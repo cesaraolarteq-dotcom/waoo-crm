@@ -2,6 +2,11 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · `claude/phase-0-review` — owner decision D4: in-house e-signature
+- **D4 decided by the owner: in-house signature** ("no voy a pagar por eso"). It lives behind a `SignatureProvider` interface, so a vendor (BoldSign) stays a later option without a rewrite. Requirements carried into DOC-01: explicit consent and intent screen, signer identity via the portal's signed link + email, the exact document rendered to PDF with a SHA-256 hash stored, timestamps (America/Chicago + UTC), IP and user agent, an immutable stored PDF plus evidence record, a copy emailed to the client, signed documents never edited (addendum flow), and evidence exportable per contract. The contract template already cites UETA/E-SIGN (clause 10). A lawyer review of the process is recommended before go-live.
+- **Catalog (BIZ-01):** the owner will fill in prices and package variables step by step. Claude opened a living catalog worksheet for the owner (Claude Docs). Its answers get copied into `docs/catalog/catalog-draft.md` as they arrive.
+- Codex is unavailable until 13:30; the ADR sign-off waits for Codex.
+
 ## 2026-10-15 · Claude Code · `claude/phase-0-review` — DISC-02 complete: all probes PASS
 - P3 phase B passed with a real **Stripe test-mode** event (details in `probes/phase0/README.md`). All 5 feasibility probes now pass on the owner's Hostinger Business plan: cron-driven retries, a private signed PDF, a signed and deduplicated webhook (local + real Stripe test), MariaDB row locks, and an encrypted off-host backup restored into a separate DB.
 - **Phase 0 exit checklist (EXIT-0):** DISC-01 web ✅ (Codex) · DISC-01 host ✅ · DISC-02 ✅ · DOC-00 ✅ (lawyer review recommended before go-live) · BIZ-02 ✅ formula documented (Codex) · ARCH-01: e-sign/email comparison ✅, **ADR sign-off pending (Codex, now with real host evidence)**, **D4 owner choice pending** · BIZ-01: draft ✅, **owner answers and inventory pending** (needed by OPS-01 in Phase 1, not a blocker for Phase 1 start) · PLAN-01: cost scenarios to finalize with the ADR.
