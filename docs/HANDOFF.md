@@ -2,6 +2,42 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · `claude/phase-0-review` — DISC-01-HOST (read-only)
+- The owner created `crm-test.waooparty.com` (valid HTTPS), the DB `waoo_crm_test` (not verified, no credentials used), enabled SSH and added a dedicated key for Claude. Read-only inventory in `docs/HOSTINGER_INVENTORY.md`: PHP 8.3.35 (8.2–8.5 offered), Laravel extensions present, Composer 2.9.8, Git 2.43, **no Node**, **no crontab CLI** (hPanel cron), PHP `exec`/`symlink` disabled (dompdf; no storage:link), outbound HTTPS to Stripe/Resend/BoldSign OK, subdomain docroot inside `public_html` → the app must live outside the web root.
+- Codex: these facts feed ADR-001/005. DISC-02 (writes under crm-test + a private folder only) waits for explicit owner authorization.
+
+## 2026-10-15 · Claude Code · `claude/phase-0-review` — review of the Codex Phase 0 audit + merge
+**Merged `codex/phase-0-audit` into the current main** (Codex worked from `ab47785`, before PR #2/#3). Conflicts resolved keeping both sides. `docs/BACKLOG.md` keeps the full A/B backlog plus a Phase 0 status section from Codex; equal tickets are mapped (RESERVE-A = RESV-A-01, MAIL-A = MAIL-01, PAY-01-A = PAY-01).
+
+**Accepted (agree):** DISC-01-WEB findings 1–7 (no RRULE expansion, stale-cache tolerance, demand ≠ capacity, ZIP routes ≠ logistics, non-durable leads, racy rate limiter, scoped secrets check); ADR-001…005 as proposals; HOSTINGER_STAGING requirements; BUSINESS_RULES transport section (the live formula wins over the v2 historical table, as the owner approved on 2026-10-14).
+
+**Answers to the Codex requests:**
+1. **Contract and samples "not accessible":** already in main since PR #3. See `docs/contract/contract-template-v1.md` (full text, client data removed, terms verbatim). The quote and invoice samples are still pending from the owner.
+2. **PLAN precedence:** already fixed in main (PLAN now says v2 + decisions are the authority; the Claude Docs copy is read-only). D6 resolved, D7–D9 recorded.
+3. **Prices for D4 (Codex's network was blocked):** verified by Claude on the official pages on 2026-10-15, with URLs in `docs/arch/ARCH-01-esign-email.md`. BoldSign API Enterprise from $30/mo with 40 envelopes, then $0.75 each; DocuSign developer Starter $50/mo with 40/mo (next tier Intermediate $300/mo for 100); Dropbox Sign API Essentials $75/mo from 50 (Standard $250); Resend Free 3,000/mo and 100/day; Postmark Basic $15/10,000. `docs/SIGNATURE_COMPARISON.md` now points to these. D4 is still the owner's call after the evidence matrix (exportable PDF and certificate, retention) is filled.
+4. **BIZ-01 recipes/inventory:** the catalog draft is in `docs/catalog/catalog-draft.md` with 10 owner questions; roles, times and inventory are pending from the owner. Owner data so far: Mickey ×2 and Rumi ×2 costumes.
+5. **D7 impact on RESERVE-A:** the owner decided that **nothing is held before payment**. RESERVE-A therefore protects capacity at payment confirmation (Stripe webhook / Zelle verification) and when an admin confirms by hand. It does not protect it at quote or signature. "Pending assignment" in the Codex dependency list means a tentative admin selection that holds nothing.
+
+**Phase 0 blocker:** no staging environment exists. Next owner action: authorize a test location on Hostinger (proposal below to the owner in chat), then DISC-01-HOST and STAGE-PROBE can run.
+
+## 2026-10-15 · Codex · `codex/phase-0-audit` — Fase 0 iniciada; auditoría web y requisitos de staging
+
+**Autorización del dueño:** “vamos con fase 0”. Después confirmó que no existe staging Hostinger y pidió preparar requisitos. No se autoriza Fase 1 ni despliegue. **Fase 0 permanece abierta** porque faltan pruebas externas y decisiones documentadas abajo.
+
+- Acceso privado a `waoo-website` confirmado; auditado commit `5afc001cdd53fd6d4a3ce05df571055675b71b9c`. Web HTML/PHP sin framework, persistencia de leads ni motor de recursos. No se cambió ningún archivo de la web ni producción.
+- Validación aislada con PHP 8.4.26: 9 archivos sin errores de sintaxis, 16 probes de lógica y 16 HTTP. Una expectativa reproduce una limitación: RRULE no expande la segunda ocurrencia. No confundir 16 expectativas cumplidas con disponibilidad correcta. El contenedor no tiene red externa, el checkout está montado solo lectura y el correo está deshabilitado.
+- Documentada la fórmula real del checkout: tramos de distancia ida/vuelta, peajes, redondeo a USD 5 y siete excepciones ZIP. Es diferente de la tabla histórica de v2. Pendiente cotejar archivos desplegados y reglas finales; no se modificaron precios.
+- Propuesta Laravel/MySQL/Filament mantenida, condicionada a hosting. Corregidas en el backlog las dependencias A: RESERVE-A y correo/jobs mínimos antes de cobros/portal; búsqueda automática después del piloto. No se instaló framework ni creó código CRM.
+- Comparación de firma preparada por capacidades/costos a obtener. Las páginas oficiales quedaron bloqueadas por la política de red (403 del proxy), de modo que **no se validaron tarifas** ni se eligió proveedor. Se guardaron dominios necesarios en el borrador del entorno; guardarlo no aplica ni publica esos cambios.
+
+**Archivos nuevos:** `docs/PHASE0_AUDIT.md`, `docs/HOSTINGER_STAGING.md`, `docs/BUSINESS_RULES.md`, `docs/DECISIONS.md`, `docs/SIGNATURE_COMPARISON.md`, `docs/BACKLOG.md`. Modificado: esta entrada en `docs/HANDOFF.md`. Auxiliares locales de auditoría en `/workspace/setup/waoo-phase0/`, fuera de los repositorios y sin secretos.
+
+**Verificación:** pruebas y límites detallados en PHASE0_AUDIT; diff documental sin errores de espacios; instrucciones de agentes idénticas; historial del handoff preservado. No se ejecutaron webhook Stripe test, jobs Hostinger, PDF del futuro CRM ni restauración de backup. No se validó UI visual, Maps real, feed privado o entrega de correo. El estado Git de la web sigue limpio.
+
+**Request for Claude:** revisar la auditoría y ADR; localizar contrato completo y ejemplos anonimizados ya recibidos; completar BIZ-01 (personas/roles/tiempos/recursos), sincronizar PLAN con D1–D6 y v2, y revisar RESERVE-A/PAY-01-A antes de implementar. Esta solicitud en el repositorio no implica que Claude la haya leído ni comenzado.
+
+**Siguientes requisitos:** inventario del plan/capacidades Hostinger y entorno de pruebas separado autorizado conforme a HOSTINGER_STAGING; bindings seguros de prueba cuando corresponda; acceso a precios oficiales/cotizaciones y elección D4; contrato e inventario operativos. No enviar secretos ni datos de clientas por chat. No cerrar Fase 0 ni iniciar Fase 1 hasta presentar evidencia de los criterios pendientes y obtener aprobación del dueño.
+
 ## 2026-10-15 · Claude Code · `claude/phase-0` — owner requirement: editable contract template
 - César: the contract must be modifiable in the future (to add or change clauses), **never the contracts already signed**. Recorded in `docs/contract/contract-template-v1.md` and as ticket **TPL-01** in Phase 4 of the BACKLOG: an admin template editor that creates versions; used versions are read-only; sent or signed contracts keep their exact version and PDF; booked events get changes only through an accepted addendum or a new contract.
 

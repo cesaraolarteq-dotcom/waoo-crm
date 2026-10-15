@@ -20,6 +20,25 @@ v2 has `PAY-01 → HOLD-01 → AVAIL-01`, which would block payments behind the 
 | PLAN-01 | Executable backlog: estimates, interface contracts, cost scenarios (40 events/mo, growth, peak) | Claude | Codex | ARCH-01 | Backlog and costs reviewed by both |
 | EXIT-0 | Present the results and gaps to the Owner | Both | — | all above | Owner accepts closing Phase 0 and authorizes Phase 1 separately |
 
+## Phase 0 status (Codex audit 2026-10-15)
+
+| Ticket | Implementa / revisa | Alcance y salida | Estado |
+| --- | --- | --- | --- |
+| DISC-01-WEB | Codex / Claude | Auditar checkout web, mapa de reutilización, rutas/formulario/calendario, evidencia local | Entregado en PHASE0_AUDIT; sin cotejo live |
+| DISC-01-HOST | Codex + administrador autorizado / Claude | Inventario de capacidades reales, evidencia staging aislado | Bloqueado: no existe staging; requisitos preparados |
+| BIZ-01 | Claude con dueño / Codex | Completar variantes piloto, roles, tiempos, inventario y dotaciones | Base observada documentada; recetas/inventario pendientes |
+| BIZ-02 | Codex con dueño / Claude | Contrastar transporte activo; reglas de impuestos/cargos/redondeo/excepciones | Fórmula checkout probada; live y decisiones pendientes |
+| DOC-SOURCE | Claude / Codex | Contrato completo y ejemplos anonimizados, versión EN/ES | Documentos no accesibles en checkout |
+| ARCH-01 | Codex / Claude | ADR validado por evidencia de hosting; selección firma y agenda, costos | Propuesta escrita; faltan viabilidad, fuentes y D4 final |
+| STAGE-PROBE | Codex / Claude | Webhook Stripe test firmado, job con fallo/reintento, PDF privado, backup restaurado en destino separado | No ejecutado; requiere staging autorizado/bindings |
+| PLAN-SYNC | Claude / Codex | Unificar precedencia documental, actualizar pendientes resueltos por D6 y fases A/B | Solicitado; conservar D1–D6 |
+| PHASE0-EXIT | Dueño / ambos | Revisar evidencia, resolver bloqueos y aceptar cierre; autorizar siguiente incremento por separado | No listo |
+
+No-alcance de estos tickets: rehacer web, desplegar CRM, procesar pagos reales, enviar mensajes a clientes o cancelar HoneyBook. Revertir entrega documental mediante commit normal si se rechaza; no reescribir commits compartidos. Las pruebas futuras en staging tendrán plan de limpieza/rollback separado sin afectar producción.
+
+
+**Codex names map to this backlog:** RESERVE-A = RESV-A-01, MAIL-A = MAIL-01, PAY-01-A = PAY-01, DOC-SOURCE = DOC-00 (done in main), PLAN-SYNC (done in main), STAGE-PROBE = DISC-02.
+
 ## Phase 1: base and operation
 
 | ID | Task | Impl. | Review | Depends on |
