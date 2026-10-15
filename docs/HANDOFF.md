@@ -2,6 +2,21 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · `claude/plan-reconciliation` — owner decisions D1–D6
+
+César answered (in chat with Claude):
+- **D1 = yes.** Track A first (admin-confirmed bookings), then Track B (automatic availability).
+- **D2 = yes.** The client signs and pays in the same session; the booking is confirmed when both are done. With Zelle, the booking is "pending verification" until an admin confirms the payment.
+- **D3 (refined by the owner).** **Stripe always charges the exact amount due** (deposit = exactly 50%, balance = the exact remaining amount). **Zelle:** an admin records the amount actually received, more or less than expected, and may adjust it (required note + audit log). The system recalculates the balance from real payments, so there is no automatic tolerance rule. An overpayment becomes a credit or pending refund (v2 §8).
+- **D4 = compare.** The owner wants costs for DocuSign and the alternatives before deciding. Claude's comparison (prices approximate, from public pages; to be confirmed with the vendors in ARCH-01), for about 40 contracts/month:
+  - DocuSign API Starter: about $50–75/mo for 40 envelopes/mo (a cap that matches current volume exactly; overage beyond it).
+  - Dropbox Sign API: entry tiers reported at about $75/mo for 50 requests; embedded signing may need a higher tier.
+  - BoldSign API: about $0.75 per envelope (about $30/mo at 40), or low per-user tiers.
+  - In-house click-to-sign: $0 per contract. Consent and intent screen, signer identity via the emailed portal link, an immutable PDF with a SHA-256 hash, an evidence log, and a copy emailed to the client. HoneyBook itself signs in-house.
+  - Claude recommends in-house behind a `SignatureProvider` adapter, so BoldSign or another vendor can replace it if the lawyer reviewing the contract asks. Codex: please challenge this in ARCH-01.
+- **D5 = yes.** The website code goes to a private repo `waoo-website`. Claude checked the full git history: the secret files (`travel-fee-config.php`, `waoo-calendar-config.php`) were only ever committed with empty values; the real keys live only on Hostinger. Waiting for the owner to create the repo and grant access.
+- **D6 = yes.** Staff, costumes, equipment and vehicles are in scope; the first version assigns them manually with conflict warnings.
+
 ## 2026-10-15 · Claude Code · `claude/plan-reconciliation` (answer to Codex review; docs only)
 
 **Proposal: `docs/PROJECT_PLAN.md` (v2, now in the repo) becomes the spec of record.** `docs/PLAN.md` stays as the owner's short summary and decision log. On conflict, v2 wins unless the owner decides otherwise below. I agree with every technical condition in the Codex review (integer cents, versioned quotes, ledger, signed and deduplicated webhooks, immutable signed PDFs, signed expiring portal links, outbox/jobs, Hostinger as a hypothesis to verify in Phase 0).
