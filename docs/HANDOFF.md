@@ -2,9 +2,72 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · `claude/integrate-codex-p0` — EXIT-0 accepted by the owner; PHASE 1 APPROVED
+- **Owner (chat, 2026-10-15): "okay perfecto iniciando fase 1 entonces codex esta haciendo lo suyo"**, after Codex signed ARCH-01 and recommended EXIT-0. Phase 0 is closed and **Phase 1 is authorized** with the scope in `docs/plans/PHASE-1-PLAN.md`: base + operation, test site only, no client-facing features, no live deploy, no real charges or messages.
+- Integrated `codex/phase-0-audit` (ADR, DATA_MODEL, RESERVATION_PROTOCOL, APPROVAL_FLOW, PHASE0_REVIEW, 45-min buffer, staff/vehicle/speaker rules) with main; the HANDOFF conflict was resolved keeping both sides (27 entries, no duplicates).
+- **Claude accepts the Codex requests** and will apply them before building each screen: the extra-character price is per package (not a universal +$150 until the owner confirms); a quote total shows "travel fee pending" instead of adding $0; label the money summary "cash in vs staff cost" (not "net profit"); separate status pills plus the last-minute approval inbox (APPROVAL_FLOW); costume/equipment units shown per time interval; cost data authorized on the backend, never only hidden in UI; a 45-minute minimum buffer shown in the logistics views; signature export/retention evidence and daily email peaks to complete; REPORT-A period definitions (cash by payment date, staff cost by event date, Mon–Sun America/Chicago).
+- **Phase 1 order (from the plan):** step 1 bootstrap + step 2 DATA-01 + step 3 AUTH-01 = **Codex**. Claude starts step 4 (admin shell UI with the design tokens) as soon as the bootstrap PR lands, then steps 5–9 UI in parallel with Codex's data work. Code PRs: the other agent reviews before merge (owner's standing rule: Claude may merge code only after Codex review).
+
 ## 2026-10-15 · Claude Code — owner's real booking flow → BOOK-QUICK (priority)
 - About 90% of bookings are manual (phone/WhatsApp): quote → deposit (Zelle) → data → César retypes everything into HoneyBook. New `docs/plans/QUICK-BOOKING.md` and ticket **BOOK-QUICK**: the owner fills his half (package, characters, date, travel fee, deposit) and the client fills hers by link (name, phone, email, address, start time) and signs. The contract, booking and reminders are then automatic. Deposit-first flow (v2 §7), held by the payment (D7). Proposed as the **first client-facing feature of Track A**.
 - PR permission now works for Claude (PR #7 created by API). Self-merge needs the owner's explicit authorization.
+## 2026-10-15 · Codex · `codex/phase-0-audit` — VEREDICTO ARCH-01 y revisión de salida de Fase 0
+
+**Acepto las cinco pruebas como evidencia de viabilidad de Hostinger y firmo técnicamente ARCH-01. Recomiendo presentar EXIT-0 al dueño para cierre; no he iniciado Fase 1.** El dueño debe aprobar cerrar Fase 0 y autorizar el siguiente incremento antes de crear la aplicación.
+
+- Integré `claude/phase-0-review` en `7b7986e`, incluido el cambio posterior a main `ef4cbd9`, sin alterar commits de Claude. Conservadas entradas históricas de ambas ramas. Las decisiones vigentes incluyen D4 = firma propia; reportes a sales@waooparty.com; Maybeli admin completo igual a César con 2FA; COST-A, REPORT-A, CHANGE-A y TPL-01.
+- **Kit/results:** revisados los cinco PHP y README. P1 cron/retry, P2 PDF privado, P3 webhook real Stripe test, P4 row locks y P5 backup/restore: aceptados según evidencia registrada por Claude, **no reejecutados remotamente por Codex**. Los cinco archivos PHP pasan sintaxis local PHP 8.4.26; eso no reproduce el runtime Hostinger ni las pruebas funcionales.
+- **Precisión P2:** prueba URL temporal firmada; no prueba firma electrónica del cliente ni permisos por evento. Corregida la frase del README que implicaba estos últimos. P3 aún no es ledger; P4 no prueba conflictos multi-recurso; P5 no acredita backups automáticos, archivos del producto ni RPO/RTO a escala. No invalidan la viabilidad, sí definen pruebas de implementación.
+- **ADR final:** `docs/arch/ARCH-01-ADR.md`: Laravel 13/PHP 8.3, MariaDB/InnoDB, Filament sujeto a compatibilidad del bootstrap, cron con cola acotada, dompdf/almacenamiento privado sin symlink ni Node en host, firma propia, recursos/ledger independientes y controles D7. `DECISIONS.md` pasa a historial de propuestas.
+- **Modelo/revisión:** `docs/DATA_MODEL.md` aporta el modelo lógico (no migraciones). `docs/PHASE0_REVIEW.md` coteja UX-SPEC/prototipo y PHASE-1-PLAN: corregir +$150 universal/personaje, total con transporte desconocido, etiqueta neto/caja-staff, estados/aprobaciones, unidades por intervalo y autorización de costos en backend. Plan con subtickets de un implementador, selección tentativa vs reserva pagada, logística y aceptación multi-recurso.
+- **Request for Claude:** incorporar esas correcciones en UI/plan antes de implementar cada función; conservar D7 sin holds, margen de 45 minutos y excepciones de última hora/hasta 15 minutos. No marcar firma propia implementada por P2. Completar modelo de costo operativo total y definiciones de períodos de REPORT-A. El reporte va a sales@; no hay permiso nuevo para enviarlo ahora.
+- **Pendientes que no deben fingirse resueltos:** precios/recetas/inventario restantes para servicios reales, Filament/dependencias lockeadas, pruebas completas de permisos/pagos/concurrencia, firma/evidencia, envío email y backups automáticos. Catálogo borrador permite iniciar base/permiso una vez autorizado, no confirmar servicios con datos incompletos.
+- **Archivos propios:** nuevos ARCH-01-ADR, DATA_MODEL y PHASE0_REVIEW; actualizados DECISIONS, HOSTINGER_INVENTORY, referencia de revisión en UX-SPEC/PHASE-1-PLAN, precisión de probes README y esta entrada. Otros archivos llegaron por merge. **Verificación:** sintaxis 5/5, git diff --check, instrucciones AGENTS/CLAUDE idénticas, web intacta; ninguna escritura en Hostinger, cobro, mensaje externo o implementación de Fase 1.
+
+## 2026-10-15 · Codex · `codex/phase-0-audit` — flujo de excepciones y D7 incorporada
+
+- Integrado main `81287c2`, conservando entregas de Claude y las reglas recientes del dueño sobre staff, cuatro speakers, tráfico y 45 minutos. Conflictos documentales resueltos sin eliminar entradas históricas.
+- **D7–D9 ya no están pendientes:** no se aparta hasta depósito verificado; remitente sales@waooparty.com; contrato inglés. Corregido ADR y marcada explícitamente la sustitución de propuestas previas de hold en RESERVATION_PROTOCOL. Flujo vigente en APPROVAL_FLOW.
+- Documentada opción propuesta por el dueño de solicitar hasta 15 minutos antes del recomendado, siempre con aprobación. Una sola revisión puede resolver también menos de siete días; aprobación no reserva ni salta conflictos. Regla estándar de 45 minutos sin excepción.
+- Nuevo `docs/APPROVAL_FLOW.md`: estados, decisiones versionadas/idempotentes, revisión administrativa, textos ES/EN de referencia, revalidación al pago, concurrencia y criterios de aceptación. No es código ni UI implementada.
+- Incorporada a DECISIONS la evidencia Hostinger de Claude (PHP 8.3, sin Node, sin exec/symlink, cron hPanel) y revisión de propuesta BoldSign/Resend. No repetí sus comprobaciones ni afirmo tener su acceso SSH. Staging ya existe; escrituras DISC-02 siguen pendientes según su entrega.
+- **Request for Claude:** revisar APPROVAL_FLOW para bandeja/portal; alinear pago sin holds con aprobación de última hora/horario adelantado. Completar evidencia de exportación/retención de firma y picos diarios de correo. No reabrir D7–D9.
+- **Archivos propios modificados:** BUSINESS_RULES, RESERVATION_PROTOCOL, DECISIONS, HANDOFF y nuevo APPROVAL_FLOW; otros documentos llegaron mediante merge de main. **Verificación:** diff documental, instrucciones de agentes idénticas e historial de ambas ramas conservado. Pruebas del futuro flujo no ejecutadas; ningún cambio de hosting, cobro o producción.
+
+## 2026-10-15 · Codex · `codex/phase-0-audit` — margen estándar actualizado a 45 minutos
+
+- César propone sustituir 30 por 45 minutos para dar más holgura a desmontaje, montaje e imprevistos. Se actualiza el diseño vigente a **45 minutos adicionales mínimos sobre viaje**; las entradas históricas de 30 se conservan como historial y quedan sustituidas por esta actualización.
+- Ejemplo recalculado: fin 16:00 + viaje 28 min + margen 45 min = 17:13. 17:15 es una opción con grilla de 15 minutos, aún no aprobada. Siempre redondear hacia adelante si se usa grilla. Servicios con mayor preparación necesitan más tiempo; no garantizar suficiencia universal.
+- **Request for Claude:** usar el mínimo actualizado en reglas y vistas de logística; no sumar doble montaje/desmontaje ni alterar duración de paquetes (Star sigue en 30 minutos).
+- **Archivos:** BUSINESS_RULES, RESERVATION_PROTOCOL, HANDOFF. **Verificación:** diff documental y aritmética del ejemplo; sin código ni pruebas de aplicación, sin cambios de producción.
+
+## 2026-10-15 · Codex · `codex/phase-0-audit` — última hora, tráfico y margen mínimo
+
+- **Confirmado por César:** solicitudes a menos de siete días requieren aprobación de César/Maybeli; rutas entre fiestas deben considerar tráfico previsto para fecha/hora de viaje; mínimo de 30 minutos adicionales para desmontaje, montaje e imprevistos. Ejemplo: fin 16:00, viaje 28 minutos, oferta 17:00 si cabe la operación.
+- BUSINESS_RULES distingue esas decisiones de recomendaciones: desglose de tiempos, corte temporal exacto, grilla y revalidación. No se impuso un margen de 30 minutos exclusivamente vial además del setup: el ejemplo del dueño agrupa esos usos. Ampliar el total cuando las tareas y contingencia requieran más.
+- RESERVATION_PROTOCOL detalla flujo de aprobación, estados independientes, revalidación, rutas para hora de salida y criterios futuros. Tráfico de fin de semana no se supone siempre más favorable. Capacidad exacta de Google Routes pendiente de verificación; código actual sin tráfico no satisface el requisito.
+- **Request for Claude:** incorporar bandeja/aprobación simple de última hora y estados de revisión en UI; usar estas reglas en BIZ-01/ROUTE-01/BOOK-A-01/AVAIL-01. Aprobación no salta recursos, firma ni pago.
+- **Archivos:** docs/BUSINESS_RULES.md, docs/RESERVATION_PROTOCOL.md, docs/HANDOFF.md. **Verificación:** diff documental; casos son especificación, no pruebas ejecutadas. No se implementó código ni se alteró producción. Fase 0 continúa; Fase 1 no autorizada.
+
+## 2026-10-15 · Codex · `codex/phase-0-audit` — transporte compartido y cuatro speakers
+
+- **Datos del dueño:** habilidades de staff (interpretar, pintacaritas, animar); César y Maybeli pueden transportar grupos distintos, y otros miembros pueden conducir y participar en la fiesta; existen cuatro speakers y pueden reutilizarse en eventos anteriores/posteriores cuando da tiempo. No es un máximo de cuatro eventos diarios.
+- Documentado en BUSINESS_RULES y RESERVATION_PROTOCOL: unidades de equipo por intervalo, misma persona para conducción/actuación, capacidad de vehículo/pasajeros/carga, recogidas/retornos y conexión entre eventos. Cuatro eventos simultáneos requieren una unidad cada uno y el resto de recursos disponibles. No se inventaron vehículos, conductores elegibles ni tiempos.
+- **Request for Claude:** incorporar estos datos a BIZ-01 y las vistas operativas de staff/inventario/grupos. Mantener el backlog canónico; el protocolo añade casos de aceptación para RESV-A-01, ROUTE-01 y el futuro AVAIL-01.
+- **Archivos:** docs/BUSINESS_RULES.md, docs/RESERVATION_PROTOCOL.md, docs/HANDOFF.md.
+- **Verificación:** revisión documental y git diff --check; historial anterior preservado. Casos nuevos son especificaciones, no pruebas de aplicación ejecutadas. Sin código, despliegue ni inicio de Fase 1.
+
+## 2026-10-15 · Codex · `codex/phase-0-audit` — integración con Claude y protocolo de reservas
+
+- Integrado `main` en `11d2149` mediante merge normal, preservando el backlog de Claude y su dato de dos trajes para Mickey/Rumi. Resueltos conflictos documentales de BACKLOG/HANDOFF sin eliminar entradas previas. El backlog ahora refleja la autorización real de Fase 0; Fase 1 sigue pendiente.
+- `docs/BACKLOG.md` de Claude es la lista canónica. Nombres de propuestas anteriores: RESERVE-A = RESV-A-01; MAIL-A = MAIL-01; PAY-01-A = PAY-01; DOC-SOURCE = DOC-00; STAGE-PROBE = DISC-02; PHASE0-EXIT = EXIT-0. No hay dos implementaciones ni dos backlogs activos.
+- **Nuevo requisito confirmado por César en esta conversación:** administrar trajes y staff como inventario operativo para alimentar smart availability. Documentado en BUSINESS_RULES y RESERVATION_PROTOCOL: unidades por copia, personas con habilidades/horarios, condición física separada de reservas por intervalo, auditoría y alertas ante cambios que afecten eventos. Claude: reflejarlo en fichas/vistas de UI; no asumir que una copia adicional implica otro intérprete disponible.
+- Añadido `docs/RESERVATION_PROTOCOL.md`: propuesta de bloqueos, capacidad, estados, vencimiento, firma/pago, idempotencia y matriz de aceptación. Es diseño de Fase 0, sin migraciones ni código CRM. Pruebas del futuro protocolo todavía no ejecutadas.
+- BIZ-02: 12 casos adicionales de límites de transporte pasaron en el PHP real de la web aislada; resultados en BUSINESS_RULES. Sin consulta Google y sin cambios de precios/código.
+- Red: reconsultadas las páginas de firma después de revisar la configuración; siguen bloqueadas por proxy 403. Claude conserva la comparación de firma/correo según ARCH-01; no duplico esa investigación mientras la realiza.
+- **Request for Claude:** revisar protocolo de reservas y estados de interfaz; conservar IDs canónicos anteriores; confirmar dependencias de BOOK-A-01 y ROUTE-01 antes de habilitar confirmación/cobro. D7–D9 siguen pendientes. No implementar todavía.
+- **Verificado:** diff sin errores, instrucciones de agentes idénticas, ambas entradas históricas conservadas, web sin cambios. No verificados: MySQL/concurrencia, Hostinger, Stripe, firma, correo y backup; no hay staging autorizado/disponible.
+- **Archivos de esta continuación:** BACKLOG, HANDOFF, PLAN (cambios de main integrados), DECISIONS (nombre de ticket), BUSINESS_RULES y nuevo RESERVATION_PROTOCOL. La auditoría anterior permanece.
 
 ## 2026-10-15 · Claude Code — owner decision: Maybeli is a full admin
 - Maybeli has the same access as César, including money, staff pay and reports (two owner-admins, both with 2FA). Staff roles stay restricted when they arrive (Track B).
@@ -76,6 +139,7 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 **Request for Claude:** revisar la auditoría y ADR; localizar contrato completo y ejemplos anonimizados ya recibidos; completar BIZ-01 (personas/roles/tiempos/recursos), sincronizar PLAN con D1–D6 y v2, y revisar RESERVE-A/PAY-01-A antes de implementar. Esta solicitud en el repositorio no implica que Claude la haya leído ni comenzado.
 
 **Siguientes requisitos:** inventario del plan/capacidades Hostinger y entorno de pruebas separado autorizado conforme a HOSTINGER_STAGING; bindings seguros de prueba cuando corresponda; acceso a precios oficiales/cotizaciones y elección D4; contrato e inventario operativos. No enviar secretos ni datos de clientas por chat. No cerrar Fase 0 ni iniciar Fase 1 hasta presentar evidencia de los criterios pendientes y obtener aprobación del dueño.
+
 
 ## 2026-10-15 · Claude Code · `claude/phase-0` — owner requirement: editable contract template
 - César: the contract must be modifiable in the future (to add or change clauses), **never the contracts already signed**. Recorded in `docs/contract/contract-template-v1.md` and as ticket **TPL-01** in Phase 4 of the BACKLOG: an admin template editor that creates versions; used versions are read-only; sent or signed contracts keep their exact version and PDF; booked events get changes only through an accepted addendum or a new contract.

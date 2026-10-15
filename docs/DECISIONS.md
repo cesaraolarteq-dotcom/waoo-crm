@@ -1,4 +1,6 @@
-# Decisiones técnicas — propuestas de Fase 0
+# Decisiones técnicas — historial de propuestas de Fase 0
+
+**Vigente:** [ARCH-01 firmado técnicamente](arch/ARCH-01-ADR.md), con evidencia P1–P5, D4 = firma propia, ambos owner-admin equivalentes y reportes a sales@waooparty.com. Las propuestas siguientes se conservan como historial y quedan sustituidas donde difieran. Cierre de Fase 0 e inicio de Fase 1 dependen del dueño.
 
 2026-10-15. Estado: **propuestas para revisión; arquitectura final pendiente de evidencia de Hostinger**. D1–D6 están aprobadas en HANDOFF; la elección de stack/proveedor no lo está. Fase 0 está autorizada; Fase 1 no.
 
@@ -12,7 +14,7 @@ Alternativas: ampliar PHP sin framework ahorra arranque pero obliga a construir 
 
 CRM como fuente maestra; Google Calendar como espejo con IDs, reintentos y alerta por retraso. El iCal existente no representa recursos ni expande recurrencias; importar compromisos con revisión, no convertir sus niveles diarios en disponibilidad.
 
-A selecciona recursos manualmente, comprueba viaje/preparación y reserva capacidad de forma transaccional antes de habilitar el pago. Diseño candidato: bloqueo de filas de los recursos en orden estable para serializar operaciones concurrentes, seguido de consulta/revalidación de intervalos y vecinos; todas las escrituras de agenda usan ese protocolo. Debe probarse con MySQL real, incluyendo eventos que cruzan medianoche, cambios de zona horaria, reasignaciones y dos administradores. No basta confiar en una validación del navegador. Duración/liberación de asignaciones pendientes requiere decisión operativa.
+D7: A selecciona recursos tentativamente y comprueba viaje/preparación sin reservar capacidad. La protección transaccional se aplica al depósito verificado y solo si la revalidación permite asignar recursos. Diseño candidato: bloqueo de filas de los recursos en orden estable para serializar operaciones concurrentes, seguido de consulta/revalidación de intervalos y vecinos; todas las escrituras de agenda usan ese protocolo. Debe probarse con MySQL real, incluyendo eventos que cruzan medianoche, cambios de zona horaria, reasignaciones y dos administradores. No basta confiar en una validación del navegador. No hay holds antes del pago por D7. La aprobación de excepciones no aparta horario; ver APPROVAL_FLOW.md.
 
 B añade búsqueda automática de combinaciones, no otro mecanismo de integridad. Un conflicto físico no resuelto bloquea confirmación. Los errores de Maps o de inventario pasan a revisión, sin capacidad inventada.
 
@@ -34,4 +36,12 @@ Datos requeridos para costos: plan/límites efectivos; tamaño documentos y back
 
 ## Fuente documental
 
-Propuesta: decisiones más recientes del dueño → PROJECT_PLAN v2 con ajustes A/B aprobados → resumen PLAN. El encabezado de PLAN todavía menciona precedencia del documento vivo; Claude debe reconciliarlo para que Git sea una referencia verificable. Esta entrega no reescribe políticas ni instrucciones previas silenciosamente.
+Propuesta: decisiones más recientes del dueño → PROJECT_PLAN v2 con ajustes A/B aprobados → resumen PLAN. PLAN ya refleja v2 y las decisiones del dueño como autoridad; la copia viva es de consulta. Esta entrega no reescribe políticas ni instrucciones previas silenciosamente.
+
+## Evidencia nueva de hosting y revisión de proveedores
+
+Fuente: inventario de solo lectura de Claude en HOSTINGER_INVENTORY.md, integrado desde main `81287c2`. No repetido por Codex: PHP 8.3.35, Composer 2.9.8, Node ausente, cron desde hPanel, exec/symlink deshabilitados; subdominio de prueba HTTPS creado por el dueño. Base creada según reporte, versión del servidor/credenciales/transacciones aún no comprobadas. Ya existe staging; sustituye referencias históricas a su ausencia. Escrituras DISC-02 siguen pendientes de autorización específica/acceso; esta entrega no escribe en Hostinger.
+
+Consecuencias propuestas: compilar assets fuera del hosting; evaluar PDF puro PHP (p. ej. dompdf) sin binario externo y probar fuentes/imágenes/plantilla real. Aplicación, vendor, .env y documentos fuera de public_html; servir archivos privados mediante controladores autorizados, sin depender de storage:link. Cron con lock y ejecución acotada de cola, midiendo solapamientos y reintentos; no asumir worker permanente. Verificar servidor MySQL/MariaDB real y transacciones, no inferirlo por versión del cliente. Ni espacio actualmente usado ni ausencia de error HTTP prueban cuota, capacidad o integración completa.
+
+Comparación de precios: se incorpora la evidencia de Claude en arch/ARCH-01-esign-email.md, no una verificación independiente de Codex. BoldSign + Resend es una candidata razonable, aún no elección D4. Revisar exportación PDF/certificado, retención, límites de sandbox y excedentes antes de decidir. Para Resend, 400 correos/mes no garantiza respetar 100/día en importaciones o reintentos: programar cola, gestionar límites y medir entregabilidad. El rango de USD 0–30 es subtotal de firma/email, no costo operativo total: faltan Maps, backups, monitoreo, procesamiento y mantenimiento. Costos de sobrecuota DocuSign/Dropbox no confirmados no implican que subir de plan sea la única opción.

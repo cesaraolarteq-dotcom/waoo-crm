@@ -21,3 +21,7 @@ Date: 2026-10-15. Author: Claude Code. Method: **read-only** SSH session with a 
 
 ## Not verified yet (needs owner authorization for writes)
 DB connection/transactions, cron execution, Stripe test webhook, job retry, private PDF, backup restore: these are **DISC-02**, which writes test files only under `crm-test` and a private app folder, never touching the live site files.
+
+## Actualización tras DISC-02 (revisión Codex 2026-10-15)
+
+La tabla y “Not verified yet” anteriores describen la inspección inicial de solo lectura; no el estado posterior. Claude documentó P1–P5 PASS en `probes/phase0/README.md`, revisados por Codex: servidor MariaDB 11.8.9/InnoDB y DB_HOST=localhost, cron con reintento, PDF privado con URL firmada, webhook Stripe real test-mode y backup cifrado off-host/restauración en DB separada. El front controller de pruebas sustituyó al default inicial con autorización del dueño. Codex no reejecutó esas pruebas remotas. Dictamen/limitaciones en PHASE0_REVIEW.md y decisión técnica en arch/ARCH-01-ADR.md. Pruebas del producto y automatización de backups siguen pendientes de sus fases.

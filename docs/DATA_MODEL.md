@@ -1,0 +1,37 @@
+# Modelo lógico para revisión — no son migraciones
+
+2026-10-15 · Codex · Referencia de ARCH-01 para UX y DATA-01. Amplía PROJECT_PLAN §15 con decisiones del dueño. No existe todavía esquema de aplicación implementado; los probes usan tablas de prueba, no este modelo.
+
+| Área | Entidades / relaciones propuestas | Invariantes y correspondencia UI |
+| --- | --- | --- |
+| Identidad | User, Role, Permission, Session, AuditLog | Dos owner-admin equivalentes con 2FA; staff no hereda permisos admin por tener ficha operativa. Clientes no acceden a documentos ajenos. |
+| Clientes/eventos | Customer → Event; Contact; EventLocationRevision | Evento conserva fecha/hora, UTC y America/Chicago, dirección versionada. Información infantil mínima. No mezclar estado de lead, pago o contrato. |
+| Catálogo | Service → Variant → PriceVersion; Requirement por segmento/rol/recurso; AddOnCompatibility | Una variante define cantidad/precio, no fórmula universal +150/personaje. Precios aceptados no cambian con edición del catálogo. |
+| Recursos | Staff, Skill, StaffSkill, Availability; Character → CostumeUnit; Compatibility; EquipmentUnit; Vehicle | Personas con múltiples habilidades, trajes por copia, 4 speakers como unidades. Condición física separada de ocupación. Vehículo con capacidad/asientos/carga, conductor es Staff. |
+| Agenda | TentativeAssignment; ResourceReservation; Maintenance/ExternalBlock; TimelineSegment | Tentativa no bloquea por D7; reserva firme respaldada por depósito verificado/asignación manual de compromiso ya verificado. Todos los cambios de capacidad usan el protocolo transaccional. |
+| Logística | Trip, TripStop, ResourceTransfer, RouteEstimate | Conductor, pasajeros, equipo, vehículo e itinerario; salida y entrada a vecinos. Fuente/fecha objetivo/consulta y versiones de ruta; sin promesas por tráfico actual de otro día. |
+| Excepciones | ApprovalRequest, ApprovalDecision | Motivos: última hora y adelanto hasta 15 min. Autor, decisión, evidencia, versión; puede resolver ambos en una acción, no bloquea recursos ni sobreescribe conflicto. |
+| Cotización | Quote → QuoteRevision → QuoteLine; Acceptance | USD en centavos, estado de cálculo completo o requiere revisión. ZIP sin costo no se transforma en cero. Depósito/redondeo explícitos. |
+| Dinero | Invoice/Line; PaymentAttempt; ProviderEvent; Payment; Allocation; Refund; Credit; Adjustment | Evento único del proveedor y transacción financiera única por cuenta/modo/proveedor; conciliación, saldo exacto y sobrepago. Correcciones Zelle preservan historial. |
+| Firma | TemplateVersion; ContractInstance; SignedArtifact; SignatureEvidence; Addendum | Instancia fija versión y bytes/hash aceptados. PDF/documento y evidencia inmutables, adjuntos privados. Plantilla usada no se edita. Solo contrato inglés por D9. |
+| Costos | RateVersion; WorkAssignment; TimeEntry; StaffCompensation; TransportCost; Expense; CostSnapshot | Tasas/horas por período y rol, estimado/real separados, reparto de costo compartido explícito. Datos admin-only en backend y exportaciones. |
+| Cambios | ChangeRequest; RescheduleRevision; CancellationDecision | Versionar recursos, fecha, dinero/documentos; conservar original si falla propuesta. Motivo y actor para dispensa/override, no para doble asignación física. |
+| Mensajes/reportes | OutboxJob; Message; Consent; ReportRun | Idempotencia por acción/revisión/canal; revalidación antes de enviar. ReportRun identifica período, zona, corte, definición y destinatario; no disparar dos emails al reintentar. |
+
+## Estados que necesita la interfaz
+
+Reserva: solicitud / capacidad asignada con pago / confirmada / cancelada / completada. D2 exige firma para confirmación completa; depósito verificado puede respaldar capacidad mientras falta firma. Registrar incidencias como entidad/alerta separada, no perder el pago ni esconder inconsistencias.
+
+Pago: por transacción pendiente/procesando/recibido/fallido/reembolsado/disputado; saldo agregado calculado. Contrato: borrador/enviado/firmado/sustituido/anulado. Operación: sin asignar/asignada/staff confirmado/lista/en servicio/completada/incidencia. Aprobaciones tienen su propio estado. UI puede resumirlos en badges sin convertirlos en un único enum ni exponer todo a cada rol.
+
+## Fase 1 sin pagos integrados
+
+Se puede probar el modelo con fixtures ficticias de compromisos cuyo depósito ya se verificó y con registro administrativo explícito de esa referencia/evidencia. No fabricar un pago al crear un evento ni activar cobros como parte de DATA-01. Dos cotizaciones tentativas pueden competir; dos reservas firmes no. Para uso real antes de PAY-01/02, acordar un flujo manual verificable del compromiso externo; si no está disponible, limitar las pruebas a fixtures y no declarar reservas confirmadas.
+
+## Semántica de reportes
+
+Separar cantidad de eventos reservados, servicios/paquetes vendidos (un evento puede contener varios), cobros por fecha de pago, saldo al corte, costo estimado de próximos eventos y costo real del período. Las anulaciones/refunds no se esconden cambiando totales históricos. Definir período lunes/domingo y mensual, qué significa “esta semana” en un email del lunes y hora de envío con el dueño. Un nombre corto en la UI debe conservar una definición precisa accesible.
+
+## Pruebas relevantes antes del piloto
+
+Permisos por objeto y rol; concurrencia real de múltiples recursos/vecinos; recurrencias importadas; DST; webhook fuera de orden y dos eventos para un mismo pago; corrección Zelle/sobrepago; cambio de plantilla sin alterar firma histórica; reprogramación fallida conserva original; reportes con mismo ledger/cortes reproducibles; jobs que se reintentan sin duplicar efectos. Son criterios futuros, no resultados de los probes P1–P5.
