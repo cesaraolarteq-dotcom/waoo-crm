@@ -1,0 +1,90 @@
+<!doctype html>
+<!-- DOC-01 render layout for the contract PDF (dompdf on Hostinger: CSS 2.1, tables, no flex/grid, DejaVu Sans for full Unicode).
+     Merge fields per docs/contract/contract-template-v1.md. {{terms_html}} = sections 1–10 of the ACTIVE template version, verbatim.
+     The signed PDF is immutable; the evidence footer is printed on the signed copy only. -->
+<html lang="en"><head><meta charset="utf-8"><title>Waoo Party · Services Agreement {{contract_number}}</title>
+<style>
+  @page { margin: 22mm 18mm 20mm 18mm; }
+  body { font-family: "DejaVu Sans", Helvetica, Arial, sans-serif; font-size: 10.5pt; color: #141A33; line-height: 1.45; }
+  h1 { font-size: 17pt; margin: 0 0 2pt; color: #122F94; }
+  h2 { font-size: 11.5pt; margin: 16pt 0 6pt; padding-bottom: 3pt; border-bottom: 1.2pt solid #122F94; color: #122F94; text-transform: uppercase; letter-spacing: 0.6pt; }
+  h3 { font-size: 10.5pt; margin: 10pt 0 3pt; }
+  .muted { color: #5B6385; }
+  .brand { width: 100%; border-collapse: collapse; margin-bottom: 10pt; }
+  .brand td { vertical-align: top; }
+  .logo { font-size: 18pt; font-weight: bold; color: #122F94; }
+  .chip { display: inline-block; padding: 1pt 6pt; border-radius: 8pt; background: #EEF1F9; font-size: 9pt; }
+  table.kv { width: 100%; border-collapse: collapse; }
+  table.kv td { padding: 4pt 6pt; border-bottom: 0.6pt solid #DFE3EF; vertical-align: top; }
+  table.kv td.k { width: 32%; color: #5B6385; }
+  table.money { width: 100%; border-collapse: collapse; margin-top: 4pt; }
+  table.money td { padding: 5pt 6pt; border-bottom: 0.6pt solid #DFE3EF; }
+  table.money td.r { text-align: right; }
+  table.money tr.total td { font-weight: bold; border-top: 1pt solid #141A33; }
+  table.money tr.balance td { font-weight: bold; color: #122F94; }
+  .includes { margin: 3pt 0 0 14pt; padding: 0; }
+  .terms p, .terms li { text-align: justify; }
+  .sig { width: 100%; border-collapse: collapse; margin-top: 18pt; page-break-inside: avoid; }
+  .sig td { width: 50%; vertical-align: top; padding: 8pt; border: 0.8pt solid #DFE3EF; }
+  .sig .line { border-bottom: 0.8pt solid #141A33; height: 26pt; font-size: 15pt; font-style: italic; }
+  .evidence { margin-top: 14pt; padding: 7pt 9pt; background: #F5F6FB; font-size: 8pt; color: #5B6385; page-break-inside: avoid; }
+  .footer { position: fixed; bottom: -12mm; left: 0; right: 0; font-size: 8pt; color: #8A91B0; text-align: center; }
+</style></head>
+<body>
+<div class="footer">Waoo Party LLC · Services Agreement {{contract_number}} · Template {{template.version}} · Page <span class="pagenum"></span></div>
+
+<table class="brand"><tr>
+  <td><div class="logo">Waoo Party</div><div class="muted">Waoo Party LLC · Katy / Houston, TX · sales@waooparty.com</div></td>
+  <td style="text-align:right"><h1>Services Agreement</h1><div class="muted">Statement of Work · No. {{contract_number}}</div><div class="chip">{{status_label}}</div></td>
+</tr></table>
+
+<h2>Client information</h2>
+<table class="kv">
+  <tr><td class="k">Name</td><td>{{client.first_name}} {{client.last_name}}</td></tr>
+  <tr><td class="k">Address</td><td>{{client.address}}</td></tr>
+  <tr><td class="k">Email</td><td>{{client.email}}</td></tr>
+  <tr><td class="k">Phone</td><td>{{client.phone}}</td></tr>
+</table>
+
+<h2>Event</h2>
+<table class="kv">
+  <tr><td class="k">Event date</td><td>{{event.date_long}}</td></tr>
+  <tr><td class="k">Service start / end</td><td>{{event.start_time}} – {{event.end_time}}</td></tr>
+  <tr><td class="k">Event location</td><td>{{event.address}}</td></tr>
+  {{#if event.requires_characters}}<tr><td class="k">Character(s)</td><td>{{event.characters}}</td></tr>{{/if}}
+</table>
+
+<h2>Services</h2>
+{{#each services}}
+<h3>{{name}} — {{total}}</h3>
+<div class="muted">Duration: {{duration}}</div>
+<ul class="includes">{{#each includes}}<li>{{this}}</li>{{/each}}</ul>
+<p>{{long_description}}</p>
+{{/each}}
+<p>We are happy to accommodate adjustments to the flow of activities with advance notice to ensure the experience aligns perfectly with your event.</p>
+
+<h2>Payment</h2>
+<table class="money">
+  {{#each lines}}<tr><td>{{label}}</td><td class="r">{{amount}}</td></tr>{{/each}}
+  <tr class="total"><td>Total</td><td class="r">{{total}}</td></tr>
+  {{#each payments.received}}<tr><td>Received on {{date}} ({{method}})</td><td class="r">− {{amount}}</td></tr>{{/each}}
+  <tr class="balance"><td>{{payments.balance_label}} · due {{payments.balance_due_date}}</td><td class="r">{{payments.balance_amount}}</td></tr>
+</table>
+
+<h2>Terms and conditions</h2>
+<div class="terms">{{terms_html}}</div>
+
+<table class="sig"><tr>
+  <td><b>Provider</b><br>Waoo Party LLC<div class="line">Waoo Party</div><span class="muted">Signed {{provider.signed_at}}</span></td>
+  <td><b>Client</b><br>{{client.first_name}} {{client.last_name}}<div class="line">{{client.typed_signature}}</div><span class="muted">Signed {{client.signed_at}}</span></td>
+</tr></table>
+
+{{#if signed}}
+<div class="evidence">
+  <b>Electronic signature record.</b> Signed by {{signer.name}} ({{signer.email}}) through a personal link sent to that email.
+  Consent: "I have read and accept the contract. My electronic signature is as valid as a handwritten one."
+  Time: {{signer.signed_at_local}} (America/Chicago) · {{signer.signed_at_utc}} UTC · IP {{signer.ip}} · Device {{signer.user_agent_short}}.
+  Document SHA-256: {{document.sha256}} · Template {{template.version}}. Texas UETA and federal E-SIGN Act.
+</div>
+{{/if}}
+</body></html>
