@@ -2,6 +2,23 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code — owner: Affirm not available yet
+- **Affirm is NOT usable yet**: the owner still has to complete a verification with Affirm. Card, Klarna, Zip and Afterpay work. PAY-01: do not offer Affirm in Checkout (exclude it explicitly, even though the test configuration shows it "on") until the owner confirms the verification is complete.
+
+## 2026-10-15 · Claude Code · `claude/owner-payments-admins` — owner data: payment methods + admin emails
+- **Payment methods (owner):** clients pay through the Stripe link and **choose the method there**: card, **Klarna, Zip, Afterpay** (all accepted), and the owner applies the **3% fee to all of them** (not to Zelle). Verified read-only via the Stripe **test** API: the default payment-method configuration has `card, apple_pay, google_pay, klarna, afterpay_clearpay, zip, affirm, cashapp, link` (and others) set to "on". PAY-01: use Stripe Checkout with automatic payment methods, so the client picks; amounts stay exact (D3).
+- **To confirm before activating the 3% in code (Codex ADR-003 condition):** card-network rules forbid surcharging debit/prepaid cards, and BNPL providers (Klarna/Afterpay/Zip/Affirm) have their own merchant rules on surcharges. Implement the fee as a disclosed, per-method rule that can be switched off. Claude will ask the owner to confirm with Stripe support or the provider terms; no legal conclusion here.
+- **Admin accounts (AUTH-01):** **cesar@waooparty.com** (César) and **maybe@waooparty.com** (Maybeli), both full admins with 2FA.
+
+## 2026-10-15 · Claude Code · `claude/integrate-codex-p0` — EXIT-0 accepted by the owner; PHASE 1 APPROVED
+- **Owner (chat, 2026-10-15): "okay perfecto iniciando fase 1 entonces codex esta haciendo lo suyo"**, after Codex signed ARCH-01 and recommended EXIT-0. Phase 0 is closed and **Phase 1 is authorized** with the scope in `docs/plans/PHASE-1-PLAN.md`: base + operation, test site only, no client-facing features, no live deploy, no real charges or messages.
+- Integrated `codex/phase-0-audit` (ADR, DATA_MODEL, RESERVATION_PROTOCOL, APPROVAL_FLOW, PHASE0_REVIEW, 45-min buffer, staff/vehicle/speaker rules) with main; the HANDOFF conflict was resolved keeping both sides (27 entries, no duplicates).
+- **Claude accepts the Codex requests** and will apply them before building each screen: the extra-character price is per package (not a universal +$150 until the owner confirms); a quote total shows "travel fee pending" instead of adding $0; label the money summary "cash in vs staff cost" (not "net profit"); separate status pills plus the last-minute approval inbox (APPROVAL_FLOW); costume/equipment units shown per time interval; cost data authorized on the backend, never only hidden in UI; a 45-minute minimum buffer shown in the logistics views; signature export/retention evidence and daily email peaks to complete; REPORT-A period definitions (cash by payment date, staff cost by event date, Mon–Sun America/Chicago).
+- **Phase 1 order (from the plan):** step 1 bootstrap + step 2 DATA-01 + step 3 AUTH-01 = **Codex**. Claude starts step 4 (admin shell UI with the design tokens) as soon as the bootstrap PR lands, then steps 5–9 UI in parallel with Codex's data work. Code PRs: the other agent reviews before merge (owner's standing rule: Claude may merge code only after Codex review).
+
+## 2026-10-15 · Claude Code — owner's real booking flow → BOOK-QUICK (priority)
+- About 90% of bookings are manual (phone/WhatsApp): quote → deposit (Zelle) → data → César retypes everything into HoneyBook. New `docs/plans/QUICK-BOOKING.md` and ticket **BOOK-QUICK**: the owner fills his half (package, characters, date, travel fee, deposit) and the client fills hers by link (name, phone, email, address, start time) and signs. The contract, booking and reminders are then automatic. Deposit-first flow (v2 §7), held by the payment (D7). Proposed as the **first client-facing feature of Track A**.
+- PR permission now works for Claude (PR #7 created by API). Self-merge needs the owner's explicit authorization.
 ## 2026-10-15 · Codex · `codex/phase-0-audit` — VEREDICTO ARCH-01 y revisión de salida de Fase 0
 
 **Acepto las cinco pruebas como evidencia de viabilidad de Hostinger y firmo técnicamente ARCH-01. Recomiendo presentar EXIT-0 al dueño para cierre; no he iniciado Fase 1.** El dueño debe aprobar cerrar Fase 0 y autorizar el siguiente incremento antes de crear la aplicación.
