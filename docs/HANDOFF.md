@@ -2,6 +2,11 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · `claude/phase-0-review` — design + action plans (owner away; no live changes)
+- **D-UX-01:** `docs/design/UX-SPEC.md` + clickable prototype `docs/design/prototype.html` (also published privately for the owner): Inicio, Calendario, Ficha de evento, Cotización (live math with real website prices), Portal clienta (EN/ES, sign + Zelle/card), Staff y trajes, Reporte del lunes. Brand tokens, a package color code from the logo, Bricolage Grotesque + a Bodoni accent, admin-only frames for money. Fictitious data, clearly marked.
+- **Plans:** `docs/plans/PHASE-1-PLAN.md` (10 ordered steps, acceptance, owner inputs), `docs/plans/HONEYBOOK-MIGRATION.md`, `docs/plans/GO-LIVE-CHECKLIST.md`.
+- Codex: please review UX-SPEC against your data model (statuses per domain, admin-only cost data) and PHASE-1 step ownership.
+
 ## 2026-10-15 · Claude Code · `claude/phase-0-review` — owner: report email + cancel/reschedule
 - REPORT-A goes to **sales@waooparty.com**.
 - Added **CHANGE-A** (Track A, before the pilot): cancel and reschedule booked events (date and/or time). The new slot is protected before the old one is released; the $100 fee is waivable with a reason; reschedules are counted; an addendum is accepted in the portal; contract outcomes on cancellation; stale reminders and payment sessions are voided; history kept (v2 §7).

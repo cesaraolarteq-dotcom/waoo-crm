@@ -1,0 +1,443 @@
+<title>Waoo CRM Prototipo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Bodoni+Moda:ital,opsz,wght@1,6..96,500;1,6..96,600&display=swap">
+<style>
+/* Layout: app shell — navy sidebar + workspace; package colors from the Waoo logo code every event chip. */
+:root{
+  --bg:#F4F5FA; --surface:#FFFFFF; --surface-2:#EEF0F8; --ink:#141A33; --muted:#5A6283; --line:#DCE0EE;
+  --navy:#122F94; --navy-ink:#FFFFFF; --sidebar:#0E1B52; --sidebar-ink:#C9D0F0;
+  --teal:#15D1C4; --purple:#8D53D9; --pink:#FF017C; --yellow:#F9C930;
+  --ok:#137A4B; --ok-bg:#E3F5EC; --warn:#9A6200; --warn-bg:#FFF2D6; --bad:#B4233A; --bad-bg:#FDE6EA; --info:#1E4DD8; --info-bg:#E5ECFF;
+  --font:"Bricolage Grotesque", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --accent-font:"Bodoni Moda", Georgia, "Times New Roman", serif;
+  --r:12px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1026; --surface:#141A38; --surface-2:#1B2247; --ink:#EEF1FF; --muted:#A3AACC; --line:#2A3263;
+  --navy:#6F8BFF; --navy-ink:#0B1026; --sidebar:#070B1C; --sidebar-ink:#AEB6DD;
+  --ok:#5CD69B; --ok-bg:#12352A; --warn:#F5C35A; --warn-bg:#3A2D0E; --bad:#FF7A8E; --bad-bg:#3D1620; --info:#8FA8FF; --info-bg:#1A2550;
+  color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0B1026; --surface:#141A38; --surface-2:#1B2247; --ink:#EEF1FF; --muted:#A3AACC; --line:#2A3263;
+  --navy:#6F8BFF; --navy-ink:#0B1026; --sidebar:#070B1C; --sidebar-ink:#AEB6DD;
+  --ok:#5CD69B; --ok-bg:#12352A; --warn:#F5C35A; --warn-bg:#3A2D0E; --bad:#FF7A8E; --bad-bg:#3D1620; --info:#8FA8FF; --info-bg:#1A2550;
+  color-scheme:dark;}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.45}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.app{display:grid;grid-template-columns:232px 1fr;min-height:100%}
+.side{background:var(--sidebar);color:var(--sidebar-ink);padding-block:20px;padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:14px;display:flex;flex-direction:column;gap:18px;position:sticky;top:env(safe-area-inset-top,0px);height:100vh}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:800;font-size:20px;letter-spacing:-.02em;padding:0 8px}
+.brand .dots{display:flex;gap:3px}.brand .dots i{width:8px;height:8px;border-radius:50%;display:block}
+.brand small{display:block;font-weight:500;font-size:11px;color:var(--sidebar-ink);letter-spacing:.08em;text-transform:uppercase}
+nav.menu{display:flex;flex-direction:column;gap:2px}
+nav.menu button{background:none;border:0;text-align:left;padding:9px 10px;border-radius:9px;color:var(--sidebar-ink);display:flex;align-items:center;gap:10px;font-weight:500}
+nav.menu button:hover{background:rgba(255,255,255,.06);color:#fff}
+nav.menu button[aria-current="page"]{background:rgba(255,255,255,.12);color:#fff}
+nav.menu svg{width:18px;height:18px;flex:none}
+.badge{margin-left:auto;background:var(--pink);color:#fff;border-radius:999px;font-size:11px;padding:1px 7px;font-weight:700}
+.side .foot{margin-top:auto;font-size:12px;padding:0 8px;opacity:.8}
+main{min-width:0;padding-block:22px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1180px;margin:0 auto}
+.proto-note{background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:8px 12px;font-size:13px;margin-bottom:16px}
+header.page{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:18px}
+h1{margin:0;font-size:28px;letter-spacing:-.02em;font-weight:700;text-wrap:balance}
+h1 em{font-family:var(--accent-font);font-weight:500;color:var(--navy)}
+h2{margin:0 0 10px;font-size:16px;font-weight:700}
+.sub{color:var(--muted);margin:4px 0 0}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 14px;font-weight:600}
+.btn.primary{background:var(--navy);border-color:var(--navy);color:var(--navy-ink)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.grid{display:grid;gap:14px}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.split{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-width:0}
+.todo{display:flex;flex-direction:column;gap:4px;border-left:4px solid var(--line)}
+.todo b{font-size:28px;line-height:1}
+.todo.bad{border-left-color:var(--bad)}.todo.warn{border-left-color:var(--yellow)}.todo.info{border-left-color:var(--navy)}.todo.ok{border-left-color:var(--teal)}
+.todo span{color:var(--muted);font-size:13px}
+.pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:600;white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}.pill.warn{background:var(--warn-bg);color:var(--warn)}.pill.bad{background:var(--bad-bg);color:var(--bad)}.pill.info{background:var(--info-bg);color:var(--info)}
+.pkg{display:inline-block;width:10px;height:10px;border-radius:3px;flex:none}
+.p-star{background:var(--yellow)}.p-magic{background:var(--purple)}.p-mg{background:var(--teal)}.p-mg2{background:var(--pink)}.p-waoo{background:var(--navy)}
+.list{display:flex;flex-direction:column}
+.row{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .when{font-weight:700}.row .when small{display:block;color:var(--muted);font-weight:500;font-size:12px}
+.row .what{min-width:0}.row .what div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .what small{color:var(--muted)}
+.money{display:grid;gap:8px}
+.money .line{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.money .line:last-child{border-bottom:0}
+.money .total{font-size:22px;font-weight:800;color:var(--ok)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:7px;background:var(--surface-2);border-radius:999px;padding:5px 11px;font-weight:600;font-size:13px}
+/* calendar */
+.cal{display:grid;grid-template-columns:52px repeat(2,minmax(0,1fr));gap:0;overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.cal .hd{padding:10px;font-weight:700;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface)}
+.cal .hours{border-right:1px solid var(--line)}
+.cal .hours div{height:56px;font-size:11px;color:var(--muted);text-align:right;padding-right:6px;transform:translateY(-6px)}
+.day{position:relative;border-right:1px solid var(--line);min-width:220px;background:repeating-linear-gradient(to bottom,transparent 0 55px,var(--line) 55px 56px)}
+.day:last-child{border-right:0}
+.ev{position:absolute;left:8px;right:8px;border-radius:10px;padding:6px 9px;color:#fff;font-size:12.5px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.08)}
+.ev b{display:block;font-size:13px}
+.ev.star{background:#B98A00}.ev.magic{background:var(--purple)}.ev.mg2{background:#D1006A}.ev.waoo{background:#122F94}.ev.mg{background:#0E9E94}
+.travel{position:absolute;left:8px;right:8px;border-radius:8px;background:repeating-linear-gradient(135deg,var(--surface-2) 0 6px,transparent 6px 12px);border:1px dashed var(--line);font-size:11px;color:var(--muted);padding:3px 8px}
+.conflict{position:absolute;left:8px;right:8px;border-radius:8px;border:2px solid var(--bad);background:var(--bad-bg);color:var(--bad);font-size:12px;padding:5px 8px;font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--muted);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+/* event file */
+.status-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.kv{display:grid;grid-template-columns:130px minmax(0,1fr);gap:6px 12px;font-size:14px}
+.kv dt{color:var(--muted)}.kv dd{margin:0;min-width:0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em;padding:8px 6px;border-bottom:1px solid var(--line)}
+td{padding:9px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+td.r,th.r{text-align:right}
+.tbl{overflow-x:auto}
+.admin-only{border:1px dashed var(--purple);border-radius:var(--r)}
+.admin-only .tag{font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.08em}
+.pending{color:var(--warn);font-style:italic}
+/* portal */
+.phone{max-width:380px;margin:0 auto;border:10px solid var(--sidebar);border-radius:34px;background:#fff;color:#141A33;overflow:hidden}
+.phone .top{background:#122F94;color:#fff;padding:18px 18px 22px}
+.phone .top .lang{float:right;font-size:12px;border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:2px 9px;background:none;color:#fff}
+.phone h3{margin:6px 0 2px;font-size:22px}
+.phone .body{padding:16px;display:grid;gap:12px}
+.step{border:1px solid #DCE0EE;border-radius:12px;padding:12px}
+.step .n{font-size:11px;font-weight:700;color:#5A6283;text-transform:uppercase;letter-spacing:.08em}
+.step.done{background:#E3F5EC;border-color:#BFE7D2}
+.phone .pay{display:grid;gap:8px}
+.phone .opt{border:2px solid #DCE0EE;border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;gap:8px;background:#fff;color:#141A33;text-align:left}
+.phone .opt[aria-pressed="true"]{border-color:#122F94;background:#EEF2FF}
+.phone .cta{background:#FF017C;color:#fff;border:0;border-radius:12px;padding:13px;font-weight:800;font-size:16px}
+.phone label{display:flex;gap:8px;align-items:flex-start;font-size:13px}
+.phone input[type=text]{width:100%;border:1px solid #DCE0EE;border-radius:10px;padding:10px;font:inherit;background:#fff;color:#141A33}
+.phone small{color:#5A6283}
+/* report email */
+.mail{max-width:560px;margin:0 auto;background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.mail .mh{background:var(--navy);color:var(--navy-ink);padding:18px 22px}
+.mail .mh h3{margin:0;font-size:20px}.mail .mh p{margin:4px 0 0;opacity:.85;font-size:13px}
+.mail .mb{padding:20px 22px;display:grid;gap:14px}
+.big{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.big div{background:var(--surface-2);border-radius:12px;padding:12px}
+.big b{display:block;font-size:24px}.big span{font-size:12px;color:var(--muted)}
+.bar{height:12px;border-radius:999px;background:var(--surface-2);overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+.tabs{display:none}
+.mobile-nav{display:none}
+@media (max-width:980px){.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.split,.g3{grid-template-columns:1fr}}
+@media (max-width:760px){
+  .app{grid-template-columns:1fr}
+  .side{display:none}
+  main{padding-bottom:90px}
+  .mobile-nav{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--sidebar);padding:8px max(8px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px));gap:4px;overflow-x:auto;z-index:5}
+  .mobile-nav button{background:none;border:0;color:var(--sidebar-ink);font-size:12px;padding:6px 10px;border-radius:8px;white-space:nowrap}
+  .mobile-nav button[aria-current="page"]{background:rgba(255,255,255,.14);color:#fff}
+  .g2{grid-template-columns:1fr}
+  .g4{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .todo{padding:12px}.todo b{font-size:24px}
+  .kv{grid-template-columns:110px minmax(0,1fr)}
+  h1{font-size:23px}
+}
+@media (prefers-reduced-motion:no-preference){.screen{animation:in .18s ease-out}@keyframes in{from{opacity:.4;transform:translateY(4px)}to{opacity:1;transform:none}}}
+</style>
+
+<div class="app">
+  <aside class="side" aria-label="Menú">
+    <div class="brand"><span class="dots"><i style="background:var(--yellow)"></i><i style="background:var(--teal)"></i><i style="background:var(--pink)"></i></span><span>Waoo CRM<small>Waoo Party LLC</small></span></div>
+    <nav class="menu" id="menu"></nav>
+    <div class="foot">Prototipo de diseño · datos de ejemplo</div>
+  </aside>
+  <main>
+    <div class="wrap">
+      <p class="proto-note">Prototipo de diseño (Fase 0). Clientas, fechas y montos son <b>ejemplos inventados</b>; los precios de paquetes son los de tu web. Las tarifas del staff que faltan aparecen como <i>pendiente</i>.</p>
+      <div id="screens"></div>
+    </div>
+  </main>
+  <nav class="mobile-nav" id="mnav" aria-label="Menú"></nav>
+</div>
+
+<template id="t-inicio">
+  <section class="screen">
+    <header class="page"><div><h1>Hola, César. <em>Esta semana</em></h1><p class="sub">Sábado 17 y domingo 18 de octubre · 6 eventos</p></div><button class="btn primary" data-go="cotizacion">+ Nueva cotización</button></header>
+    <div class="grid g4">
+      <div class="card todo bad"><b class="num">2</b>Zelle por verificar<span>La clienta dice que ya pagó</span></div>
+      <div class="card todo warn"><b class="num">1</b>Contrato sin firmar<span>Rivera · enviado hace 2 días</span></div>
+      <div class="card todo info"><b class="num">3</b>Saldos que vencen en 24 h<span>$1,135 por cobrar</span></div>
+      <div class="card todo ok"><b class="num">1</b>Staff por confirmar<span>Waoo del sábado: falta DJ</span></div>
+    </div>
+    <div class="grid split" style="margin-top:14px">
+      <div class="card">
+        <h2>Fin de semana</h2>
+        <div class="list">
+          <div class="row"><div class="when num">Sáb<small>11:00 am</small></div><div class="what"><div><span class="pkg p-magic"></span> Mágico · Familia Rivera (ejemplo)</div><small>Katy 77494 · Mickey #1 · 1 personaje</small></div><span class="pill warn">Firma pendiente</span></div>
+          <div class="row"><div class="when num">Sáb<small>2:00 pm</small></div><div class="what"><div><span class="pkg p-waoo"></span> Waoo · Familia Pérez (ejemplo)</div><small>Cypress 77433 · 5 personas · Rumi #1</small></div><span class="pill bad">Falta DJ</span></div>
+          <div class="row"><div class="when num">Sáb<small>5:30 pm</small></div><div class="what"><div><span class="pkg p-star"></span> Estrella · Familia Gómez (ejemplo)</div><small>Richmond 77406 · Mickey #2</small></div><span class="pill ok">Listo</span></div>
+          <div class="row"><div class="when num">Dom<small>12:00 pm</small></div><div class="what"><div><span class="pkg p-mg2"></span> Música y Juegos 2.0 · Familia Díaz (ejemplo)</div><small>Fulshear 77441 · Rumi #2</small></div><span class="pill info">Zelle por verificar</span></div>
+          <div class="row"><div class="when num">Dom<small>3:00 pm</small></div><div class="what"><div><span class="pkg p-waoo"></span> Waoo · Familia Ortiz (ejemplo)</div><small>Sugar Land 77479 · 5 personas</small></div><span class="pill ok">Listo</span></div>
+          <div class="row"><div class="when num">Dom<small>4:00 pm</small></div><div class="what"><div><span class="pkg p-magic"></span> Mágico · Familia Luna (ejemplo)</div><small>Katy 77450 · Mickey #1</small></div><span class="pill ok">Listo</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Dinero de la semana</h2>
+        <div class="money">
+          <div class="line"><span>Entró (depósitos + pagos)</span><b class="num">$2,350</b></div>
+          <div class="line"><span>Por cobrar (saldos)</span><b class="num">$1,900</b></div>
+          <div class="line"><span>Pago al staff del fin de semana</span><b class="num">− $860</b></div>
+          <div class="line"><span>Te queda</span><span class="total num">$1,490</span></div>
+        </div>
+        <h2 style="margin-top:16px">Se vendió esta semana</h2>
+        <div class="chips"><span class="chip"><span class="pkg p-waoo"></span>2 Waoo</span><span class="chip"><span class="pkg p-magic"></span>1 Mágico</span><span class="chip"><span class="pkg p-star"></span>1 Estrella</span></div>
+      </div>
+    </div>
+  </section>
+</template>
+
+<template id="t-calendario">
+  <section class="screen">
+    <header class="page"><div><h1>Calendario</h1><p class="sub">Sábado 17 y domingo 18 · los bloques rayados son traslado y montaje</p></div><div style="display:flex;gap:8px"><button class="btn">◀</button><button class="btn">Esta semana</button><button class="btn">▶</button></div></header>
+    <div class="cal" role="grid" aria-label="Calendario del fin de semana">
+      <div class="hd"></div><div class="hd">Sábado 17</div><div class="hd">Domingo 18</div>
+      <div class="hours"><div>10 am</div><div>11 am</div><div>12 pm</div><div>1 pm</div><div>2 pm</div><div>3 pm</div><div>4 pm</div><div>5 pm</div><div>6 pm</div><div>7 pm</div></div>
+      <div class="day" style="height:560px">
+        <div class="travel" style="top:28px;height:28px">Traslado 25 min</div>
+        <div class="ev magic" style="top:56px;height:56px"><b>Mágico · Rivera</b>11:00–12:00 · Mickey #1</div>
+        <div class="travel" style="top:196px;height:28px">Traslado 30 min</div>
+        <div class="ev waoo" style="top:224px;height:168px"><b>Waoo · Pérez</b>2:00–5:00 · 5 personas · Rumi #1</div>
+        <div class="ev star" style="top:420px;height:28px"><b>Estrella · Gómez</b>5:30–6:00 · Mickey #2</div>
+      </div>
+      <div class="day" style="height:560px">
+        <div class="ev mg2" style="top:112px;height:112px"><b>MyJ 2.0 · Díaz</b>12:00–2:00 · Rumi #2</div>
+        <div class="ev waoo" style="top:280px;height:168px"><b>Waoo · Ortiz</b>3:00–6:00 · 5 personas</div>
+        <div class="conflict" style="top:336px;height:56px;left:50%">⚠ Mágico · Luna 4:00 pm: Mickey #1 libre, pero la animadora ya está en Waoo · Ortiz</div>
+      </div>
+    </div>
+    <div class="legend"><span><i class="pkg p-star"></i>Estrella</span><span><i class="pkg p-magic"></i>Mágico</span><span><i class="pkg p-mg"></i>Música y Juegos</span><span><i class="pkg p-mg2"></i>MyJ 2.0</span><span><i class="pkg p-waoo"></i>Waoo</span><span>▨ Traslado y montaje</span><span style="color:var(--bad)">▢ Choque de staff o traje</span></div>
+  </section>
+</template>
+
+<template id="t-evento">
+  <section class="screen">
+    <header class="page"><div><h1><span class="pkg p-waoo" style="width:14px;height:14px"></span> Waoo · Familia Pérez <small style="color:var(--muted);font-weight:500">(ejemplo)</small></h1>
+      <div class="status-row"><span class="pill ok">Depósito recibido</span><span class="pill ok">Contrato firmado</span><span class="pill warn">Staff 4 de 5</span><span class="pill info">Saldo vence vie 2:00 pm</span></div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn">Reprogramar</button><button class="btn danger">Cancelar evento</button><button class="btn primary">Enviar mensaje</button></div></header>
+    <div class="grid split">
+      <div class="grid">
+        <div class="card"><h2>Fiesta</h2>
+          <dl class="kv"><dt>Fecha</dt><dd>Sábado 17 de octubre · 2:00–5:00 pm</dd><dt>Dirección</dt><dd>Cypress, TX 77433 (dirección completa de ejemplo)</dd><dt>Cumpleañero/a</dt><dd>Sofía · 6 años · tema K-Pop</dd><dt>Personaje</dt><dd>Rumi (traje #1)</dd><dt>Niños aprox.</dt><dd>25</dd><dt>Notas</dt><dd>Hay piñata. Pastel a las 4:00 pm.</dd></dl></div>
+        <div class="card"><h2>Pagos</h2><div class="tbl"><table>
+          <thead><tr><th>Concepto</th><th>Método</th><th class="r">Monto</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr><td>Paquete Waoo</td><td></td><td class="r num">$800.00</td><td></td></tr>
+            <tr><td>Costo de transporte (77433)</td><td></td><td class="r num">$40.00</td><td></td></tr>
+            <tr><td><b>Total</b></td><td></td><td class="r num"><b>$840.00</b></td><td></td></tr>
+            <tr><td>Depósito 50 %</td><td>Zelle</td><td class="r num">$420.00</td><td><span class="pill ok">Verificado por César</span></td></tr>
+            <tr><td><b>Saldo</b> (vence 24 h antes)</td><td></td><td class="r num"><b>$420.00</b></td><td><span class="pill info">Pendiente</span></td></tr>
+          </tbody></table></div></div>
+        <div class="card"><h2>Historial</h2><div class="list" style="font-size:14px">
+          <div class="row" style="grid-template-columns:110px 1fr"><span class="num" style="color:var(--muted)">2 oct, 10:14</span><span>Cotización enviada por correo y SMS</span></div>
+          <div class="row" style="grid-template-columns:110px 1fr"><span class="num" style="color:var(--muted)">2 oct, 19:40</span><span>La clienta firmó el contrato v1 en el portal</span></div>
+          <div class="row" style="grid-template-columns:110px 1fr"><span class="num" style="color:var(--muted)">3 oct, 09:05</span><span>Zelle $420.00 verificado por César · fecha asegurada</span></div>
+        </div></div>
+      </div>
+      <div class="grid">
+        <div class="card"><h2>Equipo asignado</h2><div class="tbl"><table>
+          <thead><tr><th>Rol</th><th>Persona</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr><td>Animador</td><td>Andrea (ejemplo)</td><td><span class="pill ok">Confirmó</span></td></tr>
+            <tr><td>Recreador</td><td>Luis (ejemplo)</td><td><span class="pill ok">Confirmó</span></td></tr>
+            <tr><td>Recreador</td><td>Kevin (ejemplo)</td><td><span class="pill ok">Confirmó</span></td></tr>
+            <tr><td>Personaje de peluca</td><td>Valeria · Rumi #1</td><td><span class="pill ok">Confirmó</span></td></tr>
+            <tr><td>DJ</td><td>—</td><td><span class="pill bad">Sin asignar</span></td></tr>
+          </tbody></table></div></div>
+        <div class="card admin-only"><span class="tag">Solo tú y Maybeli</span><h2>Costo y ganancia (estimado)</h2><div class="money">
+          <div class="line"><span>Cobrado a la clienta</span><b class="num">$840.00</b></div>
+          <div class="line"><span>Animador · 3.5 h × $35</span><span class="num">− $122.50</span></div>
+          <div class="line"><span>2 recreadores · 3.5 h × $25</span><span class="num">− $175.00</span></div>
+          <div class="line"><span>Personaje de peluca</span><span class="pending">tarifa pendiente</span></div>
+          <div class="line"><span>DJ</span><span class="pending">tarifa pendiente</span></div>
+          <div class="line"><span>Transporte del staff</span><span class="pending">fórmula pendiente</span></div>
+          <div class="line"><span>Ganancia (con lo conocido)</span><span class="total num">$542.50</span></div>
+        </div><p class="sub" style="font-size:12px">Las horas incluyen 30 min de llegada y montaje (ejemplo). Se ajusta con lo real después del evento.</p></div>
+        <div class="card"><h2>Documentos</h2><div class="chips"><span class="chip">📄 Contrato v1 firmado</span><span class="chip">🧾 Recibo depósito</span><span class="chip">🧾 Factura</span></div></div>
+      </div>
+    </div>
+  </section>
+</template>
+
+<template id="t-cotizacion">
+  <section class="screen">
+    <header class="page"><div><h1>Nueva cotización</h1><p class="sub">El sistema calcula todo; tú solo eliges.</p></div></header>
+    <div class="grid split">
+      <div class="card"><h2>Fiesta</h2>
+        <div class="grid g2">
+          <label style="display:grid;gap:4px">Fecha<input id="q-date" type="text" value="Sábado 24 de octubre" class="btn" style="font-weight:400"></label>
+          <label style="display:grid;gap:4px">ZIP del evento<input id="q-zip" type="text" value="77494" class="btn" style="font-weight:400"></label>
+        </div>
+        <h2 style="margin-top:16px">Paquete</h2>
+        <div class="grid g2" id="pkgs"></div>
+        <h2 style="margin-top:16px">Personajes</h2>
+        <div class="chips"><button class="chip" id="chars-minus" aria-label="Quitar personaje">−</button><span class="chip" id="chars">1 personaje</span><button class="chip" id="chars-plus" aria-label="Agregar personaje">+</button><span class="sub" style="margin:0">Personaje extra +$150</span></div>
+        <h2 style="margin-top:16px">Extras</h2>
+        <div class="chips" id="addons"></div>
+      </div>
+      <div class="grid">
+        <div class="card"><h2>Lo que verá la clienta</h2><div class="money" id="q-total"></div>
+          <button class="btn primary" style="width:100%;margin-top:12px">Enviar cotización por correo y SMS</button>
+          <p class="sub" style="font-size:12px">La fecha se asegura solo cuando llegue el pago (tu regla).</p></div>
+        <div class="card admin-only"><span class="tag">Solo tú y Maybeli</span><h2>Costo estimado</h2><p class="sub" id="q-cost"></p></div>
+      </div>
+    </div>
+  </section>
+</template>
+
+<template id="t-portal">
+  <section class="screen">
+    <header class="page"><div><h1>Portal de la clienta</h1><p class="sub">Lo que ve la clienta en su celular al abrir su enlace. Puede cambiar entre inglés y español.</p></div></header>
+    <div class="phone">
+      <div class="top"><button class="lang" id="lang">EN / ES</button><div style="font-weight:800;letter-spacing:-.02em">Waoo Party</div><h3 id="pt-title">¡Hola, Ana!</h3><div id="pt-sub" style="opacity:.9;font-size:14px">Tu fiesta Waoo · sábado 24 de octubre · 2:00 pm</div></div>
+      <div class="body">
+        <div class="step done"><div class="n" id="s1n">1 · Cotización</div><b id="s1t">Aceptada ✓</b><br><small>Waoo + transporte = $820.00</small></div>
+        <div class="step"><div class="n" id="s2n">2 · Contrato</div>
+          <p style="margin:6px 0 8px;font-size:14px" id="s2t">Lee el contrato completo y escribe tu nombre para firmar.</p>
+          <input type="text" id="sig" aria-label="Nombre para firmar" placeholder="Tu nombre completo">
+          <label style="margin-top:8px"><input type="checkbox" id="agree"> <span id="agree-t">Leí y acepto el contrato. Mi firma electrónica vale igual que una firma a mano.</span></label></div>
+        <div class="step"><div class="n" id="s3n">3 · Depósito (50 %)</div>
+          <div class="pay">
+            <button class="opt" aria-pressed="true" id="opt-zelle"><span><b>Zelle</b><br><small id="zt">Sin cargo extra</small></span><b class="num">$410.00</b></button>
+            <button class="opt" aria-pressed="false" id="opt-card"><span><b id="ct">Tarjeta</b><br><small id="cft">Crédito: +3 % de cargo</small></span><b class="num">$410.00</b></button>
+          </div>
+          <p style="font-size:12.5px;margin:8px 0 0" id="zi">Envía <b>$410.00</b> por Zelle a <b>Waoo Party LLC</b> · 346-216-8739 · nota: <b>WP-1042</b>. Te confirmamos al verificarlo.</p></div>
+        <button class="cta" id="cta">Firmar y pagar</button>
+        <small id="note" style="text-align:center">Tu fecha queda asegurada cuando recibimos tu pago.</small>
+      </div>
+    </div>
+  </section>
+</template>
+
+<template id="t-staff">
+  <section class="screen">
+    <header class="page"><div><h1>Staff y trajes</h1><p class="sub">Qué está libre el sábado 17 · cada traje físico cuenta por separado</p></div><button class="btn">+ Agregar</button></header>
+    <div class="grid g2">
+      <div class="card"><h2>Trajes</h2><div class="tbl"><table>
+        <thead><tr><th>Traje</th><th>Sábado 17</th></tr></thead>
+        <tbody>
+          <tr><td>Mickey #1</td><td><span class="pill warn">11:00–12:00 Rivera</span></td></tr>
+          <tr><td>Mickey #2</td><td><span class="pill warn">5:30–6:00 Gómez</span></td></tr>
+          <tr><td>Rumi #1</td><td><span class="pill warn">2:00–5:00 Pérez</span></td></tr>
+          <tr><td>Rumi #2</td><td><span class="pill ok">Libre</span></td></tr>
+          <tr><td>(tus demás personajes)</td><td class="pending">pendiente de tu inventario</td></tr>
+        </tbody></table></div></div>
+      <div class="card admin-only"><span class="tag">Solo tú y Maybeli</span><h2>Tarifas por rol</h2><div class="tbl"><table>
+        <thead><tr><th>Rol</th><th class="r">Por hora</th></tr></thead>
+        <tbody>
+          <tr><td>Recreador</td><td class="r num">$25</td></tr>
+          <tr><td>Animador</td><td class="r num">$35</td></tr>
+          <tr><td>Personaje</td><td class="r num">$60</td></tr>
+          <tr><td>Personaje de traje</td><td class="r num">$80</td></tr>
+          <tr><td>Personaje de peluca (princesas, K-Pop)</td><td class="r pending">pendiente</td></tr>
+          <tr><td>DJ · Face painting · Chofer</td><td class="r pending">pendiente</td></tr>
+        </tbody></table></div></div>
+    </div>
+  </section>
+</template>
+
+<template id="t-reportes">
+  <section class="screen">
+    <header class="page"><div><h1>Reporte del lunes</h1><p class="sub">Así llegará cada lunes a sales@waooparty.com (y el día 1, el del mes).</p></div></header>
+    <div class="mail">
+      <div class="mh"><h3>Tu semana en Waoo</h3><p>Lunes 13 al domingo 19 de octubre</p></div>
+      <div class="mb">
+        <div class="big"><div><b class="num">$2,350</b><span>Entró (depósitos + pagos)</span></div><div><b class="num">$1,900</b><span>Por cobrar</span></div><div><b class="num">$860</b><span>Pago al staff</span></div><div><b class="num" style="color:var(--ok)">$1,490</b><span>Te queda</span></div></div>
+        <div><div class="bar" aria-label="Entró vs staff"><i style="width:73%;background:var(--teal)"></i><i style="width:27%;background:var(--pink)"></i></div><p class="sub" style="font-size:12px">Turquesa: lo que te queda · Rosa: pago al staff</p></div>
+        <div><h2>Se vendió</h2><div class="chips"><span class="chip"><span class="pkg p-waoo"></span>2 Waoo</span><span class="chip"><span class="pkg p-magic"></span>1 Mágico</span><span class="chip"><span class="pkg p-star"></span>1 Estrella</span></div></div>
+        <p class="sub" style="font-size:12px">"Entró" cuenta los pagos por fecha en que llegaron; "pago al staff" cuenta los eventos de esa semana.</p>
+      </div>
+    </div>
+  </section>
+</template>
+
+<script>
+(function(){
+  var screens=[
+    {id:"inicio",label:"Inicio",icon:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',badge:"4"},
+    {id:"calendario",label:"Calendario",icon:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>'},
+    {id:"evento",label:"Ficha de evento",icon:'<path d="M5 4h14v16H5z"/><path d="M8 9h8M8 13h8M8 17h5"/>'},
+    {id:"cotizacion",label:"Cotización",icon:'<path d="M12 3v18M7 7h7a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h8"/>'},
+    {id:"portal",label:"Portal clienta",icon:'<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>'},
+    {id:"staff",label:"Staff y trajes",icon:'<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5M17 11a3 3 0 1 0 0-6M21 20c0-2-1-4-3-4.5"/>'},
+    {id:"reportes",label:"Reportes",icon:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'}
+  ];
+  var menu=document.getElementById("menu"), mnav=document.getElementById("mnav"), host=document.getElementById("screens");
+  screens.forEach(function(s){
+    var b=document.createElement("button"); b.type="button"; b.dataset.go=s.id;
+    b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+s.icon+'</svg>'+s.label+(s.badge?'<span class="badge">'+s.badge+'</span>':'');
+    menu.appendChild(b);
+    var m=document.createElement("button"); m.type="button"; m.dataset.go=s.id; m.textContent=s.label; mnav.appendChild(m);
+  });
+  function show(id){
+    if(!document.getElementById("t-"+id)) id="inicio";
+    host.innerHTML=""; host.appendChild(document.getElementById("t-"+id).content.cloneNode(true));
+    document.querySelectorAll("[data-go]").forEach(function(b){ if(b.closest(".menu,.mobile-nav")) b.setAttribute("aria-current", b.dataset.go===id?"page":"false"); });
+    if(id==="cotizacion") quote();
+    if(id==="portal") portal();
+    try{ history.replaceState(null,"","#"+id);}catch(e){}
+    window.scrollTo(0,0);
+  }
+  document.addEventListener("click",function(e){ var b=e.target.closest("[data-go]"); if(b){ show(b.dataset.go);} });
+
+  // quote builder: prices from the live website; travel fee by ZIP is a sample value
+  function quote(){
+    var pk=[["Estrella",275,"p-star",1],["Mágico",375,"p-magic",1],["Música y Juegos",525,"p-mg",0],["MyJ 2.0",600,"p-mg2",1],["Waoo",800,"p-waoo",1]];
+    var ad=[["Face painting 1 h",200],["Foam cannon 1 h",300],["Photo booth 3 h",420],["Robot LED alto",500]];
+    var st={p:4,c:1,a:{}};
+    var travel={"77494":20,"77433":40,"77479":40};
+    function money(n){return "$"+n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});}
+    function render(){
+      var p=pk[st.p], extraC=p[3]?Math.max(0,st.c-1)*150:0, addTot=0;
+      Object.keys(st.a).forEach(function(k){ if(st.a[k]) addTot+=ad[k][1]; });
+      var zip=document.getElementById("q-zip").value.trim(), t=travel[zip];
+      var total=p[1]+extraC+addTot+(t||0), dep=Math.round(total*50)/100;
+      document.getElementById("chars").textContent=p[3]?(st.c+(st.c===1?" personaje":" personajes")):"Sin personaje";
+      document.getElementById("q-total").innerHTML=
+        '<div class="line"><span>'+p[0]+'</span><b class="num">'+money(p[1])+'</b></div>'+
+        (extraC?'<div class="line"><span>Personajes extra</span><b class="num">'+money(extraC)+'</b></div>':'')+
+        Object.keys(st.a).filter(function(k){return st.a[k];}).map(function(k){return '<div class="line"><span>'+ad[k][0]+'</span><b class="num">'+money(ad[k][1])+'</b></div>';}).join("")+
+        '<div class="line"><span>Costo de transporte ('+zip+')</span><b class="num">'+(t!==undefined?money(t):'<span class="pending">calculando…</span>')+'</b></div>'+
+        '<div class="line"><span><b>Total</b></span><b class="num">'+money(total)+'</b></div>'+
+        '<div class="line"><span>Depósito 50 % para asegurar la fecha</span><span class="total num">'+money(dep)+'</span></div>';
+      document.getElementById("q-cost").innerHTML="Se calcula con el staff que pongas para <b>"+p[0]+"</b> en tu hoja de catálogo y las tarifas por rol. Hoy faltan datos: aparecerá aquí con la ganancia estimada.";
+      document.querySelectorAll("#pkgs button").forEach(function(b,i){b.setAttribute("aria-pressed",i===st.p?"true":"false"); b.style.borderColor=i===st.p?"var(--navy)":""; b.style.background=i===st.p?"var(--info-bg)":"";});
+      document.querySelectorAll("#addons button").forEach(function(b,i){b.setAttribute("aria-pressed",st.a[i]?"true":"false"); b.style.background=st.a[i]?"var(--info-bg)":"";});
+    }
+    var g=document.getElementById("pkgs");
+    pk.forEach(function(p,i){var b=document.createElement("button");b.type="button";b.className="btn";b.style.textAlign="left";b.innerHTML='<span class="pkg '+p[2]+'"></span> '+p[0]+'<br><small class="num" style="color:var(--muted)">desde $'+p[1]+'</small>';b.onclick=function(){st.p=i;render();};g.appendChild(b);});
+    var a=document.getElementById("addons");
+    ad.forEach(function(x,i){var b=document.createElement("button");b.type="button";b.className="chip";b.style.border="1px solid var(--line)";b.textContent=x[0]+" · $"+x[1];b.onclick=function(){st.a[i]=!st.a[i];render();};a.appendChild(b);});
+    document.getElementById("chars-plus").onclick=function(){ if(pk[st.p][3]&&st.c<3){st.c++;render();} };
+    document.getElementById("chars-minus").onclick=function(){ if(st.c>1){st.c--;render();} };
+    document.getElementById("q-zip").addEventListener("input",render);
+    render();
+  }
+
+  function portal(){
+    var es=true, card=false;
+    var T={es:{t:"¡Hola, Ana!",s:"Tu fiesta Waoo · sábado 24 de octubre · 2:00 pm",s1n:"1 · Cotización",s1t:"Aceptada ✓",s2n:"2 · Contrato",s2t:"Lee el contrato completo y escribe tu nombre para firmar.",ag:"Leí y acepto el contrato. Mi firma electrónica vale igual que una firma a mano.",s3n:"3 · Depósito (50 %)",zt:"Sin cargo extra",ct:"Tarjeta",cft:"Crédito: +3 % de cargo",zi:'Envía <b>$410.00</b> por Zelle a <b>Waoo Party LLC</b> · 346-216-8739 · nota: <b>WP-1042</b>. Te confirmamos al verificarlo.',ci:"Pagarás con tarjeta en la página segura de Stripe.",cta:"Firmar y pagar",note:"Tu fecha queda asegurada cuando recibimos tu pago.",need:"Escribe tu nombre y marca la casilla para firmar.",ok:"Listo (ejemplo): contrato firmado. Con Zelle, tu fecha se asegura al verificar el pago."},
+             en:{t:"Hi, Ana!",s:"Your Waoo party · Saturday, October 24 · 2:00 pm",s1n:"1 · Quote",s1t:"Accepted ✓",s2n:"2 · Contract",s2t:"Read the full contract and type your name to sign.",ag:"I have read and accept the contract. My electronic signature is as valid as a handwritten one.",s3n:"3 · Deposit (50%)",zt:"No extra fee",ct:"Card",cft:"Credit: +3% fee",zi:'Send <b>$410.00</b> by Zelle to <b>Waoo Party LLC</b> · 346-216-8739 · memo: <b>WP-1042</b>. We confirm once verified.',ci:"You'll pay by card on Stripe's secure page.",cta:"Sign and pay",note:"Your date is secured when we receive your payment.",need:"Type your name and check the box to sign.",ok:"Done (example): contract signed. With Zelle, your date is secured once we verify the payment."}};
+    function tr(){var x=es?T.es:T.en; [["pt-title","t"],["pt-sub","s"],["s1n","s1n"],["s1t","s1t"],["s2n","s2n"],["s2t","s2t"],["agree-t","ag"],["s3n","s3n"],["zt","zt"],["ct","ct"],["cft","cft"],["cta","cta"],["note","note"]].forEach(function(p){document.getElementById(p[0]).textContent=x[p[1]];}); document.getElementById("zi").innerHTML=card?x.ci:x.zi;}
+    document.getElementById("lang").onclick=function(){es=!es;tr();};
+    document.getElementById("opt-zelle").onclick=function(){card=false;this.setAttribute("aria-pressed","true");document.getElementById("opt-card").setAttribute("aria-pressed","false");tr();};
+    document.getElementById("opt-card").onclick=function(){card=true;this.setAttribute("aria-pressed","true");document.getElementById("opt-zelle").setAttribute("aria-pressed","false");tr();};
+    document.getElementById("cta").onclick=function(){var x=es?T.es:T.en; var ok=document.getElementById("sig").value.trim().length>3&&document.getElementById("agree").checked; document.getElementById("note").textContent=ok?x.ok:x.need;};
+    tr();
+  }
+  var start=(location.hash||"#inicio").slice(1); show(start);
+})();
+</script>
