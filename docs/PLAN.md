@@ -131,6 +131,15 @@ Decisiones del dueño: se registra el monto exacto recibido y el saldo se recalc
 | Mantenimiento | Código documentado en Git, respaldos, cambios por fases |
 | Límites de Hostinger | Verificar en Fase 0; si no alcanza, plan superior o VPS |
 
+## Decisiones del dueño (2026-10-15)
+
+- D1: primero el carril A (reservas confirmadas a mano) y después el carril B (disponibilidad automática).
+- D2: la clienta firma y paga en el mismo paso; con Zelle, la reserva queda pendiente hasta verificar el pago.
+- D3: Stripe cobra siempre el monto exacto; con Zelle, el admin registra y puede ajustar el monto real recibido (con nota). El saldo se recalcula.
+- D4: comparar DocuSign, Dropbox Sign, BoldSign y firma propia; se decide en la Fase 0 (ver HANDOFF).
+- D5: el código de la web va a un repositorio privado `waoo-website`.
+- D6: staff, trajes, equipos y vehículos entran desde el inicio, con asignación manual.
+
 ## Pendientes del dueño
 
 - [ ] Aprobar el plan
