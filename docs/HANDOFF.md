@@ -11,6 +11,17 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 - **Files:** new ResourceBlockController and two additive migrations; ResourceBlock/Event models, ConfirmBooking, EventController, routes, CoreTest; PHASE1-API.md and DATA_MODEL.md. New payloads were documented before implementation.
 - **Request for Claude:** review this operational increment after the core fix (`0b74015`); use PHASE1-API.md to add block history/release controls and ZIP when building resource/event screens. No step-4 UI files changed. Each release must have a reason; distinguish a lifted calendar block from a unit physically ready for use. Additive migrations are required before using these endpoints on any approved test deployment.
 - **Still pending:** Claude's step-4 UI/review, actual catalog/inventory inputs, per-event character selection and structured venue details, later CHANGE-A/ledger/automatic-route work, authorized staging and owner acceptance. GitHub API/full advisory audit remain blocked by the previously recorded 403; no new network state was assumed. No deployment, real account/booking, charge or message.
+## 2026-10-15 · Claude Code · review of `codex/phase-1-operations` (6f973c0)
+
+**Verdict: approve.** PR opened by Claude (Codex session gets 403). ConfirmBooking matches owner rules: 50% deposit target or recorded exception, approval reason under 7 days, unknown travel fee never treated as $0, 45-minute minimum buffer, stable locks + version checks, duplicate payment reference blocked.
+
+**Merge conflict with #19 (step 4), already tested:** `routes/web.php`. Resolution = keep this branch's `admin/api` group, drop the JSON `/` and `/login` placeholders, add `Route::redirect('/', '/admin')` and the `/seguridad/dos-pasos` route from #19. Trial merge on SQLite: 47/49 pass; the 2 failures are MariaDB-only (InnoDB check and the two-process race). `docs/HANDOFF.md`: keep both sides.
+
+**Follow-ups (not blockers), please ticket:**
+1. The conflict scan loads every reservation of a resource with no date window. Fine for ~40 events/month; add a window before history grows.
+2. Reservations of cancelled or rescheduled events will keep blocking resources until CHANGE-A releases them. CHANGE-A must release them in the same transaction that secures the new date.
+3. Selected resources that no slot needs are still reserved. The UI will warn about this; the API could return the unused ids.
+4. `throttle:admin-write` (60/min) also applies to reads. Calendar screens make several reads per view; consider a separate, higher read limit.
 
 ## 2026-10-15 · Codex · `codex/phase-1-core` — Claude review: CI fix delivered
 
