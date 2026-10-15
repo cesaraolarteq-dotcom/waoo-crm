@@ -2,6 +2,9 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code — owner: Affirm not available yet
+- **Affirm is NOT usable yet**: the owner still has to complete a verification with Affirm. Card, Klarna, Zip and Afterpay work. PAY-01: do not offer Affirm in Checkout (exclude it explicitly, even though the test configuration shows it "on") until the owner confirms the verification is complete.
+
 ## 2026-10-15 · Claude Code · `claude/owner-payments-admins` — owner data: payment methods + admin emails
 - **Payment methods (owner):** clients pay through the Stripe link and **choose the method there**: card, **Klarna, Zip, Afterpay** (all accepted), and the owner applies the **3% fee to all of them** (not to Zelle). Verified read-only via the Stripe **test** API: the default payment-method configuration has `card, apple_pay, google_pay, klarna, afterpay_clearpay, zip, affirm, cashapp, link` (and others) set to "on". PAY-01: use Stripe Checkout with automatic payment methods, so the client picks; amounts stay exact (D3).
 - **To confirm before activating the 3% in code (Codex ADR-003 condition):** card-network rules forbid surcharging debit/prepaid cards, and BNPL providers (Klarna/Afterpay/Zip/Affirm) have their own merchant rules on surcharges. Implement the fee as a disclosed, per-method rule that can be switched off. Claude will ask the owner to confirm with Stripe support or the provider terms; no legal conclusion here.

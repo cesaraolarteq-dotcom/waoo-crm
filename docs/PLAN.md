@@ -142,7 +142,7 @@ Decisiones del dueño: se registra el monto exacto recibido y el saldo se recalc
 
 ## Pagos y cuentas (2026-10-15)
 
-- Medios de pago por el enlace de Stripe: tarjeta, Klarna, Zip y Afterpay (la clienta elige). Se cobra el 3 % en todos esos medios; en Zelle no. Antes de activar el 3 % en el sistema se confirman las reglas de recargo de cada medio.
+- Medios de pago por el enlace de Stripe: tarjeta, Klarna, Zip y Afterpay (la clienta elige). Affirm todavía no: falta una verificación del dueño. Se cobra el 3 % en todos esos medios; en Zelle no. Antes de activar el 3 % en el sistema se confirman las reglas de recargo de cada medio.
 - Cuentas de administrador: cesar@waooparty.com y maybe@waooparty.com.
 
 ## Pendientes del dueño
