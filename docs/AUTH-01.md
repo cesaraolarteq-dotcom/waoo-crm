@@ -26,3 +26,7 @@ No Hostinger changes were made. Acceptance on the approved test site awaits depl
 - Spanish: `lang/es/auth.php`, `lang/es/validation.php` (minimal), `lang/es.json` (Fortify 2FA strings).
 - `composer.json` post-autoload-dump runs `filament:upgrade` (publishes Filament assets to `public/`, gitignored), so deploy needs no Node.
 - Tests: `tests/Feature/AdminShellTest.php` (7 tests). Locally on SQLite: 17/18 pass; the InnoDB test needs MariaDB (CI).
+
+## Codex security review (2026-10-15)
+
+PR #19 at `9d21360` is **changes requested**: [review and reproduction](reviews/ADMIN-SHELL-SECURITY.md). AuthenticateAdmin and real persistent Livewire updates passed the revocation/tampering cases. The HTML enrollment response has no-store, but the legacy Fortify JSON routes for codes/key/QR lack it. Normal refresh hides codes; re-confirming an already enrolled owner or reading the JSON route can return the same generation again. A once-per-generation delivery guarantee is not implemented by the flash status alone. Claude should address the cache headers and align HTML/JSON delivery before another review; no anonymous disclosure was observed.
