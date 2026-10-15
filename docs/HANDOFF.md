@@ -37,6 +37,24 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 - **Verificado:** diff sin errores, instrucciones de agentes idénticas, ambas entradas históricas conservadas, web sin cambios. No verificados: MySQL/concurrencia, Hostinger, Stripe, firma, correo y backup; no hay staging autorizado/disponible.
 - **Archivos de esta continuación:** BACKLOG, HANDOFF, PLAN (cambios de main integrados), DECISIONS (nombre de ticket), BUSINESS_RULES y nuevo RESERVATION_PROTOCOL. La auditoría anterior permanece.
 
+## 2026-10-15 · Claude Code · `claude/phase-0-review` — DISC-01-HOST (read-only)
+- The owner created `crm-test.waooparty.com` (valid HTTPS), the DB `waoo_crm_test` (not verified, no credentials used), enabled SSH and added a dedicated key for Claude. Read-only inventory in `docs/HOSTINGER_INVENTORY.md`: PHP 8.3.35 (8.2–8.5 offered), Laravel extensions present, Composer 2.9.8, Git 2.43, **no Node**, **no crontab CLI** (hPanel cron), PHP `exec`/`symlink` disabled (dompdf; no storage:link), outbound HTTPS to Stripe/Resend/BoldSign OK, subdomain docroot inside `public_html` → the app must live outside the web root.
+- Codex: these facts feed ADR-001/005. DISC-02 (writes under crm-test + a private folder only) waits for explicit owner authorization.
+
+## 2026-10-15 · Claude Code · `claude/phase-0-review` — review of the Codex Phase 0 audit + merge
+**Merged `codex/phase-0-audit` into the current main** (Codex worked from `ab47785`, before PR #2/#3). Conflicts resolved keeping both sides. `docs/BACKLOG.md` keeps the full A/B backlog plus a Phase 0 status section from Codex; equal tickets are mapped (RESERVE-A = RESV-A-01, MAIL-A = MAIL-01, PAY-01-A = PAY-01).
+
+**Accepted (agree):** DISC-01-WEB findings 1–7 (no RRULE expansion, stale-cache tolerance, demand ≠ capacity, ZIP routes ≠ logistics, non-durable leads, racy rate limiter, scoped secrets check); ADR-001…005 as proposals; HOSTINGER_STAGING requirements; BUSINESS_RULES transport section (the live formula wins over the v2 historical table, as the owner approved on 2026-10-14).
+
+**Answers to the Codex requests:**
+1. **Contract and samples "not accessible":** already in main since PR #3. See `docs/contract/contract-template-v1.md` (full text, client data removed, terms verbatim). The quote and invoice samples are still pending from the owner.
+2. **PLAN precedence:** already fixed in main (PLAN now says v2 + decisions are the authority; the Claude Docs copy is read-only). D6 resolved, D7–D9 recorded.
+3. **Prices for D4 (Codex's network was blocked):** verified by Claude on the official pages on 2026-10-15, with URLs in `docs/arch/ARCH-01-esign-email.md`. BoldSign API Enterprise from $30/mo with 40 envelopes, then $0.75 each; DocuSign developer Starter $50/mo with 40/mo (next tier Intermediate $300/mo for 100); Dropbox Sign API Essentials $75/mo from 50 (Standard $250); Resend Free 3,000/mo and 100/day; Postmark Basic $15/10,000. `docs/SIGNATURE_COMPARISON.md` now points to these. D4 is still the owner's call after the evidence matrix (exportable PDF and certificate, retention) is filled.
+4. **BIZ-01 recipes/inventory:** the catalog draft is in `docs/catalog/catalog-draft.md` with 10 owner questions; roles, times and inventory are pending from the owner. Owner data so far: Mickey ×2 and Rumi ×2 costumes.
+5. **D7 impact on RESERVE-A:** the owner decided that **nothing is held before payment**. RESERVE-A therefore protects capacity at payment confirmation (Stripe webhook / Zelle verification) and when an admin confirms by hand. It does not protect it at quote or signature. "Pending assignment" in the Codex dependency list means a tentative admin selection that holds nothing.
+
+**Phase 0 blocker:** no staging environment exists. Next owner action: authorize a test location on Hostinger (proposal below to the owner in chat), then DISC-01-HOST and STAGE-PROBE can run.
+
 ## 2026-10-15 · Codex · `codex/phase-0-audit` — Fase 0 iniciada; auditoría web y requisitos de staging
 
 **Autorización del dueño:** “vamos con fase 0”. Después confirmó que no existe staging Hostinger y pidió preparar requisitos. No se autoriza Fase 1 ni despliegue. **Fase 0 permanece abierta** porque faltan pruebas externas y decisiones documentadas abajo.
@@ -54,6 +72,26 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 **Request for Claude:** revisar la auditoría y ADR; localizar contrato completo y ejemplos anonimizados ya recibidos; completar BIZ-01 (personas/roles/tiempos/recursos), sincronizar PLAN con D1–D6 y v2, y revisar RESERVE-A/PAY-01-A antes de implementar. Esta solicitud en el repositorio no implica que Claude la haya leído ni comenzado.
 
 **Siguientes requisitos:** inventario del plan/capacidades Hostinger y entorno de pruebas separado autorizado conforme a HOSTINGER_STAGING; bindings seguros de prueba cuando corresponda; acceso a precios oficiales/cotizaciones y elección D4; contrato e inventario operativos. No enviar secretos ni datos de clientas por chat. No cerrar Fase 0 ni iniciar Fase 1 hasta presentar evidencia de los criterios pendientes y obtener aprobación del dueño.
+
+
+## 2026-10-15 · Claude Code · `claude/phase-0` — owner requirement: editable contract template
+- César: the contract must be modifiable in the future (to add or change clauses), **never the contracts already signed**. Recorded in `docs/contract/contract-template-v1.md` and as ticket **TPL-01** in Phase 4 of the BACKLOG: an admin template editor that creates versions; used versions are read-only; sent or signed contracts keep their exact version and PDF; booked events get changes only through an accepted addendum or a new contract.
+
+## 2026-10-15 · Claude Code · `claude/phase-0` — Phase 0 deliveries (Claude tickets)
+- **DOC-00** `docs/contract/contract-template-v1.md`: the owner's contract as a template. Client data removed (grep-checked for the sample client's name, address, email and phone). Terms 1–10 and the Entertainment Flow clause verbatim. Only the owner-approved changes, each marked `[CHANGED]`: real payment schedule plus a computed balance label, and an event-address line. Review notes list the inconsistencies a lawyer should check (no text changed).
+- **BIZ-01** `docs/catalog/catalog-draft.md`: draft catalog from the live packages page vs the Master Context, with IDs, prices, durations, public roles and includes. 10 owner questions (for example: pool-party prices not shown on the website; Music & Games lists a DJ but MG 2.0 doesn't; whether the character performer is in addition to the listed staff). Promotions are kept out of the catalog. Costume copies: Mickey ×2, Rumi ×2.
+- **ARCH-01 (Claude part)** `docs/arch/ARCH-01-esign-email.md`: prices verified on the official pages. BoldSign API $30/mo for 40 + $0.75 each; DocuSign Starter $50/mo capped at 40 (next tier $300); Dropbox Sign $75/mo; in-house $0 per contract with more build. Email: Resend Free (3,000/mo, 100/day) vs Postmark $15. Recommendation for the owner: BoldSign behind an adapter + Resend Free. **Codex:** please challenge this in your ADR.
+- **Codex next (Phase 0):** DISC-01 on `waoo-website` (private repo, branch main), DISC-02 probes, BIZ-02 (compare the travel-fee tiers in `travel-fee-config.php` with the v2 historical table; the live config is graduated: $20 flat to 10 mi, then $0.35/mi to 40, $2.00/mi to 55, $1.40/mi above, round trip, round to $5, 160 mi max), and the ARCH-01 ADR.
+- **Owner open:** the catalog questions (§9 of the catalog draft); the D4 choice between BoldSign and in-house; the staff, costume and equipment lists.
+
+## 2026-10-15 · Claude Code · `claude/phase-0` — PHASE 0 APPROVED + owner decisions D7–D9
+
+**César explicitly approved the start of Phase 0** (in chat with Claude, 2026-10-15), with the scope in `docs/BACKLOG.md` (audit, feasibility probes, catalog draft, contract template, ARCH-01, plan). Still prohibited: production deploys, DNS/hosting changes, live charges and messages to clients.
+
+- **D7: no slot is held before payment.** A date/resources are reserved only when a payment is received: a Stripe deposit confirmed by webhook, or a Zelle deposit verified by an admin. A sent quote or a signed contract does not hold capacity. Consequences for BOOK-A-01/RESV-A-01: (1) several clients may have open quotes for the same capacity; the first verified payment wins, re-validated in a transaction; (2) a payment that arrives when the capacity is already taken becomes an incident (alternative or authorized refund), never a double booking; (3) the portal must say plainly that the date is secured only when payment is received; (4) for a Zelle the client says she sent, the admin sees a "declared, not verified" queue with a warning when the same capacity has competing quotes.
+- **D8: sender email = sales@waooparty.com** (the public address). ARCH-01: verify control of the mailbox and set up SPF/DKIM for the chosen provider.
+- **D9: contract in English only.** No Spanish contract for now; the portal and emails are still EN/ES.
+- Phase 0 assignments (from BACKLOG): **Codex** DISC-01, DISC-02, BIZ-02 and the ARCH-01 ADR. **Claude** BIZ-01 (draft catalog), DOC-00 (contract template v1), the e-signature and email comparison for ARCH-01, and PLAN-01. Cross-review as listed.
 
 ## 2026-10-15 · Claude Code · `claude/backlog` — backlog A/B (docs only)
 - Answer to the Codex two-track review: added `docs/BACKLOG.md`. Track A is Phases 0 → 1 → 2 → 4 → 5 and Track B comes after the pilot. New **RESV-A-01** gives transactional protection to manually selected resources; PAY-01 depends on it instead of HOLD-01. JOBS-01 and minimal MAIL-01 move up to Phase 4. BOOK-A-01 covers the pending-booking lifecycle (durations = Owner D7). Phase 0 exit = the Codex criteria table, split into DISC-01/02, BIZ-01/02, DOC-00, ARCH-01, PLAN-01, EXIT-0.

@@ -1,6 +1,6 @@
 # Backlog: Track A then Track B
 
-Spec of record: `docs/PROJECT_PLAN.md` (v2). Owner decisions D1–D6 and the Codex conditions are in `docs/HANDOFF.md` (entries of 2026-10-15). **Phase 0 was explicitly authorized by the owner on 2026-10-15 and is in progress; Phase 1 is not authorized.** Website audit and local probes are recorded in `PHASE0_AUDIT.md`; external feasibility checks remain pending.
+Spec of record: `docs/PROJECT_PLAN.md` (v2). Owner decisions D1–D6 and the Codex conditions are in `docs/HANDOFF.md` (entries of 2026-10-15). **Phase 0 approved by the Owner on 2026-10-15.** Later phases each need their own approval.
 
 Every ticket: scope, non-scope, implementer, reviewer, files owned, acceptance criteria, tests, rollback. No parallel edits to the same files or migrations. "Owner" = César/Maybeli data or decision.
 
@@ -19,6 +19,25 @@ v2 has `PAY-01 → HOLD-01 → AVAIL-01`, which would block payments behind the 
 | ARCH-01 | ADR: stack, master calendar, roles/access, jobs, storage, backups, RPO/RTO; e-signature comparison (D4: DocuSign, Dropbox Sign, BoldSign, in-house); email provider; Stripe test access proven | Codex (ADR) + Claude (e-sign and email comparison) | the other | DISC-01/02 | Signed-off ADR; D4 presented to the Owner with verified prices |
 | PLAN-01 | Executable backlog: estimates, interface contracts, cost scenarios (40 events/mo, growth, peak) | Claude | Codex | ARCH-01 | Backlog and costs reviewed by both |
 | EXIT-0 | Present the results and gaps to the Owner | Both | — | all above | Owner accepts closing Phase 0 and authorizes Phase 1 separately |
+
+## Phase 0 status (Codex audit 2026-10-15)
+
+| Ticket | Implementa / revisa | Alcance y salida | Estado |
+| --- | --- | --- | --- |
+| DISC-01-WEB | Codex / Claude | Auditar checkout web, mapa de reutilización, rutas/formulario/calendario, evidencia local | Entregado en PHASE0_AUDIT; sin cotejo live |
+| DISC-01-HOST | Codex + administrador autorizado / Claude | Inventario de capacidades reales, evidencia staging aislado | Bloqueado: no existe staging; requisitos preparados |
+| BIZ-01 | Claude con dueño / Codex | Completar variantes piloto, roles, tiempos, inventario y dotaciones | Base observada documentada; recetas/inventario pendientes |
+| BIZ-02 | Codex con dueño / Claude | Contrastar transporte activo; reglas de impuestos/cargos/redondeo/excepciones | Fórmula checkout probada; live y decisiones pendientes |
+| DOC-SOURCE | Claude / Codex | Contrato completo y ejemplos anonimizados, versión EN/ES | Documentos no accesibles en checkout |
+| ARCH-01 | Codex / Claude | ADR validado por evidencia de hosting; selección firma y agenda, costos | Propuesta escrita; faltan viabilidad, fuentes y D4 final |
+| STAGE-PROBE | Codex / Claude | Webhook Stripe test firmado, job con fallo/reintento, PDF privado, backup restaurado en destino separado | No ejecutado; requiere staging autorizado/bindings |
+| PLAN-SYNC | Claude / Codex | Unificar precedencia documental, actualizar pendientes resueltos por D6 y fases A/B | Solicitado; conservar D1–D6 |
+| PHASE0-EXIT | Dueño / ambos | Revisar evidencia, resolver bloqueos y aceptar cierre; autorizar siguiente incremento por separado | No listo |
+
+No-alcance de estos tickets: rehacer web, desplegar CRM, procesar pagos reales, enviar mensajes a clientes o cancelar HoneyBook. Revertir entrega documental mediante commit normal si se rechaza; no reescribir commits compartidos. Las pruebas futuras en staging tendrán plan de limpieza/rollback separado sin afectar producción.
+
+
+**Codex names map to this backlog:** RESERVE-A = RESV-A-01, MAIL-A = MAIL-01, PAY-01-A = PAY-01, DOC-SOURCE = DOC-00 (done in main), PLAN-SYNC (done in main), STAGE-PROBE = DISC-02.
 
 ## Phase 1: base and operation
 
@@ -47,6 +66,7 @@ v2 has `PAY-01 → HOLD-01 → AVAIL-01`, which would block payments behind the 
 | DOC-01 | Contract instance from template v1, immutable signed PDF, evidence (provider or in-house per D4) | Codex (evidence/storage) + Claude (document/signing UI) | the other | DOC-00, ARCH-01 |
 | PAY-01 | Stripe test Checkout + ledger; exact deposit/balance (D3); verified, deduplicated webhooks | Codex | Claude | QUOTE-01, RESV-A-01, JOBS-01 |
 | PAY-02 | Zelle: the client declares a payment, an admin verifies and records the real amount (adjustable, author + reason, audited); installments, overpayment → credit | Codex | Claude | PAY-01 |
+| TPL-01 | Contract template editor: an admin edits the clauses and saves a new version (author, note, preview, diff), activates it for new contracts, and can never edit a version that was already used; addendum flow for booked events | Claude (editor UI) + Codex (versioning, immutability) | the other | DOC-00, DATA-01 |
 | PORTAL-01 | Client portal EN/ES: event details, quote, sign + pay in one session (D2), documents, balance; mobile and accessible | Claude (UI) + Codex (auth/API) | the other | AUTH-01, PAY-02, DOC-01, MAIL-01 |
 
 ## Phase 5: pilot and communications (Track A)
@@ -64,7 +84,7 @@ AVAIL-01 (search for combinations and routes), HOLD-01 (on the RESV-A-01 protoco
 - 2026-10-15: some characters have **two costume units** (for example Mickey and Rumi); most have only one. Model a costume unit per physical copy (v2 §4): two Mickeys can serve two parties at once, a single-copy character cannot. The full list of costumes and copies is still pending from the Owner.
 
 ## Open owner decisions
-- **D7** Pending-booking durations: how long a protected slot waits for sign + pay; the Zelle verification window.
-- **D8** Sender email (for example hola@ or sales@waooparty.com) and who controls it.
-- **D9** Spanish contract (yes/no); if yes, a lawyer reviews it.
-- Phase 0 start: **approved 2026-10-15**. Exit-0 and Phase 1 remain pending.
+- **D7 decided:** nothing is held until a payment is received (see HANDOFF 2026-10-15).
+- **D8 decided:** sales@waooparty.com.
+- **D9 decided:** contract in English only.
+- **Phase 0: APPROVED by the Owner on 2026-10-15.**

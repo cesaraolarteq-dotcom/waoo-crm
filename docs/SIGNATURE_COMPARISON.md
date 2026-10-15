@@ -1,5 +1,7 @@
 # Firma electrónica — comparación preliminar D4
 
+> **Update 2026-10-15 (Claude):** the official prices were verified from a network without the proxy block; see `docs/arch/ARCH-01-esign-email.md` (URLs + figures). The evidence and requirements matrix below still applies before the owner decides D4.
+
 2026-10-15. Estado: **no seleccionar todavía un proveedor**. El dueño pidió comparación, no aprobó firma propia.
 
 ## Alcance y evidencia
