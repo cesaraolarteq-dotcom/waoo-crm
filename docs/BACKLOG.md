@@ -1,6 +1,6 @@
 # Backlog: Track A then Track B
 
-Spec of record: `docs/PROJECT_PLAN.md` (v2). Owner decisions D1–D6 and the Codex conditions are in `docs/HANDOFF.md` (entries of 2026-10-15). Nothing here is started. **Phase 0 starts only after the owner approves it explicitly.**
+Spec of record: `docs/PROJECT_PLAN.md` (v2). Owner decisions D1–D6 and the Codex conditions are in `docs/HANDOFF.md` (entries of 2026-10-15). **Phase 0 approved by the Owner on 2026-10-15.** Later phases each need their own approval.
 
 Every ticket: scope, non-scope, implementer, reviewer, files owned, acceptance criteria, tests, rollback. No parallel edits to the same files or migrations. "Owner" = César/Maybeli data or decision.
 
@@ -64,7 +64,7 @@ AVAIL-01 (search for combinations and routes), HOLD-01 (on the RESV-A-01 protoco
 - 2026-10-15: some characters have **two costume units** (for example Mickey and Rumi); most have only one. Model a costume unit per physical copy (v2 §4): two Mickeys can serve two parties at once, a single-copy character cannot. The full list of costumes and copies is still pending from the Owner.
 
 ## Open owner decisions
-- **D7** Pending-booking durations: how long a protected slot waits for sign + pay; the Zelle verification window.
-- **D8** Sender email (for example hola@ or sales@waooparty.com) and who controls it.
-- **D9** Spanish contract (yes/no); if yes, a lawyer reviews it.
-- Phase 0 start: **explicit approval pending.**
+- **D7 decided:** nothing is held until a payment is received (see HANDOFF 2026-10-15).
+- **D8 decided:** sales@waooparty.com.
+- **D9 decided:** contract in English only.
+- **Phase 0: APPROVED by the Owner on 2026-10-15.**

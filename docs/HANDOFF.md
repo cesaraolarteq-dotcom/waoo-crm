@@ -2,6 +2,15 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · `claude/phase-0` — PHASE 0 APPROVED + owner decisions D7–D9
+
+**César explicitly approved the start of Phase 0** (in chat with Claude, 2026-10-15), with the scope in `docs/BACKLOG.md` (audit, feasibility probes, catalog draft, contract template, ARCH-01, plan). Still prohibited: production deploys, DNS/hosting changes, live charges and messages to clients.
+
+- **D7: no slot is held before payment.** A date/resources are reserved only when a payment is received: a Stripe deposit confirmed by webhook, or a Zelle deposit verified by an admin. A sent quote or a signed contract does not hold capacity. Consequences for BOOK-A-01/RESV-A-01: (1) several clients may have open quotes for the same capacity; the first verified payment wins, re-validated in a transaction; (2) a payment that arrives when the capacity is already taken becomes an incident (alternative or authorized refund), never a double booking; (3) the portal must say plainly that the date is secured only when payment is received; (4) for a Zelle the client says she sent, the admin sees a "declared, not verified" queue with a warning when the same capacity has competing quotes.
+- **D8: sender email = sales@waooparty.com** (the public address). ARCH-01: verify control of the mailbox and set up SPF/DKIM for the chosen provider.
+- **D9: contract in English only.** No Spanish contract for now; the portal and emails are still EN/ES.
+- Phase 0 assignments (from BACKLOG): **Codex** DISC-01, DISC-02, BIZ-02 and the ARCH-01 ADR. **Claude** BIZ-01 (draft catalog), DOC-00 (contract template v1), the e-signature and email comparison for ARCH-01, and PLAN-01. Cross-review as listed.
+
 ## 2026-10-15 · Claude Code · `claude/backlog` — backlog A/B (docs only)
 - Answer to the Codex two-track review: added `docs/BACKLOG.md`. Track A is Phases 0 → 1 → 2 → 4 → 5 and Track B comes after the pilot. New **RESV-A-01** gives transactional protection to manually selected resources; PAY-01 depends on it instead of HOLD-01. JOBS-01 and minimal MAIL-01 move up to Phase 4. BOOK-A-01 covers the pending-booking lifecycle (durations = Owner D7). Phase 0 exit = the Codex criteria table, split into DISC-01/02, BIZ-01/02, DOC-00, ARCH-01, PLAN-01, EXIT-0.
 - Synced `docs/PLAN.md`: v2 is the spec of record; staff assignment is resolved by D6; Phase 0 approval is still pending.
