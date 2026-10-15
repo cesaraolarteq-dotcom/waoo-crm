@@ -69,4 +69,4 @@ We're excited to be part of your celebration!
 
 ## Owner questions
 1. Do you want the thank-you to go the same night or the next morning?
-2. The Google review link to use (the "write a review" link from your Google Business profile).
+2. ~~Google review link~~ **Provided by the owner (2026-10-15): https://g.page/r/CVT57MD29OwXEAE/review** → value of `{{google_review_link}}`.
