@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+/vendor/
+/node_modules/
+/storage/*.key
+/storage/logs/
+/public/build/
+/public/hot
+*.sql
+*.sql.gz
+exports/
+honeybook*.csv
+.DS_Store
+.idea/
+.vscode/
