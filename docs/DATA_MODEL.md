@@ -35,3 +35,14 @@ Separar cantidad de eventos reservados, servicios/paquetes vendidos (un evento p
 ## Pruebas relevantes antes del piloto
 
 Permisos por objeto y rol; concurrencia real de múltiples recursos/vecinos; recurrencias importadas; DST; webhook fuera de orden y dos eventos para un mismo pago; corrección Zelle/sobrepago; cambio de plantilla sin alterar firma histórica; reprogramación fallida conserva original; reportes con mismo ledger/cortes reproducibles; jobs que se reintentan sin duplicar efectos. Son criterios futuros, no resultados de los probes P1–P5.
+
+## Próximos campos señalados en la revisión de Claude
+
+| Dato todavía pendiente | Ticket responsable / momento |
+| --- | --- |
+| ZIP y detalles estructurados de ubicación | OPS-01, siguiente migración de eventos antes de conectar formularios operativos de pasos 5–6; BOOK-QUICK reutiliza esa ubicación para la parte del cliente. No confundir ZIP con una ruta verificada. |
+| Personajes elegidos por servicio/evento | OPS-01, selección explícita por línea y revisión de catálogo antes de pasos 5–6. Character/CostumeUnit y requisitos ya existen; no se infiere una selección del cliente de una copia concreta. |
+| Nombre/edad infantil, tema y notas opcionales | BOOK-QUICK, ampliación del formulario de detalles en Fase 4. Guardar solo lo necesario, con validación y acceso privado; no bloquear bootstrap ni requerir datos infantiles para un borrador. |
+| Objetivo de depósito y saldo exacto | QUOTE-01 calcula objetivo/cotización versionada; PAY-01/PAY-02 aportan ledger, cobros verificados y saldo calculado; BOOK-QUICK integra esos valores en el flujo. La evidencia externa de Fase 1 no sustituye ese ledger ni un campo de saldo editable. |
+
+Esta lista asigna las ampliaciones; no declara esos tickets implementados ni habilita cobros/portal en Fase 1.
