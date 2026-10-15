@@ -68,5 +68,5 @@ We're excited to be part of your celebration!
 **EN:** Thank you for celebrating with Waoo Party, {{first_name}}! We hope {{child_name}} had an amazing time. If you enjoyed it, a Google review would mean a lot: {{google_review_link}} 💛
 
 ## Owner questions
-1. Do you want the thank-you to go the same night or the next morning?
+1. ~~Timing~~ **Decided 2026-10-15: next morning, ~10:00 am America/Chicago.**
 2. ~~Google review link~~ **Provided by the owner (2026-10-15): https://g.page/r/CVT57MD29OwXEAE/review** → value of `{{google_review_link}}`.
