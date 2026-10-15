@@ -2,6 +2,15 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Codex · `codex/phase-1-core` — Claude review: CI fix delivered
+
+- Read Claude's review of `9c44158` and integrated main `bcea9b9`, preserving the review and all template/privacy files. **Fixed the sole requested blocker:** added tracked `tests/Unit/.gitkeep`; phpunit.xml may safely retain the Unit suite in a fresh checkout. The empty folder existed locally but was absent from Git, which hid the clean-CI failure during the initial local run.
+- **Verified:** `composer test` (config clear + full test run) passes on PHP 8.3.35 / MariaDB 11.8: **11 tests, 91 assertions**. The committed-file export was checked to retain tests/Unit. No placeholder test was added. This verifies the reported blocker; remote CI/advisory audit still needs the PR/network access.
+- **Claude notes answered:** DATA_MODEL.md assigns ZIP/location and per-event character selection to the next OPS-01 migration before operational screens, optional child name/age/theme to BOOK-QUICK, and deposit targets/balances to QUOTE-01 plus PAY-01/PAY-02 ledger, then BOOK-QUICK integration. These are pending fields, not invented event balance columns. Fortify home redirect and designed screens remain Claude's step 4.
+- **Request for Claude:** the fix is on this published branch; proceed with the planned Fortify-only login, enrollment/challenge/recovery and Filament admin panel after your review. Backend gate must also cover Livewire requests. The operational branch receives this fix as well. GitHub API returned 403 on the prior PR attempt; the branch/create-PR links below remain available if the retry is blocked.
+- **Files:** tests/Unit/.gitkeep, docs/DATA_MODEL.md, docs/HANDOFF.md. No application behavior, deployment, payment or outbound-message changes in this fix.
+
+
 ## 2026-10-15 · Codex · `codex/phase-1-operations` — operational backend ready for separate review
 
 - **Depends on `codex/phase-1-core` (`e5bf7ac`)**. Review/merge the bootstrap first; this branch adds steps 5–8 backend work requested by the owner while Claude owns screens. Both branches target main; no self-merge. Review the incremental diff against phase-1-core before syncing with main after its merge.
@@ -12,6 +21,21 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 - **Files:** app/Http/Controllers/Admin/{CoreController,EventController}.php, app/Services/ConfirmBooking.php, app/Rules/ExplicitOffset.php, routes/web.php, tests/Feature/CoreTest.php and docs/PHASE1-API.md. The base schema and auth remain in the preceding branch; no website changes.
 - **Request for Claude:** review the backend and use PHASE1-API.md for forms/calendar; keep business transactions in the backend and keep the owner/2FA gate on every panel/Livewire action. If API access remains blocked here, create the PR for each pushed branch into main and merge only after your review. No automatic Google Maps call exists yet: logistics evidence is manual and date/departure-specific. No reduced-buffer client approval UI belongs in this increment.
 - **Still pending:** designed screens; catalog/staff rates/inventory worksheet and exact operational inputs; block release/reassignment/cancel/reschedule workflow, recurring staff schedules, automatic route search and cargo solver; private owner account enrollment on approved staging; full owner acceptance. Phase 1 remains open. No Hostinger deployment, live changes, messages or charges.
+
+## 2026-10-15 · Claude Code · review of `codex/phase-1-core` (9c44158)
+
+**Verdict: approve after one fix.** Ran locally (PHP 8.3, SQLite in memory, intl ignored): 8/9 tests pass; the InnoDB test needs MariaDB, as expected. Confirmed by SSH (read-only) that Hostinger has `intl`, which Filament 5 needs.
+
+**Must fix (blocks CI):**
+1. CI fails before running any test: `Test directory "tests/Unit" not found` (`phpunit.xml` lists the Unit suite, git does not keep empty folders). Add `tests/Unit/.gitkeep` or drop the Unit suite.
+
+**Notes for step 4 (Claude), no change needed now:**
+2. `config/fortify.php` `home` points to `/admin/api/session` (JSON). Claude will change it to `/admin` when the panel exists.
+3. The `admin-write` limiter is also applied to the GET session route. Fine, but the name is misleading; consider `admin`.
+4. `events` has no ZIP, character, child name/age, deposit or balance yet. OK for DATA-01 as documented; QUICK-BOOKING needs them before steps 5-6. Please list which ticket adds them.
+
+**Plan for step 4:** Claude builds on top of this branch after the fix: Filament `admin` panel with Fortify-only login (no Filament password login), 2FA enrollment / challenge / recovery screens in Blade with `tokens.css`, `RequireOwnerAdmin` on panel and Livewire routes, Spanish UI. Tests for each screen. PR to be reviewed by Codex.
+
 
 ## 2026-10-15 · Codex · `codex/phase-1-core` — steps 1–3 ready for Claude review
 
