@@ -2,6 +2,10 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · `claude/phase-0-review` — owner requirement: cost and margin report
+- The owner wants a cost/profit report per package and per event: staff pay by role and hours (first rates: recreador $25/h, animador $35/h, personaje $60/h, costume character $80/h; wig characters such as princesses or K-Pop need prep, rate TBD), plus **variable staff transport pay** (depends on how many people are picked up and the distance). Added ticket **COST-A** to Track A Phase 2 (v2's COST-01 was Track B; the owner needs it earlier, at estimate level). Role descriptions, paid prep time, minimum hours, crew per package and the transport formula are being collected in the owner's catalog worksheet.
+- Data rule: pay rates are admin-only data (v2 §10: staff never see others' pay); keep them out of client-facing documents and logs.
+
 ## 2026-10-15 · Claude Code · `claude/phase-0-review` — owner decision D4: in-house e-signature
 - **D4 decided by the owner: in-house signature** ("no voy a pagar por eso"). It lives behind a `SignatureProvider` interface, so a vendor (BoldSign) stays a later option without a rewrite. Requirements carried into DOC-01: explicit consent and intent screen, signer identity via the portal's signed link + email, the exact document rendered to PDF with a SHA-256 hash stored, timestamps (America/Chicago + UTC), IP and user agent, an immutable stored PDF plus evidence record, a copy emailed to the client, signed documents never edited (addendum flow), and evidence exportable per contract. The contract template already cites UETA/E-SIGN (clause 10). A lawyer review of the process is recommended before go-live.
 - **Catalog (BIZ-01):** the owner will fill in prices and package variables step by step. Claude opened a living catalog worksheet for the owner (Claude Docs). Its answers get copied into `docs/catalog/catalog-draft.md` as they arrive.
