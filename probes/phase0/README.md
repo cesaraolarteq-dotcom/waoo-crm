@@ -17,7 +17,8 @@ Throwaway code to prove the platform, **not CRM code**. It's deployed only to th
 | Setup | Laravel **13.36.0** on PHP 8.3.35, app outside the web root, front controller `public_html/crm-test/index.php` (`usePublicPath`), `X-Robots-Tag: noindex`, robots Disallow; the app is reachable **only** on crm-test.waooparty.com (waooparty.com/crm-test → 404) | curl: subdomain 200, main site 200, /packages 200 |
 | P2 private PDF | **PASS** | Signed URL → 200 application/pdf; unsigned → 403; tampered signature → 403; direct storage paths and `.env` → 403/404 |
 | P3 webhook (phase A, locally signed with a throwaway test secret) | **PASS** | Valid → "stored" (200); same event replayed → "duplicate ignored" (200); bad signature → 400; altered body → 400; 1 row in `provider_events` |
-| P1 retry job (manual worker runs) | **PASS** | Attempt 1 failed on purpose, attempt 2 succeeded after a 5 s backoff; jobs=0, failed=0. **Pending:** the same through the hPanel cron, to measure real latency |
+| P1 retry job (manual worker runs) | **PASS** | Attempt 1 failed on purpose, attempt 2 succeeded after a 5 s backoff; jobs=0, failed=0 |
+| P1 via hPanel cron (`* * * * *` schedule:run) | **PASS** | Dispatched 17:18:30 → attempt 1 (intentional fail) 17:19:05 (35 s) → attempt 2 SUCCESS 17:20:05 (next cron tick); jobs=0, failed=0. **Latency ≈ up to 1 min per attempt** with cron-driven workers: fine for emails, receipts and reminders. A webhook must persist the event inline (P3 already does) and never wait on the queue |
 | P3 phase B (real Stripe test mode) | pending | Needs the owner's Stripe **test** keys set on the server |
 | P4 DB row locks (MySQL) | pending | Needs MySQL credentials set by the owner on the server |
 | P5 backup/restore | pending | Needs MySQL + a second test DB |
