@@ -57,6 +57,8 @@ No-alcance de estos tickets: rehacer web, desplegar CRM, procesar pagos reales, 
 | ROUTE-01 | Adapt the existing Routes integration; failure goes to review, never a $0 fee | Codex | Claude | DISC-01, BIZ-02 |
 | UI-QUOTE-01 | Quote builder and quote PDF/email design, EN/ES | Claude | Codex | QUOTE-01 |
 
+| COST-A | **Cost and margin per package and per event (owner request 2026-10-15)**: staff pay by role × paid hours (incl. prep/makeup time where the owner says so), staff transport pay (variable by people picked up + distance; formula from the owner), materials/consumables, card fees → profit per package (estimate) and per event (estimate vs actual after the event), monthly summary. Admin-only; staff never see others' pay | Codex (rules, calculations) + Claude (report UI) | the other | OPS-01, QUOTE-01, owner rates |
+
 ## Phase 4: portal, signature and payments (Track A)
 | ID | Task | Impl. | Review | Depends on |
 | --- | --- | --- | --- | --- |
@@ -75,12 +77,15 @@ No-alcance de estos tickets: rehacer web, desplegar CRM, procesar pagos reales, 
 | MSG-01 | Essential reminders (7 days, balance, 24 h) that cancel when stale | Codex + Claude (copy) | the other | JOBS-01, BOOK-A-01 |
 | CAL-01 | One-way mirror to Google Calendar | Codex | Claude | OPS-01, JOBS-01 |
 | IMPORT-01 | Import and reconcile future HoneyBook events and their capacity limits (before the pilot) | Codex | Claude | DATA-01, OPS-01 |
+| CHANGE-A | **Cancel and reschedule booked events (owner request 2026-10-15; rare but required)**. **Reschedule** (date and/or time): pick the new slot, re-check resources and travel (RESV-A protocol) **before** releasing the old one, apply the $100 change fee as an invoice line (admin can waive it with a reason), count reschedules (contract 2.5: once, within 60 days), generate an addendum the client accepts in the portal, update the calendar mirror, and cancel and re-plan reminders. **Cancel:** reason + who; outcome from the contract version (deposit non-refundable; within 48 h up to 100% retained; weather: 50% credit for 60 days if paid in full); release resources; void pending payment sessions and reminders; notify the client; keep contract, payments and history. Admin can override with a recorded reason | Codex (rules, transactions) + Claude (screens, addendum and notice copy) | the other | RESV-A-01, PAY-02, DOC-01, JOBS-01 |
+| REPORT-A | **Owner reports by email (owner request 2026-10-15)**, simple and visual, not detailed. **Every Monday:** money in (deposits + payments received that week) and pending balances vs the weekend's staff cost, plus what was sold that week as counts per package (for example "2 Waoo · 1 Magic · 1 Star"). **On the 1st of each month:** events booked, income received, staff cost, net (income − staff), packages sold in the month. Sent by the cron-driven scheduler (America/Chicago) to **sales@waooparty.com** (owner decision 2026-10-15); the same view in the admin dashboard. Data from the ledger (PAY-01/02) and COST-A; definitions (cash by payment date vs events by event date) shown on the report | Claude (email + dashboard design, copy ES) + Codex (queries, scheduling, idempotent send) | the other | PAY-02, COST-A, MAIL-01, JOBS-01 |
 | PILOT-01 | Controlled pilot plus runbook: one system per event sends charges and messages | Both | Owner | everything above |
 
 ## Track B (after the Track A pilot)
 AVAIL-01 (search for combinations and routes), HOLD-01 (on the RESV-A-01 protocol), then v2 Phases 6–8: STAFF-01, SMS (needs Twilio A2P), COST-01, self-service, WhatsApp, final migration. Each service turns on automatic availability only after it passes the v2 §20 tests.
 
 ## Owner data received (for BIZ-01 / OPS-01)
+- 2026-10-15 staff pay by role (per hour): recreador $25, animador $35, personaje $60, personaje de traje (mascot/costume) $80; personaje de peluca (princesses, K-Pop) needs prep, rate to confirm. Prep time, minimum paid hours, the role descriptions and the staff transport pay formula are being collected in the owner's catalog worksheet (Claude Docs).
 - 2026-10-15: some characters have **two costume units** (for example Mickey and Rumi); most have only one. Model a costume unit per physical copy (v2 §4): two Mickeys can serve two parties at once, a single-copy character cannot. The full list of costumes and copies is still pending from the Owner.
 
 ## Open owner decisions
