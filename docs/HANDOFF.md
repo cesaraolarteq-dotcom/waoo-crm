@@ -2,6 +2,9 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · `claude/phase-0-review` — owner requirement: weekly and monthly reports
+- Added **REPORT-A** (Track A, Phase 5). **Monday email:** that week's deposits and payments received plus pending balances vs that weekend's staff cost, and packages sold as simple counts. **Monthly email on the 1st:** events booked, income received, staff cost, net, packages sold. The owner asked for something short and visual, easy to read at a glance, with no long tables. Owner email destination and the exact week boundaries (Mon–Sun, America/Chicago) to confirm in Phase 5.
+
 ## 2026-10-15 · Claude Code · `claude/phase-0-review` — owner requirement: cost and margin report
 - The owner wants a cost/profit report per package and per event: staff pay by role and hours (first rates: recreador $25/h, animador $35/h, personaje $60/h, costume character $80/h; wig characters such as princesses or K-Pop need prep, rate TBD), plus **variable staff transport pay** (depends on how many people are picked up and the distance). Added ticket **COST-A** to Track A Phase 2 (v2's COST-01 was Track B; the owner needs it earlier, at estimate level). Role descriptions, paid prep time, minimum hours, crew per package and the transport formula are being collected in the owner's catalog worksheet.
 - Data rule: pay rates are admin-only data (v2 §10: staff never see others' pay); keep them out of client-facing documents and logs.

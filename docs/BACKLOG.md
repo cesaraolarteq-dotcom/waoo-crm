@@ -77,6 +77,7 @@ No-alcance de estos tickets: rehacer web, desplegar CRM, procesar pagos reales, 
 | MSG-01 | Essential reminders (7 days, balance, 24 h) that cancel when stale | Codex + Claude (copy) | the other | JOBS-01, BOOK-A-01 |
 | CAL-01 | One-way mirror to Google Calendar | Codex | Claude | OPS-01, JOBS-01 |
 | IMPORT-01 | Import and reconcile future HoneyBook events and their capacity limits (before the pilot) | Codex | Claude | DATA-01, OPS-01 |
+| REPORT-A | **Owner reports by email (owner request 2026-10-15)**, simple and visual, not detailed. **Every Monday:** money in (deposits + payments received that week) and pending balances vs the weekend's staff cost, plus what was sold that week as counts per package (for example "2 Waoo · 1 Magic · 1 Star"). **On the 1st of each month:** events booked, income received, staff cost, net (income − staff), packages sold in the month. Sent by the cron-driven scheduler (America/Chicago) to the owners' email; the same view in the admin dashboard. Data from the ledger (PAY-01/02) and COST-A; definitions (cash by payment date vs events by event date) shown on the report | Claude (email + dashboard design, copy ES) + Codex (queries, scheduling, idempotent send) | the other | PAY-02, COST-A, MAIL-01, JOBS-01 |
 | PILOT-01 | Controlled pilot plus runbook: one system per event sends charges and messages | Both | Owner | everything above |
 
 ## Track B (after the Track A pilot)
