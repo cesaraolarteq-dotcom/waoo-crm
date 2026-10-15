@@ -171,7 +171,7 @@ td.r,th.r{text-align:right}
       <div class="card todo bad"><b class="num">2</b>Zelle por verificar<span>La clienta dice que ya pagó</span></div>
       <div class="card todo warn"><b class="num">1</b>Contrato sin firmar<span>Rivera · enviado hace 2 días</span></div>
       <div class="card todo info"><b class="num">3</b>Saldos que vencen en 24 h<span>$1,135 por cobrar</span></div>
-      <div class="card todo ok"><b class="num">1</b>Staff por confirmar<span>Waoo del sábado: falta DJ</span></div>
+      <div class="card todo ok"><b class="num">1</b>Por aprobar<span>Pedido de último minuto (menos de 7 días)</span></div>
     </div>
     <div class="grid split" style="margin-top:14px">
       <div class="card">
@@ -191,7 +191,7 @@ td.r,th.r{text-align:right}
           <div class="line"><span>Entró (depósitos + pagos)</span><b class="num">$2,350</b></div>
           <div class="line"><span>Por cobrar (saldos)</span><b class="num">$1,900</b></div>
           <div class="line"><span>Pago al staff del fin de semana</span><b class="num">− $860</b></div>
-          <div class="line"><span>Te queda</span><span class="total num">$1,490</span></div>
+          <div class="line"><span>Entró − pago al staff</span><span class="total num">$1,490</span></div>
         </div>
         <h2 style="margin-top:16px">Se vendió esta semana</h2>
         <div class="chips"><span class="chip"><span class="pkg p-waoo"></span>2 Waoo</span><span class="chip"><span class="pkg p-magic"></span>1 Mágico</span><span class="chip"><span class="pkg p-star"></span>1 Estrella</span></div>
@@ -202,14 +202,14 @@ td.r,th.r{text-align:right}
 
 <template id="t-calendario">
   <section class="screen">
-    <header class="page"><div><h1>Calendario</h1><p class="sub">Sábado 17 y domingo 18 · los bloques rayados son traslado y montaje</p></div><div style="display:flex;gap:8px"><button class="btn">◀</button><button class="btn">Esta semana</button><button class="btn">▶</button></div></header>
+    <header class="page"><div><h1>Calendario</h1><p class="sub">Sábado 17 y domingo 18 · rayado = traslado + 45 min de margen mínimo (desmontaje, montaje e imprevistos)</p></div><div style="display:flex;gap:8px"><button class="btn">◀</button><button class="btn">Esta semana</button><button class="btn">▶</button></div></header>
     <div class="cal" role="grid" aria-label="Calendario del fin de semana">
       <div class="hd"></div><div class="hd">Sábado 17</div><div class="hd">Domingo 18</div>
       <div class="hours"><div>10 am</div><div>11 am</div><div>12 pm</div><div>1 pm</div><div>2 pm</div><div>3 pm</div><div>4 pm</div><div>5 pm</div><div>6 pm</div><div>7 pm</div></div>
       <div class="day" style="height:560px">
-        <div class="travel" style="top:28px;height:28px">Traslado 25 min</div>
+        <div class="travel" style="top:0;height:56px">Traslado 25 min + 45 min margen</div>
         <div class="ev magic" style="top:56px;height:56px"><b>Mágico · Rivera</b>11:00–12:00 · Mickey #1</div>
-        <div class="travel" style="top:196px;height:28px">Traslado 30 min</div>
+        <div class="travel" style="top:140px;height:84px">Traslado 30 min + 45 min margen</div>
         <div class="ev waoo" style="top:224px;height:168px"><b>Waoo · Pérez</b>2:00–5:00 · 5 personas · Rumi #1</div>
         <div class="ev star" style="top:420px;height:28px"><b>Estrella · Gómez</b>5:30–6:00 · Mickey #2</div>
       </div>
@@ -219,7 +219,7 @@ td.r,th.r{text-align:right}
         <div class="conflict" style="top:336px;height:56px;left:50%">⚠ Mágico · Luna 4:00 pm: Mickey #1 libre, pero la animadora ya está en Waoo · Ortiz</div>
       </div>
     </div>
-    <div class="legend"><span><i class="pkg p-star"></i>Estrella</span><span><i class="pkg p-magic"></i>Mágico</span><span><i class="pkg p-mg"></i>Música y Juegos</span><span><i class="pkg p-mg2"></i>MyJ 2.0</span><span><i class="pkg p-waoo"></i>Waoo</span><span>▨ Traslado y montaje</span><span style="color:var(--bad)">▢ Choque de staff o traje</span></div>
+    <div class="legend"><span><i class="pkg p-star"></i>Estrella</span><span><i class="pkg p-magic"></i>Mágico</span><span><i class="pkg p-mg"></i>Música y Juegos</span><span><i class="pkg p-mg2"></i>MyJ 2.0</span><span><i class="pkg p-waoo"></i>Waoo</span><span>▨ Traslado + 45 min de margen</span><span style="color:var(--bad)">▢ Choque de staff o traje</span></div>
   </section>
 </template>
 
@@ -284,7 +284,7 @@ td.r,th.r{text-align:right}
         <h2 style="margin-top:16px">Paquete</h2>
         <div class="grid g2" id="pkgs"></div>
         <h2 style="margin-top:16px">Personajes</h2>
-        <div class="chips"><button class="chip" id="chars-minus" aria-label="Quitar personaje">−</button><span class="chip" id="chars">1 personaje</span><button class="chip" id="chars-plus" aria-label="Agregar personaje">+</button><span class="sub" style="margin:0">Personaje extra +$150</span></div>
+        <div class="chips"><button class="chip" id="chars-minus" aria-label="Quitar personaje">−</button><span class="chip" id="chars">1 personaje</span><button class="chip" id="chars-plus" aria-label="Agregar personaje">+</button><span class="sub" style="margin:0" id="xc-note"></span></div>
         <h2 style="margin-top:16px">Extras</h2>
         <div class="chips" id="addons"></div>
       </div>
@@ -355,8 +355,8 @@ td.r,th.r{text-align:right}
     <div class="mail">
       <div class="mh"><h3>Tu semana en Waoo</h3><p>Lunes 13 al domingo 19 de octubre</p></div>
       <div class="mb">
-        <div class="big"><div><b class="num">$2,350</b><span>Entró (depósitos + pagos)</span></div><div><b class="num">$1,900</b><span>Por cobrar</span></div><div><b class="num">$860</b><span>Pago al staff</span></div><div><b class="num" style="color:var(--ok)">$1,490</b><span>Te queda</span></div></div>
-        <div><div class="bar" aria-label="Entró vs staff"><i style="width:73%;background:var(--teal)"></i><i style="width:27%;background:var(--pink)"></i></div><p class="sub" style="font-size:12px">Turquesa: lo que te queda · Rosa: pago al staff</p></div>
+        <div class="big"><div><b class="num">$2,350</b><span>Entró (depósitos + pagos)</span></div><div><b class="num">$1,900</b><span>Por cobrar</span></div><div><b class="num">$860</b><span>Pago al staff</span></div><div><b class="num" style="color:var(--ok)">$1,490</b><span>Entró − pago al staff</span></div></div>
+        <div><div class="bar" aria-label="Entró vs staff"><i style="width:73%;background:var(--teal)"></i><i style="width:27%;background:var(--pink)"></i></div><p class="sub" style="font-size:12px">Turquesa: entró menos staff · Rosa: pago al staff</p></div>
         <div><h2>Se vendió</h2><div class="chips"><span class="chip"><span class="pkg p-waoo"></span>2 Waoo</span><span class="chip"><span class="pkg p-magic"></span>1 Mágico</span><span class="chip"><span class="pkg p-star"></span>1 Estrella</span></div></div>
         <p class="sub" style="font-size:12px">"Entró" cuenta los pagos por fecha en que llegaron; "pago al staff" cuenta los eventos de esa semana.</p>
       </div>
@@ -395,24 +395,25 @@ td.r,th.r{text-align:right}
 
   // quote builder: prices from the live website; travel fee by ZIP is a sample value
   function quote(){
-    var pk=[["Estrella",275,"p-star",1],["Mágico",375,"p-magic",1],["Música y Juegos",525,"p-mg",0],["MyJ 2.0",600,"p-mg2",1],["Waoo",800,"p-waoo",1]];
+    var pk=[["Estrella",275,"p-star",1,null],["Mágico",375,"p-magic",1,150],["Música y Juegos",525,"p-mg",0,null],["MyJ 2.0",600,"p-mg2",1,150],["Waoo",800,"p-waoo",1,150]];
     var ad=[["Face painting 1 h",200],["Foam cannon 1 h",300],["Photo booth 3 h",420],["Robot LED alto",500]];
     var st={p:4,c:1,a:{}};
     var travel={"77494":20,"77433":40,"77479":40};
     function money(n){return "$"+n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});}
     function render(){
-      var p=pk[st.p], extraC=p[3]?Math.max(0,st.c-1)*150:0, addTot=0;
+      if(!pk[st.p][4]) st.c=1; var p=pk[st.p], extraC=(p[3]&&p[4])?Math.max(0,st.c-1)*p[4]:0, addTot=0;
       Object.keys(st.a).forEach(function(k){ if(st.a[k]) addTot+=ad[k][1]; });
       var zip=document.getElementById("q-zip").value.trim(), t=travel[zip];
-      var total=p[1]+extraC+addTot+(t||0), dep=Math.round(total*50)/100;
+      var total=p[1]+extraC+addTot+(t||0), dep=Math.round(total*50)/100, tp=(t===undefined);
       document.getElementById("chars").textContent=p[3]?(st.c+(st.c===1?" personaje":" personajes")):"Sin personaje";
       document.getElementById("q-total").innerHTML=
         '<div class="line"><span>'+p[0]+'</span><b class="num">'+money(p[1])+'</b></div>'+
         (extraC?'<div class="line"><span>Personajes extra</span><b class="num">'+money(extraC)+'</b></div>':'')+
         Object.keys(st.a).filter(function(k){return st.a[k];}).map(function(k){return '<div class="line"><span>'+ad[k][0]+'</span><b class="num">'+money(ad[k][1])+'</b></div>';}).join("")+
         '<div class="line"><span>Costo de transporte ('+zip+')</span><b class="num">'+(t!==undefined?money(t):'<span class="pending">calculando…</span>')+'</b></div>'+
-        '<div class="line"><span><b>Total</b></span><b class="num">'+money(total)+'</b></div>'+
-        '<div class="line"><span>Depósito 50 % para asegurar la fecha</span><span class="total num">'+money(dep)+'</span></div>';
+        '<div class="line"><span><b>Total</b></span><b class="num">'+money(total)+(tp?' + transporte':'')+'</b></div>'+
+        (tp?'<div class="line"><span>Depósito 50 %</span><span class="pending">se calcula al confirmar el transporte</span></div>':'<div class="line"><span>Depósito 50 % para asegurar la fecha</span><span class="total num">'+money(dep)+'</span></div>');
+      document.getElementById("xc-note").textContent=p[3]?(p[4]?"Personaje extra +$"+p[4]+" (precio de "+p[0]+")":"Personaje extra: precio pendiente de tu catálogo"):"Este paquete no incluye personaje";
       document.getElementById("q-cost").innerHTML="Se calcula con el staff que pongas para <b>"+p[0]+"</b> en tu hoja de catálogo y las tarifas por rol. Hoy faltan datos: aparecerá aquí con la ganancia estimada.";
       document.querySelectorAll("#pkgs button").forEach(function(b,i){b.setAttribute("aria-pressed",i===st.p?"true":"false"); b.style.borderColor=i===st.p?"var(--navy)":""; b.style.background=i===st.p?"var(--info-bg)":"";});
       document.querySelectorAll("#addons button").forEach(function(b,i){b.setAttribute("aria-pressed",st.a[i]?"true":"false"); b.style.background=st.a[i]?"var(--info-bg)":"";});
@@ -421,7 +422,7 @@ td.r,th.r{text-align:right}
     pk.forEach(function(p,i){var b=document.createElement("button");b.type="button";b.className="btn";b.style.textAlign="left";b.innerHTML='<span class="pkg '+p[2]+'"></span> '+p[0]+'<br><small class="num" style="color:var(--muted)">desde $'+p[1]+'</small>';b.onclick=function(){st.p=i;render();};g.appendChild(b);});
     var a=document.getElementById("addons");
     ad.forEach(function(x,i){var b=document.createElement("button");b.type="button";b.className="chip";b.style.border="1px solid var(--line)";b.textContent=x[0]+" · $"+x[1];b.onclick=function(){st.a[i]=!st.a[i];render();};a.appendChild(b);});
-    document.getElementById("chars-plus").onclick=function(){ if(pk[st.p][3]&&st.c<3){st.c++;render();} };
+    document.getElementById("chars-plus").onclick=function(){ if(pk[st.p][3]&&pk[st.p][4]&&st.c<3){st.c++;render();} };
     document.getElementById("chars-minus").onclick=function(){ if(st.c>1){st.c--;render();} };
     document.getElementById("q-zip").addEventListener("input",render);
     render();
