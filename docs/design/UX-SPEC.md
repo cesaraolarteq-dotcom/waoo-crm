@@ -46,5 +46,5 @@ Status: proposal for the owner and Codex. Clickable prototype: `docs/design/prot
 - Money format: `$1,234.50`, America/Chicago times as "Sáb 17 · 2:00 pm".
 
 ## Open design questions for the owner
-1. Should Maybeli see the same home screen, or a version focused on operations (crew/costumes) without money?
+1. ~~Maybeli's view~~ **Decided 2026-10-15: Maybeli sees exactly what César sees (full admin, including money and staff pay).**
 2. Do you want the staff to have their own phone view (Track B STAFF-01), or do you keep coordinating crew by WhatsApp for now?
