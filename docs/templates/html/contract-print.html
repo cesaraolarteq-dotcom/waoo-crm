@@ -2,11 +2,11 @@
 <!-- DOC-01 render layout for the contract PDF (dompdf on Hostinger: CSS 2.1, tables, no flex/grid, DejaVu Sans for full Unicode).
      Merge fields per docs/contract/contract-template-v1.md. {{terms_html}} = sections 1–10 of the ACTIVE template version, verbatim.
      The signed PDF is immutable; the evidence footer is printed on the signed copy only. -->
-<html lang="en"><head><meta charset="utf-8"><title>Waoo Party · Services Agreement {{contract_number}}</title>
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>Waoo Party · Services Agreement {{contract_number}}</title>
 <style>
   @page { margin: 22mm 18mm 20mm 18mm; }
   body { font-family: "DejaVu Sans", Helvetica, Arial, sans-serif; font-size: 10.5pt; color: #141A33; line-height: 1.45; }
-  h1 { font-size: 17pt; margin: 0 0 2pt; color: #122F94; }
+  h1 { font-size: 15pt; margin: 0 0 2pt; color: #122F94; white-space: nowrap; }
   h2 { font-size: 11.5pt; margin: 16pt 0 6pt; padding-bottom: 3pt; border-bottom: 1.2pt solid #122F94; color: #122F94; text-transform: uppercase; letter-spacing: 0.6pt; }
   h3 { font-size: 10.5pt; margin: 10pt 0 3pt; }
   .muted { color: #5B6385; }
@@ -31,11 +31,12 @@
   .footer { position: fixed; bottom: -12mm; left: 0; right: 0; font-size: 8pt; color: #8A91B0; text-align: center; }
 </style></head>
 <body>
-<div class="footer">Waoo Party LLC · Services Agreement {{contract_number}} · Template {{template.version}} · Page <span class="pagenum"></span></div>
+<div class="footer">Waoo Party LLC · Services Agreement {{contract_number}} · Template {{template.version}}</div>
+<!-- Page numbers: stamp with $canvas->page_text(520, 772, "Page {PAGE_NUM} of {PAGE_COUNT}", null, 7, [0.54,0.57,0.69]) on Letter (right corner, below the footer line); dompdf has no CSS counters. Verified on Hostinger dompdf 2026-10-15: 6 pages, UTF-8 OK with the http-equiv charset meta. -->
 
 <table class="brand"><tr>
   <td><div class="logo">Waoo Party</div><div class="muted">Waoo Party LLC · Katy / Houston, TX · sales@waooparty.com</div></td>
-  <td style="text-align:right"><h1>Services Agreement</h1><div class="muted">Statement of Work · No. {{contract_number}}</div><div class="chip">{{status_label}}</div></td>
+  <td style="text-align:right;width:45%"><h1>Services Agreement</h1><div class="muted">Statement of Work · No. {{contract_number}}</div><div class="chip">{{status_label}}</div></td>
 </tr></table>
 
 <h2>Client information</h2>
