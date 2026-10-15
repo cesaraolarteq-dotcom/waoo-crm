@@ -2,6 +2,38 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · `claude/phase-0-review` — design + action plans (owner away; no live changes)
+- **D-UX-01:** `docs/design/UX-SPEC.md` + clickable prototype `docs/design/prototype.html` (also published privately for the owner): Inicio, Calendario, Ficha de evento, Cotización (live math with real website prices), Portal clienta (EN/ES, sign + Zelle/card), Staff y trajes, Reporte del lunes. Brand tokens, a package color code from the logo, Bricolage Grotesque + a Bodoni accent, admin-only frames for money. Fictitious data, clearly marked.
+- **Plans:** `docs/plans/PHASE-1-PLAN.md` (10 ordered steps, acceptance, owner inputs), `docs/plans/HONEYBOOK-MIGRATION.md`, `docs/plans/GO-LIVE-CHECKLIST.md`.
+- Codex: please review UX-SPEC against your data model (statuses per domain, admin-only cost data) and PHASE-1 step ownership.
+
+## 2026-10-15 · Claude Code · `claude/phase-0-review` — owner: report email + cancel/reschedule
+- REPORT-A goes to **sales@waooparty.com**.
+- Added **CHANGE-A** (Track A, before the pilot): cancel and reschedule booked events (date and/or time). The new slot is protected before the old one is released; the $100 fee is waivable with a reason; reschedules are counted; an addendum is accepted in the portal; contract outcomes on cancellation; stale reminders and payment sessions are voided; history kept (v2 §7).
+
+## 2026-10-15 · Claude Code · `claude/phase-0-review` — owner requirement: weekly and monthly reports
+- Added **REPORT-A** (Track A, Phase 5). **Monday email:** that week's deposits and payments received plus pending balances vs that weekend's staff cost, and packages sold as simple counts. **Monthly email on the 1st:** events booked, income received, staff cost, net, packages sold. The owner asked for something short and visual, easy to read at a glance, with no long tables. Owner email destination and the exact week boundaries (Mon–Sun, America/Chicago) to confirm in Phase 5.
+
+## 2026-10-15 · Claude Code · `claude/phase-0-review` — owner requirement: cost and margin report
+- The owner wants a cost/profit report per package and per event: staff pay by role and hours (first rates: recreador $25/h, animador $35/h, personaje $60/h, costume character $80/h; wig characters such as princesses or K-Pop need prep, rate TBD), plus **variable staff transport pay** (depends on how many people are picked up and the distance). Added ticket **COST-A** to Track A Phase 2 (v2's COST-01 was Track B; the owner needs it earlier, at estimate level). Role descriptions, paid prep time, minimum hours, crew per package and the transport formula are being collected in the owner's catalog worksheet.
+- Data rule: pay rates are admin-only data (v2 §10: staff never see others' pay); keep them out of client-facing documents and logs.
+
+## 2026-10-15 · Claude Code · `claude/phase-0-review` — owner decision D4: in-house e-signature
+- **D4 decided by the owner: in-house signature** ("no voy a pagar por eso"). It lives behind a `SignatureProvider` interface, so a vendor (BoldSign) stays a later option without a rewrite. Requirements carried into DOC-01: explicit consent and intent screen, signer identity via the portal's signed link + email, the exact document rendered to PDF with a SHA-256 hash stored, timestamps (America/Chicago + UTC), IP and user agent, an immutable stored PDF plus evidence record, a copy emailed to the client, signed documents never edited (addendum flow), and evidence exportable per contract. The contract template already cites UETA/E-SIGN (clause 10). A lawyer review of the process is recommended before go-live.
+- **Catalog (BIZ-01):** the owner will fill in prices and package variables step by step. Claude opened a living catalog worksheet for the owner (Claude Docs). Its answers get copied into `docs/catalog/catalog-draft.md` as they arrive.
+- Codex is unavailable until 13:30; the ADR sign-off waits for Codex.
+
+## 2026-10-15 · Claude Code · `claude/phase-0-review` — DISC-02 complete: all probes PASS
+- P3 phase B passed with a real **Stripe test-mode** event (details in `probes/phase0/README.md`). All 5 feasibility probes now pass on the owner's Hostinger Business plan: cron-driven retries, a private signed PDF, a signed and deduplicated webhook (local + real Stripe test), MariaDB row locks, and an encrypted off-host backup restored into a separate DB.
+- **Phase 0 exit checklist (EXIT-0):** DISC-01 web ✅ (Codex) · DISC-01 host ✅ · DISC-02 ✅ · DOC-00 ✅ (lawyer review recommended before go-live) · BIZ-02 ✅ formula documented (Codex) · ARCH-01: e-sign/email comparison ✅, **ADR sign-off pending (Codex, now with real host evidence)**, **D4 owner choice pending** · BIZ-01: draft ✅, **owner answers and inventory pending** (needed by OPS-01 in Phase 1, not a blocker for Phase 1 start) · PLAN-01: cost scenarios to finalize with the ADR.
+- Test-environment secrets live only in the server `.env` (DB passwords and `sk_test` typed by the owner; `whsec` stored by API). Nothing is in git.
+
+## 2026-10-15 · Claude Code · `claude/phase-0-review` — DISC-02 probes (owner-authorized writes in crm-test only)
+- Results in `probes/phase0/README.md`: **P1 retry via the hPanel cron PASS** (≤1 min per attempt), **P2 private signed PDF PASS**, **P3 webhook signature + dedupe PASS (locally signed)**, **P4 MariaDB 11.8 row locks PASS**, **P5 encrypted off-host backup + restore into a separate DB PASS (identical hashes)**.
+- Setup facts for ADR-005: app outside the web root plus a front controller in `public_html/crm-test`, restricted to its host; cron `* * * * * /usr/bin/php …/artisan schedule:run`; `DB_HOST=localhost`; no permanent worker (cron-driven `queue:work --stop-when-empty`).
+- **Remaining for Phase 0:** P3 phase B with a real Stripe **test-mode** event (the owner sets `sk_test`/`whsec` in `.env` on the server), the ARCH-01 ADR sign-off (Codex), the D4 owner choice, the owner's catalog answers and inventory, and the EXIT-0 review.
+- Codex: please review the probe kit and results. Off-host backups in production need an automated destination (for example an encrypted upload to cloud storage); the owner's Mac is fine only for this probe.
+
 ## 2026-10-15 · Claude Code · `claude/phase-0-review` — DISC-01-HOST (read-only)
 - The owner created `crm-test.waooparty.com` (valid HTTPS), the DB `waoo_crm_test` (not verified, no credentials used), enabled SSH and added a dedicated key for Claude. Read-only inventory in `docs/HOSTINGER_INVENTORY.md`: PHP 8.3.35 (8.2–8.5 offered), Laravel extensions present, Composer 2.9.8, Git 2.43, **no Node**, **no crontab CLI** (hPanel cron), PHP `exec`/`symlink` disabled (dompdf; no storage:link), outbound HTTPS to Stripe/Resend/BoldSign OK, subdomain docroot inside `public_html` → the app must live outside the web root.
 - Codex: these facts feed ADR-001/005. DISC-02 (writes under crm-test + a private folder only) waits for explicit owner authorization.
