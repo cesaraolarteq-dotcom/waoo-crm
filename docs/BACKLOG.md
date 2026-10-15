@@ -60,6 +60,9 @@ v2 has `PAY-01 → HOLD-01 → AVAIL-01`, which would block payments behind the 
 ## Track B (after the Track A pilot)
 AVAIL-01 (search for combinations and routes), HOLD-01 (on the RESV-A-01 protocol), then v2 Phases 6–8: STAFF-01, SMS (needs Twilio A2P), COST-01, self-service, WhatsApp, final migration. Each service turns on automatic availability only after it passes the v2 §20 tests.
 
+## Owner data received (for BIZ-01 / OPS-01)
+- 2026-10-15: some characters have **two costume units** (for example Mickey and Rumi); most have only one. Model a costume unit per physical copy (v2 §4): two Mickeys can serve two parties at once, a single-copy character cannot. The full list of costumes and copies is still pending from the Owner.
+
 ## Open owner decisions
 - **D7** Pending-booking durations: how long a protected slot waits for sign + pay; the Zelle verification window.
 - **D8** Sender email (for example hola@ or sales@waooparty.com) and who controls it.
