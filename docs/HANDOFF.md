@@ -2,6 +2,19 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Codex · `codex/phase-0-audit` — VEREDICTO ARCH-01 y revisión de salida de Fase 0
+
+**Acepto las cinco pruebas como evidencia de viabilidad de Hostinger y firmo técnicamente ARCH-01. Recomiendo presentar EXIT-0 al dueño para cierre; no he iniciado Fase 1.** El dueño debe aprobar cerrar Fase 0 y autorizar el siguiente incremento antes de crear la aplicación.
+
+- Integré `claude/phase-0-review` en `7b7986e`, incluido el cambio posterior a main `ef4cbd9`, sin alterar commits de Claude. Conservadas entradas históricas de ambas ramas. Las decisiones vigentes incluyen D4 = firma propia; reportes a sales@waooparty.com; Maybeli admin completo igual a César con 2FA; COST-A, REPORT-A, CHANGE-A y TPL-01.
+- **Kit/results:** revisados los cinco PHP y README. P1 cron/retry, P2 PDF privado, P3 webhook real Stripe test, P4 row locks y P5 backup/restore: aceptados según evidencia registrada por Claude, **no reejecutados remotamente por Codex**. Los cinco archivos PHP pasan sintaxis local PHP 8.4.26; eso no reproduce el runtime Hostinger ni las pruebas funcionales.
+- **Precisión P2:** prueba URL temporal firmada; no prueba firma electrónica del cliente ni permisos por evento. Corregida la frase del README que implicaba estos últimos. P3 aún no es ledger; P4 no prueba conflictos multi-recurso; P5 no acredita backups automáticos, archivos del producto ni RPO/RTO a escala. No invalidan la viabilidad, sí definen pruebas de implementación.
+- **ADR final:** `docs/arch/ARCH-01-ADR.md`: Laravel 13/PHP 8.3, MariaDB/InnoDB, Filament sujeto a compatibilidad del bootstrap, cron con cola acotada, dompdf/almacenamiento privado sin symlink ni Node en host, firma propia, recursos/ledger independientes y controles D7. `DECISIONS.md` pasa a historial de propuestas.
+- **Modelo/revisión:** `docs/DATA_MODEL.md` aporta el modelo lógico (no migraciones). `docs/PHASE0_REVIEW.md` coteja UX-SPEC/prototipo y PHASE-1-PLAN: corregir +$150 universal/personaje, total con transporte desconocido, etiqueta neto/caja-staff, estados/aprobaciones, unidades por intervalo y autorización de costos en backend. Plan con subtickets de un implementador, selección tentativa vs reserva pagada, logística y aceptación multi-recurso.
+- **Request for Claude:** incorporar esas correcciones en UI/plan antes de implementar cada función; conservar D7 sin holds, margen de 45 minutos y excepciones de última hora/hasta 15 minutos. No marcar firma propia implementada por P2. Completar modelo de costo operativo total y definiciones de períodos de REPORT-A. El reporte va a sales@; no hay permiso nuevo para enviarlo ahora.
+- **Pendientes que no deben fingirse resueltos:** precios/recetas/inventario restantes para servicios reales, Filament/dependencias lockeadas, pruebas completas de permisos/pagos/concurrencia, firma/evidencia, envío email y backups automáticos. Catálogo borrador permite iniciar base/permiso una vez autorizado, no confirmar servicios con datos incompletos.
+- **Archivos propios:** nuevos ARCH-01-ADR, DATA_MODEL y PHASE0_REVIEW; actualizados DECISIONS, HOSTINGER_INVENTORY, referencia de revisión en UX-SPEC/PHASE-1-PLAN, precisión de probes README y esta entrada. Otros archivos llegaron por merge. **Verificación:** sintaxis 5/5, git diff --check, instrucciones AGENTS/CLAUDE idénticas, web intacta; ninguna escritura en Hostinger, cobro, mensaje externo o implementación de Fase 1.
+
 ## 2026-10-15 · Codex · `codex/phase-0-audit` — flujo de excepciones y D7 incorporada
 
 - Integrado main `81287c2`, conservando entregas de Claude y las reglas recientes del dueño sobre staff, cuatro speakers, tráfico y 45 minutos. Conflictos documentales resueltos sin eliminar entradas históricas.

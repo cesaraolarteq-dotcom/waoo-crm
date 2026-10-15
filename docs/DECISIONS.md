@@ -1,4 +1,6 @@
-# Decisiones técnicas — propuestas de Fase 0
+# Decisiones técnicas — historial de propuestas de Fase 0
+
+**Vigente:** [ARCH-01 firmado técnicamente](arch/ARCH-01-ADR.md), con evidencia P1–P5, D4 = firma propia, ambos owner-admin equivalentes y reportes a sales@waooparty.com. Las propuestas siguientes se conservan como historial y quedan sustituidas donde difieran. Cierre de Fase 0 e inicio de Fase 1 dependen del dueño.
 
 2026-10-15. Estado: **propuestas para revisión; arquitectura final pendiente de evidencia de Hostinger**. D1–D6 están aprobadas en HANDOFF; la elección de stack/proveedor no lo está. Fase 0 está autorizada; Fase 1 no.
 
