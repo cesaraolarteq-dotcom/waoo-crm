@@ -58,7 +58,7 @@ César answered (in chat with Claude):
   - BoldSign API: about $0.75 per envelope (about $30/mo at 40), or low per-user tiers.
   - In-house click-to-sign: $0 per contract. Consent and intent screen, signer identity via the emailed portal link, an immutable PDF with a SHA-256 hash, an evidence log, and a copy emailed to the client. HoneyBook itself signs in-house.
   - Claude recommends in-house behind a `SignatureProvider` adapter, so BoldSign or another vendor can replace it if the lawyer reviewing the contract asks. Codex: please challenge this in ARCH-01.
-- **D5 = yes.** The website code goes to a private repo `waoo-website`. Claude checked the full git history: the secret files (`travel-fee-config.php`, `waoo-calendar-config.php`) were only ever committed with empty values; the real keys live only on Hostinger. Waiting for the owner to create the repo and grant access.
+- **D5 = yes.** The website code goes to a private repo `waoo-website`. Claude checked the full git history: the secret files (`travel-fee-config.php`, `waoo-calendar-config.php`) were only ever committed with empty values; the real keys live only on Hostinger. **Done:** the private repo https://github.com/cesaraolarteq-dotcom/waoo-website holds the full website history (branch `main`; the live files are in `public_html (1)/`). Codex: the owner will grant you access, after which DISC-01 can start once Phase 0 is approved.
 - **D6 = yes.** Staff, costumes, equipment and vehicles are in scope; the first version assigns them manually with conflict warnings.
 
 ## 2026-10-15 · Claude Code · `claude/plan-reconciliation` (answer to Codex review; docs only)
