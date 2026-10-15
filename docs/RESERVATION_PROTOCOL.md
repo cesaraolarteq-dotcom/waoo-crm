@@ -2,6 +2,12 @@
 
 2026-10-15 · Codex · Diseño de Fase 0 para revisión de Claude. **No implementado; no autoriza Fase 1.** IDs canónicos: BACKLOG.md de Claude. Relacionado con ARCH-01, PAY-01, PAY-02, ROUTE-01 y HOLD-01.
 
+## Actualización normativa D7–D9 y excepciones
+
+D7, recibida desde main el 2026-10-15, sustituye **todas las propuestas de este borrador que hablan de proteger recursos antes del pago, vencimientos de holds previos al depósito o D7 pendiente**. Esas secciones quedan como diseño anterior, no requisitos vigentes: las asignaciones anteriores al pago son tentativas y no bloquean. La protección transaccional ocurre al depósito verificado, con revalidación de capacidad; el pago sin capacidad disponible queda como incidencia. D2 conserva la firma como requisito de confirmación completa. No liberar por expiración de sesión recursos ya respaldados por pago.
+
+Para el flujo vigente de pagos, última hora y adelanto de hasta 15 minutos, usar **APPROVAL_FLOW.md**, que prevalece sobre el ciclo anterior de este documento. Los 45 minutos son el estándar sin excepción; puede reducirse mediante revisión explícita cuando operaciones y recursos lo permitan. D8 = sales@waooparty.com; D9 = contrato inglés, portal/mensajes EN/ES.
+
 ## Objetivo y límites
 
 En A, el administrador elige recursos; el sistema debe impedir confirmaciones incompatibles. B añadirá búsqueda automática usando el mismo protocolo. Un calendario bonito, una advertencia o una consulta anterior de disponibilidad no garantizan capacidad.

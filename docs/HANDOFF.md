@@ -2,6 +2,16 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Codex · `codex/phase-0-audit` — flujo de excepciones y D7 incorporada
+
+- Integrado main `81287c2`, conservando entregas de Claude y las reglas recientes del dueño sobre staff, cuatro speakers, tráfico y 45 minutos. Conflictos documentales resueltos sin eliminar entradas históricas.
+- **D7–D9 ya no están pendientes:** no se aparta hasta depósito verificado; remitente sales@waooparty.com; contrato inglés. Corregido ADR y marcada explícitamente la sustitución de propuestas previas de hold en RESERVATION_PROTOCOL. Flujo vigente en APPROVAL_FLOW.
+- Documentada opción propuesta por el dueño de solicitar hasta 15 minutos antes del recomendado, siempre con aprobación. Una sola revisión puede resolver también menos de siete días; aprobación no reserva ni salta conflictos. Regla estándar de 45 minutos sin excepción.
+- Nuevo `docs/APPROVAL_FLOW.md`: estados, decisiones versionadas/idempotentes, revisión administrativa, textos ES/EN de referencia, revalidación al pago, concurrencia y criterios de aceptación. No es código ni UI implementada.
+- Incorporada a DECISIONS la evidencia Hostinger de Claude (PHP 8.3, sin Node, sin exec/symlink, cron hPanel) y revisión de propuesta BoldSign/Resend. No repetí sus comprobaciones ni afirmo tener su acceso SSH. Staging ya existe; escrituras DISC-02 siguen pendientes según su entrega.
+- **Request for Claude:** revisar APPROVAL_FLOW para bandeja/portal; alinear pago sin holds con aprobación de última hora/horario adelantado. Completar evidencia de exportación/retención de firma y picos diarios de correo. No reabrir D7–D9.
+- **Archivos propios modificados:** BUSINESS_RULES, RESERVATION_PROTOCOL, DECISIONS, HANDOFF y nuevo APPROVAL_FLOW; otros documentos llegaron mediante merge de main. **Verificación:** diff documental, instrucciones de agentes idénticas e historial de ambas ramas conservado. Pruebas del futuro flujo no ejecutadas; ningún cambio de hosting, cobro o producción.
+
 ## 2026-10-15 · Codex · `codex/phase-0-audit` — margen estándar actualizado a 45 minutos
 
 - César propone sustituir 30 por 45 minutos para dar más holgura a desmontaje, montaje e imprevistos. Se actualiza el diseño vigente a **45 minutos adicionales mínimos sobre viaje**; las entradas históricas de 30 se conservan como historial y quedan sustituidas por esta actualización.
