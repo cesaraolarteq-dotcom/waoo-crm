@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Admin\{CoreController, EventController};
+use App\Http\Controllers\Admin\{CoreController, EventController, ResourceBlockController};
 use App\Http\Middleware\RequireOwnerAdmin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -18,6 +18,8 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::post('/variants/{variant}/prices', [CoreController::class, 'price']);
     Route::get('/variants/{variant}/prices', [CoreController::class, 'prices']);
     Route::post('/resources/{resource}/blocks', [CoreController::class, 'block']);
+    Route::get('/resources/{resource}/blocks', [ResourceBlockController::class, 'index']);
+    Route::post('/resources/{resource}/blocks/{block}/release', [ResourceBlockController::class, 'release'])->whereNumber('block');
     Route::post('/costume-compatibilities', [CoreController::class, 'compatibility']);
     Route::get('/events', [EventController::class, 'index']);
     Route::post('/events', [EventController::class, 'store']);

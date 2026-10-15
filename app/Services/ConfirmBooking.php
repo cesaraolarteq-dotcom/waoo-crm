@@ -98,7 +98,7 @@ final class ConfirmBooking
                 $busyStart = $event->starts_at->subMinutes($event->setup_minutes);
                 $busyEnd = $event->ends_at->addMinutes($event->breakdown_minutes);
                 foreach ($resources as $resource) {
-                    if (ResourceBlock::where('resource_id', $resource->id)->where('starts_at', '<', $busyEnd)->where('ends_at', '>', $busyStart)->exists()) {
+                    if (ResourceBlock::where('resource_id', $resource->id)->whereNull('released_at')->where('starts_at', '<', $busyEnd)->where('ends_at', '>', $busyStart)->exists()) {
                         $this->fail("El recurso {$resource->code} tiene un bloqueo horario.");
                     }
                     $bookings = ResourceReservation::where('resource_id', $resource->id)->with('event')->orderBy('starts_at')->get();
@@ -153,7 +153,7 @@ final class ConfirmBooking
             $this->fail('La ruta debe corresponder a la salida después de desmontar.');
         }
         $arrival = $departure->addMinutes((int) $route['travel_minutes']);
-        if ($arrival->greaterThan($departure) && ResourceBlock::where('resource_id', $resourceId)->where('starts_at', '<', $arrival)->where('ends_at', '>', $departure)->exists()) {
+        if ($arrival->greaterThan($departure) && ResourceBlock::where('resource_id', $resourceId)->whereNull('released_at')->where('starts_at', '<', $arrival)->where('ends_at', '>', $departure)->exists()) {
             $this->fail('Un bloqueo del recurso impide el traslado entre eventos.');
         }
         // This backend conservatively uses 45 minutes; reduced-buffer exceptions require the later approval workflow.

@@ -21,13 +21,13 @@ GET/POST `/admin/api/{customers|characters|resources|variants}`, PUT the same pa
 
 POST `/admin/api/variants/{id}/prices`: amount_cents (integer), currency `USD`. GET same path returns newest first. Prices append versions; no mutation endpoint. No assumed tax/discount/card fee calculations in this slice.
 
-POST `/admin/api/costume-compatibilities`: staff_id, costume_id. POST `/admin/api/resources/{id}/blocks`: starts_at, ends_at, reason. Blocks reject overlap with existing commitments including preparation and reviewed driving intervals. Listing blocks and removing compatibility/blocks will be coordinated as follow-up CRUD; do not build buttons for absent endpoints.
+POST `/admin/api/costume-compatibilities`: staff_id, costume_id. POST `/admin/api/resources/{id}/blocks`: starts_at, ends_at, reason. Blocks reject overlap with existing commitments including preparation and reviewed driving intervals. Listing and lifting blocks are defined in the lifecycle section below. Removing costume compatibility remains follow-up CRUD; do not build buttons for absent endpoints.
 
 ## Event draft
 
 GET/POST `/admin/api/events`; GET/PUT `/admin/api/events/{id}`. GET list accepts from/to date-times and paginates, includes customer/services/reservations. Every date-time must include Z or explicit UTC offset; API stores UTC and the UI displays `America/Chicago` with daylight-saving handling. Avoid naive local timestamps, especially the repeated hour in November.
 
-Create/update payload: customer_id, title, starts_at, ends_at, timezone `America/Chicago`, nullable address/setup_minutes/breakdown_minutes/travel_fee_cents, services `[ {"price_version_id": 1} ]`. Update additionally requires expected_version. Response includes version, status and immutable selected price/requirements snapshots. Drafts can be incomplete and **never reserve capacity**. Re-saving a draft refreshes its recipe snapshots; committed events cannot use this edit route. Null travel fee means unknown, not zero.
+Create/update payload: customer_id, title, starts_at, ends_at, timezone `America/Chicago`, nullable address/postal_code/setup_minutes/breakdown_minutes/travel_fee_cents, services `[ {"price_version_id": 1} ]`. Update additionally requires expected_version. Response includes version, status and immutable selected price/requirements snapshots. Drafts can be incomplete and **never reserve capacity**. Re-saving a draft refreshes its recipe snapshots; committed events cannot use this edit route. Null travel fee means unknown, not zero. Optional postal_code is a string containing five ZIP digits or ZIP+4 (e.g. `00001` or `00001-1234` in fake fixtures); leading zeros are preserved. This validates syntax only, does not verify a venue/address, and never assigns a travel fee or route automatically.
 
 GET `/admin/api/events/{id}/audit` returns event changes newest first with actor/time. The audit table also stores catalog/resource changes. No secrets/payment card data in logs.
 
@@ -67,3 +67,9 @@ Retry an identical confirmation safely; changed details on a committed event ret
 ## UI integration and remaining work
 
 Claude: implement Spanish admin shell, login/enrollment/challenge/recovery screens, client/resource/catalog/event forms, and calendar with buffers. Consume these endpoints or propose changes in HANDOFF; do not duplicate the reservation logic in the browser or bypass it with direct Filament/Eloquent writes. Filament actions must use the same audited transactions; coordinate extraction into application services before replacing an endpoint. Optional unconfirmed draft assignments and resource suggestions need a separate agreed API before adding UI behavior. Owners' worksheet, account emails, staging approval/access and acceptance remain necessary for actual use. UI approval and Phase 1 acceptance are separate from this backend delivery.
+
+## Resource block lifecycle (OPS-01 follow-up)
+
+GET `/admin/api/resources/{id}/blocks` lists blocks for that unit, paginated 50, ordered by starts_at/id. Optional `state=active|released|all` (default active), `from` and `to` with explicit UTC offsets; range selects overlapping intervals. Responses include released_at, released_by and release_reason; an unreleased block has null release fields.
+
+POST `/admin/api/resources/{id}/blocks/{block_id}/release` with `{ "reason": "Maintenance completed and unit checked." }` lifts only that block. Reason must be 10–1000 characters. It locks the same resource row used by confirmation, checks that the block belongs to the unit, records actor/time/reason and an audit entry, and preserves the original interval/reason. Identical retries return the original result without duplicate audit entries; a different reason after release returns 409. This does not activate a unit marked maintenance/inactive or release any committed reservation. No delete endpoint or edit of the original evidence is provided. Booking/transfer checks ignore released blocks; every other conflict check still applies.

@@ -299,6 +299,9 @@ class CoreTest extends TestCase
         $p['review']['transfers'] = [['from_event_id' => $a->id, 'to_event_id' => $b->id, 'from_version' => $a->version, 'to_version' => $b->version, 'travel_minutes' => 28, 'contingency_minutes' => 10, 'departure_at' => $a->ends_at->addMinutes(10)->toIso8601String(), 'note' => 'Reviewed traffic for this date and departure.']];
         $this->confirm($b, $p)->assertUnprocessable();
         $this->assertSame('draft', $b->fresh()->status);
+        $blockId = \App\Models\ResourceBlock::where('resource_id', $r->id)->value('id');
+        $this->postJson('/admin/api/resources/'.$r->id.'/blocks/'.$blockId.'/release', ['reason' => 'Owner confirmed the resource can now travel.'])->assertOk();
+        $this->confirm($b, $p)->assertOk();
     }
     public function test_new_block_cannot_interrupt_a_committed_driving_interval(): void
     {
@@ -313,6 +316,86 @@ class CoreTest extends TestCase
         $this->postJson('/admin/api/resources/' . $r->id . '/blocks', ['starts_at' => $a->ends_at->addMinutes(20)->toIso8601String(), 'ends_at' => $a->ends_at->addMinutes(25)->toIso8601String(), 'reason' => 'Cannot interrupt committed driving'])->assertConflict();
         $this->assertDatabaseCount('resource_blocks', 0);
     }
+    public function test_releasing_a_block_preserves_history_and_does_not_ignore_other_active_blocks(): void
+    {
+        $event = $this->event(); $resource = $this->resource();
+        $data = ['starts_at' => $event->starts_at->toIso8601String(), 'ends_at' => $event->ends_at->toIso8601String(), 'reason' => 'Fictitious maintenance'];
+        $first = $this->postJson('/admin/api/resources/'.$resource->id.'/blocks', $data)->assertCreated()->json('id');
+        $second = $this->postJson('/admin/api/resources/'.$resource->id.'/blocks', [...$data, 'reason' => 'Independent absence'])->assertCreated()->json('id');
+        $payload = $this->payload($event, [$resource->id]);
+        $this->confirm($event, $payload)->assertUnprocessable();
+        $path = '/admin/api/resources/'.$resource->id.'/blocks/'.$first.'/release';
+        $release = ['reason' => 'Maintenance completed and the unit was checked.'];
+        $this->postJson($path, $release)->assertOk()->assertJsonPath('released_by', $this->owner->id)->assertJsonPath('reason', $data['reason']);
+        $this->postJson($path, $release)->assertOk();
+        $this->postJson($path, ['reason' => 'A different reason must not overwrite history.'])->assertConflict();
+        $this->assertSame(1, DB::table('audit_entries')->where('action', 'resource.block_released')->count());
+        $this->confirm($event, $payload)->assertUnprocessable();
+        $this->postJson('/admin/api/resources/'.$resource->id.'/blocks/'.$second.'/release', ['reason' => 'The absence was cancelled by the owner.'])->assertOk();
+        $this->confirm($event, $payload)->assertOk();
+        $this->assertDatabaseCount('resource_blocks', 2);
+        $this->assertDatabaseHas('resource_blocks', ['id' => $first, 'reason' => $data['reason'], 'released_by' => $this->owner->id, 'release_reason' => $release['reason']]);
+        $this->getJson('/admin/api/resources/'.$resource->id.'/blocks')->assertOk()->assertJsonPath('total', 0);
+        $this->getJson('/admin/api/resources/'.$resource->id.'/blocks?state=released')->assertOk()->assertJsonPath('total', 2);
+        $this->getJson('/admin/api/resources/'.$resource->id.'/blocks?state=all')->assertOk()->assertJsonPath('total', 2);
+    }
+
+    public function test_releasing_a_block_does_not_activate_a_unit_in_maintenance(): void
+    {
+        $event = $this->event(); $resource = $this->resource('equipment', ['status' => 'maintenance']);
+        $block = $this->postJson('/admin/api/resources/'.$resource->id.'/blocks', ['starts_at' => $event->starts_at->toIso8601String(), 'ends_at' => $event->ends_at->toIso8601String(), 'reason' => 'Fictitious resource block'])->assertCreated()->json('id');
+        $this->postJson('/admin/api/resources/'.$resource->id.'/blocks/'.$block.'/release', ['reason' => 'Calendar block cleared; maintenance remains.'])->assertOk();
+        $this->assertSame('maintenance', $resource->fresh()->status);
+        $this->confirm($event, $this->payload($event, [$resource->id]))->assertUnprocessable();
+        $this->assertDatabaseCount('resource_reservations', 0);
+    }
+
+    public function test_block_release_is_scoped_to_its_unit_and_requires_an_owner_with_a_reason(): void
+    {
+        $event = $this->event(); $resource = $this->resource(); $other = $this->resource();
+        $block = $this->postJson('/admin/api/resources/'.$resource->id.'/blocks', ['starts_at' => $event->starts_at->toIso8601String(), 'ends_at' => $event->ends_at->toIso8601String(), 'reason' => 'Fictitious resource block'])->assertCreated()->json('id');
+        $body = ['reason' => 'Owner reviewed and lifted this block.'];
+        $this->postJson('/admin/api/resources/'.$other->id.'/blocks/'.$block.'/release', $body)->assertNotFound();
+        $path = '/admin/api/resources/'.$resource->id.'/blocks/'.$block.'/release';
+        $this->postJson($path, ['reason' => ''])->assertUnprocessable();
+        $staff = User::factory()->create(['role' => 'staff', 'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'), 'two_factor_confirmed_at' => now()]);
+        $this->actingAs($staff)->postJson($path, $body)->assertForbidden();
+        $this->getJson('/admin/api/resources/'.$resource->id.'/blocks')->assertForbidden();
+        $this->postJson('/logout')->assertSuccessful();
+        $this->postJson($path, $body)->assertUnauthorized();
+        $this->assertDatabaseHas('resource_blocks', ['id' => $block, 'released_at' => null]);
+        $this->assertSame(0, DB::table('audit_entries')->where('action', 'resource.block_released')->count());
+    }
+
+    public function test_block_listing_filters_by_actual_overlap_and_explicit_offsets(): void
+    {
+        $event = $this->event(); $resource = $this->resource();
+        $this->postJson('/admin/api/resources/'.$resource->id.'/blocks', ['starts_at' => $event->starts_at->toIso8601String(), 'ends_at' => $event->ends_at->toIso8601String(), 'reason' => 'Fictitious resource block'])->assertCreated();
+        $base = '/admin/api/resources/'.$resource->id.'/blocks';
+        $inside = http_build_query(['from' => $event->starts_at->addMinutes(10)->toIso8601String(), 'to' => $event->ends_at->toIso8601String()]);
+        $this->getJson($base.'?'.$inside)->assertOk()->assertJsonPath('total', 1);
+        $touch = http_build_query(['from' => $event->ends_at->toIso8601String()]);
+        $this->getJson($base.'?'.$touch)->assertOk()->assertJsonPath('total', 0);
+        $this->getJson($base.'?'.http_build_query(['to' => $event->starts_at->toIso8601String()]))->assertOk()->assertJsonPath('total', 0);
+        $this->getJson($base.'?'.http_build_query(['from' => $event->ends_at->toIso8601String(), 'to' => $event->starts_at->toIso8601String()]))->assertUnprocessable();
+        $this->getJson($base.'?from=2026-11-01T01:30:00')->assertUnprocessable();
+        $this->getJson($base.'?state=unknown')->assertUnprocessable();
+    }
+
+    public function test_postal_code_preserves_leading_zeros_and_does_not_invent_travel_pricing(): void
+    {
+        $fixture = $this->event();
+        $payload = [...$fixture->only(['customer_id', 'title', 'timezone', 'address', 'setup_minutes', 'breakdown_minutes']),
+            'starts_at' => $fixture->starts_at->toIso8601String(), 'ends_at' => $fixture->ends_at->toIso8601String(),
+            'services' => [['price_version_id' => $fixture->services()->first()->price_version_id]], 'postal_code' => '00001'];
+        $created = $this->postJson('/admin/api/events', $payload)->assertCreated()->assertJsonPath('postal_code', '00001')->assertJsonPath('travel_fee_cents', null);
+        $event = Event::findOrFail($created->json('id'));
+        $this->confirm($event, $this->payload($event, [$this->resource()->id]))->assertUnprocessable();
+        $this->putJson('/admin/api/events/'.$event->id, [...$payload, 'postal_code' => '00001-1234', 'expected_version' => 1])->assertOk()->assertJsonPath('postal_code', '00001-1234');
+        $this->postJson('/admin/api/events', [...$payload, 'postal_code' => '001'])->assertUnprocessable();
+        $this->postJson('/admin/api/events', [...$payload, 'postal_code' => 12345])->assertUnprocessable();
+    }
+
     public function test_two_real_processes_competing_for_one_resource_only_reserve_once(): void
     {
         $this->assertSame('mysql', DB::connection()->getDriverName());
