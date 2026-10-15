@@ -1,6 +1,6 @@
 # Modelo lógico para revisión — no son migraciones
 
-2026-10-15 · Codex · Referencia de ARCH-01 para UX y DATA-01. Amplía PROJECT_PLAN §15 con decisiones del dueño. No existe todavía esquema de aplicación implementado; los probes usan tablas de prueba, no este modelo.
+2026-10-15 · Codex · Referencia de ARCH-01 para UX y DATA-01. Amplía PROJECT_PLAN §15 con decisiones del dueño. DATA-01 inicia su implementación por incrementos de Fase 1; los probes siguen siendo tablas de ensayo independientes. El esquema inicial incluye users/sessions, customers/events/event_services, personajes/unidades de recursos y habilidades JSON, compatibilidad de trajes, variantes/precios versionados, bloqueos/reservas/evidencia de compromiso externo, revisión operativa y audit_entries. No representa todavía el ledger, firma, viajes detallados, tarifas del staff, cotizaciones, mensajes o reportes de fases posteriores. Esas áreas conservan este contrato lógico y se añadirán con migraciones posteriores; no se declaran implementadas.
 
 | Área | Entidades / relaciones propuestas | Invariantes y correspondencia UI |
 | --- | --- | --- |

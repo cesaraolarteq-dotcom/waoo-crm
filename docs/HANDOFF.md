@@ -2,6 +2,17 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Codex · `codex/phase-1-core` — steps 1–3 ready for Claude review
+
+- **Owner approval received** (Phase 0 closed / Phase 1 started). Integrated current main through `1d16fcd`, preserving owner payment decisions and Claude's tokens/COMPONENTS. No self-merge: Claude reviews and merges this code increment.
+- **Bootstrap:** Laravel 13.36.0, PHP 8.3.35, MariaDB 11.8/InnoDB; Composer/npm lockfiles; Filament 5.10.2 + Livewire 4.4.7 resolved and installed. CI runs PHP lint, MariaDB tests and asset build. Private local storage has automatic signed serving disabled; durable database queues use after_commit and retry_after=120. No production scheduler/jobs enabled.
+- **DATA-01 initial slice:** core relational schema, individual resource units and skills, compatibility, immutable selected prices/recipe snapshots, resource blocks/reservations, external-commitment evidence, review and audit tables. Default seeder creates nothing. Opt-in local/testing DemoSeeder is repeatable and creates fictitious draft inventory, no accounts/prices/payments. Future ledger/signature/trips/staff-pay schema is explicitly deferred, not claimed complete.
+- **AUTH-01:** Fortify session login, mandatory confirmed 2FA, encrypted secrets/recovery codes, rate limiting, active owner-admin backend gate and FilamentUser authorization. Interactive secure CLI provisions both equivalent owners: `cesar@waooparty.com` / `maybe@waooparty.com`. **No accounts have been provisioned remotely**; private password selection, test deployment and enrollment need the completed UI and authorized staging.
+- **Verified locally:** 9 tests / 76 assertions on real MariaDB, including enrollment/challenge/recovery and data constraints; 7 real HTTP checks (CSRF, unauthorized access, private .env, boot); PHP syntax and Vite build pass; composer validate --strict passes. Composer installation's advisory check reported no vulnerabilities, but the separate `composer audit --locked` request is **blocked by proxy 403 to packagist.org**; do not count it as a passed audit. CI includes the audit for normal network access. GitHub API likewise returns 403, so PR creation from this session remains blocked even though native Git access works.
+- **Files:** application bootstrap/config, composer/package lockfiles, migrations/models/seeders, auth provider/middleware/CLI, tests/Feature/AuthTest.php + DataTest.php, CI, docs/DEVELOPMENT.md and AUTH-01.md; DATA_MODEL/README/phase plan status updated. No changes to the website.
+- **Request for Claude:** review this first increment and merge after review, then build step 4 using your tokens.css and COMPONENTS.md. Follow docs/AUTH-01.md for CSRF/session/enrollment/challenge/recovery. Filament packages are ready; **no designed panel/screens generated**. Keep the same backend gate on panel routes and Livewire actions; do not introduce a second password-only login. The operational endpoints and concurrency algorithm follow in a separate branch/review so they do not delay your shell. If the API stays blocked here, please open the PR from this pushed branch into main.
+- **Open:** mandatory security-advisory audit on an allowed network, Claude UI, staging/deployment authorization, private owner enrollment and owner acceptance. Phase 1 is in progress, not closed. No Hostinger deployment, charges, messages or provider changes.
+
 ## 2026-10-15 · Claude Code — owner: Affirm not available yet
 - **Affirm is NOT usable yet**: the owner still has to complete a verification with Affirm. Card, Klarna, Zip and Afterpay work. PAY-01: do not offer Affirm in Checkout (exclude it explicitly, even though the test configuration shows it "on") until the owner confirms the verification is complete.
 
@@ -77,9 +88,7 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 - **Verificado:** diff sin errores, instrucciones de agentes idénticas, ambas entradas históricas conservadas, web sin cambios. No verificados: MySQL/concurrencia, Hostinger, Stripe, firma, correo y backup; no hay staging autorizado/disponible.
 - **Archivos de esta continuación:** BACKLOG, HANDOFF, PLAN (cambios de main integrados), DECISIONS (nombre de ticket), BUSINESS_RULES y nuevo RESERVATION_PROTOCOL. La auditoría anterior permanece.
 
-## 2026-10-15 · Claude Code — owner's real booking flow → BOOK-QUICK (priority)
-- About 90% of bookings are manual (phone/WhatsApp): quote → deposit (Zelle) → data → César retypes everything into HoneyBook. New `docs/plans/QUICK-BOOKING.md` and ticket **BOOK-QUICK**: the owner fills his half (package, characters, date, travel fee, deposit) and the client fills hers by link (name, phone, email, address, start time) and signs. The contract, booking and reminders are then automatic. Deposit-first flow (v2 §7), held by the payment (D7). Proposed as the **first client-facing feature of Track A**.
-- PR permission now works for Claude (PR #7 created by API). Self-merge needs the owner's explicit authorization.
+
 
 ## 2026-10-15 · Claude Code — owner decision: Maybeli is a full admin
 - Maybeli has the same access as César, including money, staff pay and reports (two owner-admins, both with 2FA). Staff roles stay restricted when they arrive (Track B).
