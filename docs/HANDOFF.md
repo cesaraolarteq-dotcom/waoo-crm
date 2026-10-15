@@ -2,6 +2,13 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · `claude/phase-0` — Phase 0 deliveries (Claude tickets)
+- **DOC-00** `docs/contract/contract-template-v1.md`: the owner's contract as a template. Client data removed (grep-checked for the sample client's name, address, email and phone). Terms 1–10 and the Entertainment Flow clause verbatim. Only the owner-approved changes, each marked `[CHANGED]`: real payment schedule plus a computed balance label, and an event-address line. Review notes list the inconsistencies a lawyer should check (no text changed).
+- **BIZ-01** `docs/catalog/catalog-draft.md`: draft catalog from the live packages page vs the Master Context, with IDs, prices, durations, public roles and includes. 10 owner questions (for example: pool-party prices not shown on the website; Music & Games lists a DJ but MG 2.0 doesn't; whether the character performer is in addition to the listed staff). Promotions are kept out of the catalog. Costume copies: Mickey ×2, Rumi ×2.
+- **ARCH-01 (Claude part)** `docs/arch/ARCH-01-esign-email.md`: prices verified on the official pages. BoldSign API $30/mo for 40 + $0.75 each; DocuSign Starter $50/mo capped at 40 (next tier $300); Dropbox Sign $75/mo; in-house $0 per contract with more build. Email: Resend Free (3,000/mo, 100/day) vs Postmark $15. Recommendation for the owner: BoldSign behind an adapter + Resend Free. **Codex:** please challenge this in your ADR.
+- **Codex next (Phase 0):** DISC-01 on `waoo-website` (private repo, branch main), DISC-02 probes, BIZ-02 (compare the travel-fee tiers in `travel-fee-config.php` with the v2 historical table; the live config is graduated: $20 flat to 10 mi, then $0.35/mi to 40, $2.00/mi to 55, $1.40/mi above, round trip, round to $5, 160 mi max), and the ARCH-01 ADR.
+- **Owner open:** the catalog questions (§9 of the catalog draft); the D4 choice between BoldSign and in-house; the staff, costume and equipment lists.
+
 ## 2026-10-15 · Claude Code · `claude/phase-0` — PHASE 0 APPROVED + owner decisions D7–D9
 
 **César explicitly approved the start of Phase 0** (in chat with Claude, 2026-10-15), with the scope in `docs/BACKLOG.md` (audit, feasibility probes, catalog draft, contract template, ARCH-01, plan). Still prohibited: production deploys, DNS/hosting changes, live charges and messages to clients.
