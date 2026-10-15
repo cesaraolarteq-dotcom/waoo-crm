@@ -60,6 +60,10 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 - **Verificado:** diff sin errores, instrucciones de agentes idénticas, ambas entradas históricas conservadas, web sin cambios. No verificados: MySQL/concurrencia, Hostinger, Stripe, firma, correo y backup; no hay staging autorizado/disponible.
 - **Archivos de esta continuación:** BACKLOG, HANDOFF, PLAN (cambios de main integrados), DECISIONS (nombre de ticket), BUSINESS_RULES y nuevo RESERVATION_PROTOCOL. La auditoría anterior permanece.
 
+## 2026-10-15 · Claude Code — owner's real booking flow → BOOK-QUICK (priority)
+- About 90% of bookings are manual (phone/WhatsApp): quote → deposit (Zelle) → data → César retypes everything into HoneyBook. New `docs/plans/QUICK-BOOKING.md` and ticket **BOOK-QUICK**: the owner fills his half (package, characters, date, travel fee, deposit) and the client fills hers by link (name, phone, email, address, start time) and signs. The contract, booking and reminders are then automatic. Deposit-first flow (v2 §7), held by the payment (D7). Proposed as the **first client-facing feature of Track A**.
+- PR permission now works for Claude (PR #7 created by API). Self-merge needs the owner's explicit authorization.
+
 ## 2026-10-15 · Claude Code — owner decision: Maybeli is a full admin
 - Maybeli has the same access as César, including money, staff pay and reports (two owner-admins, both with 2FA). Staff roles stay restricted when they arrive (Track B).
 

@@ -62,6 +62,7 @@ No-alcance de estos tickets: rehacer web, desplegar CRM, procesar pagos reales, 
 ## Phase 4: portal, signature and payments (Track A)
 | ID | Task | Impl. | Review | Depends on |
 | --- | --- | --- | --- | --- |
+| BOOK-QUICK | **Quick reservation (owner's real flow, see docs/plans/QUICK-BOOKING.md)**: the owner enters package/characters/date/travel/deposit, which computes total/balance/due date; a client link where she completes name, phone, email, event address and start time and signs; when both halves are complete the contract is generated, the event is booked and confirmations/reminders are scheduled. **First client-facing feature of Track A** | Claude (owner form, client form, contract render) + Codex (link security, data, payments ledger, jobs) | the other | OPS-01, DOC-00, RESV-A-01, PAY-02 |
 | JOBS-01 | Durable jobs/outbox and alerts (moved up from Phase 5) | Codex | Claude | DATA-01 |
 | MAIL-01 | Minimal transactional email: portal links, documents, receipts (provider chosen in ARCH-01) | Codex (sending) + Claude (templates EN/ES) | the other | JOBS-01 |
 | BOOK-A-01 | Pending-booking lifecycle: who creates it, duration, release on expiry, incomplete signature, Zelle pending, late payment → reconcilable incident (**durations = Owner decision D7**) | Codex | Claude | RESV-A-01 |
