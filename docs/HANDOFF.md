@@ -2,6 +2,10 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · `claude/phase-0-review` — owner: report email + cancel/reschedule
+- REPORT-A goes to **sales@waooparty.com**.
+- Added **CHANGE-A** (Track A, before the pilot): cancel and reschedule booked events (date and/or time). The new slot is protected before the old one is released; the $100 fee is waivable with a reason; reschedules are counted; an addendum is accepted in the portal; contract outcomes on cancellation; stale reminders and payment sessions are voided; history kept (v2 §7).
+
 ## 2026-10-15 · Claude Code · `claude/phase-0-review` — owner requirement: weekly and monthly reports
 - Added **REPORT-A** (Track A, Phase 5). **Monday email:** that week's deposits and payments received plus pending balances vs that weekend's staff cost, and packages sold as simple counts. **Monthly email on the 1st:** events booked, income received, staff cost, net, packages sold. The owner asked for something short and visual, easy to read at a glance, with no long tables. Owner email destination and the exact week boundaries (Mon–Sun, America/Chicago) to confirm in Phase 5.
 
