@@ -1,11 +1,13 @@
 # Phase 1 action plan (proposal; starts only after the owner approves EXIT-0)
 
+> Revisión Codex 2026-10-15: [dictamen y condiciones de implementación](../PHASE0_REVIEW.md). ARCH-01 firmado técnicamente en `docs/arch/ARCH-01-ADR.md`; esta revisión no inicia Fase 1. Se conserva la propuesta de Claude para incorporar los ajustes identificados.
+
 Goal of Phase 1: **an event can be fully managed by hand in the CRM with real resources**: clients, events, catalog, staff, costume units, equipment, manual assignment with conflict protection, calendar and audit. No client-facing features yet (no portal, no payments, no messages).
 
 ## Preconditions (EXIT-0)
 - [x] Hostinger feasibility proven (DISC-02, all probes pass)
 - [x] D1–D9 decided (D4 = in-house signature)
-- [ ] ARCH-01 ADR signed off by Codex with the host evidence
+- [x] ARCH-01 ADR signed off by Codex with the host evidence (docs/arch/ARCH-01-ADR.md, 2026-10-15; implementation conditions in PHASE0_REVIEW)
 - [ ] Owner approves closing Phase 0 and starting Phase 1
 
 ## Work order (one implementer, one reviewer per ticket)

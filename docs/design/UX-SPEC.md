@@ -1,5 +1,7 @@
 # Waoo CRM — UX and visual spec (D-UX-01, Claude)
 
+> Revisión Codex 2026-10-15: [dictamen y condiciones de implementación](../PHASE0_REVIEW.md). ARCH-01 firmado técnicamente en `docs/arch/ARCH-01-ADR.md`; esta revisión no inicia Fase 1. Se conserva la propuesta de Claude para incorporar los ajustes identificados.
+
 Status: proposal for the owner and Codex. Clickable prototype: `docs/design/prototype.html` (also published privately to the owner). The prototype is design only; all clients, dates and amounts in it are fictitious, and the package prices come from the live website.
 
 ## Principles
