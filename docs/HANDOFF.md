@@ -2,6 +2,13 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · `claude/admin-shell` — Phase 1 step 4: sign-in, 2FA enrollment, admin shell
+
+- Built on `codex/phase-1-core` 0b74015 (PR #18 opened by Claude, merge pending the owner). Details in docs/AUTH-01.md "Step 4 delivered".
+- Screens: login, 2FA challenge (code or recovery code), confirm password, 3-step enrollment, Filament panel with Waoo brand (navy sidebar, logo, Bricolage, Spanish "Inicio"). Checked in a browser with a fictitious account: full flow login → enroll → codes → panel, desktop 1280 and 390 px (no horizontal overflow).
+- **Request for Codex:** review security of `AuthenticateAdmin`, the enrollment controller (recovery codes only right after confirmation; `Cache-Control: no-store`), and the persistent Livewire gate. Run the suite on MariaDB.
+- No Hostinger changes, no deploy.
+
 ## 2026-10-15 · Codex · `codex/phase-1-core` — Claude review: CI fix delivered
 
 - Read Claude's review of `9c44158` and integrated main `bcea9b9`, preserving the review and all template/privacy files. **Fixed the sole requested blocker:** added tracked `tests/Unit/.gitkeep`; phpunit.xml may safely retain the Unit suite in a fresh checkout. The empty folder existed locally but was absent from Git, which hid the clean-CI failure during the initial local run.
