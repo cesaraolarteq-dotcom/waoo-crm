@@ -22,7 +22,7 @@ Fuente: `waoo-website` en commit `5afc001`, `contact.html:1074`, `packages.html`
 | K-Pop | Desde 375 | Depende de variante | 1–3 | Contexto: 375/525/675; Huntrix Live 900, Elite 1200; recetas pendientes |
 | Solo personajes | Desde 250 | Aproximadamente 45 min | 1–2 | Contexto: 250/400; sin show; dotación/traslado pendiente |
 
-Estaciones, foam, spa, photobooth y demás variantes permanecen fuera de automatización hasta documentar cantidades, duración por recurso, montaje/desmontaje, consumibles y logística. No afirmar que un personaje o traje existe por aparecer en un catálogo. No se ha recibido inventario real de personas/trajes/equipos/vehículos.
+Estaciones, foam, spa, photobooth y demás variantes permanecen fuera de automatización hasta documentar cantidades, duración por recurso, montaje/desmontaje, consumibles y logística. No afirmar que un personaje o traje existe por aparecer en un catálogo. El inventario recibido es parcial: ver datos confirmados al final; faltan fichas completas de personas/trajes/equipos/vehículos.
 
 ## Transporte: lo que implementa el checkout de la web
 
@@ -47,3 +47,18 @@ Dato nuevo del dueño, registrado por Claude en BACKLOG: Mickey y Rumi tienen do
 ## Requisito confirmado por el dueño: inventario operativo
 
 César confirmó que debe poder controlar trajes y staff con una experiencia de inventario que alimente la smart availability del CRM. D6 incluye administración de unidades físicas y personas, con estado, habilidades/compatibilidades, horarios y asignaciones. La disponibilidad se calcula por fecha/intervalo; no equivale a un interruptor global “libre”. Propuesta técnica y aceptación en RESERVATION_PROTOCOL. Primero administración/asignación manual en A; búsqueda automática en B. No se cambia la aprobación por fases.
+
+## Datos confirmados: habilidades, conductores, grupos y speakers
+
+Fuente: César, conversación del 2026-10-15.
+
+- El staff tiene habilidades diferentes, como interpretar personajes, pintar caritas y animar. Una persona puede tener varias habilidades; no se presupone que todos pueden cubrir todos los roles.
+- Maybeli puede conducir y llevar un grupo; César puede conducir y llevar otro. Cuando hay más grupos, algunos integrantes del staff pueden realizar el transporte y también participar en la fiesta. No se ha confirmado cuántos vehículos hay, sus capacidades ni qué miembros concretos conducen.
+- Actualmente hay **4 speakers**. El dueño los identifica como capacidad para hasta cuatro fiestas simultáneas con la dotación habitual. Deben registrarse como cuatro unidades físicas, sin inventar modelos, ubicaciones ni estado de cada una. No es un límite de cuatro fiestas por día.
+- Se pueden cubrir más eventos antes o después si da tiempo para mover personal, trajes y equipos. El cálculo incluye fin de actividad de cada recurso, desmontaje/carga, viaje, margen y montaje/preparación del siguiente evento. No fijar tiempos sin datos aprobados.
+
+Interpretación técnica propuesta: cuatro unidades permiten hasta cuatro eventos simultáneos **si cada uno requiere una unidad y las cuatro están disponibles**. Cada servicio debe declarar su cantidad y compatibilidad; una fiesta que necesite dos consume dos unidades. Personal, vestuario o transporte pueden reducir la capacidad conjunta. Los speakers se reutilizan cuando su itinerario lo permite, no apenas termina la hora anunciada de fiesta.
+
+Conducir es una función de una persona por intervalo. Si participa como artista/animador durante la fiesta, no puede transportar otro grupo durante ese mismo intervalo. Si únicamente deja y recoge al grupo, puede tener otro recorrido compatible; modelar ambos viajes y verificar cómo vuelven las personas y equipos. No asumir que el conductor permanece o queda libre sin una asignación explícita. Separar vehículo, conductor, pasajeros y carga.
+
+Pendientes para BIZ-01/ROUTE-01: conductores elegibles y disponibilidad, vehículos y capacidad de asientos/carga, pasajeros/equipos por grupo, puntos de recogida/retorno, cantidad/tipo de speaker por servicio y tiempos operativos. Estas ausencias no invalidan los datos confirmados ni autorizan inventar capacidad.

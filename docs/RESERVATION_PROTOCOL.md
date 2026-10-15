@@ -99,3 +99,33 @@ Todas son **no ejecutadas**: requieren el futuro esquema y flujos, además de My
 | Worker falla tras envío o pago | Conciliación/deduplicación evita efectos repetidos; incidente observable |
 
 Para revisión de Claude: validar estados necesarios en pantallas, mensajes de conflicto, reanudación, expiración y Zelle. Estas decisiones técnicas no resuelven D7–D9 ni cambian políticas del dueño.
+
+## Logística compartida y reutilización de equipos — ampliación confirmada
+
+César confirmó cuatro speakers y transporte por él, Maybeli o miembros del staff que también pueden trabajar en la fiesta. El protocolo debe reservar conjuntamente conductor/persona, vehículo, pasajeros y carga por tramo, además de sus actividades en el evento. No se deduce la cantidad de vehículos del número de conductores.
+
+Propuesta de ficha de traslado: origen/destino, ventana de salida/llegada, conductor, vehículo, personas, trajes/equipos transportados, carga/descarga y conexión con recogida/retorno o siguiente evento. Las asignaciones pueden viajar juntas; un recurso no se teletransporta por estar libre en el calendario. Validar asientos y espacio para los speakers y demás carga. El costo cobrado al cliente sigue siendo independiente de esta planificación interna.
+
+Un conductor que participa en la fiesta comparte identidad con su ficha de staff: bloquear su trabajo y conducción en la misma agenda. Para dejar un grupo y volver por él, verificar ambos tramos y el siguiente compromiso del conductor; no bloquear automáticamente toda la fiesta ni liberarlo automáticamente sin saber si participa. Cualquier cambio de grupo, conductor, dirección o equipo exige revalidar conexiones afectadas.
+
+Para cada recurso que pasa de A a B:
+
+`fin de uso en A + desmontaje/carga + viaje A→B + margen + descarga/preparación en B <= inicio requerido en B`
+
+Cada término depende del recurso/servicio; no asumir que un speaker está libre mientras aún se desmonta o que la artista termina cuando termina su primera actividad. Si varios recursos deben estar juntos para montar, todos deben llegar a tiempo.
+
+### Casos adicionales de aceptación (todavía no ejecutados)
+
+| Caso | Resultado esperado |
+| --- | --- |
+| Cuatro fiestas simultáneas, una unidad por fiesta, cuatro speakers listos | El requisito de speakers cabe; comprobar además todos los demás recursos |
+| Quinta fiesta solapada que también requiere speaker | No confirmar con esas cuatro unidades; alternativas o revisión sin inventar un quinto equipo |
+| Una fiesta requiere dos speakers | Reservar dos unidades y reducir capacidad restante, sin regla fija de cuatro fiestas |
+| Speaker termina en A y comienza B inmediatamente en otro lugar | Rechazar si no caben desmontaje, viaje y preparación |
+| Quinto evento más tarde y traslado viable | Permitir reutilización de la unidad concreta; no aplicar límite de cuatro eventos diarios |
+| Conductor anima en A y se lo pide para transportar B al mismo tiempo | Rechazar doble asignación de esa persona |
+| Conductor deja grupo A, transporta B y regresa por A | Aceptar solo si todos los recorridos, capacidades y horarios son compatibles |
+| Vehículo con asientos suficientes pero sin capacidad para carga | No confirmar el plan de transporte |
+| Speaker entra a mantenimiento con evento ya asignado | Retirar capacidad futura y alertar compromiso afectado; no sustituir/cancelar silenciosamente |
+
+Claude: contemplar vista por grupo/itinerario junto a inventario y calendario, con roles de conducir y participar visibles sobre la misma persona. Propuesta de UI a revisar, no pantalla implementada.

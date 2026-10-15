@@ -2,6 +2,14 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Codex · `codex/phase-0-audit` — transporte compartido y cuatro speakers
+
+- **Datos del dueño:** habilidades de staff (interpretar, pintacaritas, animar); César y Maybeli pueden transportar grupos distintos, y otros miembros pueden conducir y participar en la fiesta; existen cuatro speakers y pueden reutilizarse en eventos anteriores/posteriores cuando da tiempo. No es un máximo de cuatro eventos diarios.
+- Documentado en BUSINESS_RULES y RESERVATION_PROTOCOL: unidades de equipo por intervalo, misma persona para conducción/actuación, capacidad de vehículo/pasajeros/carga, recogidas/retornos y conexión entre eventos. Cuatro eventos simultáneos requieren una unidad cada uno y el resto de recursos disponibles. No se inventaron vehículos, conductores elegibles ni tiempos.
+- **Request for Claude:** incorporar estos datos a BIZ-01 y las vistas operativas de staff/inventario/grupos. Mantener el backlog canónico; el protocolo añade casos de aceptación para RESV-A-01, ROUTE-01 y el futuro AVAIL-01.
+- **Archivos:** docs/BUSINESS_RULES.md, docs/RESERVATION_PROTOCOL.md, docs/HANDOFF.md.
+- **Verificación:** revisión documental y git diff --check; historial anterior preservado. Casos nuevos son especificaciones, no pruebas de aplicación ejecutadas. Sin código, despliegue ni inicio de Fase 1.
+
 ## 2026-10-15 · Codex · `codex/phase-0-audit` — integración con Claude y protocolo de reservas
 
 - Integrado `main` en `11d2149` mediante merge normal, preservando el backlog de Claude y su dato de dos trajes para Mickey/Rumi. Resueltos conflictos documentales de BACKLOG/HANDOFF sin eliminar entradas previas. El backlog ahora refleja la autorización real de Fase 0; Fase 1 sigue pendiente.
