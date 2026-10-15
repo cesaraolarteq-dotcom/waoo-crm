@@ -1,6 +1,6 @@
 # Modelo lógico para revisión — no son migraciones
 
-2026-10-15 · Codex · Referencia de ARCH-01 para UX y DATA-01. Amplía PROJECT_PLAN §15 con decisiones del dueño. No existe todavía esquema de aplicación implementado; los probes usan tablas de prueba, no este modelo.
+2026-10-15 · Codex · Referencia de ARCH-01 para UX y DATA-01. Amplía PROJECT_PLAN §15 con decisiones del dueño. DATA-01 inicia su implementación por incrementos de Fase 1; los probes siguen siendo tablas de ensayo independientes. El esquema inicial incluye users/sessions, customers/events/event_services, personajes/unidades de recursos y habilidades JSON, compatibilidad de trajes, variantes/precios versionados, bloqueos/reservas/evidencia de compromiso externo, revisión operativa y audit_entries. No representa todavía el ledger, firma, viajes detallados, tarifas del staff, cotizaciones, mensajes o reportes de fases posteriores. Esas áreas conservan este contrato lógico y se añadirán con migraciones posteriores; no se declaran implementadas.
 
 | Área | Entidades / relaciones propuestas | Invariantes y correspondencia UI |
 | --- | --- | --- |
@@ -35,3 +35,14 @@ Separar cantidad de eventos reservados, servicios/paquetes vendidos (un evento p
 ## Pruebas relevantes antes del piloto
 
 Permisos por objeto y rol; concurrencia real de múltiples recursos/vecinos; recurrencias importadas; DST; webhook fuera de orden y dos eventos para un mismo pago; corrección Zelle/sobrepago; cambio de plantilla sin alterar firma histórica; reprogramación fallida conserva original; reportes con mismo ledger/cortes reproducibles; jobs que se reintentan sin duplicar efectos. Son criterios futuros, no resultados de los probes P1–P5.
+
+## Próximos campos señalados en la revisión de Claude
+
+| Dato todavía pendiente | Ticket responsable / momento |
+| --- | --- |
+| ZIP y detalles estructurados de ubicación | OPS-01, siguiente migración de eventos antes de conectar formularios operativos de pasos 5–6; BOOK-QUICK reutiliza esa ubicación para la parte del cliente. No confundir ZIP con una ruta verificada. |
+| Personajes elegidos por servicio/evento | OPS-01, selección explícita por línea y revisión de catálogo antes de pasos 5–6. Character/CostumeUnit y requisitos ya existen; no se infiere una selección del cliente de una copia concreta. |
+| Nombre/edad infantil, tema y notas opcionales | BOOK-QUICK, ampliación del formulario de detalles en Fase 4. Guardar solo lo necesario, con validación y acceso privado; no bloquear bootstrap ni requerir datos infantiles para un borrador. |
+| Objetivo de depósito y saldo exacto | QUOTE-01 calcula objetivo/cotización versionada; PAY-01/PAY-02 aportan ledger, cobros verificados y saldo calculado; BOOK-QUICK integra esos valores en el flujo. La evidencia externa de Fase 1 no sustituye ese ledger ni un campo de saldo editable. |
+
+Esta lista asigna las ampliaciones; no declara esos tickets implementados ni habilita cobros/portal en Fase 1.

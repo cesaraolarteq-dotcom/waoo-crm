@@ -8,7 +8,7 @@ Goal of Phase 1: **an event can be fully managed by hand in the CRM with real re
 - [x] Hostinger feasibility proven (DISC-02, all probes pass)
 - [x] D1–D9 decided (D4 = in-house signature)
 - [x] ARCH-01 ADR signed off by Codex with the host evidence (docs/arch/ARCH-01-ADR.md, 2026-10-15; implementation conditions in PHASE0_REVIEW)
-- [ ] Owner approves closing Phase 0 and starting Phase 1
+- [x] Owner approves closing Phase 0 and starting Phase 1 — chat approval recorded in HANDOFF.md (2026-10-15)
 
 ## Work order (one implementer, one reviewer per ticket)
 | Step | Ticket | Implementer / reviewer | Output | Owner input needed |

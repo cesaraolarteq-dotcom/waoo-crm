@@ -8,4 +8,6 @@ Custom CRM for **Waoo Party LLC** (Katy / Houston, TX) to replace HoneyBook: cli
 - Work log: [docs/HANDOFF.md](docs/HANDOFF.md)
 - Rules for agents: [AGENTS.md](AGENTS.md) (Codex) and [CLAUDE.md](CLAUDE.md) (Claude Code), with the same content
 
-**Status (2026-10-15):** planning. No application code yet. Phase 0 (setup) starts after the owner approves the plan.
+**Status (2026-10-15):** Phase 0 closed; Phase 1 authorized. Laravel 13 / MariaDB 11.8 backend bootstrap, core schema and mandatory admin 2FA are under review. Claude owns the administration screens.
+
+Setup and checks: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). Authentication integration: [docs/AUTH-01.md](docs/AUTH-01.md). No live deployment, real charges or outbound messages are included.
