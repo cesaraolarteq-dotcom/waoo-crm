@@ -1,6 +1,8 @@
 # Waoo Party contract template — v1 (DOC-00 draft)
 
-Status: **draft for owner review**. Source: the owner's current HoneyBook contract (a real signed copy pasted in chat on 2026-10-15). **All client data was removed** and replaced with merge fields. The terms text (sections 1–10 and the Entertainment Flow clause) is copied **verbatim**. Only the changes the owner approved on 2026-10-15 are applied, and each is marked `[CHANGED]`. Do not edit the terms without owner approval and a version bump. A lawyer review is recommended before go-live (PROJECT_PLAN v2 §9).
+Status: **draft for owner review**. Source: the owner's current HoneyBook contract (a real signed copy pasted in chat on 2026-10-15). **All client data was removed** and replaced with merge fields. The terms text (sections 1–10 and the Entertainment Flow clause) is copied **verbatim**. Only the changes the owner approved on 2026-10-15 are applied, and each is marked `[CHANGED]`. Do not edit the terms without owner approval and a version bump.
+
+**Owner requirement (2026-10-15): the template must be editable in the future from the CRM.** César or Maybeli can add or change clauses through an admin editor that saves a **new template version** (number, date, author, change note, preview, diff against the previous version). New contracts use the active version. **Contracts already sent or signed never change**: each keeps the exact version and immutable signed PDF it was created with. If a booked event needs the new terms, the change goes through an addendum or a new contract that the client accepts again (v2 §9). A lawyer review is recommended before go-live (PROJECT_PLAN v2 §9).
 
 ## Merge fields
 

@@ -2,6 +2,9 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · `claude/phase-0` — owner requirement: editable contract template
+- César: the contract must be modifiable in the future (to add or change clauses), **never the contracts already signed**. Recorded in `docs/contract/contract-template-v1.md` and as ticket **TPL-01** in Phase 4 of the BACKLOG: an admin template editor that creates versions; used versions are read-only; sent or signed contracts keep their exact version and PDF; booked events get changes only through an accepted addendum or a new contract.
+
 ## 2026-10-15 · Claude Code · `claude/phase-0` — Phase 0 deliveries (Claude tickets)
 - **DOC-00** `docs/contract/contract-template-v1.md`: the owner's contract as a template. Client data removed (grep-checked for the sample client's name, address, email and phone). Terms 1–10 and the Entertainment Flow clause verbatim. Only the owner-approved changes, each marked `[CHANGED]`: real payment schedule plus a computed balance label, and an event-address line. Review notes list the inconsistencies a lawyer should check (no text changed).
 - **BIZ-01** `docs/catalog/catalog-draft.md`: draft catalog from the live packages page vs the Master Context, with IDs, prices, durations, public roles and includes. 10 owner questions (for example: pool-party prices not shown on the website; Music & Games lists a DJ but MG 2.0 doesn't; whether the character performer is in addition to the listed staff). Promotions are kept out of the catalog. Costume copies: Mickey ×2, Rumi ×2.

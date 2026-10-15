@@ -47,6 +47,7 @@ v2 has `PAY-01 → HOLD-01 → AVAIL-01`, which would block payments behind the 
 | DOC-01 | Contract instance from template v1, immutable signed PDF, evidence (provider or in-house per D4) | Codex (evidence/storage) + Claude (document/signing UI) | the other | DOC-00, ARCH-01 |
 | PAY-01 | Stripe test Checkout + ledger; exact deposit/balance (D3); verified, deduplicated webhooks | Codex | Claude | QUOTE-01, RESV-A-01, JOBS-01 |
 | PAY-02 | Zelle: the client declares a payment, an admin verifies and records the real amount (adjustable, author + reason, audited); installments, overpayment → credit | Codex | Claude | PAY-01 |
+| TPL-01 | Contract template editor: an admin edits the clauses and saves a new version (author, note, preview, diff), activates it for new contracts, and can never edit a version that was already used; addendum flow for booked events | Claude (editor UI) + Codex (versioning, immutability) | the other | DOC-00, DATA-01 |
 | PORTAL-01 | Client portal EN/ES: event details, quote, sign + pay in one session (D2), documents, balance; mobile and accessible | Claude (UI) + Codex (auth/API) | the other | AUTH-01, PAY-02, DOC-01, MAIL-01 |
 
 ## Phase 5: pilot and communications (Track A)
