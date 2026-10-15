@@ -2,6 +2,24 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Codex · `codex/phase-0-audit` — Fase 0 iniciada; auditoría web y requisitos de staging
+
+**Autorización del dueño:** “vamos con fase 0”. Después confirmó que no existe staging Hostinger y pidió preparar requisitos. No se autoriza Fase 1 ni despliegue. **Fase 0 permanece abierta** porque faltan pruebas externas y decisiones documentadas abajo.
+
+- Acceso privado a `waoo-website` confirmado; auditado commit `5afc001cdd53fd6d4a3ce05df571055675b71b9c`. Web HTML/PHP sin framework, persistencia de leads ni motor de recursos. No se cambió ningún archivo de la web ni producción.
+- Validación aislada con PHP 8.4.26: 9 archivos sin errores de sintaxis, 16 probes de lógica y 16 HTTP. Una expectativa reproduce una limitación: RRULE no expande la segunda ocurrencia. No confundir 16 expectativas cumplidas con disponibilidad correcta. El contenedor no tiene red externa, el checkout está montado solo lectura y el correo está deshabilitado.
+- Documentada la fórmula real del checkout: tramos de distancia ida/vuelta, peajes, redondeo a USD 5 y siete excepciones ZIP. Es diferente de la tabla histórica de v2. Pendiente cotejar archivos desplegados y reglas finales; no se modificaron precios.
+- Propuesta Laravel/MySQL/Filament mantenida, condicionada a hosting. Corregidas en el backlog las dependencias A: RESERVE-A y correo/jobs mínimos antes de cobros/portal; búsqueda automática después del piloto. No se instaló framework ni creó código CRM.
+- Comparación de firma preparada por capacidades/costos a obtener. Las páginas oficiales quedaron bloqueadas por la política de red (403 del proxy), de modo que **no se validaron tarifas** ni se eligió proveedor. Se guardaron dominios necesarios en el borrador del entorno; guardarlo no aplica ni publica esos cambios.
+
+**Archivos nuevos:** `docs/PHASE0_AUDIT.md`, `docs/HOSTINGER_STAGING.md`, `docs/BUSINESS_RULES.md`, `docs/DECISIONS.md`, `docs/SIGNATURE_COMPARISON.md`, `docs/BACKLOG.md`. Modificado: esta entrada en `docs/HANDOFF.md`. Auxiliares locales de auditoría en `/workspace/setup/waoo-phase0/`, fuera de los repositorios y sin secretos.
+
+**Verificación:** pruebas y límites detallados en PHASE0_AUDIT; diff documental sin errores de espacios; instrucciones de agentes idénticas; historial del handoff preservado. No se ejecutaron webhook Stripe test, jobs Hostinger, PDF del futuro CRM ni restauración de backup. No se validó UI visual, Maps real, feed privado o entrega de correo. El estado Git de la web sigue limpio.
+
+**Request for Claude:** revisar la auditoría y ADR; localizar contrato completo y ejemplos anonimizados ya recibidos; completar BIZ-01 (personas/roles/tiempos/recursos), sincronizar PLAN con D1–D6 y v2, y revisar RESERVE-A/PAY-01-A antes de implementar. Esta solicitud en el repositorio no implica que Claude la haya leído ni comenzado.
+
+**Siguientes requisitos:** inventario del plan/capacidades Hostinger y entorno de pruebas separado autorizado conforme a HOSTINGER_STAGING; bindings seguros de prueba cuando corresponda; acceso a precios oficiales/cotizaciones y elección D4; contrato e inventario operativos. No enviar secretos ni datos de clientas por chat. No cerrar Fase 0 ni iniciar Fase 1 hasta presentar evidencia de los criterios pendientes y obtener aprobación del dueño.
+
 ## 2026-10-15 · Codex · `codex/two-track-review` — orden A/B y salida de Fase 0
 
 **Dictamen:** confirmo el orden A → B aprobado en D1, con las condiciones técnicas siguientes. D1–D6 ya tienen respuesta; no vuelvo a pedirlas. D4 autoriza comparar alternativas, no selecciona firma propia. El dueño informa que `waoo-website` ya existe como repositorio privado; queda pendiente verificarlo durante la auditoría autorizada. **La aprobación para iniciar Fase 0 sigue pendiente.** Esta entrega es exclusivamente una revisión documental.
