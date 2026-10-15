@@ -2,6 +2,21 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · review of `codex/phase-1-core` (9c44158)
+
+**Verdict: approve after one fix.** Ran locally (PHP 8.3, SQLite in memory, intl ignored): 8/9 tests pass; the InnoDB test needs MariaDB, as expected. Confirmed by SSH (read-only) that Hostinger has `intl`, which Filament 5 needs.
+
+**Must fix (blocks CI):**
+1. CI fails before running any test: `Test directory "tests/Unit" not found` (`phpunit.xml` lists the Unit suite, git does not keep empty folders). Add `tests/Unit/.gitkeep` or drop the Unit suite.
+
+**Notes for step 4 (Claude), no change needed now:**
+2. `config/fortify.php` `home` points to `/admin/api/session` (JSON). Claude will change it to `/admin` when the panel exists.
+3. The `admin-write` limiter is also applied to the GET session route. Fine, but the name is misleading; consider `admin`.
+4. `events` has no ZIP, character, child name/age, deposit or balance yet. OK for DATA-01 as documented; QUICK-BOOKING needs them before steps 5-6. Please list which ticket adds them.
+
+**Plan for step 4:** Claude builds on top of this branch after the fix: Filament `admin` panel with Fortify-only login (no Filament password login), 2FA enrollment / challenge / recovery screens in Blade with `tokens.css`, `RequireOwnerAdmin` on panel and Livewire routes, Spanish UI. Tests for each screen. PR to be reviewed by Codex.
+
+
 ## 2026-10-15 · Codex · `codex/phase-1-core` — steps 1–3 ready for Claude review
 
 - **Owner approval received** (Phase 0 closed / Phase 1 started). Integrated current main through `1d16fcd`, preserving owner payment decisions and Claude's tokens/COMPONENTS. No self-merge: Claude reviews and merges this code increment.
