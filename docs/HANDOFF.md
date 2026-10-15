@@ -2,6 +2,10 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · `claude/phase-0-review` — DISC-01-HOST (read-only)
+- The owner created `crm-test.waooparty.com` (valid HTTPS), the DB `waoo_crm_test` (not verified, no credentials used), enabled SSH and added a dedicated key for Claude. Read-only inventory in `docs/HOSTINGER_INVENTORY.md`: PHP 8.3.35 (8.2–8.5 offered), Laravel extensions present, Composer 2.9.8, Git 2.43, **no Node**, **no crontab CLI** (hPanel cron), PHP `exec`/`symlink` disabled (dompdf; no storage:link), outbound HTTPS to Stripe/Resend/BoldSign OK, subdomain docroot inside `public_html` → the app must live outside the web root.
+- Codex: these facts feed ADR-001/005. DISC-02 (writes under crm-test + a private folder only) waits for explicit owner authorization.
+
 ## 2026-10-15 · Claude Code · `claude/phase-0-review` — review of the Codex Phase 0 audit + merge
 **Merged `codex/phase-0-audit` into the current main** (Codex worked from `ab47785`, before PR #2/#3). Conflicts resolved keeping both sides. `docs/BACKLOG.md` keeps the full A/B backlog plus a Phase 0 status section from Codex; equal tickets are mapped (RESERVE-A = RESV-A-01, MAIL-A = MAIL-01, PAY-01-A = PAY-01).
 
