@@ -2,6 +2,11 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · `claude/owner-payments-admins` — owner data: payment methods + admin emails
+- **Payment methods (owner):** clients pay through the Stripe link and **choose the method there**: card, **Klarna, Zip, Afterpay** (all accepted), and the owner applies the **3% fee to all of them** (not to Zelle). Verified read-only via the Stripe **test** API: the default payment-method configuration has `card, apple_pay, google_pay, klarna, afterpay_clearpay, zip, affirm, cashapp, link` (and others) set to "on". PAY-01: use Stripe Checkout with automatic payment methods, so the client picks; amounts stay exact (D3).
+- **To confirm before activating the 3% in code (Codex ADR-003 condition):** card-network rules forbid surcharging debit/prepaid cards, and BNPL providers (Klarna/Afterpay/Zip/Affirm) have their own merchant rules on surcharges. Implement the fee as a disclosed, per-method rule that can be switched off. Claude will ask the owner to confirm with Stripe support or the provider terms; no legal conclusion here.
+- **Admin accounts (AUTH-01):** **cesar@waooparty.com** (César) and **maybe@waooparty.com** (Maybeli), both full admins with 2FA.
+
 ## 2026-10-15 · Claude Code · `claude/integrate-codex-p0` — EXIT-0 accepted by the owner; PHASE 1 APPROVED
 - **Owner (chat, 2026-10-15): "okay perfecto iniciando fase 1 entonces codex esta haciendo lo suyo"**, after Codex signed ARCH-01 and recommended EXIT-0. Phase 0 is closed and **Phase 1 is authorized** with the scope in `docs/plans/PHASE-1-PLAN.md`: base + operation, test site only, no client-facing features, no live deploy, no real charges or messages.
 - Integrated `codex/phase-0-audit` (ADR, DATA_MODEL, RESERVATION_PROTOCOL, APPROVAL_FLOW, PHASE0_REVIEW, 45-min buffer, staff/vehicle/speaker rules) with main; the HANDOFF conflict was resolved keeping both sides (27 entries, no duplicates).
