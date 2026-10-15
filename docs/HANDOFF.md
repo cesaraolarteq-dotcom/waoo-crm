@@ -2,6 +2,14 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Codex · `codex/phase-0-audit` — última hora, tráfico y margen mínimo
+
+- **Confirmado por César:** solicitudes a menos de siete días requieren aprobación de César/Maybeli; rutas entre fiestas deben considerar tráfico previsto para fecha/hora de viaje; mínimo de 30 minutos adicionales para desmontaje, montaje e imprevistos. Ejemplo: fin 16:00, viaje 28 minutos, oferta 17:00 si cabe la operación.
+- BUSINESS_RULES distingue esas decisiones de recomendaciones: desglose de tiempos, corte temporal exacto, grilla y revalidación. No se impuso un margen de 30 minutos exclusivamente vial además del setup: el ejemplo del dueño agrupa esos usos. Ampliar el total cuando las tareas y contingencia requieran más.
+- RESERVATION_PROTOCOL detalla flujo de aprobación, estados independientes, revalidación, rutas para hora de salida y criterios futuros. Tráfico de fin de semana no se supone siempre más favorable. Capacidad exacta de Google Routes pendiente de verificación; código actual sin tráfico no satisface el requisito.
+- **Request for Claude:** incorporar bandeja/aprobación simple de última hora y estados de revisión en UI; usar estas reglas en BIZ-01/ROUTE-01/BOOK-A-01/AVAIL-01. Aprobación no salta recursos, firma ni pago.
+- **Archivos:** docs/BUSINESS_RULES.md, docs/RESERVATION_PROTOCOL.md, docs/HANDOFF.md. **Verificación:** diff documental; casos son especificación, no pruebas ejecutadas. No se implementó código ni se alteró producción. Fase 0 continúa; Fase 1 no autorizada.
+
 ## 2026-10-15 · Codex · `codex/phase-0-audit` — transporte compartido y cuatro speakers
 
 - **Datos del dueño:** habilidades de staff (interpretar, pintacaritas, animar); César y Maybeli pueden transportar grupos distintos, y otros miembros pueden conducir y participar en la fiesta; existen cuatro speakers y pueden reutilizarse en eventos anteriores/posteriores cuando da tiempo. No es un máximo de cuatro eventos diarios.

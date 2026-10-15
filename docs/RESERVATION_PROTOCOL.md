@@ -129,3 +129,39 @@ Cada término depende del recurso/servicio; no asumir que un speaker está libre
 | Speaker entra a mantenimiento con evento ya asignado | Retirar capacidad futura y alertar compromiso afectado; no sustituir/cancelar silenciosamente |
 
 Claude: contemplar vista por grupo/itinerario junto a inventario y calendario, con roles de conducir y participar visibles sobre la misma persona. Propuesta de UI a revisar, no pantalla implementada.
+
+## Aprobación de última hora y estimaciones para el momento del viaje
+
+**Requisitos del dueño:** menos de siete días requiere aprobación administrativa; estimar rutas para la fecha/hora del evento y agregar al menos 30 minutos sobre viaje para operaciones e imprevistos. Véase BUSINESS_RULES para la distinción entre decisión y precisiones pendientes.
+
+### Flujo propuesto
+
+1. Al solicitar reserva y antes de confirmar, evaluar el plazo con hora del servidor. Mostrar “Requiere aprobación por cercanía de fecha” sin prometer reserva, si aplica. Reprogramaciones que entren en la ventana también se revisan. No cancelar automáticamente un evento ya confirmado porque pasen los días.
+2. Presentar a César/Maybeli una ficha breve: servicio, fecha, horas, dirección, grupo/staff confirmado, trajes/equipos, preparación pendiente, rutas/tiempos y conflictos. Acciones propuestas: aprobar, pedir ajuste o rechazar. Una sola acción puede aprobar si todos los requisitos están resueltos.
+3. Registrar aprobación vinculada a versión; revalidar recursos dentro del protocolo de transacción antes de confirmar. El booleano de aprobación no exime firma/pago ni impide que la disponibilidad haya cambiado. Propuesta de UX: habilitar el cobro solo después de esta revisión para reducir cobros sin capacidad; acordar con el recorrido de D2 antes de implementar.
+4. Expiración de una oferta o aprobación y duración de una protección siguen pendientes de D7. No renovar recursos indefinidamente ni inventar plazos. Si cambian los datos materiales, invalidar la aprobación incompatible sin borrar el historial.
+
+### Rutas y tiempo adicional
+
+- El adaptador de rutas debe recibir direcciones exactas y **salida prevista tras desmontaje/carga**, no solo fecha de inicio de fiesta. Incluir las paradas de recogida y el retorno cuando corresponda. Evaluar la cadena de cada persona/equipo/vehículo.
+- Investigar en ROUTE-01 las modalidades de Google Routes que admiten tráfico y salida futura, horizonte de predicción, restricciones, cuotas y costo. Capacidad exacta del API/cuenta **no verificada** aquí. El código actual usa TRAFFIC_UNAWARE y ZIPs y no satisface este requisito.
+- No asumir que el fin de semana siempre será más rápido: usar la estimación para esa fecha/hora. Conservar hora de consulta, fecha/hora objetivo y versión de ruta/direcciones según las condiciones del proveedor. Cachear por entradas temporales relevantes, no reutilizar una ruta mensual por ZIP como prueba logística.
+- Si el proveedor no admite la fecha, falla o no ofrece información suficiente, marcar estimación limitada y pasar a revisión; nunca tratar el valor como tiempo garantizado. Reconsultar cerca del evento y alertar si el itinerario ya no cabe; no cancelar, cobrar o sustituir recursos automáticamente.
+- Ejemplo confirmado: 16:00 + 28 min de viaje + 30 min adicionales = 16:58; ofrecer 17:00 solo si las tareas operativas caben en ese total. Si requieren más tiempo, ofrecer más tarde. No sumar una segunda vez el mismo desmontaje/setup que ya estuviera incluido en los intervalos. La distribución exacta de esos 30 minutos queda por servicio; recomendar un margen de imprevistos explícito sin fijar su cuantía aún.
+
+### Aceptación adicional — no ejecutada
+
+| Caso | Resultado esperado |
+| --- | --- |
+| Solicitud con menos de siete días y recursos elegibles | Pendiente de aprobación; no confirmación automática |
+| Justo siete días y un instante por debajo | Aplicar límite estricto según definición temporal acordada; cubrir DST |
+| Reserva antigua confirmada entra en ventana de siete días por paso del tiempo | Sigue confirmada, no se convierte retroactivamente en última hora |
+| Aprobación y conflicto nuevo de staff/speaker | Revalidar y bloquear confirmación incompatible |
+| Cambian fecha/dirección/servicio tras aprobación | Revisar versión y logística; no reutilizar aprobación inválida |
+| Trayecto de 28 min desde evento que acaba a las 16:00 | No ofrecer antes de 16:58 bajo el mínimo; 17:00 si cabe toda la operación |
+| Montaje/desmontaje y contingencia requieren más de 30 min | Usar total mayor; no ofrecer 17:00 solo por la regla mínima |
+| Consulta un jueves para evento del domingo | Solicitar estimación del domingo a la salida prevista, no tráfico del jueves |
+| Tráfico no disponible para fecha objetivo | Revisión explícita; no cero ni garantía falsa |
+| Reconsulta cercana al evento empeora el itinerario | Alerta operativa y revisión de asignaciones afectadas |
+
+Claude: reflejar aprobación de última hora en bandeja administrativa y estado del portal, junto con la fecha/hora objetivo de las estimaciones. Las decisiones de día de corte y grilla de horarios siguen siendo precisiones por resolver, sin bloquear la documentación del requisito.

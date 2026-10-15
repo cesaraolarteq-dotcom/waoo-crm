@@ -62,3 +62,17 @@ Interpretación técnica propuesta: cuatro unidades permiten hasta cuatro evento
 Conducir es una función de una persona por intervalo. Si participa como artista/animador durante la fiesta, no puede transportar otro grupo durante ese mismo intervalo. Si únicamente deja y recoge al grupo, puede tener otro recorrido compatible; modelar ambos viajes y verificar cómo vuelven las personas y equipos. No asumir que el conductor permanece o queda libre sin una asignación explícita. Separar vehículo, conductor, pasajeros y carga.
 
 Pendientes para BIZ-01/ROUTE-01: conductores elegibles y disponibilidad, vehículos y capacidad de asientos/carga, pasajeros/equipos por grupo, puntos de recogida/retorno, cantidad/tipo de speaker por servicio y tiempos operativos. Estas ausencias no invalidan los datos confirmados ni autorizan inventar capacidad.
+
+## Reglas confirmadas: última hora y tráfico previsto
+
+Fuente: César, conversación del 2026-10-15.
+
+- Las solicitudes para eventos a **menos de siete días** necesitan aprobación explícita de César o Maybeli, aunque la consulta de recursos indique capacidad. Motivo: preparación y disponibilidad efectiva del staff. La aprobación puede ser una acción sencilla, con revisión de la información necesaria. No confirmar automáticamente por recibir firma o pago.
+- El CRM debe calcular distancias y duración entre las direcciones concretas de los eventos según la fecha y hora previstas del traslado, incluyendo diferencias entre días laborables y fines de semana. No usar tráfico actual del día de consulta para representar otro día.
+- Añadir **al menos 30 minutos sobre el tiempo estimado de viaje**, contemplando breakdown, setup e imprevistos. Ejemplo del dueño: terminar a las 16:00, viaje de 28 minutos, ofrecer las 17:00. La suma mínima da 16:58; 17:00 es ejemplo de horario ofrecible, no aprobación de una grilla universal ni garantía para cualquier montaje.
+
+Precisiones de diseño propuestas (no nuevas decisiones comerciales): separar tiempos de desmontaje/carga, montaje y margen residual de imprevistos por servicio. No interpretar los 30 minutos como margen exclusivamente vial además de setup/breakdown sin aprobación del dueño: su ejemplo los agrupa. El total extra nunca debe ser menor de 30 minutos y debe crecer si las operaciones necesarias y el margen previsto requieren más. Faltan duraciones reales por servicio; no asumir que todos caben en media hora.
+
+Definición temporal candidata para la regla de última hora: comparar la hora actual del servidor con el inicio del evento, mostrando America/Chicago; umbral estricto de menos de 168 horas. Acordar antes de implementar si el dueño prefiere siete fechas de calendario en lugar de siete períodos de 24 horas (pueden diferir con cambio de horario). Un evento pasado se rechaza. Estar a siete días o más no elimina el resto de requisitos.
+
+Una aprobación de última hora deja autor, fecha/hora y revisión aprobada del evento. No salta conflictos de recursos ni sustituye firma/depósito. Un cambio material posterior de horario, dirección, servicio o recursos exige revalidación y, si cambia lo aprobado, nueva revisión. Plazo de respuesta y duración de protección siguen en D7; no inventarlos.
