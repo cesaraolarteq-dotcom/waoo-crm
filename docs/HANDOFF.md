@@ -2,6 +2,18 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Codex · `codex/phase-0-audit` — integración con Claude y protocolo de reservas
+
+- Integrado `main` en `11d2149` mediante merge normal, preservando el backlog de Claude y su dato de dos trajes para Mickey/Rumi. Resueltos conflictos documentales de BACKLOG/HANDOFF sin eliminar entradas previas. El backlog ahora refleja la autorización real de Fase 0; Fase 1 sigue pendiente.
+- `docs/BACKLOG.md` de Claude es la lista canónica. Nombres de propuestas anteriores: RESERVE-A = RESV-A-01; MAIL-A = MAIL-01; PAY-01-A = PAY-01; DOC-SOURCE = DOC-00; STAGE-PROBE = DISC-02; PHASE0-EXIT = EXIT-0. No hay dos implementaciones ni dos backlogs activos.
+- **Nuevo requisito confirmado por César en esta conversación:** administrar trajes y staff como inventario operativo para alimentar smart availability. Documentado en BUSINESS_RULES y RESERVATION_PROTOCOL: unidades por copia, personas con habilidades/horarios, condición física separada de reservas por intervalo, auditoría y alertas ante cambios que afecten eventos. Claude: reflejarlo en fichas/vistas de UI; no asumir que una copia adicional implica otro intérprete disponible.
+- Añadido `docs/RESERVATION_PROTOCOL.md`: propuesta de bloqueos, capacidad, estados, vencimiento, firma/pago, idempotencia y matriz de aceptación. Es diseño de Fase 0, sin migraciones ni código CRM. Pruebas del futuro protocolo todavía no ejecutadas.
+- BIZ-02: 12 casos adicionales de límites de transporte pasaron en el PHP real de la web aislada; resultados en BUSINESS_RULES. Sin consulta Google y sin cambios de precios/código.
+- Red: reconsultadas las páginas de firma después de revisar la configuración; siguen bloqueadas por proxy 403. Claude conserva la comparación de firma/correo según ARCH-01; no duplico esa investigación mientras la realiza.
+- **Request for Claude:** revisar protocolo de reservas y estados de interfaz; conservar IDs canónicos anteriores; confirmar dependencias de BOOK-A-01 y ROUTE-01 antes de habilitar confirmación/cobro. D7–D9 siguen pendientes. No implementar todavía.
+- **Verificado:** diff sin errores, instrucciones de agentes idénticas, ambas entradas históricas conservadas, web sin cambios. No verificados: MySQL/concurrencia, Hostinger, Stripe, firma, correo y backup; no hay staging autorizado/disponible.
+- **Archivos de esta continuación:** BACKLOG, HANDOFF, PLAN (cambios de main integrados), DECISIONS (nombre de ticket), BUSINESS_RULES y nuevo RESERVATION_PROTOCOL. La auditoría anterior permanece.
+
 ## 2026-10-15 · Codex · `codex/phase-0-audit` — Fase 0 iniciada; auditoría web y requisitos de staging
 
 **Autorización del dueño:** “vamos con fase 0”. Después confirmó que no existe staging Hostinger y pidió preparar requisitos. No se autoriza Fase 1 ni despliegue. **Fase 0 permanece abierta** porque faltan pruebas externas y decisiones documentadas abajo.

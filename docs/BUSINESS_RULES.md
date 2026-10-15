@@ -37,3 +37,13 @@ Fuente `travel-fee-config.php:15–45`, `travel-fee-lib.php:31–43`, `travel-fe
 Resultados locales del código, sin peajes: 10 mi → 20; 40 → 40 (bruto 41); 50 → 80 (bruto 81); 55 → 100 (bruto 101); 80 → 170 (bruto 171). Con 50 mi y USD 5 de peaje por ida → 90. Son pruebas de la implementación, no precios nuevos aprobados para eventos.
 
 **Diferencia con v2 §5:** la tabla histórica 0.50/0.65/1.00/1.50 no es esta fórmula. El registro de la web atribuye la fórmula por tramos a aprobación del dueño del 14 de octubre. Conservar evidencia y confirmar versión aplicada en producción; no reemplazarla por la tabla histórica. Para el CRM faltan dirección exacta, regla para múltiples vehículos, límites/errores y autorización de ajustes. Un ZIP informativo no valida capacidad ni tiempo de llegada.
+
+## Validación adicional de límites (2026-10-15)
+
+Se ejecutaron 12 casos de la función PHP existente sin red ni cambios de código: distancias 9.99/10/10.01, 39.99/40/40.01, 54.99/55/55.01 y 79.99/80/80.01 millas de ida. Los brutos coincidieron con 20/20/20.007, 40.993/41/41.04, 100.96/101/101.028 y 170.972/171/171.028 USD; redondeados a 20, 40, 100 y 170 respectivamente. Los 12 pasaron. La función de precio no aplica el límite de servicio: `waoo_tf_estimate` rechaza más de 160 millas ida/vuelta después de obtener ruta, salvo excepción ZIP resuelta antes. Esa ruta real sigue sin probarse por ausencia de binding Google.
+
+Dato nuevo del dueño, registrado por Claude en BACKLOG: Mickey y Rumi tienen dos unidades de traje. No significa que haya dos intérpretes disponibles. Inventario completo pendiente. Para el depósito de totales con centavos impares debe definirse redondeo antes de implementar cobros.
+
+## Requisito confirmado por el dueño: inventario operativo
+
+César confirmó que debe poder controlar trajes y staff con una experiencia de inventario que alimente la smart availability del CRM. D6 incluye administración de unidades físicas y personas, con estado, habilidades/compatibilidades, horarios y asignaciones. La disponibilidad se calcula por fecha/intervalo; no equivale a un interruptor global “libre”. Propuesta técnica y aceptación en RESERVATION_PROTOCOL. Primero administración/asignación manual en A; búsqueda automática en B. No se cambia la aprobación por fases.
