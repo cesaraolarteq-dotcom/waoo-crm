@@ -2,6 +2,25 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · `claude/phase-0` — owner requirement: editable contract template
+- César: the contract must be modifiable in the future (to add or change clauses), **never the contracts already signed**. Recorded in `docs/contract/contract-template-v1.md` and as ticket **TPL-01** in Phase 4 of the BACKLOG: an admin template editor that creates versions; used versions are read-only; sent or signed contracts keep their exact version and PDF; booked events get changes only through an accepted addendum or a new contract.
+
+## 2026-10-15 · Claude Code · `claude/phase-0` — Phase 0 deliveries (Claude tickets)
+- **DOC-00** `docs/contract/contract-template-v1.md`: the owner's contract as a template. Client data removed (grep-checked for the sample client's name, address, email and phone). Terms 1–10 and the Entertainment Flow clause verbatim. Only the owner-approved changes, each marked `[CHANGED]`: real payment schedule plus a computed balance label, and an event-address line. Review notes list the inconsistencies a lawyer should check (no text changed).
+- **BIZ-01** `docs/catalog/catalog-draft.md`: draft catalog from the live packages page vs the Master Context, with IDs, prices, durations, public roles and includes. 10 owner questions (for example: pool-party prices not shown on the website; Music & Games lists a DJ but MG 2.0 doesn't; whether the character performer is in addition to the listed staff). Promotions are kept out of the catalog. Costume copies: Mickey ×2, Rumi ×2.
+- **ARCH-01 (Claude part)** `docs/arch/ARCH-01-esign-email.md`: prices verified on the official pages. BoldSign API $30/mo for 40 + $0.75 each; DocuSign Starter $50/mo capped at 40 (next tier $300); Dropbox Sign $75/mo; in-house $0 per contract with more build. Email: Resend Free (3,000/mo, 100/day) vs Postmark $15. Recommendation for the owner: BoldSign behind an adapter + Resend Free. **Codex:** please challenge this in your ADR.
+- **Codex next (Phase 0):** DISC-01 on `waoo-website` (private repo, branch main), DISC-02 probes, BIZ-02 (compare the travel-fee tiers in `travel-fee-config.php` with the v2 historical table; the live config is graduated: $20 flat to 10 mi, then $0.35/mi to 40, $2.00/mi to 55, $1.40/mi above, round trip, round to $5, 160 mi max), and the ARCH-01 ADR.
+- **Owner open:** the catalog questions (§9 of the catalog draft); the D4 choice between BoldSign and in-house; the staff, costume and equipment lists.
+
+## 2026-10-15 · Claude Code · `claude/phase-0` — PHASE 0 APPROVED + owner decisions D7–D9
+
+**César explicitly approved the start of Phase 0** (in chat with Claude, 2026-10-15), with the scope in `docs/BACKLOG.md` (audit, feasibility probes, catalog draft, contract template, ARCH-01, plan). Still prohibited: production deploys, DNS/hosting changes, live charges and messages to clients.
+
+- **D7: no slot is held before payment.** A date/resources are reserved only when a payment is received: a Stripe deposit confirmed by webhook, or a Zelle deposit verified by an admin. A sent quote or a signed contract does not hold capacity. Consequences for BOOK-A-01/RESV-A-01: (1) several clients may have open quotes for the same capacity; the first verified payment wins, re-validated in a transaction; (2) a payment that arrives when the capacity is already taken becomes an incident (alternative or authorized refund), never a double booking; (3) the portal must say plainly that the date is secured only when payment is received; (4) for a Zelle the client says she sent, the admin sees a "declared, not verified" queue with a warning when the same capacity has competing quotes.
+- **D8: sender email = sales@waooparty.com** (the public address). ARCH-01: verify control of the mailbox and set up SPF/DKIM for the chosen provider.
+- **D9: contract in English only.** No Spanish contract for now; the portal and emails are still EN/ES.
+- Phase 0 assignments (from BACKLOG): **Codex** DISC-01, DISC-02, BIZ-02 and the ARCH-01 ADR. **Claude** BIZ-01 (draft catalog), DOC-00 (contract template v1), the e-signature and email comparison for ARCH-01, and PLAN-01. Cross-review as listed.
+
 ## 2026-10-15 · Claude Code · `claude/backlog` — backlog A/B (docs only)
 - Answer to the Codex two-track review: added `docs/BACKLOG.md`. Track A is Phases 0 → 1 → 2 → 4 → 5 and Track B comes after the pilot. New **RESV-A-01** gives transactional protection to manually selected resources; PAY-01 depends on it instead of HOLD-01. JOBS-01 and minimal MAIL-01 move up to Phase 4. BOOK-A-01 covers the pending-booking lifecycle (durations = Owner D7). Phase 0 exit = the Codex criteria table, split into DISC-01/02, BIZ-01/02, DOC-00, ARCH-01, PLAN-01, EXIT-0.
 - Synced `docs/PLAN.md`: v2 is the spec of record; staff assignment is resolved by D6; Phase 0 approval is still pending.

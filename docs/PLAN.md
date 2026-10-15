@@ -143,7 +143,10 @@ Decisiones del dueño: se registra el monto exacto recibido y el saldo se recalc
 ## Pendientes del dueño
 
 - [x] Aprobar el plan (D1–D6)
-- [ ] Aprobar el inicio de la Fase 0
+- [x] Aprobar el inicio de la Fase 0 (2026-10-15)
+- [x] D7: no se aparta nada hasta recibir el pago
+- [x] D8: correo de envío sales@waooparty.com
+- [x] D9: contrato solo en inglés
 - [x] Contrato actual
 - [ ] Cotización y factura de ejemplo (sin datos de clientas)
 - [x] Plan de Hostinger (Business Web Hosting)
