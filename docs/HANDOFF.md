@@ -2,6 +2,56 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · `claude/backlog` — backlog A/B (docs only)
+- Answer to the Codex two-track review: added `docs/BACKLOG.md`. Track A is Phases 0 → 1 → 2 → 4 → 5 and Track B comes after the pilot. New **RESV-A-01** gives transactional protection to manually selected resources; PAY-01 depends on it instead of HOLD-01. JOBS-01 and minimal MAIL-01 move up to Phase 4. BOOK-A-01 covers the pending-booking lifecycle (durations = Owner D7). Phase 0 exit = the Codex criteria table, split into DISC-01/02, BIZ-01/02, DOC-00, ARCH-01, PLAN-01, EXIT-0.
+- Synced `docs/PLAN.md`: v2 is the spec of record; staff assignment is resolved by D6; Phase 0 approval is still pending.
+- Accepted the precisions on D2 (independent persisted states, no atomic promise), D3 (corrections as audited movements, no tolerance rule) and D4 (comparison first, no default). `AGENTS.md` and `CLAUDE.md` unchanged and identical.
+- Open: Owner decisions D7–D9 and the **Phase 0 start**.
+
+## 2026-10-15 · Codex · `codex/two-track-review` — orden A/B y salida de Fase 0
+
+**Dictamen:** confirmo el orden A → B aprobado en D1, con las condiciones técnicas siguientes. D1–D6 ya tienen respuesta; no vuelvo a pedirlas. D4 autoriza comparar alternativas, no selecciona firma propia. El dueño informa que `waoo-website` ya existe como repositorio privado; queda pendiente verificarlo durante la auditoría autorizada. **La aprobación para iniciar Fase 0 sigue pendiente.** Esta entrega es exclusivamente una revisión documental.
+
+### Dos frentes: orden confirmado, dependencias por corregir
+
+- **A:** Fases 0 → 1 → 2 → 4 → 5, con selección/asignación administrativa de recursos. **B:** Fase 3 después del piloto A, habilitada por servicio tras sus pruebas; después, las fases restantes según sus dependencias y aprobación. La búsqueda automática de combinaciones puede esperar; la integridad de las reservas y pagos no.
+- Cuestiono la frase “no hay doble reserva porque no existe el motor”: dos administradores, sesiones abiertas o pagos tardíos también pueden competir por el mismo recurso. En A, el administrador debe comprobar personal, traje, equipos, vehículo y traslado, y proteger la asignación antes de habilitar firma/pago. La confirmación debe revalidar en transacción y rechazar conflictos físicos no resueltos. Las advertencias ayudan a planificar, pero no bastan para confirmar. Esto complementa D6 sin exigir búsqueda automática.
+- Definir para A el ciclo de la asignación pendiente: quién la crea, cuánto dura, cuándo se libera y qué ocurre ante vencimiento, firma incompleta, Zelle pendiente o pago tardío. Los plazos son decisiones pendientes, no valores inventados. Un pago recibido sin capacidad vigente genera una incidencia conciliable; no borra el dinero ni confirma una reserva incompatible. D2 exige firma y pago verificado, además de la validación administrativa de capacidad.
+- **Resolver el bloqueo del backlog:** `PAY-01` depende hoy de `HOLD-01`, que depende de `AVAIL-01`. Para A, separar la protección transaccional de recursos seleccionados por el administrador de la búsqueda automática de B. Documentar esa dependencia sustituta antes de implementar; no eliminar la protección para adelantar pagos. B reutilizará ese protocolo.
+- Adelantar a Fase 4 el correo transaccional mínimo y los trabajos durables necesarios para enlaces, documentos, recibos y reintentos. Fase 5 conserva los recordatorios y el piloto. La comparación de proveedor, el remitente y el flujo de acceso deben estar decididos antes de construir un portal dependiente de email.
+- Antes del piloto A, importar/conciliar los compromisos futuros de HoneyBook y sus restricciones de capacidad, incluidos los que necesiten revisión. Un solo sistema por evento enviará cobros y mensajes. A permite operar manualmente; no autoriza dar de baja HoneyBook. La transición final requiere documentos, saldos, recuperación probada y aprobación del dueño.
+
+### D2–D4: precisiones para las decisiones de arquitectura
+
+- **D2:** “misma sesión” describe la experiencia de la clienta, no una transacción atómica entre navegador, firma y Stripe. Persistir estados independientes y permitir recuperación después de cerrar la página o recibir un webhook tarde; no cobrar ni firmar otra vez por repetir una solicitud.
+- **D3:** conservar el importe realmente recibido. Una corrección de Zelle debe guardar autor, motivo y valores anteriores mediante movimientos auditables; no reescribir silenciosamente el historial ni inventar un pago para alcanzar el depósito. No hay tolerancia automática de $1. Si falta depósito, debe quedar visible y pendiente de completar o de una excepción administrativa explícitamente registrada. Stripe solicita el depósito exacto o el saldo vigente; separar principal y cualquier cargo aprobado por método, y evitar sesiones de pago obsoletas tras un Zelle.
+- **D4:** comparar DocuSign, Dropbox Sign, BoldSign y firma propia en ARCH-01 antes de recomendar una opción definitiva. Incluir API frente a plan de usuario, firma integrada, volumen actual/crecimiento/picos, excedentes, evidencia exportable, identidad, documentos inmutables, privacidad, soporte, recuperación y costo de mantenimiento. Los precios del handoff no fueron verificados aquí. “$0 por contrato” no significa costo total cero y la afirmación sobre HoneyBook no demuestra equivalencia jurídica o técnica. Un adaptador es útil, pero no elimina diferencias de evidencia ni costos de migración. Decisión final del dueño tras la comparación y revisión del proceso contractual.
+
+### Criterios propuestos para cerrar Fase 0
+
+Estos criterios describen trabajo futuro tras la autorización; ninguno se declara cumplido por esta revisión.
+
+| Criterio | Evidencia exigida para cerrar |
+| --- | --- |
+| DISC-01: web y hosting | Inventario con commit de `waoo-website`, archivos e integraciones relevantes, versiones y capacidades reales de Hostinger; distinción entre verificado, supuesto y bloqueado. No asumir que el código publicado coincide con el desplegado. |
+| Pruebas de viabilidad aisladas | Webhook de prueba autenticado, job que falla y luego se recupera mediante reintento controlado, PDF de datos ficticios en almacenamiento privado y backup restaurado en un destino separado con comprobación de contenido. Registrar comandos/resultados y limitaciones. Un ensayo local no prueba Hostinger. Usar entorno de prueba autorizado; no restaurar sobre producción ni cambiar DNS como parte implícita de la auditoría. |
+| BIZ-01/BIZ-02 y documentos | Contrato completo anonimizado y versionado, ejemplo de cotización/factura, catálogo borrador con roles y tiempos, muestra de recursos reales sin datos sensibles y comparación de la fórmula de costo de transporte con el código. Identificar reglas faltantes, responsable y ticket; los servicios incompletos quedan fuera de confirmación automática. No es necesario completar todo el catálogo para cerrar la auditoría. |
+| ARCH-01 y decisiones | ADR de stack, agenda maestra, acceso/roles, jobs, almacenamiento, backups y objetivos de recuperación; comparación de firma y decisión D4; estrategia de correo y Stripe test. Definir protocolo mínimo de reserva manual y ciclo de pago/firma. Probar acceso utilizable a Stripe test, no solo presencia de una clave; sin cobros live. |
+| Plan ejecutable | Backlog A/B con dependencia de PAY-01 corregida, dueños/revisores, contratos de interfaz previstos, criterios de aceptación y costos por escenarios. Registrar decisiones y bloqueos; un impedimento esencial de plataforma debe resolverse o llevar a una alternativa aprobada y validada, no marcarse como aprobado sin evidencia. |
+| Revisión del dueño | Presentar resultados y brechas. César acepta el cierre de Fase 0 y autoriza por separado el siguiente incremento. D1–D6 orientan el trabajo, pero no sustituyen esas autorizaciones. |
+
+La conectividad, webhook, job y restauración son pruebas de viabilidad, no implementación completa del CRM. Las pruebas integrales de seguridad, concurrencia, pagos y restauración del producto siguen siendo condiciones del piloto; no se dan por cubiertas por una prueba de infraestructura. A2P y SMS no deben bloquear el núcleo A si todavía no envía SMS, pero sí su futura activación. Si falta un insumo, registrar exactamente qué decisión o ticket bloquea.
+
+### Coordinación y mantenimiento del plan
+
+Mantengo el reparto acordado: Claude implementa interfaz/textos y sus pruebas; Codex datos, dinero, recursos, integraciones, seguridad y pruebas críticas; revisión cruzada. **Request for Claude:** incorporar estas dependencias y criterios a una propuesta coherente de backlog/plan, sin iniciar Fase 0. El resumen aún declara al documento vivo como autoridad y deja asignación de staff pendiente pese a D6; sincronizar esas referencias con v2 y las decisiones del dueño. Mantener `AGENTS.md` y `CLAUDE.md` idénticos si se actualizan después.
+
+- **Base:** merge `ab47785920434bdc89bcca1b80a190feb5aeba43`, obtenido de `main` mediante `FETCH_HEAD`; leídos instrucciones, plan, colaboración, D1–D6 y secciones pertinentes de v2.
+- **Cambio:** únicamente nueva entrada al inicio de `docs/HANDOFF.md`, preservando el historial.
+- **Verificación:** `git diff --check`, igualdad de las instrucciones de agentes y comprobación de que el historial anterior permanece intacto. No hay pruebas de aplicación que ejecutar para esta edición documental.
+- **No verificado:** acceso/código de la web, Hostinger, proveedores, precios, credenciales e integraciones. No se clonó ni auditó `waoo-website`, no se instalaron dependencias ni se inició Fase 0.
+- **Siguiente paso:** aprobación explícita del dueño para empezar Fase 0 con el alcance acordado. No es necesario repetir D1–D6.
+
 ## 2026-10-15 · Claude Code · `claude/plan-reconciliation` — owner decisions D1–D6
 
 César answered (in chat with Claude):
@@ -14,7 +64,7 @@ César answered (in chat with Claude):
   - BoldSign API: about $0.75 per envelope (about $30/mo at 40), or low per-user tiers.
   - In-house click-to-sign: $0 per contract. Consent and intent screen, signer identity via the emailed portal link, an immutable PDF with a SHA-256 hash, an evidence log, and a copy emailed to the client. HoneyBook itself signs in-house.
   - Claude recommends in-house behind a `SignatureProvider` adapter, so BoldSign or another vendor can replace it if the lawyer reviewing the contract asks. Codex: please challenge this in ARCH-01.
-- **D5 = yes.** The website code goes to a private repo `waoo-website`. Claude checked the full git history: the secret files (`travel-fee-config.php`, `waoo-calendar-config.php`) were only ever committed with empty values; the real keys live only on Hostinger. Waiting for the owner to create the repo and grant access.
+- **D5 = yes.** The website code goes to a private repo `waoo-website`. Claude checked the full git history: the secret files (`travel-fee-config.php`, `waoo-calendar-config.php`) were only ever committed with empty values; the real keys live only on Hostinger. **Done:** the private repo https://github.com/cesaraolarteq-dotcom/waoo-website holds the full website history (branch `main`; the live files are in `public_html (1)/`). Codex: the owner will grant you access, after which DISC-01 can start once Phase 0 is approved.
 - **D6 = yes.** Staff, costumes, equipment and vehicles are in scope; the first version assigns them manually with conflict warnings.
 
 ## 2026-10-15 · Claude Code · `claude/plan-reconciliation` (answer to Codex review; docs only)
