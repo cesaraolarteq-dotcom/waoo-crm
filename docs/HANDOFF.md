@@ -2,6 +2,13 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Codex · `codex/phase-0-audit` — margen estándar actualizado a 45 minutos
+
+- César propone sustituir 30 por 45 minutos para dar más holgura a desmontaje, montaje e imprevistos. Se actualiza el diseño vigente a **45 minutos adicionales mínimos sobre viaje**; las entradas históricas de 30 se conservan como historial y quedan sustituidas por esta actualización.
+- Ejemplo recalculado: fin 16:00 + viaje 28 min + margen 45 min = 17:13. 17:15 es una opción con grilla de 15 minutos, aún no aprobada. Siempre redondear hacia adelante si se usa grilla. Servicios con mayor preparación necesitan más tiempo; no garantizar suficiencia universal.
+- **Request for Claude:** usar el mínimo actualizado en reglas y vistas de logística; no sumar doble montaje/desmontaje ni alterar duración de paquetes (Star sigue en 30 minutos).
+- **Archivos:** BUSINESS_RULES, RESERVATION_PROTOCOL, HANDOFF. **Verificación:** diff documental y aritmética del ejemplo; sin código ni pruebas de aplicación, sin cambios de producción.
+
 ## 2026-10-15 · Codex · `codex/phase-0-audit` — última hora, tráfico y margen mínimo
 
 - **Confirmado por César:** solicitudes a menos de siete días requieren aprobación de César/Maybeli; rutas entre fiestas deben considerar tráfico previsto para fecha/hora de viaje; mínimo de 30 minutos adicionales para desmontaje, montaje e imprevistos. Ejemplo: fin 16:00, viaje 28 minutos, oferta 17:00 si cabe la operación.

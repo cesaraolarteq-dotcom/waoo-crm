@@ -132,7 +132,7 @@ Claude: contemplar vista por grupo/itinerario junto a inventario y calendario, c
 
 ## Aprobación de última hora y estimaciones para el momento del viaje
 
-**Requisitos del dueño:** menos de siete días requiere aprobación administrativa; estimar rutas para la fecha/hora del evento y agregar al menos 30 minutos sobre viaje para operaciones e imprevistos. Véase BUSINESS_RULES para la distinción entre decisión y precisiones pendientes.
+**Requisitos del dueño:** menos de siete días requiere aprobación administrativa; estimar rutas para la fecha/hora del evento y agregar al menos 45 minutos sobre viaje para operaciones e imprevistos. Véase BUSINESS_RULES para la distinción entre decisión y precisiones pendientes.
 
 ### Flujo propuesto
 
@@ -147,7 +147,7 @@ Claude: contemplar vista por grupo/itinerario junto a inventario y calendario, c
 - Investigar en ROUTE-01 las modalidades de Google Routes que admiten tráfico y salida futura, horizonte de predicción, restricciones, cuotas y costo. Capacidad exacta del API/cuenta **no verificada** aquí. El código actual usa TRAFFIC_UNAWARE y ZIPs y no satisface este requisito.
 - No asumir que el fin de semana siempre será más rápido: usar la estimación para esa fecha/hora. Conservar hora de consulta, fecha/hora objetivo y versión de ruta/direcciones según las condiciones del proveedor. Cachear por entradas temporales relevantes, no reutilizar una ruta mensual por ZIP como prueba logística.
 - Si el proveedor no admite la fecha, falla o no ofrece información suficiente, marcar estimación limitada y pasar a revisión; nunca tratar el valor como tiempo garantizado. Reconsultar cerca del evento y alertar si el itinerario ya no cabe; no cancelar, cobrar o sustituir recursos automáticamente.
-- Ejemplo confirmado: 16:00 + 28 min de viaje + 30 min adicionales = 16:58; ofrecer 17:00 solo si las tareas operativas caben en ese total. Si requieren más tiempo, ofrecer más tarde. No sumar una segunda vez el mismo desmontaje/setup que ya estuviera incluido en los intervalos. La distribución exacta de esos 30 minutos queda por servicio; recomendar un margen de imprevistos explícito sin fijar su cuantía aún.
+- Ejemplo actualizado al mínimo estándar de 45 minutos: 16:00 + 28 min de viaje + 45 min adicionales = 17:13. Una oferta a las 17:15 sería compatible si se acuerda una grilla de 15 minutos y las tareas caben en ese total; la grilla está pendiente. Si requieren más tiempo, ofrecer más tarde. No sumar una segunda vez el mismo desmontaje/setup que ya estuviera incluido en los intervalos. La distribución exacta de esos 45 minutos queda por servicio; recomendar un margen de imprevistos explícito sin fijar su cuantía aún.
 
 ### Aceptación adicional — no ejecutada
 
@@ -158,8 +158,8 @@ Claude: contemplar vista por grupo/itinerario junto a inventario y calendario, c
 | Reserva antigua confirmada entra en ventana de siete días por paso del tiempo | Sigue confirmada, no se convierte retroactivamente en última hora |
 | Aprobación y conflicto nuevo de staff/speaker | Revalidar y bloquear confirmación incompatible |
 | Cambian fecha/dirección/servicio tras aprobación | Revisar versión y logística; no reutilizar aprobación inválida |
-| Trayecto de 28 min desde evento que acaba a las 16:00 | No ofrecer antes de 16:58 bajo el mínimo; 17:00 si cabe toda la operación |
-| Montaje/desmontaje y contingencia requieren más de 30 min | Usar total mayor; no ofrecer 17:00 solo por la regla mínima |
+| Trayecto de 28 min desde evento que acaba a las 16:00 | No ofrecer antes de 17:13 bajo el mínimo; redondear hacia adelante según grilla acordada, nunca hacia atrás |
+| Montaje/desmontaje y contingencia requieren más de 45 min | Usar total mayor; no ofrecer 17:15 solo por la regla mínima |
 | Consulta un jueves para evento del domingo | Solicitar estimación del domingo a la salida prevista, no tráfico del jueves |
 | Tráfico no disponible para fecha objetivo | Revisión explícita; no cero ni garantía falsa |
 | Reconsulta cercana al evento empeora el itinerario | Alerta operativa y revisión de asignaciones afectadas |
