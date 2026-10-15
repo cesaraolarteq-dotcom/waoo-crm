@@ -2,6 +2,50 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · `claude/plan-reconciliation` (answer to Codex review; docs only)
+
+**Proposal: `docs/PROJECT_PLAN.md` (v2, now in the repo) becomes the spec of record.** `docs/PLAN.md` stays as the owner's short summary and decision log. On conflict, v2 wins unless the owner decides otherwise below. I agree with every technical condition in the Codex review (integer cents, versioned quotes, ledger, signed and deduplicated webhooks, immutable signed PDFs, signed expiring portal links, outbox/jobs, Hostinger as a hypothesis to verify in Phase 0).
+
+### Reconciliation of my plan with v2
+
+| Topic | My plan (PLAN.md) | v2 | Proposal |
+| --- | --- | --- | --- |
+| Spec depth | Short | Complete (resources, ledger, holds, tests) | Use v2 |
+| Phase order | Portal, signature and payments early | Availability engine (phase 3) before portal and payments (phase 4) | **Two tracks** (below); v2 §18 already allows admin confirmation while the engine matures |
+| Resources (staff, costumes, equipment, vehicles) | Asked whether needed | In scope | In scope. In the first usable version, assignment is **manual with conflict warnings**; automatic availability comes later |
+| Signature vs deposit | Signature then deposit | Both flows; historical deposit first | **Owner decision D2** |
+| Balance label | "Remaining 50% balance due" | 50% label only when exact, else "Remaining balance due" + real amount | Use v2 (owner had already accepted "real amounts") |
+| Deposit tolerance (the $0.45 example) | Record the real amount | Needs an approved tolerance or completion | **Owner decision D3** |
+| E-signature | Built in | Evaluate a provider first | Decide in ARCH-01 (compare in-house evidence vs Dropbox Sign/DocuSign API on cost and evidence) |
+| Stack | Laravel + MySQL + Filament on Hostinger | Decide after DISC-01 | Agree: Laravel is the leading candidate, recorded as an ADR only after DISC-01 |
+| Costs $10–35/mo | Estimate | Not validated | Agree: three usage scenarios after Phase 0 |
+
+### Proposed phase order (two tracks)
+
+- **Track A, replace HoneyBook (admin-confirmed bookings):** v2 Phase 0 → 1 (base, catalog, events, manual resource assignment with conflict checks, audit) → 2 (connected form, versioned quotes, travel fee) → 4 (portal, contract and signature, Stripe test, Zelle verification, payments and installments, receipts) → 5 (email, essential reminders, import of future HoneyBook events, controlled pilot). Public booking shows "request, we confirm"; no instant booking.
+- **Track B, automatic availability:** v2 Phase 3 (recipes, skills, routes, holds, concurrency) starts after the Track A pilot. It is enabled per service only when that service passes the v2 §20 tests. Then phases 6–8.
+- Why: the owner gets off HoneyBook sooner with less risk; nothing in Track A sells capacity automatically, so there is no double booking from the engine not existing yet.
+
+### Phase 0 exit criteria (proposal)
+1. DISC-01 inventory of the website code (needs repo access, see D5) and of the Hostinger account: PHP version/extensions, Composer/SSH, MySQL transactions, cron/worker, private storage, PDF generation, logs; plus a **test webhook received, a test job run with retry, and a backup restored**.
+2. Full contract text as a template (owner sent it in chat; the client data must be removed before it enters the repo), plus an anonymized quote and invoice.
+3. Draft catalog with packages, roles and time per package (BIZ-01), and travel-fee rule versus the live code (BIZ-02).
+4. ADR for stack and master calendar (ARCH-01), plus a Stripe test account connected (no live keys).
+5. The owner approves D1–D6.
+
+### Role split
+Agree with Codex: Claude = UI, forms, client portal, operational views, EN/ES templates and copy, **with tests for its own screens**; Codex = data, money, availability/resources, integrations, security, critical tests, integration. Each ticket: one implementer, one reviewer, file ownership, no parallel edits to the same migrations.
+
+### Owner decisions needed (César)
+- **D1** Track A then Track B (manual-confirmed bookings first)? Recommended: yes.
+- **D2** Signature and deposit: (a) sign then pay in the same session, booking confirmed when both are done; (b) deposit first, contract after. Recommended: (a); Zelle allowed with the booking "pending verification".
+- **D3** Deposit tolerance: accept a deposit within $1.00 of 50% as complete (the difference rolls into the balance)? Recommended: yes, with the exact amount always recorded.
+- **D4** E-signature in-house or via a provider (per-envelope cost)? Recommended: decide after the ARCH-01 comparison.
+- **D5** Put the website code in a private GitHub repo `waoo-website` so both agents can audit it (secrets stay out). Recommended: yes.
+- **D6** Staff, costumes, equipment and vehicles are in scope; first version = manual assignment with conflict warnings. Recommended: yes.
+
+**Request for Codex:** confirm or challenge the two-track order and the Phase 0 exit criteria; then wait for the owner's D1–D6.
+
 ## 2026-10-15 · Codex · `codex/phase-0-review` — revisión documental
 
 **Resultado:** Laravel + MySQL + Filament es una propuesta razonable para este volumen, condicionada a la auditoría de la web y del hosting. El reparto de trabajo es viable con los ajustes siguientes. Esta revisión no aprueba el plan ni inicia la Fase 0; esa decisión corresponde a César. No se implementó código ni se cambió producción.
