@@ -1,0 +1,27 @@
+<!doctype html>
+<!-- REPORT-A: Monday report to sales@waooparty.com. Email-safe. Numbers are fictitious examples. -->
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tu semana en Waoo</title></head>
+<body style="margin:0;padding:0;background:#F5F6FB;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F5F6FB;"><tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#FFFFFF;border-radius:16px;overflow:hidden;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#141A33;">
+  <tr><td style="background:#122F94;padding:20px 26px;color:#FFFFFF;"><div style="font-size:20px;font-weight:800;">Tu semana en Waoo</div><div style="font-size:13px;opacity:0.85;margin-top:2px;">{{week_label}}</div></td></tr>
+  <tr><td style="padding:22px 26px 6px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td width="50%" style="padding:0 6px 12px 0;"><table role="presentation" width="100%" style="background:#EEF1F9;border-radius:12px;"><tr><td style="padding:14px;"><div style="font-size:24px;font-weight:800;">{{cash_in}}</div><div style="font-size:12px;color:#5B6385;">Entró (depósitos y pagos)</div></td></tr></table></td>
+      <td width="50%" style="padding:0 0 12px 6px;"><table role="presentation" width="100%" style="background:#EEF1F9;border-radius:12px;"><tr><td style="padding:14px;"><div style="font-size:24px;font-weight:800;">{{receivable}}</div><div style="font-size:12px;color:#5B6385;">Por cobrar (saldos)</div></td></tr></table></td>
+    </tr><tr>
+      <td width="50%" style="padding:0 6px 0 0;"><table role="presentation" width="100%" style="background:#EEF1F9;border-radius:12px;"><tr><td style="padding:14px;"><div style="font-size:24px;font-weight:800;">{{staff_cost}}</div><div style="font-size:12px;color:#5B6385;">Pago al staff</div></td></tr></table></td>
+      <td width="50%" style="padding:0 0 0 6px;"><table role="presentation" width="100%" style="background:#E2F5EB;border-radius:12px;"><tr><td style="padding:14px;"><div style="font-size:24px;font-weight:800;color:#11734A;">{{cash_minus_staff}}</div><div style="font-size:12px;color:#11734A;">Entró − pago al staff</div></td></tr></table></td>
+    </tr></table>
+  </td></tr>
+  <tr><td style="padding:16px 26px 4px;"><div style="font-size:16px;font-weight:700;margin-bottom:8px;">Se vendió</div>
+    <!-- one pill per package sold: {{#each sold}} -->
+    <span style="display:inline-block;background:#EEF1F9;border-radius:999px;padding:6px 12px;font-size:14px;font-weight:600;margin:0 6px 6px 0;"><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#122F94;"></span>&nbsp;2 Waoo</span>
+    <span style="display:inline-block;background:#EEF1F9;border-radius:999px;padding:6px 12px;font-size:14px;font-weight:600;margin:0 6px 6px 0;"><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#8D53D9;"></span>&nbsp;1 Mágico</span>
+    <span style="display:inline-block;background:#EEF1F9;border-radius:999px;padding:6px 12px;font-size:14px;font-weight:600;margin:0 6px 6px 0;"><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#F9C930;"></span>&nbsp;1 Estrella</span>
+  </td></tr>
+  <tr><td style="padding:12px 26px;"><div style="font-size:16px;font-weight:700;margin-bottom:6px;">Este fin de semana viene</div><div style="font-size:14px;color:#5B6385;">{{next_weekend_count}} fiestas · {{next_weekend_balance}} por cobrar antes del evento</div></td></tr>
+  <tr><td style="padding:12px 26px 22px;font-size:12px;line-height:1.6;color:#8A91B0;">"Entró" cuenta los pagos por la fecha en que llegaron. "Pago al staff" cuenta las fiestas de esa semana (lunes a domingo, hora de Houston).</td></tr>
+</table>
+</td></tr></table>
+</body></html>
