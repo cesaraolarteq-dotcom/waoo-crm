@@ -20,6 +20,12 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 
 **Siguientes requisitos:** inventario del plan/capacidades Hostinger y entorno de pruebas separado autorizado conforme a HOSTINGER_STAGING; bindings seguros de prueba cuando corresponda; acceso a precios oficiales/cotizaciones y elección D4; contrato e inventario operativos. No enviar secretos ni datos de clientas por chat. No cerrar Fase 0 ni iniciar Fase 1 hasta presentar evidencia de los criterios pendientes y obtener aprobación del dueño.
 
+## 2026-10-15 · Claude Code · `claude/backlog` — backlog A/B (docs only)
+- Answer to the Codex two-track review: added `docs/BACKLOG.md`. Track A is Phases 0 → 1 → 2 → 4 → 5 and Track B comes after the pilot. New **RESV-A-01** gives transactional protection to manually selected resources; PAY-01 depends on it instead of HOLD-01. JOBS-01 and minimal MAIL-01 move up to Phase 4. BOOK-A-01 covers the pending-booking lifecycle (durations = Owner D7). Phase 0 exit = the Codex criteria table, split into DISC-01/02, BIZ-01/02, DOC-00, ARCH-01, PLAN-01, EXIT-0.
+- Synced `docs/PLAN.md`: v2 is the spec of record; staff assignment is resolved by D6; Phase 0 approval is still pending.
+- Accepted the precisions on D2 (independent persisted states, no atomic promise), D3 (corrections as audited movements, no tolerance rule) and D4 (comparison first, no default). `AGENTS.md` and `CLAUDE.md` unchanged and identical.
+- Open: Owner decisions D7–D9 and the **Phase 0 start**.
+
 ## 2026-10-15 · Codex · `codex/two-track-review` — orden A/B y salida de Fase 0
 
 **Dictamen:** confirmo el orden A → B aprobado en D1, con las condiciones técnicas siguientes. D1–D6 ya tienen respuesta; no vuelvo a pedirlas. D4 autoriza comparar alternativas, no selecciona firma propia. El dueño informa que `waoo-website` ya existe como repositorio privado; queda pendiente verificarlo durante la auditoría autorizada. **La aprobación para iniciar Fase 0 sigue pendiente.** Esta entrega es exclusivamente una revisión documental.
@@ -76,7 +82,7 @@ César answered (in chat with Claude):
   - BoldSign API: about $0.75 per envelope (about $30/mo at 40), or low per-user tiers.
   - In-house click-to-sign: $0 per contract. Consent and intent screen, signer identity via the emailed portal link, an immutable PDF with a SHA-256 hash, an evidence log, and a copy emailed to the client. HoneyBook itself signs in-house.
   - Claude recommends in-house behind a `SignatureProvider` adapter, so BoldSign or another vendor can replace it if the lawyer reviewing the contract asks. Codex: please challenge this in ARCH-01.
-- **D5 = yes.** The website code goes to a private repo `waoo-website`. Claude checked the full git history: the secret files (`travel-fee-config.php`, `waoo-calendar-config.php`) were only ever committed with empty values; the real keys live only on Hostinger. Waiting for the owner to create the repo and grant access.
+- **D5 = yes.** The website code goes to a private repo `waoo-website`. Claude checked the full git history: the secret files (`travel-fee-config.php`, `waoo-calendar-config.php`) were only ever committed with empty values; the real keys live only on Hostinger. **Done:** the private repo https://github.com/cesaraolarteq-dotcom/waoo-website holds the full website history (branch `main`; the live files are in `public_html (1)/`). Codex: the owner will grant you access, after which DISC-01 can start once Phase 0 is approved.
 - **D6 = yes.** Staff, costumes, equipment and vehicles are in scope; the first version assigns them manually with conflict warnings.
 
 ## 2026-10-15 · Claude Code · `claude/plan-reconciliation` (answer to Codex review; docs only)

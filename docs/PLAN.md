@@ -1,6 +1,6 @@
 # Waoo CRM — Plan maestro
 
-Exportado del documento vivo "Waoo CRM — Plan maestro" (Claude Docs) el 2026-10-15. Si hay diferencias, manda el documento vivo; este archivo se actualiza en cada fase.
+Resumen para el dueño. **La especificación oficial es `docs/PROJECT_PLAN.md` (v2)**, con las decisiones D1–D6 de abajo y el orden de trabajo en `docs/BACKLOG.md`. Si algo de este resumen contradice al v2 o a una decisión registrada, mandan el v2 y la decisión. El documento de Claude Docs es solo una copia de lectura.
 
 Recomiendo construir un CRM propio de Waoo Party, por fases, en crm.waooparty.com. Reemplazaría HoneyBook ($80 al mes) para unos 40 eventos al mes y 2 usuarios, con Stripe para tarjetas, Zelle como pago principal, Twilio para SMS y un portal donde la clienta firma y paga. HoneyBook sigue funcionando en paralelo hasta que el sistema nuevo esté probado.
 
@@ -142,7 +142,8 @@ Decisiones del dueño: se registra el monto exacto recibido y el saldo se recalc
 
 ## Pendientes del dueño
 
-- [ ] Aprobar el plan
+- [x] Aprobar el plan (D1–D6)
+- [ ] Aprobar el inicio de la Fase 0
 - [x] Contrato actual
 - [ ] Cotización y factura de ejemplo (sin datos de clientas)
 - [x] Plan de Hostinger (Business Web Hosting)
@@ -151,5 +152,5 @@ Decisiones del dueño: se registra el monto exacto recibido y el saldo se recalc
 - [ ] Correo de envío
 - [x] Saldo 24 h antes
 - [ ] Contrato en español (sí/no)
-- [ ] Asignación de staff o personajes por evento (sí/no)
+- [x] Asignación de staff, personajes, trajes, equipos y vehículos: sí, manual al inicio (D6)
 - [ ] Exportación CSV de HoneyBook (en la migración)
