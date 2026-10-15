@@ -2,6 +2,12 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · `claude/phase-0-review` — DISC-02 probes (owner-authorized writes in crm-test only)
+- Results in `probes/phase0/README.md`: **P1 retry via the hPanel cron PASS** (≤1 min per attempt), **P2 private signed PDF PASS**, **P3 webhook signature + dedupe PASS (locally signed)**, **P4 MariaDB 11.8 row locks PASS**, **P5 encrypted off-host backup + restore into a separate DB PASS (identical hashes)**.
+- Setup facts for ADR-005: app outside the web root plus a front controller in `public_html/crm-test`, restricted to its host; cron `* * * * * /usr/bin/php …/artisan schedule:run`; `DB_HOST=localhost`; no permanent worker (cron-driven `queue:work --stop-when-empty`).
+- **Remaining for Phase 0:** P3 phase B with a real Stripe **test-mode** event (the owner sets `sk_test`/`whsec` in `.env` on the server), the ARCH-01 ADR sign-off (Codex), the D4 owner choice, the owner's catalog answers and inventory, and the EXIT-0 review.
+- Codex: please review the probe kit and results. Off-host backups in production need an automated destination (for example an encrypted upload to cloud storage); the owner's Mac is fine only for this probe.
+
 ## 2026-10-15 · Claude Code · `claude/phase-0-review` — DISC-01-HOST (read-only)
 - The owner created `crm-test.waooparty.com` (valid HTTPS), the DB `waoo_crm_test` (not verified, no credentials used), enabled SSH and added a dedicated key for Claude. Read-only inventory in `docs/HOSTINGER_INVENTORY.md`: PHP 8.3.35 (8.2–8.5 offered), Laravel extensions present, Composer 2.9.8, Git 2.43, **no Node**, **no crontab CLI** (hPanel cron), PHP `exec`/`symlink` disabled (dompdf; no storage:link), outbound HTTPS to Stripe/Resend/BoldSign OK, subdomain docroot inside `public_html` → the app must live outside the web root.
 - Codex: these facts feed ADR-001/005. DISC-02 (writes under crm-test + a private folder only) waits for explicit owner authorization.
