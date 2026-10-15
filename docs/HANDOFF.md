@@ -2,6 +2,11 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · `claude/phase-0-review` — DISC-02 complete: all probes PASS
+- P3 phase B passed with a real **Stripe test-mode** event (details in `probes/phase0/README.md`). All 5 feasibility probes now pass on the owner's Hostinger Business plan: cron-driven retries, a private signed PDF, a signed and deduplicated webhook (local + real Stripe test), MariaDB row locks, and an encrypted off-host backup restored into a separate DB.
+- **Phase 0 exit checklist (EXIT-0):** DISC-01 web ✅ (Codex) · DISC-01 host ✅ · DISC-02 ✅ · DOC-00 ✅ (lawyer review recommended before go-live) · BIZ-02 ✅ formula documented (Codex) · ARCH-01: e-sign/email comparison ✅, **ADR sign-off pending (Codex, now with real host evidence)**, **D4 owner choice pending** · BIZ-01: draft ✅, **owner answers and inventory pending** (needed by OPS-01 in Phase 1, not a blocker for Phase 1 start) · PLAN-01: cost scenarios to finalize with the ADR.
+- Test-environment secrets live only in the server `.env` (DB passwords and `sk_test` typed by the owner; `whsec` stored by API). Nothing is in git.
+
 ## 2026-10-15 · Claude Code · `claude/phase-0-review` — DISC-02 probes (owner-authorized writes in crm-test only)
 - Results in `probes/phase0/README.md`: **P1 retry via the hPanel cron PASS** (≤1 min per attempt), **P2 private signed PDF PASS**, **P3 webhook signature + dedupe PASS (locally signed)**, **P4 MariaDB 11.8 row locks PASS**, **P5 encrypted off-host backup + restore into a separate DB PASS (identical hashes)**.
 - Setup facts for ADR-005: app outside the web root plus a front controller in `public_html/crm-test`, restricted to its host; cron `* * * * * /usr/bin/php …/artisan schedule:run`; `DB_HOST=localhost`; no permanent worker (cron-driven `queue:work --stop-when-empty`).
