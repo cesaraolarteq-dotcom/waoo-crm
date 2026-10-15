@@ -1,0 +1,41 @@
+/* Waoo CRM design tokens (D-UX-01). Source of truth for the admin UI and the client portal.
+   Copied into the app's resources/css when the Laravel skeleton exists (Phase 1 step 4).
+   Light first; dark redefines tokens only. Package colors come from the Waoo logo. */
+:root{
+  /* surfaces */
+  --bg:#F5F6FB; --surface:#FFFFFF; --surface-2:#EEF1F9; --line:#DFE3EF;
+  /* text */
+  --ink:#141A33; --muted:#5B6385; --faint:#8A91B0;
+  /* brand */
+  --navy:#122F94; --navy-2:#1F42C2; --navy-ink:#FFFFFF; --sidebar:#0E1B52; --sidebar-ink:#C3CAEC;
+  --teal:#15D1C4; --purple:#8D53D9; --pink:#FF017C; --yellow:#F9C930;
+  /* package code */
+  --pkg-star:var(--yellow); --pkg-magic:var(--purple); --pkg-mg:var(--teal); --pkg-mg2:var(--pink); --pkg-waoo:var(--navy);
+  /* semantic (status only, never brand) */
+  --ok:#11734A; --ok-bg:#E2F5EB; --warn:#8F5B00; --warn-bg:#FFF1D2; --bad:#B4233A; --bad-bg:#FDE6EA; --info:#1E4DD8; --info-bg:#E6EDFF;
+  /* type */
+  --font:"Bricolage Grotesque", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --accent-font:"Bodoni Moda", Georgia, "Times New Roman", serif; /* one accent word per page title only */
+  --fs-xs:12px; --fs-sm:13.5px; --fs-base:15px; --fs-md:17px; --fs-lg:23px; --fs-xl:28px;
+  /* shape */
+  --r-sm:9px; --r:14px; --r-lg:18px;
+  --shadow:0 1px 2px rgba(20,26,51,.05),0 8px 24px rgba(20,26,51,.06);
+  --focus:0 0 0 3px var(--teal);
+  /* spacing scale */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1026; --surface:#141A38; --surface-2:#1C2349; --line:#2A3263;
+  --ink:#EEF1FF; --muted:#A6AED0; --faint:#7C84AA;
+  --navy:#7A93FF; --navy-2:#93A7FF; --navy-ink:#0B1026; --sidebar:#070B1C; --sidebar-ink:#AEB6DD;
+  --ok:#5CD69B; --ok-bg:#12352A; --warn:#F5C35A; --warn-bg:#3A2D0E; --bad:#FF7A8E; --bad-bg:#3D1620; --info:#8FA8FF; --info-bg:#1A2550;
+  --shadow:0 1px 2px rgba(0,0,0,.3);
+  color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0B1026; --surface:#141A38; --surface-2:#1C2349; --line:#2A3263;
+  --ink:#EEF1FF; --muted:#A6AED0; --faint:#7C84AA;
+  --navy:#7A93FF; --navy-2:#93A7FF; --navy-ink:#0B1026; --sidebar:#070B1C; --sidebar-ink:#AEB6DD;
+  --ok:#5CD69B; --ok-bg:#12352A; --warn:#F5C35A; --warn-bg:#3A2D0E; --bad:#FF7A8E; --bad-bg:#3D1620; --info:#8FA8FF; --info-bg:#1A2550;
+  --shadow:0 1px 2px rgba(0,0,0,.3);
+  color-scheme:dark;}
