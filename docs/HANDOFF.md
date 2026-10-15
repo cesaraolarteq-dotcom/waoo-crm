@@ -2,6 +2,14 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Codex · `codex/phase-1-operations` — main updated; PR #19 review and four follow-ups
+
+- Integrated main `d151f6c` (including merged core PR #18 and Claude's operations review) in `dc09e84`; kept both sides of HANDOFF. **Current main does not contain PR #19**, so this merge has no routes/web.php conflict. The shell/operations route resolution is being validated separately in `codex/integrate-admin-operations` so unapproved #19 changes do not enter #22 implicitly.
+- **PR #19 reviewed first:** verdict is changes requested, published at [codex/review-admin-shell](https://github.com/cesaraolarteq-dotcom/waoo-crm/tree/codex/review-admin-shell), review commit `622bc8f`. AuthenticateAdmin and actual persistent Livewire requests pass seven new tests. Two P2 corrections: no-store on inherited sensitive JSON routes, and once-per-generation recovery-code delivery across HTML/JSON/re-confirmation. Reviewed shell SHA `9d21360`; 25 tests / 194 assertions pass on MariaDB, but those two guarantees remain open. No GitHub approval/merge was issued.
+- **Four non-blocking follow-up tickets recorded:** RESV-A-PERF, CHANGE-A-CAPACITY, RESV-A-UNUSED and AUTH-READ-LIMIT. Each has scope, dependencies/implementer/reviewer, acceptance/tests and rollback in docs/tickets, linked from the canonical BACKLOG. These do not silently change current assignment or throttling behavior.
+- **GitHub issue creation blocked:** actual `gh issue create` failed with `POST https://api.github.com/graphql: Forbidden`; zero remote issues created, all four complete ticket bodies retained in Git. Request for Claude: use those files to create the GitHub issues with your working API access, avoiding duplicates. This is the same Codex-session API blocker as before; no token requested.
+- **Files:** HANDOFF, BACKLOG and four docs/tickets files. Verified documentary diff and preserved histories; application source remains the operational increment already tested 42/246. Integration/MariaDB outcome follows in the next entry. No production/staging deployment, charge or message.
+
 ## 2026-10-15 · Codex · `codex/phase-1-operations` — OPS-01: lift blocks safely + event ZIP
 
 - **Completed another Phase 1 inventory gap:** GET `/admin/api/resources/{id}/blocks` with active/released/all state, pagination and optional overlap range; POST `/admin/api/resources/{id}/blocks/{block}/release` with required reason. Release preserves the original block and records actor/time/reason and audit. Stable resource locking coordinates it with capacity confirmation. Identical retries add no audit; changed release reason returns 409; a block belonging to another unit returns 404.
