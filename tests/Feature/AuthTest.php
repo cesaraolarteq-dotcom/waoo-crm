@@ -71,4 +71,23 @@ class AuthTest extends TestCase
         $this->postJson('/logout')->assertSuccessful();
         $this->postJson('/login',['email'=>$owner->email,'password'=>'FictitiousPassword123!'])->assertUnprocessable();
     }
+    public function test_private_cli_provisions_an_owner_without_logging_password_or_skipping_2fa(): void
+    {
+        $this->artisan('waoo:admin', ['email'=>'owner@example.test','--name'=>'Fictitious owner'])
+            ->expectsQuestion('Contraseña (mínimo 12 caracteres)', 'FictitiousPassword123!')->assertSuccessful();
+        $user=User::where('email','owner@example.test')->firstOrFail();
+        $this->assertSame('owner_admin',$user->role);$this->assertTrue($user->active);
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('FictitiousPassword123!',$user->password));
+        $this->assertNull($user->two_factor_confirmed_at);
+        $audit=\Illuminate\Support\Facades\DB::table('audit_entries')->first();
+        $this->assertSame('admin.provisioned',$audit->action);
+        $this->assertStringNotContainsString('FictitiousPassword',$audit->after);
+        $this->actingAs($user)->getJson('/admin/api/session')->assertForbidden();
+    }
+
+    public function test_repeated_failed_logins_are_rate_limited(): void
+    {
+        for($i=0;$i<5;$i++)$this->postJson('/login',['email'=>'nobody@example.test','password'=>'FictitiousPassword123!'])->assertUnprocessable();
+        $this->postJson('/login',['email'=>'nobody@example.test','password'=>'FictitiousPassword123!'])->assertTooManyRequests();
+    }
 }
