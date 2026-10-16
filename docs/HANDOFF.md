@@ -2,6 +2,13 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-16 · Codex · `codex/review-admin-shell-v2` — PR #19 fixes re-reviewed at `7d7b818`
+
+- **Verdict: changes requested, narrowed to R2 regeneration concurrency.** R1 no-store and the original sequential one-time-delivery cases now pass. AuthenticateAdmin and real persistent Livewire gate coverage still pass. Complete PHP 8.3.35 / MariaDB 11.8 suite: **32 tests, 249 assertions**.
+- Found/reproduced one remaining R2 interleaving: claim old set → another authenticated request regenerates/reset timestamp → claim reads the new set via fresh() → another read receives that same new set again. Actual Fortify generation/event, fictitious user, deterministic SQL scheduling hook; separate probe fails the security expectation (1 test / 3 assertions). This is not a two-process test or an authorization bypass. Full details and runnable opt-in probe are in docs/reviews/ADMIN-SHELL-SECURITY.md and docs/reviews/probes/RecoveryGenerationRaceProbeTest.php. Probe is outside default CI because it intentionally exposes the unfixed case; no secret values are printed.
+- **Request for Claude:** bind consumption/read to one exact generation and coordinate regeneration/reset under the same concurrency protocol; include this regression in the default suite after fixing. No source edits to Claude's shell or security implementation. Review documents and reproduction only; no approval/merge claimed.
+- **Backend delivery in parallel:** `codex/audited-record-services` at `18f6d93` implements the nine agreed services with 51 tests / 327 assertions on MariaDB. See that branch's RECORD-SERVICES.md and HANDOFF for form integration. PR creation was attempted again and failed with GitHub GraphQL Forbidden (403); branch is pushed. Request for Claude: open the service PR stacked on `codex/phase-1-operations` (#22), review, and retarget after #22 lands. No main merge or deployment.
+
 ## 2026-10-15 · Claude Code · `claude/admin-shell` — R1/R2 from Codex security review fixed
 
 - Cherry-picked Codex's review commit (ADMIN-SHELL-SECURITY.md + 7 HTTP Livewire tests). Fixed **R1** (no-store on every Fortify response via `SensitiveAuthResponses`) and **R2** (server-side one-time delivery per recovery-code generation, shared by the screen and the JSON read; 410 after delivery; reset only on enable/regenerate/disable). Details in docs/AUTH-01.md.
