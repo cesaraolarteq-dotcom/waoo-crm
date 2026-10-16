@@ -317,7 +317,7 @@
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "blocker": "Claude: real details submission and owner review forms, revoke button; follow-up source review and staging/owner acceptance pending",
+     "blocker": "UI wired in PR #42 (411eec1, CI green); awaits Codex review, merge of #39–#41, staging and owner acceptance",
      "backend_verification": "Integration e9b2ac5 with Claude 2074213 and main8105bef: 216 MariaDB tests / 1885 assertions; Vite build, PHP lint and strict Composer pass. Separate three-increment stack over main: 23 document/portal/screen tests / 264 assertions. No provider operation or owner acceptance.",
      "followup_reviewed": false,
      "backend_followups": "4aa340f: RevokePortalGrant, narrow review head codex/portal-revoke (2552ffd); QuickBook/details source1a5fbe3 integrated"
@@ -331,10 +331,9 @@
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "blocker": "Claude: connect actual portal details + owner review per BOOK-QUICK-API; backend is implemented",
+     "blocker": "UI wired in PR #42 (411eec1, CI green); awaits Codex review, merge of #39–#41, staging and owner acceptance",
      "backend_note": "QuickBook, immutable client details, explicit owner approval and attention API delivered; client portal/owner-review UI adapters remain pending",
      "backend_verification": "Integration e9b2ac5 with Claude 2074213 and main8105bef: 216 MariaDB tests / 1885 assertions; Vite build, PHP lint and strict Composer pass. Separate three-increment stack over main: 23 document/portal/screen tests / 264 assertions. No provider operation or owner acceptance.",
-     "ui_note": "Owner QuickBooking uses real service; Claude 2074213 real contract/payment portal still needs details/review adapters",
      "followup_reviewed": false
     }
    ]
