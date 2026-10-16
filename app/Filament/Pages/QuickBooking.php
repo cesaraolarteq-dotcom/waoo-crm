@@ -10,7 +10,7 @@ use App\Models\{Customer, PriceVersion, ServiceVariant};
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
-use Filament\Forms\Components\{Checkbox, DatePicker, Radio, Repeater, Select, Textarea, TextInput, TimePicker};
+use Filament\Forms\Components\{Checkbox, DatePicker, Hidden, Radio, Repeater, Select, Textarea, TextInput, TimePicker};
 use Filament\Pages\Page;
 use Filament\Schemas\Components\{Actions, Callout, EmbeddedSchema, Form, Grid, Section};
 use Filament\Schemas\Components\Utilities\{Get, Set};
@@ -78,22 +78,27 @@ class QuickBooking extends Page
             Section::make('1. Paquete')->columns(2)->schema([
                 Select::make('price_version_ids')->label('Paquete y extras')->multiple()->native(false)->searchable()->required()->columnSpanFull()
                     ->options(fn () => EventResource::priceOptions())->live()
-                    ->afterStateUpdated(fn (Get $get, Set $set) => $this->fillEnd($get, $set)),
+                    ->afterStateUpdated(function (Get $get, Set $set) { $this->fillEnd($get, $set); EventResource::refreshTitle($get, $set); }),
                 Repeater::make('characters')->label('Personajes')->defaultItems(0)->columns(3)->columnSpanFull()->addActionLabel('Agregar personaje')
+                    ->live()->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set))
                     ->visible(fn (Get $get) => EventResource::configurablePrices($get('price_version_ids') ?? []) !== [])
                     ->helperText(fn (Get $get) => EventResource::charactersHint($get('price_version_ids') ?? []))
                     ->schema([
                         Select::make('price_version_id')->label('Para')->native(false)->required()->live()
                             ->options(fn (Get $get) => EventResource::configurablePrices($get('../../price_version_ids') ?? [])),
                         Select::make('character_id')->label('Personaje')->native(false)->required()->searchable()
-                            ->options(fn (Get $get) => EventResource::characterOptions($get('price_version_id'))),
-                        TextInput::make('quantity')->label('Cuántos')->integer()->minValue(1)->maxValue(20)->default(1)->required(),
+                            ->options(fn (Get $get) => EventResource::characterOptions($get('price_version_id')))
+                            ->live()->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set, '../../')),
+                        TextInput::make('quantity')->label('Cuántos')->integer()->minValue(1)->maxValue(20)->default(1)->required()
+                            ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set, '../../')),
                     ]),
                 Select::make('event_type')->label('Tipo de evento')->native(false)->required()->options(EventResource::EVENT_TYPES),
-                TextInput::make('title')->label('Nombre del evento')->required()->maxLength(255)->placeholder('Ej.: Cumpleaños de Sofía'),
+                EventResource::titleField(),
+                Hidden::make('title_suggested')->dehydrated(false),
             ]),
             Section::make('2. Fecha y lugar')->columns(3)->schema([
-                DatePicker::make('date')->label('Fecha')->native()->required()->live(),
+                DatePicker::make('date')->label('Fecha')->native()->required()->live()
+                    ->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set)),
                 TimePicker::make('start_time')->label('Empieza (Houston)')->native()->seconds(false)->required()->live()
                     ->afterStateUpdated(fn (Get $get, Set $set) => $this->fillEnd($get, $set))
                     ->helperText('La clienta la confirma en su enlace.'),
@@ -109,11 +114,14 @@ class QuickBooking extends Page
                     ->helperText('Obligatorio aquí: con el depósito se fija el total.'),
             ]),
             Section::make('3. Clienta')->columns(2)->schema([
-                Radio::make('customer_mode')->hiddenLabel()->inline()->options(['new' => 'Nueva', 'existing' => 'Ya es clienta'])->live()->columnSpanFull(),
+                Radio::make('customer_mode')->hiddenLabel()->inline()->options(['new' => 'Nueva', 'existing' => 'Ya es clienta'])->live()->columnSpanFull()
+                    ->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set)),
                 Select::make('customer_id')->label('Clienta')->native(false)->searchable()->required()->columnSpanFull()
                     ->options(fn () => Customer::query()->orderBy('name')->pluck('name', 'id'))
+                    ->live()->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set))
                     ->visible(fn (Get $get) => $get('customer_mode') === 'existing'),
                 TextInput::make('name')->label('Nombre (como lo tienes)')->required()->maxLength(255)
+                    ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set))
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new')->helperText('Ella confirma su nombre completo en el enlace.'),
                 TextInput::make('phone')->label('Teléfono / WhatsApp')->tel()->maxLength(40)->visible(fn (Get $get) => $get('customer_mode') === 'new'),
                 Select::make('locale')->label('Idioma de sus mensajes')->native(false)->options(['es' => 'Español', 'en' => 'Inglés'])->required()
