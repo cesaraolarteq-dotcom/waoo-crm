@@ -5,7 +5,7 @@ namespace App\Filament\Resources\Events;
 use App\Filament\Resources\Events\Pages\{ConfirmCapacity, CreateEvent, EditEvent, ListEvents};
 use App\Filament\Support\{ChicagoTime, RecordServicePageGate};
 use App\Models\{Customer, PriceVersion, ServiceVariant};
-use Filament\Forms\Components\{DatePicker, Radio, Select, TextInput, TimePicker};
+use Filament\Forms\Components\{DatePicker, Radio, Repeater, Select, TextInput, TimePicker};
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
@@ -59,6 +59,8 @@ class EventResource extends Resource
                 Select::make('customer_id')->label('Clienta')->required()->native(false)->searchable()
                     ->options(fn () => Customer::query()->orderBy('name')->pluck('name', 'id')),
                 TextInput::make('title')->label('Nombre del evento')->required()->maxLength(255)->placeholder('Ej.: Cumpleaños de Sofía'),
+                Select::make('event_type')->label('Tipo de evento')->native(false)->options(self::EVENT_TYPES)
+                    ->helperText('Elígelo tú (no se adivina). Solo los cumpleaños reciben el correo «Un año después».'),
                 DatePicker::make('date')->label('Fecha')->native()->required()->live(),
                 TimePicker::make('start_time')->label('Empieza (hora de Houston)')->native()->seconds(false)->required()->live(),
                 TimePicker::make('end_time')->label('Termina')->native()->seconds(false)->required()->live(),
@@ -68,7 +70,18 @@ class EventResource extends Resource
             Section::make('Servicios')->columnSpanFull()->schema([
                 Select::make('price_version_ids')->label('Paquetes y servicios')->multiple()->native(false)->searchable()
                     ->options(fn (?Event $record) => self::priceOptions($record))
-                    ->helperText('Precio vigente de cada servicio. Un borrador conserva el precio que ya tenía; para usar el precio nuevo, quita el anterior y elige el actual.'),
+                    ->helperText('Precio vigente de cada servicio. Un borrador conserva el precio que ya tenía; para usar el precio nuevo, quita el anterior y elige el actual.')
+                    ->live(),
+                Repeater::make('characters')->label('Personajes')->defaultItems(0)->columns(3)->addActionLabel('Agregar personaje')
+                    ->visible(fn (Get $get) => self::configurablePrices($get('price_version_ids') ?? []) !== [])
+                    ->helperText(fn (Get $get) => self::charactersHint($get('price_version_ids') ?? []))
+                    ->schema([
+                        Select::make('price_version_id')->label('Para el servicio')->native(false)->required()->live()
+                            ->options(fn (Get $get) => self::configurablePrices($get('../../price_version_ids') ?? [])),
+                        Select::make('character_id')->label('Personaje')->native(false)->required()->searchable()
+                            ->options(fn (Get $get) => self::characterOptions($get('price_version_id'))),
+                        TextInput::make('quantity')->label('Cuántos')->integer()->minValue(1)->maxValue(20)->default(1)->required(),
+                    ]),
             ]),
             Section::make('Lugar y logística')->columns(2)->columnSpanFull()->schema([
                 TextInput::make('address')->label('Dirección')->maxLength(255)->columnSpanFull(),
@@ -111,6 +124,33 @@ class EventResource extends Resource
         return $options;
     }
 
+    public const EVENT_TYPES = ['birthday' => 'Cumpleaños', 'baby_shower' => 'Baby shower', 'gender_reveal' => 'Gender reveal', 'corporate' => 'Corporativo', 'other' => 'Otro'];
+
+    /** Selected price versions whose service includes configurable characters: id => service name. */
+    public static function configurablePrices(array $priceIds): array
+    {
+        return PriceVersion::query()->whereIn('price_versions.id', array_map('intval', $priceIds))
+            ->join('service_variants', 'service_variants.id', '=', 'price_versions.service_variant_id')
+            ->where('service_variants.character_quantity', '>', 0)->pluck('service_variants.name', 'price_versions.id')->all();
+    }
+
+    public static function characterOptions(?string $priceId): array
+    {
+        $variant = $priceId ? ServiceVariant::find(PriceVersion::whereKey((int) $priceId)->value('service_variant_id')) : null;
+        $ids = collect($variant?->character_options ?? [])->pluck('character_id')->all();
+
+        return \App\Models\Character::query()->whereIn('id', $ids)->where('active', true)->orderBy('name')->pluck('name', 'id')->all();
+    }
+
+    public static function charactersHint(array $priceIds): string
+    {
+        return collect(self::configurablePrices($priceIds))->keys()->map(function ($id) {
+            $v = ServiceVariant::find(PriceVersion::whereKey($id)->value('service_variant_id'));
+
+            return $v->name.': incluye '.$v->character_quantity.' '.($v->character_quantity === 1 ? 'personaje' : 'personajes');
+        })->implode(' · ').'. Si faltan, el evento queda incompleto y no se puede confirmar.';
+    }
+
     /** Form state -> SaveEventDraft input (explicit offsets, cents, null travel fee when unknown). */
     public static function toServiceInput(array $data): array
     {
@@ -129,7 +169,17 @@ class EventResource extends Resource
             'setup_minutes' => filled($data['setup_minutes'] ?? null) ? (int) $data['setup_minutes'] : null,
             'breakdown_minutes' => filled($data['breakdown_minutes'] ?? null) ? (int) $data['breakdown_minutes'] : null,
             'travel_fee_cents' => $fee === '' ? null : \App\Filament\Resources\Variants\Pages\EditServiceVariant::toCents($fee),
-            'services' => collect($data['price_version_ids'] ?? [])->map(fn ($id) => ['price_version_id' => (int) $id])->values()->all(),
+            'event_type' => $data['event_type'] ?? null,
+            'services' => collect($data['price_version_ids'] ?? [])->map(function ($id) use ($data) {
+                $service = ['price_version_id' => (int) $id];
+                if (array_key_exists($id, self::configurablePrices([$id]))) {
+                    // Explicit list for configurable services (even empty), so the backend never keeps stale choices silently.
+                    $service['characters'] = collect($data['characters'] ?? [])->filter(fn ($c) => (int) ($c['price_version_id'] ?? 0) === (int) $id)
+                        ->map(fn ($c) => ['character_id' => (int) $c['character_id'], 'quantity' => (int) $c['quantity']])->values()->all();
+                }
+
+                return $service;
+            })->values()->all(),
         ];
     }
 
@@ -146,6 +196,9 @@ class EventResource extends Resource
             'setup_minutes' => $event->setup_minutes, 'breakdown_minutes' => $event->breakdown_minutes,
             'travel_fee' => $event->travel_fee_cents === null ? null : rtrim(rtrim(number_format($event->travel_fee_cents / 100, 2, '.', ''), '0'), '.'),
             'price_version_ids' => $event->services()->pluck('price_version_id')->all(),
+            'event_type' => $event->event_type,
+            'characters' => $event->services()->with('characters')->get()->flatMap(fn ($s) => $s->characters->map(fn ($c) => [
+                'price_version_id' => (string) $s->price_version_id, 'character_id' => (string) $c->character_id, 'quantity' => $c->quantity]))->values()->all(),
         ];
     }
 

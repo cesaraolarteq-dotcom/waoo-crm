@@ -56,6 +56,28 @@ class EditResource extends EditRecord
                     }
                     Notification::make()->success()->title('Persona agregada')->send();
                 }),
+            Action::make('unlink')->label('Quitar persona')->icon('heroicon-o-user-minus')->color('gray')
+                ->visible(fn () => $this->getRecord()->kind === 'costume' && $this->compatibleNames() !== '' && RecordServicePageGate::ready(\App\Services\Records\UnlinkCostumeCompatibility::class))
+                ->modalHeading('Quitar a una persona de este traje')
+                ->modalDescription('Deja de poder usarlo en eventos nuevos. Si tiene un evento comprometido con este traje, primero hay que reasignarlo. Queda en el historial.')
+                ->schema([
+                    Select::make('staff_id')->label('Persona')->native(false)->required()
+                        ->options(fn () => \Illuminate\Support\Facades\DB::table('costume_compatibilities')->join('resources', 'resources.id', '=', 'costume_compatibilities.staff_id')
+                            ->where('costume_id', $this->getRecord()->getKey())->orderBy('resources.name')->pluck('resources.name', 'resources.id')),
+                    \Filament\Forms\Components\Textarea::make('reason')->label('¿Por qué?')->required()->minLength(10)->maxLength(1000)
+                        ->placeholder('Ej.: ya no trabaja con nosotros desde octubre.'),
+                ])
+                ->modalSubmitActionLabel('Quitar')
+                ->action(function (array $data, Action $action) {
+                    try {
+                        $r = app(\App\Services\Records\UnlinkCostumeCompatibility::class)->execute(Filament::auth()->user(), (int) $data['staff_id'], $this->getRecord()->getKey(), $data['reason']);
+                    } catch (ValidationException|\App\Exceptions\RecordWriteRejected|\Illuminate\Auth\Access\AuthorizationException $e) {
+                        $message = $e instanceof ValidationException ? collect($e->errors())->flatten()->first() : $e->getMessage();
+                        Notification::make()->danger()->title('No se quitó')->body($message)->persistent()->send();
+                        $action->halt();
+                    }
+                    Notification::make()->success()->title($r['removed'] ? 'Persona quitada del traje' : 'Esa persona ya no estaba asignada')->send();
+                }),
         ];
     }
 

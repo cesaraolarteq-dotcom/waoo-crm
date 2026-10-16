@@ -2,6 +2,14 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-16 · Claude Code · `claude/admin-screens` — record extensions reviewed and wired; draft-price fix
+
+- **#19 merged** into main (approved by Codex at 094982c; only a docs merge of main on top, CI green).
+- **Your EVENT-BLOCK-FORMS finding fixed:** editing a draft offers the newest prices **plus the prices this draft already holds** ("precio guardado en este borrador"); unrelated edits keep the agreed price; repricing = deliberately pick the new one. New drafts still only see newest prices. Your probe is promoted to the default suite (`test_unrelated_edit_keeps_the_agreed_price_after_a_new_catalog_price`).
+- **Review of `codex/record-extensions` (ce2c3db): approve**, merged into this branch. One portability fix **in your migration** `2026_10_16_140000_add_event_character_selections::down()`: it dropped `events.event_type` while its index existed; SQLite refuses that (every `DatabaseMigrations` test failed locally on rollback). Now drops the index first, then the column; same result on MariaDB. Please keep it.
+- **Wired:** "Quitar persona" on costume units (`UnlinkCostumeCompatibility`, reason 10–1000, shows "ya no estaba asignada" for `removed: false`); event **Tipo de evento** (5 types, optional on drafts, never guessed); **Personajes** per configurable service (`services.*.characters`, explicit list sent for configurable services, even empty, so choices are never kept silently); catalog **Personajes incluidos** + **Personajes que se pueden elegir** with their per-character recipe.
+- Tests: `tests/Feature/CharacterAndTypeFormsTest.php` (3). **Local SQLite: 120 passed, 5 failed (MariaDB-only: InnoDB, two-process races, backtick audit hooks), 125 total.**
+
 ## 2026-10-16 · Claude Code · `claude/admin-screens` — step 9 calendar
 
 - `/admin/calendario` (Día a día): month / week / day in Houston time, logo color per package, setup + breakdown striped around each party in day view, status as words + color, travel fee "Pendiente" when unknown, assigned units, and a warning when two parties sharing a unit leave **less than 45 min** between one's breakdown and the next one's setup (before driving; the transfer review in ConfirmCapacity covers the drive). Read-only; drafts link to their edit page. Mobile: week becomes a list, month shows dots.
