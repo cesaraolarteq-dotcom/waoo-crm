@@ -58,7 +58,7 @@ class QuickBookingPageTest extends TestCase
         return array_replace_recursive(['price_version_ids' => [$this->price->id], 'event_type' => 'birthday', 'title' => 'Cumpleaños de Sofía (ficticio)',
             'date' => '2026-12-19', 'start_time' => '15:00', 'postal_code' => '00001', 'travel_fee' => '25',
             'customer_mode' => 'new', 'name' => 'Ana Ficticia', 'phone' => '555-0100', 'locale' => 'es',
-            'deposit' => ['amount' => '62.50', 'reference' => 'ZELLE-QB-1', 'date' => now('America/Chicago')->format('Y-m-d'), 'time' => '00:05', 'verified' => true],
+            'deposit' => ['amount' => '62.50', 'reference' => 'ZELLE-QB-1', 'date' => now('America/Chicago')->subDay()->format('Y-m-d'), 'time' => '00:05', 'verified' => true],
             'expires_days' => 14], $over);
     }
 

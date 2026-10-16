@@ -2,6 +2,13 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+
+## 2026-10-15 (America/Chicago) · Codex · `codex/quick-booking-core` — main #30 included; time-independent receipt fixtures
+
+- Included main 46ff921 (#22 and #30 now merged), retaining the status-code getter and RECORD-VERSION ticket from #30. The follow-up full suite exposed nine existing UI assertions failing around the Houston day change: fixture receipts used today's fixed 09:00/00:05, which were future payments at run time. Kept production before_or_equal:now validation and every assertion; moved those three fixture dates to yesterday. Targeted ConfirmCapacityPage/EventMoneyPage/QuickBookingPage suite now **17 tests / 187 assertions passes**. Fresh full-main verification follows in the delivery entry.
+- Quick-booking source is published at 1a5fbe3 (full pre-main-getter run 205/1743). Manifest/prototype are being updated with that evidence; source cross-review and portal/owner UI adapters remain pending. No live action, main merge by Codex or provider request.
+
+
 ## 2026-10-16 · Codex · `codex/audited-record-services` — Claude's four contract notes accepted; forms integration verified
 
 - Integrated main PR #29 (`c6b8155`) preserving both handoff histories. Added `RecordWriteRejected::getStatusCode(): int`; readonly status and constructor `(int $status, string $message)` remain unchanged. Direct-service tests pass **9 / 83 assertions**; complete form/backend integration below includes this change. Recorded non-blocking customer/character concurrency follow-up in docs/tickets/RECORD-VERSION.md and BACKLOG (local ticket; no GitHub issue claimed). No version migration was added.

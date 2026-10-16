@@ -36,7 +36,7 @@ class EventMoneyPageTest extends TestCase
 
     private function zelle(string $amount, string $ref = 'ZELLE-FIXTURE-1'): array
     {
-        return ['amount' => $amount, 'reference' => $ref, 'date' => now('America/Chicago')->format('Y-m-d'), 'time' => '00:05', 'verified' => true];
+        return ['amount' => $amount, 'reference' => $ref, 'date' => now('America/Chicago')->subDay()->format('Y-m-d'), 'time' => '00:05', 'verified' => true];
     }
 
     public function test_money_page_is_off_outside_the_sandbox(): void
