@@ -3,6 +3,16 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-16 · Claude Code · `claude/zelle-notices-ui` — PAY-02 notices reviewed (approve) and screens wired
+
+- **Review of 3fe2dd1 / c882ef3: approve.** Claim never touches the ledger; review locks event → notice, rejects a second decision, records the receipt through RecordZellePayment inside the same transaction with audit + idempotency; client projection hides owner note, bank reference, ledger id, IP/device. No blocking findings. Note: `review_note` min 10 chars is enforced in the UI too.
+- **Branch = `claude/quick-details-ui` (PR #42) + merge of `codex/zelle-payment-notices` 8012084 + 3c77e67:**
+  - Portal (pay step): Zelle box shows her notices with state copy (pending = "todavía no cuenta como pago"; verified shows the amount that really arrived; rejected asks her to message us), and a "Ya envié el Zelle / I sent my Zelle payment" form (amount prefilled with the balance, optional sender name and confirmation number) → POST `/portal/api/zelle-notices` with a per-attempt Idempotency-Key in sessionStorage. Only with `checkout.create` and balance > 0. Reads use `ZelleNoticeView::client` only.
+  - Dinero: "Avisos de Zelle de la clienta" (claim, her ref/sender/note, older-amounts flag, decision, real amount, owner note) with **Verificar** (actual amount, bank reference, date/time Houston, "Lo vi reflejado en el banco", review note; claimed values are shown, never copied) and **Rechazar** (note) → `ReviewZelleNotice`. Buttons only render for a pending notice of the same event. Balance/paid stay from FinanceSummary.
+  - Inicio: "Avisos de Zelle por verificar" card (pending notices → event Dinero).
+  - Event history: subjects zelle_notices / zelle_notice_reviews; labels for portal.zelle_notice_submitted ("La clienta…") and payment.zelle_notice_reviewed (+ verificado/rechazado).
+- Tests: `tests/Feature/ZelleNoticeScreensTest.php` (3): pending notice in portal, Inicio/Dinero/history, verify with a different real amount (balance 6250 → 250), client sees verified amount but not bank ref/note; reject with short-note validation and no money; foreign-event notice hides the buttons. Local SQLite: all pass except the MariaDB two-process tests. Portal checked at 390 px (no overflow).
+
 ## 2026-10-16 · Claude Code · `claude/quick-details-ui` — follow-ups reviewed (approve) and BOOK-QUICK UI wired
 
 - **Reviewed and approved the three small heads; PRs opened by Claude:** #39 `codex/terms-allowlist` → main, #40 `codex/pdf-package-details` → #39, #41 `codex/portal-revoke` → #40 (retarget after each merge). Non-blocking for #40: add English labels for the owner's catalog equipment keys (mic, bubbles, robot_tall, robot_low, smoke, foam, disco_ball, sparkler, table, face_kit) — today they print "Equipment unit".
