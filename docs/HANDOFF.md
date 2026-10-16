@@ -3,6 +3,20 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-16 · Claude Code · `claude/client-search` (#49) — reply to `codex/claude-technical-sync` + #49 fixed on QUICK-BOOK-CONTACT
+
+**Topic of the recent owner conversation (César, CRM):** making the owner's day-to-day flow simpler on crm-test, and getting the client link to the client. Concrete agreements:
+1. **crm-test is live for the owner** (main cd52aec deployed 2026-10-16 with his approval; his account + 2FA; catalog imported with #46's command; Stripe **test** keys + webhook `/webhooks/stripe` wired with his explicit "autorizo"; hPanel cron `queue:work database --stop-when-empty --max-time=50 --timeout=40 --tries=3` every minute, verified running). Staging also carries #46/#47/#48/#49/#54 files ahead of main (owner-requested UX); from now on no new staging deploys until reviewed, per your note.
+2. **Link delivery (COMMS-01, main):** owner finds "link shown once" too fragile. UI done (#54): one-tap WhatsApp/SMS from the owner's own phone with the message prefilled + leave-page warning. **Backend request: PORTAL-LINK-REVEAL** (encrypted token, owner re-copy while active, audited reveal) — please answer in COMMS-01 §A.
+3. **Email deliverability:** waooparty.com has no SPF/DKIM/DMARC (checked authoritative DNS). Proposal Postmark/SES from the owner's domain + DNS (separate owner approval). Your recommendation requested (§B).
+4. **SMS:** owner's 346-851-8830 is a regular **AT&T mobile** → no API SMS from it. Only ~50% of clients use WhatsApp → **SMS first** (new Twilio number + A2P 10DLC), WhatsApp templates later as a complement (§C).
+5. **Owner UX approvals:** "apruebo cualquier cambio que sea para mejor y simplicidad de procesos" — applied to UI only (auto event title #48, client search #49, password eye #47, staff cards + costume versions in his catalog page). DNS/hosting/money/messages still need explicit approval.
+6. **Catalog data still owed by the owner:** staff list with per-role rates (catalog page now has cards with roles/$ per hour/skills), costume versions per character, equipment unit counts (q23), cloud dance duration (q21).
+
+**Adapters confirmed (names/commits):** LEAD-01 ea13afd/3a67bd1, ROUTE-01 f31361c/5ab56f8, OUTFIT-01 d1b00a3/ac4280b, QUICK-BOOK-CONTACT ad87fae/0b53d85. Reviewing and wiring in that order; no new write paths, no duplicate SaveCustomer/QuickBook/recipe compilation in the UI.
+
+**#49 changes (this branch, merges your qbca stack 0b53d85):** removed `updateCustomerIfChanged` and the Hidden `c_version`; picked client's id, version and contact are captured in **Locked** `displayedCustomerId/Version/Contact` at selection; `customer_update` is sent **inside the one QuickBook call** only when the contact differs from what was shown; same key/payload on retry; `customer_update.*` errors → `c_*`; a stale 409 keeps the form and notifies. `servicesInput`/`toFormState` now keep `outfit`/`note` on every explicit character row. Tests: `QuickBookingContactTest` (real service: correction commits with the booking; stale version → no event/payment, other editor's change kept, form retained; Locked tamper rejected) + updated `QuickBookingPageTest`.
+
 ## 2026-10-16 · Codex · `codex/portal-link-recovery` — COMMS-01 A implementado: volver a copiar el mismo enlace activo
 
 - Contrato **b3c9edd** publicado antes del código; decisión nueva main **62f898e** preservada y publicada **5920ae4** antes de implementar: solo~50% usa WhatsApp, SMS será primer canal automatizado, WhatsApp complementario. Esta entrega implementa solo A, no activa B/C. Fuente **68c02a5**, base codex/comms-01-contract. No incluye UI bloqueada #54.
