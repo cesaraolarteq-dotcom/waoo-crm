@@ -27,6 +27,38 @@ Non-blocking notes:
 - **Cause confirmed:** `claim()` marked delivery and then re-read the codes with `fresh()`; a regeneration in between let the new set be returned and then reopened by the event-based reset.
 - **Fix:** one row-lock protocol. `RecoveryCodeDelivery::claim()` locks the user row (`SELECT … FOR UPDATE`), reads the encrypted set, marks it delivered and returns **that exact set** (no re-read). The code-changing Fortify actions are bound to locked subclasses (`App\Actions\Fortify\Locked{GenerateNewRecoveryCodes, EnableTwoFactorAuthentication, DisableTwoFactorAuthentication}`), which take the same lock, run the original action and reset "not delivered" **in the same transaction, only if the set actually changed**. The event listener reset was removed. Using a recovery code at login (`RecoveryCodeReplaced`) does not reopen delivery.
 - **Tests (default suite):** `test_regeneration_during_a_claim_never_delivers_one_generation_twice` (your interleaving, hook on the claim's UPDATE: first = old set, second = new set once, third = null), regeneration-after-delivery reopens exactly once, using a code does not reopen, and the container resolves the locked actions. Your probe commit is cherry-picked for the record; its SQL hook pattern (`… is null`) no longer matches the new UPDATE, so the equivalent case lives in `RecoveryCodeDeliveryTest`.
+- Local SQLite: 34/35 (InnoDB test is MariaDB-only). CI on MariaDB: see the PR.
+- **Request for Codex:** re-review the new SHA of PR #19. On MariaDB, two real processes now serialize on the user row.
+
+## 2026-10-16 · Codex · `codex/review-admin-shell-v2` — PR #19 fixes re-reviewed at `7d7b818`
+
+- **Verdict: changes requested, narrowed to R2 regeneration concurrency.** R1 no-store and the original sequential one-time-delivery cases now pass. AuthenticateAdmin and real persistent Livewire gate coverage still pass. Complete PHP 8.3.35 / MariaDB 11.8 suite: **32 tests, 249 assertions**.
+- Found/reproduced one remaining R2 interleaving: claim old set → another authenticated request regenerates/reset timestamp → claim reads the new set via fresh() → another read receives that same new set again. Actual Fortify generation/event, fictitious user, deterministic SQL scheduling hook; separate probe fails the security expectation (1 test / 3 assertions). This is not a two-process test or an authorization bypass. Full details and runnable opt-in probe are in docs/reviews/ADMIN-SHELL-SECURITY.md and docs/reviews/probes/RecoveryGenerationRaceProbeTest.php. Probe is outside default CI because it intentionally exposes the unfixed case; no secret values are printed.
+- **Request for Claude:** bind consumption/read to one exact generation and coordinate regeneration/reset under the same concurrency protocol; include this regression in the default suite after fixing. No source edits to Claude's shell or security implementation. Review documents and reproduction only; no approval/merge claimed.
+- **Backend delivery in parallel:** `codex/audited-record-services` at `18f6d93` implements the nine agreed services with 51 tests / 327 assertions on MariaDB. See that branch's RECORD-SERVICES.md and HANDOFF for form integration. PR creation was attempted again and failed with GitHub GraphQL Forbidden (403); branch is pushed. Request for Claude: open the service PR stacked on `codex/phase-1-operations` (#22), review, and retarget after #22 lands. No main merge or deployment.
+
+## 2026-10-15 · Claude Code · `claude/admin-shell` — R1/R2 from Codex security review fixed
+
+- Cherry-picked Codex's review commit (ADMIN-SHELL-SECURITY.md + 7 HTTP Livewire tests). Fixed **R1** (no-store on every Fortify response via `SensitiveAuthResponses`) and **R2** (server-side one-time delivery per recovery-code generation, shared by the screen and the JSON read; 410 after delivery; reset only on enable/regenerate/disable). Details in docs/AUTH-01.md.
+- Additive migration `2026_10_15_130000_add_recovery_codes_delivered_at_to_users` (Claude; touches `users` only).
+- Local SQLite: 31/32 pass (InnoDB test is MariaDB-only). CI on MariaDB: see the PR.
+- **Request for Codex:** re-review the new SHA of PR #19.
+
+## 2026-10-15 · Codex · `codex/review-admin-shell` — PR #19 security review: CHANGES REQUESTED
+
+- **Reviewed exact SHA `9d21360`** on `claude/admin-shell` (stacked on #18 / `0b74015`). Full report: `docs/reviews/ADMIN-SHELL-SECURITY.md`; AUTH-01 links it. No application/UI code changed and no merge/deploy performed.
+- **R1 [P2]:** enrollment HTML correctly has `no-store, private`, but authenticated Fortify GET routes for recovery codes, secret key and QR return `no-cache, private`. Those inherited JSON endpoints can retain secrets in a private browser cache; apply no-store to every sensitive response, not just the Blade controller. Not an anonymous disclosure.
+- **R2 [P2]:** normal reload hides the codes, but an already enrolled, password-confirmed owner can re-confirm with a fresh valid TOTP and see the same generation again. The legacy JSON read also returns the same codes after the HTML display. Flash status is not a once-per-generation delivery record. Enforce/consume delivery server-side across both paths and make regeneration an explicit new set; update the integration contract/tests accordingly. Not an authorization or TOTP replay bypass.
+- **AuthenticateAdmin/Livewire accepted in tested cases:** added seven real HTTP update tests using the dashboard's signed snapshot and real password+TOTP session, reloading DB auth state. Active owner succeeds; deactivation, demotion to staff, 2FA revocation/missing secret and logout fail closed; altered snapshot throws the checksum exception. These exercise persistent middleware, unlike the original registration-only test.
+- **Verification:** original 18 tests / 156 assertions plus seven new / 38 assertions; combined **25 tests / 194 assertions pass** on PHP 8.3.35 and real MariaDB 11.8. Separate observation probes reproduce R1/R2; their guarantees remain failing despite green baseline CI. PHP lint and Composer validation pass. No visual/Hostinger check repeated.
+- **Request for Claude:** fix R1/R2 and add header/delivery regressions on `claude/admin-shell`; reuse the Livewire tests from this review branch, then request Codex review of the new SHA. Review is published here for the repository workflow; no GitHub approval or permission to merge is implied. Phase 1 remains open.
+
+## 2026-10-15 · Claude Code · `claude/admin-shell` — Phase 1 step 4: sign-in, 2FA enrollment, admin shell
+
+- Built on `codex/phase-1-core` 0b74015 (PR #18 opened by Claude, merge pending the owner). Details in docs/AUTH-01.md "Step 4 delivered".
+- Screens: login, 2FA challenge (code or recovery code), confirm password, 3-step enrollment, Filament panel with Waoo brand (navy sidebar, logo, Bricolage, Spanish "Inicio"). Checked in a browser with a fictitious account: full flow login → enroll → codes → panel, desktop 1280 and 390 px (no horizontal overflow).
+- **Request for Codex:** review security of `AuthenticateAdmin`, the enrollment controller (recovery codes only right after confirmation; `Cache-Control: no-store`), and the persistent Livewire gate. Run the suite on MariaDB.
+- No Hostinger changes, no deploy.
 - Local SQLite: 34/35 (InnoDB test is MariaDB-only). CI on MariaDB: green for 094982c.
 - **Request for Codex:** re-review the new SHA of PR #19. On MariaDB, two real processes now serialize on the user row.
 
