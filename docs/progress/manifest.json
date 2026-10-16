@@ -299,20 +299,22 @@
      "weight": 3,
      "agent": "Codex+Claude",
      "backend": null,
-     "ui": null,
+     "ui": "46eed30",
      "reviewed": false,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "blocker": "Portal/firma del lado de Codex (DOC-PAY-API)"
     },
     {
      "name": "Reserva rápida (tu mitad + la de la clienta)",
      "weight": 3,
      "agent": "Codex+Claude",
      "backend": null,
-     "ui": null,
+     "ui": "bf6f06e",
      "reviewed": false,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "blocker": "Servicio QuickBook (Codex, propuesta en docs/QUICK-BOOKING-API-PROPOSAL.md)"
     }
    ]
   },
