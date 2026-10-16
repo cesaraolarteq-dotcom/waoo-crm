@@ -150,4 +150,15 @@ class QuickBookingPageTest extends TestCase
         $this->assertStringContainsString('Ya tienes registrada', QuickBooking::duplicateHint('claudia martínez', null));
         $this->assertNull(QuickBooking::duplicateHint('Nadie', '111'));
     }
+
+    public function test_result_offers_whatsapp_and_sms_with_the_message_ready(): void
+    {
+        $this->bind();
+        Livewire::test(QuickBooking::class)->fillForm($this->form(['phone' => '(346) 555-0100']))->call('save')->assertHasNoFormErrors()
+            ->assertSee('wa.me\\/13465550100?text=', false)->assertSee('sms:+13465550100?\u0026body=', false)
+            ->assertSee('Abrir WhatsApp con el mensaje')->assertSee('beforeunload', false);
+        $this->assertSame('13465550100', \App\Filament\Support\ContactLinks::digits('346-555-0100'));
+        $this->assertSame('5215512345678', \App\Filament\Support\ContactLinks::digits('+52 1 55 1234 5678'));
+        $this->assertNull(\App\Filament\Support\ContactLinks::digits('555'));
+    }
 }

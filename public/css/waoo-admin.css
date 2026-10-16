@@ -128,3 +128,4 @@ a.wcal-name:hover{text-decoration:underline}
 .wterms-body{max-height:360px;overflow:auto;border:1px solid rgba(20,26,51,.1);border-radius:10px;padding:12px 14px;margin-top:8px;font-size:.88rem;line-height:1.55}
 .wterms-body h3{font-size:.95rem;margin:.8em 0 .3em}
 .wwarn-inline{color:#8F5B00;background:#FFF1D2;border-radius:6px;padding:1px 6px;font-weight:700}
+.wqb-send{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}

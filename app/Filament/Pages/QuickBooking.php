@@ -334,6 +334,7 @@ class QuickBooking extends Page
             'msg_es' => "¡Hola {$first}! Gracias por tu depósito de {$paid}. Registramos tu solicitud para el {$when}. Para terminar tu reserva, completa tus datos y firma tu contrato aquí: {$link} (el enlace vence el {$exp}). Tu saldo es de {$balance}. ¡Estamos emocionados de ser parte de tu celebración!",
             'msg_en' => "Hi {$first}! Thank you for your deposit of {$paid}. We recorded your booking request for {$whenEn}. To finish your booking, please complete your details and sign your contract here: {$link} (link expires {$exp}). Your remaining balance is {$balance}. We're excited to be part of your celebration!",
             'locale' => $r->customer->locale ?? 'es',
+            'phone' => $r->customer->phone ?? null,
         ];
     }
 
