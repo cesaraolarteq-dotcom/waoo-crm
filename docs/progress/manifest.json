@@ -73,10 +73,11 @@
       "backend": "1d7d76f",
       "ui": "1d7d76f",
       "reviewed": true,
-      "merged": false,
+      "merged": true,
       "accepted": false,
       "verification": "codex/integrate-42-43-fixes: fresh full 254 MariaDB tests / 2328 assertions; code matches approved bdc6c9e, coherent migration/services/approval caller/forms. PR into claude/quick-details-ui pending.",
-      "review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed."
+      "review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed.",
+      "merge_evidence": "origin/main cd52aec contains702b5e4 via PR45 then PR42, verified2026-10-16; owner business acceptance remains false."
      }
     },
     {
@@ -114,10 +115,11 @@
       "backend": "1d7d76f",
       "ui": "1d7d76f",
       "reviewed": true,
-      "merged": false,
+      "merged": true,
       "accepted": false,
       "verification": "codex/integrate-42-43-fixes: fresh full 254 MariaDB tests / 2328 assertions; code matches approved bdc6c9e, coherent migration/services/approval caller/forms. PR into claude/quick-details-ui pending.",
-      "review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed."
+      "review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed.",
+      "merge_evidence": "origin/main cd52aec contains702b5e4 via PR45 then PR42, verified2026-10-16; owner business acceptance remains false."
      }
     },
     {
@@ -146,10 +148,11 @@
       "backend": "1d7d76f",
       "ui": "1d7d76f",
       "reviewed": true,
-      "merged": false,
+      "merged": true,
       "accepted": false,
       "verification": "codex/integrate-42-43-fixes: fresh full 254 MariaDB tests / 2328 assertions; code matches approved bdc6c9e, coherent migration/services/approval caller/forms. PR into claude/quick-details-ui pending.",
-      "review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed."
+      "review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed.",
+      "merge_evidence": "origin/main cd52aec contains702b5e4 via PR45 then PR42, verified2026-10-16; owner business acceptance remains false."
      }
     },
     {
@@ -503,6 +506,15 @@
       "accepted": false,
       "verification": "Fresh isolated full suite 288 passed /2595 assertions (298.26s), PHP8.3/MariaDB11.8; report-focused8/60; build, strict Composer, lint, diff, guarded local migration check and real /up health passed. Initial Composer300s timeout and overlapping retry9 migration errors resolved by confirming no old runner and rerunning alone with600s. See HANDOFF/DEVELOPMENT.",
       "remaining": "Read-only slice only: package-sales/booked counts, upcoming weekend forecast, scheduled email/idempotent send and UI remain pending. Entire REPORT-A backend is not marked complete."
+     },
+     "weekend_followup": {
+      "backend": "2fc940e",
+      "ui": null,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "26 report/cost regression tests /219 assertions, PHP8.3/MariaDB11.8; confirmed vs draft, DST, bounds, chronology, unknown/stale costs/balances, privacy and owner/2FA/sandbox gates. Parent full288/2595 passed; no new full-suite claim.",
+      "remaining": "Claude review/UI/merge. Package/booked counts and cron/idempotent email sending remain pending; whole REPORT-A not complete."
      }
     }
    ]

@@ -119,3 +119,7 @@ AVAIL-01 (search for combinations and routes), HOLD-01 (on the RESV-A-01 protoco
 ### REPORT-A first read-only slice (Codex 2026-10-16)
 
 Contract `docs/REPORT-A-API.md`, backend source **656bd32** on `codex/operational-reports`. Owner-only sandbox period cash (received date) and scheduled-event balances/costs (event date), Chicago week/month boundaries, unknown/stale costs remain pending. No inference of staff rates, net profit, sales counts, historical closing balances or delivery. Claude can build the dashboard view now. Remaining REPORT-A slices: agreed booking/sales definition and package counts, upcoming-weekend forecast, cron/idempotent mail delivery after MAIL-01/JOBS-01. See newest HANDOFF for final checks.
+
+### REPORT-A confirmed-weekend projection (Codex 2026-10-16)
+
+`codex/weekend-forecast`, contract `docs/REPORT-A-WEEKEND-API.md`: read-only Saturday/Sunday commitments, drafts separate, current balance and pending counts, separate estimate/actual staff/direct costs using the existing report path. Reporting window is explicit, including ongoing weekends and Chicago DST; no availability policy change. Review/UI/merge pending. Package/booked counts and scheduled idempotent mail delivery remain future REPORT-A work.
