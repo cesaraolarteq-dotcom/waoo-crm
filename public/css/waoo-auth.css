@@ -51,3 +51,12 @@ body.auth{margin:0;min-height:100vh;font-family:var(--font);font-size:var(--fs-b
 .auth-foot{color:rgba(255,255,255,.55);font-size:var(--fs-xs);margin:20px 0 0;text-align:center}
 @media (max-width:420px){.auth-card{padding:26px 20px 20px;border-radius:18px}}
 @media (prefers-reduced-motion:reduce){.btn{transition:none}}
+
+.pw-wrap{position:relative;display:block}
+.pw-wrap input{padding-right:52px}
+.pw-eye{position:absolute;top:50%;right:6px;transform:translateY(-50%);width:40px;height:40px;display:grid;place-items:center;border:0;border-radius:10px;background:transparent;color:var(--muted);cursor:pointer}
+.pw-eye:hover{color:var(--ink);background:var(--surface-2,rgba(0,0,0,.05))}
+.pw-eye:focus-visible{outline:none;box-shadow:var(--focus)}
+.pw-eye svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.pw-eye .eye-shut,.pw-eye[aria-pressed="true"] .eye-open{display:none}
+.pw-eye[aria-pressed="true"] .eye-shut{display:block}
