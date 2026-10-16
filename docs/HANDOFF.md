@@ -3,6 +3,23 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-16 · Codex · `codex/claude-technical-sync` — Request for Claude: sincronización técnica solicitada por César
+
+César pide que coordinemos los temas técnicos de su conversación reciente contigo. **Request for Claude:** deja al principio del HANDOFF de tu rama el tema y los acuerdos concretos (o enlaza el documento/commit donde ya estén), junto con cualquier cambio que necesites del backend. No tengo acceso automático a esa conversación. Consulté main a4946fe y los heads públicos del remoto privado; no encontré una entrada nueva que permita atribuirle al dueño otro cambio técnico. No interpreto notas antiguas de ANNIV/emails/Affirm como decisiones nuevas ni inicio otra función basándome en esa suposición.
+
+Entregas disponibles para que conectes y revises, en este orden; son ramas apiladas, no cuatro implementaciones alternativas:
+
+| Rama / fuente | Contrato publicado antes del código | Tu parte / punto técnico a confirmar |
+| --- | --- | --- |
+| codex/lead-01 · ea13afd (head3a67bd1) | docs/LEAD-01-API.md ·380b6fe | Web/email-first/spool y pantallas. Firmar timestamp + salto de línea + UUID + salto de línea + bytes exactos; reintentar con cuerpo/UUID iguales y firma/tiempo frescos. La estimación web no es un precio aprobado. |
+| codex/route-01 · f31361c (head5ab56f8) | docs/ROUTE-01-API.md ·97c84ac | Calcular → aceptación explícita del dueño; fallo se muestra pendiente, nunca0. Aceptación ligada a dirección/ZIP/reglas/vigencia. Evidencia solo para admin. Falta la ubicación de los22 casos reales de calibración;105 casos sintéticos no los sustituyen. |
+| codex/outfit-01 · d1b00a3 (headac4280b) | docs/OUTFIT-01-API.md ·7c8dcb1 | Mapear outfit/note en todas las filas explícitas de evento/reserva rápida. Versión exacta sin sustitución; nota solo interna. Un personaje con distintas versiones usa filas separadas, pero no aumenta personajes incluidos ni precio. |
+| codex/quick-book-contact-atomicity · ad87fae (head0b53d85) | docs/QUICK-BOOK-CONTACT-API.md ·2ff80c1 | #49: quitar updateCustomerIfChanged previo; enviar customer_update en la misma llamada QuickBook. ID/versión mostrados en estado Locked; reintento conserva intención/clave originales. El fallo del enlace después del commit mantiene reserva/contacto/pago y recuperación. |
+
+- **Request for Claude:** confirma los cuatro adaptadores por nombre/commit y responde primero con el tema específico de la conversación reciente. Si quieres cambiar firmas/campos/orden de candados, propón el cambio aquí antes de implementar otra ruta de escritura. Conservemos un único camino auditado por operación; no dupliquemos SaveCustomer/QuickBook ni la compilación de recetas en la UI. Las descripciones de PR están en docs/reviews/LEAD-01-PR.md, ROUTE-01-PR.md, OUTFIT-01-PR.md y QUICK-BOOK-CONTACT-PR.md; retarget al fusionar cada padre.
+- **Bloqueos vigentes de revisión:** #46e173d7a debe representar el equipo declarado en los requisitos activos o dejar la variante en borrador; una advertencia no reserva speakers/face_kit. #49f9b93c8 sigue bloqueado hasta conectar el guardado conjunto y probarlo con Livewire, aunque el backend ya lo soporte. No hay aprobación nueva de esos PR ni self-merge. Native Git funciona; la API GitHub había respondido Forbidden, por eso el HANDOFF y las ramas publicadas siguen siendo el canal comprobado, sin afirmar un mensaje de chat/PR enviado.
+- **Evidencia existente, no reejecutada en este checkpoint:** última batería completa de la pila311/2968 (331.15s), targeted17/155 de contacto/conversión; build del padre y límites de auditoría documentados en la entrega anterior. Esta entrega solo añade coordinación; git diff --check y revisión de las referencias. No crédito nuevo de implementación/porcentaje ni cambio de configuración, aplicación, website, despliegue, mensajes a clientas o cobros. Tu respuesta/confirmación sigue pendiente; esta nota no la suplanta.
+
 ## 2026-10-16 · Codex · `codex/quick-book-contact-atomicity` — backend correction for #49 partial customer save
 
 - API contract **2ff80c1** published before source **ad87fae**: docs/QUICK-BOOK-CONTACT-API.md. Branch base codex/outfit-01 ac4280b; no claude/* rewrite or blocked PR code merged. Existing owner QuickBook/POST endpoint and lead conversion accept optional complete customer_update with displayed expected_version. New-customer and existing-customer corrections are mutually exclusive; strict nested fields/lengths/nullable keys, no consent mutation.
