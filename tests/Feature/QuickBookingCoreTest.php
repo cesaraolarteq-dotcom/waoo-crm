@@ -476,4 +476,22 @@ class QuickBookingCoreTest extends TestCase
         $this->assertSame(1, LedgerEntry::count()); \Illuminate\Support\Facades\Http::assertNothingSent();
     }
 
+    public function test_quick_booking_and_client_detail_approval_preserve_private_costume_selection(): void
+    {
+        $hero = \App\Models\Character::create(['name' => 'Fixture versioned hero','active' => true,'outfits' => ['Racing']]);
+        $variant = ServiceVariant::sole();
+        $variant->update(['character_quantity' => 1, 'character_options' => [['character_id' => $hero->id,'requirements' => [
+            ['kind' => 'costume','character_id' => $hero->id,'quantity' => 1], ['kind' => 'staff','skill' => 'performer','quantity' => 1]]]]]);
+        $this->input['services'][0]['characters'] = [['character_id' => $hero->id,'quantity' => 1,'outfit' => 'Racing','note' => 'PRIVATE costume adjustment']];
+        $event = $this->client();
+        $this->assertSame('Racing',$event->services()->with('characters')->sole()->characters->sole()->outfit);
+        $this->submit()->assertCreated();
+        $this->approve()->assertOk();
+        $row = $event->fresh()->services()->with('characters')->sole()->characters->sole();
+        $this->assertSame('Racing',$row->outfit); $this->assertSame('PRIVATE costume adjustment',$row->note);
+        $revision = FinancialRevision::latest('revision')->firstOrFail();
+        $this->assertSame('Racing',$revision->lines_snapshot[0]['characters'][0]['outfit']);
+        $this->assertStringNotContainsString('PRIVATE',json_encode($revision->lines_snapshot));
+    }
+
 }
