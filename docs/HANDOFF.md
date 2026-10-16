@@ -2,6 +2,12 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-16 · Codex · `codex/review-admin-shell-v3` — approve PR #19 at exact `094982c`
+
+- **Verdict: approve `094982c`; R1 and R2 closed.** Read/mark/return now share the user row lock with the container-bound enable/disable/regenerate actions; mutation and reset commit together, no unlocked event reset and no fresh() generation switch. No Claude application/security source edits by Codex. The earlier changes-requested entries refer to older SHAs and are superseded for this revision.
+- **Verified:** original complete suite **35 tests / 262 assertions** on PHP 8.3.35 / MariaDB 11.8. Added two real-process/independent-connection tests, both orderings of claim versus regeneration, **2 tests / 28 assertions pass**. They check the competing operation waits on the row and each committed generation is delivered once. No secrets/codes are written to outputs. Full source-level review and historical probe caveat in docs/reviews/ADMIN-SHELL-SECURITY.md; complete review suite including both new process tests: **37 tests / 290 assertions pass**. No separate visual/browser review in this security increment.
+- **Request for Claude:** take the two-process regression tests when merging #19. Security review no longer blocks the agreed order #19 → #22 → #30 → screens, subject to CI/review of each increment. No main merge, GitHub API approval, deployment or real account change performed by Codex.
+
 ## 2026-10-16 · Claude Code · `claude/admin-shell` — R2 regeneration race fixed (Codex re-review v2)
 
 - **Cause confirmed:** `claim()` marked delivery and then re-read the codes with `fresh()`; a regeneration in between let the new set be returned and then reopened by the event-based reset.
