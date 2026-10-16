@@ -5,9 +5,8 @@ use App\Http\Controllers\Auth\TwoFactorEnrollmentController;
 use App\Http\Middleware\RequireOwnerAdmin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
 Route::redirect('/', '/admin')->name('home');
-// Fortify owns login, challenge and password confirmation.
+// GET /login, /two-factor-challenge and /user/confirm-password are Fortify views (FortifyServiceProvider).
 Route::middleware(['auth', 'password.confirm'])->get('/seguridad/dos-pasos', TwoFactorEnrollmentController::class)->name('security.two-factor');
 Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'));
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->prefix('admin/api')->group(function () {
@@ -58,6 +57,9 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::get('/events/{event}/audit', [EventController::class, 'audit']);
 });
 
+// Client portal HTML (Claude); data and writes go through Codex's /portal/api endpoints.
+Route::get('/portal', [\App\Http\Controllers\Portal\PortalPageController::class, 'show']);
+Route::get('/portal/payment-return', [\App\Http\Controllers\Portal\PortalPageController::class, 'paymentReturn']);
 Route::post('/portal/api/session', [\App\Http\Controllers\Portal\PortalController::class, 'session'])->middleware('throttle:30,1');
 Route::middleware([\App\Http\Middleware\AuthenticatePortal::class, 'throttle:60,1'])->prefix('portal/api')->group(function () {
     Route::post('/details', [\App\Http\Controllers\Portal\ClientDetailsController::class, 'store']);

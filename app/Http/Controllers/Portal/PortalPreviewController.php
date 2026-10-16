@@ -17,7 +17,7 @@ final class PortalPreviewController extends Controller
         $es = $lang === 'es';
 
         return response()->view('portal.show', ['vm' => [
-            'lang' => $lang, 'step' => $step, 'test_mode' => true, 'first_name' => 'Ana',
+            'lang' => $lang, 'step' => $step, 'test_mode' => true, 'preview' => true, 'steps' => ['details', 'contract', 'pay'], 'first_name' => 'Ana',
             'lang_url' => ['es' => url("/dev/portal/{$step}?lang=es"), 'en' => url("/dev/portal/{$step}?lang=en")],
             'event' => ['package' => $es ? 'Paquete de ejemplo · 1 h' : 'Sample package · 1 h', 'when' => $es ? 'sáb. 21 nov. 2026, 3:00 p. m.' : 'Sat, Nov 21, 2026 at 3:00 pm',
                 'start_time' => $es ? '3:00 p. m.' : '3:00 pm', 'total' => '$125', 'travel' => '$25', 'paid' => '$62.50', 'balance' => '$62.50', 'due' => $es ? 'vie. 20 nov., 3:00 p. m.' : 'Fri, Nov 20, 3:00 pm'],

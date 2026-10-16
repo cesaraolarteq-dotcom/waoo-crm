@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <title>Waoo Party</title>
 <link rel="icon" href="{{ asset('img/favicon.png') }}">
 {{-- No third-party resources on portal pages (personal links are secrets). --}}
