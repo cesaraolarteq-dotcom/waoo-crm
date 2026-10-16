@@ -83,6 +83,26 @@ class EventAndBlockFormsTest extends TestCase
         $this->get("/admin/eventos/{$event->id}/editar")->assertForbidden();
     }
 
+    // Regression promoted from Codex's probe (docs/reviews/probes/EventDraftEditReviewProbeTest.php).
+    public function test_unrelated_edit_keeps_the_agreed_price_after_a_new_catalog_price(): void
+    {
+        Livewire::test(CreateEvent::class)->fillForm($this->draft())->call('create')->assertHasNoFormErrors();
+        $event = Event::sole();
+        $newer = PriceVersion::create(['service_variant_id' => $this->price->service_variant_id, 'amount_cents' => 15000, 'currency' => 'USD', 'created_by' => $this->owner->id]);
+
+        $options = \App\Filament\Resources\Events\EventResource::priceOptions($event);
+        $this->assertStringContainsString('$100 (precio guardado en este borrador)', $options[$this->price->id]);
+        $this->assertStringContainsString('$150', $options[$newer->id]);
+        $this->assertArrayNotHasKey($this->price->id, \App\Filament\Resources\Events\EventResource::priceOptions(), 'Old prices are not offered to new drafts.');
+
+        Livewire::test(EditEvent::class, ['record' => $event->id])->fillForm(['title' => 'Edited title'])->call('save')->assertHasNoFormErrors();
+        $this->assertSame('Edited title', $event->fresh()->title);
+        $this->assertSame([$this->price->id], $event->services()->pluck('price_version_id')->all());
+
+        Livewire::test(EditEvent::class, ['record' => $event->id])->fillForm(['price_version_ids' => [$newer->id]])->call('save')->assertHasNoFormErrors();
+        $this->assertSame([$newer->id], $event->services()->pluck('price_version_id')->all(), 'Repricing is a deliberate choice.');
+    }
+
     public function test_block_and_release_with_history(): void
     {
         $unit = Resource::create(['code' => 'TRJ-1', 'name' => 'Fictitious costume', 'kind' => 'costume', 'status' => 'active', 'character_id' => Character::create(['name' => 'Hero', 'active' => true])->id, 'skills' => []]);

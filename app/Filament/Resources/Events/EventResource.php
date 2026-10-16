@@ -67,8 +67,8 @@ class EventResource extends Resource
             ]),
             Section::make('Servicios')->columnSpanFull()->schema([
                 Select::make('price_version_ids')->label('Paquetes y servicios')->multiple()->native(false)->searchable()
-                    ->options(fn () => self::priceOptions())
-                    ->helperText('Precio vigente de cada servicio. Queda guardado tal cual en el evento aunque el precio cambie después.'),
+                    ->options(fn (?Event $record) => self::priceOptions($record))
+                    ->helperText('Precio vigente de cada servicio. Un borrador conserva el precio que ya tenía; para usar el precio nuevo, quita el anterior y elige el actual.'),
             ]),
             Section::make('Lugar y logística')->columns(2)->columnSpanFull()->schema([
                 TextInput::make('address')->label('Dirección')->maxLength(255)->columnSpanFull(),
@@ -83,15 +83,32 @@ class EventResource extends Resource
         ]);
     }
 
-    /** Newest price of each non-retired service: price_version_id => "Name · 1 h · $X". */
-    public static function priceOptions(): array
+    /**
+     * Newest price of each non-retired service, plus (when editing) the prices this draft already holds,
+     * so an unrelated edit keeps the agreed price and repricing is a deliberate choice (Codex review EVENT-BLOCK-FORMS).
+     */
+    public static function priceOptions(?Event $event = null): array
     {
-        return ServiceVariant::query()->where('status', '!=', 'retired')->orderBy('name')->get()
-            ->mapWithKeys(function ($variant) {
+        $label = fn ($variant, $price) => $variant->name.' · '.Labels::duration($variant->duration_minutes).' · '.Labels::money($price->amount_cents);
+        $options = ServiceVariant::query()->where('status', '!=', 'retired')->orderBy('name')->get()
+            ->mapWithKeys(function ($variant) use ($label) {
                 $price = PriceVersion::where('service_variant_id', $variant->id)->orderByDesc('id')->first();
 
-                return $price ? [$price->id => $variant->name.' · '.Labels::duration($variant->duration_minutes).' · '.Labels::money($price->amount_cents).($variant->status === 'draft' ? ' (borrador)' : '')] : [];
+                return $price ? [$price->id => $label($variant, $price).($variant->status === 'draft' ? ' (borrador)' : '')] : [];
             })->all();
+        if ($event?->exists) {
+            foreach ($event->services()->get() as $service) {
+                if (! isset($options[$service->price_version_id])) {
+                    $price = PriceVersion::find($service->price_version_id);
+                    $variant = ServiceVariant::find($service->service_variant_id);
+                    if ($price && $variant) {
+                        $options[$service->price_version_id] = $label($variant, $price).' (precio guardado en este borrador)';
+                    }
+                }
+            }
+        }
+
+        return $options;
     }
 
     /** Form state -> SaveEventDraft input (explicit offsets, cents, null travel fee when unknown). */
