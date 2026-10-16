@@ -279,7 +279,14 @@
      "reviewed": true,
      "merged": false,
      "accepted": false,
-     "review_evidence": "d3fab7b reviewed with finance version corrections 3279591; Claude to integrate; Claude integrated 3279591 in a9f2996"
+     "review_evidence": "d3fab7b reviewed with finance version corrections 3279591; Claude to integrate; Claude integrated 3279591 in a9f2996",
+     "backend_notice_followup": "3fe2dd1: immutable client claim, scoped list, owner queue and atomic verify/reject using actual bank amount; source cross-review and notice UI pending",
+     "notice_ui": null,
+     "notice_reviewed": false,
+     "notice_merged": false,
+     "notice_accepted": false,
+     "backend_verification": "3fe2dd1 atop doc-pay-followups3bc38bf: full 229 MariaDB tests / 2017 assertions; 13 Zelle notice scenarios incl. three two-process races and actual staging CSRF; Vite build/PHP lint/strict Composer/diff checks pass; sandbox only",
+     "ui_note": "Existing manual money screen reviewed separately; client notice + owner queue/verification screens remain for Claude. Follow-up evidence adds no UI/owner acceptance credit."
     },
     {
      "name": "Stripe (modo prueba, sin Affirm)",

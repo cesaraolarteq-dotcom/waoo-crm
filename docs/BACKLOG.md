@@ -85,6 +85,10 @@ These are open tickets, not implemented changes and not additional approval bloc
 | TPL-01 | Contract template editor: an admin edits the clauses and saves a new version (author, note, preview, diff), activates it for new contracts, and can never edit a version that was already used; addendum flow for booked events | Claude (editor UI) + Codex (versioning, immutability) | the other | DOC-00, DATA-01 |
 | PORTAL-01 | Client portal EN/ES: event details, quote, sign + pay in one session (D2), documents, balance; mobile and accessible | Claude (UI) + Codex (auth/API) | the other | AUTH-01, PAY-02, DOC-01, MAIL-01 |
 
+### PAY-02 client notice follow-up (2026-10-16)
+
+Backend source `3fe2dd1` on `codex/zelle-payment-notices`: immutable client Zelle notice, private scoped list, owner queue and atomic explicit verification/rejection through the existing exact-amount ledger. API contract: [ZELLE-NOTICES-API.md](ZELLE-NOTICES-API.md). Claims never count as cash or reserve resources. Claude review and client/owner screen wiring pending. Receipt corrections/refunds remain separate; no live activation or messages.
+
 ## Phase 5: pilot and communications (Track A)
 | ID | Task | Impl. | Review | Depends on |
 | --- | --- | --- | --- | --- |

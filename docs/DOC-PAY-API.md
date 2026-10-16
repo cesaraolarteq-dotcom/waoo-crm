@@ -188,3 +188,8 @@ The owner authorizes crossing phase boundaries where dependencies permit (chat, 
 ## Approved DOC/PAY follow-ups (2026-10-16)
 
 See [DOC-PAY-FOLLOWUPS.md](DOC-PAY-FOLLOWUPS.md): closed three-field legal merge allowlist, audited nullable catalog long_description copied into new financial snapshots, friendly English PDF labels, and explicit-owner `Portal\RevokePortalGrant::execute(User, int): PortalGrant`. Existing revoke endpoint/response is unchanged. QuickBook and SubmitClientDetails are delivered separately per [BOOK-QUICK-API.md](BOOK-QUICK-API.md); real details/review screen wiring remains pending. Legal text edits/activation still need owner approval.
+
+
+## PAY-02 client Zelle notice extension (2026-10-16)
+
+[ZELLE-NOTICES-API.md](ZELLE-NOTICES-API.md) defines the delivered scoped claim/list APIs and explicit-owner verification/rejection service. A notice is not a receipt; balances use only the ledger. Both sandbox flags and existing scopes/CSRF/2FA remain. Claude owns the new notice/review screen wiring.
