@@ -161,7 +161,15 @@
      "reviewed": true,
      "merged": false,
      "accepted": false,
-     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996"
+     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996",
+     "performance_followup": {
+      "backend": "83b2709",
+      "ui": null,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "RESV-A-PERF on codex/reservation-neighborhood; full 262/2362, new8/34, existing Core31/155. Fictional1201 history: 2402 models ->2, 2 queries ->3; old-scan decisions, long/midnight overlap, distant neighbors, SQLite and actual race pass. No new availability policy or phase acceptance."
+     }
     },
     {
      "name": "Calendario con márgenes de 45 min",
@@ -257,7 +265,15 @@
      "ui": null,
      "reviewed": true,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "performance_followup": {
+      "backend": "83b2709",
+      "ui": null,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "RESV-A-PERF on codex/reservation-neighborhood; full 262/2362, new8/34, existing Core31/155. Fictional1201 history: 2402 models ->2, 2 queries ->3; old-scan decisions, long/midnight overlap, distant neighbors, SQLite and actual race pass. No new availability policy or phase acceptance."
+     }
     },
     {
      "name": "Rutas y tiempos de manejo automáticos",

@@ -53,7 +53,7 @@ No-alcance de estos tickets: rehacer web, desplegar CRM, procesar pagos reales, 
 
 ## Non-blocking follow-ups from Claude's PR #22 review
 
-These are open tickets, not implemented changes and not additional approval blockers for the reviewed increment. Detailed scope, acceptance, test and rollback plans are linked below. GitHub issue creation is separate from this canonical backlog.
+These follow-ups are not additional approval blockers for the reviewed increment. Linked tickets record their current source/review status. RESV-A-PERF is implemented on codex/reservation-neighborhood (83b2709), with independent review/merge pending. Detailed scope, acceptance, test and rollback plans are linked below. GitHub issue creation is separate from this canonical backlog.
 
 | ID | Follow-up | Impl. / review | Parent |
 | --- | --- | --- | --- |

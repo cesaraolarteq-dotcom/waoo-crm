@@ -2,6 +2,15 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-16 · Codex · `codex/reservation-neighborhood` — RESV-A-PERF delivered and measured
+
+- Contract **a01a5ca** before source **83b2709**, based on the requested integration **702b5e4**. ConfirmBooking uses internal ReservationNeighborhood: SQL overlap existence + at most two neighboring Event models, retaining the original reservation ordering and all dates. No new endpoint, UI, migration, availability policy or resource release.
+- Confirmed with a **1,201-reservation fictional fixture** against the old full-scan oracle: old hydrated **1,201 reservations + 1,201 events**; new hydrates **0 reservations + 2 events**. Queries **2 → 3**; observed loaded heap **5,066,248 → 11,072 bytes**; local observed time **264.86 → 4.60 ms**. Timing is not a production guarantee. Neighbor EXPLAIN uses the existing resource/start/end index; no new index needed. SQL overlap can still examine history inside the DB: improvement bounds application loading, not constant SQL CPU.
+- **Fresh full suite 262 tests / 2362 assertions PASS** on PHP8.3 / MariaDB11.8. Existing CoreTest31/155 and new focused8/34 pass. Covers a 45-day overlapping event, midnight prep, exact half-open boundaries, unrelated resource, distant preceding/following commitments, stale/missing transfer evidence, retry idempotency and equivalent SQLite expressions; existing actual competing-confirmation race remains green. Strict Composer, changed PHP lint and diff checks pass. Frontend/dependencies unchanged; no extra build needed beyond the parent integration's passing build.
+- **All booking protections remain:** same sorted resource row locks and transaction, same conflict messages, versioned transfer evidence and 45-minute minimum, block/trip checks, crew matching, payment evidence and audit. The new query is internal and never represents a pre-confirmation availability promise. Source did not change after the full run.
+- **Request for Claude:** review this separate performance follow-up after #42/#43 integration. Prepared PR docs/reviews/RESERVATION-NEIGHBORHOOD-PR.md, base codex/integrate-42-43-fixes then retarget main after its merge. Design/limits: docs/RESERVATION-NEIGHBORHOOD.md; ticket/protocol updated. Performance metadata is tested evidence only; independent review, merge and owner acceptance remain pending. No phase completion, production benchmark, deployment, charge or customer message claimed.
+
+
 ## 2026-10-16 · Codex · `codex/integrate-42-43-fixes` — requested integration using the approved Codex implementation
 
 - **Explicit latest decision:** user relayed approval of codex/portal-review-fixes **ee706a6** and codex/record-versions **bdc6c9e**, green CI, and chose Codex's implementation over the parallel Claude corrections. This supersedes the prior advice to use codex/record-versions-v2. Created this branch from exact Claude #43 **2d19000**, then merged exact **bdc6c9e** normally. No claude/* history or other published branch was rewritten.
