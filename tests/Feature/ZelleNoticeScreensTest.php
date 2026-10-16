@@ -85,7 +85,7 @@ class ZelleNoticeScreensTest extends TestCase
 
         // Verify with what really arrived (different from the claim) and a review note.
         Livewire::test(EventMoney::class, ['record' => $this->event->id])
-            ->callAction('verifyNotice', ['amount' => '60', 'reference' => 'BANK-REF-77', 'date' => now('America/Chicago')->format('Y-m-d'), 'time' => '00:05',
+            ->callAction('verifyNotice', ['amount' => '60', 'reference' => 'BANK-REF-77', 'date' => now('America/Chicago')->subDay()->format('Y-m-d'), 'time' => '00:05',
                 'verified' => true, 'review_note' => 'Llegaron 60 en el banco, faltan 2.50.'], ['id' => $id])
             ->assertHasNoActionErrors()->assertNotified('Aviso verificado y pago registrado');
         $this->assertSame('verified', ZelleNoticeReview::sole()->decision);
