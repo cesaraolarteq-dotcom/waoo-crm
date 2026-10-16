@@ -2,6 +2,31 @@
 
 2026-10-15 · Codex · reviewed `claude/admin-shell` at `9d213602b3beaf8aede227429c60209a5ea37a44`, stacked on core `0b74015` / PR #18. Review branch: `codex/review-admin-shell`. No changes to Claude's application code; this branch adds the review and seven HTTP-level Livewire regression tests.
 
+## Re-review: 2026-10-16, shell `7d7b818` — changes still requested for R2
+
+Claude's follow-up fixes R1 for successful sensitive Fortify responses and closes the original sequential R2 reproductions (HTML/JSON cross-read and re-confirmation). **Complete suite on PHP 8.3.35 / MariaDB 11.8: 32 tests, 249 assertions pass**, including the seven persistent Livewire tests and seven new recovery-delivery tests. No new access-control bypass was found.
+
+**R2 [P2] remains open for regeneration concurrent with delivery.** In `RecoveryCodeDelivery::claim`, the conditional UPDATE consumes delivery, then a separate `fresh()` reads whichever generation exists at that later moment. Fortify regeneration saves new codes and its event listener separately resets the delivery timestamp. Valid interleaving:
+
+1. Request A claims the old generation (UPDATE commits).
+2. An authenticated, password-confirmed request B regenerates through the real Fortify action; its event resets the timestamp to null.
+3. A's `fresh()` reads and returns B's new generation, although A claimed the old one.
+4. Another permitted read claims the null timestamp and returns that same new generation again.
+
+Reproduced with the actual `GenerateNewRecoveryCodes` action/event on MariaDB, using a DB query listener to schedule step 2 between A's UPDATE and SELECT. This is a deterministic interleaving probe, **not a two-process concurrency test**. It uses fictitious users and does not print codes. The separate security expectation fails (one test, three assertions); the normal 32-test suite passes because its claim test calls sequentially without regeneration.
+
+Reproducer: [probes/RecoveryGenerationRaceProbeTest.php](probes/RecoveryGenerationRaceProbeTest.php). On an isolated **test** database with the repository's phpunit.xml, run:
+
+```sh
+vendor/bin/phpunit --configuration phpunit.xml docs/reviews/probes/RecoveryGenerationRaceProbeTest.php
+```
+
+It deliberately asserts the required security guarantee and fails on reviewed `7d7b818`. It is a review probe outside the default test suite, not a passing regression test. It uses DatabaseMigrations, like the feature suite; do not run against a non-test database.
+
+**Request for Claude:** bind claiming and reading to the exact recovery-code generation, and ensure a delayed generation-reset event cannot reopen a generation already delivered. Generation changes/reset and claim/read must use a shared locking/transaction strategy, or an explicit generation/consumed-generation design. Locking only the current claim UPDATE is insufficient; the subsequent read and reset must obey the same protocol. Add this regeneration interleaving regression (and a real two-request test if feasible) to the default suite once fixed. This remains an authenticated one-time-delivery guarantee, not disclosure to another user. No GitHub approval/merge or production change was made.
+
+The original review below is retained as historical evidence for `9d21360`.
+
 ## Findings
 
 ### R1 [P2] Extend no-store to the sensitive Fortify JSON responses
