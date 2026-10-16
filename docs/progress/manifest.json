@@ -72,10 +72,11 @@
      "record_version_followup": {
       "backend": "1d7d76f",
       "ui": "1d7d76f",
-      "reviewed": false,
+      "reviewed": true,
       "merged": false,
       "accepted": false,
-      "verification": "Full integrated 254 MariaDB tests / 2328 assertions; targeted 25/235 includes two real owner races, API/services/Livewire and isolated SQLite backfill/rollback. docs/RECORD-VERSION-API.md. Claude review pending."
+      "verification": "codex/integrate-42-43-fixes: fresh full 254 MariaDB tests / 2328 assertions; code matches approved bdc6c9e, coherent migration/services/approval caller/forms. PR into claude/quick-details-ui pending.",
+      "review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed."
      }
     },
     {
@@ -112,10 +113,11 @@
      "record_version_followup": {
       "backend": "1d7d76f",
       "ui": "1d7d76f",
-      "reviewed": false,
+      "reviewed": true,
       "merged": false,
       "accepted": false,
-      "verification": "Full integrated 254 MariaDB tests / 2328 assertions; targeted 25/235 includes two real owner races, API/services/Livewire and isolated SQLite backfill/rollback. docs/RECORD-VERSION-API.md. Claude review pending."
+      "verification": "codex/integrate-42-43-fixes: fresh full 254 MariaDB tests / 2328 assertions; code matches approved bdc6c9e, coherent migration/services/approval caller/forms. PR into claude/quick-details-ui pending.",
+      "review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed."
      }
     },
     {
@@ -143,10 +145,11 @@
      "record_version_followup": {
       "backend": "1d7d76f",
       "ui": "1d7d76f",
-      "reviewed": false,
+      "reviewed": true,
       "merged": false,
       "accepted": false,
-      "verification": "Full integrated 254 MariaDB tests / 2328 assertions; targeted 25/235 includes two real owner races, API/services/Livewire and isolated SQLite backfill/rollback. docs/RECORD-VERSION-API.md. Claude review pending."
+      "verification": "codex/integrate-42-43-fixes: fresh full 254 MariaDB tests / 2328 assertions; code matches approved bdc6c9e, coherent migration/services/approval caller/forms. PR into claude/quick-details-ui pending.",
+      "review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed."
      }
     },
     {
@@ -316,8 +319,8 @@
      "notice_accepted": false,
      "backend_verification": "3fe2dd1 atop doc-pay-followups3bc38bf: full 229 MariaDB tests / 2017 assertions; 13 Zelle notice scenarios incl. three two-process races and actual staging CSRF; Vite build/PHP lint/strict Composer/diff checks pass; sandbox only",
      "ui_note": "Claude 3c77e67: portal 'Ya envié el Zelle' (pending only), Dinero notice list with verify (actual bank amount/ref/time + checkbox + note) / reject (note), Inicio card, event history labels. Claude reviewed 3fe2dd1 (approve). Merge and owner acceptance pending.",
-     "notice_ui_reviewed": false,
-     "notice_ui_review_evidence": "Codex exact #43 a16166d: payment/private-projection paths reviewed without blocking product finding; new receipt fixture fails at frozen 00:01 Houston (R3). Correct fixture and parent #42 findings before merge; docs/reviews/CLAUDE-42-43.md.",
+     "notice_ui_reviewed": true,
+     "notice_ui_review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed. Fresh integrated suite 254/2328; yesterday fixture and actual-bank verification preserved.",
      "notice_ui_fix_evidence": "Codex bf2ffac: past receipt fixture, frozen 00:01 Houston verification passes; full 243 MariaDB tests / 2226 assertions. Claude review/integration and parent #42 corrections pending."
     },
     {
@@ -356,13 +359,14 @@
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "blocker": "PR #42 findings corrected on codex/portal-review-fixes (bf2ffac, 7ebcf2c); Claude review/integration, merge, staging and owner acceptance pending. #39–#41 are in main ea41755.",
+     "blocker": "Approved Codex implementation consolidated on codex/integrate-42-43-fixes, target claude/quick-details-ui (#42); independent PR CI/merge, staging and owner acceptance pending. Supersedes the previous v2 alternative.",
      "backend_verification": "Integration e9b2ac5 with Claude 2074213 and main8105bef: 216 MariaDB tests / 1885 assertions; Vite build, PHP lint and strict Composer pass. Separate three-increment stack over main: 23 document/portal/screen tests / 264 assertions. No provider operation or owner acceptance.",
      "followup_reviewed": false,
      "backend_followups": "4aa340f: RevokePortalGrant, narrow review head codex/portal-revoke (2552ffd); QuickBook/details source1a5fbe3 integrated",
      "ui_review_evidence": "Codex exact #42 4ff9d13 / #43 a16166d: full MariaDB 235 tests / 2156 assertions pass; opt-in probes reproduce stale unseen-address approval (R1) and requested-time DST error (R2). See docs/reviews/CLAUDE-42-43.md.",
-     "ui_fix_evidence": "Codex bf2ffac + 7ebcf2c fixes R1/R2/C1; full 243 MariaDB tests / 2226 assertions pass. Source awaits Claude review; docs/PORTAL-REVIEW-FIXES.md.",
-     "review_fixes": "Codex ee706a6 (R1/R2/C1/R3) approved by Claude; integration branch codex/integrate-42-43-fixes requested"
+     "ui_fix_evidence": "Codex implementation bf2ffac/7ebcf2c chosen explicitly; integrated exact bdc6c9e with Claude2d19000. Full 254/2328; server resolves Houston local time with CDT/CST choice. Both HANDOFF histories retained.",
+     "ui_fix_reviewed": true,
+     "ui_fix_review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed."
     },
     {
      "name": "Reserva rápida (tu mitad + la de la clienta)",
@@ -373,13 +377,14 @@
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "blocker": "PR #42 findings corrected on codex/portal-review-fixes (bf2ffac, 7ebcf2c); Claude review/integration, merge, staging and owner acceptance pending. #39–#41 are in main ea41755.",
+     "blocker": "Approved Codex implementation consolidated on codex/integrate-42-43-fixes, target claude/quick-details-ui (#42); independent PR CI/merge, staging and owner acceptance pending. Supersedes the previous v2 alternative.",
      "backend_note": "QuickBook/details services implemented; Claude 411eec1 connected portal/owner-review UI; Codex found approval snapshot and DST issues (review doc), not accepted yet.",
      "backend_verification": "Integration e9b2ac5 with Claude 2074213 and main8105bef: 216 MariaDB tests / 1885 assertions; Vite build, PHP lint and strict Composer pass. Separate three-increment stack over main: 23 document/portal/screen tests / 264 assertions. No provider operation or owner acceptance.",
      "followup_reviewed": false,
      "ui_review_evidence": "Codex exact #42 4ff9d13 / #43 a16166d: full MariaDB 235 tests / 2156 assertions pass; opt-in probes reproduce stale unseen-address approval (R1) and requested-time DST error (R2). See docs/reviews/CLAUDE-42-43.md.",
-     "ui_fix_evidence": "Codex bf2ffac + 7ebcf2c fixes R1/R2/C1; full 243 MariaDB tests / 2226 assertions pass. Source awaits Claude review; docs/PORTAL-REVIEW-FIXES.md.",
-     "review_fixes": "Codex ee706a6 (R1/R2/C1/R3) approved by Claude; integration branch codex/integrate-42-43-fixes requested"
+     "ui_fix_evidence": "Codex implementation bf2ffac/7ebcf2c chosen explicitly; integrated exact bdc6c9e with Claude2d19000. Full 254/2328; server resolves Houston local time with CDT/CST choice. Both HANDOFF histories retained.",
+     "ui_fix_reviewed": true,
+     "ui_fix_review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed."
     }
    ]
   },

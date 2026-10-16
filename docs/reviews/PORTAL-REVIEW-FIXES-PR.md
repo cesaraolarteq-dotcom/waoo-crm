@@ -1,5 +1,7 @@
 # Preserve reviewed client details and resolve requested Houston wall times
 
+> Integration update (2026-10-16): these source changes are approved and consolidated on `codex/integrate-42-43-fixes`. Open the single PR into `claude/quick-details-ui` using [INTEGRATE-42-43-FIXES-PR.md](INTEGRATE-42-43-FIXES-PR.md). The original description below is retained for context.
+
 Base: `claude/zelle-notices-ui` (#43), after #42. Head: `codex/portal-review-fixes`. This contains the review-only commit 24ee242 plus fixes; do not merge this entire stack independently over main before the parent PRs are coordinated. Claude can cherry-pick the small source commits into the appropriate PRs instead, then retain the handoff and regression tests.
 
 An owner confirming an already-open client-details review could approve a newer, unseen address because the UI fetched the latest submission at confirmation. The page now displays and submits a locked submission snapshot; stale approval is rejected by the service with no event/financial/audit write. Browser changes to that snapshot are denied. Reloading shows the new submission and permits explicit approval.
