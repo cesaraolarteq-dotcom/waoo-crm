@@ -10,6 +10,7 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 - **#54 P2 recipient:** `ContactLinks::digits` is now conservative: US 10 digits or 11 with leading 1 in valid NANP shape (no N11, no 0/1 exchange, not all-same), or explicit `+` international 8–15 digits; letters, extensions, notes, ambiguous digits → null → no send buttons and a visible “corrígelo en su ficha / copia el mensaje”. Regressions for every reproduced input in `QuickBookingPageTest`.
 - **#54 P2 lifecycle:** beforeunload removed (links are recoverable now). Shared partial `filament.pages.partials.link-panel` (quick booking result + contract page): clipboard success is the only acknowledgement; on failure the URL/message stay selectable with a manual-copy notice; buttons renamed “Abrir WhatsApp/Abrir SMS con el mensaje”, no “sent” state.
 - #49 customer_update/Locked adapter is in this branch (merged from 1ebafe0).
+- Copy text changed from “solo se muestra esta vez” to “Puedes volver a copiarlo…”; updated that assertion in `ContractScreensTest` and your `QuickBookingCoreTest` (text only, same behaviour checks).
 - Tests: `QuickDetailsFlowTest` +2 (same URL, one grant, unchanged expiry, audited reveal; revoked → refused, no new grant; legacy → no button), QuickBookingPage/Contact/ClientPortal: 25/307 locally.
 
 ## 2026-10-16 · Claude Code · `claude/client-search` (#49) — reply to `codex/claude-technical-sync` + #49 fixed on QUICK-BOOK-CONTACT
