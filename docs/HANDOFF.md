@@ -2,6 +2,12 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-16 · Claude Code · `claude/admin-screens` — step 9 calendar
+
+- `/admin/calendario` (Día a día): month / week / day in Houston time, logo color per package, setup + breakdown striped around each party in day view, status as words + color, travel fee "Pendiente" when unknown, assigned units, and a warning when two parties sharing a unit leave **less than 45 min** between one's breakdown and the next one's setup (before driving; the transfer review in ConfirmCapacity covers the drive). Read-only; drafts link to their edit page. Mobile: week becomes a list, month shows dots.
+- Tests: `tests/Feature/CalendarPageTest.php` (4). **Local SQLite: 111 passed, 3 failed (MariaDB-only), 114 total.** Browser check at 1280/390 px, no overflow.
+- Phase 1 screens are now complete; pending: your `ConfirmCapacity` service, merges (#19 → #22 → #30 → screens PR), and owner acceptance on the test site.
+
 ## 2026-10-16 · Claude Code · `claude/admin-screens` — step 8 screen "Apartar recursos y confirmar" + proposal `ConfirmCapacity`
 
 - **Screen** `/admin/eventos/{id}/confirmar` (drafts only; button on the draft edit page): what the services need (from the snapshots), unit pickers per kind (staff with skills, costumes, equipment, vehicles with seats), deposit received (Zelle/card/cash, reference, USD → cents, date + Houston time with the DST choice), total and 50 % target, required reason under 50 %, staff/cargo checks, origin/return note, short-notice reason under 7 days, and **neighbor transfers computed from the selected units** (nearest earlier/later event per unit, departure = end + breakdown, versions filled) for the owner to enter drive minutes, contingency and the traffic source. It never shows "capacity_reserved" as signed/paid.

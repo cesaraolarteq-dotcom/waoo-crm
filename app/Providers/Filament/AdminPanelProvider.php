@@ -54,7 +54,7 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make('Vender'),
                 NavigationGroup::make('Operación'),
             ])
-            ->pages([Dashboard::class])
+            ->pages([Dashboard::class, \App\Filament\Pages\Calendar::class])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->renderHook(PanelsRenderHook::HEAD_END, fn () => view('filament.head'))
             ->middleware([

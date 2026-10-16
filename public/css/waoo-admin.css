@@ -19,3 +19,54 @@
 .dark .waoo-next div{border-color:rgba(255,255,255,.08);background:rgba(255,255,255,.03)}
 .waoo-next b{display:block;margin-bottom:4px}
 .waoo-next span{font-size:.875rem;opacity:.75}
+/* Calendar (read-only). Package color via --pkg; status always words + color. */
+.wcal{display:grid;gap:12px}
+.wcal-bar{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center}
+.wcal-nav,.wcal-modes{display:flex;gap:6px;align-items:center}
+.wcal-title{font-size:1.15rem;font-weight:800;margin:0 0 0 8px;letter-spacing:-.01em}
+.wcal-btn{border:1px solid rgba(20,26,51,.12);background:#fff;border-radius:10px;padding:6px 12px;font-weight:700;font-size:.875rem;min-height:36px}
+.wcal-btn:hover{background:#EEF1F9}.wcal-btn.on{background:#122F94;color:#fff;border-color:#122F94}
+.wcal-btn:focus-visible{outline:none;box-shadow:0 0 0 3px #15D1C4}
+.dark .wcal-btn{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.12)}
+.wcal-legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8rem;opacity:.85;margin:0}
+.wcal-legend span{display:inline-flex;align-items:center;gap:6px}
+.wcal-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.wcal-legend-note{opacity:.75}
+.wcal-month{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.wcal-dow{font-size:.75rem;font-weight:700;opacity:.6;padding:2px 6px}
+.wcal-mday{display:flex;flex-direction:column;gap:3px;align-items:stretch;text-align:left;min-height:96px;border-radius:12px;border:1px solid rgba(20,26,51,.08);background:#fff;padding:6px;overflow:hidden}
+.wcal-mday:hover{border-color:#122F94}.wcal-mday.out{opacity:.45}.wcal-mday.today{box-shadow:inset 0 0 0 2px #FF017C}
+.dark .wcal-mday{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.08)}
+.wcal-mnum{font-weight:800;font-size:.85rem}
+.wcal-mev{font-size:.72rem;line-height:1.25;border-left:3px solid var(--pkg);padding-left:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wcal-more{font-size:.72rem;opacity:.7}
+.wcal-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.wcal-wday{display:flex;flex-direction:column;gap:8px;min-width:0}
+.wcal-whead{text-align:left;font-weight:800;font-size:.9rem;padding:6px 8px;border-radius:10px;background:#EEF1F9}
+.wcal-wday.today .wcal-whead{background:#FF017C;color:#fff}
+.dark .wcal-whead{background:rgba(255,255,255,.06)}
+.wcal-whead small{font-weight:600;opacity:.75;margin-left:4px}
+.wcal-empty{font-size:.8rem;opacity:.55;margin:2px 8px}
+.wcal-card{display:flex;flex-direction:column;gap:3px;border-radius:12px;padding:10px 10px 10px 12px;background:#fff;border:1px solid rgba(20,26,51,.08);border-left:5px solid var(--pkg);min-width:0}
+.dark .wcal-card{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08);border-left-color:var(--pkg)}
+.wcal-card-top{display:flex;justify-content:space-between;gap:6px;align-items:center;flex-wrap:wrap}
+.wcal-time{font-size:.8rem;font-variant-numeric:tabular-nums}
+.wcal-name{font-weight:800;font-size:.9rem;line-height:1.25;color:inherit}
+a.wcal-name:hover{text-decoration:underline}
+.wcal-meta{font-size:.76rem;opacity:.78;line-height:1.35;overflow-wrap:anywhere}
+.wcal-warn{font-size:.75rem;font-weight:700;color:#8F5B00;background:#FFF1D2;border-radius:8px;padding:4px 6px}
+.wcal-day{position:relative}
+.wcal-grid{position:relative;border-radius:14px;background:#fff;border:1px solid rgba(20,26,51,.08);overflow:hidden}
+.dark .wcal-grid{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.08)}
+.wcal-hour{position:absolute;left:0;right:0;border-top:1px solid rgba(20,26,51,.06);height:0}
+.wcal-hour span{position:absolute;left:8px;top:2px;font-size:.72rem;opacity:.6}
+.wcal-prep{position:absolute;width:calc((100% - 64px) / 2 - 8px);border-radius:12px;background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--pkg) 18%,transparent) 0 6px,transparent 6px 12px)}
+.wcal-slot{position:absolute;width:calc((100% - 64px) / 2 - 8px);display:flex}
+.wcal-slot .wcal-card{flex:1}
+@media (max-width:1100px){.wcal-week{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){
+  .wcal-week{grid-template-columns:1fr}
+  .wcal-month{gap:2px}.wcal-mday{min-height:58px;padding:4px}.wcal-mev{display:none}
+  .wcal-mday:has(.wcal-mev)::after{content:"•";color:#FF017C;font-weight:800}
+  .wcal-prep,.wcal-slot{width:calc(100% - 72px)!important;left:68px!important}
+}
