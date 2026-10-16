@@ -3,7 +3,10 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Services\RecoveryCodeDelivery;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Support\Facades\DB;
+use Laravel\Fortify\Actions\GenerateNewRecoveryCodes;
 use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
 
@@ -107,6 +110,51 @@ class RecoveryCodeDeliveryTest extends TestCase
         $this->assertSame(['old-code-one', 'old-code-two'], RecoveryCodeDelivery::claim($owner));
         $this->assertNull(RecoveryCodeDelivery::claim($owner));
         $this->assertNull(RecoveryCodeDelivery::claim($owner->fresh()));
+    }
+
+    // Codex re-review (v2): regeneration between the claim's write and its read must not deliver one generation twice.
+    // Deterministic seam (same hook style as Codex's probe): regenerate right after the claim marks delivery.
+    public function test_regeneration_during_a_claim_never_delivers_one_generation_twice(): void
+    {
+        $owner = $this->enrolled();
+        $interleaved = false;
+        DB::listen(function (QueryExecuted $query) use ($owner, &$interleaved): void {
+            if (! $interleaved && str_starts_with(strtolower($query->sql), 'update')
+                && str_contains($query->sql, 'two_factor_recovery_codes_delivered_at')) {
+                $interleaved = true;
+                app(GenerateNewRecoveryCodes::class)($owner->fresh());
+            }
+        });
+        $first = RecoveryCodeDelivery::claim($owner);
+        $second = RecoveryCodeDelivery::claim($owner->fresh());
+        $third = RecoveryCodeDelivery::claim($owner->fresh());
+
+        $this->assertTrue($interleaved, 'The interleaving hook must have run.');
+        $this->assertSame(['old-code-one', 'old-code-two'], $first, 'The claim returns the generation it marked, read under the lock.');
+        $this->assertNotNull($second, 'The new generation is still deliverable exactly once.');
+        $this->assertNotSame($first, $second);
+        $this->assertSame($owner->fresh()->recoveryCodes(), $second);
+        $this->assertNull($third, 'The new generation is never delivered twice.');
+    }
+
+    public function test_regeneration_after_delivery_reopens_once_and_using_a_recovery_code_does_not(): void
+    {
+        $owner = $this->enrolled();
+        $this->assertNotNull(RecoveryCodeDelivery::claim($owner));
+        app(\Laravel\Fortify\Actions\GenerateNewRecoveryCodes::class)($owner->fresh());
+        $new = RecoveryCodeDelivery::claim($owner->fresh());
+        $this->assertNotNull($new);
+        $this->assertNull(RecoveryCodeDelivery::claim($owner->fresh()));
+
+        $owner->fresh()->replaceRecoveryCode($new[0]); // what Fortify does when a recovery code is used to log in
+        $this->assertNull(RecoveryCodeDelivery::claim($owner->fresh()), 'Using a code must not re-show the rest of the set.');
+    }
+
+    public function test_code_changing_fortify_actions_are_the_locked_versions(): void
+    {
+        $this->assertInstanceOf(\App\Actions\Fortify\LockedGenerateNewRecoveryCodes::class, app(\Laravel\Fortify\Actions\GenerateNewRecoveryCodes::class));
+        $this->assertInstanceOf(\App\Actions\Fortify\LockedEnableTwoFactorAuthentication::class, app(\Laravel\Fortify\Actions\EnableTwoFactorAuthentication::class));
+        $this->assertInstanceOf(\App\Actions\Fortify\LockedDisableTwoFactorAuthentication::class, app(\Laravel\Fortify\Actions\DisableTwoFactorAuthentication::class));
     }
 
     private function assertNoStore($response): void
