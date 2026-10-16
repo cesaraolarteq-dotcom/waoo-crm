@@ -515,6 +515,15 @@
       "accepted": false,
       "verification": "26 report/cost regression tests /219 assertions, PHP8.3/MariaDB11.8; confirmed vs draft, DST, bounds, chronology, unknown/stale costs/balances, privacy and owner/2FA/sandbox gates. Parent full288/2595 passed; no new full-suite claim.",
       "remaining": "Claude review/UI/merge. Package/booked counts and cron/idempotent email sending remain pending; whole REPORT-A not complete."
+     },
+     "booking_counts_followup": {
+      "backend": "f7950b2",
+      "ui": null,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "34 report/cost tests /271 assertions plus8 finance tests /62 assertions (42/333 total); real paid-capacity confirmation/retry proves one reported booking/package. Parent source full288/2595 is separate evidence; no fresh full-suite claim.",
+      "remaining": "Owner review of first-confirmation sales definition, Claude review/UI and main merge; net-sales/cancellations and scheduled idempotent email delivery remain pending."
      }
     }
    ]

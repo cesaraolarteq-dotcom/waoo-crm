@@ -123,3 +123,7 @@ Contract `docs/REPORT-A-API.md`, backend source **656bd32** on `codex/operationa
 ### REPORT-A confirmed-weekend projection (Codex 2026-10-16)
 
 `codex/weekend-forecast`, contract `docs/REPORT-A-WEEKEND-API.md`: read-only Saturday/Sunday commitments, drafts separate, current balance and pending counts, separate estimate/actual staff/direct costs using the existing report path. Reporting window is explicit, including ongoing weekends and Chicago DST; no availability policy change. Review/UI/merge pending. Package/booked counts and scheduled idempotent mail delivery remain future REPORT-A work.
+
+### REPORT-A initial-confirmation/package query (Codex 2026-10-16)
+
+`codex/booking-sales-report`: counts first capacity-confirmation audit per event in a Chicago week/month, with service occurrences from the immutable financial revision linked at confirmation. Missing legacy links remain unknown; current catalog/event data never rewrites history. Contract `docs/REPORT-A-SALES-API.md`, regression plus actual paid-capacity/retry verification in HANDOFF. Backend query delivered for review; owner definition/UI, cancellation-adjusted sales and scheduled mail remain pending. No sends activated.
