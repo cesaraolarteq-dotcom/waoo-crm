@@ -45,7 +45,8 @@ Antes de salir: envíos autorizados SOLO a buzones semilla controlados de Gmail/
 
 - An AT&T mobile number **cannot** be used by an API for SMS (Twilio “hosted SMS” is not available for wireless numbers; porting would move calls too). Proposal: a **new Twilio local number** (346/281/832) only for automated texts, **A2P 10DLC** brand + campaign registration (owner's EIN/LLC; approval 1–3 weeks), STOP/HELP handling, consent text already on the website form.
 - Alternative to evaluate: **WhatsApp Business Platform** (Cloud API or via Twilio) with approved templates — clients already use WhatsApp with Waoo Party. Check whether Meta's app+API **coexistence** lets the owner keep 346-851-8830 on the WhatsApp Business app while the CRM sends template messages from the same number; costs per conversation; opt-in rules.
-- Question: which channel first (SMS via Twilio vs WhatsApp templates), and the minimal compliant setup.
+- **Owner data (2026-10-16): only about 50% of clients use WhatsApp.** So SMS is required for everyone and WhatsApp can only be a complement. Proposed order: (1) SMS via a new Twilio number + A2P 10DLC for every client, together with email; (2) later, WhatsApp template messages for clients who have WhatsApp (if coexistence keeps the owner's number on the app), never as the only channel. The one-tap “Abrir WhatsApp / Enviar por SMS” buttons stay for manual sends.
+- Question: confirm this order, and the minimal compliant setup for SMS first.
 
 Until then the owner sends the link from her phone with the one-tap buttons; nothing is sent automatically.
 
