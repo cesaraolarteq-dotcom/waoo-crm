@@ -59,6 +59,63 @@ class SandboxDocumentsTest extends TestCase
         return [...['expected_version' => $this->contract->version, 'presented_pdf_sha256' => $this->contract->presented_pdf_sha256,
             'signer_name' => 'Fixture Client', 'consent' => true, 'intent_to_sign' => true, 'consent_version' => 'esign-consent-v1'], ...$extra];
     }
+    public function test_revoke_service_reauthorizes_is_idempotent_and_invalidates_existing_session(): void
+    {
+        $this->issue(); $grantId = $this->clientSession();
+        $this->get('/portal/api/contracts/'.$this->contract->id.'/pdf')->assertOk();
+        $service = app(\App\Services\Portal\RevokePortalGrant::class);
+        $this->owner->forceFill(['active' => false])->save();
+        try { $service->execute($this->owner, $grantId); $this->fail('Inactive owner accepted.'); }
+        catch (\Illuminate\Auth\Access\AuthorizationException) { $this->assertNull(\App\Models\PortalGrant::findOrFail($grantId)->revoked_at); }
+        $this->owner->forceFill(['active' => true])->save();
+        $first = $service->execute($this->owner, $grantId);
+        $again = $service->execute($this->owner, $grantId);
+        $this->assertSame($first->revoked_at->toIso8601String(), $again->revoked_at->toIso8601String());
+        $this->assertSame(1, DB::table('audit_entries')->where('action', 'portal.grant_revoked')->where('actor_id', $this->owner->id)->count());
+        $this->getJson('/portal/api/event')->assertForbidden()->assertHeader('Cache-Control', 'no-store, private');
+        $this->withHeader('Idempotency-Key', (string) Str::uuid())->postJson('/portal/api/contracts/'.$this->contract->id.'/sign', $this->signInput())->assertForbidden();
+        $this->assertDatabaseCount('signature_evidence', 0);
+    }
+    public function test_revoke_audit_failure_rolls_back_and_sandbox_off_denies_direct_call(): void
+    {
+        $grantId = $this->clientSession();
+        $service = app(\App\Services\Portal\RevokePortalGrant::class);
+        $fail = true;
+        DB::connection()->beforeExecuting(function ($query, $bindings) use (&$fail) {
+            if ($fail && str_contains($query, 'audit_entries') && in_array('portal.grant_revoked', $bindings, true)) throw new \RuntimeException('Fixture revoke audit failure');
+        });
+        try { $service->execute($this->owner, $grantId); $this->fail('Audit failure ignored.'); }
+        catch (\RuntimeException $e) { $this->assertSame('Fixture revoke audit failure', $e->getMessage()); }
+        finally { $fail = false; }
+        $this->assertNull(\App\Models\PortalGrant::findOrFail($grantId)->revoked_at);
+        config(['waoo.sandbox_documents' => false]);
+        try { $service->execute($this->owner, $grantId); $this->fail('Disabled sandbox accepted.'); }
+        catch (\Illuminate\Auth\Access\AuthorizationException) { $this->assertFalse(config('waoo.sandbox_documents')); }
+        $this->assertNull(\App\Models\PortalGrant::findOrFail($grantId)->revoked_at);
+    }
+    public function test_revoke_and_signature_concurrency_serializes_on_same_grant_row(): void
+    {
+        $this->issue(); $grantId = $this->clientSession();
+        $this->get('/portal/api/contracts/'.$this->contract->id.'/pdf')->assertOk();
+        $request = \Illuminate\Http\Request::create('/portal/api/contracts/'.$this->contract->id.'/sign', 'POST');
+        $request->setLaravelSession($this->app['session.store']); $request->setUserResolver(fn () => null);
+        $context = \App\Services\Portal\PortalContext::fromRequest($request);
+        $signatureRequest = \App\Services\Documents\SignatureRequestContext::fromRequest($request);
+        $input = $this->signInput(); $id = $this->contract->id; $actor = $this->owner;
+        $results = \Tests\Support\ConcurrentWorkers::run([
+            function () use ($actor, $grantId) { app(\App\Services\Portal\RevokePortalGrant::class)->execute($actor, $grantId); return 'revoked'; },
+            function () use ($context, $signatureRequest, $input, $id) {
+                try { app(\App\Services\Documents\AcceptSignature::class)->execute($context, $id, $input, $signatureRequest, (string) Str::uuid()); return 'signed'; }
+                catch (\Illuminate\Auth\Access\AuthorizationException) { return 'revocation_won'; }
+            },
+        ]);
+        $this->assertSame('revoked', $results[0]);
+        $this->assertContains($results[1], ['signed', 'revocation_won']);
+        $this->assertNotNull(\App\Models\PortalGrant::findOrFail($grantId)->revoked_at);
+        $this->assertDatabaseCount('signature_evidence', $results[1] === 'signed' ? 1 : 0);
+        $this->assertSame($results[1] === 'signed' ? 'signed' : 'issued', $this->contract->fresh()->state);
+        $this->getJson('/portal/api/event')->assertForbidden();
+    }
     public function test_catalog_description_is_audited_and_frozen_in_finance_and_pdf(): void
     {
         $variant = ServiceVariant::firstOrFail();
