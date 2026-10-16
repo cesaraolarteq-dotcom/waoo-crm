@@ -1,6 +1,6 @@
 # ROUTE-01 · Travel fee (costo de transporte) inside the CRM (Phase 2)
 
-Status: backend source f31361c on codex/route-01, API published first97c84ac. Targeted45/490 and synthetic website-formula parity pass; final integrated LEAD/ROUTE/OUTFIT300/2864 pass on codex/outfit-01 d1b00a3.22 real calibration fixtures, Claude UI/review and real provider/staging validation remain pending. Default off, no live calls. See docs/ROUTE-01-API.md.
+Status: backend source f31361c on codex/route-01, API published first97c84ac. Targeted45/490 and synthetic website-formula parity pass; final integrated LEAD/ROUTE/OUTFIT300/2864 pass on codex/outfit-01 d1b00a3.All22 recorded reference cases from main/#58 now match (test ed8d426, including recorded route selection); Claude UI #57 c57a3dc reviewed/approved. Main merge, owner acceptance and real provider/staging validation remain pending. The fixtures retain rounded miles/minutes, not original exact Google measurements. Default off, no live calls. See docs/ROUTE-01-API.md.
 
 ## Goal
 
