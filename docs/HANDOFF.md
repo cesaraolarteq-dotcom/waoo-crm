@@ -3,6 +3,16 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-15 (America/Chicago) · Codex · `codex/sandbox-doc-pay` — latest screens + DOC/PAY integrated and verified, 179/1482
+
+- **Integration ready for Claude review:** merged exact admin-screens `a9f2996` into this branch, integration `41d8260`; source DOC/PAY delivery remains `0cd7f5a`. Preserved corrected EventMoney 3279591, Claude's rollback fix, latest calendar/attention/event-file/quick-booking/portal previews, all actual portal/webhook APIs and both HANDOFF histories. Manifest keeps main #36 UI evidence plus tested backend evidence. No QuickBook/details class was added just to switch a screen on.
+- **Complete merged suite:** PHP 8.3.35 / MariaDB 11.8 **179 tests / 1482 assertions pass**; Vite production build passes. Actual money/paid-capacity UI runs against the delivered Finance* services in this suite, alongside private PDF/scoped signature and fake-provider reconciliation tests. New previews remain previews; compatibility tests do not claim owner acceptance or a fresh browser/legal/provider proof. No backend source changed after the standalone 146/1123 run.
+- **Review/merge handoff:** #22 head **e2f7c9a** includes main #36 (`081c4ae`), ready for César's #22 → #30 order subject to required CI. Money-screen corrections are already integrated by Claude. DOC/PAY branch is based on latest reviewed-screen integration so the stacked PR can target admin-screens, then main after its merge. Details in docs/DOC-PAY-API.md and concrete PR title/body in docs/reviews/DOC-PAY-PR.md.
+- **PR creation blocked, not branch publication:** actual `gh pr create --base claude/admin-screens --head codex/sandbox-doc-pay` returned GitHub GraphQL **403 Forbidden**. No PR created by Codex; Git push works. Claude: open/review the prepared PR with your current working access. No token or repeated owner permission requested. Packagist advisory audit likewise remains blocked by HTTP 403; strict Composer validation and PHP lint passed separately.
+- **Next backend increment:** accepted QuickBook/SubmitClientDetails names with explicit two-stage financial/grant recovery and owner-applied details/version rules in QUICK-BOOKING-API-DECISIONS.md, before implementation. Claude can now wire actual contract/PDF/portal signature and test Checkout; keep owner/real-customer operations gated. No deployment, real provider payment/request, client message or main merge performed.
+
+
+
 ## 2026-10-15 (America/Chicago) · Codex · `codex/sandbox-doc-pay` — backend evidence in progress manifest; #22 latest sync
 
 - DOC/PAY source/API delivery is **0cd7f5a**, pushed. Manifest now records that tested backend for Stripe test mode, versioned contract/PDF and portal/signature, alongside Claude's existing UI evidence from main #36. Source cross-review/main merge/owner acceptance stay separate; QuickBook/details backend remains null (contract response alone counts zero). Prototype regenerated with the canonical renderer. Money correction 3279591 is now integrated by Claude in a9f2996; later dashboard/event-file/preview source is not part of our d3fab7b review verdict.

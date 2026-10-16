@@ -290,7 +290,7 @@
           "merged": false,
           "accepted": false,
           "blocker": "Real test-account probe and fee/payment-method rules before any real operation; current sandbox has no surcharge",
-          "backend_verification": "146 MariaDB tests / 1123 assertions; local sandbox only; source cross-review and owner acceptance pending"
+          "backend_verification": "Standalone: 146 MariaDB tests / 1123 assertions; integrated with admin-screens a9f2996 at 41d8260: 179 / 1482 plus Vite build; sandbox only; source review and owner acceptance pending"
         },
         {
           "name": "Contrato con versiones y PDF",
@@ -302,7 +302,7 @@
           "merged": false,
           "accepted": false,
           "blocker": "Revisión de abogado antes de clientas reales",
-          "backend_verification": "146 MariaDB tests / 1123 assertions; local sandbox only; source cross-review and owner acceptance pending"
+          "backend_verification": "Standalone: 146 MariaDB tests / 1123 assertions; integrated with admin-screens a9f2996 at 41d8260: 179 / 1482 plus Vite build; sandbox only; source review and owner acceptance pending"
         },
         {
           "name": "Portal de la clienta y firma",
@@ -314,7 +314,7 @@
           "merged": false,
           "accepted": false,
           "blocker": "Portal/firma del lado de Codex (DOC-PAY-API)",
-          "backend_verification": "146 MariaDB tests / 1123 assertions; local sandbox only; source cross-review and owner acceptance pending"
+          "backend_verification": "Standalone: 146 MariaDB tests / 1123 assertions; integrated with admin-screens a9f2996 at 41d8260: 179 / 1482 plus Vite build; sandbox only; source review and owner acceptance pending"
         },
         {
           "name": "Reserva rápida (tu mitad + la de la clienta)",
