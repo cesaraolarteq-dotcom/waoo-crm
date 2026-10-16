@@ -49,6 +49,17 @@ No-alcance de estos tickets: rehacer web, desplegar CRM, procesar pagos reales, 
 | RESV-A-01 | Manual resource assignment with transactional protection: the admin selects resources; conflicts (person, costume, equipment, vehicle, travel) are rejected on save and re-validated on confirm; the same protocol for every schedule write | Codex | Claude | OPS-01 |
 | UI-ADMIN-01 | Dashboard, event file (summary, services, agenda, resources, documents, payments, messages, history), calendar month/week/day | Claude | Codex | OPS-01 |
 
+## Non-blocking follow-ups from Claude's PR #22 review
+
+These are open tickets, not implemented changes and not additional approval blockers for the reviewed increment. Detailed scope, acceptance, test and rollback plans are linked below. GitHub issue creation is separate from this canonical backlog.
+
+| ID | Follow-up | Impl. / review | Parent |
+| --- | --- | --- | --- |
+| [RESV-A-PERF](tickets/RESV-A-PERF.md) | Bound conflict/history queries while retaining overlaps and nearest travel neighbors | Codex / Claude | RESV-A-01 |
+| [CHANGE-A-CAPACITY](tickets/CHANGE-A-CAPACITY.md) | Release or atomically exchange old reservations in the approved cancellation/reschedule lifecycle | Codex / Claude | CHANGE-A |
+| [RESV-A-UNUSED](tickets/RESV-A-UNUSED.md) | Report unnecessary selections without dropping transport/backup resources silently | Codex API + Claude UI / the other | RESV-A-01, OPS-01 |
+| [AUTH-READ-LIMIT](tickets/AUTH-READ-LIMIT.md) | Independent bounded read/write budgets for calendar/API traffic | Codex / Claude | AUTH-01 |
+
 ## Phase 2: quotes and logistics
 | ID | Task | Impl. | Review | Depends on |
 | --- | --- | --- | --- | --- |
