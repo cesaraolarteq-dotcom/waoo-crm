@@ -76,6 +76,8 @@ class EventContract extends Page
             'id' => $g->id, 'active' => ! $g->revoked_at && $g->expires_at->isFuture(), 'details' => in_array('details.submit', $g->scopes ?? [], true),
             'expires' => Labels::when($g->expires_at), 'state' => $g->revoked_at ? 'Anulado' : ($g->expires_at->isFuture() ? 'Activo' : 'Vencido'),
             'opened' => DB::table('contract_presentations')->where('portal_grant_id', $g->id)->exists(),
+            // COMMS-01: metadata only; the URL is decrypted only when the owner presses "Copiar enlace".
+            'can_reveal' => $g->canRevealLink(),
         ]);
         $quick = QuickBookingRecord::where('event_id', $e->id)->exists();
         $detailsState = $quick || ClientDetailsSubmission::where('event_id', $e->id)->exists() ? ClientDetailsState::forEvent($e) : null;
@@ -149,7 +151,7 @@ class EventContract extends Page
         return Action::make('link')->label('Crear enlace para la clienta')->icon('heroicon-o-link')->color('primary')
             ->visible(fn () => in_array($this->state()['contract']?->state, ['issued'], true) || in_array($this->state()['detailsState'], ['waiting_details', 'review_details'], true))
             ->modalHeading('Enlace para la clienta')
-            ->modalDescription('Solo se muestra una vez. Con él la clienta lee el contrato, lo firma y ve cómo pagar.')
+            ->modalDescription('Con él la clienta lee el contrato, lo firma y ve cómo pagar. Mientras esté activo puedes volver a copiarlo desde aquí.')
             ->fillForm(['days' => 7])
             ->schema([TextInput::make('days')->label('Vence en (días)')->integer()->minValue(1)->maxValue(30)->required()])
             ->modalSubmitActionLabel('Crear enlace')
@@ -168,12 +170,49 @@ class EventContract extends Page
                     Notification::make()->danger()->title('No se creó')->body($e->getMessage())->persistent()->send();
                     $action->halt();
                 }
-                $first = trim(explode(' ', (string) $this->record->customer?->name)[0] ?? '');
-                $exp = Labels::when(\Carbon\CarbonImmutable::parse($g->expiresAt));
-                $this->newLink = ['url' => $g->url, 'expires' => $exp,
-                    'msg_es' => "¡Hola {$first}! Aquí puedes leer y firmar tu contrato de Waoo Party y ver cómo pagar tu saldo: {$g->url} (vence el ".rtrim($exp, '.')."). ¡Estamos emocionados de ser parte de tu celebración!",
-                    'msg_en' => "Hi {$first}! Here you can read and sign your Waoo Party contract and see how to pay your balance: {$g->url} (expires ".rtrim($exp, '.')."). We're excited to be part of your celebration!",
-                    'locale' => $this->record->customer?->locale ?? 'es'];
+                $this->newLink = $this->linkPanel($g->url, $g->expiresAt, (bool) $this->state()['quick'], false);
+            });
+    }
+
+    /** Panel data for a link (new or recovered): ready-to-paste messages in both languages, the client's phone for one-tap opening. */
+    private function linkPanel(string $url, string $expiresIso, bool $details, bool $recovered): array
+    {
+        $first = trim(explode(' ', (string) $this->record->customer?->name)[0] ?? '');
+        $exp = Labels::when(\Carbon\CarbonImmutable::parse($expiresIso));
+        $until = rtrim($exp, '.');
+
+        return ['url' => $url, 'expires' => $exp, 'phone' => $this->record->customer?->phone, 'locale' => $this->record->customer?->locale ?? 'es', 'recovered' => $recovered,
+            'msg_es' => $details ? "¡Hola {$first}! Para terminar tu reserva con Waoo Party, completa tus datos y firma tu contrato aquí: {$url} (vence el {$until}). ¡Estamos emocionados de ser parte de tu celebración!"
+                : "¡Hola {$first}! Aquí puedes leer y firmar tu contrato de Waoo Party y ver cómo pagar tu saldo: {$url} (vence el {$until}). ¡Estamos emocionados de ser parte de tu celebración!",
+            'msg_en' => $details ? "Hi {$first}! To finish your booking with Waoo Party, please complete your details and sign your contract here: {$url} (expires {$until}). We're excited to be part of your celebration!"
+                : "Hi {$first}! Here you can read and sign your Waoo Party contract and see how to pay your balance: {$url} (expires {$until}). We're excited to be part of your celebration!"];
+    }
+
+    /**
+     * COMMS-01 "Copiar enlace": the SAME active link, decrypted only on this click by Codex's RevealPortalGrantLink.
+     * Never issues, rotates, renews, or marks anything opened/sent. Inactive/legacy links offer creating a new one explicitly.
+     */
+    public function copyLinkAction(): Action
+    {
+        return Action::make('copyLink')->label('Copiar enlace')->icon('heroicon-o-clipboard-document')->color('primary')->size('sm')->link()
+            ->action(function (array $arguments) {
+                $grant = PortalGrant::where('event_id', $this->record->getKey())->find((int) ($arguments['id'] ?? 0));
+                try {
+                    $r = app(\App\Services\Portal\RevealPortalGrantLink::class)->execute(Filament::auth()->user(), $this->record->getKey(), (int) ($arguments['id'] ?? 0));
+                } catch (\App\Exceptions\PortalLinkRejected $e) {
+                    $n = Notification::make()->danger()->title('No se pudo copiar')->body($e->getMessage())->persistent();
+                    if (in_array($e->status, [409, 410], true) && $this->linkAction()->isVisible()) {
+                        $n->body($e->getMessage().' Usa «Crear enlace para la clienta» (arriba) para hacer uno nuevo.');
+                    } elseif ($e->status === 503) {
+                        $n->title('No se pudo recuperar ahora')->body('Inténtalo de nuevo en un momento.');
+                    } elseif ($e->status === 404) {
+                        $n->body('Recarga la página.');
+                    }
+                    $n->send();
+
+                    return;
+                }
+                $this->newLink = $this->linkPanel($r->url, $r->expires_at, in_array('details.submit', $grant?->scopes ?? [], true), true);
             });
     }
 

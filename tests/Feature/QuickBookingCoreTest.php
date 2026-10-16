@@ -157,7 +157,7 @@ class QuickBookingCoreTest extends TestCase
         Livewire::test(QuickBookingPage::class)->fillForm(['price_version_ids' => [$price->id], 'event_type' => 'birthday', 'title' => 'Fixture UI Party',
             'date' => '2026-12-19', 'start_time' => '15:00', 'postal_code' => '00001', 'travel_fee' => '25', 'customer_mode' => 'new', 'name' => 'Fixture Contact', 'locale' => 'es',
             'deposit' => ['amount' => '62', 'reference' => 'QB-REAL-UI-FIXTURE', 'date' => now('America/Chicago')->format('Y-m-d'), 'time' => '00:05', 'verified' => true], 'expires_days' => 30])
-            ->call('save')->assertHasNoFormErrors()->assertSee('solo se muestra esta vez')->assertDontSee('is held')->assertDontSee('quedó apartada');
+            ->call('save')->assertHasNoFormErrors()->assertSee('Puedes volver a copiarlo')->assertDontSee('is held')->assertDontSee('quedó apartada');
         $this->assertDatabaseCount('ledger_entries', 1); $this->assertDatabaseCount('portal_grants', 1);
         $this->assertSame('draft', Event::sole()->status);
         } finally { $this->travelBack(); }
@@ -492,6 +492,24 @@ class QuickBookingCoreTest extends TestCase
         $revision = FinancialRevision::latest('revision')->firstOrFail();
         $this->assertSame('Racing',$revision->lines_snapshot[0]['characters'][0]['outfit']);
         $this->assertStringNotContainsString('PRIVATE',json_encode($revision->lines_snapshot));
+    }
+
+    public function test_actual_encrypted_grant_write_failure_keeps_paid_core_and_allows_manual_link_recovery(): void
+    {
+        $fail = true;
+        DB::connection()->beforeExecuting(function ($query) use (&$fail) {
+            if ($fail && str_contains($query,'portal_grants') && str_starts_with(strtolower(ltrim($query)),'update')) throw new \RuntimeException('Fixture encrypted grant write failure');
+        });
+        try { $this->create()->assertCreated()->assertJsonPath('portal_url',null)->assertJsonPath('link_issue_pending',true); }
+        finally { $fail = false; }
+        $this->assertDatabaseCount('events',1); $this->assertDatabaseCount('ledger_entries',1); $this->assertDatabaseCount('portal_grants',0);
+        $this->assertDatabaseHas('payment_exceptions',['kind' => 'portal_link_pending','state' => 'open']);
+        $event = Event::sole();
+        $grant = app(IssuePortalGrant::class)->execute($this->owner,$event->id,['customer_id' => $event->customer_id,'expires_at' => now()->addDays(5)->toIso8601String(),'scopes' => ['details.submit','contract.read','contract.sign','payments.read','checkout.create']]);
+        $link = app(\App\Services\Portal\RevealPortalGrantLink::class)->execute($this->owner,$event->id,$grant->id);
+        $this->assertSame($grant->url,$link->url); $this->assertDatabaseCount('ledger_entries',1); $this->assertDatabaseCount('quick_bookings',1);
+        $this->assertSame($grant->id,QuickBookingRecord::sole()->portal_grant_id);
+        $this->assertDatabaseHas('payment_exceptions',['kind' => 'portal_link_pending','state' => 'resolved']);
     }
 
 }
