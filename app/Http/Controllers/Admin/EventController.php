@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\{Event, EventService, PriceVersion, ServiceVariant};
+use App\Models\Event;
 use App\Rules\ExplicitOffset;
-use App\Services\{Audit, ConfirmBooking};
+use App\Services\ConfirmBooking;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -38,35 +38,8 @@ class EventController extends Controller
     }
     private function save(Request $request, ?int $id = null)
     {
-        $data = $request->validate(['customer_id' => 'required|integer|exists:customers,id', 'title' => 'required|string|max:255', 'starts_at' => ['required', 'date', new ExplicitOffset()], 'ends_at' => ['required', 'date', 'after:starts_at', new ExplicitOffset()], 'timezone' => ['required', Rule::in(['America/Chicago'])], 'address' => 'nullable|string|max:255', 'postal_code' => ['nullable', 'string', 'regex:/^[0-9]{5}(?:-[0-9]{4})?$/'], 'setup_minutes' => 'nullable|integer|min:0|max:720', 'breakdown_minutes' => 'nullable|integer|min:0|max:720', 'travel_fee_cents' => 'nullable|integer|min:0|max:100000000', 'services' => 'present|array|max:10', 'services.*' => 'array:price_version_id', 'services.*.price_version_id' => 'required|integer|distinct|exists:price_versions,id', 'expected_version' => ($id ? 'required' : 'sometimes') . '|integer|min:1']);
-        return DB::transaction(function () use ($data, $id) {
-            $event = $id ? Event::whereKey($id)->lockForUpdate()->firstOrFail() : new Event();
-            if ($id) {
-                abort_unless($event->status === 'draft' && $event->version === $data['expected_version'], 409, 'Solo se editan borradores vigentes. Una reserva requiere el flujo de cambios.');
-            }
-            $before = $event->getAttributes();
-            $services = $data['services'];
-            unset($data['services'], $data['expected_version']);
-            $data['starts_at'] = CarbonImmutable::parse($data['starts_at'])->utc();
-            $data['ends_at'] = CarbonImmutable::parse($data['ends_at'])->utc();
-            $event->fill($data);
-            if ($id) {
-                $event->version++;
-            }
-            $event->save();
-            if ($id) {
-                $event->services()->delete();
-            }
-            // Only a draft; booked snapshots are immutable.
-            foreach ($services as $selection) {
-                $price = PriceVersion::findOrFail($selection['price_version_id']);
-                $variant = ServiceVariant::whereKey($price->service_variant_id)->lockForUpdate()->firstOrFail();
-                abort_if($variant->status === 'retired', 422, 'La variante fue retirada.');
-                EventService::create(['event_id' => $event->id, 'service_variant_id' => $variant->id, 'price_version_id' => $price->id, 'requirements_snapshot' => $variant->requirements, 'duration_minutes' => $variant->duration_minutes, 'operational_ready' => $variant->status === 'active']);
-            }
-            Audit::record($id ? 'event.draft_updated' : 'event.created', $event, $before, [...$event->getAttributes(), 'services' => $services]);
-            return response()->json($event->fresh()->load('services'), $id ? 200 : 201);
-        });
+        $event = app(\App\Services\Records\SaveEventDraft::class)->execute($request->user(), $request->all(), $id);
+        return response()->json($event, $id ? 200 : 201);
     }
     public function confirm(Request $request, Event $event, ConfirmBooking $booking)
     {
