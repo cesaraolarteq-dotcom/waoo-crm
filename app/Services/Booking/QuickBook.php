@@ -20,6 +20,8 @@ final class QuickBook
         \App\Exceptions\RecordWriteRejected::unless(DB::transactionLevel() === 0, 409, 'No se pudo iniciar la reserva. Recarga e inténtalo de nuevo.');
         $actor = RecordActor::authorize($actor);
         $data = RecordInput::validate($input, [
+            'lead_id' => 'required_with:lead_expected_version|integer|exists:leads,id',
+            'lead_expected_version' => 'required_with:lead_id|integer|min:1',
             'customer_id' => 'required_without:new_customer|prohibits:new_customer|integer|exists:customers,id',
             'new_customer' => 'required_without:customer_id|prohibits:customer_id|array:name,phone,email,locale',
             'new_customer.name' => 'required_with:new_customer|string|max:255',
@@ -37,15 +39,22 @@ final class QuickBook
             'portal' => 'sometimes|array:expires_at',
             'portal.expires_at' => ['required_with:portal','date', new ExplicitOffset],
         ]);
+        if (isset($data['lead_id'])) \App\Services\Leads\LeadAccess::owner($actor);
         $scope = "owner:{$actor->id}:quick-book"; $hash = MutationKey::hash($data);
         [$record, $created] = DB::transaction(function () use ($actor, $data, $scope, $hash, $key) {
             // Serialize this owner's first request and identical concurrent retries before any new customer/event.
             User::whereKey($actor->id)->lockForUpdate()->firstOrFail();
             RecordActor::authorize($actor);
             if ($saved = MutationKey::find($scope, $key, $hash)) return [QuickBookingRecord::findOrFail($saved->result_id), false];
+            $lead = null;
+            if (isset($data['lead_id'])) {
+                $lead = \App\Models\Lead::whereKey($data['lead_id'])->lockForUpdate()->firstOrFail();
+                \App\Exceptions\RecordWriteRejected::unless($lead->version === (int) $data['lead_expected_version']
+                    && $lead->booked_event_id === null && in_array($lead->status, ['new','contacted','quoted'], true), 409, 'El prospecto cambió o ya está reservado.');
+            }
             if (isset($data['portal']['expires_at'])) RecordInput::validate($data, ['portal.expires_at' => ['date','after:now','before_or_equal:'.now()->addDays(30)->toIso8601String()]]);
             $customer = isset($data['customer_id']) ? Customer::findOrFail($data['customer_id']) : app(SaveCustomer::class)->execute($actor, $data['new_customer']);
-            $eventInput = array_diff_key($data, array_flip(['new_customer','deposit','portal']));
+            $eventInput = array_diff_key($data, array_flip(['new_customer','deposit','portal','lead_id','lead_expected_version']));
             $event = app(SaveEventDraft::class)->execute($actor, [...$eventInput, 'customer_id' => $customer->id]);
             $finance = app(CreateFinancialRevision::class)->execute($actor, $event->id, ['expected_version' => $event->version], (string) Str::uuid());
             try {
@@ -58,6 +67,11 @@ final class QuickBook
             $record = QuickBookingRecord::create(['event_id' => $event->id, 'customer_id' => $customer->id,
                 'initial_financial_revision_id' => $finance->id, 'receipt_id' => $receipt->id,
                 'portal_expires_at' => isset($data['portal']['expires_at']) ? CarbonImmutable::parse($data['portal']['expires_at'])->utc() : now()->addDays(14), 'created_by' => $actor->id]);
+            if ($lead) {
+                $before = $lead->only(['status','version']);
+                $lead->forceFill(['status' => 'booked', 'booked_event_id' => $event->id, 'quick_booking_id' => $record->id, 'version' => $lead->version + 1])->save();
+                Audit::recordFor($actor, 'lead.booked', $lead, $before, $lead->only(['status','version','booked_event_id','quick_booking_id']));
+            }
             Audit::recordFor($actor, 'quick_booking.created', $record, [], ['event_id' => $event->id, 'receipt_id' => $receipt->id]);
             MutationKey::store($scope, $key, $hash, 'quick_booking', $record->id);
             return [$record, true];

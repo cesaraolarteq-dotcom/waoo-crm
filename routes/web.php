@@ -10,6 +10,10 @@ Route::redirect('/', '/admin')->name('home');
 Route::middleware(['auth', 'password.confirm'])->get('/seguridad/dos-pasos', TwoFactorEnrollmentController::class)->name('security.two-factor');
 Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'));
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->prefix('admin/api')->group(function () {
+    Route::get('/leads', [\App\Http\Controllers\Admin\LeadController::class, 'index']);
+    Route::get('/leads/{lead}', [\App\Http\Controllers\Admin\LeadController::class, 'show'])->whereNumber('lead');
+    Route::patch('/leads/{lead}', [\App\Http\Controllers\Admin\LeadController::class, 'update'])->whereNumber('lead');
+    Route::post('/leads/{lead}/quick-book', [\App\Http\Controllers\Admin\LeadController::class, 'convert'])->whereNumber('lead');
     Route::get('/session', fn(Request $r) => ['user' => $r->user()->only(['id', 'name', 'email', 'role']), 'timezone' => 'America/Chicago']);
     foreach (['customers', 'characters', 'resources', 'variants'] as $entity) {
         Route::get('/' . $entity, [CoreController::class, 'index'])->defaults('entity', $entity);
