@@ -3,6 +3,13 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-16 · Codex · `codex/admin-read-write-budgets` — AUTH-READ-LIMIT backend: reads cannot consume saves
+
+- API contract committed first in PHASE1-API.md. AdminApiRateLimit delegates GET/HEAD to named admin-read and mutations to existing admin-write, after auth/owner/confirmed-2FA gates. Independent per-owner60/min counters preserve conservative limits; same-IP owners are isolated. Validation failures still count; normal429/Retry-After/privacy headers remain. No URL/DTO/business permission/login/challenge/portal/provider limiter changes or migration.
+- **17 focused auth/calendar/budget tests /367 assertions pass** on MariaDB. Actual60-read exhaustion still permits a real audited customer save;60 failed writes throttle later writes while reads work, and expiry restores saves. Also HEAD/read sharing, same-IP owner independence, denied-gate ordering and actual initial calendar HTML not consuming REST budget. A first development run exposed a wrong framework namespace; corrected to Illuminate\Routing\Middleware\ThrottleRequests before this successful run.
+- Current calendar source is Eloquent/Livewire with no admin/api fetch. Keep60/min for read sizing; no browser network trace/higher-throughput claim. Claude should supply actual browser/API fan-out measurements before raising it. Livewire actions are not claimed covered by this API-only limiter; their existing authorization/CSRF remains unchanged.
+- Request for Claude: review the small main-based branch to be published separately from prior phase stacks. No UI wiring needed. All prior DOC/PAY/QuickBook/Zelle/cost screen work remains independent. Full integration result and final branch refs follow in the delivery entry.
+
 ## 2026-10-16 · Codex · `codex/event-cost-snapshots` — verified Phase 2 event-cost foundation ready for review
 
 - **Source08c284a**, API contract d2e6da9 before implementation. Full integrated PHP8.3/MariaDB11.8 suite **241 tests / 2119 assertions pass** with the test-only512M CLI helper. Focused cost subset **12 / 101** passes, including two real process races. Build, PHP lint, strict Composer, route discovery and diff checks pass. No application code/test changes after the successful full run. This includes prior Zelle notices, QuickBook, DOC/PAY/private PDFs and Claude real portal; those independent source reviews still remain separate.
