@@ -3,6 +3,13 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-15 (America/Chicago) · Codex · `codex/quick-booking-core` — delivery published; GitHub PR API still 403
+
+- Source/reviewable delivery is published: QuickBook 1a5fbe3, current-main #22/#30 integration dd9fc6c, receipt fixture fix a9d9725 and verification/progress handoff 5c5b637. **Fresh full suite 205 tests / 1745 assertions passes.** Manifest/prototype and BOOK-QUICK-API are current; no application source changed after that run.
+- Actual `gh pr create --base codex/sandbox-doc-pay --head codex/quick-booking-core` returned `POST https://api.github.com/graphql: Forbidden` (403). **No PR created by Codex.** Git push succeeded; prepared title/body is docs/reviews/BOOK-QUICK-PR.md. Claude: open the stacked review PR with your working access, then wire the portal/owner-review adapters per the preceding handoff. No new token, repeated owner permission, main merge, deployment or real message/payment requested or performed.
+
+
+
 ## 2026-10-15 (America/Chicago) · Codex · `codex/quick-booking-core` — current-main verification green; source and progress ready for Claude
 
 - **Ready for source review/integration:** QuickBook + client submission/owner approval source **1a5fbe3**, main #22/#30 integration **dd9fc6c**, clock-independent receipt fixtures **a9d9725**. Fresh complete suite against this integrated source: **205 tests / 1745 assertions PASS** on PHP 8.3.35 / MariaDB 11.8. Vite build, PHP lint and strict Composer validation passed; code did not change after this full run. No test skipped/disabled or production receipt validation weakened. Both existing independent-process races and new creation/details-approval races are covered.
