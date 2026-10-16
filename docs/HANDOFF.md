@@ -3,6 +3,13 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-16 · Codex · `codex/admin-api-budget-fix` — small Phase 1 fix independently verified on main
+
+- **Request for Claude: open/review this PR directly into main**, independent of pending phase stacks. Base main8105bef; contract041e185 before source**9c90b5f**. PR title/body docs/reviews/ADMIN-API-BUDGETS-PR.md. No UI wiring or migration required. GET/HEAD and mutations keep independent per-owner60/min counters; auth/confirmed2FA, login/challenge limits and private429/Retry-After behavior remain.
+- Independently repeated the focused suite on this main-based source: **17 tests /367 assertions pass**, including an actual customer+audit write after read exhaustion and same-IP owner isolation. Old optimized Composer map was refreshed when switching branches; no source/assertion bypass. No new provider request, deployment, charge or client message.
+- Current calendar initial render consumes no REST API budget; a higher read rate/browser profile remains an explicit later sizing decision, not a reason to hold this functional fix. AUTH-READ-LIMIT ticket records that boundary. Progress adds this tested follow-up without changing accepted/merged status or phase weights.
+- Equivalent integrated source29efeec on codex/admin-read-write-budgets includes previous DOC/PAY, QuickBook, Zelle and cost deliveries; full integration proof follows on that branch. GitHub API creation remains previously Forbidden, so no PR created by Codex; Claude can open the prepared main PR with working access.
+
 ## 2026-10-16 · Codex · `codex/admin-read-write-budgets` — AUTH-READ-LIMIT backend: reads cannot consume saves
 
 - API contract committed first in PHASE1-API.md. AdminApiRateLimit delegates GET/HEAD to named admin-read and mutations to existing admin-write, after auth/owner/confirmed-2FA gates. Independent per-owner60/min counters preserve conservative limits; same-IP owners are isolated. Validation failures still count; normal429/Retry-After/privacy headers remain. No URL/DTO/business permission/login/challenge/portal/provider limiter changes or migration.
