@@ -17,6 +17,11 @@ final class Audit
         self::insert($actor->getKey(), $action, $subject, $before, $after);
     }
 
+    public static function recordSystem(string $action, Model $subject, array $before = [], array $after = []): void
+    {
+        self::insert(null, $action, $subject, $before, $after);
+    }
+
     private static function insert(?int $actorId, string $action, Model $subject, array $before, array $after): void
     {
         DB::table('audit_entries')->insert([

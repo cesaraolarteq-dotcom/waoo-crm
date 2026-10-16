@@ -100,7 +100,7 @@
      "merged": false,
      "accepted": false,
      "blocker": "Hoja de catálogo de César",
-     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed"
+     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996"
     },
     {
      "name": "Staff, trajes, equipo, vehículos, bloqueos",
@@ -112,7 +112,7 @@
      "merged": false,
      "accepted": false,
      "blocker": "Inventario de César",
-     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed"
+     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996"
     },
     {
      "name": "Clientas y borradores de eventos",
@@ -123,7 +123,7 @@
      "reviewed": true,
      "merged": false,
      "accepted": false,
-     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed"
+     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996"
     },
     {
      "name": "Apartar recursos sin choques (con depósito)",
@@ -134,7 +134,7 @@
      "reviewed": true,
      "merged": false,
      "accepted": false,
-     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed"
+     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996"
     },
     {
      "name": "Calendario con márgenes de 45 min",
@@ -145,7 +145,7 @@
      "reviewed": true,
      "merged": false,
      "accepted": false,
-     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed"
+     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996"
     },
     {
      "name": "Prueba con César en el sitio de prueba",
@@ -220,7 +220,7 @@
      "reviewed": true,
      "merged": false,
      "accepted": false,
-     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed"
+     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996"
     },
     {
      "name": "Motor sin choques (habilidades, trajes, vehículos, concurrencia)",
@@ -263,54 +263,58 @@
      "weight": 2,
      "agent": "Codex+Claude",
      "backend": "cbaa83b",
-     "ui": "3279591",
+     "ui": "d3fab7b",
      "reviewed": true,
      "merged": false,
      "accepted": false,
-     "review_evidence": "d3fab7b reviewed with finance version corrections 3279591; Claude to integrate"
+     "review_evidence": "d3fab7b reviewed with finance version corrections 3279591; Claude to integrate; Claude integrated 3279591 in a9f2996"
     },
     {
      "name": "Registro de Zelle verificado y saldo",
      "weight": 3,
      "agent": "Codex+Claude",
      "backend": "cbaa83b",
-     "ui": "3279591",
+     "ui": "d3fab7b",
      "reviewed": true,
      "merged": false,
      "accepted": false,
-     "review_evidence": "d3fab7b reviewed with finance version corrections 3279591; Claude to integrate"
+     "review_evidence": "d3fab7b reviewed with finance version corrections 3279591; Claude to integrate; Claude integrated 3279591 in a9f2996"
     },
     {
      "name": "Stripe (modo prueba, sin Affirm)",
      "weight": 3,
      "agent": "Codex+Claude",
-     "backend": null,
+     "backend": "0cd7f5a",
      "ui": null,
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "blocker": "Reglas del 3 % (César)"
+     "blocker": "Real test-account probe and fee/payment-method rules before any real operation; current sandbox has no surcharge",
+     "backend_verification": "Standalone: 146 MariaDB tests / 1123 assertions; integrated with admin-screens a9f2996 at 41d8260: 179 / 1482 plus Vite build; sandbox only; source review and owner acceptance pending"
     },
     {
      "name": "Contrato con versiones y PDF",
      "weight": 3,
      "agent": "Codex+Claude",
-     "backend": null,
+     "backend": "0cd7f5a",
      "ui": null,
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "blocker": "Revisión de abogado antes de clientas reales"
+     "blocker": "Revisión de abogado antes de clientas reales",
+     "backend_verification": "Standalone: 146 MariaDB tests / 1123 assertions; integrated with admin-screens a9f2996 at 41d8260: 179 / 1482 plus Vite build; sandbox only; source review and owner acceptance pending"
     },
     {
      "name": "Portal de la clienta y firma",
      "weight": 3,
      "agent": "Codex+Claude",
-     "backend": null,
+     "backend": "0cd7f5a",
      "ui": "46eed30",
      "reviewed": false,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "blocker": "Portal/firma del lado de Codex (DOC-PAY-API)",
+     "backend_verification": "Standalone: 146 MariaDB tests / 1123 assertions; integrated with admin-screens a9f2996 at 41d8260: 179 / 1482 plus Vite build; sandbox only; source review and owner acceptance pending"
     },
     {
      "name": "Reserva rápida (tu mitad + la de la clienta)",
@@ -320,7 +324,9 @@
      "ui": "bf6f06e",
      "reviewed": false,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "blocker": "Servicio QuickBook (Codex, propuesta en docs/QUICK-BOOKING-API-PROPOSAL.md)",
+     "backend_note": "QuickBook/SubmitClientDetails names accepted with transaction/version refinements in QUICK-BOOKING-API-DECISIONS.md; not implemented (0 backend credit)"
     }
    ]
   },

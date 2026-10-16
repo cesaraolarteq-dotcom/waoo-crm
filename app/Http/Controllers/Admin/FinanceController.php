@@ -30,7 +30,7 @@ final class FinanceController extends Controller
     public function confirm(Request $request, Event $event, \App\Services\Finance\ConfirmPaidCapacity $service, FinanceSummary $summary)
     {
         $saved = $service->execute($request->user(), $event->id, $request->all());
-        return response()->json(['capacity_status' => $saved->status, 'finance' => $summary->forEvent($saved), 'contract_status' => 'not_issued'])->header('Cache-Control', 'no-store, private');
+        return response()->json(['capacity_status' => $saved->status, 'finance' => $summary->forEvent($saved), 'contract_status' => $summary->forEvent($saved)['contract_status']])->header('Cache-Control', 'no-store, private');
     }
     public function exceptions()
     {

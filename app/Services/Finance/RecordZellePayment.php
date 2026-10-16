@@ -43,6 +43,10 @@ final class RecordZellePayment
                 $entry = LedgerEntry::create(['event_id' => $eventId, 'financial_revision_id' => $revision->id, 'environment' => 'test', 'kind' => 'receipt', 'method' => 'zelle',
                     'amount_cents' => $data['amount_cents'], 'currency' => 'USD', 'received_at' => $data['received_at'], 'external_reference' => $data['reference'],
                     'external_identity_key' => $identity, 'verified_by' => $actor->id, 'source_type' => 'owner_verified', 'note' => $data['note'] ?? null]);
+                SupersedeCollections::forEvent($eventId, 'external_payment_received', $actor);
+                $summary = app(FinanceSummary::class)->forEvent($event);
+                if ($summary['credit_cents'] > 0) DB::table('payment_exceptions')->insertOrIgnore(['event_id' => $eventId, 'financial_revision_id' => $revision->id, 'kind' => 'overpayment',
+                    'exception_key' => hash('sha256', 'zelle:'.$entry->id.':overpayment'), 'state' => 'open', 'context' => json_encode(['ledger_entry_id' => $entry->id, 'credit_cents' => $summary['credit_cents']], JSON_THROW_ON_ERROR), 'created_at' => now(), 'updated_at' => now()]);
                 Audit::recordFor($actor, 'payment.zelle_received', $entry, [], $entry->getAttributes());
                 MutationKey::store($scope, $key, $hash, 'ledger_entry', $entry->id);
                 return $entry;
