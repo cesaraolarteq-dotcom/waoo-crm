@@ -8,9 +8,15 @@ use Mustache\Engine;
 
 final class PrintRenderer
 {
+    private const TERMS_FIELD = '/(?<!\{)\{\{\s*(client\.first_name|client\.last_name|payments\.balance_amount)\s*\}\}(?!\})/';
+
     public function validateTerms(string $html): void
     {
-        if (strlen($html) > 200000 || preg_match('/<!DOCTYPE|<!ENTITY|<\/?(?:html|head|body)\b|\{\{/i', $html)) {
+        $withoutFields = preg_replace(self::TERMS_FIELD, '', $html);
+        if (str_contains($withoutFields, '{{') || str_contains($withoutFields, '}}')) {
+            throw ValidationException::withMessages(['terms_html' => 'Solo se permiten client.first_name, client.last_name y payments.balance_amount.']);
+        }
+        if (strlen($html) > 200000 || preg_match('/<!DOCTYPE|<!ENTITY|<\/?(?:html|head|body)\b/i', $html)) {
             throw ValidationException::withMessages(['terms_html' => 'El texto contiene contenido no permitido o supera el límite.']);
         }
         $document = new \DOMDocument();
@@ -41,7 +47,12 @@ final class PrintRenderer
         }, $source);
         if ($stack !== []) throw new \LogicException('Unclosed trusted print layout section.');
         $source = str_replace(['{{this}}', '{{terms_html}}'], ['{{.}}', '{{{terms_html}}}'], $source);
-        $context['terms_html'] = $terms;
+        // Substitute approved fields once; client values are data, never template source.
+        $context['terms_html'] = preg_replace_callback(self::TERMS_FIELD, function ($match) use ($context) {
+            $value = data_get($context, $match[1]);
+            if (! is_scalar($value)) throw new \LogicException('Missing approved terms field.');
+            return str_replace(['{', '}'], ['&#123;', '&#125;'], htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+        }, $terms);
         $html = (new Engine(['escape' => fn ($value) => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')]))->render($source, $context);
         if (str_contains($html, '{{')) throw new \LogicException('Unresolved print merge field.');
         return $html;

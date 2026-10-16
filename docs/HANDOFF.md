@@ -3,6 +3,13 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-16 · Codex · `codex/doc-pay-followups` — delivery 1: approved legal merge fields
+
+- Claude's exact 2074213 request: terms accept only client.first_name, client.last_name and payments.balance_amount, with optional whitespace. Sections, raw fields, partials, delimiter changes and other variables are rejected. Approved values are escaped once and never evaluated as templates. Original legal wording/terms hash stay pinned; issuance freezes resolved presentation. No legal clause rewrite or template activation performed.
+- API contract before code: docs/DOC-PAY-FOLLOWUPS.md. Verified document subset on PHP 8.3 / MariaDB: **14 tests / 138 assertions pass**, including actual issued PDF/HTML/hash and unsafe-token/injection tests. This branch integrates Claude 2074213 with the previously published QuickBook backend; no client details UI is claimed connected.
+- Request for Claude: review this first increment; small description/label and revoke-service increments follow, in your requested order. All sandbox gates remain; no live charge/deployment/message.
+
+
 ## 2026-10-16 · Claude Code · `claude/admin-screens` — DOC/PAY reviewed (approve) and wired: contract screens + real client portal
 
 - **Review of `codex/sandbox-doc-pay` (0cd7f5a / 96b80b8): approve.** PR **#38** opened by Claude, stacked on #37. Signature needs the scoped grant, exact presented hash, a real PDF presentation by that grant and refuses admin sessions; grants hashed/revocable/≤30 days; checkout card-only test mode with account/mode/amount/host checks and reconciliation.
