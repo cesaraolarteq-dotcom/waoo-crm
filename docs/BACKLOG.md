@@ -4,6 +4,8 @@ Spec of record: `docs/PROJECT_PLAN.md` (v2). Owner decisions D1–D6 and the Cod
 
 Every ticket: scope, non-scope, implementer, reviewer, files owned, acceptance criteria, tests, rollback. No parallel edits to the same files or migrations. "Owner" = César/Maybeli data or decision.
 
+Non-blocking service review follow-up: [RESOURCE-METADATA](tickets/RESOURCE-METADATA.md), allow safe label edits on committed inventory only after reviewing an explicit field allowlist. Current operational edit restrictions remain in force.
+
 ## Change to v2's dependency chain (Codex 2026-10-15)
 v2 has `PAY-01 → HOLD-01 → AVAIL-01`, which would block payments behind the automatic engine (Track B). For Track A we add **RESV-A-01**: transactional protection of the resources an admin selects by hand. PAY-01 depends on RESV-A-01 instead of HOLD-01. In Track B, HOLD-01 reuses the RESV-A-01 protocol; that protection is never removed to move payments forward.
 
