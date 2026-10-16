@@ -110,4 +110,16 @@ class LeadConversionTest extends TestCase
         $this->withHeader('Idempotency-Key', (string) Str::uuid())->postJson('/admin/api/quick-bookings', [...$this->input, 'lead_id' => $lead->id, 'lead_expected_version' => 2])->assertForbidden();
         $this->assertDatabaseCount('events', 0);
     }
+    public function test_route_quote_is_preserved_through_real_lead_quickbook_without_dto_exposure(): void
+    {
+        config(['waoo.sandbox_routes' => true]); \Illuminate\Support\Facades\Http::fake();
+        $lead = $this->lead(); $address = '123 Fictional Venue, TX 77433';
+        $quote = app(\App\Services\Routing\TravelFeeQuote::class)->forAddress($this->owner, $address, '77433');
+        $input = [...$this->input, 'address' => $address, 'postal_code' => '77433', 'travel_fee_cents' => 4000, 'travel_fee_quote_id' => $quote['quote_id']];
+        $this->convert($lead, $input)->assertCreated()->assertJsonMissingPath('event.travel_fee_evidence');
+        $this->assertSame($quote['quote_id'], Event::sole()->travel_fee_evidence['quote_id']);
+        $this->assertSame(4000, FinancialRevision::sole()->travel_fee_cents);
+        \Illuminate\Support\Facades\Http::assertNothingSent();
+    }
+
 }

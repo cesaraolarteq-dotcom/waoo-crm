@@ -10,6 +10,8 @@ Route::redirect('/', '/admin')->name('home');
 Route::middleware(['auth', 'password.confirm'])->get('/seguridad/dos-pasos', TwoFactorEnrollmentController::class)->name('security.two-factor');
 Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'));
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->prefix('admin/api')->group(function () {
+    Route::post('/travel-fee-quotes', [\App\Http\Controllers\Admin\TravelFeeController::class, 'store']);
+    Route::get('/events/{event}/travel-fee-evidence', [\App\Http\Controllers\Admin\TravelFeeController::class, 'evidence'])->whereNumber('event');
     Route::get('/leads', [\App\Http\Controllers\Admin\LeadController::class, 'index']);
     Route::get('/leads/{lead}', [\App\Http\Controllers\Admin\LeadController::class, 'show'])->whereNumber('lead');
     Route::patch('/leads/{lead}', [\App\Http\Controllers\Admin\LeadController::class, 'update'])->whereNumber('lead');

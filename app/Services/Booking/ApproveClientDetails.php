@@ -53,6 +53,7 @@ final class ApproveClientDetails
                 $updated = app(SaveEventDraft::class)->execute($actor, [...$event->only(['customer_id','title','event_type','timezone','setup_minutes','breakdown_minutes','travel_fee_cents']),
                     'starts_at' => $event->starts_at->toIso8601String(), 'ends_at' => $event->ends_at->toIso8601String(),
                     'setup_minutes' => $data['setup_minutes'] ?? $event->setup_minutes, 'breakdown_minutes' => $data['breakdown_minutes'] ?? $event->breakdown_minutes,
+                    ...($event->travel_fee_evidence ? ['travel_fee_override_note' => mb_substr($data['review_note'], 0, 1000)] : []),
                     'address' => $values['event_address'], 'postal_code' => $values['event_postal_code'] ?? $event->postal_code,
                     'expected_version' => $event->version, 'services' => $beforeServices->map(fn ($s) => ['price_version_id' => $s->price_version_id,
                         'characters' => $s->characters->map(fn ($c) => $c->only(['character_id','quantity']))->all()])->all(),

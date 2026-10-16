@@ -20,7 +20,7 @@ final class SaveEventDraft
     {
         $actor = RecordActor::authorize($actor);
         $id = $eventId;
-        $data = RecordInput::validate($input, ['customer_id' => 'required|integer|exists:customers,id', 'title' => 'required|string|max:255', 'event_type' => ['sometimes', 'nullable', Rule::in(['birthday', 'baby_shower', 'gender_reveal', 'corporate', 'other'])], 'starts_at' => ['required', 'date', new ExplicitOffset()], 'ends_at' => ['required', 'date', 'after:starts_at', new ExplicitOffset()], 'timezone' => ['required', Rule::in(['America/Chicago'])], 'address' => 'nullable|string|max:255', 'postal_code' => ['nullable', 'string', 'regex:/^[0-9]{5}(?:-[0-9]{4})?$/'], 'setup_minutes' => 'nullable|integer|min:0|max:720', 'breakdown_minutes' => 'nullable|integer|min:0|max:720', 'travel_fee_cents' => 'nullable|integer|min:0|max:100000000', 'services' => 'present|array|max:10', 'services.*' => 'array:price_version_id,characters', 'services.*.characters' => 'sometimes|array|max:20', 'services.*.characters.*' => 'array:character_id,quantity', 'services.*.characters.*.character_id' => 'required|integer|exists:characters,id', 'services.*.characters.*.quantity' => 'required|integer|min:1|max:20', 'services.*.price_version_id' => 'required|integer|distinct|exists:price_versions,id', 'expected_version' => ($id ? 'required' : 'sometimes') . '|integer|min:1']);
+        $data = RecordInput::validate($input, ['customer_id' => 'required|integer|exists:customers,id', 'title' => 'required|string|max:255', 'event_type' => ['sometimes', 'nullable', Rule::in(['birthday', 'baby_shower', 'gender_reveal', 'corporate', 'other'])], 'starts_at' => ['required', 'date', new ExplicitOffset()], 'ends_at' => ['required', 'date', 'after:starts_at', new ExplicitOffset()], 'timezone' => ['required', Rule::in(['America/Chicago'])], 'address' => 'nullable|string|max:255', 'postal_code' => ['nullable', 'string', 'regex:/^[0-9]{5}(?:-[0-9]{4})?$/'], 'setup_minutes' => 'nullable|integer|min:0|max:720', 'breakdown_minutes' => 'nullable|integer|min:0|max:720', 'travel_fee_cents' => 'nullable|integer|min:0|max:100000000', 'travel_fee_quote_id' => 'sometimes|nullable|integer|min:1', 'travel_fee_override_note' => 'sometimes|nullable|string|min:10|max:1000', 'services' => 'present|array|max:10', 'services.*' => 'array:price_version_id,characters', 'services.*.characters' => 'sometimes|array|max:20', 'services.*.characters.*' => 'array:character_id,quantity', 'services.*.characters.*.character_id' => 'required|integer|exists:characters,id', 'services.*.characters.*.quantity' => 'required|integer|min:1|max:20', 'services.*.price_version_id' => 'required|integer|distinct|exists:price_versions,id', 'expected_version' => ($id ? 'required' : 'sometimes') . '|integer|min:1']);
         return DB::transaction(function () use ($actor, $data, $id) {
             $event = $id ? Event::whereKey($id)->lockForUpdate()->firstOrFail() : new Event();
             if ($id) {
@@ -32,7 +32,10 @@ final class SaveEventDraft
             unset($data['services'], $data['expected_version']);
             $data['starts_at'] = CarbonImmutable::parse($data['starts_at'])->utc();
             $data['ends_at'] = CarbonImmutable::parse($data['ends_at'])->utc();
+            $evidence = app(\App\Services\Routing\AcceptTravelFee::class)->forDraft($actor, $event, $data);
+            unset($data['travel_fee_quote_id'], $data['travel_fee_override_note']);
             $event->fill($data);
+            $event->forceFill(['travel_fee_evidence' => $evidence]);
             if ($id) {
                 $event->version++;
             }

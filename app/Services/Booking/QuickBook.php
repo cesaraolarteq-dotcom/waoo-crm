@@ -31,6 +31,7 @@ final class QuickBook
             'starts_at' => ['required','date', new ExplicitOffset], 'ends_at' => ['required','date','after:starts_at', new ExplicitOffset],
             'timezone' => ['required', Rule::in(['America/Chicago'])], 'postal_code' => ['required','string','regex:/^[0-9]{5}(?:-[0-9]{4})?$/'],
             'address' => 'nullable|string|max:255', 'setup_minutes' => 'nullable|integer|min:0|max:720', 'breakdown_minutes' => 'nullable|integer|min:0|max:720',
+            'travel_fee_quote_id' => 'sometimes|nullable|integer|min:1', 'travel_fee_override_note' => 'sometimes|nullable|string|min:10|max:1000',
             'travel_fee_cents' => 'required|integer|min:0|max:100000000', 'services' => 'required|array|min:1|max:10',
             'deposit' => 'required|array:method,amount_cents,reference,received_at,verified_received,note',
             'deposit.method' => ['required', Rule::in(['zelle'])], 'deposit.amount_cents' => 'required|integer|min:1|max:100000000',
