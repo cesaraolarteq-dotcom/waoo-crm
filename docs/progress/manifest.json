@@ -78,7 +78,10 @@
      "ui": "094982c",
      "reviewed": true,
      "merged": true,
-     "accepted": false
+     "accepted": false,
+     "api_budget_followup": "9c90b5f on codex/admin-api-budget-fix, base main8105bef: independent60/min read/write counters after owner+2FA; no UI wiring or phase-stack dependencies",
+     "api_budget_verification": "17 main-based auth/calendar/budget tests /367 assertions pass; integration proof separately in codex/admin-read-write-budgets HANDOFF",
+     "api_budget_reviewed": false
     },
     {
      "name": "Panel con el diseño de Waoo",
