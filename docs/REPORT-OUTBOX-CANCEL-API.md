@@ -1,0 +1,11 @@
+# JOBS-01 — cancel local preview tasks safely
+
+Contract before code. Sandbox local receipts only; no email or reservation cancellation. This does not implement CHANGE-A or automatic reminder invalidation.
+
+`CancelReportPreview::execute(User $actor, int $deliveryId, array $input): ReportPreviewDelivery` in App\Services\Reports\Outbox; required note10–500 chars. Existing owner/2FA + both preview/finance gates remain. POST `/admin/api/reports/snapshots/{snapshot}/preview-delivery/cancel`, GET `/admin/api/reports/snapshots/{snapshot}/preview-delivery` reads current state (404 if absent). Private/no-store. No enqueue on GET.
+
+Cancellation takes the same delivery row lock used by claim, local transport and acknowledgement. pending or processing + no durable receipt → cancelled; record cancelled_at/by/note, invalidate lease token/expiry and audit in the same transaction. Retrying cancelled returns the original cancellation without rewriting actor/note/audit. completed/failed or any committed local receipt →409; never pretend to retract a completed effect. Existing enqueue remains company-idempotent and returns cancelled, never rearms it. CLI excludes cancelled, processing never reactivates terminal status.
+
+PreviewTransport::record adds required leaseToken. DatabasePreviewTransport must check active processing state, matching token and unexpired lease under the delivery lock before creating/returning a receipt. The processor passes its own claim token. Cancellation before transport wins prevents even a local receipt; a stale worker's later acknowledgement cannot undo it. If transport already won, cancellation refuses. Local transport/DB receipt share this lock: **this is not a guarantee that a network email can be recalled**. Future external senders require separate ambiguous/in-flight cancellation handling.
+
+Additive migration250000: nullable cancelled_at, cancelled_by FKusers, cancellation_note; existing rows preserved. JSON exposes cancellation metadata to owners, hides lease_token. Notes are owner-only and UI must escape them. No deletion of reports/tasks/receipts/audits. No real provider, scheduling, notifications, reset/retry or customer-facing flow added. Claude may add “Anular vista de prueba” with note and a current-state refresh; cancelled means preview cancelled, never event cancelled/email recalled.
