@@ -69,8 +69,8 @@ final class PortalPageController extends Controller
         return [
             'lang' => $lang, 'step' => $step, 'steps' => $canDetails ? ['details', 'contract', 'pay'] : ['contract', 'pay'], 'test_mode' => true,
             'details' => $details ? ['expected_event_version' => $details['expected_event_version'], 'expected_revision' => $details['expected_revision'],
-                'event_date' => $start->format('Y-m-d'), 'event_offset' => $start->format('P'), 'action' => url('/portal/api/details'),
-                'sms_versions' => array_keys((array) config('waoo.sms_consent_versions', []))] : null,
+                'event_date' => $start->format('Y-m-d'), 'action' => url('/portal/api/details'),
+                'sms' => $this->smsConsent($lang)] : null,
             'prefill' => $details && $details['submission'] ? $details['submission']['data']
                 : ['phone' => $event->customer?->phone, 'email' => $event->customer?->email, 'event_address' => $event->address, 'event_postal_code' => $event->postal_code],
             // The contracting party's own first name when a contract exists; otherwise the owner's record.
@@ -100,6 +100,18 @@ final class PortalPageController extends Controller
                         'when' => CarbonImmutable::instance($n['submitted_at'])->setTimezone($tz)->locale($lang)->{$lang === 'es' ? 'translatedFormat' : 'format'}($lang === 'es' ? 'D j M, g:i a' : 'D, M j, g:i a')])->all()],
             'actions' => ['details' => '#', 'sign' => $contract ? url('/portal/api/contracts/'.$contract->id.'/sign') : '#', 'checkout' => url('/portal/api/checkout-intents')],
         ];
+    }
+
+    /** The exact approved SMS wording and its version (the same text SubmitClientDetails records); a "-es"/"-en" version wins for that language. */
+    private function smsConsent(string $lang): ?array
+    {
+        $versions = array_filter((array) config('waoo.sms_consent_versions', []), fn ($t) => is_string($t) && $t !== '');
+        if ($versions === []) {
+            return null;
+        }
+        $version = collect(array_keys($versions))->first(fn ($v) => str_ends_with((string) $v, '-'.$lang)) ?? array_key_last($versions);
+
+        return ['version' => (string) $version, 'text' => $versions[$version]];
     }
 
     private function lang(Request $request): string
