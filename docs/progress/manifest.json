@@ -130,7 +130,16 @@
      "merged": true,
      "accepted": false,
      "blocker": "Inventario de César",
-     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996"
+     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996",
+     "outfit_backend_followup": {
+      "backend": "d1b00a3",
+      "ui": null,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "API7c8dcb1 published first. Final integrated codex/outfit-01 d1b00a3: full300/2864 pass (330.31s), PHP8.3/MariaDB11.8; includes LEAD/ROUTE/OUTFIT, real independent races and populated SQLite/MariaDB roundtrips. Vite/strict Composer/syntax/diff pass. Packagist audit unavailable (proxy403), no dependency changes.",
+      "remaining": "Claude must map optional outfit/note explicitly and add forms/assignment labels; owner version names/unit quantities, independent review/CI/main merge/acceptance pending. No phase completion claimed."
+     }
     },
     {
      "name": "Clientas y borradores de eventos",
@@ -208,7 +217,8 @@
       "merged": false,
       "accepted": false,
       "verification": "Published API380b6fe before source. Full272/2583 pass; targeted18/253 includes HMAC replay binding, stateless HTTPS staging/rate limits, concurrent intake/status/conversion races, real QuickBook rollback and post-core portal recovery, SQLite migration.",
-      "remaining": "Claude website email-first fallback/private spool + UI and review/main merge; secure shared-secret configuration and explicit live activation. Backend default off; whole website-to-CRM delivery not accepted yet."
+      "remaining": "Claude website email-first fallback/private spool + UI and review/main merge; secure shared-secret configuration and explicit live activation. Backend default off; whole website-to-CRM delivery not accepted yet.",
+      "integration_verification": "Final integrated codex/outfit-01 d1b00a3: full300/2864 pass (330.31s), PHP8.3/MariaDB11.8; includes LEAD/ROUTE/OUTFIT, real independent races and populated SQLite/MariaDB roundtrips. Vite/strict Composer/syntax/diff pass. Packagist audit unavailable (proxy403), no dependency changes."
      }
     },
     {
@@ -227,7 +237,8 @@
       "merged": false,
       "accepted": false,
       "verification": "Contract97c84ac published first. Targeted45/490 pass including105 synthetic differential cases vs website formula,7 fixed ZIPs, bounded provider errors/null fees, true atomic quota race/Chicago midnight, cache, explicit/private/stale quote acceptance, actual lead→QuickBook and client-address reconfirmation, SQLite. Quoted_at metadata is additive; later integrated run will cover the complete stack.",
-      "remaining": "Missing22 actual calibrated ZIP reference fixtures (asked owner/Claude); no real Google/staging probe, UI/review/main merge or live activation. Full ROUTE-01 not complete/accepted."
+      "remaining": "Missing22 actual calibrated ZIP reference fixtures (asked owner/Claude); no real Google/staging probe, UI/review/main merge or live activation. Full ROUTE-01 not complete/accepted.",
+      "integration_verification": "Final integrated codex/outfit-01 d1b00a3: full300/2864 pass (330.31s), PHP8.3/MariaDB11.8; includes LEAD/ROUTE/OUTFIT, real independent races and populated SQLite/MariaDB roundtrips. Vite/strict Composer/syntax/diff pass. Packagist audit unavailable (proxy403), no dependency changes."
      }
     },
     {
