@@ -24,9 +24,11 @@ final class AcceptSignature
         $scope = "customer:{$client->customerId}:contract:{$contractId}:sign"; $hash = MutationKey::hash($data);
         return DB::transaction(function () use ($client, $contractId, $data, $request, $key, $scope, $hash) {
             $client->authorize($client->eventId, 'contract.sign', true);
-            Event::whereKey($client->eventId)->lockForUpdate()->firstOrFail();
+            $event = Event::whereKey($client->eventId)->lockForUpdate()->firstOrFail();
             $contract = Contract::whereKey($contractId)->where('event_id', $client->eventId)->where('signer_customer_id', $client->customerId)->lockForUpdate()->firstOrFail();
             if ($saved = MutationKey::find($scope, $key, $hash)) return SignatureEvidence::findOrFail($saved->result_id);
+            CreateContract::assertCurrent($event, \App\Models\FinancialRevision::findOrFail($contract->financial_revision_id));
+            \App\Services\Booking\ClientDetailsState::assertApproved($contract->event_id, $contract->financial_revision_id);
             RecordWriteRejected::unless($contract->state === 'issued' && $contract->version === $data['expected_version'] && hash_equals($contract->presented_pdf_sha256, $data['presented_pdf_sha256']), 409, 'El documento cambió o ya no admite esta firma. Revisa la versión vigente.');
             app(ArtifactStore::class)->read($contract->presented_pdf_path, $contract->presented_pdf_sha256);
             if (! DB::table('contract_presentations')->where('contract_id', $contract->id)->where('portal_grant_id', $client->grantId)->where('presented_pdf_sha256', $contract->presented_pdf_sha256)->exists()) {

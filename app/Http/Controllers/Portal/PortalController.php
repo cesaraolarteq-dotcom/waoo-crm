@@ -28,7 +28,7 @@ final class PortalController extends Controller
     }
     public function event(Request $request, FinanceSummary $finance)
     {
-        $client = $request->attributes->get('portal_context'); $client->authorize($client->eventId, 'payments.read');
+        $client = $request->attributes->get('portal_context'); $grant = $client->authorize($client->eventId, 'payments.read');
         $event = Event::whereKey($client->eventId)->where('customer_id', $client->customerId)->firstOrFail();
         $summary = $finance->forEvent($event);
         if ($summary['financial_revision']) $summary['financial_revision'] = $summary['financial_revision']->only(['id','revision','currency','total_cents','deposit_target_cents','balance_due_at']);
@@ -40,12 +40,13 @@ final class PortalController extends Controller
             ])->all(),
         ])->all();
         $current = null;
-        if (in_array('contract.read', $client->authorize($event->id, 'payments.read')->scopes, true)) {
+        if (in_array('contract.read', $grant->scopes, true)) {
             $current = Contract::where('event_id', $event->id)->where('signer_customer_id', $client->customerId)
                 ->whereIn('state', ['issued','signed'])->orderByDesc('revision')->first()?->only(['id','state','version','revision','issued_at','signed_at','presented_pdf_sha256','final_pdf_sha256']);
         }
         return response()->json(['event' => $event->only(['id','title','starts_at','ends_at','timezone','address','status']),
-            'services' => $services, 'finance' => $summary, 'contract' => $current]);
+            'services' => $services, 'finance' => $summary, 'contract' => $current,
+            'details' => in_array('details.submit', $grant->scopes, true) ? \App\Services\Booking\ClientDetailsState::portal($event) : null]);
     }
     public function show(Request $request, string $contract)
     {

@@ -24,6 +24,10 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::post('/resources/{resource}/blocks/{block}/release', [ResourceBlockController::class, 'release'])->whereNumber('block');
     Route::post('/costume-compatibilities', [CoreController::class, 'compatibility']);
     Route::post('/costume-compatibilities/unlink', [CoreController::class, 'unlinkCompatibility']);
+    Route::get('/quick-bookings', [\App\Http\Controllers\Admin\QuickBookingController::class, 'index']);
+    Route::post('/quick-bookings', [\App\Http\Controllers\Admin\QuickBookingController::class, 'create']);
+    Route::get('/events/{event}/client-details', [\App\Http\Controllers\Admin\ClientDetailsController::class, 'index']);
+    Route::post('/events/{event}/client-details/{submission}/approve', [\App\Http\Controllers\Admin\ClientDetailsController::class, 'approve']);
     Route::get('/contract-templates', [\App\Http\Controllers\Admin\DocumentController::class, 'templates']);
     Route::get('/contract-templates/{template}', [\App\Http\Controllers\Admin\DocumentController::class, 'template']);
     Route::post('/contract-templates', [\App\Http\Controllers\Admin\DocumentController::class, 'createTemplate']);
@@ -56,6 +60,7 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
 
 Route::post('/portal/api/session', [\App\Http\Controllers\Portal\PortalController::class, 'session'])->middleware('throttle:30,1');
 Route::middleware([\App\Http\Middleware\AuthenticatePortal::class, 'throttle:60,1'])->prefix('portal/api')->group(function () {
+    Route::post('/details', [\App\Http\Controllers\Portal\ClientDetailsController::class, 'store']);
     Route::post('/checkout-intents', [\App\Http\Controllers\Portal\CheckoutController::class, 'create']);
     Route::get('/payment-intents/{intent}', [\App\Http\Controllers\Portal\CheckoutController::class, 'show']);
     Route::get('/event', [\App\Http\Controllers\Portal\PortalController::class, 'event']);

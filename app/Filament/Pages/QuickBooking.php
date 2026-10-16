@@ -42,9 +42,12 @@ class QuickBooking extends Page
     #[Locked]
     public string $key = '';
 
+    #[Locked]
+    public string $linkExpiryAnchorUtc = '';
+
     public static function canAccess(): bool
     {
-        return parent::canAccess() && RecordServicePageGate::ready(self::SERVICE);
+        return parent::canAccess() && \App\Filament\Support\FinanceGate::enabled() && config('waoo.sandbox_documents', false) && RecordServicePageGate::ready(self::SERVICE);
     }
 
     public static function getNavigationBadge(): ?string
@@ -54,7 +57,9 @@ class QuickBooking extends Page
 
     public function mount(): void
     {
+        abort_unless(static::canAccess(), 403);
         $this->key = (string) Str::uuid();
+        $this->linkExpiryAnchorUtc = now('UTC')->startOfSecond()->toIso8601String();
         $this->form->fill(['customer_mode' => 'new', 'locale' => 'es', 'deposit' => ['method' => 'zelle'], 'expires_days' => 14, 'characters' => []]);
     }
 
@@ -95,6 +100,9 @@ class QuickBooking extends Page
                 TimePicker::make('end_time')->label('Termina')->native()->seconds(false)->required()->live()
                     ->helperText('Se llena con la duración del paquete.'),
                 $choice('start_time'), $choice('end_time'),
+                TextInput::make('setup_minutes')->label('Montaje (minutos antes)')->integer()->minValue(0)->maxValue(720)
+                    ->helperText('Si aún no lo sabes, complétalo al revisar los datos de la clienta.'),
+                TextInput::make('breakdown_minutes')->label('Desmontaje (minutos después)')->integer()->minValue(0)->maxValue(720),
                 TextInput::make('postal_code')->label('ZIP')->required()->maxLength(10)->placeholder('77494'),
                 TextInput::make('travel_fee')->label('Costo de transporte (USD)')->prefix('$')->required()->live(onBlur: true)
                     ->rule('regex:/^\d{1,7}(\.\d{1,2})?$/')->validationMessages(['regex' => 'Escribe solo el número, por ejemplo 40.'])
@@ -221,10 +229,13 @@ class QuickBooking extends Page
                 : ['new_customer' => ['name' => trim($s['name']), 'phone' => filled($s['phone'] ?? null) ? trim($s['phone']) : null, 'email' => null, 'locale' => $s['locale']]]),
             'title' => trim((string) $s['title']), 'event_type' => $s['event_type'], 'starts_at' => $start, 'ends_at' => $end, 'timezone' => ChicagoTime::TZ,
             'postal_code' => trim((string) $s['postal_code']), 'travel_fee_cents' => EditServiceVariant::toCents((string) $s['travel_fee']),
+            ...(filled($s['setup_minutes'] ?? null) ? ['setup_minutes' => (int) $s['setup_minutes']] : []),
+            ...(filled($s['breakdown_minutes'] ?? null) ? ['breakdown_minutes' => (int) $s['breakdown_minutes']] : []),
             'services' => EventResource::servicesInput($s),
             'deposit' => ['method' => 'zelle', 'amount_cents' => EditServiceVariant::toCents((string) $d['amount']), 'reference' => trim($d['reference']),
                 'received_at' => ChicagoTime::toIso($d['date'], $d['time'], $d['choice'] ?? null, 'data.deposit.date'), 'verified_received' => (bool) ($d['verified'] ?? false)],
-            'portal' => ['expires_at' => now(ChicagoTime::TZ)->addDays((int) $s['expires_days'])->endOfDay()->format('Y-m-d\TH:i:sP')],
+            // The pre-request snapshot retains this anchor even when the save response is lost.
+            'portal' => ['expires_at' => min(CarbonImmutable::parse($this->linkExpiryAnchorUtc)->setTimezone(ChicagoTime::TZ)->addDays((int) $s['expires_days'])->endOfDay(), CarbonImmutable::parse($this->linkExpiryAnchorUtc)->addDays(30))->format('Y-m-d\TH:i:sP')],
         ];
     }
 
@@ -242,10 +253,11 @@ class QuickBooking extends Page
         $whenEn = CarbonImmutable::instance($r->event->starts_at)->setTimezone(ChicagoTime::TZ)->format('D, M j \a\t g:i a');
 
         return [
-            'event_id' => $r->event->id, 'link' => $link, 'expires' => $exp, 'shown_before' => $link === null,
+            'event_id' => $r->event->id, 'link' => $link, 'expires' => $exp, 'shown_before' => $link === null && !($r->link_issue_pending ?? false),
+            'link_pending' => (bool) ($r->link_issue_pending ?? false),
             'summary' => 'Total '.Labels::money($f['financial_revision']->total_cents).' · recibido '.$paid.' · saldo '.$balance.' (vence '.$due.')',
-            'msg_es' => "¡Hola {$first}! Gracias por tu depósito de {$paid}. Tu fecha del {$when} quedó apartada. Para terminar tu reserva, completa tus datos y firma tu contrato aquí: {$link} (el enlace vence el {$exp}). Tu saldo es de {$balance}. ¡Estamos emocionados de ser parte de tu celebración!",
-            'msg_en' => "Hi {$first}! Thank you for your deposit of {$paid}. Your date on {$whenEn} is held. To finish your booking, please complete your details and sign your contract here: {$link} (link expires {$exp}). Your remaining balance is {$balance}. We're excited to be part of your celebration!",
+            'msg_es' => "¡Hola {$first}! Gracias por tu depósito de {$paid}. Registramos tu solicitud para el {$when}. Para terminar tu reserva, completa tus datos y firma tu contrato aquí: {$link} (el enlace vence el {$exp}). Tu saldo es de {$balance}. ¡Estamos emocionados de ser parte de tu celebración!",
+            'msg_en' => "Hi {$first}! Thank you for your deposit of {$paid}. We recorded your booking request for {$whenEn}. To finish your booking, please complete your details and sign your contract here: {$link} (link expires {$exp}). Your remaining balance is {$balance}. We're excited to be part of your celebration!",
             'locale' => $r->customer->locale ?? 'es',
         ];
     }

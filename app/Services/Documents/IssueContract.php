@@ -23,6 +23,7 @@ final class IssueContract
             RecordWriteRejected::unless($contract->state === 'draft' && $contract->version === (int) $data['expected_version'] && $contract->event_version === $event->version
                 && $contract->revision === (int) Contract::where('event_id', $eventId)->max('revision'), 409, 'Revisa el evento y la revisión del contrato antes de emitirlo.');
             CreateContract::assertCurrent($event, FinancialRevision::findOrFail($contract->financial_revision_id));
+            \App\Services\Booking\ClientDetailsState::assertApproved($eventId, $contract->financial_revision_id);
             RecordWriteRejected::when(Contract::where('event_id', $eventId)->where('state', 'signed')->exists(), 409, 'Un contrato firmado requiere una adenda o el flujo de cambios.');
             $template = ContractTemplateVersion::whereKey($contract->template_version_id)->lockForUpdate()->firstOrFail();
             RecordWriteRejected::unless($template->state === 'active' && $template->approved_at, 409, 'La plantilla debe estar activa y aprobada por un administrador.');

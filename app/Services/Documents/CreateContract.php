@@ -29,6 +29,7 @@ final class CreateContract
             if ($saved = MutationKey::find($scope, $key, $hash)) return Contract::findOrFail($saved->result_id);
             RecordWriteRejected::unless($event->version === (int) $data['expected_version'], 409, 'El evento cambió. Actualiza la ficha.');
             $finance = FinancialRevision::where('event_id', $eventId)->whereKey($data['financial_revision_id'])->firstOrFail(); self::assertCurrent($event, $finance);
+            \App\Services\Booking\ClientDetailsState::assertApproved($eventId, $finance->id);
             $template = ContractTemplateVersion::findOrFail($data['template_version_id']);
             if (! $event->address || ! $event->customer?->email || strcasecmp($event->customer->email, $data['client']['email']) !== 0 || $event->services()->where('operational_ready', false)->exists()) {
                 throw ValidationException::withMessages(['contract' => 'Completa dirección, identidad/correo de la clienta y selecciones operativas antes de generar el contrato.']);

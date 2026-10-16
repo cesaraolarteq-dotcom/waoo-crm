@@ -3,7 +3,9 @@
     @if ($result)
         <div class="wqb-done" x-data="{ lang: @js($result['locale']), copied: '' }">
             <h2>¡Reserva guardada! <span>{{ $result['summary'] }}</span></h2>
-            @if ($result['shown_before'])
+            @if ($result['link_pending'] ?? false)
+                <p class="wqb-warn">El pago y el evento están guardados. Falta crear el enlace: genera otro desde el evento; no vuelvas a registrar el depósito.</p>
+            @elseif ($result['shown_before'])
                 <p class="wqb-warn">Este enlace ya se mostró antes. Por seguridad no se muestra otra vez: anúlalo y crea uno nuevo desde el evento.</p>
             @else
                 <p class="wqb-hint">Copia el enlace ahora: <b>solo se muestra esta vez</b>. Vence el {{ rtrim($result['expires'], '.') }}.</p>
