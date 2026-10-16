@@ -66,11 +66,14 @@ final class PortalPageController extends Controller
         $services = collect($revision?->lines_snapshot ?? [])->map(fn ($l) => ($l['name'] ?? '').(isset($l['duration_minutes']) ? ' · '.($l['duration_minutes'] >= 60 ? rtrim(rtrim(number_format($l['duration_minutes'] / 60, 1), '0'), '.').' h' : $l['duration_minutes'].' min') : ''))->implode(' + ');
         $due = $revision ? CarbonImmutable::instance($revision->balance_due_at)->setTimezone($tz)->locale($lang) : null;
 
+        $approvedSms = collect((array) config('waoo.sms_consent_versions', []))->filter(fn ($text) => is_string($text) && $text !== '');
+        $smsVersion = $approvedSms->keys()->first();
+
         return [
             'lang' => $lang, 'step' => $step, 'steps' => $canDetails ? ['details', 'contract', 'pay'] : ['contract', 'pay'], 'test_mode' => true,
             'details' => $details ? ['expected_event_version' => $details['expected_event_version'], 'expected_revision' => $details['expected_revision'],
-                'event_date' => $start->format('Y-m-d'), 'action' => url('/portal/api/details'),
-                'sms' => $this->smsConsent($lang)] : null,
+                'action' => url('/portal/api/details'),
+                'sms_consent' => $smsVersion !== null ? ['version' => $smsVersion, 'text' => $approvedSms[$smsVersion]] : null] : null,
             'prefill' => $details && $details['submission'] ? $details['submission']['data']
                 : ['phone' => $event->customer?->phone, 'email' => $event->customer?->email, 'event_address' => $event->address, 'event_postal_code' => $event->postal_code],
             // The contracting party's own first name when a contract exists; otherwise the owner's record.
@@ -91,20 +94,15 @@ final class PortalPageController extends Controller
             'consent' => ['version' => InHouseSignatureProvider::CONSENT_VERSION, 'text' => InHouseSignatureProvider::CONSENT],
             'pay' => ['revision_id' => $revision?->id, 'can_checkout' => in_array('checkout.create', $grant->scopes, true) && ($balance ?? 0) > 0],
             'zelle_memo' => 'WP-'.$event->id,
+            // Her own notices, through Codex's client projection only (never the owner's review note, bank reference or ledger).
+            'zelle' => ['can_notify' => in_array('checkout.create', $grant->scopes, true) && ($balance ?? 0) > 0, 'action' => url('/portal/api/zelle-notices'),
+                'amount' => $balance ? number_format($balance / 100, 2, '.', '') : '',
+                'notices' => \App\Models\ZelleNotice::where('event_id', $event->id)->where('customer_id', $client->customerId)->with('review.ledgerEntry')->orderByDesc('id')->limit(10)->get()
+                    ->map(fn ($n) => \App\Services\Portal\ZelleNoticeView::client($n))
+                    ->map(fn ($n) => ['state' => $n['state'], 'amount' => $fmt($n['amount_cents']), 'verified' => $n['verified_amount_cents'] !== null ? $fmt($n['verified_amount_cents']) : null,
+                        'when' => CarbonImmutable::instance($n['submitted_at'])->setTimezone($tz)->locale($lang)->{$lang === 'es' ? 'translatedFormat' : 'format'}($lang === 'es' ? 'D j M, g:i a' : 'D, M j, g:i a')])->all()],
             'actions' => ['details' => '#', 'sign' => $contract ? url('/portal/api/contracts/'.$contract->id.'/sign') : '#', 'checkout' => url('/portal/api/checkout-intents')],
         ];
-    }
-
-    /** The exact approved SMS wording and its version (the same text SubmitClientDetails records); a "-es"/"-en" version wins for that language. */
-    private function smsConsent(string $lang): ?array
-    {
-        $versions = array_filter((array) config('waoo.sms_consent_versions', []), fn ($t) => is_string($t) && $t !== '');
-        if ($versions === []) {
-            return null;
-        }
-        $version = collect(array_keys($versions))->first(fn ($v) => str_ends_with((string) $v, '-'.$lang)) ?? array_key_last($versions);
-
-        return ['version' => (string) $version, 'text' => $versions[$version]];
     }
 
     private function lang(Request $request): string

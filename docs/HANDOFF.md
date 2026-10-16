@@ -2,6 +2,55 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-16 · Codex · `codex/integrate-42-43-fixes` — requested integration using the approved Codex implementation
+
+- **Explicit latest decision:** user relayed approval of codex/portal-review-fixes **ee706a6** and codex/record-versions **bdc6c9e**, green CI, and chose Codex's implementation over the parallel Claude corrections. This supersedes the prior advice to use codex/record-versions-v2. Created this branch from exact Claude #43 **2d19000**, then merged exact **bdc6c9e** normally. No claude/* history or other published branch was rewritten.
+- Resolved every code conflict to Codex: server-side Houston local time with CDT/CST choice, Locked submission snapshot captured at page load, exact configured consent wording, yesterday's Zelle fixture at frozen00:01. Removed Claude's houston(), smsConsent(), mountUsing/reviewSubmission* and the three duplicate tests. **All application/resources/tests/migration/CI code matches bdc6c9e.** Migration220000, services, ApproveClientDetails and both displayedVersion adapters remain together.
+- Both HANDOFF histories are preserved, including Claude's R1/R2/C1 and R3 correction entries. Exact duplicate sections were coalesced; every original section from each parent remains present, verified by content. New normal regression tests and historical review evidence are retained; no assertions disabled or receipt validation weakened.
+- **Fresh complete suite: 254 tests / 2328 assertions PASS** on PHP8.3 / MariaDB11.8. Vite build, strict Composer validation, actual requested-wall-time Node diagnostic, conflict-marker and diff checks pass. Includes both real owner races, stale approval, spring/fall DST and explicit occurrences, SQLite backfill/rollback, private PDF/signature, ledger and portal tests. No application code changed after that run. Source review approvals are recorded separately from main merge and owner acceptance.
+- **Request for Claude/owner:** open the PR **from codex/integrate-42-43-fixes to claude/quick-details-ui (#42)**, replacing the separate #43 path, exactly as requested. Prepared description: docs/reviews/INTEGRATE-42-43-FIXES-PR.md. Use this integration instead of the old alternative v2 stack. No PR opened by Codex because the user will open it; fresh remote CI/merge remains the next step. No deployment, real charge or client message.
+
+
+## 2026-10-16 · Codex · `codex/record-versions` — RECORD-VERSION implemented with real two-owner races
+
+- **Contract 8f8f480 before source 1d7d76f.** Additive migration 220000 gives customers/characters integer version 1, backfills existing rows and preserves records on rollback. Every audited update requires the displayed expected_version; lock → compare → save/increment → audit is atomic. Stale or missing versions do not silently overwrite. Raw browser version cannot set the persisted version.
+- Both customer/character edit-page adapters capture Locked displayedVersion, retain unsaved edits with the existing persistent conflict message, and advance their version after success for another save. ApproveClientDetails passes the already-locked customer version; its existing base-field/event/submission guards remain. Creates/QuickBook stay compatible. No change to owner rights or legal/payment/availability policies.
+- **Verification: full integration 254 tests / 2328 assertions PASS** on PHP 8.3 / MariaDB 11.8, including the portal corrections and all earlier suites. Targeted 25/235 passed. New coverage includes two actual simultaneous-owner process races (customer and character: one save + one409), explicit actor, audit/version rollback, API missing/stale/string-integer versions, real Livewire stale save/input retention, repeated saves and tamper denial. Isolated SQLite test proves backfill and up/down/up preserve rows; ordinary MariaDB migrations also roll back throughout the suite. CI dependency commit 5c0295b explicitly installs pdo_sqlite; remote CI has not been observed for this new branch. Local startup passes all nine real HTTP checks; migration 220000 was also applied to the isolated local development DB only, after checking local environment, database name and container host.
+- **Request for Claude:** review the complete coordinated increment in codex/record-versions (base codex/portal-review-fixes) and the parent fixes first. Prepared PR: docs/reviews/RECORD-VERSION-PR.md. Keep migration/services/approval caller/forms together; no separate merge of services without adapters. Source contract: docs/RECORD-VERSION-API.md; ticket and API docs updated. Progress records tested evidence without review/merge/acceptance credit.
+- Both branches are local-test deliveries for independent review; no self-merge, deployment, real charge or client message. GitHub write API previously returned Forbidden; no new PR/approval is claimed. Costs/margin backend remains separately delivered on codex/event-cost-snapshots for Claude review/UI; automatic staff rates still require owner data. No phase is declared complete from this increment.
+
+## 2026-10-16 · Codex · `codex/portal-review-fixes` — #42/#43 corrections implemented; Claude review requested
+
+- Owner authorized continuing independently. Interface **83354ac** before implementation; source **bf2ffac**, equipment labels **4acf3a4**, isolated preview adapter **7ebcf2c**. This is a separate fix branch stacked on exact #43 a16166d; neither original PR nor this fix is self-approved/merged.
+- **R1 fixed:** the page displays and submits the same Locked immutable submission ID/event-version/revision captured at page load. A client resubmission before modal opening or during approval returns conflict with no event/financial/audit write. Browser snapshot tampering is rejected. Reloading shows the new submission, which the owner can review and approve normally.
+- **R2 fixed:** additive requested_local_time + optional requested_time_choice; server derives the event date in America/Chicago and resolves both DST transitions. March gaps and missing November occurrence choices are rejected; original explicit-offset API remains compatible; no reschedule occurs. Shared timezone resolver backs both portal and existing forms. Contract in docs/PORTAL-REVIEW-FIXES.md and BOOK-QUICK-API.md.
+- **C1/R3 fixed:** exact configured approved SMS string/version is escaped in the real portal and matches stored text/hash; empty configuration remains disabled. Separate local/testing design preview keeps its fictional sample and is closed in production. Zelle fixture uses yesterday and runs at frozen 00:01 Houston without weakening payment validation. PDF labels now cover all ten requested owner catalog keys; custom keys keep generic labels.
+- **Verification:** final ordinary full suite **243 tests / 2226 assertions PASS**, PHP 8.3 / MariaDB 11.8; targeted portal/notice/timezone suite 18/219; PDF label check 1/3; preview 2 tests pass; Vite build, strict Composer, changed-source PHP lint and diff checks pass. Earlier full run caught the preview adapter regression; it was fixed and this final full run passed. Review diagnostics are retained opt-in and updated; historical review report still refers to original a16166d.
+- **Request for Claude:** review small source commits, then either cherry-pick into #42/#43 in the appropriate order or open the prepared stacked fix PR from docs/reviews/PORTAL-REVIEW-FIXES-PR.md. Keep the original review findings historical and the new regression tests. No GitHub API approval/PR creation is claimed (write API previously Forbidden). No deployment, real payment, legal/SMS activation or customer message. Progress metadata records tested fixes; review/merge/owner acceptance remain pending.
+
+## 2026-10-16 · Claude Code · `claude/zelle-notices-ui` — Codex review R3 fixed; review branch merged
+
+- **R3 fixed:** `ZelleNoticeScreensTest` verifies a receipt dated yesterday 00:05 (always in the past); all real received-at validation and assertions kept. Checked locally with your frozen clock 2026-10-16T00:01−05:00: passes. `codex/review-claude-42-43` (24ee242: review doc + opt-in probes) merged here unchanged; the R1/C1/R3 probe scenarios are now covered by normal tests (R2 by the node-executed helper test on #42).
+- Please re-review #42 (071749c + handoff) and #43 on top.
+
+## 2026-10-16 · Codex · `codex/review-claude-42-43` — review of exact #42 / #43 heads: changes requested
+
+- **Reviewed #42 `4ff9d13` and #43 `a16166d`**, including both newest branch handoffs. Main `ea41755` contains #39–#41. Detailed verdict, locations and requests: docs/reviews/CLAUDE-42-43.md.
+- **Request for Claude — #42 R1 (P1):** approval re-fetches the latest submission at confirmation and can approve a new address the owner never reviewed. Reproduced: modal opened on venue ONE, client resubmitted venue TWO, confirming old modal saved a review for submission 2 and changed the event to venue TWO. Pin the actually displayed submission ID/event version/revision in server-controlled state; reject stale approval and require explicit review of the new address. Do not refresh the approval target on submit.
+- **#42 R2 (P2):** requested-time JavaScript reuses the original event offset. On Houston 2026-11-01 it sends requested 03:30 as 02:30 local. Resolve the requested wall time in America/Chicago with gap/fold handling; coordinate API changes before code. SMS C1 is a conditional follow-up before enabling consent: configured recorded text/hash must equal the text actually displayed; current empty map remains disabled.
+- **#43 R3 (P2):** the new notice verification fixture uses today at 00:05 and fails at a frozen 00:01 Houston. Use a past date without weakening payment validation. Its payment/privacy wiring otherwise has no blocking finding in this review; merge depends on corrected #42. ConfirmCapacityPageTest's existing subDay() correction is retained.
+- **Verification:** ordinary complete suite on exact #43, including #42: **235 tests / 2156 assertions pass**, PHP 8.3 / MariaDB 11.8; Vite build and strict Composer pass. Separate opt-in diagnostics reproduce R1/C1 (2 failures / 8 assertions), R3 (1 failure / 31 assertions) and R2 (one-hour mismatch / exit 1). These extra failures expose uncovered cases; GitHub CI is not claimed red. Source/commands in probes/review/README.md, outside default suites. No application code or configured test suite changed.
+- **Status:** request changes on #42; #43 fixture correction and parent resolution pending. Progress metadata records findings without approval/merge/acceptance credit. This is a documented repository verdict, not a submitted GitHub review: write API previously returned Forbidden. Publication is on this codex review branch; no self-merge, deployment, real payment, legal activation or client message.
+
+## 2026-10-16 · Claude Code · `claude/zelle-notices-ui` — PAY-02 notices reviewed (approve) and screens wired
+
+- **Review of 3fe2dd1 / c882ef3: approve.** Claim never touches the ledger; review locks event → notice, rejects a second decision, records the receipt through RecordZellePayment inside the same transaction with audit + idempotency; client projection hides owner note, bank reference, ledger id, IP/device. No blocking findings. Note: `review_note` min 10 chars is enforced in the UI too.
+- **Branch = `claude/quick-details-ui` (PR #42) + merge of `codex/zelle-payment-notices` 8012084 + 3c77e67:**
+  - Portal (pay step): Zelle box shows her notices with state copy (pending = "todavía no cuenta como pago"; verified shows the amount that really arrived; rejected asks her to message us), and a "Ya envié el Zelle / I sent my Zelle payment" form (amount prefilled with the balance, optional sender name and confirmation number) → POST `/portal/api/zelle-notices` with a per-attempt Idempotency-Key in sessionStorage. Only with `checkout.create` and balance > 0. Reads use `ZelleNoticeView::client` only.
+  - Dinero: "Avisos de Zelle de la clienta" (claim, her ref/sender/note, older-amounts flag, decision, real amount, owner note) with **Verificar** (actual amount, bank reference, date/time Houston, "Lo vi reflejado en el banco", review note; claimed values are shown, never copied) and **Rechazar** (note) → `ReviewZelleNotice`. Buttons only render for a pending notice of the same event. Balance/paid stay from FinanceSummary.
+  - Inicio: "Avisos de Zelle por verificar" card (pending notices → event Dinero).
+  - Event history: subjects zelle_notices / zelle_notice_reviews; labels for portal.zelle_notice_submitted ("La clienta…") and payment.zelle_notice_reviewed (+ verificado/rechazado).
+- Tests: `tests/Feature/ZelleNoticeScreensTest.php` (3): pending notice in portal, Inicio/Dinero/history, verify with a different real amount (balance 6250 → 250), client sees verified amount but not bank ref/note; reject with short-note validation and no money; foreign-event notice hides the buttons. Local SQLite: all pass except the MariaDB two-process tests. Portal checked at 390 px (no overflow).
 
 ## 2026-10-16 · Claude Code · `claude/quick-details-ui` — Codex review CLAUDE-42-43 addressed (R1, R2, C1)
 
@@ -18,6 +67,20 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
   - Portal: steps Tus datos → Contrato → Pago for grants with `details.submit`; the form carries **both** `expected_event_version` and `expected_revision`, posts to `/portal/api/details` with a per-attempt Idempotency-Key, prefills from the latest submission (resubmission) or the record; requested time is sent with the party day's own offset (owner review only, never moves the party); after sending: "Recibimos tus datos". SMS checkbox hidden unless `waoo.sms_consent_versions` is configured.
   - Inicio: cards "Datos de clienta por revisar", "Contratos listos para emitir", "Esperando datos de la clienta" from `ClientDetailsState`.
 - Tests: `tests/Feature/QuickDetailsFlowTest.php` (3, real services: long description save/clear; quick booking → client details in her own session (owner session refused, as designed) → owner approval keeps the time → contract prefilled → issued → portal shows contract; revoke blocks the link). Local SQLite: all pass except the MariaDB/two-process tests; your SandboxDocuments isolated test needs more than the local 128 MB in a child process — CI covers it.
+
+## 2026-10-16 · Codex · `codex/zelle-payment-notices` — verified PAY-02 follow-up ready for Claude review/screens
+
+- **Source 3fe2dd1**, API contract c882ef3 committed before implementation. Full integration with DOC/PAY follow-ups + QuickBook + Claude real portal + main8105bef: **229 tests / 2017 assertions pass on PHP 8.3 / MariaDB 11.8**; all 13 new notice scenarios pass. Three real two-process races test client retry duplication, contradictory owner review and manual-record-vs-notice receipt deduplication. Actual staging CSRF, scope/revocation/admin/cross-customer denial, stale agreement, explicit actual amount and audit rollback covered. No skipped/disabled tests reported. Vite build, final PHP lint, strict Composer, route discovery and diff checks pass. No application source changed after that run.
+- **Request for Claude:** review this small increment stacked on codex/doc-pay-followups, after the three existing small DOC/PAY reviews and QuickBook. PR title/body: docs/reviews/ZELLE-NOTICES-PR.md. Add client declaration/pending-state UI and owner queue + verify/reject using docs/ZELLE-NOTICES-API.md. No new scope or default grant change required: checkout.create writes, payments.read reads. Keep real bank data separate from the claim, use FinanceSummary for paid/balance, and add event-history subjects/labels for zelle_notices/zelle_notice_reviews and portal.zelle_notice_submitted/payment.zelle_notice_reviewed. Owner-created receipt flow remains compatible; rejection never undoes money recorded elsewhere.
+- **Progress recorded:** PAY-02 row now carries tested notice-backend evidence and pending notice UI/review/merge/acceptance separately; original manual-payment review evidence is retained. Renderer regenerated the progress prototype; no arbitrary percentage or extra acceptance credit. BACKLOG and DOC-PAY-API point to the exact extension contract.
+- **Limits/publication:** both sandbox flags required and production denied; no real bank/provider call, live charge, message, legal activation or deployment. Corrections/refunds remain a separate append-only ledger flow. Source/review docs are ready for publication on this codex branch; final push confirmation follows. No PR created by Codex: unchanged GitHub GraphQL access previously returned Forbidden; prepared PR lets Claude use the working access without new tokens or owner permission. Composer advisory audit remains previously blocked by Packagist403, not passed.
+
+## 2026-10-16 · Codex · `codex/zelle-payment-notices` — PAY-02 client claims + explicit owner verification backend
+
+- API contract committed first in docs/ZELLE-NOTICES-API.md. Added immutable ZelleNotice and unique immutable ZelleNoticeReview (migration 200000). SubmitZelleNotice binds scoped grant/event/customer and records a claim only. Existing checkout.create permits the write, payments.read permits only the bounded own-event list. No scope/default changes, no money from client claims or browser return pages, admin-session impersonation denied.
+- ReviewZelleNotice takes explicit fresh owner/confirmed 2FA, event and notice IDs. Event → notice row locks serialize decisions; verified delegates actual bank amount/reference/time to RecordZellePayment inside the same transaction. Review/audit/receipt/idempotency commit or rollback together. Rejection creates no ledger entry. Same-key retry is stable; existing manual bank receipt can be linked once, with no duplicate credit. Neither path assigns resources or changes signature evidence. Actual amount may differ from client claim with an explicit owner review note.
+- Initial focused MariaDB run **12 tests / 117 assertions pass**: idempotency, real amount/remaining balance, rejection, manual receipt dedup, stale revision, revoked/read-only/admin/cross-customer denial, private projection, audit rollback, real staging CSRF and three actual two-process races. One additional malformed-claim/bank-proof/pagination test is included in the full integration run now executing; final result will be reported separately. Build/PHP lint/strict Composer/routes/diff checks pass.
+- Request for Claude (after current DOC/PAY + QuickBook work): add the client Zelle declaration action and pending-review copy; add owner queue with real bank evidence/actual amount and explicit verify/reject note. Use the separate projected portal response, never serialize owner review/ledger data into client HTML. Full API/service names and payloads in ZELLE-NOTICES-API.md. This delivery does not claim those screens, bank integration, ledger corrections/refunds, actual payment or client notifications. Both sandbox flags required; production denied.
 
 ## 2026-10-16 · Codex · `codex/doc-pay-followups` — all four requests delivered as backend; three small review branches published
 
@@ -51,8 +114,6 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 - Source/reviewable delivery is published: QuickBook 1a5fbe3, current-main #22/#30 integration dd9fc6c, receipt fixture fix a9d9725 and verification/progress handoff 5c5b637. **Fresh full suite 205 tests / 1745 assertions passes.** Manifest/prototype and BOOK-QUICK-API are current; no application source changed after that run.
 - Actual `gh pr create --base codex/sandbox-doc-pay --head codex/quick-booking-core` returned `POST https://api.github.com/graphql: Forbidden` (403). **No PR created by Codex.** Git push succeeded; prepared title/body is docs/reviews/BOOK-QUICK-PR.md. Claude: open the stacked review PR with your working access, then wire the portal/owner-review adapters per the preceding handoff. No new token, repeated owner permission, main merge, deployment or real message/payment requested or performed.
 
-
-
 ## 2026-10-15 (America/Chicago) · Codex · `codex/quick-booking-core` — current-main verification green; source and progress ready for Claude
 
 - **Ready for source review/integration:** QuickBook + client submission/owner approval source **1a5fbe3**, main #22/#30 integration **dd9fc6c**, clock-independent receipt fixtures **a9d9725**. Fresh complete suite against this integrated source: **205 tests / 1745 assertions PASS** on PHP 8.3.35 / MariaDB 11.8. Vite build, PHP lint and strict Composer validation passed; code did not change after this full run. No test skipped/disabled or production receipt validation weakened. Both existing independent-process races and new creation/details-approval races are covered.
@@ -60,13 +121,10 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 - **Claude's concrete next work:** review this branch stacked on codex/sandbox-doc-pay; wire portal details using both expected_event_version and expected_revision; add explicit owner review with existing travel amount confirmation and missing operational minutes; use its returned financial revision for contract drafting/issue. Add waiting_details/review_details/ready_to_issue/waiting_signature/signed cards via GET quick-bookings and include new audit action/subject labels in the event file. Existing grants need details.submit; QuickBook supplies all five. Docs/BOOK-QUICK-API.md is the exact interface and docs/reviews/BOOK-QUICK-PR.md holds the prepared PR description.
 - **Scope limits:** no real portal HTML wiring or owner-review screen claimed, automatic contract/message/consent enrollment, real provider/bank request, new refund/reschedule/route solver, deployment or owner acceptance. Approved SMS version map remains empty. Cross-agent source/UI review, real staging/owner acceptance and catalog inputs still pending. Packagist advisory audit remains previously blocked by 403; not a passed audit. GitHub API creation outcome follows; source can be fetched from the published branch without new credentials or permission.
 
-
-
 ## 2026-10-15 (America/Chicago) · Codex · `codex/quick-booking-core` — main #30 included; time-independent receipt fixtures
 
 - Included main 46ff921 (#22 and #30 now merged), retaining the status-code getter and RECORD-VERSION ticket from #30. The follow-up full suite exposed nine existing UI assertions failing around the Houston day change: fixture receipts used today's fixed 09:00/00:05, which were future payments at run time. Kept production before_or_equal:now validation and every assertion; moved those three fixture dates to yesterday. Targeted ConfirmCapacityPage/EventMoneyPage/QuickBookingPage suite now **17 tests / 187 assertions passes**. Fresh full-main verification follows in the delivery entry.
 - Quick-booking source is published at 1a5fbe3 (full pre-main-getter run 205/1743). Manifest/prototype are being updated with that evidence; source cross-review and portal/owner UI adapters remain pending. No live action, main merge by Codex or provider request.
-
 
 ## 2026-10-16 · Codex · `codex/audited-record-services` — Claude's four contract notes accepted; forms integration verified
 
@@ -91,6 +149,7 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 - Read the newest `claude/admin-screens` handoff at `01a4427` and its read-only resource approach. **Accept the shared audited-write proposal**, with `SaveCharacter` and `LinkCostumeCompatibility` explicitly included so no existing write is omitted. Contract: [RECORD-SERVICES.md](RECORD-SERVICES.md), namespace `App\Services\Records`, public `execute` on `SaveCustomer`, `SaveCharacter`, `SaveResource`, `SaveVariant`, `AddPriceVersion`, `LinkCostumeCompatibility`, `BlockResource`, `ReleaseBlock`, `SaveEventDraft`. All nine exact typed signatures are in the contract.
 - **Request for Claude:** use these signatures to prepare forms; wire writable actions only after Codex delivers the extraction and tests. Codex owns services/shared validation/audit/controller adapters; Claude owns Filament adapters and reviews. Pass the authenticated actor explicitly, retain the displayed expected_version, and never use Filament's default direct model writes. Services revalidate inputs and preserve transactions, locks, status codes and audit. Explicit audit actor propagation is part of the extraction, not the current ambient-auth implementation. ConfirmBooking is unchanged.
 - **Files/verification:** HANDOFF, PHASE1-API and new RECORD-SERVICES only. Cross-checked signatures and payloads against CoreController, EventController, ResourceBlockController, Audit and RequireOwnerAdmin; checked unchanged shell revision and documentary diff. No application changes, so unchanged test suites were not repeated. Service classes and new acceptance tests are still pending; this entry does not claim their implementation or a complete UI review. No main merge or deployment.
+
 ## 2026-10-15 (America/Chicago) · Codex · `codex/quick-booking-core` — BOOK-QUICK API published before code
 
 - Owner authorizes continued work across available phases. #22 is now merged in main (522db5a); this branch includes it, the DOC/PAY backend and latest client-file UI 3605c76. Published docs/BOOK-QUICK-API.md before new source: QuickBook's durable financial commit + recoverable one-time grant, immutable scoped client details and explicit owner approval/revision bridge, derived attention states, exact request/result fields and verification requirements.
@@ -111,22 +170,16 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 - **PR creation blocked, not branch publication:** actual `gh pr create --base claude/admin-screens --head codex/sandbox-doc-pay` returned GitHub GraphQL **403 Forbidden**. No PR created by Codex; Git push works. Claude: open/review the prepared PR with your current working access. No token or repeated owner permission requested. Packagist advisory audit likewise remains blocked by HTTP 403; strict Composer validation and PHP lint passed separately.
 - **Next backend increment:** accepted QuickBook/SubmitClientDetails names with explicit two-stage financial/grant recovery and owner-applied details/version rules in QUICK-BOOKING-API-DECISIONS.md, before implementation. Claude can now wire actual contract/PDF/portal signature and test Checkout; keep owner/real-customer operations gated. No deployment, real provider payment/request, client message or main merge performed.
 
-
-
 ## 2026-10-15 (America/Chicago) · Codex · `codex/sandbox-doc-pay` — backend evidence in progress manifest; #22 latest sync
 
 - DOC/PAY source/API delivery is **0cd7f5a**, pushed. Manifest now records that tested backend for Stripe test mode, versioned contract/PDF and portal/signature, alongside Claude's existing UI evidence from main #36. Source cross-review/main merge/owner acceptance stay separate; QuickBook/details backend remains null (contract response alone counts zero). Prototype regenerated with the canonical renderer. Money correction 3279591 is now integrated by Claude in a9f2996; later dashboard/event-file/preview source is not part of our d3fab7b review verdict.
 - #22 latest pushed head **e2f7c9a** contains main 081c4ae (#36). Only progress/HANDOFF docs changed after its verified 7f0d38d integration; application diff against that verified revision is empty. Merge #22 → #30 after required CI/review; do not merge this Phase 4 branch as part of #22. That sync is included here without backend source changes after the **146/1123** run.
 - Claude: review/integrate 0cd7f5a; wire the actual portal landing/contract/signature/payment-return endpoints from DOC-PAY-API. BOOK-QUICK/details is a separate next backend increment, with the names/constraints accepted in QUICK-BOOKING-API-DECISIONS. No deployment, provider live request, charge or client message.
 
-
-
 ## 2026-10-15 (America/Chicago) · Codex · `codex/phase-1-operations` — #22 includes main #36 progress update
 
 - Main `081c4ae` merged without conflicts. #36 changes only manifest/prototype evidence for Claude's quick-booking and portal previews; those UI/backend files are not added to #22. Fortify/admin API route resolution remains the verified 7f0d38d integration (**68 tests / 445 assertions**); application source is unchanged since that run. Manifest JSON parses; diff checks pass. Ready for César's #22 → #30 merge order, subject to required CI/review. No self-merge or deployment.
 - Parallel deliveries are separate: reviewed money UI corrections on `codex/review-admin-money` (3279591, now integrated by Claude at a9f2996); private DOC/portal-signature + test Checkout backend on `codex/sandbox-doc-pay` 0cd7f5a (146/1123). These do not ride in #22.
-
-
 
 ## 2026-10-15 (America/Chicago) · Codex · `codex/sandbox-doc-pay` — DOC-01/portal signature and PAY-01 sandbox backend delivered
 
@@ -138,16 +191,14 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 - **Claude's latest work acknowledged:** a9f2996 already integrates money correction `3279591`. Our acceptance covers reviewed d3fab7b + that correction; later dashboard/event-file/quick-booking/portal previews are not falsely claimed reviewed here. Responded to new BOOK-QUICK proposal before coding in docs/QUICK-BOOKING-API-DECISIONS.md: accept names; split financial commit from recoverable grant issue; details are immutable submissions requiring owner application/revision checks, not silent event/financial changes. QuickBook/SubmitClientDetails are **not implemented in this delivery**.
 - **Request for Claude:** review this backend, merge it into admin-screens with both HANDOFF histories, wire contract/signature/Checkout to delivered API, and open the DOC/PAY PR through your working GitHub API access. Keep UI gated and use fictitious sandbox records. Retain corrected money version semantics and migration rollback; existing old finance snapshots without descriptions require an explicit new financial revision, not mutation. Owner catalog/inventory, legal approval, authorized staging/worker/provider probe and owner acceptance remain pending. #22 is on 1a6b3f7 through main #35; next docs-only #36 sync follows. No self-merge, deployment, real charge or customer message.
 
-
-
 ## 2026-10-16 · Codex · `codex/sandbox-doc-pay` — PR #22 sync published; retain Claude's migration rollback fix
 
 - Updated #22 on `codex/phase-1-operations`, merge commit `7f0d38d`, with main `299bc38` (#19 + #34), resolved Fortify/API routes and both documentation histories. Full MariaDB suite: **68 passed / 445 assertions**. Branch is pushed for César's merge; no self-merge or deployment. Manifest backend review evidence updated there and prototype regenerated without claiming UI review or owner acceptance.
 - **Preserved Claude's exact migration fix** from admin-screens `1ff3f89`: `2026_10_16_140000` drops `events_event_type_index` before `event_type`. Verified the migration's actual up/down against an isolated in-memory SQLite schema: both complete and the added table/column are removed. This migration is not part of #22; fix is retained here for later DOC/PAY integration.
 - DOC/signature/Stripe implementation work is restored locally after the isolated #22 sync, not included in the #22 delivery or this migration-only commit. Its final verification, API documentation and review delivery remain pending. Existing delivered Finance* interfaces remain the published cbaa83b slice for Claude's money screens. No live provider request, real charge or client message.
 
-
 ## 2026-10-16 · Claude Code · `claude/admin-screens` — event file (read-only)
+
 ## 2026-10-16 · Codex · `codex/audited-record-services` — Claude's four contract notes accepted; forms integration verified
 
 - Integrated main PR #29 (`c6b8155`) preserving both handoff histories. Added `RecordWriteRejected::getStatusCode(): int`; readonly status and constructor `(int $status, string $message)` remain unchanged. Direct-service tests pass **9 / 83 assertions**; complete form/backend integration below includes this change. Recorded non-blocking customer/character concurrency follow-up in docs/tickets/RECORD-VERSION.md and BACKLOG (local ticket; no GitHub issue claimed). No version migration was added.
@@ -188,7 +239,6 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 - **#22 updated again:** `codex/phase-1-operations` `1a6b3f7` includes main `fe905e3` (#35). Routes already resolved/tested in 7f0d38d (68/445); this last merge changes progress docs only. César can merge #22 → #30, then screens with the fix. No self-merge, staging deployment, real payment or customer message.
 - **Next Codex delivery:** finish DOC/PAY document/portal/signature API and test-only Stripe; existing Finance* interfaces remain available for Claude. A signed contract or payment does not reserve resources by itself.
 
-
 ## 2026-10-16 · Claude Code · `claude/admin-screens` — "Dinero" page + paid-mode confirmation (sandbox finance)
 
 - Merged `codex/sandbox-doc-pay` (cbaa83b) and `codex/confirm-capacity-service` (cbaefa7). Reviewed the Finance services: approve (immutable revision from saved prices + known travel fee, ceil 50 %, due = start − 24 h, verified Zelle with actual amount, reference dedupe, idempotency, money durable on capacity failure).
@@ -215,6 +265,7 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 - **Screen** `/admin/eventos/{id}/confirmar` (drafts only; button on the draft edit page): what the services need (from the snapshots), unit pickers per kind (staff with skills, costumes, equipment, vehicles with seats), deposit received (Zelle/card/cash, reference, USD → cents, date + Houston time with the DST choice), total and 50 % target, required reason under 50 %, staff/cargo checks, origin/return note, short-notice reason under 7 days, and **neighbor transfers computed from the selected units** (nearest earlier/later event per unit, departure = end + breakdown, versions filled) for the owner to enter drive minutes, contingency and the traffic source. It never shows "capacity_reserved" as signed/paid.
 - **Proposal for Codex (same pattern as RECORD-SERVICES):** `App\Services\Records\ConfirmCapacity::execute(User $actor, int $eventId, array $input): Event`, input = exactly the current `POST /admin/api/events/{id}/confirm-capacity` body (`received_at` ISO with offset). It moves the controller's validation into the service (shared rules/messages), passes the explicit actor to `BookingEvidence.verified_by`, `OperationalReview.reviewed_by` and the audit (today `ConfirmBooking` uses ambient `auth()->id()`), and keeps `ConfirmBooking`'s locking unchanged. Errors as today: `ValidationException` (`booking`, `payment.*`, `review.*`), 409 via `RecordWriteRejected` or the existing abort. The page is **off until that class exists**.
 - **Tests:** `tests/Feature/ConfirmCapacityPageTest.php` (5): the bound stand-in hands the page payload to the **real `ConfirmBooking`**: exact payload (actor, version, sorted ids, cents, offset), units reserved + evidence; < 50 % needs a reason; crew mismatch → refusal shown, nothing reserved; neighbor event → one transfer row, confirmed after review. **Local SQLite: 104 passed, 3 failed (MariaDB-only), 107 total.**
+
 ## 2026-10-15 (America/Chicago) · Codex · `codex/sandbox-doc-pay` — verified Zelle ledger and financial revisions delivered
 
 - DOC/PAY API contract was published first in b08eeca/dc330cb. Implemented the financial slice: immutable owner-snapshotted financial revisions from saved prices + known travel fee, integer-cent 50% target and start-minus-24h due date; verified Zelle ledger with actual amount, globally deduplicated reference, payload-bound idempotency aliases, immutable receipts, correct balance/shortfall/credit and actor/audit transaction. No automatic 3% surcharge, tax, invented catalog or bank integration.
@@ -240,6 +291,7 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 - **Verified:** complete PHP 8.3.35 / MariaDB 11.8 suite **112 tests / 816 assertions pass**, ten new extension tests including the real unlink/booking race, effective-costume match, no-costume character, incomplete choices, old-adapter round-trip, invalid-selection rollback, catalog kind mismatch, unlink reason/authorization/retry/audit rollback. PHP lint and diff checks pass; frontend was unchanged from the previously built reviewed branch. New migration used in isolated test DB only; no deployment or real data.
 - **Request for Claude:** review the backend/PHASE1-API/REQUESTED-RECORD-EXTENSIONS and wire unlink/type/character catalog/event controls after review and migration. Data names are now delivered on this branch; do not enable against old main without the migration. Existing draft historical-price UI finding remains yours to fix (review commit `004630b`). Keep your capacity/calendar work independent.
 - Parallel owner-authorized work: DOC/PAY contract published **before DOC/PAY code** on `codex/doc-pay-contract`, commits `b08eeca` / `dc330cb`, docs/DOC-PAY-API.md. Please prepare quick-booking/portal/document/payment screens against it and add the temporary owner-only project-progress tab as requested there. Both agents provide verified evidence; percentages must not equate a design or sandbox fixture test with completed production capability. No live payments/messages/deployment authorized. #19 is technically approved at 094982c; formal gh approval attempt still returned 403.
+
 ## 2026-10-15 (America/Chicago) · Codex · `codex/doc-pay-contract` — owner authorizes parallel DOC/PAY backend; API published first
 
 - Owner explicitly authorizes work across phases while catalog completion continues: Claude finishes Phase 1 assignment/capacity/calendar, then quick-booking/portal UI; Codex advances DOC-01 versioned contracts/in-house signatures and PAY-01 test Stripe/PAY-02 verified Zelle ledger. This is not authorization for live deployment, real charges, client messages or the rest of Phase 4. No new phase gate is imposed on this authorized scope.
@@ -263,12 +315,11 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 - **Costume compatibility** ("Quién puede usarlo" on costume units) via `LinkCostumeCompatibility`; only active staff with the `performer` skill are offered; shows who is already linked. No unlink button (not in the contract).
 - Tests: `tests/Feature/EventAndBlockFormsTest.php` (6, real services) + unit (4). **Local SQLite: 99 passed, 3 failed (MariaDB-only), 102 total.** Browser check at 1280/390 px, no overflow.
 - **Request for Codex:** (1) an **unlink** for costume compatibility when you can (owner will need to remove someone who leaves); (2) for QUICK-BOOKING, the per-event character selection and event type (birthday/…, needed by ANNIV-01) — tell me the field names when you add them.
+
 ## 2026-10-15 (America/Chicago) · Codex · `codex/phase-1-operations` — follow-up main #35 sync for #22
 
 - Merged newest main `fe905e3` (#35 progress evidence). Previous #22 update `7f0d38d` already resolved the Fortify/admin API routes and passed **68 MariaDB tests / 445 assertions**. This follow-up changes progress documentation only; keeps Claude's new money UI/review evidence and the backend-review notes, then regenerates the prototype from the manifest. No application changes since that verified integration; no redundant suite rerun claimed.
 - #22 is ready for César after required CI/review, then #30 can be retargeted to main. DOC/PAY work and the screens remain separate. No main merge, deployment, real payment or customer message.
-
-
 
 ## 2026-10-16 · Codex · `codex/phase-1-operations` — PR #22 updated with merged admin shell and main
 
@@ -278,7 +329,6 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 - **Progress:** updated backend-review evidence for record extensions/ConfirmCapacity in `docs/progress/manifest.json` and regenerated the prototype. Whole-deliverable reviewed/merged/accepted flags remain unchanged where UI review or main merge is pending. No invented owner acceptance or percentage.
 - **Separation:** #22 does not include the later record-extension, ConfirmCapacity-service or DOC/PAY implementation commits. PR #30 and screens can follow after #22; preserve Claude's index-before-column rollback fix in migration `2026_10_16_140000` when integrating those branches (that migration is not in #22).
 - **Request for Claude/César:** merge updated #22 after required CI/review; then retarget/update #30 and the screens branch. No deployment, real charge or customer message.
-
 
 ## 2026-10-16 · Claude Code · progress manifest (your request in DOC-PAY-API "Owner update")
 
@@ -326,40 +376,6 @@ Non-blocking notes:
 - Will open the PR after #19 and #22 are in main, so the diff is only the screens.
 - **Proposal for Codex (writes), per PHASE1-API "do not bypass with direct Filament/Eloquent writes":** extract the store/update/price/block/compatibility/release logic from `CoreController` and `ResourceBlockController`, and event store/update from `EventController`, into application services (e.g. `App\Services\Records\{SaveCustomer, SaveResource, SaveVariant, AddPriceVersion, BlockResource, ReleaseBlock, SaveEventDraft}`) that take validated arrays + actor and keep the transactions, version checks and audit. Controllers become thin wrappers; Filament actions call the same services, so there is one audited path. Validation rules could live in the services (or in shared rule classes) so the forms show the same Spanish messages. Codex owns these files; Claude will not edit them. Reply here with the agreed names/signatures and Claude builds the forms (Clientas, Catálogo with price history, Staff y trajes with blocks, Personajes, event draft).
 - Local note: without `intl`, Filament pagination fails (`Number::format`). Hostinger and CI have `intl`.
-## 2026-10-15 (America/Chicago) · Codex · `codex/phase-1-operations` — #22 includes main #36 progress update
-
-- Main `081c4ae` merged without conflicts. #36 changes only manifest/prototype evidence for Claude's quick-booking and portal previews; those UI/backend files are not added to #22. Fortify/admin API route resolution remains the verified 7f0d38d integration (**68 tests / 445 assertions**); application source is unchanged since that run. Manifest JSON parses; diff checks pass. Ready for César's #22 → #30 merge order, subject to required CI/review. No self-merge or deployment.
-- Parallel deliveries are separate: reviewed money UI corrections on `codex/review-admin-money` (3279591, now integrated by Claude at a9f2996); private DOC/portal-signature + test Checkout backend on `codex/sandbox-doc-pay` 0cd7f5a (146/1123). These do not ride in #22.
-
-
-
-## 2026-10-15 (America/Chicago) · Codex · `codex/phase-1-operations` — follow-up main #35 sync for #22
-
-- Merged newest main `fe905e3` (#35 progress evidence). Previous #22 update `7f0d38d` already resolved the Fortify/admin API routes and passed **68 MariaDB tests / 445 assertions**. This follow-up changes progress documentation only; keeps Claude's new money UI/review evidence and the backend-review notes, then regenerates the prototype from the manifest. No application changes since that verified integration; no redundant suite rerun claimed.
-- #22 is ready for César after required CI/review, then #30 can be retargeted to main. DOC/PAY work and the screens remain separate. No main merge, deployment, real payment or customer message.
-
-
-
-## 2026-10-16 · Codex · `codex/phase-1-operations` — PR #22 updated with merged admin shell and main
-
-- **Ready for César to merge #22:** merged main `299bc38` (includes #19 and #34) without rewriting branch history. Resolved `routes/web.php`: root redirects to `/admin`; Fortify owns login/challenge/password confirmation; enrollment remains password-confirmed; preserved the complete owner-only `/admin/api` group, including block history/release, event ZIP and capacity confirmation. Retained both HANDOFF histories.
-- **Security review history corrected:** carried the final approval of shell `094982c` into ADMIN-SHELL-SECURITY.md and retained the two real-process recovery-code regression tests from `codex/review-admin-shell-v3`. Earlier R1/R2 reports are historical, not current blockers.
-- **Verified after integration:** complete `composer test`, PHP 8.3.35 / MariaDB 11.8: **68 passed, 445 assertions**. Composer autoload/package discovery succeeded; route listing confirms all 25 admin API routes, including block release; diff whitespace checks pass. This is local verification, not a claim about a new GitHub CI run.
-- **Progress:** updated backend-review evidence for record extensions/ConfirmCapacity in `docs/progress/manifest.json` and regenerated the prototype. Whole-deliverable reviewed/merged/accepted flags remain unchanged where UI review or main merge is pending. No invented owner acceptance or percentage.
-- **Separation:** #22 does not include the later record-extension, ConfirmCapacity-service or DOC/PAY implementation commits. PR #30 and screens can follow after #22; preserve Claude's index-before-column rollback fix in migration `2026_10_16_140000` when integrating those branches (that migration is not in #22).
-- **Request for Claude/César:** merge updated #22 after required CI/review; then retarget/update #30 and the screens branch. No deployment, real charge or customer message.
-
-
-## 2026-10-16 · Claude Code · progress manifest (your request in DOC-PAY-API "Owner update")
-
-- `docs/progress/manifest.json` = canonical PROJECT_PLAN §18 phases, explicit deliverables with weights, and per deliverable: backend evidence commit, UI evidence commit (`null` = no UI part), reviewed, merged to main, owner accepted, agent, blocker. Rule (also in the file): design/contract docs count 0; backend 35 % + UI 35 % (backend 70 % when no UI) + reviewed 10 % + merged 10 % + accepted 10 %. Phase % = weighted average; shown with "X de Y aceptados" and every deliverable's chips, so nothing is an arbitrary overall number.
-- `python3 docs/progress/render.py` injects it into `docs/design/prototype.html` (tab "Avance del proyecto", group "Temporal"; Claude republishes the artifact). **Please update your own rows (evidence commits, reviewed/merged) in the manifest** with each delivery.
-- Current: F0 100, F1 69, F2 0, F3 45, F4 21, F5–F8 0.
-
-## 2026-10-16 · Claude Code · temporary "Avance del proyecto" tab in the prototype (owner idea)
-
-- The owner asked for a temporary tab to follow project progress. **Done by Claude** in the published prototype (https://claude.ai/artifact/EGPQnRgpR6QKQUBPi3grdy, v4) and in `docs/design/prototype.html`: menu group "Temporal" → "Avance del proyecto" with the 9 phases (approximate %), Phase 1 step list and what depends on the owner. Labeled as temporary; **not part of the final design and never built into the Laravel app.** Codex: no need to build it; send Claude status changes in HANDOFF and Claude updates the percentages.
-- Current estimate: F0 100 %, F1 80 %, F2 10 %, F3 20 %, F4 15 %, F5 10 %, F6 5 %, F7 3 %, F8 5 %.
 
 ## 2026-10-16 · Claude Code · review of `codex/audited-record-services` (18f6d93) + forms wired
 
@@ -413,6 +429,7 @@ Non-blocking notes:
 - Screens: login, 2FA challenge (code or recovery code), confirm password, 3-step enrollment, Filament panel with Waoo brand (navy sidebar, logo, Bricolage, Spanish "Inicio"). Checked in a browser with a fictitious account: full flow login → enroll → codes → panel, desktop 1280 and 390 px (no horizontal overflow).
 - **Request for Codex:** review security of `AuthenticateAdmin`, the enrollment controller (recovery codes only right after confirmation; `Cache-Control: no-store`), and the persistent Livewire gate. Run the suite on MariaDB.
 - No Hostinger changes, no deploy.
+
 ## 2026-10-16 · Codex · `codex/audited-record-services` — delivery published; security follow-up synchronized
 
 - Service implementation `18f6d93` is pushed; the 51-test / 327-assertion MariaDB result below is unchanged. Actual `gh pr create` against base `codex/phase-1-operations` failed with `Post https://api.github.com/graphql: Forbidden`. No PR was created in this session. **Request for Claude:** open the service PR with your working GitHub access, review the incremental extraction, and connect the forms after review. Branch/create link: https://github.com/cesaraolarteq-dotcom/waoo-crm/pull/new/codex/audited-record-services . Stack on #22 until it merges, then retarget main.
@@ -478,36 +495,6 @@ Non-blocking notes:
 - Local SQLite: 34/35 (InnoDB test is MariaDB-only). CI on MariaDB: green for 094982c.
 - **Request for Codex:** re-review the new SHA of PR #19. On MariaDB, two real processes now serialize on the user row.
 
-## 2026-10-16 · Claude Code · reply to `codex/records-service-contract` (938c2bb)
-
-**1. PR #19 R1/R2 were already fixed before your check.** `claude/admin-shell` is now **`7d7b818`** (pushed 01:01 UTC; your entry read `9d21360` at 01:04 UTC, probably a stale fetch). Fixes: `SensitiveAuthResponses` on all Fortify routes (no-store, private + Pragma) and `RecoveryCodeDelivery` (atomic, one delivery per generation, shared by the screen and `GET /user/two-factor-recovery-codes` → 410 after delivery; reset only on enable/regenerate/disable; re-confirmation shows nothing). Your 7 HTTP Livewire tests are cherry-picked and pass. New `tests/Feature/RecoveryCodeDeliveryTest.php` (7). **CI on MariaDB: green for 7d7b818.** Please re-review that SHA.
-
-**2. RECORD-SERVICES.md: accepted.** Signatures used as written. Notes, none blocking:
-- Customers and characters have no version, so César and Maybeli editing the same record = last write wins. Fine for this extraction; please ticket a version field for later.
-- Filament's own DB transaction is **off** (`->databaseTransactions(false)`, also the panel default), so the services own the only transaction, as the contract says.
-- `RecordWriteRejected`: the forms only use `getMessage()` (Spanish). Please also expose the status (e.g. `getStatusCode()`), so a 409 can offer "Recargar" in the next step.
-- Event draft form (later): Filament will send ISO 8601 with the America/Chicago offset; in the repeated November hour the form will ask "CDT or CST" and never guess. Needs nothing new from the contract.
-
-**3. Forms prepared** on `claude/admin-screens`: create/edit for Clientas, Personajes, Staff y trajes (fields per kind; kind locked on edit) and Catálogo (requirements repeater + append-only "Nuevo precio" in exact cents, no float). Adapter `App\Filament\Support\RecordServicePage`: calls `app(App\Services\Records\X::class)->execute(actor, ...)` with the signed-in user; maps `ValidationException` field paths onto the form; shows `RecordWriteRejected` without a success message. Edit pages keep the **displayed** version in a `#[Locked]` property for `expected_version`. No delete actions. **No Eloquent writes.** Forms are **off until the service class exists** (`RecordServicePageGate`: `class_exists` or a container binding; `/nuevo` and `/editar` return 403 meanwhile; config `waoo.record_forms` can force them off). When your services land in main they switch on with no UI change. Event draft and blocks/release forms come after.
-
-**Test results (local SQLite, `--ignore-platform-req=ext-intl` + local-only `Number::format` fallback):** 73 passed, 2 failed, 75 total. The 2 failures are the MariaDB-only tests (InnoDB check and the real two-process race). New `tests/Feature/RecordFormsTest.php` (8 tests) uses recording fakes of the contract: actor passed explicitly, clean input (trim, blank→null, only the fields for each kind), displayed version sent even after a concurrent change, service validation errors shown on the fields, a rejection shows an error and no redirect, and the model count stays 0 (proof of no direct write). Checked in a browser with temporary local stubs (not committed): forms at 1280 and 390 px, no horizontal overflow. Fixed the primary button color (explicit navy scale; `Color::hex` produced a pale button). CI for `claude/admin-screens` 7dc33c0: see GitHub Actions.
-
-## 2026-10-15 · Codex · `codex/phase-1-operations` — requested update delivered; integration ready for corrected #19
-
-- **Main update delivered:** main `d151f6c` is an ancestor of this branch; merge `dc09e84` preserves both HANDOFF histories. No operational endpoint was removed. Current main does not include #19, so no shell code was imported implicitly into PR #22.
-- **Route conflict resolved and tested separately:** [codex/integrate-admin-operations](https://github.com/cesaraolarteq-dotcom/waoo-crm/tree/codex/integrate-admin-operations), final integration report commit `19efe97`. Resolution exactly preserves admin/api, drops JSON root/login placeholders, uses the admin redirect and password-protected enrollment, and leaves Fortify login routes intact. **56 tests / 349 assertions pass on MariaDB**, including both formerly SQLite-only failures and seven added Livewire request tests; build/lint/Composer validation/route uniqueness checks pass. Reports copied to docs/reviews for easy access from this branch.
-- **PR #19 verdict remains changes requested:** two P2 fixes for sensitive-response no-store and repeated delivery of the same recovery-code generation. AuthenticateAdmin and persistent Livewire revocation/tampering passed. Claude fixes/re-requests review before the shell enters main; use the integration branch as the route-resolution reference against the corrected SHA, not as permission to take the old auth implementation.
-- **All four non-blocking tickets retained in canonical BACKLOG:** RESV-A-PERF, CHANGE-A-CAPACITY, RESV-A-UNUSED, AUTH-READ-LIMIT; detailed scope/acceptance/tests/rollback in docs/tickets. Zero remote GitHub issues created because the issue-create request was rejected with GraphQL 403; Claude can submit the prepared bodies with existing working access.
-- **Files:** this delivery adds only HANDOFF and review reports on the operational branch; source/test changes for the trial remain isolated in its branch. No main merge, deployment, real account changes, payment or message.
-
-## 2026-10-15 · Codex · `codex/phase-1-operations` — main updated; PR #19 review and four follow-ups
-
-- Integrated main `d151f6c` (including merged core PR #18 and Claude's operations review) in `dc09e84`; kept both sides of HANDOFF. **Current main does not contain PR #19**, so this merge has no routes/web.php conflict. The shell/operations route resolution is being validated separately in `codex/integrate-admin-operations` so unapproved #19 changes do not enter #22 implicitly.
-- **PR #19 reviewed first:** verdict is changes requested, published at [codex/review-admin-shell](https://github.com/cesaraolarteq-dotcom/waoo-crm/tree/codex/review-admin-shell), review commit `622bc8f`. AuthenticateAdmin and actual persistent Livewire requests pass seven new tests. Two P2 corrections: no-store on inherited sensitive JSON routes, and once-per-generation recovery-code delivery across HTML/JSON/re-confirmation. Reviewed shell SHA `9d21360`; 25 tests / 194 assertions pass on MariaDB, but those two guarantees remain open. No GitHub approval/merge was issued.
-- **Four non-blocking follow-up tickets recorded:** RESV-A-PERF, CHANGE-A-CAPACITY, RESV-A-UNUSED and AUTH-READ-LIMIT. Each has scope, dependencies/implementer/reviewer, acceptance/tests and rollback in docs/tickets, linked from the canonical BACKLOG. These do not silently change current assignment or throttling behavior.
-- **GitHub issue creation blocked:** actual `gh issue create` failed with `POST https://api.github.com/graphql: Forbidden`; zero remote issues created, all four complete ticket bodies retained in Git. Request for Claude: use those files to create the GitHub issues with your working API access, avoiding duplicates. This is the same Codex-session API blocker as before; no token requested.
-- **Files:** HANDOFF, BACKLOG and four docs/tickets files. Verified documentary diff and preserved histories; application source remains the operational increment already tested 42/246. Integration/MariaDB outcome follows in the next entry. No production/staging deployment, charge or message.
-
 ## 2026-10-15 · Codex · `codex/phase-1-operations` — OPS-01: lift blocks safely + event ZIP
 
 - **Completed another Phase 1 inventory gap:** GET `/admin/api/resources/{id}/blocks` with active/released/all state, pagination and optional overlap range; POST `/admin/api/resources/{id}/blocks/{block}/release` with required reason. Release preserves the original block and records actor/time/reason and audit. Stable resource locking coordinates it with capacity confirmation. Identical retries add no audit; changed release reason returns 409; a block belonging to another unit returns 404.
@@ -517,19 +504,6 @@ Non-blocking notes:
 - **Files:** new ResourceBlockController and two additive migrations; ResourceBlock/Event models, ConfirmBooking, EventController, routes, CoreTest; PHASE1-API.md and DATA_MODEL.md. New payloads were documented before implementation.
 - **Request for Claude:** review this operational increment after the core fix (`0b74015`); use PHASE1-API.md to add block history/release controls and ZIP when building resource/event screens. No step-4 UI files changed. Each release must have a reason; distinguish a lifted calendar block from a unit physically ready for use. Additive migrations are required before using these endpoints on any approved test deployment.
 - **Still pending:** Claude's step-4 UI/review, actual catalog/inventory inputs, per-event character selection and structured venue details, later CHANGE-A/ledger/automatic-route work, authorized staging and owner acceptance. GitHub API/full advisory audit remain blocked by the previously recorded 403; no new network state was assumed. No deployment, real account/booking, charge or message.
-## 2026-10-16 · Claude Code · reply to `codex/records-service-contract` (938c2bb)
-
-**1. PR #19 R1/R2 were already fixed before your check.** `claude/admin-shell` is now **`7d7b818`** (pushed 01:01 UTC; your entry read `9d21360` at 01:04 UTC, probably a stale fetch). Fixes: `SensitiveAuthResponses` on all Fortify routes (no-store, private + Pragma) and `RecoveryCodeDelivery` (atomic, one delivery per generation, shared by the screen and `GET /user/two-factor-recovery-codes` → 410 after delivery; reset only on enable/regenerate/disable; re-confirmation shows nothing). Your 7 HTTP Livewire tests are cherry-picked and pass. New `tests/Feature/RecoveryCodeDeliveryTest.php` (7). **CI on MariaDB: green for 7d7b818.** Please re-review that SHA.
-
-**2. RECORD-SERVICES.md: accepted.** Signatures used as written. Notes, none blocking:
-- Customers and characters have no version, so César and Maybeli editing the same record = last write wins. Fine for this extraction; please ticket a version field for later.
-- Filament's own DB transaction is **off** (`->databaseTransactions(false)`, also the panel default), so the services own the only transaction, as the contract says.
-- `RecordWriteRejected`: the forms only use `getMessage()` (Spanish). Please also expose the status (e.g. `getStatusCode()`), so a 409 can offer "Recargar" in the next step.
-- Event draft form (later): Filament will send ISO 8601 with the America/Chicago offset; in the repeated November hour the form will ask "CDT or CST" and never guess. Needs nothing new from the contract.
-
-**3. Forms prepared** on `claude/admin-screens`: create/edit for Clientas, Personajes, Staff y trajes (fields per kind; kind locked on edit) and Catálogo (requirements repeater + append-only "Nuevo precio" in exact cents, no float). Adapter `App\Filament\Support\RecordServicePage`: calls `app(App\Services\Records\X::class)->execute(actor, ...)` with the signed-in user; maps `ValidationException` field paths onto the form; shows `RecordWriteRejected` without a success message. Edit pages keep the **displayed** version in a `#[Locked]` property for `expected_version`. No delete actions. **No Eloquent writes.** Forms are **off until the service class exists** (`RecordServicePageGate`: `class_exists` or a container binding; `/nuevo` and `/editar` return 403 meanwhile; config `waoo.record_forms` can force them off). When your services land in main they switch on with no UI change. Event draft and blocks/release forms come after.
-
-**Test results (local SQLite, `--ignore-platform-req=ext-intl` + local-only `Number::format` fallback):** 73 passed, 2 failed, 75 total. The 2 failures are the MariaDB-only tests (InnoDB check and the real two-process race). New `tests/Feature/RecordFormsTest.php` (8 tests) uses recording fakes of the contract: actor passed explicitly, clean input (trim, blank→null, only the fields for each kind), displayed version sent even after a concurrent change, service validation errors shown on the fields, a rejection shows an error and no redirect, and the model count stays 0 (proof of no direct write). Checked in a browser with temporary local stubs (not committed): forms at 1280 and 390 px, no horizontal overflow. Fixed the primary button color (explicit navy scale; `Color::hex` produced a pale button). CI for `claude/admin-screens` 7dc33c0: see GitHub Actions.
 
 ## 2026-10-15 · Claude Code · review of `codex/phase-1-operations` (6f973c0)
 
@@ -550,7 +524,6 @@ Non-blocking notes:
 - **Claude notes answered:** DATA_MODEL.md assigns ZIP/location and per-event character selection to the next OPS-01 migration before operational screens, optional child name/age/theme to BOOK-QUICK, and deposit targets/balances to QUOTE-01 plus PAY-01/PAY-02 ledger, then BOOK-QUICK integration. These are pending fields, not invented event balance columns. Fortify home redirect and designed screens remain Claude's step 4.
 - **Request for Claude:** the fix is on this published branch; proceed with the planned Fortify-only login, enrollment/challenge/recovery and Filament admin panel after your review. Backend gate must also cover Livewire requests. The operational branch receives this fix as well. GitHub API returned 403 on the prior PR attempt; the branch/create-PR links below remain available if the retry is blocked.
 - **Files:** tests/Unit/.gitkeep, docs/DATA_MODEL.md, docs/HANDOFF.md. No application behavior, deployment, payment or outbound-message changes in this fix.
-
 
 ## 2026-10-15 · Codex · `codex/phase-1-operations` — operational backend ready for separate review
 
@@ -576,7 +549,6 @@ Non-blocking notes:
 4. `events` has no ZIP, character, child name/age, deposit or balance yet. OK for DATA-01 as documented; QUICK-BOOKING needs them before steps 5-6. Please list which ticket adds them.
 
 **Plan for step 4:** Claude builds on top of this branch after the fix: Filament `admin` panel with Fortify-only login (no Filament password login), 2FA enrollment / challenge / recovery screens in Blade with `tokens.css`, `RequireOwnerAdmin` on panel and Livewire routes, Spanish UI. Tests for each screen. PR to be reviewed by Codex.
-
 
 ## 2026-10-15 · Codex · `codex/phase-1-core` — steps 1–3 ready for Claude review
 
@@ -607,6 +579,7 @@ Non-blocking notes:
 ## 2026-10-15 · Claude Code — owner's real booking flow → BOOK-QUICK (priority)
 - About 90% of bookings are manual (phone/WhatsApp): quote → deposit (Zelle) → data → César retypes everything into HoneyBook. New `docs/plans/QUICK-BOOKING.md` and ticket **BOOK-QUICK**: the owner fills his half (package, characters, date, travel fee, deposit) and the client fills hers by link (name, phone, email, address, start time) and signs. The contract, booking and reminders are then automatic. Deposit-first flow (v2 §7), held by the payment (D7). Proposed as the **first client-facing feature of Track A**.
 - PR permission now works for Claude (PR #7 created by API). Self-merge needs the owner's explicit authorization.
+
 ## 2026-10-15 · Codex · `codex/phase-0-audit` — VEREDICTO ARCH-01 y revisión de salida de Fase 0
 
 **Acepto las cinco pruebas como evidencia de viabilidad de Hostinger y firmo técnicamente ARCH-01. Recomiendo presentar EXIT-0 al dueño para cierre; no he iniciado Fase 1.** El dueño debe aprobar cerrar Fase 0 y autorizar el siguiente incremento antes de crear la aplicación.
@@ -664,8 +637,6 @@ Non-blocking notes:
 - **Request for Claude:** revisar protocolo de reservas y estados de interfaz; conservar IDs canónicos anteriores; confirmar dependencias de BOOK-A-01 y ROUTE-01 antes de habilitar confirmación/cobro. D7–D9 siguen pendientes. No implementar todavía.
 - **Verificado:** diff sin errores, instrucciones de agentes idénticas, ambas entradas históricas conservadas, web sin cambios. No verificados: MySQL/concurrencia, Hostinger, Stripe, firma, correo y backup; no hay staging autorizado/disponible.
 - **Archivos de esta continuación:** BACKLOG, HANDOFF, PLAN (cambios de main integrados), DECISIONS (nombre de ticket), BUSINESS_RULES y nuevo RESERVATION_PROTOCOL. La auditoría anterior permanece.
-
-
 
 ## 2026-10-15 · Claude Code — owner decision: Maybeli is a full admin
 - Maybeli has the same access as César, including money, staff pay and reports (two owner-admins, both with 2FA). Staff roles stay restricted when they arrive (Track B).
@@ -737,7 +708,6 @@ Non-blocking notes:
 **Request for Claude:** revisar la auditoría y ADR; localizar contrato completo y ejemplos anonimizados ya recibidos; completar BIZ-01 (personas/roles/tiempos/recursos), sincronizar PLAN con D1–D6 y v2, y revisar RESERVE-A/PAY-01-A antes de implementar. Esta solicitud en el repositorio no implica que Claude la haya leído ni comenzado.
 
 **Siguientes requisitos:** inventario del plan/capacidades Hostinger y entorno de pruebas separado autorizado conforme a HOSTINGER_STAGING; bindings seguros de prueba cuando corresponda; acceso a precios oficiales/cotizaciones y elección D4; contrato e inventario operativos. No enviar secretos ni datos de clientas por chat. No cerrar Fase 0 ni iniciar Fase 1 hasta presentar evidencia de los criterios pendientes y obtener aprobación del dueño.
-
 
 ## 2026-10-15 · Claude Code · `claude/phase-0` — owner requirement: editable contract template
 - César: the contract must be modifiable in the future (to add or change clauses), **never the contracts already signed**. Recorded in `docs/contract/contract-template-v1.md` and as ticket **TPL-01** in Phase 4 of the BACKLOG: an admin template editor that creates versions; used versions are read-only; sent or signed contracts keep their exact version and PDF; booked events get changes only through an accepted addendum or a new contract.

@@ -46,7 +46,10 @@ final class ContractPrintContext
             },
             'equipment' => match ($requirement['equipment_kind'] ?? null) {
                 'speaker' => 'Speaker', 'robot' => 'LED robot', 'photo_booth' => 'Photo booth',
-                'foam_cannon' => 'Foam cannon', 'vanity' => 'Vanity station', default => 'Equipment unit',
+                'foam_cannon' => 'Foam cannon', 'vanity' => 'Vanity station',
+                'mic' => 'Microphone', 'bubbles' => 'Bubble machine', 'robot_tall' => 'Tall LED robot', 'robot_low' => 'Small LED robot',
+                'smoke' => 'Smoke machine', 'foam' => 'Foam equipment', 'disco_ball' => 'Disco ball', 'sparkler' => 'Sparkler',
+                'table' => 'Table', 'face_kit' => 'Face painting kit', default => 'Equipment unit',
             },
             'costume' => 'Character costume', 'vehicle' => 'Vehicle', default => 'Resource unit',
         };

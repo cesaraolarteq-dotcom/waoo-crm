@@ -43,7 +43,7 @@
 @elseif ($vm['step'] === 'details')
 <form class="p-card p-form" method="POST" action="{{ $vm['details']['action'] ?? $vm['actions']['details'] }}" id="details-form"
   data-event-version="{{ $vm['details']['expected_event_version'] ?? '' }}" data-revision="{{ $vm['details']['expected_revision'] ?? '' }}"
-  data-event-date="{{ $vm['details']['event_date'] ?? '' }}" data-lang="{{ $vm['lang'] }}">
+  data-lang="{{ $vm['lang'] }}">
   @csrf
   <h2>{{ $t('details_title') }}</h2>
   <p class="p-hint">{{ $t('details_hint') }}</p>
@@ -66,6 +66,7 @@
     <label class="p-check"><input type="radio" name="start_time_confirmed" value="1" checked> {{ $t('start_yes') }}</label>
     <label class="p-check"><input type="radio" name="start_time_confirmed" value="0"> {{ $t('start_no') }}</label>
     <label class="p-field p-sub-field"><span>{{ $t('requested_time') }}</span><input type="time" name="requested_time"><small>{{ $t('requested_hint') }}</small></label>
+    <label class="p-field p-sub-field"><span>{{ $t('requested_occurrence') }}</span><select name="requested_time_choice"><option value="">{{ $t('requested_occurrence_default') }}</option><option value="cdt">{{ $t('requested_occurrence_first') }}</option><option value="cst">{{ $t('requested_occurrence_second') }}</option></select><small>{{ $t('requested_occurrence_hint') }}</small></label>
   </fieldset>
   <div class="p-row">
     <label class="p-field"><span>{{ $t('child_name') }} <em>({{ $t('optional') }})</em></span><input name="child_name"></label>
@@ -73,11 +74,8 @@
   </div>
   <label class="p-field"><span>{{ $t('theme') }} <em>({{ $t('optional') }})</em></span><input name="theme"></label>
   <label class="p-field"><span>{{ $t('notes') }} <em>({{ $t('optional') }})</em></span><textarea name="notes" rows="3"></textarea></label>
-  @if (! empty($vm['details']['sms']))
-  {{-- Exactly the approved wording for this version: the same text is recorded with her consent. --}}
-  <label class="p-check p-small"><input type="checkbox" name="sms_consent" value="1" data-version="{{ $vm['details']['sms']['version'] }}"> {{ $vm['details']['sms']['text'] }}</label>
-  @elseif ($vm['preview'] ?? false)
-  <label class="p-check p-small"><input type="checkbox" name="sms_consent" value="1" data-version=""> {{ $t('sms') }}</label>
+  @if (! empty($vm['details']['sms_consent']))
+  <label class="p-check p-small"><input type="checkbox" name="sms_consent" value="1" data-version="{{ $vm['details']['sms_consent']['version'] }}"> {{ $vm['details']['sms_consent']['text'] }}</label>
   @endif
   <p class="p-test" id="details-error" role="alert" hidden></p>
   <button class="p-btn" type="submit">{{ $t('save_details') }}</button>
@@ -108,6 +106,23 @@
         <div><dt>{{ $t('zelle_memo') }}</dt><dd><code>{{ $vm['zelle_memo'] }}</code></dd></div>
       </dl>
       <p class="p-hint">{{ $t('zelle_note') }}</p>
+      @foreach ($vm['zelle']['notices'] ?? [] as $n)
+        <p class="p-notice p-notice-{{ $n['state'] }}" role="status">{{ $t('zelle_state_'.$n['state'], ['amount' => $n['amount'], 'verified' => $n['verified'] ?? '', 'when' => $n['when']]) }}</p>
+      @endforeach
+      @if ($vm['zelle']['can_notify'] ?? false)
+      @php($hasPending = collect($vm['zelle']['notices'])->contains('state', 'pending'))
+      <details class="p-zelle" @if (! $hasPending) open @endif>
+        <summary>{{ $hasPending ? $t('zelle_again') : $t('zelle_sent_btn') }}</summary>
+        <form class="p-form p-zelle-form" method="POST" action="{{ $vm['zelle']['action'] }}" id="zelle-form" data-revision="{{ $vm['pay']['revision_id'] ?? '' }}" novalidate>
+          @csrf
+          <label class="p-field"><span>{{ $t('zelle_amount_sent') }} (USD)</span><input name="amount" inputmode="decimal" value="{{ $vm['zelle']['amount'] }}" required autocomplete="off"></label>
+          <label class="p-field"><span>{{ $t('zelle_payer') }} <em>({{ $t('optional') }})</em></span><input name="payer_name" maxlength="120" autocomplete="name"></label>
+          <label class="p-field"><span>{{ $t('zelle_ref') }} <em>({{ $t('optional') }})</em></span><input name="reference" maxlength="255" autocomplete="off"></label>
+          <p class="p-test" id="zelle-error" role="alert" hidden></p>
+          <button class="p-btn" type="submit">{{ $t('zelle_sent_btn') }}</button>
+        </form>
+      </details>
+      @endif
     </div>
     <form class="p-opt" method="POST" action="{{ $vm['actions']['checkout'] }}" id="pay-form" data-revision="{{ $vm['pay']['revision_id'] ?? '' }}" @if (isset($vm['pay']) && ! $vm['pay']['can_checkout']) hidden @endif>
       @csrf
@@ -134,16 +149,6 @@
     return fetch(url, {method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf, 'Idempotency-Key': idem}, body: JSON.stringify(body)})
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) { var m = j.message || (j.errors && Object.values(j.errors)[0][0]) || 'Error'; throw new Error(m); } return j; }); });
   }
-  // A Houston wall time on the party day → ISO with that moment's own offset (CST/CDT), never the device's zone
-  // or the original start's offset. Returns null if the time does not exist (spring forward), 'ambiguous' if it repeats (fall back).
-  function houston(date, time) {
-    var fmt = new Intl.DateTimeFormat('en-CA', {timeZone: 'America/Chicago', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'});
-    var hits = ['-05:00', '-06:00'].map(function (off) { return date + 'T' + time + ':00' + off; }).filter(function (iso) {
-      var p = {}; fmt.formatToParts(new Date(iso)).forEach(function (x) { p[x.type] = x.value; });
-      return p.year + '-' + p.month + '-' + p.day === date && p.hour + ':' + p.minute === time;
-    });
-    return hits.length === 1 ? hits[0] : (hits.length ? 'ambiguous' : null);
-  }
   var det = document.getElementById('details-form');
   if (det) det.addEventListener('submit', function (ev) {
     ev.preventDefault(); var err = document.getElementById('details-error'); err.hidden = true;
@@ -154,11 +159,10 @@
       billing_address: f.billing_address.value.trim(), event_address: same ? f.billing_address.value.trim() : f.event_address.value.trim(),
       locale: f.dataset.lang, start_time_confirmed: confirmed};
     if (f.event_postal_code.value.trim()) body.event_postal_code = f.event_postal_code.value.trim();
-    // The requested time is only a request for the owner; it is sent with the party day's own offset.
+    // Send a Houston wall time; the server resolves the event date and DST occurrence.
     if (!confirmed) { if (!f.requested_time.value) { err.textContent = @js($t('requested_missing')); err.hidden = false; b.disabled = false; return; }
-      var at = houston(f.dataset.eventDate, f.requested_time.value);
-      if (at === null || at === 'ambiguous') { err.textContent = at === null ? @js($t('requested_nonexistent')) : @js($t('requested_ambiguous')); err.hidden = false; b.disabled = false; return; }
-      body.requested_start_at = at; }
+      body.requested_local_time = f.requested_time.value;
+      if (f.requested_time_choice.value) body.requested_time_choice = f.requested_time_choice.value; }
     ['child_name', 'theme', 'notes'].forEach(function (k) { if (f[k] && f[k].value.trim()) body[k] = f[k].value.trim(); });
     if (f.child_age && f.child_age.value.trim()) body.child_age = Number(f.child_age.value);
     if (f.sms_consent && f.sms_consent.checked) { body.sms_consent = true; body.sms_consent_version = f.sms_consent.dataset.version; }
@@ -173,6 +177,20 @@
     post(sign.action, {expected_version: Number(sign.dataset.version), presented_pdf_sha256: sign.presented_pdf_sha256.value, signer_name: sign.signer_name.value.trim(),
       consent: sign.consent.checked, intent_to_sign: sign.intent_to_sign.checked, consent_version: sign.dataset.consentVersion}, key('waoo-sign-' + sign.dataset.version))
       .then(function () { try { sessionStorage.removeItem('waoo-sign-' + sign.dataset.version); } catch (e) {} location.reload(); })
+      .catch(function (e) { err.textContent = e.message; err.hidden = false; b.disabled = false; });
+  });
+  var zf = document.getElementById('zelle-form');
+  if (zf) zf.addEventListener('submit', function (ev) {
+    ev.preventDefault(); var err = document.getElementById('zelle-error'); err.hidden = true;
+    var raw = zf.amount.value.replace(/[$,\s]/g, ''), b = zf.querySelector('button[type=submit]');
+    if (!/^\d{1,7}(\.\d{1,2})?$/.test(raw) || Number(raw) <= 0) { err.textContent = @js($t('zelle_amount_bad')); err.hidden = false; return; }
+    b.disabled = true;
+    var body = {financial_revision_id: Number(zf.dataset.revision), amount_cents: Math.round(Number(raw) * 100)};
+    if (zf.payer_name.value.trim()) body.payer_name = zf.payer_name.value.trim();
+    if (zf.reference.value.trim().length >= 3) body.reference = zf.reference.value.trim();
+    // One key per attempt: a double tap or retry after a timeout sends one notice. A notice is never a payment.
+    post(zf.action, body, key('waoo-zelle-' + zf.dataset.revision))
+      .then(function () { try { sessionStorage.removeItem('waoo-zelle-' + zf.dataset.revision); } catch (e) {} location.reload(); })
       .catch(function (e) { err.textContent = e.message; err.hidden = false; b.disabled = false; });
   });
   var pay = document.getElementById('pay-form');

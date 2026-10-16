@@ -16,8 +16,8 @@ Shared application-service signatures for API and Filament writes are in [RECORD
 
 GET/POST `/admin/api/{customers|characters|resources|variants}`, PUT the same path with `/{id}`. Lists are Laravel pagination objects (`data`, links, metadata), 50/page. PUT supplies full editable record. No hard-delete endpoints.
 
-- Customer: name, nullable email/phone, locale `en|es`.
-- Character: name, active boolean.
+- Customer: name, nullable email/phone, locale `en|es`. Reads/create return integer version (initially 1); PUT requires displayed `expected_version`, increments on success and rejects stale writes with 409. See RECORD-VERSION-API.md.
+- Character: name, active boolean. Reads/create return integer version (initially 1); PUT requires displayed `expected_version`, increments on success and rejects stale writes with 409.
 - Resource: code (unique), name, kind `staff|costume|equipment|vehicle` (immutable), status `active|maintenance|inactive`, skills array; nullable location. Costume requires character_id; equipment requires equipment_kind (e.g. `speaker`); vehicle requires seats (total occupants including driver). Staff skills are explicit identifiers, e.g. `performer`, `face_painter`, `entertainer`, `driver`. Separate resource records represent separate costume/speaker units. Updates require expected_version. Changing a resource with future commitments is blocked pending reassignment, not silently applied.
 - Variant: name, status `draft|active|retired`, duration_minutes, requirements array. Each requirement: kind, quantity, plus skill for staff / character_id for costume / equipment_kind for equipment. Requirements are simultaneous for the full event in this first slice. Active variants require complete requirements. Updates require expected_version. Catalog worksheet data remains authoritative; do not invent operational recipes.
 

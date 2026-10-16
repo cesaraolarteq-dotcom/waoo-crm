@@ -63,6 +63,13 @@ class Dashboard extends BaseDashboard
                 'items' => $exceptions->map(fn ($x) => ['label' => (Event::whereKey($x->event_id)->value('title') ?? 'Evento').' · '.(json_decode($x->context, true)['message'] ?? $x->kind), 'url' => EventResource::getUrl('money', ['record' => $x->event_id])])->all()];
         }
 
+        if (FinanceGate::enabled() && \App\Filament\Support\DocumentsGate::enabled()) {
+            // Client Zelle notices are claims, never money: the owner checks the bank, then verifies or rejects on Dinero.
+            $notices = \App\Models\ZelleNotice::query()->whereDoesntHave('review')->orderBy('id')->limit(50)->get();
+            $cards[] = ['tone' => 'bad', 'title' => 'Avisos de Zelle por verificar', 'text' => 'La clienta dice que ya envió el Zelle. Revisa tu banco antes de contarlo como pago.',
+                'items' => $notices->map(fn ($n) => ['label' => (Event::whereKey($n->event_id)->value('title') ?? 'Evento').' · dice '.Labels::money($n->amount_cents).' · '.Labels::when($n->submitted_at), 'url' => EventResource::getUrl('money', ['record' => $n->event_id])])->all()];
+        }
+
         if (\App\Filament\Support\DocumentsGate::enabled() && class_exists(\App\Services\Booking\ClientDetailsState::class)) {
             $quick = Event::query()->whereIn('id', \App\Models\QuickBookingRecord::query()->select('event_id'))->where('ends_at', '>=', $now)->orderBy('starts_at')->get()
                 ->groupBy(fn ($e) => \App\Services\Booking\ClientDetailsState::forEvent($e));
