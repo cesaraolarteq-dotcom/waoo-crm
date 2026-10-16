@@ -56,3 +56,7 @@ La desvinculación de compatibilidad elimina solo el pivote actual, conserva la 
 ### LEAD-01 website prospects (sandbox)
 
 Immutable lead_submissions stores the validated original website payload, exact-body SHA-256, company-unique request UUID and submitted/received times. The signature authenticates timestamp + UUID + raw body; signatures/secrets are never stored. Mutable leads has one submission, guarded status/version/owner note and optional actual QuickBook/event linkage. Duplicate hints never merge or edit customer records. Booking linkage is part of QuickBook's existing core transaction; portal-link recovery remains after that core commit. No fee, event, customer or message is created by intake. See docs/LEAD-01-API.md for stateless transport and owner APIs.
+
+### ROUTE-01 travel quotes and accepted evidence
+
+Immutable travel_fee_quotes contains address/rules hashes, required route measures, rules/input snapshots, nullable fee/status/expiry and admin. Pricing hash excludes operational quota/TTL settings. travel_route_daily_usage reserves each attempted Google call under a row lock for the Chicago date. CRM counter is separate from the website's existing counter. events.travel_fee_evidence is nullable and hidden from serialization; owner API exposes it explicitly. Acceptance binds the normalized address/ZIP, rules and expiry; manual overrides preserve an owner reason. No price/availability is inferred from unknown results. Owner-approved rules copied from website5afc001/unchanged083563b; actual22 calibration cases remain pending.

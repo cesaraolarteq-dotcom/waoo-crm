@@ -218,7 +218,16 @@
      "ui": null,
      "reviewed": false,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "address_quote_followup": {
+      "backend": "f31361c",
+      "ui": null,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "Contract97c84ac published first. Targeted45/490 pass including105 synthetic differential cases vs website formula,7 fixed ZIPs, bounded provider errors/null fees, true atomic quota race/Chicago midnight, cache, explicit/private/stale quote acceptance, actual lead→QuickBook and client-address reconfirmation, SQLite. Quoted_at metadata is additive; later integrated run will cover the complete stack.",
+      "remaining": "Missing22 actual calibrated ZIP reference fixtures (asked owner/Claude); no real Google/staging probe, UI/review/main merge or live activation. Full ROUTE-01 not complete/accepted."
+     }
     },
     {
      "name": "Cotizaciones con versiones",

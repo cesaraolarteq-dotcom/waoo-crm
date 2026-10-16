@@ -1,6 +1,6 @@
 # ROUTE-01 · Travel fee (costo de transporte) inside the CRM (Phase 2)
 
-Status: contract proposal by Claude for Codex (backend) + Claude (screens). Nothing implemented.
+Status: backend source f31361c on codex/route-01, API published first97c84ac. Targeted45/490 and synthetic website-formula parity pass;22 real calibration fixtures, final stack integration, Claude UI/review and real provider/staging validation remain pending. Default off, no live calls. See docs/ROUTE-01-API.md.
 
 ## Goal
 
