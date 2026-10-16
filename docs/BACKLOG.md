@@ -135,3 +135,7 @@ Contract `docs/REPORT-A-API.md`, backend source **656bd32** on `codex/operationa
 ### JOBS-01 / REPORT-A local retry foundation (Codex 2026-10-16)
 
 `codex/report-preview-outbox`, source **e28fc3d**, contract docs/REPORT-OUTBOX-API.md: leased, fenced, bounded retry outbox for local prepared-report previews; durable DB receipts survive acknowledgment failure and real competing-worker tests deduplicate. Default off, production denied, manual bounded worker only. This is a reusable recovery pattern under test, not production messaging or a completed JOBS-01. Real provider retention/ambiguous-send handling, alerts, stale reminder cancellation, queue/scheduler integration, approved templates and activation remain pending.
+
+### JOBS-01 local cancellation/fencing follow-up (Codex 2026-10-16)
+
+`codex/cancel-preview-tasks`, source **c1c2f45**, contract docs/REPORT-OUTBOX-CANCEL-API.md. Audited owner cancellation, read-status API, active claim token enforced inside local transport, real cancellation-vs-processing race. No receipt can be created after cancellation wins; existing receipt rejects cancellation. No CHANGE-A, automatic stale-reminder cancellation or live send/recall is implemented by this local-only slice.

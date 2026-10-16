@@ -542,6 +542,15 @@
       "accepted": false,
       "verification": "Fresh integrated full324/2863 passed (370.39s), PHP8.3/MariaDB11.8; focused21/144 with actual enqueue/worker races, lost-ack recovery, stale fencing, bounded retries, integrity and production/owner gates, no mail/queue and SQLite rollback/unique receipt. Strict Composer/all changed PHP lint/diff, guarded local migration and real /up passed. Local default flag remains disabled.",
       "remaining": "Local simulation only, no emails or scheduler. Claude review/UI/main merge; real-provider idempotency/ambiguity, alerts and activation remain future work. Entire REPORT-A/JOBS-01 not complete."
+     },
+     "preview_cancellation_followup": {
+      "backend": "c1c2f45",
+      "ui": null,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "29/200 affected regression tests pass: actual cancel-vs-worker race, pre-transport cancellation, receipt-before-ack refusal, audit rollback/token preservation, expired/wrong claim fencing, status/auth routes and SQLite metadata rollback. Parent full324/2863 is separate evidence.",
+      "remaining": "Claude review/UI/main merge. Local previews only; no automatic event/reminder invalidation, real provider or recall guarantee. Entire JOBS-01/REPORT-A remains incomplete."
      }
     }
    ]
