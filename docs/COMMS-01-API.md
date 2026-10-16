@@ -1,6 +1,6 @@
 # COMMS-01 — contrato antes de implementación
 
-2026-10-16 America/Chicago. Propuesta de Codex para revisión de Claude. Este documento publica el contrato; **los nuevos campos/servicios/rutas no están implementados**. No autoriza DNS, proveedores, envíos ni despliegues. Prioridad del dueño: recuperar/copiar fácilmente el enlace y enviarlo desde su teléfono.
+2026-10-16 America/Chicago. Contrato de Codex publicado antes del código en b3c9edd; backend implementado en codex/portal-link-recovery, fuente68c02a5. **Full326/3148 PASS; UI, revisión independiente, CI remoto, main y aceptación pendientes.** No autoriza DNS, proveedores, envíos ni despliegues. Prioridad del dueño: recuperar/copiar fácilmente el enlace y enviarlo desde su teléfono.
 
 ## Alcance de esta primera entrega
 
@@ -72,3 +72,7 @@ Email recomendado Postmark, From `Waoo Party <reservas@mail.waooparty.com>`, Rep
 - Carrera real reveal/revoke linealiza sobre la fila y nunca revela DESPUÉS de un revoke ya confirmado. La firma conserva su protocolo de locks. Revocar borra ciphertext; no borra firma/evidencia ni invalida la función de otro grant.
 - Nueva emisión guarda hash+ciphertext+audit juntos; un fallo revierte todo, incluida la emisión post-core sin revertir pagos que ya se confirmaron (recuperación QuickBook existente).
 - UI solo accede por servicio, maneja copy failure, no representa abrir SMS/WhatsApp como envío/entrega y conserva fallback. Probar iOS/Android/desktop autorizados antes de prometer compatibilidad de sus compositores; sin mensajes a clientas para verificarlo.
+
+## Evidencia de implementación
+
+Full326/3148 (352.01s), PHP8.3/MariaDB11.8; nuevas14/168 pass, incluyendo SQLite up/down/up y contención real revoke/reveal. Migración290000 aplicada solo a DB local aislada, /up200. Strict Composer/sintaxis14 PHP/diff pass; sin nuevos assets/dependencias/envíos. APP_KEY ausente globalmente impide arrancar Laravel:409 cubre cifrado de una clave anterior no disponible mientras el encrypter actual funciona; no se desactiva la encriptación de cookies ni la autenticación para encubrir un fallo global de configuración. Fuente68c02a5, Request for Claude en HANDOFF y PR preparado PORTAL-LINK-RECOVERY-PR.md.

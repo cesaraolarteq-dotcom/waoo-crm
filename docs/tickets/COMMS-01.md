@@ -2,7 +2,7 @@
 
 Owner: “The link is shown only once; if the tab closes it is a hassle. With HoneyBook more than 50% of our emails land in clients' spam, so we also text them. Can we avoid spam as much as possible? For SMS, can I use my Waoo Party number or do I need Twilio?” Owner's number 346-851-8830 is a regular **AT&T mobile line**. Owner priority: **simplicity of the process**.
 
-Codex: evaluated below, each section has a recommendation. API published in docs/COMMS-01-API.md before implementation; no backend/provider/DNS change in this delivery.
+Codex: recomendaciones por sección. API b3c9edd publicada antes del backend A (68c02a5, codex/portal-link-recovery): full326/3148 PASS; UI/revisión/CI/main/aceptación pendientes. B/C siguen como recomendaciones, sin proveedor/DNS/envíos activados.
 
 ## A. Link shown only once → owner can copy it again (backend: Codex)
 
@@ -62,6 +62,6 @@ Mínimo antes de SMS/WhatsApp automáticos: evidencia específica del canal/fina
 
 ### Evidencia y próximos pasos
 
-Revisado main ea14310 y #54 b30d209. Pruebas locales de integración seleccionadas41/446 + build PASS; diagnóstico2/5 reproduce teléfonos mal interpretados, no aprueba el defecto. Sin prueba de dispositivo real, proveedor, DNS ni envío. Contrato nuevo solo documental; implementación todavía pendiente. Otros PR: #47/#48 approve, #44 con dos correcciones de texto, #46/#49 request-changes; heads/limitaciones en la revisión enlazada.
+Revisado main ea14310 y #54 b30d209. Pruebas locales de integración seleccionadas41/446 + build PASS; diagnóstico2/5 reproduce teléfonos mal interpretados, no aprueba el defecto. Sin prueba de dispositivo real, proveedor, DNS ni envío. Backend A implementado después del contrato, fuente68c02a5: nueva batería326/3148 PASS, distintas de la revisión #54. UI/revisión/main siguen pendientes. Otros PR: #47/#48 approve, #44 con dos correcciones de texto, #46/#49 request-changes; heads/limitaciones en la revisión enlazada.
 
 Referencias oficiales para verificar antes de elegir/activar: [Postmark: documentación](https://postmarkapp.com/developer), [Postmark: autenticación de dominio](https://postmarkapp.com/support/article/1090-how-do-i-set-up-dkim-for-postmark), [Twilio A2P10DLC](https://www.twilio.com/docs/messaging/compliance/a2p-10dlc), [Twilio hosted numbers FAQ](https://www.twilio.com/docs/phone-numbers/hosted-numbers/hosted-numbers-faq), [Meta: onboarding de usuarios de Business App](https://developers.facebook.com/docs/whatsapp/embedded-signup/custom-flows/onboarding-business-app-users/), [WhatsApp: tarifas](https://business.whatsapp.com/products/platform-pricing). Intentos de lectura oficial en esta sesión: proxy CONNECT403, por lo que las condiciones comerciales/eligibilidad actuales no están verificadas aquí. Son referencias pendientes de consulta, no fuentes que afirme haber leído; no se sustituyeron por precios/plazos inventados.
