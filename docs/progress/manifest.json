@@ -391,7 +391,8 @@
      "ui_review_evidence": "Codex exact #42 4ff9d13 / #43 a16166d: full MariaDB 235 tests / 2156 assertions pass; opt-in probes reproduce stale unseen-address approval (R1) and requested-time DST error (R2). See docs/reviews/CLAUDE-42-43.md.",
      "ui_fix_evidence": "Codex implementation bf2ffac/7ebcf2c chosen explicitly; integrated exact bdc6c9e with Claude2d19000. Full 254/2328; server resolves Houston local time with CDT/CST choice. Both HANDOFF histories retained.",
      "ui_fix_reviewed": true,
-     "ui_fix_review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed."
+     "ui_fix_review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed.",
+     "link_recovery": "Codex 68c02a5 (API b3c9edd) + Claude #54: Copiar enlace (mismo enlace activo), teléfonos validados, sin aviso al cerrar; pendiente revisión de Codex."
     },
     {
      "name": "Reserva rápida (tu mitad + la de la clienta)",

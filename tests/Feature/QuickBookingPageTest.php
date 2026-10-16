@@ -79,7 +79,7 @@ class QuickBookingPageTest extends TestCase
             ->assertSet('data.end_time', '16:00') // filled from the package duration
             ->assertSee('Total $125 · depósito 50 % $62.50 · recibido $62.50 · saldo $62.50')
             ->call('save')->assertHasNoFormErrors()
-            ->assertSee('https://crm.example.test/p/fixture-secret')->assertSee('solo se muestra esta vez')
+            ->assertSee('https://crm.example.test/p/fixture-secret')->assertSee('Puedes volver a copiarlo desde el evento')
             ->assertSee('¡Hola Ana! Gracias por tu depósito de $62.50')->assertSee('Hi Ana! Thank you for your deposit of $62.50')
             ->assertSee('¡Estamos emocionados de ser parte de tu celebración!');
 
@@ -160,9 +160,17 @@ class QuickBookingPageTest extends TestCase
         $this->bind();
         Livewire::test(QuickBooking::class)->fillForm($this->form(['phone' => '(346) 555-0100']))->call('save')->assertHasNoFormErrors()
             ->assertSee('wa.me\\/13465550100?text=', false)->assertSee('sms:+13465550100?\u0026body=', false)
-            ->assertSee('Abrir WhatsApp con el mensaje')->assertSee('beforeunload', false);
+            ->assertSee('Abrir WhatsApp con el mensaje')->assertSee('Abrir SMS con el mensaje')->assertDontSee('beforeunload', false);
         $this->assertSame('13465550100', \App\Filament\Support\ContactLinks::digits('346-555-0100'));
-        $this->assertSame('5215512345678', \App\Filament\Support\ContactLinks::digits('+52 1 55 1234 5678'));
-        $this->assertNull(\App\Filament\Support\ContactLinks::digits('555'));
+        // Codex review #54: never guess a recipient for a message that carries the client's link.
+        $d = fn ($p) => \App\Filament\Support\ContactLinks::digits($p);
+        $this->assertSame('5215512345678', $d('+52 1 55 1234 5678'));
+        $this->assertSame('13465550100', $d('+1 (346) 555-0100'));
+        $this->assertSame('13465550100', $d('1-346-555-0100'));
+        foreach (['(346) 555-0100 ext 123', '346-555-0100 x12', 'DO NOT TEXT 346-555-0100', '00000000000', '555-0100', '911-555-0100', '(346) 055-0100',
+            '3465550100123', '+0 123 4567 890', '++1 346 555 0100', '', null] as $bad) {
+            $this->assertNull($d($bad), 'rejected: '.var_export($bad, true));
+        }
+        $this->assertNull(\App\Filament\Support\ContactLinks::whatsapp('DO NOT TEXT 346-555-0100', 'x'));
     }
 }

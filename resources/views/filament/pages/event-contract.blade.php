@@ -15,34 +15,8 @@
     @endif
 
     @if ($newLink)
-        <div class="wqb-done" x-data="{ lang: @js($newLink['locale']), copied: '', sent: false }" x-init="window.addEventListener('beforeunload', e => { if (!sent) { e.preventDefault(); e.returnValue = ''; } })">
-            <h2>Enlace creado <span>Vence el {{ rtrim($newLink['expires'], '.') }}. Cópialo ahora: <b>solo se muestra esta vez</b>.</span></h2>
-            <div class="wqb-link"><code>{{ $newLink['url'] }}</code>
-                <button type="button" class="wcal-btn" x-on:click="navigator.clipboard.writeText(@js($newLink['url'])).then(() => { copied = 'link'; sent = true })" x-text="copied === 'link' ? 'Copiado' : 'Copiar enlace'"></button></div>
-            <div class="wqb-msg">
-                <div class="wcal-modes"><button type="button" class="wcal-btn" :class="lang==='es' && 'on'" x-on:click="lang='es'">Español</button><button type="button" class="wcal-btn" :class="lang==='en' && 'on'" x-on:click="lang='en'">English</button></div>
-                <p x-show="lang==='es'">{{ $newLink['msg_es'] }}</p>
-                <p x-show="lang==='en'" x-cloak>{{ $newLink['msg_en'] }}</p>
-                <button type="button" class="wcal-btn on" x-on:click="navigator.clipboard.writeText(lang==='es' ? @js($newLink['msg_es']) : @js($newLink['msg_en'])).then(() => { copied = 'msg'; sent = true })" x-text="copied === 'msg' ? 'Mensaje copiado' : 'Copiar mensaje para WhatsApp'"></button>
-                    @php
-                        $waEs = \App\Filament\Support\ContactLinks::whatsapp($newLink['phone'] ?? null, $newLink['msg_es']);
-                        $waEn = \App\Filament\Support\ContactLinks::whatsapp($newLink['phone'] ?? null, $newLink['msg_en']);
-                        $smsEs = \App\Filament\Support\ContactLinks::sms($newLink['phone'] ?? null, $newLink['msg_es']);
-                        $smsEn = \App\Filament\Support\ContactLinks::sms($newLink['phone'] ?? null, $newLink['msg_en']);
-                    @endphp
-                    @if ($waEs)
-                        <div class="wqb-send">
-                            <a class="wcal-btn on" target="_blank" rel="noopener" :href="lang==='es' ? @js($waEs) : @js($waEn)" x-on:click="sent = true">Abrir WhatsApp con el mensaje</a>
-                            <a class="wcal-btn" :href="lang==='es' ? @js($smsEs) : @js($smsEn)" x-on:click="sent = true">Enviar por SMS</a>
-                        </div>
-                        <small>Se abre en tu WhatsApp o en Mensajes con el texto listo: solo toca enviar.</small>
-                    @else
-                        <small>No tiene teléfono guardado: copia el mensaje y pégalo en WhatsApp o en un SMS.</small>
-                    @endif
-                <small>Nada se envía solo.</small>
-            </div>
-            <div class="wqb-next"><button type="button" class="wcal-btn" wire:click="hideLink">Ya lo copié</button></div>
-        </div>
+        @include('filament.pages.partials.link-panel', ['panel' => [...$newLink, 'heading' => $newLink['recovered'] ?? false ? 'Enlace activo (el mismo de antes)' : 'Enlace creado']])
+        <div class="wqb-next"><button type="button" class="wcal-btn" wire:click="hideLink">Listo, ocultar</button></div>
     @endif
 
     <div class="wfile">
@@ -114,7 +88,7 @@
     <x-filament::section>
         <x-slot name="heading">Enlaces creados</x-slot>
         @forelse ($s['grants'] as $g)
-            <div class="wmoney-row"><div><b>{{ $g->state }}</b> · vence {{ $g->expires }}@if ($g->details) · incluye sus datos @endif @if ($g->active) · {{ ($this->revokeAction)(['id' => $g->id]) }}@endif</div><small>{{ $g->opened ? 'La clienta ya abrió el contrato' : 'Todavía no abre el contrato' }}</small></div>
+            <div class="wmoney-row"><div><b>{{ $g->state }}</b> · vence {{ $g->expires }}@if ($g->details) · incluye sus datos @endif @if ($g->active)@if ($g->can_reveal) · {{ ($this->copyLinkAction)(['id' => $g->id]) }}@else · <small>enlace anterior: no se puede volver a copiar</small>@endif · {{ ($this->revokeAction)(['id' => $g->id]) }}@endif</div><small>{{ $g->opened ? 'La clienta ya abrió el contrato' : 'Todavía no abre el contrato' }}</small></div>
         @empty
             <p class="wmoney-p">Ninguno todavía. En una reserva rápida se crea al guardarla; si no, después de emitir el contrato.</p>
         @endforelse

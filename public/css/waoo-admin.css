@@ -129,3 +129,4 @@ a.wcal-name:hover{text-decoration:underline}
 .wterms-body h3{font-size:.95rem;margin:.8em 0 .3em}
 .wwarn-inline{color:#8F5B00;background:#FFF1D2;border-radius:6px;padding:1px 6px;font-weight:700}
 .wqb-send{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.wqb-url{user-select:all;-webkit-user-select:all;overflow-wrap:anywhere}
