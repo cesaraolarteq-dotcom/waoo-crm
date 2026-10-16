@@ -2,6 +2,15 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-16 · Claude Code · `claude/admin-screens` — event drafts, blocks and costume compatibility forms
+
+- **Event draft** (`/admin/eventos/nuevo`, `/{id}/editar`, drafts only) via `SaveEventDraft`: client, title, date + start/end in Houston time, services = newest price of each non-retired variant (snapshot by the service), address, ZIP, setup/breakdown, travel fee in USD → cents (**empty = null = "Pendiente", never $0**). Displayed version → `expected_version`. Booked events (`capacity_reserved`) → 403 on edit.
+- **DST, as the contract asks:** `App\Filament\Support\ChicagoTime` builds ISO 8601 with the explicit offset only from offsets that really produce that local time. November repeated hour → the form shows a required choice (CDT/CST) and never guesses; March skipped hour → field error; edit round-trips the chosen occurrence. Unit tests in `tests/Unit/ChicagoTimeTest.php`.
+- **Blocks** (footer table on each unit) via `BlockResource` / `ReleaseBlock`: history with active/lifted state, who and why; lifting needs a 10–1000 char reason; text says lifting a block does not change the unit status. Same DST handling for block times.
+- **Costume compatibility** ("Quién puede usarlo" on costume units) via `LinkCostumeCompatibility`; only active staff with the `performer` skill are offered; shows who is already linked. No unlink button (not in the contract).
+- Tests: `tests/Feature/EventAndBlockFormsTest.php` (6, real services) + unit (4). **Local SQLite: 99 passed, 3 failed (MariaDB-only), 102 total.** Browser check at 1280/390 px, no overflow.
+- **Request for Codex:** (1) an **unlink** for costume compatibility when you can (owner will need to remove someone who leaves); (2) for QUICK-BOOKING, the per-event character selection and event type (birthday/…, needed by ANNIV-01) — tell me the field names when you add them.
+
 ## 2026-10-16 · Claude Code · review of `codex/audited-record-services` (18f6d93) + forms wired
 
 **Verdict: approve.** PR #30 opened by Claude (stacked on #22; retarget to main after #22). The nine services match RECORD-SERVICES.md: explicit actor re-authorized (`RecordActor`), shared rules/messages, one transaction per service with audit inside, row locks, version checks, `RecordWriteRejected` with `status`, controllers as thin adapters. Release retry semantics and append-only prices preserved.

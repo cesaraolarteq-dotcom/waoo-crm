@@ -4,7 +4,13 @@ namespace App\Filament\Resources\Resources\Pages;
 
 use App\Filament\Resources\Resources\ResourceUnitResource;
 use App\Filament\Support\RecordServicePage;
+use App\Filament\Support\RecordServicePageGate;
+use Filament\Actions\Action;
+use Filament\Facades\Filament;
+use Filament\Forms\Components\Select;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\Model;
 use Livewire\Attributes\Locked;
 
@@ -26,10 +32,42 @@ class EditResource extends EditRecord
         $this->displayedVersion = $this->getRecord()->version;
     }
 
-    // No delete: the API has no hard-delete endpoints.
+    // No delete (the API has none). Costumes: link who can wear it (LinkCostumeCompatibility; unlinking is not in the contract yet).
     protected function getHeaderActions(): array
     {
-        return [];
+        return [
+            Action::make('compatibility')->label('Quién puede usarlo')->icon('heroicon-o-user-plus')
+                ->visible(fn () => $this->getRecord()->kind === 'costume' && RecordServicePageGate::ready(\App\Services\Records\LinkCostumeCompatibility::class))
+                ->modalHeading('Personas que pueden usar este traje')
+                ->modalDescription(fn () => 'Ya pueden usarlo: '.($this->compatibleNames() ?: 'nadie todavía').'. Solo aparecen personas con el rol "Personaje".')
+                ->schema([
+                    Select::make('staff_id')->label('Agregar persona')->native(false)->searchable()->required()
+                        ->options(fn () => \App\Models\Resource::query()->where('kind', 'staff')->where('status', 'active')
+                            ->whereJsonContains('skills', 'performer')->orderBy('name')->pluck('name', 'id')),
+                ])
+                ->modalSubmitActionLabel('Agregar')
+                ->action(function (array $data, Action $action) {
+                    try {
+                        app(\App\Services\Records\LinkCostumeCompatibility::class)->execute(Filament::auth()->user(), (int) $data['staff_id'], $this->getRecord()->getKey());
+                    } catch (ValidationException|\App\Exceptions\RecordWriteRejected|\Illuminate\Auth\Access\AuthorizationException $e) {
+                        $message = $e instanceof ValidationException ? collect($e->errors())->flatten()->first() : $e->getMessage();
+                        Notification::make()->danger()->title('No se guardó')->body($message)->persistent()->send();
+                        $action->halt();
+                    }
+                    Notification::make()->success()->title('Persona agregada')->send();
+                }),
+        ];
+    }
+
+    private function compatibleNames(): string
+    {
+        return \Illuminate\Support\Facades\DB::table('costume_compatibilities')->join('resources', 'resources.id', '=', 'costume_compatibilities.staff_id')
+            ->where('costume_id', $this->getRecord()->getKey())->orderBy('resources.name')->pluck('resources.name')->implode(', ');
+    }
+
+    protected function getFooterWidgets(): array
+    {
+        return [\App\Filament\Resources\Resources\Widgets\ResourceBlocks::class];
     }
 
     protected function handleRecordUpdate(Model $record, array $data): Model
