@@ -20,7 +20,9 @@ class ImportOwnerCatalogTest extends TestCase
         $this->file = tempnam(sys_get_temp_dir(), 'cat');
         file_put_contents($this->file, json_encode([
             'characters' => ['mickey' => ['name' => 'Mickey', 'costumes' => 2, 'wig' => false], 'rumi' => ['name' => 'Rumi', 'costumes' => 1, 'wig' => true]],
-            'staff' => ['s1' => ['name' => 'Ana Ficticia', 'roles' => ['host', 'face_painter', 'character'], 'rate' => 25]],
+            'staff' => ['s1' => ['name' => 'Ana Ficticia', 'roles' => ['host', 'face_painter', 'character'], 'rate' => 25],
+                's2' => ['name' => 'Bea Ficticia', 'roles' => ['character_wig'], 'rates' => ['character_wig' => 80], 'skills' => ['glitter', 'car'], 'active' => true],
+                's3' => ['name' => 'Ex Staff', 'roles' => ['host'], 'active' => false]],
             'packages' => [
                 'star' => ['name' => 'Estrella (Star)', 'group' => 'Paquetes con personaje', 'price' => 275, 'duration_min' => 30, 'characters_included' => 1,
                     'crew' => ['character' => 1, 'host' => 1, 'driver' => 0], 'gear' => ['bubbles' => 1], 'description' => 'Entrada y bienvenida', 'ready' => true],
@@ -48,6 +50,8 @@ class ImportOwnerCatalogTest extends TestCase
         $this->assertSame(['Mickey', 'Rumi'], Character::orderBy('name')->pluck('name')->all());
         $this->assertSame(3, Resource::where('kind', 'costume')->count());
         $this->assertSame(['host', 'face_painter', 'performer'], Resource::where('code', 'STAFF-ANA-FICTICIA')->value('skills'));
+        $this->assertSame(['performer_wig', 'performer', 'glitter', 'car'], Resource::where('code', 'STAFF-BEA-FICTICIA')->value('skills'));
+        $this->assertFalse(Resource::where('code', 'STAFF-EX-STAFF')->exists(), 'Inactive staff is not imported.');
 
         $star = ServiceVariant::where('name', 'Estrella (Star)')->sole();
         $this->assertSame('active', $star->status);

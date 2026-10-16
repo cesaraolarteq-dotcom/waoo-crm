@@ -17,7 +17,12 @@ class ImportOwnerCatalog extends Command
 
     /** Catalog crew role → staff skill. "character" is the performer of a character option; "driver" is a staff skill too. */
     public const SKILLS = ['entertainer' => 'entertainer', 'host' => 'host', 'dj' => 'dj', 'face_painter' => 'face_painter',
-        'operator' => 'operator', 'spa' => 'spa', 'driver' => 'driver', 'character' => 'performer'];
+        'operator' => 'operator', 'spa' => 'spa', 'driver' => 'driver', 'character' => 'performer',
+        'character_head' => 'performer', 'character_wig' => 'performer_wig'];
+
+    /** Staff card extra skills (catalog page) → staff skills; a wig performer can also play head characters. */
+    public const EXTRA_SKILLS = ['glitter' => 'glitter', 'hair' => 'hair', 'balloons' => 'balloons', 'games' => 'games', 'show' => 'show',
+        'stilts' => 'stilts', 'bilingual' => 'bilingual', 'car' => 'car', 'first_aid' => 'first_aid'];
 
     private array $report = [];
 
@@ -76,11 +81,15 @@ class ImportOwnerCatalog extends Command
             $name = trim((string) ($row['name'] ?? ''));
             if ($name === '') continue;
             $code = 'STAFF-'.Str::upper(Str::slug($name));
-            $skills = collect($row['roles'] ?? [])->map(fn ($r) => self::SKILLS[$r] ?? null)->filter()->unique()->values()->all();
+            $skills = collect($row['roles'] ?? [])->map(fn ($r) => self::SKILLS[$r] ?? null)
+                ->merge(in_array('character_wig', $row['roles'] ?? [], true) ? ['performer'] : [])
+                ->merge(collect($row['skills'] ?? [])->map(fn ($k) => self::EXTRA_SKILLS[$k] ?? null))
+                ->filter()->unique()->values()->all();
+            if (($row['active'] ?? true) === false) { $this->report[] = ['Staff', $name, 'no importado', 'inactiva/o en el catálogo']; continue; }
             if (Resource::where('code', $code)->exists()) { $this->report[] = ['Staff', $name, 'ya existía', '']; continue; }
             if (! $dry) app(SaveResource::class)->execute($actor, ['code' => $code, 'name' => $name, 'kind' => 'staff', 'status' => 'active',
                 'character_id' => null, 'location' => null, 'skills' => $skills, 'equipment_kind' => null, 'seats' => null]);
-            $this->report[] = ['Staff', $name, $dry ? 'se crearía' : 'creado', implode(', ', $skills).(isset($row['rate']) && $row['rate'] !== null ? ' · tarifa no se importa' : '')];
+            $this->report[] = ['Staff', $name, $dry ? 'se crearía' : 'creado', implode(', ', $skills).(! empty($row['rates']) || isset($row['rate']) ? ' · tarifas: se usan en Costos, no se importan aún' : '')];
         }
     }
 
