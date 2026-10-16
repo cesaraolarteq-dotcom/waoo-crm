@@ -55,12 +55,13 @@ class ImportOwnerCatalogTest extends TestCase
 
         $star = ServiceVariant::where('name', 'Estrella (Star)')->sole();
         $this->assertSame('active', $star->status);
-        $this->assertSame([['kind' => 'staff', 'quantity' => 1, 'skill' => 'host']], $star->requirements);
+        $this->assertSame([['kind' => 'staff', 'quantity' => 1, 'skill' => 'host'], ['kind' => 'equipment', 'quantity' => 1, 'equipment_kind' => 'bubbles']], $star->requirements);
         $this->assertNull($star->long_description, 'Spanish text never becomes the English contract description.');
         $this->assertSame(27500, PriceVersion::where('service_variant_id', $star->id)->sole()->amount_cents);
 
         $waoo = ServiceVariant::where('name', 'Waoo')->sole();
-        $this->assertSame([['kind' => 'staff', 'quantity' => 1, 'skill' => 'entertainer'], ['kind' => 'staff', 'quantity' => 1, 'skill' => 'face_painter']], $waoo->requirements);
+        $this->assertSame([['kind' => 'staff', 'quantity' => 1, 'skill' => 'entertainer'], ['kind' => 'staff', 'quantity' => 1, 'skill' => 'face_painter'],
+            ['kind' => 'equipment', 'quantity' => 1, 'equipment_kind' => 'face_kit'], ['kind' => 'equipment', 'quantity' => 1, 'equipment_kind' => 'speaker']], $waoo->requirements);
         $rumi = Character::where('name', 'Rumi')->value('id');
         $byChar = collect($waoo->character_options)->keyBy('character_id');
         $this->assertCount(2, $byChar[Character::where('name', 'Mickey')->value('id')]['requirements'], 'Head character: a host dresses (3 people).');
@@ -70,10 +71,14 @@ class ImportOwnerCatalogTest extends TestCase
         $robot = ServiceVariant::where('name', 'Pistola de humo + Robot alto')->sole();
         $this->assertSame('draft', $robot->status);
         $this->assertSame(0, $robot->character_quantity);
-        $this->assertSame([['kind' => 'staff', 'quantity' => 2, 'skill' => 'operator']], $robot->requirements);
+        $this->assertSame([['kind' => 'staff', 'quantity' => 2, 'skill' => 'operator'], ['kind' => 'equipment', 'quantity' => 1, 'equipment_kind' => 'robot_tall']], $robot->requirements);
 
-        // Re-run: nothing duplicated, no new price version when the price did not change.
+        // Re-run: nothing duplicated, no new price version, no version/audit churn when nothing changed.
+        $versions = ServiceVariant::orderBy('id')->pluck('version')->all();
+        $audits = \Illuminate\Support\Facades\DB::table('audit_entries')->count();
         $this->artisan('waoo:import-catalog', ['file' => $this->file, '--actor' => 'owner@example.test'])->assertSuccessful();
+        $this->assertSame($versions, ServiceVariant::orderBy('id')->pluck('version')->all());
+        $this->assertSame($audits, \Illuminate\Support\Facades\DB::table('audit_entries')->count());
         $this->assertSame(3, ServiceVariant::count());
         $this->assertSame(3, PriceVersion::count());
         $this->assertSame(3, Resource::where('kind', 'costume')->count());
@@ -83,5 +88,48 @@ class ImportOwnerCatalogTest extends TestCase
     {
         $this->artisan('waoo:import-catalog', ['file' => $this->file, '--actor' => 'nobody@example.test'])->assertFailed();
         $this->assertSame(0, ServiceVariant::count());
+    }
+
+    public function test_unknown_equipment_keeps_draft_and_versions_become_units(): void
+    {
+        file_put_contents($this->file, json_encode([
+            'characters' => ['mickey' => ['name' => 'Mickey', 'costumes' => 2, 'wig' => false, 'outfits' => 'Clásico 1, Disneyland 2']],
+            'packages' => ['x' => ['name' => 'Raro', 'group' => 'Extras', 'price' => 100, 'duration_min' => 60, 'characters_included' => 0,
+                'crew' => ['host' => 1], 'gear' => ['laser_show' => 1], 'description' => '', 'ready' => true]],
+        ]));
+        $this->artisan('waoo:import-catalog', ['file' => $this->file, '--actor' => 'owner@example.test'])->assertSuccessful();
+        $this->assertSame('draft', ServiceVariant::where('name', 'Raro')->value('status'), 'Declared equipment that cannot be represented never activates.');
+        $mickey = Character::where('name', 'Mickey')->sole();
+        $this->assertSame(['Clásico', 'Disneyland'], $mickey->outfits);
+        $this->assertSame(['Clásico' => 1, 'Disneyland' => 2], Resource::where('character_id', $mickey->id)->get()->countBy('outfit')->all());
+    }
+
+    // Codex review P1: an active imported speaker package cannot reserve without a speaker and competes for the same unit.
+    public function test_imported_equipment_is_reserved_by_the_real_engine(): void
+    {
+        file_put_contents($this->file, json_encode(['packages' => ['m' => ['name' => 'Música', 'group' => 'Fiesta sin personaje', 'price' => 525, 'duration_min' => 60,
+            'characters_included' => 0, 'crew' => ['host' => 1], 'gear' => ['speaker' => 1], 'description' => '', 'ready' => true]]]));
+        $this->artisan('waoo:import-catalog', ['file' => $this->file, '--actor' => 'owner@example.test'])->assertSuccessful();
+        $owner = User::sole();
+        $price = PriceVersion::sole();
+        $customer = \App\Models\Customer::create(['name' => 'Fixture Client', 'locale' => 'es']);
+        $staff = [1, 2, 3];
+        foreach ($staff as $n) Resource::create(['code' => "STF-$n", 'name' => "Host $n", 'kind' => 'staff', 'status' => 'active', 'skills' => ['host']]);
+        $event = fn () => app(\App\Services\Records\SaveEventDraft::class)->execute($owner, ['customer_id' => $customer->id, 'title' => 'Fixture', 'starts_at' => '2026-12-19T15:00:00-06:00',
+            'ends_at' => '2026-12-19T16:00:00-06:00', 'timezone' => 'America/Chicago', 'travel_fee_cents' => 2500, 'address' => 'Fixture address 1', 'postal_code' => '00001', 'setup_minutes' => 15, 'breakdown_minutes' => 15,
+            'services' => [['price_version_id' => $price->id]]]);
+        $reason = function (callable $f): string { try { $f(); return 'OK'; } catch (\Illuminate\Validation\ValidationException $e) { return json_encode($e->errors(), JSON_UNESCAPED_UNICODE); } catch (\Throwable $e) { return $e->getMessage(); } };
+        $confirm = fn ($e, array $ids, string $ref) => app(\App\Services\Records\ConfirmCapacity::class)->execute($owner, $e->id, ['expected_version' => $e->fresh()->version, 'resource_ids' => $ids,
+            'payment' => ['method' => 'external_zelle', 'reference' => $ref, 'amount_cents' => 27500, 'received_at' => now()->subHour()->toIso8601String()],
+            'review' => ['staff_confirmed' => true, 'cargo_checked' => true, 'origin_return_note' => 'Fixture origin and return note.', 'transfers' => []]]);
+        $a = $event();
+        $why = $reason(fn () => $confirm($a, [Resource::where('code', 'STF-1')->value('id')], 'REF-A0'));
+        $this->assertNotSame('OK', $why, 'Reserved without a speaker.');
+        $this->assertStringContainsString('No hay una combinación', $why, 'Rejected for capacity, not for missing event data.');
+        $speaker = Resource::create(['code' => 'SPK-1', 'name' => 'Bocina 1', 'kind' => 'equipment', 'status' => 'active', 'equipment_kind' => 'speaker', 'skills' => []]);
+        $this->assertSame('OK', $reason(fn () => $confirm($a, [Resource::where('code', 'STF-1')->value('id'), $speaker->id], 'REF-A1')));
+        $b = $event();
+        $this->assertNotSame('OK', $reason(fn () => $confirm($b, [Resource::where('code', 'STF-2')->value('id'), $speaker->id], 'REF-B1')), 'Same speaker reserved twice.');
+        $this->assertSame('draft', $b->fresh()->status);
     }
 }

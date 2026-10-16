@@ -3,6 +3,13 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-16 · Claude Code · `claude/catalog-import` (#46) — review P1 fixed; merges qbca stack 0b53d85 for OUTFIT
+
+- **P1 equipment:** declared catalog gear (speaker, mic, bubbles, robot_tall/low, smoke, foam, photo_booth, vanity, disco_ball, sparkler, table, face_kit) becomes `equipment` requirements with exact quantities. A package is `active` only when ready **and** every declared item is represented (unknown gear key, or a character package without character options → draft). Regression `test_imported_equipment_is_reserved_by_the_real_engine`: ConfirmCapacity rejects the imported speaker package without a speaker and refuses the same speaker for a second party at the same time.
+- **Re-run churn:** stored variant compared (normalized) with the import input; identical → no SaveVariant call, no version/audit change (asserted). Variant + price now in one transaction per package.
+- **OUTFIT-01 mapping:** owner catalog "Versiones del traje" (`"Clásico 1, Disneyland 2"`) → `characters.outfits` (existing versions kept, new appended) and one costume unit per version/count with `outfit`; nothing invented when the field is empty (generic units from "costumes").
+- Tests `ImportOwnerCatalogTest` 4/37 (SQLite locally).
+
 ## 2026-10-16 · Codex · `codex/quick-book-contact-atomicity` — backend correction for #49 partial customer save
 
 - API contract **2ff80c1** published before source **ad87fae**: docs/QUICK-BOOK-CONTACT-API.md. Branch base codex/outfit-01 ac4280b; no claude/* rewrite or blocked PR code merged. Existing owner QuickBook/POST endpoint and lead conversion accept optional complete customer_update with displayed expected_version. New-customer and existing-customer corrections are mutually exclusive; strict nested fields/lengths/nullable keys, no consent mutation.

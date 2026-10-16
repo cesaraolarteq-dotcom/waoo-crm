@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 use App\Models\{Character, PriceVersion, Resource, ServiceVariant, User};
 use App\Services\Records\{AddPriceVersion, SaveCharacter, SaveResource, SaveVariant};
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -19,6 +20,9 @@ class ImportOwnerCatalog extends Command
     public const SKILLS = ['entertainer' => 'entertainer', 'host' => 'host', 'dj' => 'dj', 'face_painter' => 'face_painter',
         'operator' => 'operator', 'spa' => 'spa', 'driver' => 'driver', 'character' => 'performer',
         'character_head' => 'performer', 'character_wig' => 'performer_wig'];
+
+    /** Catalog equipment keys (owner's catalog page). Declared units become equipment requirements; anything else keeps the package in draft. */
+    public const EQUIPMENT = ['speaker', 'mic', 'bubbles', 'robot_tall', 'robot_low', 'smoke', 'foam', 'photo_booth', 'vanity', 'disco_ball', 'sparkler', 'table', 'face_kit'];
 
     /** Staff card extra skills (catalog page) → staff skills; a wig performer can also play head characters. */
     public const EXTRA_SKILLS = ['glitter' => 'glitter', 'hair' => 'hair', 'balloons' => 'balloons', 'games' => 'games', 'show' => 'show',
@@ -49,6 +53,19 @@ class ImportOwnerCatalog extends Command
         return self::SUCCESS;
     }
 
+    /** "Clásico 1, Disneyland 1, Carreras 1" → ['Clásico' => 1, 'Disneyland' => 1, 'Carreras' => 1]. A name without a number counts as 1. */
+    public static function parseOutfits(?string $text): array
+    {
+        $out = [];
+        foreach (preg_split('/[,;\n]+/', (string) $text) as $part) {
+            if (! preg_match('/^\s*(.*?)\s*(\d+)?\s*$/u', $part, $m) || trim($m[1]) === '') continue;
+            $name = mb_substr(trim($m[1]), 0, 60);
+            $out[$name] = ($out[$name] ?? 0) + max(1, (int) ($m[2] ?? 1));
+        }
+
+        return $out;
+    }
+
     /** @return array<string, array{id:int|null, wig:bool}> by lower-case name */
     private function characters(User $actor, array $rows, bool $dry): array
     {
@@ -56,19 +73,32 @@ class ImportOwnerCatalog extends Command
         foreach ($rows as $row) {
             $name = trim((string) ($row['name'] ?? ''));
             if ($name === '') continue;
+            $versions = self::parseOutfits($row['outfits'] ?? null);
             $character = Character::whereRaw('lower(name) = ?', [mb_strtolower($name)])->first();
             $existed = (bool) $character;
-            if (! $character && ! $dry) $character = app(SaveCharacter::class)->execute($actor, ['name' => $name, 'active' => true]);
-            $this->report[] = ['Personaje', $name, $existed ? 'ya existía' : ($dry ? 'se crearía' : 'creado'), ! empty($row['wig']) ? 'peluca' : 'cabeza'];
-            $made = 0;
-            for ($n = 1; $n <= max(0, (int) ($row['costumes'] ?? 0)); $n++) {
-                $code = 'TRAJE-'.Str::upper(Str::slug($name)).'-'.$n;
-                if (Resource::where('code', $code)->exists()) continue;
-                if (! $dry && $character) app(SaveResource::class)->execute($actor, ['code' => $code, 'name' => "Traje {$name} {$n}", 'kind' => 'costume', 'status' => 'active',
-                    'character_id' => $character->id, 'location' => null, 'skills' => [], 'equipment_kind' => null, 'seats' => null]);
-                $made++;
+            if (! $dry) {
+                if (! $character) {
+                    $character = app(SaveCharacter::class)->execute($actor, ['name' => $name, 'active' => true, 'outfits' => $versions ? array_keys($versions) : null]);
+                } elseif ($versions && array_values((array) $character->outfits) !== array_keys($versions)) {
+                    // Keep existing versions (a costume may still use them) and add the owner's new ones.
+                    $merged = array_values(array_unique([...((array) $character->outfits), ...array_keys($versions)]));
+                    $character = app(SaveCharacter::class)->execute($actor, ['name' => $character->name, 'active' => (bool) $character->active, 'outfits' => $merged, 'expected_version' => $character->version], $character->id);
+                }
             }
-            if ($made) $this->report[] = ['Trajes', $name, ($dry ? 'se crearían ' : 'creados ').$made, ''];
+            $this->report[] = ['Personaje', $name, $existed ? 'ya existía' : ($dry ? 'se crearía' : 'creado'), (! empty($row['wig']) ? 'peluca' : 'cabeza').($versions ? ' · versiones: '.implode(', ', array_keys($versions)) : '')];
+            // Units: one per version when the owner listed versions; otherwise generic units from "costumes".
+            $plan = $versions ?: [null => max(0, (int) ($row['costumes'] ?? 0))];
+            $made = 0;
+            foreach ($plan as $version => $count) {
+                for ($n = 1; $n <= $count; $n++) {
+                    $code = 'TRAJE-'.Str::upper(Str::slug($name)).($version !== null && $version !== '' ? '-'.Str::upper(Str::slug((string) $version)) : '').'-'.$n;
+                    if (Resource::where('code', $code)->exists()) continue;
+                    if (! $dry && $character) app(SaveResource::class)->execute($actor, ['code' => $code, 'name' => "Traje {$name}".($version ? " {$version}" : '')." {$n}", 'kind' => 'costume', 'status' => 'active',
+                        'character_id' => $character->id, 'outfit' => $version ?: null, 'location' => null, 'skills' => [], 'equipment_kind' => null, 'seats' => null]);
+                    $made++;
+                }
+            }
+            if ($made) $this->report[] = ['Trajes', $name, ($dry ? 'se crearían ' : 'creados ').$made, $versions ? 'por versión' : ''];
             $out[mb_strtolower($name)] = ['id' => $character?->id, 'wig' => ! empty($row['wig'])];
         }
 
@@ -113,6 +143,12 @@ class ImportOwnerCatalog extends Command
         foreach ($base as $role => $count) {
             if ($count > 0 && isset(self::SKILLS[$role])) $requirements[] = ['kind' => 'staff', 'quantity' => $count, 'skill' => self::SKILLS[$role]];
         }
+        $unknownGear = [];
+        foreach ((array) ($p['gear'] ?? []) as $kind => $count) {
+            if ((int) $count <= 0) continue;
+            if (in_array($kind, self::EQUIPMENT, true)) $requirements[] = ['kind' => 'equipment', 'quantity' => (int) $count, 'equipment_kind' => $kind];
+            else $unknownGear[] = $kind;
+        }
         $options = [];
         if ($included > 0) {
             foreach ($characters as $c) {
@@ -127,11 +163,13 @@ class ImportOwnerCatalog extends Command
         $input = ['name' => $name, 'duration_minutes' => (int) ($p['duration_min'] ?? 0), 'requirements' => $requirements,
             'character_quantity' => $included, 'character_options' => $options === [] ? null : $options,
             'long_description' => $english ? $description : null,
-            'status' => ! empty($p['ready']) && ($requirements !== [] || $options !== []) ? 'active' : 'draft'];
+            // Active only when everything declared is represented (staff + equipment); otherwise the owner finishes it in the CRM.
+            'status' => ! empty($p['ready']) && ($requirements !== [] || $options !== []) && $unknownGear === [] && ($included === 0 || $options !== []) ? 'active' : 'draft'];
         $variant = ServiceVariant::where('name', $name)->first();
         $notes = array_filter([
             $included > 0 && $options === [] ? 'sin personajes cargados' : null,
-            ! empty($p['gear']) && array_filter($p['gear']) ? 'equipo sin inventario: '.implode(', ', array_keys(array_filter($p['gear']))) : null,
+            $unknownGear ? 'equipo desconocido (queda en borrador): '.implode(', ', $unknownGear) : null,
+            array_filter((array) ($p['gear'] ?? [])) ? 'reserva equipo: '.implode(', ', array_keys(array_filter((array) $p['gear']))).' (carga las unidades en Recursos)' : null,
             ! empty($p['extra_character_price']) ? 'personaje extra $'.$p['extra_character_price'].' (no modelado)' : null,
             $english ? null : 'descripción en español: escribe la del contrato en inglés',
             $isHoraLoca && ($p['characters_included'] ?? 0) > 0 ? 'robot tratado como equipo + operador' : null,
@@ -139,13 +177,38 @@ class ImportOwnerCatalog extends Command
         if ($dry) { $this->report[] = ['Paquete', $name, ($variant ? 'se actualizaría' : 'se crearía').' ('.$input['status'].')', implode(' · ', $notes)]; return; }
 
         $existed = (bool) $variant;
-        $variant = $variant
-            ? app(SaveVariant::class)->execute($actor, [...$input, 'expected_version' => $variant->version], $variant->id)
-            : app(SaveVariant::class)->execute($actor, $input);
         $cents = isset($p['price']) && $p['price'] !== null ? (int) round($p['price'] * 100) : null;
-        $latest = PriceVersion::where('service_variant_id', $variant->id)->orderByDesc('id')->value('amount_cents');
-        if ($cents !== null && $latest !== $cents) app(AddPriceVersion::class)->execute($actor, $variant->id, ['amount_cents' => $cents, 'currency' => 'USD']);
-        $this->report[] = ['Paquete', $name, ($existed ? 'actualizado' : 'creado').' ('.$variant->status.')'.($cents === null ? ' sin precio' : ' $'.($cents / 100)), implode(' · ', $notes)];
+        $unchanged = $existed && self::sameVariant($variant, $input);
+        // Variant + price together: a bad price never leaves a half-imported package.
+        $variant = DB::transaction(function () use ($actor, $variant, $input, $cents, $unchanged) {
+            $saved = $unchanged ? $variant : ($variant
+                ? app(SaveVariant::class)->execute($actor, [...$input, 'expected_version' => $variant->version], $variant->id)
+                : app(SaveVariant::class)->execute($actor, $input));
+            $latest = PriceVersion::where('service_variant_id', $saved->id)->orderByDesc('id')->value('amount_cents');
+            if ($cents !== null && $latest !== $cents) app(AddPriceVersion::class)->execute($actor, $saved->id, ['amount_cents' => $cents, 'currency' => 'USD']);
+
+            return $saved;
+        });
+        $this->report[] = ['Paquete', $name, ($unchanged ? 'sin cambios' : ($existed ? 'actualizado' : 'creado')).' ('.$variant->status.')'.($cents === null ? ' sin precio' : ' $'.($cents / 100)), implode(' · ', $notes)];
+    }
+
+    /** Stored variant already equals what the import would write (normalized): no save, no new version or audit. */
+    private static function sameVariant(ServiceVariant $v, array $input): bool
+    {
+        $norm = fn ($x) => json_encode($x === null ? null : (is_array($x) ? self::sortDeep($x) : $x));
+        foreach (['name', 'duration_minutes', 'requirements', 'character_quantity', 'character_options', 'long_description', 'status'] as $k) {
+            if ($norm($v->{$k} ?? null) !== $norm($input[$k] ?? null)) return false;
+        }
+
+        return true;
+    }
+
+    private static function sortDeep(array $a): array
+    {
+        foreach ($a as $k => $v) if (is_array($v)) $a[$k] = self::sortDeep($v);
+        if (array_keys($a) !== range(0, count($a) - 1)) ksort($a);
+
+        return $a;
     }
 
     private function reason(Throwable $e): string
