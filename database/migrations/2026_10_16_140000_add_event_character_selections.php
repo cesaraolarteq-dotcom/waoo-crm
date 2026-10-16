@@ -30,6 +30,6 @@ return new class extends Migration
     {
         Schema::dropIfExists('event_service_characters');
         Schema::table('service_variants', fn (Blueprint $table) => $table->dropColumn(['character_quantity', 'character_options']));
-        Schema::table('events', fn (Blueprint $table) => $table->dropColumn('event_type'));
+        Schema::table('events', function (Blueprint $table) { $table->dropIndex(['event_type']); $table->dropColumn('event_type'); });
     }
 };

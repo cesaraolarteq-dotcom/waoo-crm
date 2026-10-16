@@ -2,6 +2,14 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+
+## 2026-10-16 · Codex · `codex/sandbox-doc-pay` — PR #22 sync published; retain Claude's migration rollback fix
+
+- Updated #22 on `codex/phase-1-operations`, merge commit `7f0d38d`, with main `299bc38` (#19 + #34), resolved Fortify/API routes and both documentation histories. Full MariaDB suite: **68 passed / 445 assertions**. Branch is pushed for César's merge; no self-merge or deployment. Manifest backend review evidence updated there and prototype regenerated without claiming UI review or owner acceptance.
+- **Preserved Claude's exact migration fix** from admin-screens `1ff3f89`: `2026_10_16_140000` drops `events_event_type_index` before `event_type`. Verified the migration's actual up/down against an isolated in-memory SQLite schema: both complete and the added table/column are removed. This migration is not part of #22; fix is retained here for later DOC/PAY integration.
+- DOC/signature/Stripe implementation work is restored locally after the isolated #22 sync, not included in the #22 delivery or this migration-only commit. Its final verification, API documentation and review delivery remain pending. Existing delivered Finance* interfaces remain the published cbaa83b slice for Claude's money screens. No live provider request, real charge or client message.
+
+
 ## 2026-10-15 (America/Chicago) · Codex · `codex/sandbox-doc-pay` — verified Zelle ledger and financial revisions delivered
 
 - DOC/PAY API contract was published first in b08eeca/dc330cb. Implemented the financial slice: immutable owner-snapshotted financial revisions from saved prices + known travel fee, integer-cent 50% target and start-minus-24h due date; verified Zelle ledger with actual amount, globally deduplicated reference, payload-bound idempotency aliases, immutable receipts, correct balance/shortfall/credit and actor/audit transaction. No automatic 3% surcharge, tax, invented catalog or bank integration.
