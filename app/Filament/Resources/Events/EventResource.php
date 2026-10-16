@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Events;
 
-use App\Filament\Resources\Events\Pages\{CreateEvent, EditEvent, ListEvents};
+use App\Filament\Resources\Events\Pages\{ConfirmCapacity, CreateEvent, EditEvent, ListEvents};
 use App\Filament\Support\{ChicagoTime, RecordServicePageGate};
 use App\Models\{Customer, PriceVersion, ServiceVariant};
 use Filament\Forms\Components\{DatePicker, Radio, Select, TextInput, TimePicker};
@@ -167,6 +167,6 @@ class EventResource extends Resource
     public static function getPages(): array
     {
         // Routes always exist; canCreate()/canEdit() answer 403 until the audited service is available.
-        return ['index' => ListEvents::route('/'), 'create' => CreateEvent::route('/nuevo'), 'edit' => EditEvent::route('/{record}/editar')];
+        return ['index' => ListEvents::route('/'), 'create' => CreateEvent::route('/nuevo'), 'edit' => EditEvent::route('/{record}/editar'), 'confirm' => ConfirmCapacity::route('/{record}/confirmar')];
     }
 }
