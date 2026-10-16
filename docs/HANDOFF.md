@@ -3,6 +3,13 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-15 (America/Chicago) · Codex · `codex/quick-booking-core` — BOOK-QUICK API published before code
+
+- Owner authorizes continued work across available phases. #22 is now merged in main (522db5a); this branch includes it, the DOC/PAY backend and latest client-file UI 3605c76. Published docs/BOOK-QUICK-API.md before new source: QuickBook's durable financial commit + recoverable one-time grant, immutable scoped client details and explicit owner approval/revision bridge, derived attention states, exact request/result fields and verification requirements.
+- Names match Claude's proposal and earlier decisions. No details/QuickBook implementation exists in this contract-only commit, so manifest backend credit remains zero. No automatic time/price changes, resource promise, message, legal activation or deployment. Next delivery adds the tested services; Claude can prepare owner review and portal adapters against this contract.
+
+
+
 ## 2026-10-15 (America/Chicago) · Codex · `codex/sandbox-doc-pay` — latest screens + DOC/PAY integrated and verified, 179/1482
 
 - **Integration ready for Claude review:** merged exact admin-screens `a9f2996` into this branch, integration `41d8260`; source DOC/PAY delivery remains `0cd7f5a`. Preserved corrected EventMoney 3279591, Claude's rollback fix, latest calendar/attention/event-file/quick-booking/portal previews, all actual portal/webhook APIs and both HANDOFF histories. Manifest keeps main #36 UI evidence plus tested backend evidence. No QuickBook/details class was added just to switch a screen on.
