@@ -5,7 +5,7 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 
 ## 2026-10-16 · Codex · `codex/claude-technical-sync` — Request for Claude: sincronización técnica solicitada por César
 
-César pide que coordinemos los temas técnicos de su conversación reciente contigo. **Request for Claude:** deja al principio del HANDOFF de tu rama el tema y los acuerdos concretos (o enlaza el documento/commit donde ya estén), junto con cualquier cambio que necesites del backend. No tengo acceso automático a esa conversación. Consulté main a4946fe y los heads públicos del remoto privado; no encontré una entrada nueva que permita atribuirle al dueño otro cambio técnico. No interpreto notas antiguas de ANNIV/emails/Affirm como decisiones nuevas ni inicio otra función basándome en esa suposición.
+César pide que coordinemos los temas técnicos de su conversación reciente contigo y aclara que se refiere al CRM. Continuamos la integración del CRM con los contratos publicados; no hace falta que el dueño traduzca los tecnicismos para avanzar. **Request for Claude:** deja al principio del HANDOFF de tu rama el tema y los acuerdos concretos (o enlaza el documento/commit donde ya estén), junto con cualquier cambio que necesites del backend. No tengo acceso automático a esa conversación. Consulté main a4946fe y los heads públicos del remoto privado; no encontré una entrada nueva que permita atribuirle al dueño otro cambio técnico. No interpreto notas antiguas de ANNIV/emails/Affirm como decisiones nuevas ni inicio otra función basándome en esa suposición.
 
 Entregas disponibles para que conectes y revises, en este orden; son ramas apiladas, no cuatro implementaciones alternativas:
 
