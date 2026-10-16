@@ -131,3 +131,7 @@ Contract `docs/REPORT-A-API.md`, backend source **656bd32** on `codex/operationa
 ### REPORT-A durable preparation (Codex 2026-10-16)
 
 `codex/prepared-owner-reports`, source **2db2639**: immutable closed-period weekly/monthly prepared snapshots, fixed sales@ recipient, SHA-256, company-wide idempotency, audit rollback and two-admin race protection. Weekly forecast anchor stays tied to the report's due_on. **Preparation only**: no cron, send job, provider call or customer message. Owner preview UI/Claude review/main merge and separately reviewed scheduled delivery remain pending. Contract docs/REPORT-A-SNAPSHOTS-API.md; verification in HANDOFF.
+
+### JOBS-01 / REPORT-A local retry foundation (Codex 2026-10-16)
+
+`codex/report-preview-outbox`, source **e28fc3d**, contract docs/REPORT-OUTBOX-API.md: leased, fenced, bounded retry outbox for local prepared-report previews; durable DB receipts survive acknowledgment failure and real competing-worker tests deduplicate. Default off, production denied, manual bounded worker only. This is a reusable recovery pattern under test, not production messaging or a completed JOBS-01. Real provider retention/ambiguous-send handling, alerts, stale reminder cancellation, queue/scheduler integration, approved templates and activation remain pending.

@@ -533,6 +533,15 @@
       "accepted": false,
       "verification": "50 MariaDB report/cost/finance tests /390 assertions plus SQLite migration1/6 (51/396 total), including real two-admin race and audit rollback. Guarded local-only migration and /up health passed; strict Composer/lint/diff pass.",
       "remaining": "Claude preview/review/main merge; owner metric/send-time/copy review and separately reviewed idempotent email sender/scheduler. Stored snapshot is prepared, not sent. Entire REPORT-A remains incomplete."
+     },
+     "preview_outbox_followup": {
+      "backend": "e28fc3d",
+      "ui": null,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "Fresh integrated full324/2863 passed (370.39s), PHP8.3/MariaDB11.8; focused21/144 with actual enqueue/worker races, lost-ack recovery, stale fencing, bounded retries, integrity and production/owner gates, no mail/queue and SQLite rollback/unique receipt. Strict Composer/all changed PHP lint/diff, guarded local migration and real /up passed. Local default flag remains disabled.",
+      "remaining": "Local simulation only, no emails or scheduler. Claude review/UI/main merge; real-provider idempotency/ambiguity, alerts and activation remain future work. Entire REPORT-A/JOBS-01 not complete."
      }
     }
    ]

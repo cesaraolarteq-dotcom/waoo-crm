@@ -61,3 +61,7 @@ La desvinculación de compatibilidad elimina solo el pivote actual, conserva la 
 ### Prepared owner reports (REPORT-A, sandbox)
 
 `owner_report_snapshots` stores immutable prepared weekly/monthly report JSON text and its SHA-256, schema version, explicit Chicago date bounds, fixed owner recipient and preparing admin. Unique environment/kind/period start deduplicates both admins and retries. Payload bytes remain exact across MariaDB/SQLite. Audit failure rolls back preparation; no delivery state, scheduler or mail dispatch exists in this slice. Snapshot data is owner-only; never project it to portal/staff. See docs/REPORT-A-SNAPSHOTS-API.md.
+
+### Local report preview outbox (JOBS-01 foundation, sandbox only)
+
+`report_preview_deliveries` has one company task per immutable owner snapshot, fixed recipient/hash, retry counters, due time, lease token/expiry and terminal status. `report_preview_receipts` has one durable local receipt per task plus stable unique transport key; it is separate from completion acknowledgment for crash recovery. No SMTP/provider receipt, delivery guarantee or production outbox is implied. Migration240000 drops receipts before tasks; both precede parent snapshot rollback. See docs/REPORT-OUTBOX-API.md.
