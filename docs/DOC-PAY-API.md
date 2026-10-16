@@ -4,6 +4,12 @@
 
 **Status: contract published before implementation. Routes, tables and services below are not delivered yet.** Codex owns backend/schema/integrations; Claude owns screens and reviews. Each delivery will mark which routes are implemented. No live deployment, live Stripe requests, actual charges or client messages are authorized. Catalog gaps do not justify invented prices, recipes or contract terms. This increment does not close Phase 1 or authorize the rest of Phase 4.
 
+## Delivered increment: sandbox Zelle and finance (codex/sandbox-doc-pay)
+
+Implemented after this contract was published: financial revision creation, event finance summary, payment list, verified Zelle registration, payment-exception list and ledger-backed confirm-paid-capacity routes. Sandbox flags default false and the backend rejects production regardless of flag. Eight finance tests plus the Phase 1 adapter tests bring the complete suite to **122 tests / 886 assertions on MariaDB**. Contract/signature/portal/checkout/webhook routes below remain planned until their own delivery; installing dompdf/Mustache/Stripe SDK does not count as those modules being implemented. A fixture-tested ledger is not a real bank/provider reconciliation proof.
+
+Financial revision replacement is intentionally restricted to drafts in this increment; booked financial changes await CHANGE-A. No refunds/adjustments API or quote-acceptance workflow is claimed. The initial capacity linkage is immutable and reused after later balance receipts, so retry does not rewrite deposit evidence or count it as another payment. Current legacy confirm-capacity stays separate from the ledger adapter; no automatic import of its receipt evidence.
+
 ## Screen boundaries and shared conventions
 
 - Owner admin session + confirmed 2FA + CSRF for `/admin/api/*`. Use existing error shapes: 401/403 authorization, 404 inaccessible object, 409 stale version/idempotency conflict, 422 field/business errors, 429 throttling. Integers in USD cents; no floating-point money inputs. Dates are ISO 8601 with explicit offset; store UTC, display America/Chicago.
