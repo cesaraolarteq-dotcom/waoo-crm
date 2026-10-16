@@ -5,9 +5,9 @@ namespace App\Filament\Resources\Events;
 use App\Filament\Resources\Events\Pages\{ConfirmCapacity, CreateEvent, EditEvent, EventContract, EventMoney, ListEvents, ViewEvent};
 use App\Filament\Support\{ChicagoTime, RecordServicePageGate};
 use App\Models\{Customer, PriceVersion, ServiceVariant};
-use Filament\Forms\Components\{DatePicker, Radio, Repeater, Select, TextInput, TimePicker};
+use Filament\Forms\Components\{DatePicker, Hidden, Radio, Repeater, Select, TextInput, TimePicker};
 use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\{Get, Set};
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
 use App\Filament\Support\Labels;
@@ -58,11 +58,14 @@ class EventResource extends Resource
         return $schema->columns(2)->components([
             Section::make('La fiesta')->columns(2)->columnSpanFull()->schema([
                 Select::make('customer_id')->label('Clienta')->required()->native(false)->searchable()
-                    ->options(fn () => Customer::query()->orderBy('name')->pluck('name', 'id')),
-                TextInput::make('title')->label('Nombre del evento')->required()->maxLength(255)->placeholder('Ej.: Cumpleaños de Sofía'),
+                    ->options(fn () => Customer::query()->orderBy('name')->pluck('name', 'id'))
+                    ->live()->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set)),
+                self::titleField(),
+                Hidden::make('title_suggested')->dehydrated(false),
                 Select::make('event_type')->label('Tipo de evento')->native(false)->options(self::EVENT_TYPES)
                     ->helperText('Elígelo tú (no se adivina). Solo los cumpleaños reciben el correo «Un año después».'),
-                DatePicker::make('date')->label('Fecha')->native()->required()->live(),
+                DatePicker::make('date')->label('Fecha')->native()->required()->live()
+                    ->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set)),
                 TimePicker::make('start_time')->label('Empieza (hora de Houston)')->native()->seconds(false)->required()->live(),
                 TimePicker::make('end_time')->label('Termina')->native()->seconds(false)->required()->live(),
                 $choice('date', 'start_time'),
@@ -72,16 +75,19 @@ class EventResource extends Resource
                 Select::make('price_version_ids')->label('Paquetes y servicios')->multiple()->native(false)->searchable()
                     ->options(fn (?Event $record) => self::priceOptions($record))
                     ->helperText('Precio vigente de cada servicio. Un borrador conserva el precio que ya tenía; para usar el precio nuevo, quita el anterior y elige el actual.')
-                    ->live(),
+                    ->live()->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set)),
                 Repeater::make('characters')->label('Personajes')->defaultItems(0)->columns(3)->addActionLabel('Agregar personaje')
+                    ->live()->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set))
                     ->visible(fn (Get $get) => self::configurablePrices($get('price_version_ids') ?? []) !== [])
                     ->helperText(fn (Get $get) => self::charactersHint($get('price_version_ids') ?? []))
                     ->schema([
                         Select::make('price_version_id')->label('Para el servicio')->native(false)->required()->live()
                             ->options(fn (Get $get) => self::configurablePrices($get('../../price_version_ids') ?? [])),
                         Select::make('character_id')->label('Personaje')->native(false)->required()->searchable()
-                            ->options(fn (Get $get) => self::characterOptions($get('price_version_id'))),
-                        TextInput::make('quantity')->label('Cuántos')->integer()->minValue(1)->maxValue(20)->default(1)->required(),
+                            ->options(fn (Get $get) => self::characterOptions($get('price_version_id')))
+                            ->live()->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set, '../../')),
+                        TextInput::make('quantity')->label('Cuántos')->integer()->minValue(1)->maxValue(20)->default(1)->required()
+                            ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set, '../../')),
                     ]),
             ]),
             Section::make('Lugar y logística')->columns(2)->columnSpanFull()->schema([
@@ -123,6 +129,55 @@ class EventResource extends Resource
         }
 
         return $options;
+    }
+
+    public static function titleField(): TextInput
+    {
+        return TextInput::make('title')->label('Nombre del evento')->required()->maxLength(255)
+            ->placeholder('Ej.: Mágico Rumi 04/10 Claudia Martínez')
+            ->helperText('Se llena solo: paquete + personajes + fecha + clienta. Si lo cambias a mano, ya no se toca.');
+    }
+
+    /**
+     * Owner's naming convention: package + characters + short date (MM/DD, plus /YY when it is not this year) + client.
+     * Example: "Mágico (Magic) Rumi 04/10 Claudia Martínez".
+     */
+    public static function suggestTitle(array $priceVersionIds, array $characters, ?string $date, ?string $client): string
+    {
+        $ids = array_values(array_filter(array_map('intval', $priceVersionIds)));
+        $variants = PriceVersion::query()->whereIn('price_versions.id', $ids)
+            ->join('service_variants', 'service_variants.id', '=', 'price_versions.service_variant_id')
+            ->pluck('service_variants.name', 'price_versions.id');
+        $packages = collect($ids)->map(fn ($id) => $variants[$id] ?? null)->filter()->implode(' + ');
+        $names = collect($characters)->filter(fn ($c) => filled($c['character_id'] ?? null))
+            ->map(function ($c) {
+                $name = \App\Models\Character::whereKey((int) $c['character_id'])->value('name');
+                $n = max(1, (int) ($c['quantity'] ?? 1));
+
+                return $name ? ($n > 1 ? "{$n} {$name}" : $name) : null;
+            })->filter()->values();
+        $chars = $names->count() > 1 ? $names->slice(0, -1)->implode(', ').' y '.$names->last() : (string) $names->first();
+        $short = null;
+        if ($date && preg_match('/^\d{4}-\d{2}-\d{2}/', $date)) {
+            $d = \Carbon\CarbonImmutable::parse(substr($date, 0, 10), ChicagoTime::TZ);
+            $short = $d->format('m/d').($d->year !== now(ChicagoTime::TZ)->year ? $d->format('/y') : '');
+        }
+
+        return trim(preg_replace('/\s+/', ' ', implode(' ', array_filter([$packages, $chars, $short, trim((string) $client)]))));
+    }
+
+    /** Fill the title from the suggestion unless the owner already typed her own. $p = path prefix from inside a repeater. */
+    public static function refreshTitle(Get $get, Set $set, string $p = ''): void
+    {
+        $client = $get($p.'customer_mode') === 'new'
+            ? $get($p.'name')
+            : (filled($get($p.'customer_id')) ? Customer::whereKey((int) $get($p.'customer_id'))->value('name') : null);
+        $suggestion = self::suggestTitle((array) ($get($p.'price_version_ids') ?? []), (array) ($get($p.'characters') ?? []), $get($p.'date'), $client);
+        $current = trim((string) $get($p.'title'));
+        if ($suggestion !== '' && ($current === '' || $current === (string) $get($p.'title_suggested'))) {
+            $set($p.'title', $suggestion);
+        }
+        $set($p.'title_suggested', $suggestion);
     }
 
     public const EVENT_TYPES = ['birthday' => 'Cumpleaños', 'baby_shower' => 'Baby shower', 'gender_reveal' => 'Gender reveal', 'corporate' => 'Corporativo', 'other' => 'Otro'];
