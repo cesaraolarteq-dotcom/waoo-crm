@@ -22,7 +22,13 @@ final class QuickBook
         $data = RecordInput::validate($input, [
             'lead_id' => 'required_with:lead_expected_version|integer|exists:leads,id',
             'lead_expected_version' => 'required_with:lead_id|integer|min:1',
-            'customer_id' => 'required_without:new_customer|prohibits:new_customer|integer|exists:customers,id',
+            'customer_id' => 'required_without:new_customer|required_with:customer_update|prohibits:new_customer|integer|exists:customers,id',
+            'customer_update' => 'sometimes|required|prohibits:new_customer|array:expected_version,name,email,phone,locale',
+            'customer_update.expected_version' => 'required_with:customer_update|integer|min:1',
+            'customer_update.name' => 'required_with:customer_update|string|max:255',
+            'customer_update.email' => 'present_with:customer_update|nullable|email|max:255',
+            'customer_update.phone' => 'present_with:customer_update|nullable|string|max:40',
+            'customer_update.locale' => ['required_with:customer_update', Rule::in(['es','en'])],
             'new_customer' => 'required_without:customer_id|prohibits:customer_id|array:name,phone,email,locale',
             'new_customer.name' => 'required_with:new_customer|string|max:255',
             'new_customer.phone' => 'nullable|string|max:40', 'new_customer.email' => 'nullable|email|max:255',
@@ -54,8 +60,8 @@ final class QuickBook
                     && $lead->booked_event_id === null && in_array($lead->status, ['new','contacted','quoted'], true), 409, 'El prospecto cambió o ya está reservado.');
             }
             if (isset($data['portal']['expires_at'])) RecordInput::validate($data, ['portal.expires_at' => ['date','after:now','before_or_equal:'.now()->addDays(30)->toIso8601String()]]);
-            $customer = isset($data['customer_id']) ? Customer::findOrFail($data['customer_id']) : app(SaveCustomer::class)->execute($actor, $data['new_customer']);
-            $eventInput = array_diff_key($data, array_flip(['new_customer','deposit','portal','lead_id','lead_expected_version']));
+            $customer = $this->customer($actor, $data);
+            $eventInput = array_diff_key($data, array_flip(['new_customer','customer_update','deposit','portal','lead_id','lead_expected_version']));
             $event = app(SaveEventDraft::class)->execute($actor, [...$eventInput, 'customer_id' => $customer->id]);
             $finance = app(CreateFinancialRevision::class)->execute($actor, $event->id, ['expected_version' => $event->version], (string) Str::uuid());
             try {
@@ -100,4 +106,23 @@ final class QuickBook
             LedgerEntry::findOrFail($record->receipt_id), app(FinanceSummary::class)->forEvent($event), $url, $record->portal_expires_at->toIso8601String(),
             !$created && $grantRow !== null, !$grantRow || $grantRow->revoked_at !== null || !$grantRow->expires_at->isFuture());
     }
+
+    private function customer(User $actor, array $data): Customer
+    {
+        if (!isset($data['customer_id'])) return app(SaveCustomer::class)->execute($actor, $data['new_customer']);
+        if (!isset($data['customer_update'])) return Customer::findOrFail($data['customer_id']);
+
+        $customer = Customer::whereKey($data['customer_id'])->lockForUpdate()->firstOrFail();
+        $update = $data['customer_update'];
+        \App\Exceptions\RecordWriteRejected::unless($customer->version === (int) $update['expected_version'], 409, 'La ficha de la clienta cambió. Recarga antes de guardar la reserva.');
+        $contact = array_diff_key($update, ['expected_version' => true]);
+        if (collect($contact)->every(fn ($value, $field) => $customer->{$field} === $value)) return $customer;
+
+        try {
+            return app(SaveCustomer::class)->execute($actor, $update, $customer->id);
+        } catch (ValidationException $e) {
+            throw ValidationException::withMessages(collect($e->errors())->mapWithKeys(fn ($messages, $field) => ['customer_update.'.$field => $messages])->all());
+        }
+    }
+
 }

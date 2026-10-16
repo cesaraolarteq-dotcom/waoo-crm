@@ -122,4 +122,21 @@ class LeadConversionTest extends TestCase
         \Illuminate\Support\Facades\Http::assertNothingSent();
     }
 
+    public function test_lead_conversion_and_contact_correction_share_rollback_and_success_boundary(): void
+    {
+        $lead = $this->lead();
+        $customer = Customer::create(['name' => 'Fixture existing','email' => 'existing@example.test','locale' => 'es']);
+        $input = $this->input; unset($input['new_customer']);
+        $input['customer_id'] = $customer->id;
+        $input['customer_update'] = ['expected_version' => 2,'name' => 'Fixture corrected','email' => 'corrected@example.test','phone' => null,'locale' => 'en'];
+        $this->convert($lead,$input)->assertConflict();
+        $this->assertSame('new',$lead->fresh()->status); $this->assertSame(1,$lead->fresh()->version);
+        $this->assertSame('existing@example.test',$customer->fresh()->email); $this->assertDatabaseCount('events',0); $this->assertDatabaseCount('ledger_entries',0);
+        $input['customer_update']['expected_version'] = 1;
+        $this->convert($lead,$input)->assertCreated();
+        $this->assertSame('booked',$lead->fresh()->status); $this->assertSame($customer->id,Event::sole()->customer_id);
+        $this->assertSame('corrected@example.test',$customer->fresh()->email); $this->assertSame(2,$customer->fresh()->version);
+        foreach (['customers','events','ledger_entries','quick_bookings'] as $table) $this->assertDatabaseCount($table,1);
+    }
+
 }

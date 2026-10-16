@@ -12,6 +12,8 @@ Result DTO public properties: `id`, `event`, `customer`, `financial_revision`, `
 
 `quick_bookings` binds creator/event/customer/initial financial revision/receipt, grant ID nullable and requested expiry. Grant issue failure is recoverable, not another deposit. UUID key is scoped to owner + operation, canonical payload hash; customer/event references are server resolved.
 
+Optional existing-customer contact corrections are described in [QUICK-BOOK-CONTACT-API.md](QUICK-BOOK-CONTACT-API.md). Send them in the same QuickBook call; never pre-save contact from the booking form. The displayed version is checked inside the core transaction, after idempotent retry lookup.
+
 ## Client details
 
 Add `details.submit` to the allowed grant scopes (max five); existing default four-scope grants remain unchanged. QuickBook requests all five. Portal GET `/portal/api/event` adds `details` for the holder of details.submit: `{submission: {id,revision,data,submitted_at}|null, reviewed:bool, expected_revision:int, expected_event_version:int}`. Other scopes do not expose details. Portal POST `/portal/api/details`, Idempotency-Key, delegates to `Portal\SubmitClientDetails::execute(PortalContext $client,array $input,string $key): ClientDetailsSubmission`.
