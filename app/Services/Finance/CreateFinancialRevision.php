@@ -38,7 +38,8 @@ final class CreateFinancialRevision
                         }
                     }
                 }
-                $lines[] = ['event_service_id' => $service->id, 'service_variant_id' => $service->service_variant_id, 'price_version_id' => $price->id, 'amount_cents' => $price->amount_cents, 'name' => \App\Models\ServiceVariant::findOrFail($service->service_variant_id)->name, 'duration_minutes' => $service->duration_minutes, 'requirements_snapshot' => $service->requirements_snapshot, 'characters' => $characterSnapshot];
+                $variant = \App\Models\ServiceVariant::findOrFail($service->service_variant_id);
+                $lines[] = ['event_service_id' => $service->id, 'service_variant_id' => $service->service_variant_id, 'price_version_id' => $price->id, 'amount_cents' => $price->amount_cents, 'name' => $variant->name, 'long_description' => $variant->long_description, 'duration_minutes' => $service->duration_minutes, 'requirements_snapshot' => $service->requirements_snapshot, 'characters' => $characterSnapshot];
                 $subtotal += $price->amount_cents;
             }
             $total = $subtotal + $event->travel_fee_cents;

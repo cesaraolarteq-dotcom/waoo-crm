@@ -59,6 +59,43 @@ class SandboxDocumentsTest extends TestCase
         return [...['expected_version' => $this->contract->version, 'presented_pdf_sha256' => $this->contract->presented_pdf_sha256,
             'signer_name' => 'Fixture Client', 'consent' => true, 'intent_to_sign' => true, 'consent_version' => 'esign-consent-v1'], ...$extra];
     }
+    public function test_catalog_description_is_audited_and_frozen_in_finance_and_pdf(): void
+    {
+        $variant = ServiceVariant::firstOrFail();
+        $input = ['name' => $variant->name, 'status' => 'active', 'duration_minutes' => 60, 'requirements' => $variant->requirements];
+        $description = 'Fixture owner description & details <not executable>.';
+        $service = app(\App\Services\Records\SaveVariant::class);
+        $variant = $service->execute($this->owner, [...$input, 'expected_version' => 1, 'long_description' => $description], $variant->id);
+        $variant = $service->execute($this->owner, [...$input, 'expected_version' => 2], $variant->id);
+        $this->assertSame($description, $variant->long_description);
+        $this->finance = app(CreateFinancialRevision::class)->execute($this->owner, $this->event->id, ['expected_version' => 1], (string) Str::uuid());
+        $this->assertSame($description, $this->finance->lines_snapshot[0]['long_description']);
+        $this->contract = $this->draft();
+        $service->execute($this->owner, [...$input, 'expected_version' => 3, 'long_description' => null], $variant->id);
+        $this->assertNull($variant->fresh()->long_description);
+        $contract = $this->issue();
+        $html = app(ArtifactStore::class)->read($contract->presented_html_path, $contract->presented_html_sha256);
+        $this->assertStringContainsString('Fixture owner description &amp; details &lt;not executable&gt;.', $html);
+        $this->assertStringContainsString('1 × Character performer', $html);
+        $this->assertStringNotContainsString('1 × performer', $html);
+        $this->assertSame($description, $contract->commercial_snapshot['services'][0]['long_description']);
+        $this->assertDatabaseHas('audit_entries', ['action' => 'variants.updated', 'subject_id' => (string) $variant->id]);
+    }
+    public function test_pdf_requirements_use_friendly_labels_without_leaking_custom_internal_codes(): void
+    {
+        $snapshot = $this->contract->commercial_snapshot;
+        $snapshot['payments'] = app(\App\Services\Documents\ContractPrintContext::class)->paymentSnapshot($this->event);
+        $snapshot['services'][0]['requirements_snapshot'] = [
+            ['kind' => 'staff', 'quantity' => 1, 'skill' => 'face_painter'],
+            ['kind' => 'staff', 'quantity' => 1, 'skill' => 'internal_custom_role'],
+            ['kind' => 'equipment', 'quantity' => 2, 'equipment_kind' => 'foam_cannon'],
+            ['kind' => 'equipment', 'quantity' => 1, 'equipment_kind' => 'private_internal_gear'],
+        ];
+        $this->contract->commercial_snapshot = $snapshot;
+        $context = app(\App\Services\Documents\ContractPrintContext::class)->build($this->contract, $this->template);
+        $this->assertSame(['1 × Face painter', '1 × Staff member', '2 × Foam cannon', '1 × Equipment unit'], $context['services'][0]['includes']);
+        $this->assertSame('', $context['services'][0]['long_description']);
+    }
     public function test_approved_terms_fields_use_frozen_issue_values_and_preserve_legal_hash(): void
     {
         $terms = '<p>{{ client.first_name }} {{client.last_name}} owes {{payments.balance_amount}}.</p>';
