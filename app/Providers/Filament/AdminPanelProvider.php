@@ -49,6 +49,7 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make('Operación'),
             ])
             ->pages([Dashboard::class])
+            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->renderHook(PanelsRenderHook::HEAD_END, fn () => view('filament.head'))
             ->middleware([
                 EncryptCookies::class,
