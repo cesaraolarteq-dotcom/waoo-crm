@@ -9,7 +9,7 @@
         @if (! $s['financial_revision_id'])
             <x-filament::section>
                 <x-slot name="heading">Primero fija los montos acordados</x-slot>
-                <p class="wmoney-p">El margen se calcula contra lo que pagó la clienta. Fija los montos en “Dinero” y luego registra los costos aquí.</p>
+                <p class="wmoney-p">El margen se calcula contra el ingreso acordado. Fija los montos en “Dinero” y luego registra los costos aquí.</p>
             </x-filament::section>
         @else
             @if (! $s['agreement_current'])
@@ -48,7 +48,7 @@
                                         <small>{{ $cats[$l['category']] ?? $l['category'] }}@if (! empty($l['event_service_id']) && isset($services[$l['event_service_id']])) · {{ $services[$l['event_service_id']] }}@endif</small>
                                     </div>
                                 @empty
-                                    <p class="wmoney-p">Sin costos (confirmaste que no hubo ninguno).</p>
+                                    <p class="wmoney-p">{{ $c['coverage_confirmed'] ? 'Sin costos (confirmaste que no hubo ninguno).' : 'Todavía no has agregado costos.' }}</p>
                                 @endforelse
                             </div>
                             <p class="wmoney-p"><b>Nota:</b> {{ $c['note'] }}</p>
