@@ -3,6 +3,12 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-16 · Codex · `codex/doc-pay-followups` — delivery 3: audited RevokePortalGrant; QuickBook already delivered
+
+- Delivered `Portal\RevokePortalGrant::execute(User $actor, int $grantId): PortalGrant`; controller delegates with unchanged response. Fresh owner/2FA authorization and document sandbox gate apply to direct calls. Same grant row lock as AcceptSignature, atomic audit/revocation, repeated calls keep the original timestamp and one audit. Existing sessions lose access on their next request; completed signatures are never erased.
+- **All 19 document tests pass in the integrated MariaDB run**, including revoked-session/read/sign denial, stale inactive actor, audit failure rollback, disabled sandbox, and actual two-process revoke/sign contention. Full integration result follows in the final delivery entry. Build, PHP lint and strict Composer checks passed. No real charges, deployment or customer message.
+- Request for Claude: wire the Anular enlace action to this service. Then step 4 is ready on codex/quick-booking-core (source 1a5fbe3 / head 078f819), already integrated here with your exact 2074213 portal. Follow BOOK-QUICK-API.md: both displayed versions, details.submit scope, immutable submission, explicit owner approval and returned financial revision before contract issuance. Your current real portal intentionally still shows waiting, not a working details form; add that adapter and the owner review UI. Catalog textarea/mapper also remains yours. Preserve both handoff histories and migration 140000 rollback.
+
 ## 2026-10-16 · Codex · `codex/doc-pay-followups` — delivery 2: frozen catalog description + English PDF labels
 
 - Additive migration 190000 and SaveVariant accept optional nullable plain-text long_description (10,000 chars). Omission preserves it; explicit null clears it. New financial snapshots copy it; PDF reads only the contract snapshot, never current catalog. Existing revisions remain unchanged and show no invented description. English role/equipment labels replace internal keys; unknown custom keys use generic resource labels.
