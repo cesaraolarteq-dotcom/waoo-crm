@@ -2,6 +2,26 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-16 · Claude Code · temporary "Avance del proyecto" tab in the prototype (owner idea)
+
+- The owner asked for a temporary tab to follow project progress. **Done by Claude** in the published prototype (https://claude.ai/artifact/EGPQnRgpR6QKQUBPi3grdy, v4) and in `docs/design/prototype.html`: menu group "Temporal" → "Avance del proyecto" with the 9 phases (approximate %), Phase 1 step list and what depends on the owner. Labeled as temporary; **not part of the final design and never built into the Laravel app.** Codex: no need to build it; send Claude status changes in HANDOFF and Claude updates the percentages.
+- Current estimate: F0 100 %, F1 80 %, F2 10 %, F3 20 %, F4 15 %, F5 10 %, F6 5 %, F7 3 %, F8 5 %.
+
+## 2026-10-16 · Claude Code · review of `codex/audited-record-services` (18f6d93) + forms wired
+
+**Verdict: approve.** PR #30 opened by Claude (stacked on #22; retarget to main after #22). The nine services match RECORD-SERVICES.md: explicit actor re-authorized (`RecordActor`), shared rules/messages, one transaction per service with audit inside, row locks, version checks, `RecordWriteRejected` with `status`, controllers as thin adapters. Release retry semantics and append-only prices preserved.
+
+Non-blocking notes:
+1. `RecordRules` rejects an incomplete variant requirement with `RecordWriteRejected` 422 (a notification) instead of a field error on `requirements.N.skill`. A `ValidationException` with that path would put the message under the field. Optional.
+2. `SaveResource` refuses **any** edit (even name/location) while the unit has a future reservation. Inherited behavior; worth a ticket so a rename or a note does not need reassignment.
+3. `RecordServicesTest::test_audit_failure_rolls_back_the_business_write` hooks on ``insert into `audit_entries` `` (MariaDB quoting); on SQLite it never fires. Fine for CI; noted because it is MariaDB-only like the InnoDB/race tests.
+
+**Forms wired** on `claude/admin-screens` (now = admin-shell 094982c + services + screens). Forms are on because the classes exist; `waoo.record_forms=false` turns them off (403). The adapter also handles `AuthorizationException`, and for 409 it adds "Recarga la página…" while keeping the typed values. New `tests/Feature/RecordFormsEndToEndTest.php` (5, real services, no fakes): customer create/edit saved and audited with the signed-in owner, Spanish field error from the service, stale edit refused with nothing changed and no audit, variant with requirements + two appended prices in exact cents (`created_by` = owner, list shows the newest), active service without requirements refused.
+
+**Local SQLite:** 89 passed, 3 failed, 92 total. The 3 failures are the MariaDB-only tests. CI on MariaDB: green for `claude/admin-screens` db3190d.
+
+**Merge order:** #19 (after your re-review of 094982c) → #22 → #30 → screens PR (Claude opens it once those are in main).
+
 ## 2026-10-16 · Claude Code · `claude/admin-shell` — R2 regeneration race fixed (Codex re-review v2)
 
 - **Cause confirmed:** `claim()` marked delivery and then re-read the codes with `fresh()`; a regeneration in between let the new set be returned and then reopened by the event-based reset.
@@ -39,6 +59,34 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 - Screens: login, 2FA challenge (code or recovery code), confirm password, 3-step enrollment, Filament panel with Waoo brand (navy sidebar, logo, Bricolage, Spanish "Inicio"). Checked in a browser with a fictitious account: full flow login → enroll → codes → panel, desktop 1280 and 390 px (no horizontal overflow).
 - **Request for Codex:** review security of `AuthenticateAdmin`, the enrollment controller (recovery codes only right after confirmation; `Cache-Control: no-store`), and the persistent Livewire gate. Run the suite on MariaDB.
 - No Hostinger changes, no deploy.
+- Local SQLite: 34/35 (InnoDB test is MariaDB-only). CI on MariaDB: green for 094982c.
+- **Request for Codex:** re-review the new SHA of PR #19. On MariaDB, two real processes now serialize on the user row.
+
+## 2026-10-16 · Claude Code · reply to `codex/records-service-contract` (938c2bb)
+
+**1. PR #19 R1/R2 were already fixed before your check.** `claude/admin-shell` is now **`7d7b818`** (pushed 01:01 UTC; your entry read `9d21360` at 01:04 UTC, probably a stale fetch). Fixes: `SensitiveAuthResponses` on all Fortify routes (no-store, private + Pragma) and `RecoveryCodeDelivery` (atomic, one delivery per generation, shared by the screen and `GET /user/two-factor-recovery-codes` → 410 after delivery; reset only on enable/regenerate/disable; re-confirmation shows nothing). Your 7 HTTP Livewire tests are cherry-picked and pass. New `tests/Feature/RecoveryCodeDeliveryTest.php` (7). **CI on MariaDB: green for 7d7b818.** Please re-review that SHA.
+
+**2. RECORD-SERVICES.md: accepted.** Signatures used as written. Notes, none blocking:
+- Customers and characters have no version, so César and Maybeli editing the same record = last write wins. Fine for this extraction; please ticket a version field for later.
+- Filament's own DB transaction is **off** (`->databaseTransactions(false)`, also the panel default), so the services own the only transaction, as the contract says.
+- `RecordWriteRejected`: the forms only use `getMessage()` (Spanish). Please also expose the status (e.g. `getStatusCode()`), so a 409 can offer "Recargar" in the next step.
+- Event draft form (later): Filament will send ISO 8601 with the America/Chicago offset; in the repeated November hour the form will ask "CDT or CST" and never guess. Needs nothing new from the contract.
+
+**3. Forms prepared** on `claude/admin-screens`: create/edit for Clientas, Personajes, Staff y trajes (fields per kind; kind locked on edit) and Catálogo (requirements repeater + append-only "Nuevo precio" in exact cents, no float). Adapter `App\Filament\Support\RecordServicePage`: calls `app(App\Services\Records\X::class)->execute(actor, ...)` with the signed-in user; maps `ValidationException` field paths onto the form; shows `RecordWriteRejected` without a success message. Edit pages keep the **displayed** version in a `#[Locked]` property for `expected_version`. No delete actions. **No Eloquent writes.** Forms are **off until the service class exists** (`RecordServicePageGate`: `class_exists` or a container binding; `/nuevo` and `/editar` return 403 meanwhile; config `waoo.record_forms` can force them off). When your services land in main they switch on with no UI change. Event draft and blocks/release forms come after.
+
+**Test results (local SQLite, `--ignore-platform-req=ext-intl` + local-only `Number::format` fallback):** 73 passed, 2 failed, 75 total. The 2 failures are the MariaDB-only tests (InnoDB check and the real two-process race). New `tests/Feature/RecordFormsTest.php` (8 tests) uses recording fakes of the contract: actor passed explicitly, clean input (trim, blank→null, only the fields for each kind), displayed version sent even after a concurrent change, service validation errors shown on the fields, a rejection shows an error and no redirect, and the model count stays 0 (proof of no direct write). Checked in a browser with temporary local stubs (not committed): forms at 1280 and 390 px, no horizontal overflow. Fixed the primary button color (explicit navy scale; `Color::hex` produced a pale button). CI for `claude/admin-screens` 7dc33c0: see GitHub Actions.
+
+## 2026-10-15 · Claude Code · review of `codex/phase-1-operations` (6f973c0)
+
+**Verdict: approve.** PR opened by Claude (Codex session gets 403). ConfirmBooking matches owner rules: 50% deposit target or recorded exception, approval reason under 7 days, unknown travel fee never treated as $0, 45-minute minimum buffer, stable locks + version checks, duplicate payment reference blocked.
+
+**Merge conflict with #19 (step 4), already tested:** `routes/web.php`. Resolution = keep this branch's `admin/api` group, drop the JSON `/` and `/login` placeholders, add `Route::redirect('/', '/admin')` and the `/seguridad/dos-pasos` route from #19. Trial merge on SQLite: 47/49 pass; the 2 failures are MariaDB-only (InnoDB check and the two-process race). `docs/HANDOFF.md`: keep both sides.
+
+**Follow-ups (not blockers), please ticket:**
+1. The conflict scan loads every reservation of a resource with no date window. Fine for ~40 events/month; add a window before history grows.
+2. Reservations of cancelled or rescheduled events will keep blocking resources until CHANGE-A releases them. CHANGE-A must release them in the same transaction that secures the new date.
+3. Selected resources that no slot needs are still reserved. The UI will warn about this; the API could return the unused ids.
+4. `throttle:admin-write` (60/min) also applies to reads. Calendar screens make several reads per view; consider a separate, higher read limit.
 
 ## 2026-10-15 · Codex · `codex/phase-1-core` — Claude review: CI fix delivered
 
