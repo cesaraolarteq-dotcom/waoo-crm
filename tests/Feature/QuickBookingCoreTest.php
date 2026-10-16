@@ -462,4 +462,36 @@ class QuickBookingCoreTest extends TestCase
         } finally { $this->travelBack(); }
     }
 
+    public function test_route_address_approval_records_manual_reconfirmation_without_reusing_old_calculation(): void
+    {
+        config(['waoo.sandbox_routes' => true]); \Illuminate\Support\Facades\Http::fake();
+        $address = '123 Fictional Venue, TX 77433';
+        $quote = app(\App\Services\Routing\TravelFeeQuote::class)->forAddress($this->owner, $address, '77433');
+        $this->input = [...$this->input, 'address' => $address, 'postal_code' => '77433', 'travel_fee_cents' => 4000, 'travel_fee_quote_id' => $quote['quote_id']];
+        $event = $this->client();
+        $this->submit(['event_address' => '456 Different Fictional Venue, TX 77433', 'event_postal_code' => '77433'])->assertCreated();
+        $this->approve()->assertOk(); $evidence = $event->fresh()->travel_fee_evidence;
+        $this->assertSame('manual', $evidence['mode']); $this->assertSame($quote['quote_id'], $evidence['previous_quote_id']);
+        $this->assertSame(4000, $evidence['accepted_fee_cents']);
+        $this->assertSame(1, LedgerEntry::count()); \Illuminate\Support\Facades\Http::assertNothingSent();
+    }
+
+    public function test_quick_booking_and_client_detail_approval_preserve_private_costume_selection(): void
+    {
+        $hero = \App\Models\Character::create(['name' => 'Fixture versioned hero','active' => true,'outfits' => ['Racing']]);
+        $variant = ServiceVariant::sole();
+        $variant->update(['character_quantity' => 1, 'character_options' => [['character_id' => $hero->id,'requirements' => [
+            ['kind' => 'costume','character_id' => $hero->id,'quantity' => 1], ['kind' => 'staff','skill' => 'performer','quantity' => 1]]]]]);
+        $this->input['services'][0]['characters'] = [['character_id' => $hero->id,'quantity' => 1,'outfit' => 'Racing','note' => 'PRIVATE costume adjustment']];
+        $event = $this->client();
+        $this->assertSame('Racing',$event->services()->with('characters')->sole()->characters->sole()->outfit);
+        $this->submit()->assertCreated();
+        $this->approve()->assertOk();
+        $row = $event->fresh()->services()->with('characters')->sole()->characters->sole();
+        $this->assertSame('Racing',$row->outfit); $this->assertSame('PRIVATE costume adjustment',$row->note);
+        $revision = FinancialRevision::latest('revision')->firstOrFail();
+        $this->assertSame('Racing',$revision->lines_snapshot[0]['characters'][0]['outfit']);
+        $this->assertStringNotContainsString('PRIVATE',json_encode($revision->lines_snapshot));
+    }
+
 }

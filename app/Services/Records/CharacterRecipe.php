@@ -62,16 +62,21 @@ final class CharacterRecipe
         foreach ($characters as $index => $selection) {
             $id = (int) $selection['character_id'];
             $quantity = (int) $selection['quantity'];
-            $character = Character::whereKey($id)->where('active', true)->first();
-            if ($included === 0 || ! $options->has($id) || ! $character || in_array($id, $seen, true)) {
+            $outfit = $selection['outfit'] ?? null;
+            $pair = json_encode([$id, $outfit], JSON_THROW_ON_ERROR);
+            $character = Character::whereKey($id)->where('active', true)->lockForUpdate()->first();
+            if ($included === 0 || ! $options->has($id) || ! $character || in_array($pair, $seen, true)) {
                 throw ValidationException::withMessages(["{$path}.{$index}.character_id" => 'Selecciona un personaje permitido, activo y sin repetir.']);
             }
-            $seen[] = $id;
+            if ($outfit !== null && (!in_array($outfit, $character->outfits ?? [], true) || !collect($options[$id]['requirements'])->contains('kind', 'costume'))) {
+                throw ValidationException::withMessages(["{$path}.{$index}.outfit" => 'La versión ya no existe o falta definir su requisito de traje.']);
+            }
+            $seen[] = $pair;
             $total += $quantity;
             foreach ($options[$id]['requirements'] as $requirement) {
-                $requirements[] = [...$requirement, 'quantity' => (int) $requirement['quantity'] * $quantity];
+                $requirements[] = [...$requirement, ...($requirement['kind'] === 'costume' && $outfit !== null ? ['outfit' => $outfit] : []), 'quantity' => (int) $requirement['quantity'] * $quantity];
             }
-            $rows[] = ['character_id' => $id, 'quantity' => $quantity, 'character_name_snapshot' => $character->name];
+            $rows[] = ['character_id' => $id, 'quantity' => $quantity, 'character_name_snapshot' => $character->name, ...($outfit !== null ? ['outfit' => $outfit] : []), ...(isset($selection['note']) ? ['note' => $selection['note']] : [])];
         }
         if ($total > $included) {
             throw ValidationException::withMessages([$path => 'La cantidad supera los personajes incluidos. Revisa el servicio y su precio.']);

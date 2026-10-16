@@ -67,6 +67,14 @@ final class ConfirmBooking
                         }
                     }
                 }
+                foreach (collect($slots)->where('kind', 'costume')->filter(fn ($s) => isset($s['outfit']))->groupBy(fn ($s) => json_encode([(int) $s['character_id'], $s['outfit']])) as $requested) {
+                    $slot = $requested->first();
+                    $matching = $resources->filter(fn ($r) => $r->kind === 'costume' && (int) $r->character_id === (int) $slot['character_id'] && $r->outfit === $slot['outfit']);
+                    if ($matching->count() < $requested->count()) {
+                        $name = \App\Models\Character::whereKey($slot['character_id'])->value('name');
+                        throw new \App\Exceptions\RecordWriteRejected(409, "Selecciona suficientes trajes {$name} ({$slot['outfit']}); no se sustituye la versión.");
+                    }
+                }
                 // Merge costume-wearer constraints into performer roles before matching.
                 // This solves all simultaneous staff roles together instead of choosing
                 // a face painter first and rejecting an otherwise valid crew pairing.
@@ -87,7 +95,7 @@ final class ConfirmBooking
                     }
                 }
                 $this->match($slots, $resources->all(), function ($slot, $r) use ($compatibilities) {
-                    return $r->kind === $slot['kind'] && (empty($slot['skill']) || in_array($slot['skill'], $r->skills ?? [], true)) && (empty($slot['character_id']) || (int) $r->character_id === (int) $slot['character_id']) && (empty($slot['equipment_kind']) || $r->equipment_kind === $slot['equipment_kind']) && (empty($slot['costume_unit_id']) || $compatibilities->contains(fn($c) => (int) $c->staff_id === $r->id && (int) $c->costume_id === $slot['costume_unit_id']));
+                    return $r->kind === $slot['kind'] && (!isset($slot['outfit']) || $r->outfit === $slot['outfit']) && (empty($slot['skill']) || in_array($slot['skill'], $r->skills ?? [], true)) && (empty($slot['character_id']) || (int) $r->character_id === (int) $slot['character_id']) && (empty($slot['equipment_kind']) || $r->equipment_kind === $slot['equipment_kind']) && (empty($slot['costume_unit_id']) || $compatibilities->contains(fn($c) => (int) $c->staff_id === $r->id && (int) $c->costume_id === $slot['costume_unit_id']));
                 }, 'No hay una combinación de recursos e intérpretes compatibles que cubra todos los roles simultáneos.');
                 $vehicles = $resources->where('kind', 'vehicle');
                 if ($vehicles->isNotEmpty()) {
@@ -100,8 +108,9 @@ final class ConfirmBooking
                 }
                 $busyStart = $event->starts_at->subMinutes($event->setup_minutes);
                 $busyEnd = $event->ends_at->addMinutes($event->breakdown_minutes);
-                foreach ($resources as $resource) {
+                foreach ($resources->sortBy(fn ($r) => $r->kind === 'costume' ? 0 : 1) as $resource) {
                     if (ResourceBlock::where('resource_id', $resource->id)->whereNull('released_at')->where('starts_at', '<', $busyEnd)->where('ends_at', '>', $busyStart)->exists()) {
+                        $this->rejectVersionConflict($resource, $slots);
                         $this->fail("El recurso {$resource->code} tiene un bloqueo horario.");
                     }
                     $bookings = ResourceReservation::where('resource_id', $resource->id)->with('event')->orderBy('starts_at')->get();
@@ -110,6 +119,7 @@ final class ConfirmBooking
                     foreach ($bookings as $booking) {
                         $other = $booking->event;
                         if ($other->starts_at->subMinutes($other->setup_minutes)->lessThan($busyEnd) && $other->ends_at->addMinutes($other->breakdown_minutes)->greaterThan($busyStart)) {
+                            $this->rejectVersionConflict($resource, $slots);
                             $this->fail("Conflicto de horario: {$resource->code}.");
                         }
                         if ($other->ends_at->lessThanOrEqualTo($event->starts_at)) {
@@ -143,6 +153,15 @@ final class ConfirmBooking
             }, 3);
         } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
             $this->fail('La referencia o asignación ya fue registrada. Actualiza y revisa el evento.');
+        }
+    }
+    private function rejectVersionConflict(Resource $resource, array $slots): void
+    {
+        if ($resource->kind !== 'costume') return;
+        $versioned = collect($slots)->contains(fn ($slot) => $slot['kind'] === 'costume' && isset($slot['outfit']) && (int) ($slot['character_id'] ?? 0) === (int) $resource->character_id && $slot['outfit'] === $resource->outfit);
+        if ($versioned) {
+            $name = \App\Models\Character::whereKey($resource->character_id)->value('name');
+            throw new \App\Exceptions\RecordWriteRejected(409, "No hay traje {$name} ({$resource->outfit}) libre a esa hora.");
         }
     }
     private function checkTransfer(Event $from, Event $to, array $review, int $resourceId): void

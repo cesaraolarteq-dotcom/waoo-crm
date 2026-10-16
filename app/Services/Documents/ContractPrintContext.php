@@ -18,7 +18,7 @@ final class ContractPrintContext
             foreach ($service['requirements_snapshot'] ?? [] as $requirement) $description[] = $requirement['quantity'].' × '.self::requirementLabel($requirement);
             $services[] = ['name' => $service['name'], 'total' => self::money($service['amount_cents']), 'duration' => $service['duration_minutes'].' minutes', 'includes' => $description, 'long_description' => $service['long_description'] ?? ''];
             $lines[] = ['label' => $service['name'], 'amount' => self::money($service['amount_cents'])];
-            foreach ($service['characters'] ?? [] as $character) $characters[] = $character['quantity'].' × '.$character['name'];
+            foreach ($service['characters'] ?? [] as $character) $characters[] = $character['quantity'].' × '.\App\Services\Records\CharacterLabel::fromSnapshot($character);
         }
         $lines[] = ['label' => 'Travel fee', 'amount' => self::money($snapshot['travel_fee_cents'])];
         $payments = $snapshot['payments'];
