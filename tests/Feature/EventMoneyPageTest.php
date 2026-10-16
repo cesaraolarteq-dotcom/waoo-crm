@@ -95,4 +95,28 @@ class EventMoneyPageTest extends TestCase
         $this->assertSame(1, DB::table('capacity_payment_links')->where('event_id', $this->event->id)->count());
         $this->assertSame(1, LedgerEntry::count(), 'Booking evidence is not a second payment.');
     }
+    public function test_stale_money_page_does_not_fix_unseen_amounts(): void
+    {
+        $page = Livewire::test(EventMoney::class, ['record' => $this->event->id]);
+        // Another editor commits a valid newer draft while this owner is reading the old amounts.
+        $this->event->forceFill(['travel_fee_cents' => 7500, 'version' => $this->event->fresh()->version + 1])->save();
+        $page->callAction('fixAmounts')->assertNotified('No se guardó');
+        $this->assertSame(0, FinancialRevision::count(), 'Never agree to the unseen newer event using fresh()->version.');
+    }
+
+    public function test_changed_draft_can_create_a_new_revision_without_rewriting_previous_money(): void
+    {
+        Livewire::test(EventMoney::class, ['record' => $this->event->id])->callAction('fixAmounts');
+        $first = FinancialRevision::sole();
+        Livewire::test(EventMoney::class, ['record' => $this->event->id])->callAction('zelle', $this->zelle('62.50'));
+        $this->event->forceFill(['travel_fee_cents' => 7500, 'version' => $this->event->fresh()->version + 1])->save();
+        Livewire::test(EventMoney::class, ['record' => $this->event->id])
+            ->assertActionVisible('fixAmounts')->callAction('fixAmounts')->assertNotified('Montos fijados');
+        $this->assertSame(2, FinancialRevision::count());
+        $this->assertSame(12500, $first->fresh()->total_cents);
+        $this->assertSame(17500, FinancialRevision::latest('revision')->first()->total_cents);
+        $this->assertSame(1, LedgerEntry::count());
+        $this->assertSame(6250, LedgerEntry::sole()->amount_cents);
+    }
+
 }

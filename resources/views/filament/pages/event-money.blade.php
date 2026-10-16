@@ -19,6 +19,9 @@
                 <p class="wmoney-p">Precio de servicios hoy: {{ $money($this->record->services()->join('price_versions', 'price_versions.id', '=', 'event_services.price_version_id')->sum('price_versions.amount_cents')) }} · Transporte: {{ $money($this->record->travel_fee_cents) }}</p>
             </x-filament::section>
         @else
+            @if ($f['capacity_status'] === 'draft' && $rev->event_version !== $this->record->fresh()->version)
+                <div class="wmoney-warn" role="alert">El borrador cambió después de fijar estos montos. Revisa los datos del evento y usa “Fijar montos acordados” para crear una revisión nueva. Los montos anteriores y los pagos recibidos se conservan.</div>
+            @endif
             <div class="wmoney-grid">
                 <div><span>Total acordado</span><b>{{ $money($rev->total_cents) }}</b><small>Servicios {{ $money($rev->subtotal_cents) }} + transporte {{ $money($rev->travel_fee_cents) }}</small></div>
                 <div><span>Depósito (50 %)</span><b>{{ $money($rev->deposit_target_cents) }}</b>
