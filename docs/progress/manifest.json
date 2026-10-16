@@ -409,7 +409,16 @@
      "ui_review_evidence": "Codex exact #42 4ff9d13 / #43 a16166d: full MariaDB 235 tests / 2156 assertions pass; opt-in probes reproduce stale unseen-address approval (R1) and requested-time DST error (R2). See docs/reviews/CLAUDE-42-43.md.",
      "ui_fix_evidence": "Codex implementation bf2ffac/7ebcf2c chosen explicitly; integrated exact bdc6c9e with Claude2d19000. Full 254/2328; server resolves Houston local time with CDT/CST choice. Both HANDOFF histories retained.",
      "ui_fix_reviewed": true,
-     "ui_fix_review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed."
+     "ui_fix_review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed.",
+     "contact_atomicity_followup": {
+      "backend": "ad87fae",
+      "ui": null,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "API2ff80c1 published before source. Full311/2968 pass (331.15s); targeted17/155 pass, PHP8.3/MariaDB11.8. Actual recipe/bank/audit rollbacks, stale/no-op/version guards, later-correction replay, grant recovery, two real process races, lead conversion. Syntax/strict Composer/diff pass; no schema/dependency change.",
+      "remaining": "Claude #49 must remove separate pre-save, send customer_update and pin displayed ID/version in Locked state; Livewire regression/independent review/CI/main merge pending. Existing #49 f9b93c8 not approved. No phase completion or live acceptance."
+     }
     }
    ]
   },

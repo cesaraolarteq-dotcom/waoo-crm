@@ -9,3 +9,5 @@ Successful retries return before checking the old contact version, never reapply
 Validation and source SHA: see newest HANDOFF. New tests cover actual recipe/payment/audit failures, same-key replay after a later legitimate customer edit, strict nested payloads, no-op/stale guards, grant failure, actual competing-owner and identical-retry processes, and lead conversion with the same correction.
 
 Claude must connect #49: remove pre-booking updateCustomerIfChanged, send customer_update in the single QuickBook call, keep displayed ID/version in Locked state, map customer_update.* errors to the existing contact fields, and preserve the request key/payload after an uncertain retry. No claude/* branch or UI was edited here. #49 remains blocked until that adapter and Livewire regression are reviewed. No migration, dependency change, provider call, real charge, client message or deployment.
+
+Source ad87fae: full311/2968 pass (331.15s), targeted17/155 pass; PHP8.3/MariaDB11.8. Changed PHP syntax, strict Composer validation, diff pass. No app changes after final full run. No new frontend build or vulnerability-audit result claimed; dependency files unchanged.
