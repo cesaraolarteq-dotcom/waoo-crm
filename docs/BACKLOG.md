@@ -115,3 +115,7 @@ AVAIL-01 (search for combinations and routes), HOLD-01 (on the RESV-A-01 protoco
 - **D8 decided:** sales@waooparty.com.
 - **D9 decided:** contract in English only.
 - **Phase 0: APPROVED by the Owner on 2026-10-15.**
+
+### REPORT-A first read-only slice (Codex 2026-10-16)
+
+Contract `docs/REPORT-A-API.md`, backend source **656bd32** on `codex/operational-reports`. Owner-only sandbox period cash (received date) and scheduled-event balances/costs (event date), Chicago week/month boundaries, unknown/stale costs remain pending. No inference of staff rates, net profit, sales counts, historical closing balances or delivery. Claude can build the dashboard view now. Remaining REPORT-A slices: agreed booking/sales definition and package counts, upcoming-weekend forecast, cron/idempotent mail delivery after MAIL-01/JOBS-01. See newest HANDOFF for final checks.

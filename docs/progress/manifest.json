@@ -243,7 +243,9 @@
      "foundation_verification": "Focused 12 MariaDB tests / 101 assertions; full integration 241 / 2119 with CLI-only512M helper after a128M PDF-suite exhaustion; Vite, lint, strict Composer and 9 real HTTP smoke checks pass",
      "foundation_reviewed": true,
      "foundation_ui": "0f8ae91",
-     "progress_note": "Overall backend remains null: only a tested event-cost foundation is delivered, not complete package/rate automation. Existing weights and stage acceptance credit stay unchanged."
+     "progress_note": "Overall backend remains null: only a tested event-cost foundation is delivered, not complete package/rate automation. Existing weights and stage acceptance credit stay unchanged.",
+     "foundation_ui_reviewed": true,
+     "foundation_review_evidence": "Claude approved backend08c284a; Codex reviewed Claude UI150941f (source0f8ae91), with two copy corrections in656bd32. No main merge or owner acceptance claimed. Fresh integrated full suite288/2595; no test failures."
     }
    ]
   },
@@ -492,7 +494,16 @@
      "ui": null,
      "reviewed": false,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "read_only_followup": {
+      "backend": "656bd32",
+      "ui": null,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "Fresh isolated full suite 288 passed /2595 assertions (298.26s), PHP8.3/MariaDB11.8; report-focused8/60; build, strict Composer, lint, diff, guarded local migration check and real /up health passed. Initial Composer300s timeout and overlapping retry9 migration errors resolved by confirming no old runner and rerunning alone with600s. See HANDOFF/DEVELOPMENT.",
+      "remaining": "Read-only slice only: package-sales/booked counts, upcoming weekend forecast, scheduled email/idempotent send and UI remain pending. Entire REPORT-A backend is not marked complete."
+     }
     }
    ]
   },
