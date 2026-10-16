@@ -29,7 +29,7 @@ final class CreateFinancialRevision
             foreach ($services as $service) {
                 $price = PriceVersion::findOrFail($service->price_version_id);
                 if ($price->currency !== 'USD') throw ValidationException::withMessages(['finance' => 'La moneda debe ser USD.']);
-                $characterSnapshot = $service->characters->map(fn ($row) => ['character_id' => $row->character_id, 'quantity' => $row->quantity, 'name' => $row->character_name_snapshot])->all();
+                $characterSnapshot = $service->characters->map(fn ($row) => ['character_id' => $row->character_id, 'quantity' => $row->quantity, 'name' => $row->character_name_snapshot, ...($row->outfit !== null ? ['outfit' => $row->outfit] : [])])->all();
                 if ($characterSnapshot === []) {
                     foreach ($service->requirements_snapshot as $requirement) {
                         if ($requirement['kind'] === 'costume') {

@@ -9,7 +9,7 @@ final class SensitiveApplicationResponses
 {
     public static function appliesTo(Request $request): bool
     {
-        return $request->is('admin', 'admin/*', 'portal', 'portal/*')
+        return $request->is('api/leads', 'admin', 'admin/*', 'portal', 'portal/*')
             || str_ends_with((string) $request->route()?->getName(), 'livewire.update');
     }
 

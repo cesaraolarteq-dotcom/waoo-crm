@@ -6,6 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Character extends Model
 {
-    protected $fillable = ['name', 'active'];
-    protected function casts(): array { return ['active' => 'boolean', 'version' => 'integer']; }
+    protected $fillable = ['name', 'active', 'outfits'];
+    protected function casts(): array { return ['outfits' => 'array', 'active' => 'boolean', 'version' => 'integer']; }
 }

@@ -130,7 +130,16 @@
      "merged": true,
      "accepted": false,
      "blocker": "Inventario de César",
-     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996"
+     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996",
+     "outfit_backend_followup": {
+      "backend": "d1b00a3",
+      "ui": null,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "API7c8dcb1 published first. Final integrated codex/outfit-01 d1b00a3: full300/2864 pass (330.31s), PHP8.3/MariaDB11.8; includes LEAD/ROUTE/OUTFIT, real independent races and populated SQLite/MariaDB roundtrips. Vite/strict Composer/syntax/diff pass. Packagist audit unavailable (proxy403), no dependency changes.",
+      "remaining": "Claude must map optional outfit/note explicitly and add forms/assignment labels; owner version names/unit quantities, independent review/CI/main merge/acceptance pending. No phase completion claimed."
+     }
     },
     {
      "name": "Clientas y borradores de eventos",
@@ -200,7 +209,17 @@
      "ui": null,
      "reviewed": false,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "intake_backend_followup": {
+      "backend": "ea13afd",
+      "ui": null,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "Published API380b6fe before source. Full272/2583 pass; targeted18/253 includes HMAC replay binding, stateless HTTPS staging/rate limits, concurrent intake/status/conversion races, real QuickBook rollback and post-core portal recovery, SQLite migration.",
+      "remaining": "Claude website email-first fallback/private spool + UI and review/main merge; secure shared-secret configuration and explicit live activation. Backend default off; whole website-to-CRM delivery not accepted yet.",
+      "integration_verification": "Final integrated codex/outfit-01 d1b00a3: full300/2864 pass (330.31s), PHP8.3/MariaDB11.8; includes LEAD/ROUTE/OUTFIT, real independent races and populated SQLite/MariaDB roundtrips. Vite/strict Composer/syntax/diff pass. Packagist audit unavailable (proxy403), no dependency changes."
+     }
     },
     {
      "name": "Costo de transporte por ZIP dentro del CRM",
@@ -210,7 +229,17 @@
      "ui": null,
      "reviewed": false,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "address_quote_followup": {
+      "backend": "f31361c",
+      "ui": null,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "Contract97c84ac published first. Targeted45/490 pass including105 synthetic differential cases vs website formula,7 fixed ZIPs, bounded provider errors/null fees, true atomic quota race/Chicago midnight, cache, explicit/private/stale quote acceptance, actual lead→QuickBook and client-address reconfirmation, SQLite. Quoted_at metadata is additive; later integrated run will cover the complete stack.",
+      "remaining": "Missing22 actual calibrated ZIP reference fixtures (asked owner/Claude); no real Google/staging probe, UI/review/main merge or live activation. Full ROUTE-01 not complete/accepted.",
+      "integration_verification": "Final integrated codex/outfit-01 d1b00a3: full300/2864 pass (330.31s), PHP8.3/MariaDB11.8; includes LEAD/ROUTE/OUTFIT, real independent races and populated SQLite/MariaDB roundtrips. Vite/strict Composer/syntax/diff pass. Packagist audit unavailable (proxy403), no dependency changes."
+     }
     },
     {
      "name": "Cotizaciones con versiones",
@@ -380,7 +409,16 @@
      "ui_review_evidence": "Codex exact #42 4ff9d13 / #43 a16166d: full MariaDB 235 tests / 2156 assertions pass; opt-in probes reproduce stale unseen-address approval (R1) and requested-time DST error (R2). See docs/reviews/CLAUDE-42-43.md.",
      "ui_fix_evidence": "Codex implementation bf2ffac/7ebcf2c chosen explicitly; integrated exact bdc6c9e with Claude2d19000. Full 254/2328; server resolves Houston local time with CDT/CST choice. Both HANDOFF histories retained.",
      "ui_fix_reviewed": true,
-     "ui_fix_review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed."
+     "ui_fix_review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed.",
+     "contact_atomicity_followup": {
+      "backend": "ad87fae",
+      "ui": null,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "API2ff80c1 published before source. Full311/2968 pass (331.15s); targeted17/155 pass, PHP8.3/MariaDB11.8. Actual recipe/bank/audit rollbacks, stale/no-op/version guards, later-correction replay, grant recovery, two real process races, lead conversion. Syntax/strict Composer/diff pass; no schema/dependency change.",
+      "remaining": "Claude #49 must remove separate pre-save, send customer_update and pin displayed ID/version in Locked state; Livewire regression/independent review/CI/main merge pending. Existing #49 f9b93c8 not approved. No phase completion or live acceptance."
+     }
     }
    ]
   },

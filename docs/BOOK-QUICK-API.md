@@ -12,6 +12,8 @@ Result DTO public properties: `id`, `event`, `customer`, `financial_revision`, `
 
 `quick_bookings` binds creator/event/customer/initial financial revision/receipt, grant ID nullable and requested expiry. Grant issue failure is recoverable, not another deposit. UUID key is scoped to owner + operation, canonical payload hash; customer/event references are server resolved.
 
+Optional existing-customer contact corrections are described in [QUICK-BOOK-CONTACT-API.md](QUICK-BOOK-CONTACT-API.md). Send them in the same QuickBook call; never pre-save contact from the booking form. The displayed version is checked inside the core transaction, after idempotent retry lookup.
+
 ## Client details
 
 Add `details.submit` to the allowed grant scopes (max five); existing default four-scope grants remain unchanged. QuickBook requests all five. Portal GET `/portal/api/event` adds `details` for the holder of details.submit: `{submission: {id,revision,data,submitted_at}|null, reviewed:bool, expected_revision:int, expected_event_version:int}`. Other scopes do not expose details. Portal POST `/portal/api/details`, Idempotency-Key, delegates to `Portal\SubmitClientDetails::execute(PortalContext $client,array $input,string $key): ClientDetailsSubmission`.
@@ -53,3 +55,7 @@ Required tests: real QuickBook UI/service; duplicate reference/core rollback, id
 - No automatic template activation/issuance, messages, provider requests, refunds, rescheduling, capacity assignment or live activation is added. SMS false/omitted works; true needs an approved configured text/version (none by default). Legal/customer UI copy remains Claude's EN/ES responsibility. Source cross-review and actual portal/owner UI acceptance remain pending; a fixture-tested backend is not a real bank/Stripe or deployed portal proof. Packagist advisory audit was already blocked by HTTP403 and was not misreported as passed.
 
 Current-main follow-up: main 46ff921 includes merged #22 and #30; integration dd9fc6c retains its status getter. Time-dependent existing receipt fixtures are corrected in a9d9725 without relaxing validation/assertions. Fresh full suite on that integrated source: **205 / 1745 pass**. Source module delivery remains 1a5fbe3; frontend proof above is local, not a remote CI/deployment claim.
+
+### ROUTE-01 accepted travel quote (optional, backward-compatible)
+
+QuickBook accepts `travel_fee_quote_id` and `travel_fee_override_note` alongside the explicit owner `travel_fee_cents`, full event `address` and `postal_code`. SaveEventDraft validates address/rules/expiry binding and stores private evidence, never auto-fills a fee. Overrides require a reason. No quote preserves the existing manual flow. If a previously calculated draft changes address/fee, recalculate or supply a manual review reason. Client-details approval already explicitly confirms the fee; a changed quoted address uses the owner's review note as manual reconfirmation without changing agreed money. See docs/ROUTE-01-API.md. Lead conversion carries these same booking fields unchanged.
