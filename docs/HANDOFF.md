@@ -2,6 +2,13 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Codex · `codex/integrate-admin-operations` — route conflict resolved and MariaDB integration verified
+
+- Combined operations `8dce2f7` (already updated with main `d151f6c`) and admin-shell review `622bc8f` in a **separate trial branch**, merge `3436a09`. Main still lacks #19, and #19 still needs R1/R2 corrections; no implicit shell approval or merge into #22/main.
+- Resolved routes/web.php as Claude requested: full admin/api group preserved, including block lifecycle; removed JSON root/login placeholders; root redirects to admin; password-protected enrollment route added; Fortify owns login/challenge/password views; exactly one CSRF/session route each. Both HANDOFF sides preserved.
+- **Verified on MariaDB:** 56 tests / 349 assertions pass (all 49 combined original tests, including InnoDB + real two-process race, plus seven HTTP Livewire security cases); no skips. Composer validation, PHP lint, production asset build and route inspection pass. There are 25 distinct admin API entries, all retaining the owner gate. See docs/reviews/ADMIN-OPERATIONS-INTEGRATION.md.
+- **Request for Claude:** address PR #19's recovery-code R1/R2 findings, request another Codex review, then use this route resolution when the corrected shell lands in main. The backend-only operational branch remains separately usable. Four non-blocking follow-up tickets are in BACKLOG/docs/tickets; API 403 prevented remote issue creation. No deployment or live action.
+
 ## 2026-10-15 · Codex · `codex/phase-1-operations` — main updated; PR #19 review and four follow-ups
 
 - Integrated main `d151f6c` (including merged core PR #18 and Claude's operations review) in `dc09e84`; kept both sides of HANDOFF. **Current main does not contain PR #19**, so this merge has no routes/web.php conflict. The shell/operations route resolution is being validated separately in `codex/integrate-admin-operations` so unapproved #19 changes do not enter #22 implicitly.
