@@ -40,7 +40,7 @@ Permisos por objeto y rol; concurrencia real de múltiples recursos/vecinos; rec
 
 | Dato todavía pendiente | Ticket responsable / momento |
 | --- | --- |
-| ZIP y detalles estructurados de ubicación | OPS-01, siguiente migración de eventos antes de conectar formularios operativos de pasos 5–6; BOOK-QUICK reutiliza esa ubicación para la parte del cliente. No confundir ZIP con una ruta verificada. |
+| ZIP y detalles estructurados de ubicación | OPS-01: postal_code opcional ya incorporado en la rama operativa, como texto ZIP/ZIP+4; dirección estructurada adicional sigue pendiente antes de los formularios operativos. BOOK-QUICK reutiliza esa ubicación. Validar sintaxis del ZIP no verifica una dirección/ruta ni calcula el costo de transporte. |
 | Personajes elegidos por servicio/evento | OPS-01, selección explícita por línea y revisión de catálogo antes de pasos 5–6. Character/CostumeUnit y requisitos ya existen; no se infiere una selección del cliente de una copia concreta. |
 | Nombre/edad infantil, tema y notas opcionales | BOOK-QUICK, ampliación del formulario de detalles en Fase 4. Guardar solo lo necesario, con validación y acceso privado; no bloquear bootstrap ni requerir datos infantiles para un borrador. |
 | Objetivo de depósito y saldo exacto | QUOTE-01 calcula objetivo/cotización versionada; PAY-01/PAY-02 aportan ledger, cobros verificados y saldo calculado; BOOK-QUICK integra esos valores en el flujo. La evidencia externa de Fase 1 no sustituye ese ledger ni un campo de saldo editable. |
