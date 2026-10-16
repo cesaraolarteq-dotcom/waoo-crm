@@ -199,7 +199,16 @@
      "ui": null,
      "reviewed": false,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "intake_backend_followup": {
+      "backend": "ea13afd",
+      "ui": null,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "Published API380b6fe before source. Full272/2583 pass; targeted18/253 includes HMAC replay binding, stateless HTTPS staging/rate limits, concurrent intake/status/conversion races, real QuickBook rollback and post-core portal recovery, SQLite migration.",
+      "remaining": "Claude website email-first fallback/private spool + UI and review/main merge; secure shared-secret configuration and explicit live activation. Backend default off; whole website-to-CRM delivery not accepted yet."
+     }
     },
     {
      "name": "Costo de transporte por ZIP dentro del CRM",

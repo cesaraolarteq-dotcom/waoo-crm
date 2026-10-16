@@ -4,7 +4,7 @@ Contract published before backend code. Source ticket docs/tickets/LEAD-01.md. C
 
 ## Website server → CRM
 
-POST `/api/leads`, stateless API middleware (no session/cookies/CSRF). Content-Type application/json, exact body ≤65536 bytes,120 requests/min per source IP (429 → retry). Headers:
+POST `/api/leads` (HTTPS required in staging), stateless API middleware (no session/cookies/CSRF). Content-Type application/json, exact body ≤65536 bytes,120 requests/min per source IP (429 → retry). Headers:
 
 - Idempotency-Key: canonical lowercase UUIDv4, unique per genuine submission, unchanged on retry.
 - X-Waoo-Timestamp: Unix seconds decimal, within±300s of CRM clock.
@@ -14,11 +14,11 @@ POST `/api/leads`, stateless API middleware (no session/cookies/CSRF). Content-T
 
 Allowed payload keys only (unknown root/consent keys422): name required string≤255, phone required≤40, email required valid≤255; event_date real YYYY-MM-DD (2000–2100, past allowed for delayed spool), start_time nullable HH:mm Houston (no UTC inference on DST ambiguity), zip five digits or ZIP+4, event_type/package required opaque website codes≤100; message nullable≤4000, travel_estimate_text nullable≤1000; locale en|es; demand_flag open|filling|full|unknown; submitted_at required ISO8601 with explicit offset, no more than5min future; page exactly /contact; consent present nullable, or `{text: nonempty string≤4000, version: nonempty string≤120}`. Consent text is stored verbatim as website evidence; **does not enroll/opt-in a customer or authorize messaging**. No browser honeypot submission should be posted; website drops it before this call. Travel estimate is informational text only.
 
-202 `{accepted:true}` for first receipt and identical retry; no lead/customer IDs or PII returned. Same key/different exact body409. Invalid/missing/stale auth401, payload422, wrong media415, too large413, disabled/missing secret/production503. All responses private/no-store. No public read/search endpoint. One immutable lead_submissions (request UUID/body hash/validated original payload/submitted+received timestamps) and one leads row per distinct key; one system audit without payload. Concurrent retries create only one of each. Different keys are separate prospects, never automatically merged.
+202 `{accepted:true}` for first receipt and identical retry; no lead/customer IDs or PII returned. Same key/different exact body409. Invalid/missing/stale auth401, payload422, wrong media415, too large413, disabled/missing secret/production/persistence failure503; insecure staging403. All responses private/no-store. No public read/search endpoint. One immutable lead_submissions (request UUID/body hash/validated original payload/submitted+received timestamps) and one leads row per distinct key; one system audit without payload. Concurrent retries create only one of each. Different keys are separate prospects, never automatically merged.
 
 ## Owner API and services
 
-Owner+2FA, feature gate and private/no-store on every route/service; both admins equal. `LeadWorkflow` namespace App\Services\Leads.
+Owner+2FA, feature gate and private/no-store on every route/service; both admins equal. Services are in App\Services\Leads: ReceiveWebsiteLead::execute(string body,string timestamp,string key,string signature): Lead; ReadLeads::index(User,array) and show(User,int); UpdateLead and ConvertLead below. All website text is untrusted: escape it in owner screens, including message, consent and duplicate-hint names.
 
 - GET `/admin/api/leads?status=new&page=1&per_page=25` (per_page1–50). Laravel paginator; each row has lead metadata, immutable submission and `duplicate_hints` [{customer_id,name,matched_by:[email|phone]}], capped20. Comparison: trim/lower email; phone digits with US leading1 removed for11-digit numbers (minimum7 digits to hint); hint only, never merge. Batch-load candidate customer data once per page.
 - GET `/admin/api/leads/{lead}` → same owner row. No public payload leakage.
