@@ -5,12 +5,13 @@ namespace App\Filament\Resources\Events\Pages;
 use App\Exceptions\RecordWriteRejected;
 use App\Filament\Resources\Events\EventResource;
 use App\Filament\Support\{DocumentsGate, Labels};
-use App\Models\{Contract, ContractTemplateVersion, FinancialRevision, PortalGrant, SignatureEvidence};
+use App\Models\{ClientDetailsReview, ClientDetailsSubmission, Contract, ContractTemplateVersion, FinancialRevision, PortalGrant, QuickBookingRecord, SignatureEvidence};
+use App\Services\Booking\{ApproveClientDetails, ClientDetailsState};
 use App\Services\Documents\{CreateContract, IssueContract};
-use App\Services\Portal\IssuePortalGrant;
+use App\Services\Portal\{IssuePortalGrant, RevokePortalGrant};
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
-use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\{Checkbox, Radio, Textarea, TextInput};
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
@@ -35,6 +36,7 @@ class EventContract extends Page
 
     #[Locked] public string $createKey = '';
     #[Locked] public string $issueKey = '';
+    #[Locked] public string $approveKey = '';
     #[Locked] public ?int $displayedEventVersion = null;
 
     /** Shown once after creating a link; never stored. */
@@ -47,6 +49,7 @@ class EventContract extends Page
         $this->displayedEventVersion = $this->record->version;
         $this->createKey = (string) Str::uuid();
         $this->issueKey = (string) Str::uuid();
+        $this->approveKey = (string) Str::uuid();
     }
 
     public function getSubheading(): ?string
@@ -62,22 +65,29 @@ class EventContract extends Page
         $contract = Contract::where('event_id', $e->id)->orderByDesc('revision')->first();
         $signature = $contract ? SignatureEvidence::where('contract_id', $contract->id)->first() : null;
         $grants = PortalGrant::where('event_id', $e->id)->orderByDesc('id')->get()->map(fn ($g) => (object) [
+            'id' => $g->id, 'active' => ! $g->revoked_at && $g->expires_at->isFuture(), 'details' => in_array('details.submit', $g->scopes ?? [], true),
             'expires' => Labels::when($g->expires_at), 'state' => $g->revoked_at ? 'Anulado' : ($g->expires_at->isFuture() ? 'Activo' : 'Vencido'),
             'opened' => DB::table('contract_presentations')->where('portal_grant_id', $g->id)->exists(),
         ]);
+        $quick = QuickBookingRecord::where('event_id', $e->id)->exists();
+        $detailsState = $quick || ClientDetailsSubmission::where('event_id', $e->id)->exists() ? ClientDetailsState::forEvent($e) : null;
+        $submission = ClientDetailsSubmission::where('event_id', $e->id)->orderByDesc('revision')->first();
+        $review = $submission ? ClientDetailsReview::where('submission_id', $submission->id)->first() : null;
         $blockers = [];
+        if ($detailsState === 'waiting_details') $blockers[] = 'Esperando que la clienta llene sus datos con su enlace.';
+        if ($detailsState === 'review_details') $blockers[] = 'Revisa y aprueba los datos de la clienta (abajo).';
         if (! $revision) $blockers[] = 'Fija los montos acordados en “Dinero”.';
         if (! $template) $blockers[] = 'Activa una versión de la plantilla en “Contrato”.';
         if (! $e->address) $blockers[] = 'Falta la dirección de la fiesta en el evento.';
         if (! $e->customer?->email) $blockers[] = 'Falta el correo de la clienta en su ficha.';
         if ($e->services()->where('operational_ready', false)->exists()) $blockers[] = 'Hay un servicio incompleto (personaje o catálogo).';
 
-        return compact('e', 'revision', 'template', 'contract', 'signature', 'grants', 'blockers');
+        return compact('e', 'revision', 'template', 'contract', 'signature', 'grants', 'blockers', 'quick', 'detailsState', 'submission', 'review');
     }
 
     protected function getHeaderActions(): array
     {
-        return [$this->createAction(), $this->issueAction(), $this->linkAction()];
+        return [$this->approveAction(), $this->createAction(), $this->issueAction(), $this->linkAction()];
     }
 
     public function createAction(): Action
@@ -86,7 +96,12 @@ class EventContract extends Page
             ->visible(function () { $s = $this->state(); return $s['blockers'] === [] && (! $s['contract'] || $s['contract']->state === 'superseded'); })
             ->modalHeading('¿Quién firma el contrato?')
             ->modalDescription('La persona adulta que contrata. Escribe nombre y apellido por separado tal como deben ir en el contrato.')
-            ->fillForm(fn () => ['email' => $this->record->customer?->email, 'phone' => $this->record->customer?->phone])
+            ->fillForm(function () {
+                $s = $this->state();
+                $d = $s['review'] ? ($s['submission']->data ?? []) : [];
+                return ['first_name' => $d['first_name'] ?? null, 'last_name' => $d['last_name'] ?? null, 'address' => $d['billing_address'] ?? null,
+                    'email' => $d['email'] ?? $this->record->customer?->email, 'phone' => $d['phone'] ?? $this->record->customer?->phone];
+            })
             ->schema([Grid::make(2)->schema([
                 TextInput::make('first_name')->label('Nombre')->required()->maxLength(120),
                 TextInput::make('last_name')->label('Apellido')->required()->maxLength(120),
@@ -123,7 +138,7 @@ class EventContract extends Page
     public function linkAction(): Action
     {
         return Action::make('link')->label('Crear enlace para la clienta')->icon('heroicon-o-link')->color('primary')
-            ->visible(fn () => in_array($this->state()['contract']?->state, ['issued'], true))
+            ->visible(fn () => in_array($this->state()['contract']?->state, ['issued'], true) || in_array($this->state()['detailsState'], ['waiting_details', 'review_details'], true))
             ->modalHeading('Enlace para la clienta')
             ->modalDescription('Solo se muestra una vez. Con él la clienta lee el contrato, lo firma y ve cómo pagar.')
             ->fillForm(['days' => 7])
@@ -134,6 +149,8 @@ class EventContract extends Page
                     $g = app(IssuePortalGrant::class)->execute(Filament::auth()->user(), $this->record->getKey(), [
                         'customer_id' => $this->record->customer_id,
                         'expires_at' => now(Labels::TZ)->addDays((int) $data['days'])->endOfDay()->format('Y-m-d\TH:i:sP'),
+                        // Quick bookings also let the client send her details through the same link.
+                        'scopes' => $this->state()['quick'] ? ['details.submit', 'contract.read', 'contract.sign', 'payments.read', 'checkout.create'] : ['contract.read', 'contract.sign', 'payments.read', 'checkout.create'],
                     ]);
                 } catch (ValidationException $e) {
                     Notification::make()->danger()->title('No se creó')->body(collect($e->errors())->flatten()->first())->persistent()->send();
@@ -149,6 +166,46 @@ class EventContract extends Page
                     'msg_en' => "Hi {$first}! Here you can read and sign your Waoo Party contract and see how to pay your balance: {$g->url} (expires ".rtrim($exp, '.')."). We're excited to be part of your celebration!",
                     'locale' => $this->record->customer?->locale ?? 'es'];
             });
+    }
+
+    public function approveAction(): Action
+    {
+        return Action::make('approve')->label('Aprobar datos de la clienta')->icon('heroicon-o-check-badge')->color('primary')
+            ->visible(fn () => $this->state()['detailsState'] === 'review_details' && $this->state()['submission'] && ! $this->state()['review'])
+            ->modalHeading('Aprobar los datos de la clienta')
+            ->modalDescription('Se copian a su ficha y al evento (nombre, contacto y dirección). No cambia la fecha, la hora, los paquetes ni el dinero. Luego preparas el contrato.')
+            ->schema(fn () => array_values(array_filter([
+                Checkbox::make('travel_fee_confirmed')->label('Revisé la dirección y el ZIP: el costo de transporte cotizado sigue igual')->accepted(),
+                ($this->state()['submission']->data['start_time_confirmed'] ?? true) ? null
+                    : Radio::make('requested_start_resolution')->label('Pidió otra hora')->options(['keep_original' => 'Hablé con ella: se queda la hora original'])->required()
+                        ->helperText('Un cambio de hora se hace aparte (flujo de cambios), no aquí.'),
+                $this->record->setup_minutes === null ? TextInput::make('setup_minutes')->label('Montaje (minutos antes)')->integer()->minValue(0)->maxValue(720)->required() : null,
+                $this->record->breakdown_minutes === null ? TextInput::make('breakdown_minutes')->label('Desmontaje (minutos después)')->integer()->minValue(0)->maxValue(720)->required() : null,
+                Textarea::make('review_note')->label('Nota de revisión')->required()->minLength(10)->maxLength(2000)->rows(2)->placeholder('Ej.: confirmé la dirección por WhatsApp.'),
+            ])))
+            ->modalSubmitActionLabel('Aprobar')
+            ->action(function (array $data, Action $action) {
+                $sub = $this->state()['submission'];
+                $input = ['expected_event_version' => $sub->event_version, 'expected_revision' => $sub->revision, 'travel_fee_confirmed' => (bool) ($data['travel_fee_confirmed'] ?? false),
+                    'review_note' => trim((string) $data['review_note'])];
+                foreach (['requested_start_resolution', 'setup_minutes', 'breakdown_minutes'] as $k) {
+                    if (filled($data[$k] ?? null)) $input[$k] = in_array($k, ['setup_minutes', 'breakdown_minutes'], true) ? (int) $data[$k] : $data[$k];
+                }
+                $this->run($action, fn () => app(ApproveClientDetails::class)->execute(Filament::auth()->user(), $this->record->getKey(), $sub->id, $input, $this->approveKey), 'Datos aprobados');
+                $this->approveKey = (string) Str::uuid();
+                $this->record->refresh();
+                $this->displayedEventVersion = $this->record->version;
+            });
+    }
+
+    public function revokeAction(): Action
+    {
+        return Action::make('revoke')->label('Anular enlace')->color('danger')->size('sm')->link()
+            ->requiresConfirmation()
+            ->modalHeading('Anular este enlace')
+            ->modalDescription('La clienta ya no podrá entrar con él. Si ya firmó, su firma se conserva. Puedes crear un enlace nuevo después.')
+            ->modalSubmitActionLabel('Anular')
+            ->action(fn (array $arguments, Action $action) => $this->run($action, fn () => app(RevokePortalGrant::class)->execute(Filament::auth()->user(), (int) $arguments['id']), 'Enlace anulado'));
     }
 
     public function hideLink(): void

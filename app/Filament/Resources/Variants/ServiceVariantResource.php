@@ -9,7 +9,7 @@ use App\Filament\Resources\Variants\Pages\{CreateServiceVariant, EditServiceVari
 use App\Filament\Support\RecordServicePageGate;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Forms\Components\{Repeater, Select, TextInput};
+use Filament\Forms\Components\{Repeater, Select, Textarea, TextInput};
 use Filament\Schemas\Components\Utilities\Get;
 
 use Filament\Support\Icons\Heroicon;
@@ -51,6 +51,8 @@ class ServiceVariantResource extends Resource
     {
         return $schema->columns(2)->components([
             TextInput::make('name')->label('Nombre del servicio')->required()->maxLength(255)->columnSpanFull(),
+            Textarea::make('long_description')->label('Descripción para el contrato (en inglés)')->rows(6)->maxLength(10000)->columnSpanFull()
+                ->helperText('Cómo se desarrolla el servicio, con tus palabras. Se copia al contrato cuando fijas los montos; los contratos ya emitidos no cambian.'),
             TextInput::make('duration_minutes')->label('Duración (minutos)')->integer()->minValue(1)->maxValue(1440)->required()
                 ->helperText('Ej.: 60 = 1 h; 90 = 1 h 30 min.'),
             Select::make('status')->label('Estado')->options(Labels::VARIANT_STATUS)->default('draft')->required()->native(false)
@@ -97,7 +99,9 @@ class ServiceVariantResource extends Resource
             'character_id' => (int) ($o['character_id'] ?? 0), 'requirements' => self::normalizeRequirements($o['requirements'] ?? []),
         ])->all() : [];
 
-        return ['name' => trim((string) ($data['name'] ?? '')), 'status' => $data['status'] ?? 'draft',
+        $long = trim((string) ($data['long_description'] ?? ''));
+
+        return ['name' => trim((string) ($data['name'] ?? '')), 'long_description' => $long === '' ? null : $long, 'status' => $data['status'] ?? 'draft',
             'duration_minutes' => (int) ($data['duration_minutes'] ?? 0), 'requirements' => self::normalizeRequirements($data['requirements'] ?? []),
             'character_quantity' => $quantity, 'character_options' => $options];
     }

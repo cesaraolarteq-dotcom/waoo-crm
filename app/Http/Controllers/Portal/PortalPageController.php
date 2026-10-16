@@ -49,7 +49,17 @@ final class PortalPageController extends Controller
             : null;
         $signed = $contract?->state === 'signed';
         $balance = $f['balance_cents'];
-        $step = ! $contract ? 'waiting' : (! $signed ? 'contract' : (($balance ?? 0) > 0 ? 'pay' : 'done'));
+        // Quick bookings: the client first sends her details; the owner approves them before a contract is issued.
+        $canDetails = in_array('details.submit', $grant->scopes, true);
+        $details = $canDetails ? \App\Services\Booking\ClientDetailsState::portal($event) : null;
+        $step = match (true) {
+            $canDetails && ! $signed && ! $details['submission'] => 'details',
+            $canDetails && ! $signed && ! $details['reviewed'] => 'details_sent',
+            ! $contract => 'waiting',
+            ! $signed => 'contract',
+            ($balance ?? 0) > 0 => 'pay',
+            default => 'done',
+        };
         $tz = 'America/Chicago';
         $start = CarbonImmutable::instance($event->starts_at)->setTimezone($tz)->locale($lang);
         $fmt = fn ($c) => $c === null ? '—' : '$'.number_format($c / 100, $c % 100 ? 2 : 0);
@@ -57,7 +67,12 @@ final class PortalPageController extends Controller
         $due = $revision ? CarbonImmutable::instance($revision->balance_due_at)->setTimezone($tz)->locale($lang) : null;
 
         return [
-            'lang' => $lang, 'step' => $step, 'steps' => ['contract', 'pay'], 'test_mode' => true,
+            'lang' => $lang, 'step' => $step, 'steps' => $canDetails ? ['details', 'contract', 'pay'] : ['contract', 'pay'], 'test_mode' => true,
+            'details' => $details ? ['expected_event_version' => $details['expected_event_version'], 'expected_revision' => $details['expected_revision'],
+                'event_date' => $start->format('Y-m-d'), 'event_offset' => $start->format('P'), 'action' => url('/portal/api/details'),
+                'sms_versions' => array_keys((array) config('waoo.sms_consent_versions', []))] : null,
+            'prefill' => $details && $details['submission'] ? $details['submission']['data']
+                : ['phone' => $event->customer?->phone, 'email' => $event->customer?->email, 'event_address' => $event->address, 'event_postal_code' => $event->postal_code],
             // The contracting party's own first name when a contract exists; otherwise the owner's record.
             'first_name' => trim((string) ($contract?->commercial_snapshot['client']['first_name'] ?? explode(' ', (string) $event->customer?->name)[0] ?? '')),
             'notice' => $request->session()->get('portal_notice'),

@@ -63,6 +63,18 @@ class Dashboard extends BaseDashboard
                 'items' => $exceptions->map(fn ($x) => ['label' => (Event::whereKey($x->event_id)->value('title') ?? 'Evento').' · '.(json_decode($x->context, true)['message'] ?? $x->kind), 'url' => EventResource::getUrl('money', ['record' => $x->event_id])])->all()];
         }
 
+        if (\App\Filament\Support\DocumentsGate::enabled() && class_exists(\App\Services\Booking\ClientDetailsState::class)) {
+            $quick = Event::query()->whereIn('id', \App\Models\QuickBookingRecord::query()->select('event_id'))->where('ends_at', '>=', $now)->orderBy('starts_at')->get()
+                ->groupBy(fn ($e) => \App\Services\Booking\ClientDetailsState::forEvent($e));
+            $contractLink = fn (Event $e) => ['label' => $e->title.' · '.Labels::when($e->starts_at), 'url' => EventResource::getUrl('contract', ['record' => $e])];
+            $cards[] = ['tone' => 'bad', 'title' => 'Datos de clienta por revisar', 'text' => 'Ya llenó sus datos. Revísalos y apruébalos para preparar el contrato.',
+                'items' => ($quick['review_details'] ?? collect())->map($contractLink)->values()->all()];
+            $cards[] = ['tone' => 'info', 'title' => 'Contratos listos para emitir', 'text' => 'Datos aprobados: prepara y emite el contrato.',
+                'items' => ($quick['ready_to_issue'] ?? collect())->map($contractLink)->values()->all()];
+            $cards[] = ['tone' => 'warn', 'title' => 'Esperando datos de la clienta', 'text' => 'Tiene su enlace pero todavía no llena sus datos. Recuérdale por WhatsApp.',
+                'items' => ($quick['waiting_details'] ?? collect())->map($contractLink)->values()->all()];
+        }
+
         $maintenance = Resource::query()->where('status', 'maintenance')->orderBy('name')->get();
         $cards[] = ['tone' => 'info', 'title' => 'Unidades en mantenimiento', 'text' => 'No se pueden asignar hasta que las pongas como disponibles.',
             'items' => $maintenance->map(fn ($r) => ['label' => $r->name, 'url' => \App\Filament\Resources\Resources\ResourceUnitResource::getUrl('edit', ['record' => $r])])->all()];
