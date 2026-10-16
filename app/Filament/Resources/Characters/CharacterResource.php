@@ -4,7 +4,12 @@ namespace App\Filament\Resources\Characters;
 
 use App\Filament\Resources\Characters\Pages\ListCharacters;
 use App\Models\Character;
+use App\Filament\Resources\Characters\Pages\{CreateCharacter, EditCharacter};
+use App\Filament\Support\RecordServicePageGate;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Forms\Components\{TextInput, Toggle};
+
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
@@ -23,9 +28,35 @@ class CharacterResource extends Resource
     protected static bool $hasTitleCaseModelLabel = false;
     protected static ?int $navigationSort = 20;
 
+    // Writable only once Codex's audited service exists (docs/RECORD-SERVICES.md); until then the list is read-only.
     public static function canCreate(): bool
     {
+        return RecordServicePageGate::ready(\App\Services\Records\SaveCharacter::class);
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return static::canCreate();
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
         return false;
+    }
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema->columns(2)->components([
+            TextInput::make('name')->label('Nombre del personaje')->required()->maxLength(255),
+            Toggle::make('active')->label('En catálogo')->default(true)->inline(false)
+                ->helperText('Apágalo para dejar de ofrecerlo sin borrar su historial.'),
+        ]);
+    }
+
+    /** Only the editable fields of the contract, with empty strings as null like the HTTP path. */
+    public static function toServiceInput(array $data): array
+    {
+        return ['name' => trim((string) ($data['name'] ?? '')) ?: null, 'active' => (bool) ($data['active'] ?? false)];
     }
 
     public static function table(Table $table): Table
@@ -51,6 +82,11 @@ class CharacterResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => ListCharacters::route('/')];
+        $pages = ['index' => ListCharacters::route('/')];
+        // Routes always exist; canCreate()/canEdit() answer 403 until the audited service is available.
+        $pages['create'] = CreateCharacter::route('/nuevo');
+        $pages['edit'] = EditCharacter::route('/{record}/editar');
+
+        return $pages;
     }
 }

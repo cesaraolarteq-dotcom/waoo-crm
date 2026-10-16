@@ -49,10 +49,11 @@ class AdminScreensTest extends TestCase
     public function test_lists_are_read_only_for_now(): void
     {
         $this->actingAs($this->owner());
-        foreach (['clientas', 'catalogo', 'staff-y-trajes', 'personajes', 'eventos'] as $slug) {
+        foreach (['clientas', 'catalogo', 'staff-y-trajes', 'personajes'] as $slug) {
             $this->get("/admin/{$slug}")->assertOk();
-            $this->get("/admin/{$slug}/create")->assertNotFound();
+            $this->get("/admin/{$slug}/nuevo")->assertForbidden(); // until the audited services exist
         }
+        $this->get('/admin/eventos/create')->assertNotFound(); // event draft form comes later (DST-safe dates)
     }
 
     public function test_empty_lists_explain_what_comes_next(): void

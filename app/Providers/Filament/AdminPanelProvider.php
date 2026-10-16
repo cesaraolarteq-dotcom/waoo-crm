@@ -34,7 +34,11 @@ class AdminPanelProvider extends PanelProvider
             ->brandLogoHeight('2.25rem')
             ->favicon(asset('img/favicon.png'))
             ->colors([
-                'primary' => Color::hex('#122F94'),
+                // Explicit Waoo navy scale: Color::hex() generates a lighter palette, which made primary buttons pale blue.
+                'primary' => [
+                    50 => '#EEF2FF', 100 => '#DCE3FB', 200 => '#B9C6F5', 300 => '#8DA2EC', 400 => '#5C77DD',
+                    500 => '#3352C4', 600 => '#1F3FB0', 700 => '#122F94', 800 => '#0F2778', 900 => '#0E1F5C', 950 => '#0A1540',
+                ],
                 'danger' => Color::hex('#B4233A'),
                 'warning' => Color::hex('#F9C930'),
                 'success' => Color::hex('#11734A'),
@@ -42,6 +46,8 @@ class AdminPanelProvider extends PanelProvider
                 'gray' => Color::Slate,
             ])
             ->font('Bricolage Grotesque')
+            // Record services own their transactions (docs/RECORD-SERVICES.md); Filament must not wrap them.
+            ->databaseTransactions(false)
             ->sidebarCollapsibleOnDesktop()
             ->navigationGroups([
                 NavigationGroup::make('Día a día'),

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Resources\Pages;
 
 use App\Filament\Resources\Resources\ResourceUnitResource;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 
@@ -24,5 +25,11 @@ class ListResourceUnits extends ListRecords
         }
 
         return $tabs;
+    }
+
+    // Shown only when the audited service exists (Resource::canCreate()).
+    protected function getHeaderActions(): array
+    {
+        return [CreateAction::make()->visible(fn () => static::getResource()::canCreate())->label('Nueva unidad')];
     }
 }

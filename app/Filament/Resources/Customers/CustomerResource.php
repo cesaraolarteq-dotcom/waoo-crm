@@ -4,7 +4,12 @@ namespace App\Filament\Resources\Customers;
 
 use App\Filament\Resources\Customers\Pages\ListCustomers;
 use App\Models\Customer;
+use App\Filament\Resources\Customers\Pages\{CreateCustomer, EditCustomer};
+use App\Filament\Support\RecordServicePageGate;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Forms\Components\{Select, TextInput};
+
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -24,9 +29,39 @@ class CustomerResource extends Resource
     protected static bool $hasTitleCaseModelLabel = false;
     protected static ?int $navigationSort = 10;
 
+    // Writable only once Codex's audited service exists (docs/RECORD-SERVICES.md); until then the list is read-only.
     public static function canCreate(): bool
     {
+        return RecordServicePageGate::ready(\App\Services\Records\SaveCustomer::class);
+    }
+
+    public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
+    {
+        return static::canCreate();
+    }
+
+    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    {
         return false;
+    }
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema->columns(2)->components([
+            TextInput::make('name')->label('Nombre completo')->required()->maxLength(255)->columnSpanFull(),
+            TextInput::make('phone')->label('Teléfono')->tel()->maxLength(40)->helperText('Con código de área, como lo escribe la clienta.'),
+            TextInput::make('email')->label('Correo')->email()->maxLength(255),
+            Select::make('locale')->label('Idioma para sus mensajes')->options(['es' => 'Español', 'en' => 'Inglés'])->default('es')->required()->native(false)
+                ->helperText('Los correos y textos le llegan en este idioma.'),
+        ]);
+    }
+
+    /** Only the editable fields of the contract, with empty strings as null like the HTTP path. */
+    public static function toServiceInput(array $data): array
+    {
+        $blank = fn ($v) => is_string($v) && trim($v) === '' ? null : (is_string($v) ? trim($v) : $v);
+
+        return ['name' => $blank($data['name'] ?? null), 'email' => $blank($data['email'] ?? null), 'phone' => $blank($data['phone'] ?? null), 'locale' => $data['locale'] ?? 'es'];
     }
 
     public static function table(Table $table): Table
@@ -54,6 +89,11 @@ class CustomerResource extends Resource
 
     public static function getPages(): array
     {
-        return ['index' => ListCustomers::route('/')];
+        $pages = ['index' => ListCustomers::route('/')];
+        // Routes always exist; canCreate()/canEdit() answer 403 until the audited service is available.
+        $pages['create'] = CreateCustomer::route('/nuevo');
+        $pages['edit'] = EditCustomer::route('/{record}/editar');
+
+        return $pages;
     }
 }
