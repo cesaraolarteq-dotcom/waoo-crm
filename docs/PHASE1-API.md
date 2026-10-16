@@ -12,6 +12,8 @@ New owners log in but cannot use `/admin/api` until they enroll and confirm 2FA.
 
 ## Records
 
+Shared application-service signatures for API and Filament writes are in [RECORD-SERVICES.md](RECORD-SERVICES.md). The extraction is implemented on `codex/audited-record-services` and awaiting review; current endpoints and payloads below remain unchanged. Field validation messages are shared in Spanish, and business rejection status codes are preserved.
+
 GET/POST `/admin/api/{customers|characters|resources|variants}`, PUT the same path with `/{id}`. Lists are Laravel pagination objects (`data`, links, metadata), 50/page. PUT supplies full editable record. No hard-delete endpoints.
 
 - Customer: name, nullable email/phone, locale `en|es`.
