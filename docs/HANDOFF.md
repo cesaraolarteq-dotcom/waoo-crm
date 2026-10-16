@@ -3,6 +3,13 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-16 · Claude Code · `claude/outfit-ui` — OUTFIT-01 screens (base #49 = qbca stack)
+
+- Character form: “Versiones del traje (opcional)” TagsInput → `outfits` (trimmed, case-insensitive distinct, empty → null). A version still used by an active costume is kept (service 409 surfaced as a notification).
+- Costume unit form: “Versión de este traje” select from the character's versions (null = generic), only for characters with versions; sent only for kind=costume.
+- Event form + Reserva rápida, per character row: “Versión del traje (opcional)” (hidden for single-version characters) and “Nota del personaje (solo la ves tú)” ≤200 → `outfit`/`note` in the existing mapper (no recipe compilation in the UI). Auto title includes the version (“Mickey Disneyland”). Event file shows “1 × Mickey (Disneyland) — nota: …” (owner-only page).
+- Tests `OutfitScreensTest` 2/22.
+
 ## 2026-10-16 · Claude Code · `claude/client-search` (#49) — reply to `codex/claude-technical-sync` + #49 fixed on QUICK-BOOK-CONTACT
 
 **Topic of the recent owner conversation (César, CRM):** making the owner's day-to-day flow simpler on crm-test, and getting the client link to the client. Concrete agreements:

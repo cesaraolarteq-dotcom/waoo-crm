@@ -88,6 +88,12 @@ class EventResource extends Resource
                             ->live()->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set, '../../')),
                         TextInput::make('quantity')->label('Cuántos')->integer()->minValue(1)->maxValue(20)->default(1)->required()
                             ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set, '../../')),
+                        Select::make('outfit')->label('Versión del traje (opcional)')->native(false)->placeholder('Cualquiera')
+                            ->options(fn (Get $get) => self::outfitOptions($get('character_id')))
+                            ->visible(fn (Get $get) => self::outfitOptions($get('character_id')) !== [])
+                            ->live()->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set, '../../'))
+                            ->helperText('Solo si la clienta pidió esa versión: se aparta exactamente ese traje.'),
+                        TextInput::make('note')->label('Nota del personaje (solo la ves tú)')->maxLength(200)->placeholder('Ej.: sin orejas grandes'),
                     ]),
             ]),
             Section::make('Lugar y logística')->columns(2)->columnSpanFull()->schema([
@@ -131,6 +137,12 @@ class EventResource extends Resource
         return $options;
     }
 
+    /** Costume versions of a character (OUTFIT-01); empty for single-version characters, so the selector stays hidden. */
+    public static function outfitOptions($characterId): array
+    {
+        return filled($characterId) ? collect(\App\Models\Character::find((int) $characterId)?->outfits ?? [])->mapWithKeys(fn ($o) => [$o => $o])->all() : [];
+    }
+
     public static function titleField(): TextInput
     {
         return TextInput::make('title')->label('Nombre del evento')->required()->maxLength(255)
@@ -153,6 +165,8 @@ class EventResource extends Resource
             ->map(function ($c) {
                 $name = \App\Models\Character::whereKey((int) $c['character_id'])->value('name');
                 $n = max(1, (int) ($c['quantity'] ?? 1));
+
+                $name = $name && filled($c['outfit'] ?? null) ? "{$name} {$c['outfit']}" : $name;
 
                 return $name ? ($n > 1 ? "{$n} {$name}" : $name) : null;
             })->filter()->values();
