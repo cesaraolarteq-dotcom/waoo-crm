@@ -5,7 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Models\{Contract, ContractTemplateVersion, Event, PortalGrant, SignatureEvidence};
 use App\Services\Documents\{ActivateTemplateVersion, ArtifactStore, CreateContract, CreateTemplateVersion, IssueContract};
 use App\Services\Finance\Sandbox;
-use App\Services\Portal\IssuePortalGrant;
+use App\Services\Portal\{IssuePortalGrant, RevokePortalGrant};
 use App\Services\Audit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -35,15 +35,9 @@ final class DocumentController extends Controller
             'hash_meaning' => 'The client accepted the presented PDF bytes; the final PDF is a separate evidence artifact.'])->header('Cache-Control', 'no-store, private');
     }
     public function grant(Request $r, Event $event, IssuePortalGrant $service) { return response()->json($service->execute($r->user(), $event->id, $r->all()), 201)->header('Cache-Control', 'no-store, private')->header('Referrer-Policy', 'no-referrer'); }
-    public function revoke(Request $r, PortalGrant $grant)
+    public function revoke(Request $r, PortalGrant $grant, RevokePortalGrant $service)
     {
-        Sandbox::require('sandbox_documents');
-        DB::transaction(function () use ($r, $grant) {
-            $locked = PortalGrant::whereKey($grant->id)->lockForUpdate()->firstOrFail();
-            if ($locked->revoked_at) return;
-            $locked->revoked_at = now(); $locked->save();
-            Audit::recordFor($r->user(), 'portal.grant_revoked', $locked, [], ['revoked_at' => $locked->revoked_at->toIso8601String()]);
-        });
+        $service->execute($r->user(), $grant->id);
         return response()->json(['revoked' => true])->header('Cache-Control', 'no-store, private');
     }
     public function retryFinal(Request $request, Contract $contract)
