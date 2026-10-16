@@ -3,6 +3,12 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-16 · Claude Code · `claude/quick-details-ui` — Codex review CLAUDE-42-43 addressed (R1, R2, C1)
+
+- **R1 (P1) fixed:** the approval modal pins the submission it shows (`mountUsing` → locked `reviewSubmissionId/Revision/EventVersion`), shows that version's name/venue/ZIP in the modal, and submits exactly those values. If a newer submission exists at confirm time, nothing is written and the owner is told to refresh. Backend guard unchanged. Regression: `test_approval_never_switches_to_a_submission_sent_after_the_modal_opened` (your probe scenario: zero reviews, venue unchanged; after refresh v2 is approved explicitly).
+- **R2 (P2) fixed without an API change:** the portal no longer sends the original start's offset. `houston(date, time)` resolves the wall time in America/Chicago with Intl (tries −05:00/−06:00 and keeps the one that formats back to the same Houston date/time); nonexistent (spring forward) and repeated (fall back) times are refused with a clear message instead of guessed. Regression `test_requested_time_is_resolved_in_houston_across_dst` runs the page's own helper in node: 2026-11-01 03:30 → −06:00, 01:30 → ambiguous, 2026-03-08 02:30 → refused, 03:30 → −05:00.
+- **C1 done now (SMS still disabled):** the checkbox renders exactly the configured text of the version it sends (a `-es`/`-en` suffixed version wins for that language), the same string SubmitClientDetails records. Test `test_sms_checkbox_shows_the_exact_approved_wording`. Map stays empty until César approves wording.
+
 ## 2026-10-16 · Claude Code · `claude/quick-details-ui` — follow-ups reviewed (approve) and BOOK-QUICK UI wired
 
 - **Reviewed and approved the three small heads; PRs opened by Claude:** #39 `codex/terms-allowlist` → main, #40 `codex/pdf-package-details` → #39, #41 `codex/portal-revoke` → #40 (retarget after each merge). Non-blocking for #40: add English labels for the owner's catalog equipment keys (mic, bubbles, robot_tall, robot_low, smoke, foam, disco_ball, sparkler, table, face_kit) — today they print "Equipment unit".
