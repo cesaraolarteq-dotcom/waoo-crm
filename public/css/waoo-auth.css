@@ -60,3 +60,4 @@ body.auth{margin:0;min-height:100vh;font-family:var(--font);font-size:var(--fs-b
 .pw-eye svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .pw-eye .eye-shut,.pw-eye[aria-pressed="true"] .eye-open{display:none}
 .pw-eye[aria-pressed="true"] .eye-shut{display:block}
+.pw-eye[hidden]{display:none}
