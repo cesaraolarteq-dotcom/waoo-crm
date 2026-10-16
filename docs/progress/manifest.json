@@ -267,7 +267,8 @@
           "reviewed": true,
           "merged": false,
           "accepted": false,
-          "review_evidence": "d3fab7b reviewed with finance version corrections 3279591; Claude to integrate; Claude integrated 3279591 in a9f2996"
+          "review_evidence": "d3fab7b reviewed with finance version corrections 3279591; Claude to integrate; Claude integrated 3279591 in a9f2996",
+          "backend_followup": "1a5fbe3 preserves receipts through details approval and rejects generic signed-contract changes; this follow-up awaits Claude review"
         },
         {
           "name": "Registro de Zelle verificado y saldo",
@@ -308,25 +309,27 @@
           "name": "Portal de la clienta y firma",
           "weight": 3,
           "agent": "Codex+Claude",
-          "backend": "0cd7f5a",
+          "backend": "1a5fbe3",
           "ui": "46eed30",
           "reviewed": false,
           "merged": false,
           "accepted": false,
           "blocker": "Portal/firma del lado de Codex (DOC-PAY-API)",
-          "backend_verification": "Standalone: 146 MariaDB tests / 1123 assertions; integrated with admin-screens a9f2996 at 41d8260: 179 / 1482 plus Vite build; sandbox only; source review and owner acceptance pending"
+          "backend_verification": "1a5fbe3 + current main46ff921 (#22/#30), integration dd9fc6c and fixture fix a9d9725: full 205 MariaDB tests / 1745 assertions; Vite build, lint and strict Composer validation pass; no real operation or owner acceptance"
         },
         {
           "name": "Reserva rápida (tu mitad + la de la clienta)",
           "weight": 3,
           "agent": "Codex+Claude",
-          "backend": null,
+          "backend": "1a5fbe3",
           "ui": "bf6f06e",
           "reviewed": false,
           "merged": false,
           "accepted": false,
           "blocker": "Servicio QuickBook (Codex, propuesta en docs/QUICK-BOOKING-API-PROPOSAL.md)",
-          "backend_note": "QuickBook/SubmitClientDetails names accepted with transaction/version refinements in QUICK-BOOKING-API-DECISIONS.md; not implemented (0 backend credit)"
+          "backend_note": "QuickBook, immutable client details, explicit owner approval and attention API delivered; client portal/owner-review UI adapters remain pending",
+          "backend_verification": "1a5fbe3 + current main46ff921 (#22/#30), integration dd9fc6c and fixture fix a9d9725: full 205 MariaDB tests / 1745 assertions; Vite build, lint and strict Composer validation pass; no real operation or owner acceptance",
+          "ui_note": "Owner QuickBooking page calls real service (1a5fbe3); existing Claude portal preview still needs real details/review adapters"
         }
       ]
     },
