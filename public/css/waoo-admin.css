@@ -99,3 +99,18 @@ a.wcal-name:hover{text-decoration:underline}
 .wqb-next{display:flex;gap:8px;flex-wrap:wrap}
 .fi-sidebar a[href$="/reserva-rapida"]{background:#FF017C!important;border-radius:10px}
 .fi-sidebar a[href$="/reserva-rapida"] *{color:#fff!important;font-weight:800}
+/* Inicio */
+.wdash-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.wdash-card{border-radius:14px;border:1px solid rgba(20,26,51,.08);background:#fff;overflow:hidden}
+.dark .wdash-card{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08)}
+.wdash-card summary{display:flex;gap:12px;align-items:flex-start;padding:14px;cursor:pointer;list-style:none}
+.wdash-card summary::-webkit-details-marker{display:none}
+.wdash-card summary b{display:block;font-size:.95rem}.wdash-card summary small{display:block;font-size:.8rem;opacity:.75;margin-top:2px}
+.wdash-n{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-weight:800;color:#fff}
+.tone-bad .wdash-n{background:#B4233A}.tone-warn .wdash-n{background:#8F5B00}.tone-info .wdash-n{background:#1E4DD8}
+.wdash-card ul{margin:0;padding:0 14px 12px 60px;display:grid;gap:6px;font-size:.85rem}
+.wdash-card a{color:#122F94;text-decoration:underline}.dark .wdash-card a{color:#93A7FF}
+.wdash-row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 0;border-top:1px solid rgba(20,26,51,.06);color:inherit}
+.wdash-row:first-child{border-top:0}.wdash-row b{display:block}.wdash-row small{opacity:.75}
+.wdash-ok{margin:0;font-weight:700;color:#11734A}
+.wdash-row>:last-child{flex:none}

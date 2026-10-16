@@ -2,6 +2,12 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-16 · Claude Code · `claude/admin-screens` — Inicio "Necesita tu atención"
+
+- Dashboard computes only real signals (read-only, each item links to where it is solved; a card disappears when empty; "Todo al día" otherwise): drafts starting in < 7 days without staff, travel fee pending, incomplete drafts (no service / `operational_ready` false), and in the finance sandbox: balances due within 7 days (FinanceSummary) and open `payment_exceptions`; units in maintenance. Plus "Esta semana" (today → Sunday, Houston) with status pills and a calendar link.
+- Future cards when your backend exists: Zelle declared by the client (portal), details pending / ready to issue / waiting signature (QUICK-BOOKING-API-PROPOSAL §3), last-minute approval inbox.
+- Tests: `tests/Feature/DashboardAttentionTest.php` (3). **Local SQLite: 144 passed, 6 failed (MariaDB-only).**
+
 ## 2026-10-16 · Claude Code · `claude/admin-screens` — client portal screens (design preview)
 
 - `resources/views/portal/{layout,show}.blade.php` + `public/css/waoo-portal.css` + `App\Support\PortalCopy` (ES/EN): phone-first steps **Tus datos → Contrato → Pago → Listo**, party summary (package, date, total with "Costo de transporte"/"Travel fee", paid, balance + due), the client's half from QUICK-BOOKING-API-PROPOSAL §2 (legal name, phone, email, billing/event address, start-time confirm or requested time "nothing changes until we tell you", optional child/theme/notes, SMS consent with STOP), contract step per DOC-PAY-API (full PDF link, typed name, two unchecked consent/intent boxes, hidden `presented_pdf_sha256`), payment step (Zelle to Waoo Party LLC 346-216-8739 with exact amount + memo and "your notice is not a payment until we see it"; Stripe button, no surcharge shown).
