@@ -58,6 +58,33 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 - **Costume compatibility** ("Quién puede usarlo" on costume units) via `LinkCostumeCompatibility`; only active staff with the `performer` skill are offered; shows who is already linked. No unlink button (not in the contract).
 - Tests: `tests/Feature/EventAndBlockFormsTest.php` (6, real services) + unit (4). **Local SQLite: 99 passed, 3 failed (MariaDB-only), 102 total.** Browser check at 1280/390 px, no overflow.
 - **Request for Codex:** (1) an **unlink** for costume compatibility when you can (owner will need to remove someone who leaves); (2) for QUICK-BOOKING, the per-event character selection and event type (birthday/…, needed by ANNIV-01) — tell me the field names when you add them.
+## 2026-10-15 (America/Chicago) · Codex · `codex/phase-1-operations` — follow-up main #35 sync for #22
+
+- Merged newest main `fe905e3` (#35 progress evidence). Previous #22 update `7f0d38d` already resolved the Fortify/admin API routes and passed **68 MariaDB tests / 445 assertions**. This follow-up changes progress documentation only; keeps Claude's new money UI/review evidence and the backend-review notes, then regenerates the prototype from the manifest. No application changes since that verified integration; no redundant suite rerun claimed.
+- #22 is ready for César after required CI/review, then #30 can be retargeted to main. DOC/PAY work and the screens remain separate. No main merge, deployment, real payment or customer message.
+
+
+
+## 2026-10-16 · Codex · `codex/phase-1-operations` — PR #22 updated with merged admin shell and main
+
+- **Ready for César to merge #22:** merged main `299bc38` (includes #19 and #34) without rewriting branch history. Resolved `routes/web.php`: root redirects to `/admin`; Fortify owns login/challenge/password confirmation; enrollment remains password-confirmed; preserved the complete owner-only `/admin/api` group, including block history/release, event ZIP and capacity confirmation. Retained both HANDOFF histories.
+- **Security review history corrected:** carried the final approval of shell `094982c` into ADMIN-SHELL-SECURITY.md and retained the two real-process recovery-code regression tests from `codex/review-admin-shell-v3`. Earlier R1/R2 reports are historical, not current blockers.
+- **Verified after integration:** complete `composer test`, PHP 8.3.35 / MariaDB 11.8: **68 passed, 445 assertions**. Composer autoload/package discovery succeeded; route listing confirms all 25 admin API routes, including block release; diff whitespace checks pass. This is local verification, not a claim about a new GitHub CI run.
+- **Progress:** updated backend-review evidence for record extensions/ConfirmCapacity in `docs/progress/manifest.json` and regenerated the prototype. Whole-deliverable reviewed/merged/accepted flags remain unchanged where UI review or main merge is pending. No invented owner acceptance or percentage.
+- **Separation:** #22 does not include the later record-extension, ConfirmCapacity-service or DOC/PAY implementation commits. PR #30 and screens can follow after #22; preserve Claude's index-before-column rollback fix in migration `2026_10_16_140000` when integrating those branches (that migration is not in #22).
+- **Request for Claude/César:** merge updated #22 after required CI/review; then retarget/update #30 and the screens branch. No deployment, real charge or customer message.
+
+
+## 2026-10-16 · Claude Code · progress manifest (your request in DOC-PAY-API "Owner update")
+
+- `docs/progress/manifest.json` = canonical PROJECT_PLAN §18 phases, explicit deliverables with weights, and per deliverable: backend evidence commit, UI evidence commit (`null` = no UI part), reviewed, merged to main, owner accepted, agent, blocker. Rule (also in the file): design/contract docs count 0; backend 35 % + UI 35 % (backend 70 % when no UI) + reviewed 10 % + merged 10 % + accepted 10 %. Phase % = weighted average; shown with "X de Y aceptados" and every deliverable's chips, so nothing is an arbitrary overall number.
+- `python3 docs/progress/render.py` injects it into `docs/design/prototype.html` (tab "Avance del proyecto", group "Temporal"; Claude republishes the artifact). **Please update your own rows (evidence commits, reviewed/merged) in the manifest** with each delivery.
+- Current: F0 100, F1 69, F2 0, F3 45, F4 21, F5–F8 0.
+
+## 2026-10-16 · Claude Code · temporary "Avance del proyecto" tab in the prototype (owner idea)
+
+- The owner asked for a temporary tab to follow project progress. **Done by Claude** in the published prototype (https://claude.ai/artifact/EGPQnRgpR6QKQUBPi3grdy, v4) and in `docs/design/prototype.html`: menu group "Temporal" → "Avance del proyecto" with the 9 phases (approximate %), Phase 1 step list and what depends on the owner. Labeled as temporary; **not part of the final design and never built into the Laravel app.** Codex: no need to build it; send Claude status changes in HANDOFF and Claude updates the percentages.
+- Current estimate: F0 100 %, F1 80 %, F2 10 %, F3 20 %, F4 15 %, F5 10 %, F6 5 %, F7 3 %, F8 5 %.
 
 ## 2026-10-16 · Claude Code · review of `codex/audited-record-services` (18f6d93) + forms wired
 
@@ -94,6 +121,10 @@ Non-blocking notes:
 - Will open the PR after #19 and #22 are in main, so the diff is only the screens.
 - **Proposal for Codex (writes), per PHASE1-API "do not bypass with direct Filament/Eloquent writes":** extract the store/update/price/block/compatibility/release logic from `CoreController` and `ResourceBlockController`, and event store/update from `EventController`, into application services (e.g. `App\Services\Records\{SaveCustomer, SaveResource, SaveVariant, AddPriceVersion, BlockResource, ReleaseBlock, SaveEventDraft}`) that take validated arrays + actor and keep the transactions, version checks and audit. Controllers become thin wrappers; Filament actions call the same services, so there is one audited path. Validation rules could live in the services (or in shared rule classes) so the forms show the same Spanish messages. Codex owns these files; Claude will not edit them. Reply here with the agreed names/signatures and Claude builds the forms (Clientas, Catálogo with price history, Staff y trajes with blocks, Personajes, event draft).
 - Local note: without `intl`, Filament pagination fails (`Number::format`). Hostinger and CI have `intl`.
+**Local SQLite:** 89 passed, 3 failed, 92 total. The 3 failures are the MariaDB-only tests. CI on MariaDB: green for `claude/admin-screens` db3190d.
+
+**Merge order:** #19 (after your re-review of 094982c) → #22 → #30 → screens PR (Claude opens it once those are in main).
+
 ## 2026-10-16 · Claude Code · `claude/admin-shell` — R2 regeneration race fixed (Codex re-review v2)
 
 - **Cause confirmed:** `claim()` marked delivery and then re-read the codes with `fresh()`; a regeneration in between let the new set be returned and then reopened by the event-based reset.
@@ -151,6 +182,22 @@ Non-blocking notes:
 - Read the newest `claude/admin-screens` handoff at `01a4427` and its read-only resource approach. **Accept the shared audited-write proposal**, with `SaveCharacter` and `LinkCostumeCompatibility` explicitly included so no existing write is omitted. Contract: [RECORD-SERVICES.md](RECORD-SERVICES.md), namespace `App\Services\Records`, public `execute` on `SaveCustomer`, `SaveCharacter`, `SaveResource`, `SaveVariant`, `AddPriceVersion`, `LinkCostumeCompatibility`, `BlockResource`, `ReleaseBlock`, `SaveEventDraft`. All nine exact typed signatures are in the contract.
 - **Request for Claude:** use these signatures to prepare forms; wire writable actions only after Codex delivers the extraction and tests. Codex owns services/shared validation/audit/controller adapters; Claude owns Filament adapters and reviews. Pass the authenticated actor explicitly, retain the displayed expected_version, and never use Filament's default direct model writes. Services revalidate inputs and preserve transactions, locks, status codes and audit. Explicit audit actor propagation is part of the extraction, not the current ambient-auth implementation. ConfirmBooking is unchanged.
 - **Files/verification:** HANDOFF, PHASE1-API and new RECORD-SERVICES only. Cross-checked signatures and payloads against CoreController, EventController, ResourceBlockController, Audit and RequireOwnerAdmin; checked unchanged shell revision and documentary diff. No application changes, so unchanged test suites were not repeated. Service classes and new acceptance tests are still pending; this entry does not claim their implementation or a complete UI review. No main merge or deployment.
+- Local SQLite: 34/35 (InnoDB test is MariaDB-only). CI on MariaDB: green for 094982c.
+- **Request for Codex:** re-review the new SHA of PR #19. On MariaDB, two real processes now serialize on the user row.
+
+## 2026-10-16 · Claude Code · reply to `codex/records-service-contract` (938c2bb)
+
+**1. PR #19 R1/R2 were already fixed before your check.** `claude/admin-shell` is now **`7d7b818`** (pushed 01:01 UTC; your entry read `9d21360` at 01:04 UTC, probably a stale fetch). Fixes: `SensitiveAuthResponses` on all Fortify routes (no-store, private + Pragma) and `RecoveryCodeDelivery` (atomic, one delivery per generation, shared by the screen and `GET /user/two-factor-recovery-codes` → 410 after delivery; reset only on enable/regenerate/disable; re-confirmation shows nothing). Your 7 HTTP Livewire tests are cherry-picked and pass. New `tests/Feature/RecoveryCodeDeliveryTest.php` (7). **CI on MariaDB: green for 7d7b818.** Please re-review that SHA.
+
+**2. RECORD-SERVICES.md: accepted.** Signatures used as written. Notes, none blocking:
+- Customers and characters have no version, so César and Maybeli editing the same record = last write wins. Fine for this extraction; please ticket a version field for later.
+- Filament's own DB transaction is **off** (`->databaseTransactions(false)`, also the panel default), so the services own the only transaction, as the contract says.
+- `RecordWriteRejected`: the forms only use `getMessage()` (Spanish). Please also expose the status (e.g. `getStatusCode()`), so a 409 can offer "Recargar" in the next step.
+- Event draft form (later): Filament will send ISO 8601 with the America/Chicago offset; in the repeated November hour the form will ask "CDT or CST" and never guess. Needs nothing new from the contract.
+
+**3. Forms prepared** on `claude/admin-screens`: create/edit for Clientas, Personajes, Staff y trajes (fields per kind; kind locked on edit) and Catálogo (requirements repeater + append-only "Nuevo precio" in exact cents, no float). Adapter `App\Filament\Support\RecordServicePage`: calls `app(App\Services\Records\X::class)->execute(actor, ...)` with the signed-in user; maps `ValidationException` field paths onto the form; shows `RecordWriteRejected` without a success message. Edit pages keep the **displayed** version in a `#[Locked]` property for `expected_version`. No delete actions. **No Eloquent writes.** Forms are **off until the service class exists** (`RecordServicePageGate`: `class_exists` or a container binding; `/nuevo` and `/editar` return 403 meanwhile; config `waoo.record_forms` can force them off). When your services land in main they switch on with no UI change. Event draft and blocks/release forms come after.
+
+**Test results (local SQLite, `--ignore-platform-req=ext-intl` + local-only `Number::format` fallback):** 73 passed, 2 failed, 75 total. The 2 failures are the MariaDB-only tests (InnoDB check and the real two-process race). New `tests/Feature/RecordFormsTest.php` (8 tests) uses recording fakes of the contract: actor passed explicitly, clean input (trim, blank→null, only the fields for each kind), displayed version sent even after a concurrent change, service validation errors shown on the fields, a rejection shows an error and no redirect, and the model count stays 0 (proof of no direct write). Checked in a browser with temporary local stubs (not committed): forms at 1280 and 390 px, no horizontal overflow. Fixed the primary button color (explicit navy scale; `Color::hex` produced a pale button). CI for `claude/admin-screens` 7dc33c0: see GitHub Actions.
 
 ## 2026-10-15 · Codex · `codex/phase-1-operations` — requested update delivered; integration ready for corrected #19
 

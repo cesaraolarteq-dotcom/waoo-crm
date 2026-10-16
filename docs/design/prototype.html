@@ -189,6 +189,24 @@ dialog::backdrop{background:rgba(10,14,40,.55)}
 .crew{display:flex;flex-wrap:wrap;gap:6px}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;z-index:20;box-shadow:var(--shadow)}
 .mobile-nav{display:none}
+.temp-note{display:flex;gap:10px;align-items:flex-start;background:var(--warn-bg);color:var(--warn);border-radius:var(--r);padding:12px 14px;font-size:var(--fs-sm);font-weight:600;margin-bottom:16px}
+.phase{display:grid;grid-template-columns:minmax(0,1fr) 64px;gap:6px 14px;align-items:center;padding:14px 0;border-top:1px solid var(--line)}
+.phase:first-of-type{border-top:0}
+.phase h3{margin:0;font-size:var(--fs-md)}.phase p{margin:2px 0 0;color:var(--muted);font-size:var(--fs-sm)}
+.phase .pct{font-size:22px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums}
+.phase .bar{grid-column:1/-1;height:10px}
+.phase.now{background:linear-gradient(90deg,rgba(255,1,124,.06),transparent);margin:0 -14px;padding:14px}
+.phase{cursor:pointer}.phase:focus-visible{outline:none;box-shadow:var(--focus);border-radius:10px}
+.dl{border-top:1px solid var(--line);padding:10px 0;display:grid;gap:6px}.dl:first-child{border-top:0}
+.dl b{font-size:var(--fs-sm)}.dl small{color:var(--muted);font-size:var(--fs-xs)}
+.stg{display:flex;flex-wrap:wrap;gap:4px}.stg span{font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;background:var(--surface-2);color:var(--faint)}
+.stg span.on{background:var(--ok-bg);color:var(--ok)}.stg span.na{opacity:.45}
+.blk{font-size:var(--fs-xs);color:var(--warn);background:var(--warn-bg);border-radius:8px;padding:3px 8px;justify-self:start}
+.steps-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.steps-list li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;font-size:var(--fs-sm)}
+.steps-list li b{font-weight:700}
+.steps-list .st{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
+.st.ok{background:var(--ok)}.st.wip{background:var(--warn)}.st.todo{background:var(--line);color:var(--muted)}
 @media (max-width:1000px){.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.split,.g3{grid-template-columns:1fr}}
 @media (max-width:760px){
   .app{grid-template-columns:1fr}
@@ -523,6 +541,28 @@ dialog::backdrop{background:rgba(10,14,40,.55)}
   </section>
 </template>
 
+<!-- ============ AVANCE (TEMPORAL: se quita del diseño final) ============ -->
+<template id="t-avance">
+  <section class="screen">
+    <header class="page"><div><h1>Avance del <em>proyecto</em></h1><p class="sub" id="av-updated"></p></div></header>
+    <div class="temp-note"><span>⏳</span><span>Pestaña temporal para seguir la construcción del CRM. No forma parte del diseño final: se quita cuando terminemos.</span></div>
+    <div class="grid g2">
+      <div class="card">
+        <h2>Las 9 fases</h2>
+        <p class="hint" id="av-how"></p>
+        <div id="phases"></div>
+      </div>
+      <div style="display:grid;gap:16px;align-content:start">
+        <div class="card"><h2 id="av-detail-title">Detalle</h2><p class="hint">Toca una fase para ver sus entregables.</p><div id="av-detail"></div></div>
+        <div class="card">
+          <h2>Lo que depende de ti</h2>
+          <ul class="steps-list" id="av-blockers"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+</template>
+
 <script>
 (function(){
   var icons={
@@ -534,9 +574,10 @@ dialog::backdrop{background:rgba(10,14,40,.55)}
     catalogo:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
     staff:'<path d="M12 3l2 4 4 .5-3 3 .8 4.5L12 13l-3.8 2 .8-4.5-3-3 4-.5z"/><path d="M5 21h14"/>',
     portal:'<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>',
-    reportes:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'
+    reportes:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    avance:'<path d="M3 12h4l3-8 4 16 3-8h4"/>'
   };
-  var menu=[["Día a día"],["inicio","Inicio","4"],["calendario","Calendario"],["aprobar","Por aprobar","1"],["clientas","Clientas"],["Vender"],["cotizacion","Cotización"],["catalogo","Catálogo"],["Operación"],["staff","Staff y trajes"],["portal","Vista de la clienta"],["reportes","Reportes"]];
+  var menu=[["Día a día"],["inicio","Inicio","4"],["calendario","Calendario"],["aprobar","Por aprobar","1"],["clientas","Clientas"],["Vender"],["cotizacion","Cotización"],["catalogo","Catálogo"],["Operación"],["staff","Staff y trajes"],["portal","Vista de la clienta"],["reportes","Reportes"],["Temporal"],["avance","Avance del proyecto"]];
   var m=document.getElementById("menu"), mn=document.getElementById("mnav"), host=document.getElementById("screens");
   var qk=document.createElement("button"); qk.type="button"; qk.className="qk"; qk.dataset.go="reserva"; qk.textContent="+ Reserva"; mn.appendChild(qk);
   menu.forEach(function(x){
@@ -552,7 +593,7 @@ dialog::backdrop{background:rgba(10,14,40,.55)}
     if(!document.getElementById("t-"+id)) id="inicio";
     host.innerHTML=""; host.appendChild(document.getElementById("t-"+id).content.cloneNode(true));
     document.querySelectorAll(".menu [data-go], .mobile-nav [data-go]").forEach(function(b){ b.setAttribute("aria-current", b.dataset.go===id?"page":"false"); });
-    ({reserva:reserva,cotizacion:quote,portal:portal,evento:evento})[id]&&({reserva:reserva,cotizacion:quote,portal:portal,evento:evento})[id]();
+    ({reserva:reserva,cotizacion:quote,portal:portal,evento:evento,avance:avance})[id]&&({reserva:reserva,cotizacion:quote,portal:portal,evento:evento,avance:avance})[id]();
     try{history.replaceState(null,"","#"+id);}catch(e){}
     window.scrollTo(0,0);
   }
@@ -578,6 +619,44 @@ dialog::backdrop{background:rgba(10,14,40,.55)}
   var PK=[["Estrella",275,"p-star","30 min",1,null],["Mágico",375,"p-magic","1 hora",1,150],["Música y Juegos",525,"p-mg","2 horas",0,null],["MyJ 2.0",600,"p-mg2","2 horas",1,150],["Waoo",800,"p-waoo","3 horas",1,150]];
   var TRAVEL={"77494":20,"77450":20,"77433":40,"77479":40,"77406":30,"77441":35};
 
+
+  // ---- Avance (temporal) ----
+  /*PROGRESS-START*/var PROGRESS={"_about":"Temporary owner progress view (prototype tab 'Avance del proyecto'). Phases = docs/PROJECT_PLAN.md §18. Each agent updates its own evidence; Claude renders. Rules: a design/contract doc counts 0; a part counts only with a tested commit; review, merge to main and owner acceptance are separate steps. Phase % = sum(weight × stage score) / sum(weight).","updated":"2026-10-16","stage_scores":{"backend":0.35,"ui":0.35,"reviewed":0.1,"merged":0.1,"accepted":0.1},"stage_scores_note":"If a deliverable has no UI part (ui: null), its backend counts 0.7. No UI-only deliverable without backend counts backend as 0.","phases":[{"id":0,"name":"Auditoría y reglas","deliverables":[{"name":"Hostinger verificado (PHP, base de datos, cron, Stripe de prueba)","weight":3,"agent":"Claude+Codex","backend":"probes/phase0 P1–P5","ui":null,"reviewed":true,"merged":true,"accepted":true},{"name":"Contrato, catálogo borrador y decisiones D1–D9","weight":2,"agent":"Claude","backend":"docs main","ui":null,"reviewed":true,"merged":true,"accepted":true},{"name":"Arquitectura ARCH-01 firmada","weight":1,"agent":"Codex","backend":"docs/arch/ARCH-01-ADR.md","ui":null,"reviewed":true,"merged":true,"accepted":true}]},{"id":1,"name":"Base y operación","deliverables":[{"name":"Base Laravel + pruebas automáticas (CI)","weight":1,"agent":"Codex","backend":"0b74015","ui":null,"reviewed":true,"merged":true,"accepted":false},{"name":"Datos: clientas, eventos, catálogo, recursos, auditoría","weight":2,"agent":"Codex","backend":"0b74015","ui":null,"reviewed":true,"merged":true,"accepted":false},{"name":"Entrar con contraseña + 2 pasos","weight":2,"agent":"Codex+Claude","backend":"0b74015","ui":"094982c","reviewed":true,"merged":true,"accepted":false},{"name":"Panel con el diseño de Waoo","weight":1,"agent":"Claude","backend":"0b74015","ui":"094982c","reviewed":true,"merged":true,"accepted":false},{"name":"Catálogo (precios con historial, personajes incluidos)","weight":2,"agent":"Codex+Claude","backend":"ce2c3db","ui":"d3fab7b","reviewed":false,"merged":false,"accepted":false,"blocker":"Hoja de catálogo de César"},{"name":"Staff, trajes, equipo, vehículos, bloqueos","weight":2,"agent":"Codex+Claude","backend":"ce2c3db","ui":"d3fab7b","reviewed":false,"merged":false,"accepted":false,"blocker":"Inventario de César"},{"name":"Clientas y borradores de eventos","weight":2,"agent":"Codex+Claude","backend":"ce2c3db","ui":"d3fab7b","reviewed":false,"merged":false,"accepted":false},{"name":"Apartar recursos sin choques (con depósito)","weight":3,"agent":"Codex+Claude","backend":"cbaefa7","ui":"d3fab7b","reviewed":false,"merged":false,"accepted":false},{"name":"Calendario con márgenes de 45 min","weight":2,"agent":"Claude","backend":"ce2c3db","ui":"b2839dd","reviewed":false,"merged":false,"accepted":false},{"name":"Prueba con César en el sitio de prueba","weight":2,"agent":"Ambos + César","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false,"blocker":"Permiso para subir a crm-test + catálogo"}]},{"id":2,"name":"Cotización y logística","deliverables":[{"name":"Formulario de la web → prospecto en el CRM","weight":3,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Costo de transporte por ZIP dentro del CRM","weight":2,"agent":"Codex","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Cotizaciones con versiones","weight":3,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Costos y margen por paquete","weight":2,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false,"blocker":"Tarifas del staff (César)"}]},{"id":3,"name":"Disponibilidad","deliverables":[{"name":"Recetas por paquete y personaje","weight":3,"agent":"Codex+Claude","backend":"ce2c3db","ui":"d3fab7b","reviewed":false,"merged":false,"accepted":false},{"name":"Motor sin choques (habilidades, trajes, vehículos, concurrencia)","weight":3,"agent":"Codex","backend":"cbaefa7","ui":null,"reviewed":true,"merged":false,"accepted":false},{"name":"Rutas y tiempos de manejo automáticos","weight":2,"agent":"Codex","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Disponibilidad automática para la web","weight":2,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false}]},{"id":4,"name":"Portal, firma y pagos","deliverables":[{"name":"Montos acordados por evento (revisión financiera)","weight":2,"agent":"Codex+Claude","backend":"cbaa83b","ui":"d3fab7b","reviewed":true,"merged":false,"accepted":false},{"name":"Registro de Zelle verificado y saldo","weight":3,"agent":"Codex+Claude","backend":"cbaa83b","ui":"d3fab7b","reviewed":true,"merged":false,"accepted":false},{"name":"Stripe (modo prueba, sin Affirm)","weight":3,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false,"blocker":"Reglas del 3 % (César)"},{"name":"Contrato con versiones y PDF","weight":3,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false,"blocker":"Revisión de abogado antes de clientas reales"},{"name":"Portal de la clienta y firma","weight":3,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Reserva rápida (tu mitad + la de la clienta)","weight":3,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false}]},{"id":5,"name":"Piloto y comunicaciones","deliverables":[{"name":"Correos a clientas (envío real)","weight":3,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Recordatorios (7 días, saldo, gracias + reseña)","weight":2,"agent":"Codex","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Importar eventos futuros de HoneyBook","weight":2,"agent":"Codex","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Piloto en paralelo con HoneyBook","weight":3,"agent":"Ambos + César","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false}]},{"id":6,"name":"Staff y gestión avanzada","deliverables":[{"name":"Portal del staff y aceptación de asignaciones","weight":3,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"SMS (Twilio)","weight":2,"agent":"Codex","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Pago al staff y gastos","weight":2,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Reportes del lunes y del mes","weight":2,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false}]},{"id":7,"name":"Autoservicio ampliado","deliverables":[{"name":"Cambios y reprogramaciones (CHANGE-A)","weight":3,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Correo «Un año después» (ANNIV-01)","weight":2,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"WhatsApp y upsells","weight":2,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false}]},{"id":8,"name":"Migración final","deliverables":[{"name":"Archivo histórico de HoneyBook (~250 clientas)","weight":3,"agent":"Codex","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Capacitación y paso definitivo","weight":2,"agent":"Ambos + César","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false}]}]};/*PROGRESS-END*/
+  function stageScore(d){
+    var S=PROGRESS.stage_scores, sc=0;
+    if(d.backend) sc+= d.ui===null ? S.backend+S.ui : S.backend;
+    if(d.ui && d.backend) sc+=S.ui;
+    if(d.reviewed) sc+=S.reviewed; if(d.merged) sc+=S.merged; if(d.accepted) sc+=S.accepted;
+    return Math.min(1,sc);
+  }
+  function phasePct(ph){var w=0,t=0;ph.deliverables.forEach(function(d){w+=d.weight;t+=d.weight*stageScore(d);});return w?Math.round(100*t/w):0;}
+  function esc(t){return String(t).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+  function avance(){
+    if(!PROGRESS.phases) return;
+    var colors=["var(--ok)","var(--pink)","var(--teal)","var(--teal)","var(--teal)","var(--teal)","var(--purple)","var(--purple)","var(--purple)"];
+    var current=PROGRESS.phases.filter(function(p){var x=phasePct(p);return x>0&&x<100;})[0];
+    document.getElementById("av-updated").textContent="Actualizado el "+PROGRESS.updated+" · calculado de "+PROGRESS.phases.reduce(function(n,p){return n+p.deliverables.length;},0)+" entregables con evidencia en GitHub";
+    document.getElementById("av-how").textContent="Cada entregable suma por partes: lógica probada 35 %, pantalla probada 35 %, revisado por el otro agente 10 %, en main 10 %, aceptado por ti 10 %. Un documento o diseño solo no suma.";
+    document.getElementById("phases").innerHTML=PROGRESS.phases.map(function(f,i){
+      var pct=phasePct(f), done=f.deliverables.filter(function(d){return d.accepted;}).length, now=current&&current.id===f.id;
+      return '<div class="phase'+(now?' now':'')+'" tabindex="0" role="button" data-phase="'+i+'"><div><h3>'+f.id+'. '+esc(f.name)+(now?' <span class="pill warn">En curso</span>':'')+'</h3><p>'+done+' de '+f.deliverables.length+' entregables aceptados</p></div><div class="pct">'+pct+'%</div>'+
+        '<div class="bar" role="img" aria-label="'+pct+' por ciento"><i style="width:'+pct+'%;background:'+colors[i]+'"></i></div></div>';
+    }).join("");
+    function detail(i){
+      var f=PROGRESS.phases[i];
+      document.getElementById("av-detail-title").textContent="Fase "+f.id+": "+f.name+" · "+phasePct(f)+"%";
+      document.getElementById("av-detail").innerHTML=f.deliverables.map(function(d){
+        function chip(label,on,na){return '<span class="'+(na?'na':(on?'on':''))+'">'+(on&&!na?'✓ ':'')+label+'</span>';}
+        return '<div class="dl"><b>'+esc(d.name)+'</b><div class="stg">'+chip("Lógica",!!d.backend,false)+chip("Pantalla",!!d.ui,d.ui===null)+chip("Revisado",d.reviewed)+chip("En main",d.merged)+chip("Aceptado por ti",d.accepted)+'</div>'+
+          '<small>'+esc(d.agent)+(d.backend||d.ui?' · evidencia: '+esc([d.backend,d.ui].filter(Boolean).join(", ")):'')+' · '+Math.round(stageScore(d)*100)+'%</small>'+(d.blocker?'<span class="blk">Falta: '+esc(d.blocker)+'</span>':'')+'</div>';
+      }).join("");
+    }
+    document.getElementById("phases").addEventListener("click",function(e){var el=e.target.closest("[data-phase]");if(el)detail(+el.dataset.phase);});
+    document.getElementById("phases").addEventListener("keydown",function(e){var el=e.target.closest("[data-phase]");if(el&&(e.key==="Enter"||e.key===" ")){e.preventDefault();detail(+el.dataset.phase);}});
+    detail(current?PROGRESS.phases.indexOf(current):0);
+    var blockers=[];PROGRESS.phases.forEach(function(f){f.deliverables.forEach(function(d){if(d.blocker&&/César|abogado|Permiso/i.test(d.blocker)&&blockers.indexOf(d.blocker)<0)blockers.push(d.blocker);});});
+    document.getElementById("av-blockers").innerHTML=blockers.map(function(b){return '<li><span class="st wip">…</span><span>'+esc(b)+'</span></li>';}).join("");
+  }
   function reserva(){
     var st={p:4,lang:"es",saved:false};
     var g=document.getElementById("r-pkgs");
