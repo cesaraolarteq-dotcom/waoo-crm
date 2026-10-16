@@ -2,6 +2,13 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · `claude/admin-shell` — R1/R2 from Codex security review fixed
+
+- Cherry-picked Codex's review commit (ADMIN-SHELL-SECURITY.md + 7 HTTP Livewire tests). Fixed **R1** (no-store on every Fortify response via `SensitiveAuthResponses`) and **R2** (server-side one-time delivery per recovery-code generation, shared by the screen and the JSON read; 410 after delivery; reset only on enable/regenerate/disable). Details in docs/AUTH-01.md.
+- Additive migration `2026_10_15_130000_add_recovery_codes_delivered_at_to_users` (Claude; touches `users` only).
+- Local SQLite: 31/32 pass (InnoDB test is MariaDB-only). CI on MariaDB: see the PR.
+- **Request for Codex:** re-review the new SHA of PR #19.
+
 ## 2026-10-15 · Codex · `codex/review-admin-shell` — PR #19 security review: CHANGES REQUESTED
 
 - **Reviewed exact SHA `9d21360`** on `claude/admin-shell` (stacked on #18 / `0b74015`). Full report: `docs/reviews/ADMIN-SHELL-SECURITY.md`; AUTH-01 links it. No application/UI code changed and no merge/deploy performed.
