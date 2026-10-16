@@ -72,6 +72,10 @@ These are open tickets, not implemented changes and not additional approval bloc
 
 | COST-A | **Cost and margin per package and per event (owner request 2026-10-15)**: staff pay by role × paid hours (incl. prep/makeup time where the owner says so), staff transport pay (variable by people picked up + distance; formula from the owner), materials/consumables, card fees → profit per package (estimate) and per event (estimate vs actual after the event), monthly summary. Admin-only; staff never see others' pay | Codex (rules, calculations) + Claude (report UI) | the other | OPS-01, QUOTE-01, owner rates |
 
+### COST-A foundation (2026-10-16)
+
+Source `08c284a` / `codex/event-cost-snapshots`: owner-entered immutable estimate/actual event costs and current contribution margin, with explicit unknown costs/coverage and private owner-only API. Contract [COST-A-API.md](COST-A-API.md). Source/UI review and forms pending. **COST-A remains incomplete:** automatic rate/paid-hour/preparation/transport rules, shared allocation, per-package margins and later reports still require owner data and implementation. This foundation invents no rates or payroll policy and changes no customer charges.
+
 ## Phase 4: portal, signature and payments (Track A)
 | ID | Task | Impl. | Review | Depends on |
 | --- | --- | --- | --- | --- |
