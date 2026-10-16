@@ -63,7 +63,7 @@ Auth/CSRF/throttle pueden usar el formato existente del framework; no se promete
 
 ## B y C: separación de alcance
 
-Email recomendado Postmark, From `Waoo Party <reservas@mail.waooparty.com>`, Reply-To `sales@waooparty.com`, sujeto a verificación de dominio/proveedor y aprobación antes de DNS/envíos. SMS automatizado, si se necesita después, con número dedicado/proveedor y A2P/consentimiento; WhatsApp API solo tras comprobar coexistencia/opt-in/templates. **No se publican rutas ficticias de envío ni webhooks sin elegir/verificar proveedor**: sus firmas/autenticación, deduplicación, estados y opt-outs tendrán contrato propio antes del código. Leer recomendaciones por sección en docs/tickets/COMMS-01.md.
+Email recomendado Postmark, From `Waoo Party <reservas@mail.waooparty.com>`, Reply-To `sales@waooparty.com`, sujeto a verificación de dominio/proveedor y aprobación antes de DNS/envíos. Decisión del dueño en main62f898e: solo~50% usa WhatsApp; SMS es el primer canal de automatización y WhatsApp un complemento. SMS automatizado, después, con número dedicado/proveedor y A2P/consentimiento; WhatsApp API solo tras comprobar coexistencia/opt-in/templates. **No se publican rutas ficticias de envío ni webhooks sin elegir/verificar proveedor**: sus firmas/autenticación, deduplicación, estados y opt-outs tendrán contrato propio antes del código. Leer recomendaciones por sección en docs/tickets/COMMS-01.md.
 
 ## Criterios de aceptación antes de conectar pantallas
 
