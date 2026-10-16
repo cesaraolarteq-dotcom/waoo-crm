@@ -30,7 +30,7 @@ Use the exact existing field names and limits in [PHASE1-API.md](PHASE1-API.md) 
 
 Services validate and normalize their inputs, even when called directly. Shared rules/messages are authoritative for HTTP and Filament; form validation may improve feedback but cannot replace service validation. Apply the same trimming/empty-string-to-null behavior as the HTTP path, without changing password/secret handling. Only validated editable fields reach persistence. Spanish field errors retain the existing field paths, including nested service/requirement paths.
 
-Updates to resources, variants and event drafts require `expected_version` inside `$input`, checked under the row lock. Customers and characters currently have no version field: do not introduce one during this extraction. Resource kind remains immutable. Event updates remain draft-only.
+Updates to customers, characters, resources, variants and event drafts require `expected_version` inside `$input`, checked under the row lock. The coordinated RECORD-VERSION follow-up adds customer/character versions and both edit-page adapters; see [RECORD-VERSION-API.md](RECORD-VERSION-API.md). Creates do not require a version; these two new record types start at version 1, increment once on a successful update and reject stale writes with 409 before audit. Resource kind remains immutable. Event updates remain draft-only.
 
 Date inputs require ISO 8601 with an explicit UTC offset; persist UTC, display America/Chicago. Filament's adapter must serialize a selected local date with its intended offset and handle ambiguous DST times explicitly. Never guess an offset or silently reinterpret the event time. Money is integer cents; unknown travel fee stays null, not zero.
 

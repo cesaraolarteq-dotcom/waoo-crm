@@ -15,16 +15,16 @@ final class SaveCustomer
         $actor = RecordActor::authorize($actor);
         $id = $customerId;
         $data = RecordRules::validate('customers', $input, $id);
-        $version = $data['expected_version'] ?? null;
+        $version = isset($data['expected_version']) ? (int) $data['expected_version'] : null;
         unset($data['expected_version']);
         return DB::transaction(function () use ($actor, $id, $data, $version) {
             $model = $id ? Customer::whereKey($id)->lockForUpdate()->firstOrFail() : new Customer();
-            if ($id && $version !== null) {
+            if ($id) {
                 RecordWriteRejected::unless($model->version === $version, 409, 'La ficha cambió. Actualiza antes de guardar.');
             }
             $before = $model->getAttributes();
             $model->fill($data);
-            if ($id && $version !== null) $model->version++;
+            if ($id) $model->version++;
             $model->save();
             Audit::recordFor($actor, 'customers.' . ($id ? 'updated' : 'created'), $model, $before, $model->getAttributes());
             return $model->fresh();
