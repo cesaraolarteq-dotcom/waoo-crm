@@ -36,6 +36,9 @@ class EditEvent extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            \Filament\Actions\Action::make('money')->label('Dinero')->icon('heroicon-o-banknotes')->color('gray')
+                ->visible(fn () => \App\Filament\Support\FinanceGate::enabled())
+                ->url(fn () => EventResource::getUrl('money', ['record' => $this->getRecord()])),
             \Filament\Actions\Action::make('confirmCapacity')->label('Apartar recursos y confirmar')->icon('heroicon-o-check-badge')
                 ->visible(fn () => ConfirmCapacity::canAccessFor($this->getRecord()))
                 ->url(fn () => EventResource::getUrl('confirm', ['record' => $this->getRecord()])),

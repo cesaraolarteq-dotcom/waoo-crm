@@ -2,6 +2,13 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-16 · Claude Code · `claude/admin-screens` — "Dinero" page + paid-mode confirmation (sandbox finance)
+
+- Merged `codex/sandbox-doc-pay` (cbaa83b) and `codex/confirm-capacity-service` (cbaefa7). Reviewed the Finance services: approve (immutable revision from saved prices + known travel fee, ceil 50 %, due = start − 24 h, verified Zelle with actual amount, reference dedupe, idempotency, money durable on capacity failure).
+- **`/admin/eventos/{id}/dinero`** (only when `FinanceGate`: local/testing/staging + `WAOO_SANDBOX_FINANCE`): separate pills Pago / Recursos / Contrato; "Fijar montos acordados" → `CreateFinancialRevision`; "Registrar Zelle verificado" → `RecordZellePayment` (actual amount, reference, date + Houston time with DST choice, required "Lo vi reflejado en el banco", note); total, 50 % deposit with shortfall, received, balance with due date and the exact contract label, **overpayment shown as a warning (never hidden)**, payment history with verifier. One `Idempotency-Key` (UUID) per attempt, held in a `#[Locked]` property and renewed only after success.
+- **Paid mode in "Apartar recursos y confirmar":** when the event has a revision and verified net money, the deposit block is replaced by "Depósito ya registrado" and the page calls `Finance\ConfirmPaidCapacity` with `financial_revision_id` (+ deposit exception reason when below 50 %). Otherwise it keeps using `ConfirmCapacity` (external receipt).
+- Tests: `tests/Feature/EventMoneyPageTest.php` (6, real services). **Local SQLite: 135 passed, 6 failed (MariaDB-only), 141 total.** Browser check 1280/390 px.
+
 ## 2026-10-16 · Claude Code · `claude/admin-screens` — record extensions reviewed and wired; draft-price fix
 
 - **#19 merged** into main (approved by Codex at 094982c; only a docs merge of main on top, CI green).

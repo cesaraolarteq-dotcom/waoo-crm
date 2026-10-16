@@ -45,6 +45,17 @@ class ConfirmCapacity extends Page
         return $event->status === 'draft' && RecordServicePageGate::ready(self::SERVICE);
     }
 
+    /** Paid mode: verified ledger money already exists (sandbox finance), so the deposit is not typed again. */
+    public function paidFinance(): ?array
+    {
+        if (! \App\Filament\Support\FinanceGate::enabled()) {
+            return null;
+        }
+        $f = app(\App\Services\Finance\FinanceSummary::class)->forEvent($this->record);
+
+        return $f['financial_revision'] && $f['net_received_cents'] > 0 ? $f : null;
+    }
+
     public function mount(int|string $record): void
     {
         $this->record = $this->resolveRecord($record);
@@ -75,7 +86,13 @@ class ConfirmCapacity extends Page
                 ->description(fn () => $this->needsSummary()),
             Section::make('1. Staff, trajes y equipo')->columns(2)->schema($pickers)
                 ->description('Elige las unidades exactas. Una persona no puede hacer dos roles a la vez; un traje necesita a alguien que pueda usarlo.'),
-            Section::make('2. Depósito recibido')->columns(2)->schema([
+            Callout::make('2. Depósito ya registrado')->success()->columnSpanFull()
+                ->visible(fn () => $this->paidFinance() !== null)
+                ->description(fn () => ($f = $this->paidFinance()) ? 'Recibido '.Labels::money($f['net_received_cents']).' de '.Labels::money($f['financial_revision']->total_cents)
+                    .($f['deposit_shortfall_cents'] > 0 ? ' · faltan '.Labels::money($f['deposit_shortfall_cents']).' para el 50 %.' : ' · depósito cubierto.').' Se usa este pago; no lo escribas otra vez.' : ''),
+            Textarea::make('paid_deposit_exception_reason')->label('Por qué se acepta menos del 50 %')->minLength(10)->maxLength(2000)->required()->columnSpanFull()
+                ->visible(fn () => ($f = $this->paidFinance()) !== null && $f['deposit_shortfall_cents'] > 0),
+            Section::make('2. Depósito recibido')->columns(2)->visible(fn () => $this->paidFinance() === null)->schema([
                 Group::make()->statePath('payment')->columns(2)->columnSpanFull()->schema([
                     Radio::make('method')->label('Cómo pagó')->inline()->required()
                         ->options(['external_zelle' => 'Zelle', 'external_card' => 'Tarjeta (Stripe)', 'external_cash' => 'Efectivo'])->columnSpanFull(),
@@ -131,9 +148,12 @@ class ConfirmCapacity extends Page
     public function confirm(): void
     {
         $state = $this->form->getState();
-        $input = $this->toServiceInput($state);
+        $paid = $this->paidFinance();
+        $input = $paid ? $this->toPaidInput($state, $paid) : $this->toServiceInput($state);
         try {
-            app(self::SERVICE)->execute(Filament::auth()->user(), $this->record->getKey(), $input);
+            $paid
+                ? app(\App\Services\Finance\ConfirmPaidCapacity::class)->execute(Filament::auth()->user(), $this->record->getKey(), $input)
+                : app(self::SERVICE)->execute(Filament::auth()->user(), $this->record->getKey(), $input);
         } catch (ValidationException $e) {
             $this->showFieldErrors($e);
 
@@ -178,6 +198,18 @@ class ConfirmCapacity extends Page
                 'received_at' => ChicagoTime::toIso($p['date'], $p['time'], $p['choice'] ?? null, 'data.payment.date')],
             'review' => $review,
         ];
+    }
+
+    /** Paid mode input: same review, no payment block, pinned financial revision (ConfirmPaidCapacity). */
+    public function toPaidInput(array $s, array $finance): array
+    {
+        $input = $this->toServiceInput([...$s, 'payment' => ['date' => now(ChicagoTime::TZ)->format('Y-m-d'), 'time' => '00:00']]);
+        unset($input['payment']);
+        if (filled($s['paid_deposit_exception_reason'] ?? null)) {
+            $input['review']['deposit_exception_reason'] = trim($s['paid_deposit_exception_reason']);
+        }
+
+        return [...$input, 'financial_revision_id' => $finance['financial_revision']->id];
     }
 
     /** Selected unit ids from the four pickers, sorted and unique. $get reads form state by path. */
