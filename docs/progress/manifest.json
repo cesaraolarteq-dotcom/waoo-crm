@@ -68,7 +68,15 @@
      "ui": null,
      "reviewed": true,
      "merged": true,
-     "accepted": false
+     "accepted": false,
+     "record_version_followup": {
+      "backend": "767d035",
+      "ui": "767d035",
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "codex/record-versions-v2 atop corrected Claude2d19000; full 249 MariaDB tests / 2286 assertions pass, including real two-owner races and SQLite rollback. Supersedes alternate old parent; Claude record-increment review pending."
+     }
     },
     {
      "name": "Entrar con contraseña + 2 pasos",
@@ -100,7 +108,15 @@
      "merged": false,
      "accepted": false,
      "blocker": "Hoja de catálogo de César",
-     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996"
+     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996",
+     "record_version_followup": {
+      "backend": "767d035",
+      "ui": "767d035",
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "codex/record-versions-v2 atop corrected Claude2d19000; full 249 MariaDB tests / 2286 assertions pass, including real two-owner races and SQLite rollback. Supersedes alternate old parent; Claude record-increment review pending."
+     }
     },
     {
      "name": "Staff, trajes, equipo, vehículos, bloqueos",
@@ -123,7 +139,15 @@
      "reviewed": true,
      "merged": false,
      "accepted": false,
-     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996"
+     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996",
+     "record_version_followup": {
+      "backend": "767d035",
+      "ui": "767d035",
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "codex/record-versions-v2 atop corrected Claude2d19000; full 249 MariaDB tests / 2286 assertions pass, including real two-owner races and SQLite rollback. Supersedes alternate old parent; Claude record-increment review pending."
+     }
     },
     {
      "name": "Apartar recursos sin choques (con depósito)",
@@ -331,7 +355,8 @@
      "followup_reviewed": false,
      "backend_followups": "4aa340f: RevokePortalGrant, narrow review head codex/portal-revoke (2552ffd); QuickBook/details source1a5fbe3 integrated",
      "ui_review_evidence": "Codex approves corrected #42 0fae4e5/source071749c + #43 2d19000; full 238 MariaDB tests / 2183 assertions, actual Node helper executes. CLAUDE-42-43-REREVIEW.md.",
-     "ui_reviewed": true
+     "ui_reviewed": true,
+     "ui_integration_evidence": "Codex successor record-versions-v2 preserves approved Claude071749c/2d19000 UI; full 249/2286. Redundant alternate portal implementation is not merged. UI approval is distinct from record follow-up review/merge/acceptance."
     },
     {
      "name": "Reserva rápida (tu mitad + la de la clienta)",
@@ -347,7 +372,8 @@
      "backend_verification": "Integration e9b2ac5 with Claude 2074213 and main8105bef: 216 MariaDB tests / 1885 assertions; Vite build, PHP lint and strict Composer pass. Separate three-increment stack over main: 23 document/portal/screen tests / 264 assertions. No provider operation or owner acceptance.",
      "followup_reviewed": false,
      "ui_review_evidence": "Codex approves corrected #42 0fae4e5/source071749c + #43 2d19000; full 238 MariaDB tests / 2183 assertions, actual Node helper executes. CLAUDE-42-43-REREVIEW.md.",
-     "ui_reviewed": true
+     "ui_reviewed": true,
+     "ui_integration_evidence": "Codex successor record-versions-v2 preserves approved Claude071749c/2d19000 UI; full 249/2286. Redundant alternate portal implementation is not merged. UI approval is distinct from record follow-up review/merge/acceptance."
     }
    ]
   },

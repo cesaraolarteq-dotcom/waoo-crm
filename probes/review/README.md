@@ -21,3 +21,8 @@ Expected diagnostics before fixes:
 - C1: configured approved SMS wording is missing from the rendered checkbox.
 - R3: at 00:01 Houston, the existing today/00:05 receipt fixture fails the success notification. The probe restores both Carbon clocks afterward.
 - R2: actual inline JavaScript expression sends 03:30 with `-05:00` on 2026-11-01; Houston displays 02:30. The probe extracts the current expression; revise the diagnostic when the encoding implementation changes and add proper regression coverage for the replacement.
+
+
+## Corrected heads (#42 0fae4e5 / #43 2d19000)
+
+The findings above describe the original a16166d. Codex's re-review approves the corrected heads; see docs/reviews/CLAUDE-42-43-REREVIEW.md. Normal QuickDetailsFlowTest now covers the pinned approval, exact consent and the actual houston() JavaScript helper executed by Node. The old standalone pr42-dst-review.cjs extracts the original buggy inline assignment and is historical evidence only; it is not a current regression command after the helper was replaced. Use the normal helper test on corrected code. Run no concurrent PHP suite against the shared isolated test database.

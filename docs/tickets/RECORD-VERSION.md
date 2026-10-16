@@ -1,6 +1,6 @@
 # RECORD-VERSION — prevent silent concurrent customer/character edits
 
-Status: implemented on `codex/record-versions`, awaiting Claude review/integration; non-blocking follow-up accepted in main PR #29. Coordinated contract: [RECORD-VERSION-API.md](../RECORD-VERSION-API.md), committed before source. Final verification evidence is in the newest HANDOFF entry.
+Status: implemented on `codex/record-versions-v2` above Claude’s corrected #42/#43, awaiting Claude review/integration; non-blocking follow-up accepted in main PR #29. Coordinated contract: [RECORD-VERSION-API.md](../RECORD-VERSION-API.md), committed before source. Final verification evidence is in the newest HANDOFF entry.
 
 - Implementer: Codex. Reviewer/UI adapter: Claude. Depends on the shared record services and form integration.
 - Scope: additive optimistic versions for customers and characters; return the version on reads and require the displayed expected_version on updates through both the API and services. Filament retains that version in a Locked property, reports 409, and lets the owner reload/reconcile. The delivered branch replaces last write wins; main remains unprotected until the coordinated migration/services/forms are reviewed and merged.

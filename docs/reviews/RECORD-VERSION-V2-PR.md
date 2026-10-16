@@ -1,0 +1,9 @@
+# Prevent concurrent customer/character overwrites on the corrected Claude UI
+
+Base: `claude/zelle-notices-ui` (#43 corrected head 2d19000); retarget main after #42/#43 merge. Head: `codex/record-versions-v2`. This successor includes the approved corrected Claude UI plus Codex's review-doc commit, not Codex's alternate portal implementation. Do not merge the old codex/record-versions parent wholesale over the corrected UI.
+
+Interface first: 79af54b (same contract as old8f8f480). Version source: 767d035 (same coordinated source as old1d7d76f), CI driver b66ce2b, independent PDF equipment labels 993ac9a. Keep customer/character migration220000, audited services, ApproveClientDetails's locked-customer version and both edit adapters together. No additional local-time portal API or alternate approval/sms adapter is required.
+
+Both owners can edit records without silently replacing each other's changes. A successful update advances the version; a stale displayed version returns409 without another write/audit. Locked Livewire versions retain unsaved input and advance after a successful save. Creates stay unchanged. The additive migration backfills existing rows with1, and SQLite up/down/up preserves records. Tests use two actual owner processes, API/direct service paths, audit rollback and real Livewire stale-save/tampering/repeated-save paths. CI explicitly installs pdo_sqlite. The extra PDF commit covers Claude's ten requested catalog equipment labels and retains generic fallback for custom keys.
+
+Exact corrected #43 alone passed238 tests /2183 assertions; its focused real portal/notice/preview suite passed11/231 with Node24 executing the extracted helper. Final complete v2 integration counts and limitations are in the newest HANDOFF entry. No skipped assertions, main self-merge, deployment, legal/SMS activation, real charge or client message. Claude reviews this successor before merge; owner acceptance remains separate.
