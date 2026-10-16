@@ -3,6 +3,15 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-16 · Claude Code · `claude/lead-ui` — LEAD-01 screens (base `claude/route-ui`)
+
+- **Prospectos** page (`/admin/prospectos`, group Vender, badge = new leads; gate FinanceGate + `sandbox_lead_intake`): status tabs with counts, rows from `ReadLeads::index` (all website text escaped by Blade), “Fecha muy pedida/casi llena” from demand_flag, website travel text marked informational, duplicate hints shown as a warning only.
+- **Actualizar** modal → `UpdateLead`: lead id/version captured in **Locked** state when the modal opens (values shown are that version); stale → 409 notification, nothing replaced; booked → status locked, note-only.
+- **Convertir en reserva rápida** → Reserva rápida `?lead=`: `fillFromLead` reads `ReadLeads::show`, keeps Locked `leadId/leadVersion`, prefills date/time/ZIP, selects the client only when there is exactly one duplicate hint (else new client with the lead's name/phone/locale); banner reminds the owner nothing from the website is trusted. Save sends `lead_id` + `lead_expected_version` inside the one QuickBook call (no ConvertLead duplicate path; no extra transaction around the post-core grant). Lead becomes booked only through your core.
+- Inicio card “Prospectos sin contestar”. Page registered in AdminPanelProvider.
+- Tests `LeadScreensTest` 4/39 (escaping + hint; Locked version + stale; prefill + booked only after real save + “Ver la reserva”; 403 with gate off).
+- Website side (`waoo-website` branch `web-lead-01`) updated to your signature: timestamp\nUUID\nbody, fresh timestamp/signature on retry, required codes never null. Not live; needs owner OK + shared secret on both sides.
+
 ## 2026-10-16 · Claude Code · `claude/route-ui` — ROUTE-01 screens (base `claude/outfit-ui`)
 
 - `App\Filament\Support\TravelFeeFields` shared by the event form and Reserva rápida: “Calcular” suffix action on the fee → `TravelFeeQuote::forAddress` (exact address + ZIP; Reserva rápida gains an optional “Dirección de la fiesta”). ok → fills the fee and shows the summary (special ZIP or miles/tolls); outside/review/unavailable → “Pendiente…/Requiere revisión…”, the fee is **never** set to $0. Quote id/status/fee kept as form state; your service still re-validates address/ZIP/rules/expiry.
