@@ -46,12 +46,13 @@ class AdminScreensTest extends TestCase
         $this->get('/admin/eventos')->assertOk()->assertSee('Fictitious Party')->assertSee('Pendiente')->assertSee('Falta transporte')->assertSee('Borrador')->assertDontSee('$0');
     }
 
-    public function test_lists_are_read_only_for_now(): void
+    public function test_lists_stay_read_only_when_forms_are_switched_off(): void
     {
+        config(['waoo.record_forms' => false]);
         $this->actingAs($this->owner());
         foreach (['clientas', 'catalogo', 'staff-y-trajes', 'personajes'] as $slug) {
             $this->get("/admin/{$slug}")->assertOk();
-            $this->get("/admin/{$slug}/nuevo")->assertForbidden(); // until the audited services exist
+            $this->get("/admin/{$slug}/nuevo")->assertForbidden(); // forms switched off
         }
         $this->get('/admin/eventos/create')->assertNotFound(); // event draft form comes later (DST-safe dates)
     }
