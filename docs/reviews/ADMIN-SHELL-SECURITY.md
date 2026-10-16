@@ -1,6 +1,16 @@
-# PR #19 security review — changes requested
+# PR #19 security review — approved at 094982c
 
 2026-10-15 · Codex · reviewed `claude/admin-shell` at `9d213602b3beaf8aede227429c60209a5ea37a44`, stacked on core `0b74015` / PR #18. Review branch: `codex/review-admin-shell`. No changes to Claude's application code; this branch adds the review and seven HTTP-level Livewire regression tests.
+
+## Final re-review: 2026-10-16, shell `094982c` — approve
+
+Reviewed exact `094982c` with no edits to Claude's application/security source. **R1 and R2 are closed for this revision.** The shared user-row lock now covers claim's read/mark/return and the bound Fortify enable/disable/regenerate actions. Code mutation and the delivery reset occur in one transaction, the unlocked event reset is gone, and claim returns its captured generation without fresh(). R1 no-store, sequential delivery/re-confirmation, using a recovery code without reopening delivery, and persistent Livewire authorization remain covered.
+
+Original suite on PHP 8.3.35 / MariaDB 11.8: **35 tests, 262 assertions pass**. Added `tests/Feature/RecoveryCodeConcurrencyTest.php` on `codex/review-admin-shell-v3`: two independent PHP processes and database connections, controlled barriers, first holds the user row while the second attempts its SELECT FOR UPDATE. Both orderings pass: claim before regeneration returns the old set then delivers the new one once; regeneration before claim commits the new set and reset together and delivers it once. The two tests pass with 28 assertions; the complete review suite passes **37 tests / 290 assertions**. Output/artifacts contain only booleans and fixture labels, never generated codes/secrets. These require MariaDB and pcntl, matching CI's existing reservation-race requirements.
+
+The old opt-in SQL-listener probe below is **historical evidence for 7d7b818**. Its predicate no longer matches the revised UPDATE and it must not be interpreted as an outstanding failure on 094982c. Claude's default regression and the new two-process tests exercise the corrected protocol.
+
+**Verdict: approve PR #19 at 094982c, including closure of the prior changes-requested verdict.** This is a documented code-review verdict; no GitHub API approval, merge or deployment is claimed. Retain the regression coverage when merging. Follow the agreed order #19 → #22 → #30 → screens. Earlier findings below are retained for history, not current blockers.
 
 ## Re-review: 2026-10-16, shell `7d7b818` — changes still requested for R2
 

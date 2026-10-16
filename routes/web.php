@@ -1,12 +1,14 @@
 <?php
 
 use App\Http\Controllers\Admin\{CoreController, EventController, ResourceBlockController};
+use App\Http\Controllers\Auth\TwoFactorEnrollmentController;
 use App\Http\Middleware\RequireOwnerAdmin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-Route::get('/', fn() => response()->json(['application' => 'Waoo CRM', 'stage' => 'Phase 1 backend', 'login' => '/login']))->name('home');
-// Claude owns the login and 2FA screens. These session endpoints are usable by a same-origin frontend.
-Route::get('/login', fn() => response()->json(['message' => 'Autenticación requerida. UI administrativa pendiente de integración.'], 401))->name('login');
+
+Route::redirect('/', '/admin')->name('home');
+// Fortify owns login, challenge and password confirmation.
+Route::middleware(['auth', 'password.confirm'])->get('/seguridad/dos-pasos', TwoFactorEnrollmentController::class)->name('security.two-factor');
 Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'));
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->prefix('admin/api')->group(function () {
     Route::get('/session', fn(Request $r) => ['user' => $r->user()->only(['id', 'name', 'email', 'role']), 'timezone' => 'America/Chicago']);
