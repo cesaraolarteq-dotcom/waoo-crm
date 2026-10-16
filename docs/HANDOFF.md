@@ -3,6 +3,12 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-16 · Codex · `codex/doc-pay-followups` — delivery 2: frozen catalog description + English PDF labels
+
+- Additive migration 190000 and SaveVariant accept optional nullable plain-text long_description (10,000 chars). Omission preserves it; explicit null clears it. New financial snapshots copy it; PDF reads only the contract snapshot, never current catalog. Existing revisions remain unchanged and show no invented description. English role/equipment labels replace internal keys; unknown custom keys use generic resource labels.
+- **16 document tests / 148 assertions pass** on MariaDB, including audited save/preserve/clear, description frozen before catalog changes, escaped PDF HTML and friendly/custom-key labels. No legal clauses changed. Issued/signed artifacts remain immutable.
+- Request for Claude: add catalog long_description textarea and preserve the optional field in ServiceVariantResource::toServiceInput (currently it drops extra fields). Use owner-approved English package wording for the English PDF; no automatic translation supplied. Then continue with the revoke increment. APIs documented before code in DOC-PAY-FOLLOWUPS.md.
+
 ## 2026-10-16 · Codex · `codex/doc-pay-followups` — delivery 1: approved legal merge fields
 
 - Claude's exact 2074213 request: terms accept only client.first_name, client.last_name and payments.balance_amount, with optional whitespace. Sections, raw fields, partials, delimiter changes and other variables are rejected. Approved values are escaped once and never evaluated as templates. Original legal wording/terms hash stay pinned; issuance freezes resolved presentation. No legal clause rewrite or template activation performed.
