@@ -1,0 +1,617 @@
+{
+    "source": "Waoo Party website calibration 2026-10-14 (commit a52727d): owner real prices + Google Routes measurements (miles rounded to 0.1, minutes, one-way toll USD; null = no toll info). Expected fees computed with the website waoo_tf_fee() and its route selection.",
+    "owner_accepted": "2 of 22 differ by more than $10 (owner accepted)",
+    "cases": [
+        {
+            "zip": "77449",
+            "owner_price_usd": 20,
+            "routes_measured_2026_10_14": [
+                {
+                    "one_way_miles": 8.1,
+                    "minutes": 19,
+                    "one_way_toll_usd": null,
+                    "google_label": "DEFAULT_ROUTE"
+                },
+                {
+                    "one_way_miles": 9.2,
+                    "minutes": 19,
+                    "one_way_toll_usd": 2.56,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                },
+                {
+                    "one_way_miles": 9.5,
+                    "minutes": 22,
+                    "one_way_toll_usd": null,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                }
+            ],
+            "rule": "formula",
+            "selected": "DEFAULT_ROUTE",
+            "expected_fee_usd": 20,
+            "raw_usd": 20,
+            "difference_vs_owner_usd": 0
+        },
+        {
+            "zip": "77084",
+            "owner_price_usd": 30,
+            "routes_measured_2026_10_14": [
+                {
+                    "one_way_miles": 12.9,
+                    "minutes": 28,
+                    "one_way_toll_usd": null,
+                    "google_label": "DEFAULT_ROUTE"
+                },
+                {
+                    "one_way_miles": 13.9,
+                    "minutes": 29,
+                    "one_way_toll_usd": 2.56,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                },
+                {
+                    "one_way_miles": 14,
+                    "minutes": 32,
+                    "one_way_toll_usd": null,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                }
+            ],
+            "rule": "formula",
+            "selected": "DEFAULT_ROUTE",
+            "expected_fee_usd": 20,
+            "raw_usd": 22.03,
+            "difference_vs_owner_usd": -10
+        },
+        {
+            "zip": "77469",
+            "owner_price_usd": 50,
+            "routes_measured_2026_10_14": [
+                {
+                    "one_way_miles": 34.5,
+                    "minutes": 44,
+                    "one_way_toll_usd": 6.32,
+                    "google_label": "DEFAULT_ROUTE"
+                },
+                {
+                    "one_way_miles": 40.3,
+                    "minutes": 57,
+                    "one_way_toll_usd": 4.97,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                },
+                {
+                    "one_way_miles": 48.1,
+                    "minutes": 59,
+                    "one_way_toll_usd": 3.91,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                }
+            ],
+            "rule": "formula",
+            "selected": "DEFAULT_ROUTE",
+            "expected_fee_usd": 50,
+            "raw_usd": 49.79,
+            "difference_vs_owner_usd": 0
+        },
+        {
+            "zip": "77433",
+            "owner_price_usd": 40,
+            "routes_measured_2026_10_14": [
+                {
+                    "one_way_miles": 12.3,
+                    "minutes": 21,
+                    "one_way_toll_usd": 1.37,
+                    "google_label": "DEFAULT_ROUTE"
+                },
+                {
+                    "one_way_miles": 12.2,
+                    "minutes": 20,
+                    "one_way_toll_usd": 1.12,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                },
+                {
+                    "one_way_miles": 11.9,
+                    "minutes": 24,
+                    "one_way_toll_usd": null,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                }
+            ],
+            "rule": "special_zip",
+            "expected_fee_usd": 40
+        },
+        {
+            "zip": "77082",
+            "owner_price_usd": 40,
+            "routes_measured_2026_10_14": [
+                {
+                    "one_way_miles": 21.6,
+                    "minutes": 34,
+                    "one_way_toll_usd": 2.56,
+                    "google_label": "DEFAULT_ROUTE"
+                },
+                {
+                    "one_way_miles": 24.5,
+                    "minutes": 32,
+                    "one_way_toll_usd": 4.24,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                },
+                {
+                    "one_way_miles": 19.7,
+                    "minutes": 34,
+                    "one_way_toll_usd": 0.69,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                }
+            ],
+            "rule": "formula",
+            "selected": "DEFAULT_ROUTE_ALTERNATE",
+            "expected_fee_usd": 40,
+            "raw_usd": 38.63,
+            "difference_vs_owner_usd": 0
+        },
+        {
+            "zip": "77479",
+            "owner_price_usd": 40,
+            "routes_measured_2026_10_14": [
+                {
+                    "one_way_miles": 36.4,
+                    "minutes": 47,
+                    "one_way_toll_usd": 6.32,
+                    "google_label": "DEFAULT_ROUTE"
+                },
+                {
+                    "one_way_miles": 42.1,
+                    "minutes": 52,
+                    "one_way_toll_usd": 3.91,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                }
+            ],
+            "rule": "formula",
+            "selected": "DEFAULT_ROUTE",
+            "expected_fee_usd": 50,
+            "raw_usd": 51.12,
+            "difference_vs_owner_usd": 10
+        },
+        {
+            "zip": "77098",
+            "owner_price_usd": 50,
+            "routes_measured_2026_10_14": [
+                {
+                    "one_way_miles": 39.5,
+                    "minutes": 47,
+                    "one_way_toll_usd": 6.9399999999999995,
+                    "google_label": "DEFAULT_ROUTE"
+                },
+                {
+                    "one_way_miles": 37.3,
+                    "minutes": 47,
+                    "one_way_toll_usd": 2.56,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                },
+                {
+                    "one_way_miles": 37.8,
+                    "minutes": 47,
+                    "one_way_toll_usd": 5.26,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                }
+            ],
+            "rule": "formula",
+            "selected": "DEFAULT_ROUTE",
+            "expected_fee_usd": 55,
+            "raw_usd": 54.53,
+            "difference_vs_owner_usd": 5
+        },
+        {
+            "zip": "77057",
+            "owner_price_usd": 50,
+            "routes_measured_2026_10_14": [
+                {
+                    "one_way_miles": 31.2,
+                    "minutes": 44,
+                    "one_way_toll_usd": 2.56,
+                    "google_label": "DEFAULT_ROUTE"
+                },
+                {
+                    "one_way_miles": 38.2,
+                    "minutes": 50,
+                    "one_way_toll_usd": 6.9399999999999995,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                },
+                {
+                    "one_way_miles": 43.1,
+                    "minutes": 53,
+                    "one_way_toll_usd": 2.14,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                }
+            ],
+            "rule": "formula",
+            "selected": "DEFAULT_ROUTE",
+            "expected_fee_usd": 40,
+            "raw_usd": 39.96,
+            "difference_vs_owner_usd": -10
+        },
+        {
+            "zip": "77004",
+            "owner_price_usd": 60,
+            "routes_measured_2026_10_14": [
+                {
+                    "one_way_miles": 41.6,
+                    "minutes": 52,
+                    "one_way_toll_usd": 2.56,
+                    "google_label": "DEFAULT_ROUTE"
+                },
+                {
+                    "one_way_miles": 43.5,
+                    "minutes": 52,
+                    "one_way_toll_usd": 6.9399999999999995,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                },
+                {
+                    "one_way_miles": 41.8,
+                    "minutes": 52,
+                    "one_way_toll_usd": 5.26,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                }
+            ],
+            "rule": "formula",
+            "selected": "DEFAULT_ROUTE",
+            "expected_fee_usd": 55,
+            "raw_usd": 52.52,
+            "difference_vs_owner_usd": -5
+        },
+        {
+            "zip": "77021",
+            "owner_price_usd": 60,
+            "routes_measured_2026_10_14": [
+                {
+                    "one_way_miles": 45,
+                    "minutes": 56,
+                    "one_way_toll_usd": 2.56,
+                    "google_label": "DEFAULT_ROUTE"
+                },
+                {
+                    "one_way_miles": 45.4,
+                    "minutes": 55,
+                    "one_way_toll_usd": 6.9399999999999995,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                },
+                {
+                    "one_way_miles": 53,
+                    "minutes": 61,
+                    "one_way_toll_usd": 2.14,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                }
+            ],
+            "rule": "formula",
+            "selected": "DEFAULT_ROUTE_ALTERNATE",
+            "expected_fee_usd": 75,
+            "raw_usd": 76.48,
+            "difference_vs_owner_usd": 15
+        },
+        {
+            "zip": "77584",
+            "owner_price_usd": 100,
+            "routes_measured_2026_10_14": [
+                {
+                    "one_way_miles": 54.1,
+                    "minutes": 63,
+                    "one_way_toll_usd": 5.26,
+                    "google_label": "DEFAULT_ROUTE"
+                },
+                {
+                    "one_way_miles": 55.7,
+                    "minutes": 63,
+                    "one_way_toll_usd": 7.39,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                },
+                {
+                    "one_way_miles": 57.7,
+                    "minutes": 68,
+                    "one_way_toll_usd": 2.56,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                }
+            ],
+            "rule": "formula",
+            "selected": "DEFAULT_ROUTE",
+            "expected_fee_usd": 110,
+            "raw_usd": 107.92,
+            "difference_vs_owner_usd": 10
+        },
+        {
+            "zip": "77013",
+            "owner_price_usd": 100,
+            "routes_measured_2026_10_14": [
+                {
+                    "one_way_miles": 45.1,
+                    "minutes": 51,
+                    "one_way_toll_usd": 2.56,
+                    "google_label": "DEFAULT_ROUTE"
+                },
+                {
+                    "one_way_miles": 53.1,
+                    "minutes": 57,
+                    "one_way_toll_usd": 2.14,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                },
+                {
+                    "one_way_miles": 43,
+                    "minutes": 61,
+                    "one_way_toll_usd": null,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                }
+            ],
+            "rule": "special_zip",
+            "expected_fee_usd": 100
+        },
+        {
+            "zip": "77506",
+            "owner_price_usd": 100,
+            "routes_measured_2026_10_14": [
+                {
+                    "one_way_miles": 51.9,
+                    "minutes": 60,
+                    "one_way_toll_usd": 2.56,
+                    "google_label": "DEFAULT_ROUTE"
+                },
+                {
+                    "one_way_miles": 54.4,
+                    "minutes": 63,
+                    "one_way_toll_usd": 2.56,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                },
+                {
+                    "one_way_miles": 54.4,
+                    "minutes": 62,
+                    "one_way_toll_usd": 6.9399999999999995,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                }
+            ],
+            "rule": "formula",
+            "selected": "DEFAULT_ROUTE",
+            "expected_fee_usd": 95,
+            "raw_usd": 93.72,
+            "difference_vs_owner_usd": -5
+        },
+        {
+            "zip": "77355",
+            "owner_price_usd": 80,
+            "routes_measured_2026_10_14": [
+                {
+                    "one_way_miles": 26.6,
+                    "minutes": 38,
+                    "one_way_toll_usd": 3.89,
+                    "google_label": "DEFAULT_ROUTE"
+                },
+                {
+                    "one_way_miles": 26.6,
+                    "minutes": 40,
+                    "one_way_toll_usd": 1.75,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                },
+                {
+                    "one_way_miles": 25.9,
+                    "minutes": 43,
+                    "one_way_toll_usd": null,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                }
+            ],
+            "rule": "special_zip",
+            "expected_fee_usd": 80
+        },
+        {
+            "zip": "77380",
+            "owner_price_usd": 100,
+            "routes_measured_2026_10_14": [
+                {
+                    "one_way_miles": 42.1,
+                    "minutes": 50,
+                    "one_way_toll_usd": 8.1,
+                    "google_label": "DEFAULT_ROUTE"
+                },
+                {
+                    "one_way_miles": 56.8,
+                    "minutes": 64,
+                    "one_way_toll_usd": 7.82,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                }
+            ],
+            "rule": "special_zip",
+            "expected_fee_usd": 100
+        },
+        {
+            "zip": "77583",
+            "owner_price_usd": 120,
+            "routes_measured_2026_10_14": [
+                {
+                    "one_way_miles": 63.8,
+                    "minutes": 72,
+                    "one_way_toll_usd": 5.26,
+                    "google_label": "DEFAULT_ROUTE"
+                },
+                {
+                    "one_way_miles": 60.9,
+                    "minutes": 75,
+                    "one_way_toll_usd": 6.32,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                },
+                {
+                    "one_way_miles": 54.3,
+                    "minutes": 80,
+                    "one_way_toll_usd": 4.91,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                }
+            ],
+            "rule": "formula",
+            "selected": "DEFAULT_ROUTE",
+            "expected_fee_usd": 135,
+            "raw_usd": 136.16,
+            "difference_vs_owner_usd": 15
+        },
+        {
+            "zip": "77571",
+            "owner_price_usd": 135,
+            "routes_measured_2026_10_14": [
+                {
+                    "one_way_miles": 61.8,
+                    "minutes": 69,
+                    "one_way_toll_usd": 2.56,
+                    "google_label": "DEFAULT_ROUTE"
+                },
+                {
+                    "one_way_miles": 64.3,
+                    "minutes": 72,
+                    "one_way_toll_usd": 2.56,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                },
+                {
+                    "one_way_miles": 64.3,
+                    "minutes": 71,
+                    "one_way_toll_usd": 6.9399999999999995,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                }
+            ],
+            "rule": "formula",
+            "selected": "DEFAULT_ROUTE",
+            "expected_fee_usd": 125,
+            "raw_usd": 125.16,
+            "difference_vs_owner_usd": -10
+        },
+        {
+            "zip": "77586",
+            "owner_price_usd": 125,
+            "routes_measured_2026_10_14": [
+                {
+                    "one_way_miles": 69.7,
+                    "minutes": 77,
+                    "one_way_toll_usd": 2.56,
+                    "google_label": "DEFAULT_ROUTE"
+                },
+                {
+                    "one_way_miles": 73.3,
+                    "minutes": 80,
+                    "one_way_toll_usd": 8.74,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                },
+                {
+                    "one_way_miles": 77,
+                    "minutes": 82,
+                    "one_way_toll_usd": 2.14,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                }
+            ],
+            "rule": "formula",
+            "selected": "DEFAULT_ROUTE",
+            "expected_fee_usd": 145,
+            "raw_usd": 147.28,
+            "difference_vs_owner_usd": 20
+        },
+        {
+            "zip": "77339",
+            "owner_price_usd": 125,
+            "routes_measured_2026_10_14": [
+                {
+                    "one_way_miles": 59.3,
+                    "minutes": 67,
+                    "one_way_toll_usd": 7.82,
+                    "google_label": "DEFAULT_ROUTE"
+                },
+                {
+                    "one_way_miles": 59.2,
+                    "minutes": 68,
+                    "one_way_toll_usd": 3.49,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                },
+                {
+                    "one_way_miles": 50.8,
+                    "minutes": 71,
+                    "one_way_toll_usd": 1.35,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                }
+            ],
+            "rule": "formula",
+            "selected": "DEFAULT_ROUTE",
+            "expected_fee_usd": 130,
+            "raw_usd": 128.68,
+            "difference_vs_owner_usd": 5
+        },
+        {
+            "zip": "77573",
+            "owner_price_usd": 125,
+            "routes_measured_2026_10_14": [
+                {
+                    "one_way_miles": 64.7,
+                    "minutes": 75,
+                    "one_way_toll_usd": 2.56,
+                    "google_label": "DEFAULT_ROUTE"
+                },
+                {
+                    "one_way_miles": 67.8,
+                    "minutes": 74,
+                    "one_way_toll_usd": 6.61,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                },
+                {
+                    "one_way_miles": 69.3,
+                    "minutes": 75,
+                    "one_way_toll_usd": 8.74,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                }
+            ],
+            "rule": "special_zip",
+            "expected_fee_usd": 125
+        },
+        {
+            "zip": "77301",
+            "owner_price_usd": 135,
+            "routes_measured_2026_10_14": [
+                {
+                    "one_way_miles": 57,
+                    "minutes": 66,
+                    "one_way_toll_usd": 8.1,
+                    "google_label": "DEFAULT_ROUTE"
+                },
+                {
+                    "one_way_miles": 71.6,
+                    "minutes": 80,
+                    "one_way_toll_usd": 3.49,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                },
+                {
+                    "one_way_miles": 56.4,
+                    "minutes": 82,
+                    "one_way_toll_usd": 6.9399999999999995,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                }
+            ],
+            "rule": "formula",
+            "selected": "DEFAULT_ROUTE",
+            "expected_fee_usd": 125,
+            "raw_usd": 122.8,
+            "difference_vs_owner_usd": -10
+        },
+        {
+            "zip": "77590",
+            "owner_price_usd": 175,
+            "routes_measured_2026_10_14": [
+                {
+                    "one_way_miles": 78,
+                    "minutes": 87,
+                    "one_way_toll_usd": 2.56,
+                    "google_label": "DEFAULT_ROUTE"
+                },
+                {
+                    "one_way_miles": 82.7,
+                    "minutes": 87,
+                    "one_way_toll_usd": 8.74,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                },
+                {
+                    "one_way_miles": 85.9,
+                    "minutes": 93,
+                    "one_way_toll_usd": 2.14,
+                    "google_label": "DEFAULT_ROUTE_ALTERNATE"
+                }
+            ],
+            "rule": "formula",
+            "selected": "DEFAULT_ROUTE",
+            "expected_fee_usd": 170,
+            "raw_usd": 170.52,
+            "difference_vs_owner_usd": -5
+        }
+    ]
+}
