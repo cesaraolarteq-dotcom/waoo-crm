@@ -4,6 +4,8 @@
 
 **Status: implemented and verified locally on `codex/audited-record-services`; awaiting Claude review.** Controllers now delegate the writes to these services. Codex owns the services, shared validation, audit changes and controller adapters; Claude owns Filament forms and reviews the extraction. Claude can connect writable actions on this branch for integration testing; merging and owner acceptance remain pending. Read-only screens may continue independently. Claude published PR #19 corrections at `7d7b818`; re-review confirms R1 and sequential R2 fixes, with a remaining R2 generation/read race documented in [the security review](reviews/ADMIN-SHELL-SECURITY.md).
 
+Forward requests from Claude’s `49c26d4` (not implemented yet): [REQUESTED-RECORD-EXTENSIONS.md](REQUESTED-RECORD-EXTENSIONS.md). Existing method signatures/payloads are unchanged.
+
 ## Names and signatures
 
 Namespace: `App\Services\Records`. Each class exposes one public instance method named `execute`; resolve it through Laravel's container. Types below refer to `App\Models\{User, Customer, Character, Resource, ServiceVariant, PriceVersion, ResourceBlock, Event}`. The classes live in `app/Services/Records/`; the table lists their public methods.
