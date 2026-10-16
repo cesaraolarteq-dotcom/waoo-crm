@@ -18,10 +18,22 @@ final class RecordRules
         if ($id && in_array($entity, ['resources', 'variants'])) {
             $rules['expected_version'] = 'required|integer|min:1';
         }
-        $data = RecordInput::validate($input, $rules);
-        if ($entity === 'variants' && $data['status'] === 'active') {
-            RecordWriteRejected::when(empty($data['requirements']), 422, 'Define requisitos antes de activar el servicio.');
+        if ($entity === 'variants') {
+            $rules += [
+                'character_quantity' => 'sometimes|integer|min:0|max:20',
+                'character_options' => 'sometimes|nullable|array|max:100',
+                'character_options.*' => 'array:character_id,requirements',
+                'character_options.*.character_id' => 'required|integer|exists:characters,id',
+                'character_options.*.requirements' => 'required|array|min:1|max:10',
+                'character_options.*.requirements.*' => 'array:kind,quantity,skill,character_id,equipment_kind',
+                'character_options.*.requirements.*.kind' => ['required', Rule::in(['staff', 'costume', 'equipment', 'vehicle'])],
+                'character_options.*.requirements.*.quantity' => 'required|integer|min:1|max:20',
+                'character_options.*.requirements.*.skill' => 'nullable|string|max:60',
+                'character_options.*.requirements.*.character_id' => 'nullable|integer|exists:characters,id',
+                'character_options.*.requirements.*.equipment_kind' => 'nullable|string|max:60',
+            ];
         }
+        $data = RecordInput::validate($input, $rules);
         if ($entity === 'variants') {
             foreach ($data['requirements'] as $req) {
                 $field = match ($req['kind']) {

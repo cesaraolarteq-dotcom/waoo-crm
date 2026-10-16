@@ -1,6 +1,6 @@
 {
  "_about": "Temporary owner progress view (prototype tab 'Avance del proyecto'). Phases = docs/PROJECT_PLAN.md §18. Each agent updates its own evidence; Claude renders. Rules: a design/contract doc counts 0; a part counts only with a tested commit; review, merge to main and owner acceptance are separate steps. Phase % = sum(weight × stage score) / sum(weight).",
- "updated": "2026-10-16",
+ "updated": "2026-10-15",
  "stage_scores": {
   "backend": 0.35,
   "ui": 0.35,
@@ -96,10 +96,11 @@
      "agent": "Codex+Claude",
      "backend": "ce2c3db",
      "ui": "d3fab7b",
-     "reviewed": false,
+     "reviewed": true,
      "merged": false,
      "accepted": false,
-     "blocker": "Hoja de catálogo de César"
+     "blocker": "Hoja de catálogo de César",
+     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996"
     },
     {
      "name": "Staff, trajes, equipo, vehículos, bloqueos",
@@ -107,10 +108,11 @@
      "agent": "Codex+Claude",
      "backend": "ce2c3db",
      "ui": "d3fab7b",
-     "reviewed": false,
+     "reviewed": true,
      "merged": false,
      "accepted": false,
-     "blocker": "Inventario de César"
+     "blocker": "Inventario de César",
+     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996"
     },
     {
      "name": "Clientas y borradores de eventos",
@@ -118,9 +120,10 @@
      "agent": "Codex+Claude",
      "backend": "ce2c3db",
      "ui": "d3fab7b",
-     "reviewed": false,
+     "reviewed": true,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996"
     },
     {
      "name": "Apartar recursos sin choques (con depósito)",
@@ -128,9 +131,10 @@
      "agent": "Codex+Claude",
      "backend": "cbaefa7",
      "ui": "d3fab7b",
-     "reviewed": false,
+     "reviewed": true,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996"
     },
     {
      "name": "Calendario con márgenes de 45 min",
@@ -138,9 +142,10 @@
      "agent": "Claude",
      "backend": "ce2c3db",
      "ui": "b2839dd",
-     "reviewed": false,
+     "reviewed": true,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996"
     },
     {
      "name": "Prueba con César en el sitio de prueba",
@@ -212,9 +217,10 @@
      "agent": "Codex+Claude",
      "backend": "ce2c3db",
      "ui": "d3fab7b",
-     "reviewed": false,
+     "reviewed": true,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996"
     },
     {
      "name": "Motor sin choques (habilidades, trajes, vehículos, concurrencia)",
@@ -260,7 +266,8 @@
      "ui": "d3fab7b",
      "reviewed": true,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "review_evidence": "d3fab7b reviewed with finance version corrections 3279591; Claude to integrate; Claude integrated 3279591 in a9f2996"
     },
     {
      "name": "Registro de Zelle verificado y saldo",
@@ -270,40 +277,44 @@
      "ui": "d3fab7b",
      "reviewed": true,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "review_evidence": "d3fab7b reviewed with finance version corrections 3279591; Claude to integrate; Claude integrated 3279591 in a9f2996"
     },
     {
      "name": "Stripe (modo prueba, sin Affirm)",
      "weight": 3,
      "agent": "Codex+Claude",
-     "backend": null,
-     "ui": null,
+     "backend": "0cd7f5a",
+     "ui": "2074213",
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "blocker": "Reglas del 3 % (César)"
+     "blocker": "Real test-account probe and fee/payment-method rules before any real operation; current sandbox has no surcharge",
+     "backend_verification": "Standalone: 146 MariaDB tests / 1123 assertions; integrated with admin-screens a9f2996 at 41d8260: 179 / 1482 plus Vite build; sandbox only; source review and owner acceptance pending"
     },
     {
      "name": "Contrato con versiones y PDF",
      "weight": 3,
      "agent": "Codex+Claude",
-     "backend": null,
-     "ui": null,
+     "backend": "0cd7f5a",
+     "ui": "2074213",
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "blocker": "Revisión de abogado antes de clientas reales"
+     "blocker": "Revisión de abogado antes de clientas reales",
+     "backend_verification": "Standalone: 146 MariaDB tests / 1123 assertions; integrated with admin-screens a9f2996 at 41d8260: 179 / 1482 plus Vite build; sandbox only; source review and owner acceptance pending"
     },
     {
      "name": "Portal de la clienta y firma",
      "weight": 3,
      "agent": "Codex+Claude",
-     "backend": null,
-     "ui": "46eed30",
+     "backend": "0cd7f5a",
+     "ui": "2074213",
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "blocker": "Portal/firma del lado de Codex (DOC-PAY-API)"
+     "blocker": "Portal/firma del lado de Codex (DOC-PAY-API)",
+     "backend_verification": "Standalone: 146 MariaDB tests / 1123 assertions; integrated with admin-screens a9f2996 at 41d8260: 179 / 1482 plus Vite build; sandbox only; source review and owner acceptance pending"
     },
     {
      "name": "Reserva rápida (tu mitad + la de la clienta)",
@@ -314,7 +325,8 @@
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "blocker": "Servicio QuickBook (Codex, propuesta en docs/QUICK-BOOKING-API-PROPOSAL.md)"
+     "blocker": "Servicio QuickBook (Codex, propuesta en docs/QUICK-BOOKING-API-PROPOSAL.md)",
+     "backend_note": "QuickBook/SubmitClientDetails names accepted with transaction/version refinements in QUICK-BOOKING-API-DECISIONS.md; not implemented (0 backend credit)"
     }
    ]
   },

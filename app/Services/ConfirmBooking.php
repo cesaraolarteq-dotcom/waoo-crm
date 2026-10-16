@@ -12,10 +12,13 @@ final class ConfirmBooking
     {
         throw ValidationException::withMessages(['booking' => $message]);
     }
-    public function execute(int $eventId, array $data): Event
+    public function execute(int $eventId, array $data, ?\App\Models\User $actor = null): Event
     {
+        $actor ??= auth()->user();
+        if (! $actor) throw new \Illuminate\Auth\Access\AuthorizationException('Acceso exclusivo de administración.');
+        $actor = \App\Services\Records\RecordActor::authorize($actor);
         try {
-            return DB::transaction(function () use ($eventId, $data) {
+            return DB::transaction(function () use ($eventId, $data, $actor) {
                 $event = Event::query()->lockForUpdate()->findOrFail($eventId);
                 $ids = collect($data['resource_ids'])->map(fn($id) => (int) $id)->unique()->sort()->values();
                 if ($event->status === 'capacity_reserved') {
@@ -126,16 +129,16 @@ final class ConfirmBooking
                 if (BookingEvidence::where('reference', $data['payment']['reference'])->exists()) {
                     $this->fail('La referencia de pago ya está asociada a otro evento.');
                 }
-                BookingEvidence::create([...$data['payment'], 'event_id' => $event->id, 'verified_by' => auth()->id()]);
+                BookingEvidence::create([...$data['payment'], 'event_id' => $event->id, 'verified_by' => $actor->id]);
                 foreach ($resources as $resource) {
                     ResourceReservation::create(['event_id' => $event->id, 'resource_id' => $resource->id, 'starts_at' => $event->starts_at, 'ends_at' => $event->ends_at]);
                 }
-                OperationalReview::create(['event_id' => $event->id, 'reviewed_by' => auth()->id(), 'evidence' => $data['review']]);
+                OperationalReview::create(['event_id' => $event->id, 'reviewed_by' => $actor->id, 'evidence' => $data['review']]);
                 $event->status = 'capacity_reserved';
                 // Contract/payment lifecycle remains separate for Phase 4.
                 $event->version++;
                 $event->save();
-                Audit::record('booking.capacity_reserved', $event, ['status' => 'draft'], ['resource_ids' => $ids->all(), 'version' => $event->version, 'booking_evidence_id' => BookingEvidence::where('event_id', $event->id)->value('id')]);
+                Audit::recordFor($actor, 'booking.capacity_reserved', $event, ['status' => 'draft'], ['resource_ids' => $ids->all(), 'version' => $event->version, 'booking_evidence_id' => BookingEvidence::where('event_id', $event->id)->value('id')]);
                 return $event;
             }, 3);
         } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
