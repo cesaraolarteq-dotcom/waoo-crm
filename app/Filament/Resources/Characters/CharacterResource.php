@@ -8,7 +8,7 @@ use App\Filament\Resources\Characters\Pages\{CreateCharacter, EditCharacter};
 use App\Filament\Support\RecordServicePageGate;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Forms\Components\{TextInput, Toggle};
+use Filament\Forms\Components\{TagsInput, TextInput, Toggle};
 
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -50,13 +50,17 @@ class CharacterResource extends Resource
             TextInput::make('name')->label('Nombre del personaje')->required()->maxLength(255),
             Toggle::make('active')->label('En catálogo')->default(true)->inline(false)
                 ->helperText('Apágalo para dejar de ofrecerlo sin borrar su historial.'),
+            TagsInput::make('outfits')->label('Versiones del traje (opcional)')->columnSpanFull()->placeholder('Ej.: Disneyland, Carreras')
+                ->helperText('Solo si este personaje tiene trajes distintos que las clientas piden por nombre. Escribe una y presiona Enter.'),
         ]);
     }
 
     /** Only the editable fields of the contract, with empty strings as null like the HTTP path. */
     public static function toServiceInput(array $data): array
     {
-        return ['name' => trim((string) ($data['name'] ?? '')) ?: null, 'active' => (bool) ($data['active'] ?? false)];
+        $outfits = collect($data['outfits'] ?? [])->map(fn ($o) => trim((string) $o))->filter()->unique(fn ($o) => mb_strtolower($o))->values()->all();
+
+        return ['name' => trim((string) ($data['name'] ?? '')) ?: null, 'active' => (bool) ($data['active'] ?? false), 'outfits' => $outfits === [] ? null : $outfits];
     }
 
     public static function table(Table $table): Table

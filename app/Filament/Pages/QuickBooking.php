@@ -101,6 +101,12 @@ class QuickBooking extends Page
                             ->live()->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set, '../../')),
                         TextInput::make('quantity')->label('Cuántos')->integer()->minValue(1)->maxValue(20)->default(1)->required()
                             ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set, '../../')),
+                        Select::make('outfit')->label('Versión del traje (opcional)')->native(false)->placeholder('Cualquiera')
+                            ->options(fn (Get $get) => EventResource::outfitOptions($get('character_id')))
+                            ->visible(fn (Get $get) => EventResource::outfitOptions($get('character_id')) !== [])
+                            ->live()->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set, '../../'))
+                            ->helperText('Solo si la clienta pidió esa versión: se aparta exactamente ese traje.'),
+                        TextInput::make('note')->label('Nota del personaje (solo la ves tú)')->maxLength(200)->placeholder('Ej.: sin orejas grandes'),
                     ]),
                 Select::make('event_type')->label('Tipo de evento')->native(false)->required()->options(EventResource::EVENT_TYPES),
                 EventResource::titleField(),
