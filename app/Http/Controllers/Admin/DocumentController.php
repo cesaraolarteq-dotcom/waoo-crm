@@ -35,6 +35,10 @@ final class DocumentController extends Controller
             'hash_meaning' => 'The client accepted the presented PDF bytes; the final PDF is a separate evidence artifact.'])->header('Cache-Control', 'no-store, private');
     }
     public function grant(Request $r, Event $event, IssuePortalGrant $service) { return response()->json($service->execute($r->user(), $event->id, $r->all()), 201)->header('Cache-Control', 'no-store, private')->header('Referrer-Policy', 'no-referrer'); }
+    public function revealLink(Request $request, int $event, int $grant, \App\Services\Portal\RevealPortalGrantLink $service)
+    {
+        return response()->json($service->execute($request->user(), $event, $grant));
+    }
     public function revoke(Request $r, PortalGrant $grant, RevokePortalGrant $service)
     {
         $service->execute($r->user(), $grant->id);

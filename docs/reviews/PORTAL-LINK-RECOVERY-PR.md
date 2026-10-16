@@ -1,0 +1,13 @@
+Title: Let both owners recover the same active client portal link without changing the booking
+
+Base codex/comms-01-contract (b3c9edd). API was published before source; owner SMS-first update from main62f898e preserved before implementation5920ae4. Backend only; #54 UI remains separate and blocked by its review findings.
+
+New portal grants keep an authenticated encrypted copy alongside their existing authentication hash. The owner-only POST /admin/api/events/{event}/portal-grants/{grant}/reveal-link returns the same active URL under the grant row lock and audits only IDs. Fresh active owner/2FA, sandbox/production gates, actual staging HTTPS/secure-cookie/CSRF, no-store/no-referrer and existing rate limits apply. Both admins can recover; no fresh TOTP challenge per copy.
+
+Expiry/revocation/current event-customer binding and encrypted payload IDs/scopes/expiry/hash are rechecked. Legacy hash-only links still authenticate clients but cannot be recovered. Model serialization/mass input hides/protects the encrypted field; successful recovery does not change expiry, money, contracts, presentations, QuickBook grants or issue another token. Revoke clears ciphertext atomically; old encrypted data cannot be revealed after a committed revoke. Previous encryption keys are supported through Laravel's existing key ring.
+
+New issuance stores hash+ciphertext+audit in one transaction. Secret-bearing crypto/SQL failures are replaced with safe exceptions/fixed log codes, no previous chain. Failed post-core grant issuance still preserves the verified payment/booking and existing manual link recovery. Additive nullable migration290000 leaves every old hash intact; SQLite roundtrip and real MariaDB migration lifecycle verified.
+
+Final source/result evidence is in newest HANDOFF; targeted14/168 passed. Tests cover same URL/client auth/both admins, no plaintext in records/audits/projections, tamper/binding/key changes, real competing revoke/reveal, stale authorization and production/CSRF/transport gates, audit/storage rollback and actual QuickBook paid-core recovery. UI/composer/device/provider/DNS/main-merge/owner acceptance remain pending. No new frontend assets/dependencies, automated messages, charges or deployment.
+
+Claude: map canRevealLink() only in your owner presenter, call RevealPortalGrantLink from an explicit copy action, catch PortalLinkRejected and show its safe message, keep clipboard/manual fallback, handle old/expired/revoked links with the existing create flow. Remove brittle unload warnings when recopy is connected. Do not silently rotate/renew/emit on copy, mark opened/sent from it or store the URL in analytics/browser storage. Keep #54 phone validation and #49 atomic-contact adapters in their respective fixes.
