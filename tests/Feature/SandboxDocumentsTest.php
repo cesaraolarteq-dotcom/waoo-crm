@@ -59,6 +59,30 @@ class SandboxDocumentsTest extends TestCase
         return [...['expected_version' => $this->contract->version, 'presented_pdf_sha256' => $this->contract->presented_pdf_sha256,
             'signer_name' => 'Fixture Client', 'consent' => true, 'intent_to_sign' => true, 'consent_version' => 'esign-consent-v1'], ...$extra];
     }
+    public function test_approved_terms_fields_use_frozen_issue_values_and_preserve_legal_hash(): void
+    {
+        $terms = '<p>{{ client.first_name }} {{client.last_name}} owes {{payments.balance_amount}}.</p>';
+        $this->template = app(CreateTemplateVersion::class)->execute($this->owner, ['terms_html' => $terms, 'change_note' => 'Fixture merge fields only'], (string) Str::uuid());
+        app(ActivateTemplateVersion::class)->execute($this->owner, $this->template->id, ['expected_source_sha256' => $this->template->source_sha256, 'approval_note' => 'Approve fixture version with allowed merge fields only.']);
+        $this->contract = $this->draft();
+        $contract = $this->issue();
+        $html = app(ArtifactStore::class)->read($contract->presented_html_path, $contract->presented_html_sha256);
+        $this->assertStringContainsString('<p>Fixture Client owes $455.00.</p>', $html);
+        $this->assertSame($terms, $this->template->fresh()->terms_html);
+        $this->assertSame(hash('sha256', $terms), $this->template->fresh()->terms_sha256);
+    }
+    public function test_terms_fields_are_escaped_once_without_template_evaluation(): void
+    {
+        $renderer = app(\App\Services\Documents\PrintRenderer::class);
+        $html = $renderer->html('<html><body>{{terms_html}}</body></html>', '<p>{{client.first_name}} {{client.last_name}}: {{payments.balance_amount}}</p>', [
+            'client' => ['first_name' => '<script>&', 'last_name' => '{{payments.balance_amount}}'], 'payments' => ['balance_amount' => '$1.25']]);
+        $this->assertStringContainsString('&lt;script&gt;&amp;', $html);
+        $this->assertStringNotContainsString('<script>', $html);
+        $this->assertStringContainsString('&#123;&#123;payments.balance_amount&#125;&#125;', $html);
+        foreach (['{{client.email}}', '{{{client.first_name}}}', '{{#client.first_name}}x{{/client.first_name}}', '{{>client.first_name}}', '{{&client.first_name}}', '{{= <% %> =}}', '{{client.first_name', '{{ client.first_name }} }}}'] as $field) {
+            $this->withHeader('Idempotency-Key', (string) Str::uuid())->postJson('/admin/api/contract-templates', ['terms_html' => '<p>'.$field.'</p>', 'change_note' => 'Reject fixture unsafe merge expression'])->assertUnprocessable();
+        }
+    }
     public function test_issued_pdf_is_private_hashed_and_uses_pinned_template(): void
     {
         $contract = $this->issue();
