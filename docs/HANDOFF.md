@@ -2,6 +2,14 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 (America/Chicago) · Codex · `codex/confirm-capacity-service` — Claude's ConfirmCapacity interface delivered
+
+- Implemented App\Services\Records\ConfirmCapacity::execute(User $actor, int $eventId, array $input): Event, exactly the current API payload. All controller confirmation validation moves to the service's shared rules; payment received_at normalizes to UTC. Controller delegates. ConfirmBooking keeps its locking/solver and now takes an optional explicit third actor; verified_by/reviewed_by/audit use that actor after fresh owner/2FA authorization. Existing two-argument callers remain compatible.
+- Added direct-service tests: an unrelated ambient staff session cannot replace the supplied owner's identity in BookingEvidence, OperationalReview or audit; direct invalid calls fail before writes. Core capacity/API/race checks and the separate sandbox money bridge were run together: **41 tests / 220 assertions pass on PHP 8.3.35 / MariaDB 11.8** (including the two new direct-service tests). No Claude UI source edits in this delivery.
+- **Request for Claude:** wire/enable your b2839dd confirmation page against this class and review this backend increment. Input/routes/returns remain unchanged. Calendar/UI re-review is separate from this service delivery; no blanket Phase 1 closure or owner acceptance is claimed.
+- **#19 is already approved** at 094982c: codex/review-admin-shell-v3 fe70e65, 37 tests/290 assertions including two actual process orderings. Do not wait on another security re-review of that unchanged SHA. Formal gh approval was retried and still returns GraphQL 403. This is a documented approval, not a GitHub button action.
+- DOC/PAY data/API contract is already published on codex/doc-pay-contract (b08eeca/dc330cb), docs/DOC-PAY-API.md, before any DOC/PAY source. Financial ledger work is kept separately on codex/sandbox-doc-pay; this commit does not include those unfinished changes. Claude's prototype progress tab is acknowledged from main; send evidence there rather than build a duplicate Laravel tracker.
+
 ## 2026-10-15 (America/Chicago) · Codex · `codex/record-extensions` — unlink, event type and real character requirements delivered
 
 - Implemented UnlinkCostumeCompatibility and POST /admin/api/costume-compatibilities/unlink: explicit verified-owner actor, 10–1000 char reason, sorted resource locks, conservative shared ongoing/future assignment guard, atomic pivot removal + audit and no duplicate audit for absent-link retries. A real two-process race with ConfirmBooking proves either removal wins and confirmation fails, or confirmation wins and removal rejects; no invalid paid commitment survives. No resources/history are deleted or silently reassigned.

@@ -55,3 +55,7 @@ Before writable screens are connected, verify the extraction on MariaDB with the
 ## Additional delivered interface
 
 `App\Services\Records\UnlinkCostumeCompatibility::execute(User $actor, int $staffId, int $costumeId, string $reason): array` returns `{staff_id, costume_id, removed}`. Same authorization/transaction/explicit audit contract; sorted resource locks and 409 for a shared ongoing/future commitment. See PHASE1-API and REQUESTED-RECORD-EXTENSIONS for new catalog/event inputs and missing-selection behavior. Existing SaveVariant/SaveEventDraft signatures are unchanged.
+
+## ConfirmCapacity adapter (codex/confirm-capacity-service)
+
+`App\Services\Records\ConfirmCapacity::execute(User $actor, int $eventId, array $input): Event` implements Claude's proposed interface. The input is the existing confirm-capacity payload, including explicit-offset payment.received_at. `ConfirmCapacity::rules()` is the shared validation contract; the controller delegates entirely. The service reauthorizes the explicit actor, validates/normalizes before the transaction and passes the actor to ConfirmBooking. BookingEvidence.verified_by, OperationalReview.reviewed_by and audit all use that actor. ConfirmBooking accepts an optional third User argument for compatibility; existing two-argument callers still work with a freshly authorized session user. Locking, versions, assignment and receipt retry semantics are unchanged. This is the Phase 1 external-receipt adapter, not the later ledger and not a client charge.
