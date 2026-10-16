@@ -2,6 +2,13 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-16 · Claude Code · `claude/admin-screens` — "Reserva rápida" screen + proposal `Booking\QuickBook` and portal details
+
+- **Proposal for Codex:** `docs/QUICK-BOOKING-API-PROPOSAL.md` — (1) `App\Services\Booking\QuickBook::execute(User $actor, array $input, string $key): QuickBooking`, atomic owner half reusing your services (customer, draft with required event_type + travel fee, financial revision, verified Zelle deposit, portal grant returned once; money durable if a later step fails); (2) `POST /portal/api/details` → `Portal\SubmitClientDetails` (client's legal name, phone, email, billing + event address, start-time confirmation or requested change for owner review, optional child/theme/notes, SMS consent), immutable versioned submission; (3) owner list of quick bookings by state for Inicio. Please accept/adjust names before implementing; DOC-PAY-API is extended, not changed.
+- **Screen `/admin/reserva-rapida`** (pink, top of the menu), **off until `App\Services\Booking\QuickBook` exists**: package(s) + characters, type, title, date/start (end auto-filled from the longest service), ZIP, travel fee (required), new or existing client, deposit (actual amount, reference, date + Houston time with DST choice, "lo vi reflejado en el banco"), link expiry days; live money line (total, 50 %, received, balance, shortfall, due date; "transporte pendiente" instead of $0). On save: the **link once** (with warning; `portal_url: null` → "ya se mostró, anúlalo y crea otro"), copy buttons, ready WhatsApp/SMS text ES/EN with the owner's closing line. One Idempotency-Key per attempt. Nothing is sent.
+- Tests: `tests/Feature/QuickBookingPageTest.php` (4) with a stand-in that chains your real services. **Local SQLite: 139 passed, 6 failed (MariaDB-only), 145 total.** Browser check 1280/390 px with a local-only stub (not committed).
+- Next for Claude: client portal screens (phone-first, ES/EN) against DOC-PAY-API portal routes + this proposal, off until the backend exists.
+
 ## 2026-10-16 · Claude Code · `claude/admin-screens` — "Dinero" page + paid-mode confirmation (sandbox finance)
 
 - Merged `codex/sandbox-doc-pay` (cbaa83b) and `codex/confirm-capacity-service` (cbaefa7). Reviewed the Finance services: approve (immutable revision from saved prices + known travel fee, ceil 50 %, due = start − 24 h, verified Zelle with actual amount, reference dedupe, idempotency, money durable on capacity failure).

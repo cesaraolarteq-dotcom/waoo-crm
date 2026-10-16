@@ -89,3 +89,13 @@ a.wcal-name:hover{text-decoration:underline}
 .wmoney-warn{background:#FFF1D2;color:#8F5B00;border-radius:12px;padding:12px 14px;font-weight:700;font-size:.9rem}
 .wmoney-next{justify-self:start;background:#FF017C;color:#fff;font-weight:800;border-radius:12px;padding:12px 18px}
 @media (max-width:900px){.wmoney-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Quick booking result */
+.wqb-done{display:grid;gap:14px;background:#fff;border-radius:16px;border:1px solid rgba(20,26,51,.08);padding:20px}
+.dark .wqb-done{background:rgba(255,255,255,.04)}
+.wqb-done h2{margin:0;font-size:1.3rem;font-weight:800}.wqb-done h2 span{display:block;font-size:.9rem;font-weight:600;opacity:.75;margin-top:4px}
+.wqb-hint{margin:0}.wqb-warn{margin:0;background:#FFF1D2;color:#8F5B00;border-radius:10px;padding:10px 12px;font-weight:700}
+.wqb-link{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.wqb-link code{flex:1;min-width:0;overflow-wrap:anywhere;background:#EEF1F9;border-radius:10px;padding:10px 12px}
+.wqb-msg{display:grid;gap:10px;border-left:4px solid #15D1C4;padding-left:14px}.wqb-msg p{margin:0;line-height:1.55}.wqb-msg small{opacity:.7}
+.wqb-next{display:flex;gap:8px;flex-wrap:wrap}
+.fi-sidebar a[href$="/reserva-rapida"]{background:#FF017C!important;border-radius:10px}
+.fi-sidebar a[href$="/reserva-rapida"] *{color:#fff!important;font-weight:800}

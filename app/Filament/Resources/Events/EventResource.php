@@ -170,17 +170,23 @@ class EventResource extends Resource
             'breakdown_minutes' => filled($data['breakdown_minutes'] ?? null) ? (int) $data['breakdown_minutes'] : null,
             'travel_fee_cents' => $fee === '' ? null : \App\Filament\Resources\Variants\Pages\EditServiceVariant::toCents($fee),
             'event_type' => $data['event_type'] ?? null,
-            'services' => collect($data['price_version_ids'] ?? [])->map(function ($id) use ($data) {
-                $service = ['price_version_id' => (int) $id];
-                if (array_key_exists($id, self::configurablePrices([$id]))) {
-                    // Explicit list for configurable services (even empty), so the backend never keeps stale choices silently.
-                    $service['characters'] = collect($data['characters'] ?? [])->filter(fn ($c) => (int) ($c['price_version_id'] ?? 0) === (int) $id)
-                        ->map(fn ($c) => ['character_id' => (int) $c['character_id'], 'quantity' => (int) $c['quantity']])->values()->all();
-                }
-
-                return $service;
-            })->values()->all(),
+            'services' => self::servicesInput($data),
         ];
+    }
+
+    /** price_version_ids + characters form state -> services[] for SaveEventDraft / QuickBook. */
+    public static function servicesInput(array $data): array
+    {
+        return collect($data['price_version_ids'] ?? [])->map(function ($id) use ($data) {
+            $service = ['price_version_id' => (int) $id];
+            if (array_key_exists($id, self::configurablePrices([$id]))) {
+                // Explicit list for configurable services (even empty), so the backend never keeps stale choices silently.
+                $service['characters'] = collect($data['characters'] ?? [])->filter(fn ($c) => (int) ($c['price_version_id'] ?? 0) === (int) $id)
+                    ->map(fn ($c) => ['character_id' => (int) $c['character_id'], 'quantity' => (int) $c['quantity']])->values()->all();
+            }
+
+            return $service;
+        })->values()->all();
     }
 
     /** Stored event -> form state. */
