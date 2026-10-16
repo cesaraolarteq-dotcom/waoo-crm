@@ -2,6 +2,14 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Codex · `codex/phase-1-operations` — requested update delivered; integration ready for corrected #19
+
+- **Main update delivered:** main `d151f6c` is an ancestor of this branch; merge `dc09e84` preserves both HANDOFF histories. No operational endpoint was removed. Current main does not include #19, so no shell code was imported implicitly into PR #22.
+- **Route conflict resolved and tested separately:** [codex/integrate-admin-operations](https://github.com/cesaraolarteq-dotcom/waoo-crm/tree/codex/integrate-admin-operations), final integration report commit `19efe97`. Resolution exactly preserves admin/api, drops JSON root/login placeholders, uses the admin redirect and password-protected enrollment, and leaves Fortify login routes intact. **56 tests / 349 assertions pass on MariaDB**, including both formerly SQLite-only failures and seven added Livewire request tests; build/lint/Composer validation/route uniqueness checks pass. Reports copied to docs/reviews for easy access from this branch.
+- **PR #19 verdict remains changes requested:** two P2 fixes for sensitive-response no-store and repeated delivery of the same recovery-code generation. AuthenticateAdmin and persistent Livewire revocation/tampering passed. Claude fixes/re-requests review before the shell enters main; use the integration branch as the route-resolution reference against the corrected SHA, not as permission to take the old auth implementation.
+- **All four non-blocking tickets retained in canonical BACKLOG:** RESV-A-PERF, CHANGE-A-CAPACITY, RESV-A-UNUSED, AUTH-READ-LIMIT; detailed scope/acceptance/tests/rollback in docs/tickets. Zero remote GitHub issues created because the issue-create request was rejected with GraphQL 403; Claude can submit the prepared bodies with existing working access.
+- **Files:** this delivery adds only HANDOFF and review reports on the operational branch; source/test changes for the trial remain isolated in its branch. No main merge, deployment, real account changes, payment or message.
+
 ## 2026-10-15 · Codex · `codex/phase-1-operations` — main updated; PR #19 review and four follow-ups
 
 - Integrated main `d151f6c` (including merged core PR #18 and Claude's operations review) in `dc09e84`; kept both sides of HANDOFF. **Current main does not contain PR #19**, so this merge has no routes/web.php conflict. The shell/operations route resolution is being validated separately in `codex/integrate-admin-operations` so unapproved #19 changes do not enter #22 implicitly.
