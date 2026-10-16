@@ -38,12 +38,16 @@ class EventMoney extends Page
     public string $revisionKey = '';
 
     #[Locked]
+    public ?int $displayedVersion = null;
+
+    #[Locked]
     public string $zelleKey = '';
 
     public function mount(int|string $record): void
     {
         abort_unless(FinanceGate::enabled(), 403);
         $this->record = $this->resolveRecord($record);
+        $this->displayedVersion = $this->record->version;
         $this->revisionKey = (string) Str::uuid();
         $this->zelleKey = (string) Str::uuid();
     }
@@ -75,14 +79,19 @@ class EventMoney extends Page
     public function fixAmountsAction(): Action
     {
         return Action::make('fixAmounts')->label('Fijar montos acordados')->icon('heroicon-o-lock-closed')->color('gray')
-            ->visible(fn () => $this->summary()['financial_revision'] === null)
+            ->visible(function () {
+                $event = $this->record->fresh();
+                $revision = $this->summary()['financial_revision'];
+
+                return $event->status === 'draft' && ($revision === null || $revision->event_version !== $event->version);
+            })
             ->requiresConfirmation()
             ->modalHeading('Fijar los montos acordados')
             ->modalDescription(fn () => 'Se guarda una copia que ya no cambia: precio de cada servicio + costo de transporte. Depósito = 50 % del total; el saldo vence 24 horas antes de la fiesta. Si después cambia el precio o la fecha, se hace una revisión nueva.')
             ->modalSubmitActionLabel('Fijar montos')
             ->action(function (Action $action) {
                 $this->run($action, fn () => app(CreateFinancialRevision::class)->execute(Filament::auth()->user(), $this->record->getKey(),
-                    ['expected_version' => $this->record->fresh()->version], $this->revisionKey), 'Montos fijados');
+                    ['expected_version' => $this->displayedVersion], $this->revisionKey), 'Montos fijados');
                 $this->revisionKey = (string) Str::uuid();
             });
     }
