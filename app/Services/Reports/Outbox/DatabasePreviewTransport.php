@@ -8,12 +8,16 @@ use Illuminate\Support\Str;
 
 final class DatabasePreviewTransport implements PreviewTransport
 {
-    public function record(int $deliveryId, string $key, string $payloadJson): string
+    public function record(int $deliveryId, string $key, string $payloadJson, string $leaseToken): string
     {
         PreviewGate::require();
-        return DB::transaction(function () use ($deliveryId, $key, $payloadJson) {
+        return DB::transaction(function () use ($deliveryId, $key, $payloadJson, $leaseToken) {
             // Separate transaction from claim/ack: this durable receipt survives a lost ack.
             $delivery = ReportPreviewDelivery::whereKey($deliveryId)->lockForUpdate()->firstOrFail();
+            if ($delivery->status !== 'processing' || !$delivery->lease_until?->isFuture()
+                || !hash_equals((string) $delivery->lease_token, $leaseToken)) {
+                throw new \LogicException('Preview claim is no longer active.');
+            }
             $hash = hash('sha256', $payloadJson);
             if ($delivery->environment !== 'test' || $delivery->recipient !== 'sales@waooparty.com'
                 || !hash_equals($delivery->payload_sha256, $hash)

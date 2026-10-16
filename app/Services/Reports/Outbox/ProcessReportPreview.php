@@ -38,7 +38,7 @@ final class ProcessReportPreview
             return $this->acknowledge($deliveryId, $token, 'payload_invalid');
         }
         try {
-            $this->transport->record($deliveryId, hash('sha256', 'report-preview:test:'.$deliveryId.':v1'), $snapshot->payload_json);
+            $this->transport->record($deliveryId, hash('sha256', 'report-preview:test:'.$deliveryId.':v1'), $snapshot->payload_json, $token);
         } catch (\Throwable) {
             // Never persist provider exception strings, payloads or credentials in retry metadata.
             return $this->acknowledge($deliveryId, $token, 'transport_error');

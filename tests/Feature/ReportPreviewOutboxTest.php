@@ -36,7 +36,7 @@ class ReportPreviewOutboxTest extends TestCase
     {
         app()->bind(PreviewTransport::class, fn () => new class($callback) implements PreviewTransport {
             public function __construct(private \Closure $callback) {}
-            public function record(int $deliveryId, string $key, string $payloadJson): string { return ($this->callback)($deliveryId, $key, $payloadJson); }
+            public function record(int $deliveryId, string $key, string $payloadJson, string $leaseToken): string { return ($this->callback)($deliveryId, $key, $payloadJson, $leaseToken); }
         });
     }
     public function test_http_enqueue_retries_share_one_company_delivery_and_never_expose_lease_or_send(): void
@@ -88,8 +88,8 @@ class ReportPreviewOutboxTest extends TestCase
     public function test_late_worker_failure_cannot_overwrite_success_by_newer_lease(): void
     {
         $delivery = $this->enqueue();
-        $this->adapter(function ($id, $key, $json) {
-            (new DatabasePreviewTransport())->record($id, $key, $json);
+        $this->adapter(function ($id, $key, $json, $token) {
+            (new DatabasePreviewTransport())->record($id, $key, $json, $token);
             $this->travel(91)->seconds();
             (new ProcessReportPreview(new DatabasePreviewTransport()))->execute($id);
             throw new \RuntimeException('Fixture stale worker failure');
