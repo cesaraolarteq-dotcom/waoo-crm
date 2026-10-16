@@ -21,5 +21,22 @@
   <p class="auth-foot">Waoo CRM · solo para administración de Waoo Party</p>
 </main>
 @stack('scripts')
+<script>
+// Password "eye": shows/hides what was typed. Only appears with JavaScript; the field stays a normal password field otherwise.
+document.querySelectorAll('[data-pw-toggle]').forEach(function (b) {
+  var input = document.getElementById(b.getAttribute('aria-controls'));
+  if (!input) return;
+  b.hidden = false;
+  b.addEventListener('click', function () {
+    var show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    b.setAttribute('aria-pressed', show ? 'true' : 'false');
+    b.setAttribute('aria-label', show ? 'Ocultar contraseña' : 'Mostrar contraseña');
+    input.focus();
+  });
+  // Never leave it visible when the form is sent (browsers may remember text fields).
+  if (input.form) input.form.addEventListener('submit', function () { input.type = 'password'; });
+});
+</script>
 </body>
 </html>
