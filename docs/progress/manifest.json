@@ -227,11 +227,11 @@
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "blocker": "Base manual por evento lista (08c284a); pendientes revisión/pantallas de Claude, tarifas/horas/preparación/transporte reales y margen automático por paquete",
+     "blocker": "Base manual por evento con pantalla (Claude 0f8ae91, revisión de 08c284a: aprobado). Pendiente: tarifas reales del staff/horas/transporte de César y margen automático por paquete",
      "backend_foundation": "08c284a: owner-entered immutable estimated/actual event costs, unknown/coverage states, versioned history and owner-only contribution margin API",
      "foundation_verification": "Focused 12 MariaDB tests / 101 assertions; full integration 241 / 2119 with CLI-only512M helper after a128M PDF-suite exhaustion; Vite, lint, strict Composer and 9 real HTTP smoke checks pass",
-     "foundation_reviewed": false,
-     "foundation_ui": null,
+     "foundation_reviewed": true,
+     "foundation_ui": "0f8ae91",
      "progress_note": "Overall backend remains null: only a tested event-cost foundation is delivered, not complete package/rate automation. Existing weights and stage acceptance credit stay unchanged."
     }
    ]
@@ -361,7 +361,8 @@
      "followup_reviewed": false,
      "backend_followups": "4aa340f: RevokePortalGrant, narrow review head codex/portal-revoke (2552ffd); QuickBook/details source1a5fbe3 integrated",
      "ui_review_evidence": "Codex exact #42 4ff9d13 / #43 a16166d: full MariaDB 235 tests / 2156 assertions pass; opt-in probes reproduce stale unseen-address approval (R1) and requested-time DST error (R2). See docs/reviews/CLAUDE-42-43.md.",
-     "ui_fix_evidence": "Codex bf2ffac + 7ebcf2c fixes R1/R2/C1; full 243 MariaDB tests / 2226 assertions pass. Source awaits Claude review; docs/PORTAL-REVIEW-FIXES.md."
+     "ui_fix_evidence": "Codex bf2ffac + 7ebcf2c fixes R1/R2/C1; full 243 MariaDB tests / 2226 assertions pass. Source awaits Claude review; docs/PORTAL-REVIEW-FIXES.md.",
+     "review_fixes": "Codex ee706a6 (R1/R2/C1/R3) approved by Claude; integration branch codex/integrate-42-43-fixes requested"
     },
     {
      "name": "Reserva rápida (tu mitad + la de la clienta)",
@@ -377,7 +378,8 @@
      "backend_verification": "Integration e9b2ac5 with Claude 2074213 and main8105bef: 216 MariaDB tests / 1885 assertions; Vite build, PHP lint and strict Composer pass. Separate three-increment stack over main: 23 document/portal/screen tests / 264 assertions. No provider operation or owner acceptance.",
      "followup_reviewed": false,
      "ui_review_evidence": "Codex exact #42 4ff9d13 / #43 a16166d: full MariaDB 235 tests / 2156 assertions pass; opt-in probes reproduce stale unseen-address approval (R1) and requested-time DST error (R2). See docs/reviews/CLAUDE-42-43.md.",
-     "ui_fix_evidence": "Codex bf2ffac + 7ebcf2c fixes R1/R2/C1; full 243 MariaDB tests / 2226 assertions pass. Source awaits Claude review; docs/PORTAL-REVIEW-FIXES.md."
+     "ui_fix_evidence": "Codex bf2ffac + 7ebcf2c fixes R1/R2/C1; full 243 MariaDB tests / 2226 assertions pass. Source awaits Claude review; docs/PORTAL-REVIEW-FIXES.md.",
+     "review_fixes": "Codex ee706a6 (R1/R2/C1/R3) approved by Claude; integration branch codex/integrate-42-43-fixes requested"
     }
    ]
   },
