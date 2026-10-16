@@ -48,4 +48,10 @@ class CoreController extends Controller
         $data = \App\Services\Records\RecordInput::validate($request->all(), ['staff_id' => 'required|integer', 'costume_id' => 'required|integer']);
         return response()->json(app(\App\Services\Records\LinkCostumeCompatibility::class)->execute($request->user(), $data['staff_id'], $data['costume_id']));
     }
+
+    public function unlinkCompatibility(Request $request)
+    {
+        $data = \App\Services\Records\RecordInput::validate($request->all(), ['staff_id' => 'required|integer', 'costume_id' => 'required|integer', 'reason' => 'required|string']);
+        return response()->json(app(\App\Services\Records\UnlinkCostumeCompatibility::class)->execute($request->user(), $data['staff_id'], $data['costume_id'], $data['reason']));
+    }
 }

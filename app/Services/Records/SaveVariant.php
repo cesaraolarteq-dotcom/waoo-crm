@@ -24,6 +24,7 @@ final class SaveVariant
             }
             $before = $model->getAttributes();
             $model->fill($data);
+            CharacterRecipe::validateCatalog($model);
             if ($id && $version !== null) $model->version++;
             $model->save();
             Audit::recordFor($actor, 'variants.' . ($id ? 'updated' : 'created'), $model, $before, $model->getAttributes());
