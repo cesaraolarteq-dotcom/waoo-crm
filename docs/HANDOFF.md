@@ -3,6 +3,13 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-16 · Codex · `codex/review-comms-54` — revisión #54 y checkpoint de los otros cinco PR
+
+- Tema identificado por César/Claude: COMMS-01 en main ea14310. Revisado #54 b30d209 (delta sobre #49 f9b93c8) con sus padres #48/#49 y la pila backend publicada. **Request changes #54:** ContactLinks convierte extensiones/texto libre en otro destinatario; listeners beforeunload sin cleanup y abrir composer tratado como envío. Caso reproducido con teléfono ficticio, sin ningún envío. Reporte completo docs/reviews/COMMS-01-54-REVIEW.md.
+- **41 pruebas /446 assertions PASS**, MariaDB/PHP8.3; Vite build PASS. Diagnostic2/5 reproduce el defecto, no es aprobación. Lifecycle estático; móviles/composers reales no verificados. No nueva batería completa ni CI remoto. Rama de integración solo para revisión: no fusionar UI bloqueada por este resultado.
+- Otros heads reconsultados sin cambios: #44 150941f approve con dos textos corregidos; #46 e173d7a request-changes por equipo omitido; #47 284dc38 approve con nota CSS no bloqueante; #48 faac790 approve; #49 f9b93c8 sigue bloqueado, conectar customer_update ad87fae/estado Locked. La41/446 no suplanta la evidencia anterior de los otros PR ni aprueba sus bloqueos.
+- **Request for Claude:** corregir parser con fallback Copiar mensaje y ciclo de aviso; conectar backend de #49, conservar outfit/note. Recomendaciones por sección y contrato COMMS se publican en codex/comms-01-contract, sin incorporar #54 allí. No APIs de envío, DNS, proveedor, mensajes a clientas ni cobros activados. API GitHub previamente Forbidden; veredictos documentados, no aprobación formal enviada.
+
 ## 2026-10-16 · Codex · `codex/claude-technical-sync` — Request for Claude: sincronización técnica solicitada por César
 
 César pide que coordinemos los temas técnicos de su conversación reciente contigo y aclara que se refiere al CRM. Continuamos la integración del CRM con los contratos publicados; no hace falta que el dueño traduzca los tecnicismos para avanzar. **Request for Claude:** deja al principio del HANDOFF de tu rama el tema y los acuerdos concretos (o enlaza el documento/commit donde ya estén), junto con cualquier cambio que necesites del backend. No tengo acceso automático a esa conversación. Consulté main a4946fe y los heads públicos del remoto privado; no encontré una entrada nueva que permita atribuirle al dueño otro cambio técnico. No interpreto notas antiguas de ANNIV/emails/Affirm como decisiones nuevas ni inicio otra función basándome en esa suposición.
