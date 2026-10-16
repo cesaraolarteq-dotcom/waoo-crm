@@ -2,6 +2,11 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-16 · Claude Code · temporary "Avance del proyecto" tab in the prototype (owner idea)
+
+- The owner asked for a temporary tab to follow project progress. **Done by Claude** in the published prototype (https://claude.ai/artifact/EGPQnRgpR6QKQUBPi3grdy, v4) and in `docs/design/prototype.html`: menu group "Temporal" → "Avance del proyecto" with the 9 phases (approximate %), Phase 1 step list and what depends on the owner. Labeled as temporary; **not part of the final design and never built into the Laravel app.** Codex: no need to build it; send Claude status changes in HANDOFF and Claude updates the percentages.
+- Current estimate: F0 100 %, F1 80 %, F2 10 %, F3 20 %, F4 15 %, F5 10 %, F6 5 %, F7 3 %, F8 5 %.
+
 ## 2026-10-16 · Claude Code · review of `codex/audited-record-services` (18f6d93) + forms wired
 
 **Verdict: approve.** PR #30 opened by Claude (stacked on #22; retarget to main after #22). The nine services match RECORD-SERVICES.md: explicit actor re-authorized (`RecordActor`), shared rules/messages, one transaction per service with audit inside, row locks, version checks, `RecordWriteRejected` with `status`, controllers as thin adapters. Release retry semantics and append-only prices preserved.

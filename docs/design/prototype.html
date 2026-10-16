@@ -189,6 +189,18 @@ dialog::backdrop{background:rgba(10,14,40,.55)}
 .crew{display:flex;flex-wrap:wrap;gap:6px}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;z-index:20;box-shadow:var(--shadow)}
 .mobile-nav{display:none}
+.temp-note{display:flex;gap:10px;align-items:flex-start;background:var(--warn-bg);color:var(--warn);border-radius:var(--r);padding:12px 14px;font-size:var(--fs-sm);font-weight:600;margin-bottom:16px}
+.phase{display:grid;grid-template-columns:minmax(0,1fr) 64px;gap:6px 14px;align-items:center;padding:14px 0;border-top:1px solid var(--line)}
+.phase:first-of-type{border-top:0}
+.phase h3{margin:0;font-size:var(--fs-md)}.phase p{margin:2px 0 0;color:var(--muted);font-size:var(--fs-sm)}
+.phase .pct{font-size:22px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums}
+.phase .bar{grid-column:1/-1;height:10px}
+.phase.now{background:linear-gradient(90deg,rgba(255,1,124,.06),transparent);margin:0 -14px;padding:14px}
+.steps-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.steps-list li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;font-size:var(--fs-sm)}
+.steps-list li b{font-weight:700}
+.steps-list .st{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
+.st.ok{background:var(--ok)}.st.wip{background:var(--warn)}.st.todo{background:var(--line);color:var(--muted)}
 @media (max-width:1000px){.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.split,.g3{grid-template-columns:1fr}}
 @media (max-width:760px){
   .app{grid-template-columns:1fr}
@@ -523,6 +535,38 @@ dialog::backdrop{background:rgba(10,14,40,.55)}
   </section>
 </template>
 
+<!-- ============ AVANCE (TEMPORAL: se quita del diseño final) ============ -->
+<template id="t-avance">
+  <section class="screen">
+    <header class="page"><div><h1>Avance del <em>proyecto</em></h1><p class="sub">Actualizado el viernes 16 de octubre de 2026 · porcentajes aproximados</p></div></header>
+    <div class="temp-note"><span>⏳</span><span>Pestaña temporal para seguir la construcción del CRM. No forma parte del diseño final: se quita cuando terminemos.</span></div>
+    <div class="grid g2">
+      <div class="card">
+        <h2>Las 9 fases</h2>
+        <p class="hint">La primera versión que ya sirve para trabajar llega al terminar la fase 5. La reserva rápida se adelanta.</p>
+        <div id="phases"></div>
+      </div>
+      <div style="display:grid;gap:16px;align-content:start">
+        <div class="card">
+          <h2>Fase 1, paso por paso</h2>
+          <ul class="steps-list" id="p1steps"></ul>
+        </div>
+        <div class="card">
+          <h2>Lo que depende de ti</h2>
+          <ul class="steps-list">
+            <li><span class="st wip">…</span><span><b>Catálogo:</b> precios faltantes, quién va a cada paquete, trajes, bocinas y tarifas del staff.</span></li>
+            <li><span class="st todo">·</span><span><b>Fusionar en GitHub</b> los PR #22 y #30 cuando Codex apruebe el #19.</span></li>
+            <li><span class="st todo">·</span><span><b>Recargo del 3 %:</b> confirmar las reglas con Stripe (débito, Klarna, Afterpay, Zip).</span></li>
+            <li><span class="st todo">·</span><span><b>Affirm:</b> terminar tu verificación.</span></li>
+            <li><span class="st todo">·</span><span><b>Abogado:</b> revisar el contrato y la firma electrónica antes de usarlos con clientas.</span></li>
+            <li><span class="st todo">·</span><span><b>Permiso</b> para subir el CRM al sitio de prueba y hacer la prueba contigo (30 a 60 min).</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+</template>
+
 <script>
 (function(){
   var icons={
@@ -534,9 +578,10 @@ dialog::backdrop{background:rgba(10,14,40,.55)}
     catalogo:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
     staff:'<path d="M12 3l2 4 4 .5-3 3 .8 4.5L12 13l-3.8 2 .8-4.5-3-3 4-.5z"/><path d="M5 21h14"/>',
     portal:'<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>',
-    reportes:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'
+    reportes:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    avance:'<path d="M3 12h4l3-8 4 16 3-8h4"/>'
   };
-  var menu=[["Día a día"],["inicio","Inicio","4"],["calendario","Calendario"],["aprobar","Por aprobar","1"],["clientas","Clientas"],["Vender"],["cotizacion","Cotización"],["catalogo","Catálogo"],["Operación"],["staff","Staff y trajes"],["portal","Vista de la clienta"],["reportes","Reportes"]];
+  var menu=[["Día a día"],["inicio","Inicio","4"],["calendario","Calendario"],["aprobar","Por aprobar","1"],["clientas","Clientas"],["Vender"],["cotizacion","Cotización"],["catalogo","Catálogo"],["Operación"],["staff","Staff y trajes"],["portal","Vista de la clienta"],["reportes","Reportes"],["Temporal"],["avance","Avance del proyecto"]];
   var m=document.getElementById("menu"), mn=document.getElementById("mnav"), host=document.getElementById("screens");
   var qk=document.createElement("button"); qk.type="button"; qk.className="qk"; qk.dataset.go="reserva"; qk.textContent="+ Reserva"; mn.appendChild(qk);
   menu.forEach(function(x){
@@ -552,7 +597,7 @@ dialog::backdrop{background:rgba(10,14,40,.55)}
     if(!document.getElementById("t-"+id)) id="inicio";
     host.innerHTML=""; host.appendChild(document.getElementById("t-"+id).content.cloneNode(true));
     document.querySelectorAll(".menu [data-go], .mobile-nav [data-go]").forEach(function(b){ b.setAttribute("aria-current", b.dataset.go===id?"page":"false"); });
-    ({reserva:reserva,cotizacion:quote,portal:portal,evento:evento})[id]&&({reserva:reserva,cotizacion:quote,portal:portal,evento:evento})[id]();
+    ({reserva:reserva,cotizacion:quote,portal:portal,evento:evento,avance:avance})[id]&&({reserva:reserva,cotizacion:quote,portal:portal,evento:evento,avance:avance})[id]();
     try{history.replaceState(null,"","#"+id);}catch(e){}
     window.scrollTo(0,0);
   }
@@ -577,6 +622,41 @@ dialog::backdrop{background:rgba(10,14,40,.55)}
 
   var PK=[["Estrella",275,"p-star","30 min",1,null],["Mágico",375,"p-magic","1 hora",1,150],["Música y Juegos",525,"p-mg","2 horas",0,null],["MyJ 2.0",600,"p-mg2","2 horas",1,150],["Waoo",800,"p-waoo","3 horas",1,150]];
   var TRAVEL={"77494":20,"77450":20,"77433":40,"77479":40,"77406":30,"77441":35};
+
+
+  // ---- Avance (temporal) ----
+  var PHASES=[
+    ["0. Auditoría y reglas","Hostinger, contrato, decisiones, pruebas técnicas",100,"var(--ok)"],
+    ["1. Base y operación","Entrar con 2 pasos, clientas, eventos, catálogo, staff y trajes, apartar recursos, calendario",80,"var(--pink)",true],
+    ["2. Cotización y logística","Formulario de la web → CRM, costo de transporte, cotizaciones",10,"var(--teal)"],
+    ["3. Disponibilidad","Que el sistema sepa solo qué staff y trajes están libres",20,"var(--teal)"],
+    ["4. Portal, firma y pagos","Reserva rápida, contrato con firma, Stripe, Zelle, recibos",15,"var(--teal)"],
+    ["5. Piloto y comunicaciones","Correos y recordatorios, eventos reales en paralelo con HoneyBook",10,"var(--teal)"],
+    ["6. Staff y gestión avanzada","Pago al staff, SMS, reportes de costos",5,"var(--purple)"],
+    ["7. Autoservicio ampliado","WhatsApp, upsells, \u00abUn año después\u00bb",3,"var(--purple)"],
+    ["8. Migración final","Pasar HoneyBook y cancelarlo",5,"var(--purple)"]
+  ];
+  var P1=[
+    ["ok","Base del sistema (Laravel) y pruebas automáticas"],
+    ["ok","Base de datos de clientas, eventos, catálogo y recursos"],
+    ["ok","Entrar con contraseña + código de 6 dígitos (2 pasos)"],
+    ["wip","Panel con el diseño de Waoo · esperando la última revisión de Codex"],
+    ["ok","Catálogo: crear, editar y precios con historial"],
+    ["ok","Staff y trajes: fichas, bloqueos y quién puede usar cada traje"],
+    ["ok","Clientas y borradores de eventos (hora de Houston, cambios de horario)"],
+    ["wip","Apartar staff y trajes y confirmar con el depósito · pantalla lista, falta un servicio de Codex"],
+    ["todo","Calendario de mes, semana y día"],
+    ["todo","Prueba contigo en el sitio de prueba"]
+  ];
+  function avance(){
+    document.getElementById("phases").innerHTML=PHASES.map(function(f){
+      return '<div class="phase'+(f[4]?' now':'')+'"><div><h3>'+f[0]+(f[4]?' <span class="pill warn">En curso</span>':'')+'</h3><p>'+f[1]+'</p></div><div class="pct">'+f[2]+'%</div>'+
+        '<div class="bar" role="img" aria-label="'+f[2]+' por ciento"><i style="width:'+f[2]+'%;background:'+f[3]+'"></i></div></div>';
+    }).join("");
+    document.getElementById("p1steps").innerHTML=P1.map(function(x){
+      return '<li><span class="st '+x[0]+'">'+(x[0]==="ok"?"✓":x[0]==="wip"?"…":"·")+'</span><span>'+x[1]+'</span></li>';
+    }).join("");
+  }
 
   function reserva(){
     var st={p:4,lang:"es",saved:false};
