@@ -170,7 +170,7 @@ class EventContract extends Page
                 }
                 $first = trim(explode(' ', (string) $this->record->customer?->name)[0] ?? '');
                 $exp = Labels::when(\Carbon\CarbonImmutable::parse($g->expiresAt));
-                $this->newLink = ['url' => $g->url, 'expires' => $exp,
+                $this->newLink = ['url' => $g->url, 'expires' => $exp, 'phone' => $this->record->customer?->phone,
                     'msg_es' => "¡Hola {$first}! Aquí puedes leer y firmar tu contrato de Waoo Party y ver cómo pagar tu saldo: {$g->url} (vence el ".rtrim($exp, '.')."). ¡Estamos emocionados de ser parte de tu celebración!",
                     'msg_en' => "Hi {$first}! Here you can read and sign your Waoo Party contract and see how to pay your balance: {$g->url} (expires ".rtrim($exp, '.')."). We're excited to be part of your celebration!",
                     'locale' => $this->record->customer?->locale ?? 'es'];

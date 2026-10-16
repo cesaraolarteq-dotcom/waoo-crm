@@ -10,7 +10,7 @@ use App\Models\{Customer, PriceVersion, ServiceVariant};
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
-use Filament\Forms\Components\{Checkbox, DatePicker, Radio, Repeater, Select, Textarea, TextInput, TimePicker};
+use Filament\Forms\Components\{Checkbox, DatePicker, Hidden, Radio, Repeater, Select, Textarea, TextInput, TimePicker};
 use Filament\Pages\Page;
 use Filament\Schemas\Components\{Actions, Callout, EmbeddedSchema, Form, Grid, Section};
 use Filament\Schemas\Components\Utilities\{Get, Set};
@@ -60,7 +60,7 @@ class QuickBooking extends Page
         abort_unless(static::canAccess(), 403);
         $this->key = (string) Str::uuid();
         $this->linkExpiryAnchorUtc = now('UTC')->startOfSecond()->toIso8601String();
-        $this->form->fill(['customer_mode' => 'new', 'locale' => 'es', 'deposit' => ['method' => 'zelle'], 'expires_days' => 14, 'characters' => []]);
+        $this->form->fill(['customer_mode' => 'existing', 'locale' => 'es', 'deposit' => ['method' => 'zelle'], 'expires_days' => 14, 'characters' => []]);
     }
 
     public function getSubheading(): ?string
@@ -78,22 +78,27 @@ class QuickBooking extends Page
             Section::make('1. Paquete')->columns(2)->schema([
                 Select::make('price_version_ids')->label('Paquete y extras')->multiple()->native(false)->searchable()->required()->columnSpanFull()
                     ->options(fn () => EventResource::priceOptions())->live()
-                    ->afterStateUpdated(fn (Get $get, Set $set) => $this->fillEnd($get, $set)),
+                    ->afterStateUpdated(function (Get $get, Set $set) { $this->fillEnd($get, $set); EventResource::refreshTitle($get, $set); }),
                 Repeater::make('characters')->label('Personajes')->defaultItems(0)->columns(3)->columnSpanFull()->addActionLabel('Agregar personaje')
+                    ->live()->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set))
                     ->visible(fn (Get $get) => EventResource::configurablePrices($get('price_version_ids') ?? []) !== [])
                     ->helperText(fn (Get $get) => EventResource::charactersHint($get('price_version_ids') ?? []))
                     ->schema([
                         Select::make('price_version_id')->label('Para')->native(false)->required()->live()
                             ->options(fn (Get $get) => EventResource::configurablePrices($get('../../price_version_ids') ?? [])),
                         Select::make('character_id')->label('Personaje')->native(false)->required()->searchable()
-                            ->options(fn (Get $get) => EventResource::characterOptions($get('price_version_id'))),
-                        TextInput::make('quantity')->label('Cuántos')->integer()->minValue(1)->maxValue(20)->default(1)->required(),
+                            ->options(fn (Get $get) => EventResource::characterOptions($get('price_version_id')))
+                            ->live()->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set, '../../')),
+                        TextInput::make('quantity')->label('Cuántos')->integer()->minValue(1)->maxValue(20)->default(1)->required()
+                            ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set, '../../')),
                     ]),
                 Select::make('event_type')->label('Tipo de evento')->native(false)->required()->options(EventResource::EVENT_TYPES),
-                TextInput::make('title')->label('Nombre del evento')->required()->maxLength(255)->placeholder('Ej.: Cumpleaños de Sofía'),
+                EventResource::titleField(),
+                Hidden::make('title_suggested')->dehydrated(false),
             ]),
             Section::make('2. Fecha y lugar')->columns(3)->schema([
-                DatePicker::make('date')->label('Fecha')->native()->required()->live(),
+                DatePicker::make('date')->label('Fecha')->native()->required()->live()
+                    ->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set)),
                 TimePicker::make('start_time')->label('Empieza (Houston)')->native()->seconds(false)->required()->live()
                     ->afterStateUpdated(fn (Get $get, Set $set) => $this->fillEnd($get, $set))
                     ->helperText('La clienta la confirma en su enlace.'),
@@ -109,13 +114,31 @@ class QuickBooking extends Page
                     ->helperText('Obligatorio aquí: con el depósito se fija el total.'),
             ]),
             Section::make('3. Clienta')->columns(2)->schema([
-                Radio::make('customer_mode')->hiddenLabel()->inline()->options(['new' => 'Nueva', 'existing' => 'Ya es clienta'])->live()->columnSpanFull(),
-                Select::make('customer_id')->label('Clienta')->native(false)->searchable()->required()->columnSpanFull()
-                    ->options(fn () => Customer::query()->orderBy('name')->pluck('name', 'id'))
+                Radio::make('customer_mode')->hiddenLabel()->inline()->options(['existing' => 'Buscar clienta registrada', 'new' => 'Clienta nueva'])->live()->columnSpanFull()
+                    ->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set)),
+                Select::make('customer_id')->label('Buscar clienta')->native(false)->searchable()->required()->columnSpanFull()
+                    ->placeholder('Escribe nombre, teléfono o correo')
+                    ->getSearchResultsUsing(fn (string $search) => self::searchCustomers($search))
+                    ->getOptionLabelUsing(fn ($value) => self::customerLabel(Customer::find($value)))
+                    ->noSearchResultsMessage('No aparece. Elige “Clienta nueva”.')
+                    ->live()->afterStateUpdated(function (Get $get, Set $set) { self::fillCustomer($get, $set); EventResource::refreshTitle($get, $set); })
                     ->visible(fn (Get $get) => $get('customer_mode') === 'existing'),
+                Callout::make('Verifica sus datos')->description('Si algo cambió, corrígelo aquí: se actualiza su ficha al guardar la reserva.')->info()->columnSpanFull()
+                    ->visible(fn (Get $get) => $get('customer_mode') === 'existing' && filled($get('customer_id'))),
+                TextInput::make('c_name')->label('Nombre')->required()->maxLength(255)
+                    ->visible(fn (Get $get) => $get('customer_mode') === 'existing' && filled($get('customer_id'))),
+                TextInput::make('c_phone')->label('Teléfono / WhatsApp')->tel()->maxLength(40)
+                    ->visible(fn (Get $get) => $get('customer_mode') === 'existing' && filled($get('customer_id'))),
+                TextInput::make('c_email')->label('Correo')->email()->maxLength(255)
+                    ->visible(fn (Get $get) => $get('customer_mode') === 'existing' && filled($get('customer_id'))),
+                Select::make('c_locale')->label('Idioma de sus mensajes')->native(false)->options(['es' => 'Español', 'en' => 'Inglés'])->required()
+                    ->visible(fn (Get $get) => $get('customer_mode') === 'existing' && filled($get('customer_id'))),
+                Hidden::make('c_version'),
                 TextInput::make('name')->label('Nombre (como lo tienes)')->required()->maxLength(255)
-                    ->visible(fn (Get $get) => $get('customer_mode') === 'new')->helperText('Ella confirma su nombre completo en el enlace.'),
-                TextInput::make('phone')->label('Teléfono / WhatsApp')->tel()->maxLength(40)->visible(fn (Get $get) => $get('customer_mode') === 'new'),
+                    ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set))
+                    ->visible(fn (Get $get) => $get('customer_mode') === 'new')->helperText(fn (Get $get) => self::duplicateHint($get('name'), $get('phone')) ?? 'Ella confirma su nombre completo en el enlace.'),
+                TextInput::make('phone')->label('Teléfono / WhatsApp')->tel()->maxLength(40)->live(onBlur: true)
+                    ->visible(fn (Get $get) => $get('customer_mode') === 'new'),
                 Select::make('locale')->label('Idioma de sus mensajes')->native(false)->options(['es' => 'Español', 'en' => 'Inglés'])->required()
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new'),
             ]),
@@ -186,6 +209,7 @@ class QuickBooking extends Page
         $s = $this->form->getState();
         $input = $this->toServiceInput($s);
         try {
+            $this->updateCustomerIfChanged($s);
             $r = app(self::SERVICE)->execute(Filament::auth()->user(), $input, $this->key);
         } catch (ValidationException $e) {
             throw ValidationException::withMessages(collect($e->errors())->mapWithKeys(fn ($m, $k) => ['data.'.self::formPath($k) => $m])->all());
@@ -196,6 +220,57 @@ class QuickBooking extends Page
         }
         $this->result = self::presentResult($r, $s);
         $this->key = (string) Str::uuid();
+    }
+
+    /** Search by name, phone (digits only) or email; label shows the phone so two people with the same name are told apart. */
+    public static function searchCustomers(string $search): array
+    {
+        $term = trim($search);
+        if (mb_strlen($term) < 2) return [];
+        $digits = preg_replace('/\D/', '', $term);
+
+        return Customer::query()->where(function ($q) use ($term, $digits) {
+            $q->where('name', 'like', '%'.$term.'%')->orWhere('email', 'like', '%'.$term.'%');
+            if (strlen($digits) >= 3) $q->orWhereRaw("replace(replace(replace(replace(replace(coalesce(phone,''),'-',''),' ',''),'(',''),')',''),'+','') like ?", ['%'.$digits.'%']);
+        })->orderBy('name')->limit(20)->get()->mapWithKeys(fn ($c) => [$c->id => self::customerLabel($c)])->all();
+    }
+
+    public static function customerLabel(?Customer $c): ?string
+    {
+        return $c ? $c->name.($c->phone ? ' · '.$c->phone : '').($c->email ? ' · '.$c->email : '') : null;
+    }
+
+    public static function fillCustomer(Get $get, Set $set): void
+    {
+        $c = filled($get('customer_id')) ? Customer::find((int) $get('customer_id')) : null;
+        $set('c_name', $c?->name); $set('c_phone', $c?->phone); $set('c_email', $c?->email); $set('c_locale', $c?->locale ?? 'es'); $set('c_version', $c?->version);
+    }
+
+    /** For a new client: warn when the phone or exact name already exists, so she is not registered twice. */
+    public static function duplicateHint(?string $name, ?string $phone): ?string
+    {
+        $digits = preg_replace('/\D/', '', (string) $phone);
+        $match = Customer::query()->where(function ($q) use ($name, $digits) {
+            $q->whereRaw('lower(name) = ?', [mb_strtolower(trim((string) $name))]);
+            if (strlen($digits) >= 7) $q->orWhereRaw("replace(replace(replace(replace(replace(coalesce(phone,''),'-',''),' ',''),'(',''),')',''),'+','') like ?", ['%'.substr($digits, -10)]);
+        })->first();
+
+        return $match && (filled($name) || strlen($digits) >= 7) ? '⚠ Ya tienes registrada a '.self::customerLabel($match).'. Si es ella, elige “Buscar clienta registrada”.' : null;
+    }
+
+    /** Existing client: save corrected contact details first (audited, version-guarded), so the booking uses current data. */
+    private function updateCustomerIfChanged(array $s): void
+    {
+        if (($s['customer_mode'] ?? null) !== 'existing' || blank($s['customer_id'] ?? null)) return;
+        $c = Customer::findOrFail((int) $s['customer_id']);
+        $new = ['name' => trim((string) $s['c_name']), 'phone' => filled($s['c_phone'] ?? null) ? trim($s['c_phone']) : null,
+            'email' => filled($s['c_email'] ?? null) ? trim($s['c_email']) : null, 'locale' => $s['c_locale'] ?? $c->locale];
+        if ($new === ['name' => $c->name, 'phone' => $c->phone, 'email' => $c->email, 'locale' => $c->locale]) return;
+        try {
+            app(\App\Services\Records\SaveCustomer::class)->execute(Filament::auth()->user(), [...$new, 'expected_version' => (int) ($s['c_version'] ?? 0)], $c->id);
+        } catch (ValidationException $e) {
+            throw ValidationException::withMessages(collect($e->errors())->mapWithKeys(fn ($m, $k) => ['data.c_'.$k => $m])->all());
+        }
     }
 
     /** Service field paths -> form paths (deposit.* and services.* stay; new_customer.* and event fields map to their inputs). */
@@ -259,6 +334,7 @@ class QuickBooking extends Page
             'msg_es' => "¡Hola {$first}! Gracias por tu depósito de {$paid}. Registramos tu solicitud para el {$when}. Para terminar tu reserva, completa tus datos y firma tu contrato aquí: {$link} (el enlace vence el {$exp}). Tu saldo es de {$balance}. ¡Estamos emocionados de ser parte de tu celebración!",
             'msg_en' => "Hi {$first}! Thank you for your deposit of {$paid}. We recorded your booking request for {$whenEn}. To finish your booking, please complete your details and sign your contract here: {$link} (link expires {$exp}). Your remaining balance is {$balance}. We're excited to be part of your celebration!",
             'locale' => $r->customer->locale ?? 'es',
+            'phone' => $r->customer->phone ?? null,
         ];
     }
 
