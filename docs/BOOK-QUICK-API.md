@@ -59,3 +59,7 @@ Current-main follow-up: main 46ff921 includes merged #22 and #30; integration dd
 ### ROUTE-01 accepted travel quote (optional, backward-compatible)
 
 QuickBook accepts `travel_fee_quote_id` and `travel_fee_override_note` alongside the explicit owner `travel_fee_cents`, full event `address` and `postal_code`. SaveEventDraft validates address/rules/expiry binding and stores private evidence, never auto-fills a fee. Overrides require a reason. No quote preserves the existing manual flow. If a previously calculated draft changes address/fee, recalculate or supply a manual review reason. Client-details approval already explicitly confirms the fee; a changed quoted address uses the owner's review note as manual reconfirmation without changing agreed money. See docs/ROUTE-01-API.md. Lead conversion carries these same booking fields unchanged.
+
+## COMMS-01: cambio propuesto, todavía sin implementar
+
+La implementación actual conserva grants hash-only y muestra el secreto al emitirlo. [COMMS-01-API.md](COMMS-01-API.md) publica antes del código una copia cifrada recuperable solo por admin, manteniendo la autenticación de la clienta por hash, expiración/revocación y la recuperación post-core de QuickBook. No asumir esa ruta/campo disponibles hasta su entrega probada. Los grants anteriores sin copia no pueden reconstruirse. No cambia el consentimiento ni autoriza enviar mensajes/DNS/proveedores.

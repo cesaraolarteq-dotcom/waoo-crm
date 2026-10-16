@@ -193,3 +193,7 @@ See [DOC-PAY-FOLLOWUPS.md](DOC-PAY-FOLLOWUPS.md): closed three-field legal merge
 ## PAY-02 client Zelle notice extension (2026-10-16)
 
 [ZELLE-NOTICES-API.md](ZELLE-NOTICES-API.md) defines the delivered scoped claim/list APIs and explicit-owner verification/rejection service. A notice is not a receipt; balances use only the ledger. Both sandbox flags and existing scopes/CSRF/2FA remain. Claude owns the new notice/review screen wiring.
+
+## COMMS-01: cambio propuesto, todavía sin implementar
+
+La implementación actual conserva grants hash-only y muestra el secreto al emitirlo. [COMMS-01-API.md](COMMS-01-API.md) publica antes del código una copia cifrada recuperable solo por admin, manteniendo la autenticación de la clienta por hash, expiración/revocación y la recuperación post-core de QuickBook. No asumir esa ruta/campo disponibles hasta su entrega probada. Los grants anteriores sin copia no pueden reconstruirse. No cambia el consentimiento ni autoriza enviar mensajes/DNS/proveedores.
