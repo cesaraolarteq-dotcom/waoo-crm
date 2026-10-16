@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\{BookingEvidence, Event, OperationalReview, Resource, ResourceBlock, ResourceReservation};
 use Carbon\CarbonImmutable;
+use App\Services\Scheduling\ReservationNeighborhood;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 final class ConfirmBooking
@@ -104,21 +105,12 @@ final class ConfirmBooking
                     if (ResourceBlock::where('resource_id', $resource->id)->whereNull('released_at')->where('starts_at', '<', $busyEnd)->where('ends_at', '>', $busyStart)->exists()) {
                         $this->fail("El recurso {$resource->code} tiene un bloqueo horario.");
                     }
-                    $bookings = ResourceReservation::where('resource_id', $resource->id)->with('event')->orderBy('starts_at')->get();
-                    $before = null;
-                    $after = null;
-                    foreach ($bookings as $booking) {
-                        $other = $booking->event;
-                        if ($other->starts_at->subMinutes($other->setup_minutes)->lessThan($busyEnd) && $other->ends_at->addMinutes($other->breakdown_minutes)->greaterThan($busyStart)) {
-                            $this->fail("Conflicto de horario: {$resource->code}.");
-                        }
-                        if ($other->ends_at->lessThanOrEqualTo($event->starts_at)) {
-                            $before = $other;
-                        }
-                        if ($after === null && $other->starts_at->greaterThanOrEqualTo($event->ends_at)) {
-                            $after = $other;
-                        }
+                    $neighborhood = app(ReservationNeighborhood::class)->forResource($event, $resource->id);
+                    if ($neighborhood['overlaps']) {
+                        $this->fail("Conflicto de horario: {$resource->code}.");
                     }
+                    $before = $neighborhood['before'];
+                    $after = $neighborhood['after'];
                     if ($before) {
                         $this->checkTransfer($before, $event, $data['review'], $resource->id);
                     }
