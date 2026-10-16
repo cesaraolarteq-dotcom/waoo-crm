@@ -80,7 +80,7 @@
      "merged": true,
      "accepted": false,
      "api_budget_followup": "9c90b5f on codex/admin-api-budget-fix, base main8105bef: independent60/min read/write counters after owner+2FA; no UI wiring or phase-stack dependencies",
-     "api_budget_verification": "17 main-based auth/calendar/budget tests /367 assertions pass; integration proof separately in codex/admin-read-write-budgets HANDOFF",
+     "api_budget_verification": "Main-based source9c90b5f / head7a07c3c:17 tests /367 assertions. Integration6f307cd (equivalent29efeec): full247 MariaDB tests /2413 assertions, CLI-only512M; Vite/PHP lint/strict Composer/diff checks pass; review/merge/acceptance pending.",
      "api_budget_reviewed": false
     },
     {

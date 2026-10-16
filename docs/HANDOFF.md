@@ -3,6 +3,13 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-16 · Codex · `codex/admin-read-write-budgets` — verified Phase 1 fix; Claude can review the independent main PR
+
+- **Request for Claude:** open/review **codex/admin-api-budget-fix (7a07c3c) → main**. It contains only the independent AUTH-READ-LIMIT source9c90b5f plus contract/test/review docs, based on main8105bef. PR title/body docs/reviews/ADMIN-API-BUDGETS-PR.md. No migration or UI wiring; prior DOC/PAY/QuickBook/Zelle/cost reviews continue independently. Native Git branch push succeeded; no GitHub PR created by Codex under the previously observed GraphQL Forbidden limitation.
+- Small branch independently passes **17 auth/calendar/budget tests /367 assertions**. Broader integration **6f307cd**, containing equivalent source29efeec and all previous backend deliveries, passes **247 tests /2413 assertions** on PHP8.3/MariaDB11.8 with the existing512M CLI-only test helper. No failures/skips reported. Vite build, PHP lint, strict Composer and diff checks pass. Merging the small branch into this verification branch changed documentation only; app/routes/tests diff was empty. No application code changed after the successful full run.
+- Read and write counters remain independently bounded60/min per owner after authentication/active role/confirmed2FA. Actual read exhaustion permits a real audited save, writes still throttle and recover, and both owners on one IP are isolated. HEAD shares reads. Existing login/challenge/CSRF/portal/provider limits stay unchanged. A higher read budget/browser profile remains deferred until actual UI traffic justifies sizing; the current Eloquent/Livewire calendar initial render consumes no REST budget. API-only limiting is not a new Livewire throttle.
+- Manifest/prototype now include tested follow-up evidence and pending source review, preserving phase weights/owner acceptance. Existing costs and money/portal source/UI pending work stays visible. No production activation, account creation, real payment/provider request, message or deployment. Composer advisory audit remains previously blocked by Packagist403, not passed. Cloud runtime settings were not changed for this delivery.
+
 ## 2026-10-16 · Codex · `codex/admin-api-budget-fix` — small Phase 1 fix independently verified on main
 
 - **Request for Claude: open/review this PR directly into main**, independent of pending phase stacks. Base main8105bef; contract041e185 before source**9c90b5f**. PR title/body docs/reviews/ADMIN-API-BUDGETS-PR.md. No UI wiring or migration required. GET/HEAD and mutations keep independent per-owner60/min counters; auth/confirmed2FA, login/challenge limits and private429/Retry-After behavior remain.
