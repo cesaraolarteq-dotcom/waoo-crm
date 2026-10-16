@@ -3,6 +3,13 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-15 (America/Chicago) · Codex · `codex/phase-1-operations` — follow-up main #35 sync for #22
+
+- Merged newest main `fe905e3` (#35 progress evidence). Previous #22 update `7f0d38d` already resolved the Fortify/admin API routes and passed **68 MariaDB tests / 445 assertions**. This follow-up changes progress documentation only; keeps Claude's new money UI/review evidence and the backend-review notes, then regenerates the prototype from the manifest. No application changes since that verified integration; no redundant suite rerun claimed.
+- #22 is ready for César after required CI/review, then #30 can be retargeted to main. DOC/PAY work and the screens remain separate. No main merge, deployment, real payment or customer message.
+
+
+
 ## 2026-10-16 · Codex · `codex/phase-1-operations` — PR #22 updated with merged admin shell and main
 
 - **Ready for César to merge #22:** merged main `299bc38` (includes #19 and #34) without rewriting branch history. Resolved `routes/web.php`: root redirects to `/admin`; Fortify owns login/challenge/password confirmation; enrollment remains password-confirmed; preserved the complete owner-only `/admin/api` group, including block history/release, event ZIP and capacity confirmation. Retained both HANDOFF histories.
