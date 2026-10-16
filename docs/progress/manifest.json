@@ -68,7 +68,15 @@
      "ui": null,
      "reviewed": true,
      "merged": true,
-     "accepted": false
+     "accepted": false,
+     "record_version_followup": {
+      "backend": "1d7d76f",
+      "ui": "1d7d76f",
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "Full integrated 254 MariaDB tests / 2328 assertions; targeted 25/235 includes two real owner races, API/services/Livewire and isolated SQLite backfill/rollback. docs/RECORD-VERSION-API.md. Claude review pending."
+     }
     },
     {
      "name": "Entrar con contraseña + 2 pasos",
@@ -100,7 +108,15 @@
      "merged": false,
      "accepted": false,
      "blocker": "Hoja de catálogo de César",
-     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996"
+     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996",
+     "record_version_followup": {
+      "backend": "1d7d76f",
+      "ui": "1d7d76f",
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "Full integrated 254 MariaDB tests / 2328 assertions; targeted 25/235 includes two real owner races, API/services/Livewire and isolated SQLite backfill/rollback. docs/RECORD-VERSION-API.md. Claude review pending."
+     }
     },
     {
      "name": "Staff, trajes, equipo, vehículos, bloqueos",
@@ -123,7 +139,15 @@
      "reviewed": true,
      "merged": false,
      "accepted": false,
-     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996"
+     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996",
+     "record_version_followup": {
+      "backend": "1d7d76f",
+      "ui": "1d7d76f",
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "Full integrated 254 MariaDB tests / 2328 assertions; targeted 25/235 includes two real owner races, API/services/Livewire and isolated SQLite backfill/rollback. docs/RECORD-VERSION-API.md. Claude review pending."
+     }
     },
     {
      "name": "Apartar recursos sin choques (con depósito)",
