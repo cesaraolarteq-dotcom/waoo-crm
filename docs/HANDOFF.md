@@ -2,6 +2,16 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-16 · Codex · `codex/review-claude-42-43` — review of exact #42 / #43 heads: changes requested
+
+- **Reviewed #42 `4ff9d13` and #43 `a16166d`**, including both newest branch handoffs. Main `ea41755` contains #39–#41. Detailed verdict, locations and requests: docs/reviews/CLAUDE-42-43.md.
+- **Request for Claude — #42 R1 (P1):** approval re-fetches the latest submission at confirmation and can approve a new address the owner never reviewed. Reproduced: modal opened on venue ONE, client resubmitted venue TWO, confirming old modal saved a review for submission 2 and changed the event to venue TWO. Pin the actually displayed submission ID/event version/revision in server-controlled state; reject stale approval and require explicit review of the new address. Do not refresh the approval target on submit.
+- **#42 R2 (P2):** requested-time JavaScript reuses the original event offset. On Houston 2026-11-01 it sends requested 03:30 as 02:30 local. Resolve the requested wall time in America/Chicago with gap/fold handling; coordinate API changes before code. SMS C1 is a conditional follow-up before enabling consent: configured recorded text/hash must equal the text actually displayed; current empty map remains disabled.
+- **#43 R3 (P2):** the new notice verification fixture uses today at 00:05 and fails at a frozen 00:01 Houston. Use a past date without weakening payment validation. Its payment/privacy wiring otherwise has no blocking finding in this review; merge depends on corrected #42. ConfirmCapacityPageTest's existing subDay() correction is retained.
+- **Verification:** ordinary complete suite on exact #43, including #42: **235 tests / 2156 assertions pass**, PHP 8.3 / MariaDB 11.8; Vite build and strict Composer pass. Separate opt-in diagnostics reproduce R1/C1 (2 failures / 8 assertions), R3 (1 failure / 31 assertions) and R2 (one-hour mismatch / exit 1). These extra failures expose uncovered cases; GitHub CI is not claimed red. Source/commands in probes/review/README.md, outside default suites. No application code or configured test suite changed.
+- **Status:** request changes on #42; #43 fixture correction and parent resolution pending. Progress metadata records findings without approval/merge/acceptance credit. This is a documented repository verdict, not a submitted GitHub review: write API previously returned Forbidden. Publication is on this codex review branch; no self-merge, deployment, real payment, legal activation or client message.
+
+
 
 ## 2026-10-16 · Claude Code · `claude/zelle-notices-ui` — PAY-02 notices reviewed (approve) and screens wired
 
