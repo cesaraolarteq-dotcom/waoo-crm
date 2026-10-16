@@ -82,6 +82,7 @@ final class PortalPageController extends Controller
             'lang_url' => ['es' => url('/portal?lang=es'), 'en' => url('/portal?lang=en')],
             'event' => [
                 'package' => $services ?: $event->title,
+                'characters' => collect($revision?->lines_snapshot ?? [])->flatMap(fn ($l) => $l['characters'] ?? [])->map(fn ($c) => $c['quantity'].' × '.\App\Services\Records\CharacterLabel::fromSnapshot($c))->implode(', '),
                 'when' => $lang === 'es' ? $start->translatedFormat('D j M Y, g:i a') : $start->format('D, M j, Y \a\t g:i a'),
                 'start_time' => $lang === 'es' ? $start->translatedFormat('g:i a') : $start->format('g:i a'),
                 'total' => $fmt($revision?->total_cents), 'travel' => $fmt($revision?->travel_fee_cents),
