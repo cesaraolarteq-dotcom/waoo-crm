@@ -25,6 +25,7 @@ class ViewEvent extends Page
         'event.created' => 'Creó el borrador', 'event.draft_updated' => 'Editó el borrador', 'booking.capacity_reserved' => 'Apartó staff y trajes',
         'finance.revision_created' => 'Fijó los montos', 'payment.zelle_received' => 'Registró un Zelle', 'payment.capacity_linked' => 'Vinculó el pago con los recursos',
         'portal.zelle_notice_submitted' => 'La clienta avisó que envió un Zelle', 'payment.zelle_notice_reviewed' => 'Revisó un aviso de Zelle de la clienta',
+        'cost.snapshot_recorded' => 'Registró costos',
     ];
 
     /** Zelle notice reviews say which way they went; amounts stay on the Dinero screen. */
@@ -61,6 +62,7 @@ class ViewEvent extends Page
         return [
             Action::make('edit')->label('Editar borrador')->color('gray')->visible(fn () => EventResource::canEdit($e))->url(fn () => EventResource::getUrl('edit', ['record' => $e])),
             Action::make('money')->label('Dinero')->icon('heroicon-o-banknotes')->color('gray')->visible(fn () => FinanceGate::enabled())->url(fn () => EventResource::getUrl('money', ['record' => $e])),
+            Action::make('costs')->label('Costos y margen')->icon('heroicon-o-chart-bar')->color('gray')->visible(fn () => FinanceGate::enabled() && class_exists(\App\Services\Costs\RecordCostSnapshot::class))->url(fn () => EventResource::getUrl('costs', ['record' => $e])),
             Action::make('contract')->label('Contrato y enlace')->icon('heroicon-o-document-text')->color('gray')->visible(fn () => \App\Filament\Support\DocumentsGate::enabled())->url(fn () => EventResource::getUrl('contract', ['record' => $e])),
             Action::make('confirm')->label('Apartar recursos y confirmar')->visible(fn () => ConfirmCapacity::canAccessFor($e))->url(fn () => EventResource::getUrl('confirm', ['record' => $e])),
         ];
@@ -81,7 +83,7 @@ class ViewEvent extends Page
             ->map(fn ($u) => (object) ['name' => $u->name, 'kind' => Labels::label(Labels::KIND, $u->kind)]);
         $history = DB::table('audit_entries')->where(function ($q) use ($e) {
             $q->where(fn ($w) => $w->where('subject_type', 'events')->where('subject_id', $e->id));
-            foreach (['financial_revisions', 'ledger_entries', 'zelle_notices', 'zelle_notice_reviews'] as $table) {
+            foreach (['financial_revisions', 'ledger_entries', 'zelle_notices', 'zelle_notice_reviews', 'event_cost_snapshots'] as $table) {
                 if (DB::getSchemaBuilder()->hasTable($table)) {
                     $q->orWhere(fn ($w) => $w->where('subject_type', $table)->whereIn('subject_id', DB::table($table)->where('event_id', $e->id)->pluck('id')));
                 }

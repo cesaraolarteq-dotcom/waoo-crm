@@ -262,7 +262,12 @@
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "blocker": "Tarifas del staff (César)"
+     "blocker": "Base manual por evento con pantalla (Claude 0f8ae91, revisión de 08c284a: aprobado). Pendiente: tarifas reales del staff/horas/transporte de César y margen automático por paquete",
+     "backend_foundation": "08c284a: owner-entered immutable estimated/actual event costs, unknown/coverage states, versioned history and owner-only contribution margin API",
+     "foundation_verification": "Focused 12 MariaDB tests / 101 assertions; full integration 241 / 2119 with CLI-only512M helper after a128M PDF-suite exhaustion; Vite, lint, strict Composer and 9 real HTTP smoke checks pass",
+     "foundation_reviewed": true,
+     "foundation_ui": "0f8ae91",
+     "progress_note": "Overall backend remains null: only a tested event-cost foundation is delivered, not complete package/rate automation. Existing weights and stage acceptance credit stay unchanged."
     }
    ]
   },

@@ -78,3 +78,8 @@ No schema change. Optional customer_update is transient validated input, bound t
 Migration290000 adds nullable encrypted_token to portal_grants, no backfill. New issuance creates its row/hash, then authenticated encrypted versioned payload bound to grant/event/customer/expiry/scopes, then metadata-only audit, in the same transaction. Existing hashes still authenticate clients; missing old ciphertext cannot be reconstructed. The encrypted field is guarded/hidden and never included in generic owner/client projections or audit snapshots.
 
 RevealPortalGrantLink locks grant→event, verifies active/current identity and cryptographic binding/hash, audits IDs and returns only the same URL/expiry DTO to a fresh authorized owner. It does not mutate link lifetime, money, signature, presentations or existing QuickBook linkage. Revoke clears ciphertext atomically; expired links cannot reveal regardless of deferred purge. Key rotation uses Laravel's existing previous keys; keep key/backup access controlled. A grant-storage failure after QuickBook's durable core commit preserves its payment and existing pending-link exception/recovery. No sending provider or automated communication schema is added.
+
+
+### COST-A implemented foundation (2026-10-16)
+
+`event_cost_snapshots` / EventCostSnapshot implements only the owner-entered CostSnapshot portion: immutable estimate/actual histories, explicit unknown cents, owner coverage/note, source financial/event versions, audit and per-kind optimistic concurrency. No RateVersion/TimeEntry/StaffCompensation/TransportCost engine is implied. EventMarginSummary is owner-only and suppresses stale/incomplete margin, with cash and revenue labelled separately. API: COST-A-API.md; source08c284a.
