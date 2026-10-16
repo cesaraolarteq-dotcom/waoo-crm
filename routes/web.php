@@ -66,3 +66,5 @@ Route::middleware([\App\Http\Middleware\AuthenticatePortal::class, 'throttle:60,
 });
 
 Route::post('/webhooks/stripe', \App\Http\Controllers\Webhooks\StripeWebhookController::class)->middleware('throttle:120,1');
+// Design preview of the client portal with fictitious data; the controller returns 404 outside local/testing.
+Route::match(['get', 'post'], '/dev/portal/{step?}', \App\Http\Controllers\Portal\PortalPreviewController::class)->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);

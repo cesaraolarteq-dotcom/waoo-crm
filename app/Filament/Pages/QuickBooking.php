@@ -1,0 +1,258 @@
+<?php
+
+namespace App\Filament\Pages;
+
+use App\Exceptions\RecordWriteRejected;
+use App\Filament\Resources\Events\EventResource;
+use App\Filament\Resources\Variants\Pages\EditServiceVariant;
+use App\Filament\Support\{ChicagoTime, Labels, RecordServicePageGate};
+use App\Models\{Customer, PriceVersion, ServiceVariant};
+use Carbon\CarbonImmutable;
+use Filament\Actions\Action;
+use Filament\Facades\Filament;
+use Filament\Forms\Components\{Checkbox, DatePicker, Radio, Repeater, Select, Textarea, TextInput, TimePicker};
+use Filament\Pages\Page;
+use Filament\Schemas\Components\{Actions, Callout, EmbeddedSchema, Form, Grid, Section};
+use Filament\Schemas\Components\Utilities\{Get, Set};
+use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
+
+// BOOK-QUICK, owner half (docs/plans/QUICK-BOOKING.md). One form, one call to the proposed atomic
+// App\Services\Booking\QuickBook (docs/QUICK-BOOKING-API-PROPOSAL.md). Off until that class exists. Never sends anything.
+class QuickBooking extends Page
+{
+    protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedBolt;
+    protected static ?string $navigationLabel = 'Reserva rápida';
+    protected static ?int $navigationSort = -10;
+    protected static ?string $slug = 'reserva-rapida';
+    protected static ?string $title = 'Reserva rápida';
+    protected string $view = 'filament.pages.quick-booking';
+
+    public const SERVICE = 'App\\Services\\Booking\\QuickBook';
+
+    public ?array $data = [];
+
+    /** Result shown once after saving (the client link is never stored in the page afterwards). */
+    public ?array $result = null;
+
+    #[Locked]
+    public string $key = '';
+
+    public static function canAccess(): bool
+    {
+        return parent::canAccess() && RecordServicePageGate::ready(self::SERVICE);
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        return null;
+    }
+
+    public function mount(): void
+    {
+        $this->key = (string) Str::uuid();
+        $this->form->fill(['customer_mode' => 'new', 'locale' => 'es', 'deposit' => ['method' => 'zelle'], 'expires_days' => 14, 'characters' => []]);
+    }
+
+    public function getSubheading(): ?string
+    {
+        return 'Tu mitad en un minuto. La clienta completa sus datos y firma con el enlace. Nada se envía solo: tú copias el mensaje.';
+    }
+
+    public function form(Schema $schema): Schema
+    {
+        $choice = fn (string $time) => Radio::make("{$time}_choice")->label('Esa hora se repite ese día (cambio de horario): ¿cuál?')
+            ->options(ChicagoTime::CHOICES)->required()->columnSpanFull()
+            ->visible(fn (Get $get) => ChicagoTime::isAmbiguous($get('date'), $get($time)));
+
+        return $schema->statePath('data')->components([
+            Section::make('1. Paquete')->columns(2)->schema([
+                Select::make('price_version_ids')->label('Paquete y extras')->multiple()->native(false)->searchable()->required()->columnSpanFull()
+                    ->options(fn () => EventResource::priceOptions())->live()
+                    ->afterStateUpdated(fn (Get $get, Set $set) => $this->fillEnd($get, $set)),
+                Repeater::make('characters')->label('Personajes')->defaultItems(0)->columns(3)->columnSpanFull()->addActionLabel('Agregar personaje')
+                    ->visible(fn (Get $get) => EventResource::configurablePrices($get('price_version_ids') ?? []) !== [])
+                    ->helperText(fn (Get $get) => EventResource::charactersHint($get('price_version_ids') ?? []))
+                    ->schema([
+                        Select::make('price_version_id')->label('Para')->native(false)->required()->live()
+                            ->options(fn (Get $get) => EventResource::configurablePrices($get('../../price_version_ids') ?? [])),
+                        Select::make('character_id')->label('Personaje')->native(false)->required()->searchable()
+                            ->options(fn (Get $get) => EventResource::characterOptions($get('price_version_id'))),
+                        TextInput::make('quantity')->label('Cuántos')->integer()->minValue(1)->maxValue(20)->default(1)->required(),
+                    ]),
+                Select::make('event_type')->label('Tipo de evento')->native(false)->required()->options(EventResource::EVENT_TYPES),
+                TextInput::make('title')->label('Nombre del evento')->required()->maxLength(255)->placeholder('Ej.: Cumpleaños de Sofía'),
+            ]),
+            Section::make('2. Fecha y lugar')->columns(3)->schema([
+                DatePicker::make('date')->label('Fecha')->native()->required()->live(),
+                TimePicker::make('start_time')->label('Empieza (Houston)')->native()->seconds(false)->required()->live()
+                    ->afterStateUpdated(fn (Get $get, Set $set) => $this->fillEnd($get, $set))
+                    ->helperText('La clienta la confirma en su enlace.'),
+                TimePicker::make('end_time')->label('Termina')->native()->seconds(false)->required()->live()
+                    ->helperText('Se llena con la duración del paquete.'),
+                $choice('start_time'), $choice('end_time'),
+                TextInput::make('postal_code')->label('ZIP')->required()->maxLength(10)->placeholder('77494'),
+                TextInput::make('travel_fee')->label('Costo de transporte (USD)')->prefix('$')->required()->live(onBlur: true)
+                    ->rule('regex:/^\d{1,7}(\.\d{1,2})?$/')->validationMessages(['regex' => 'Escribe solo el número, por ejemplo 40.'])
+                    ->helperText('Obligatorio aquí: con el depósito se fija el total.'),
+            ]),
+            Section::make('3. Clienta')->columns(2)->schema([
+                Radio::make('customer_mode')->hiddenLabel()->inline()->options(['new' => 'Nueva', 'existing' => 'Ya es clienta'])->live()->columnSpanFull(),
+                Select::make('customer_id')->label('Clienta')->native(false)->searchable()->required()->columnSpanFull()
+                    ->options(fn () => Customer::query()->orderBy('name')->pluck('name', 'id'))
+                    ->visible(fn (Get $get) => $get('customer_mode') === 'existing'),
+                TextInput::make('name')->label('Nombre (como lo tienes)')->required()->maxLength(255)
+                    ->visible(fn (Get $get) => $get('customer_mode') === 'new')->helperText('Ella confirma su nombre completo en el enlace.'),
+                TextInput::make('phone')->label('Teléfono / WhatsApp')->tel()->maxLength(40)->visible(fn (Get $get) => $get('customer_mode') === 'new'),
+                Select::make('locale')->label('Idioma de sus mensajes')->native(false)->options(['es' => 'Español', 'en' => 'Inglés'])->required()
+                    ->visible(fn (Get $get) => $get('customer_mode') === 'new'),
+            ]),
+            Section::make('4. Depósito recibido')->columns(3)->schema([
+                Grid::make(3)->statePath('deposit')->columnSpanFull()->schema([
+                    TextInput::make('amount')->label('Monto que llegó (USD)')->prefix('$')->required()->live(onBlur: true)
+                        ->rule('regex:/^\d{1,7}(\.\d{1,2})?$/')->validationMessages(['regex' => 'Escribe solo el número, por ejemplo 250.']),
+                    TextInput::make('reference')->label('Referencia de Zelle')->required()->minLength(3)->maxLength(255),
+                    DatePicker::make('date')->label('Fecha en que llegó')->native()->required()->live()->maxDate(now(ChicagoTime::TZ)),
+                    TimePicker::make('time')->label('Hora (Houston)')->native()->seconds(false)->required()->live(),
+                    Radio::make('choice')->label('Esa hora se repite ese día: ¿cuál?')->options(ChicagoTime::CHOICES)->required()->columnSpanFull()
+                        ->visible(fn (Get $get) => ChicagoTime::isAmbiguous($get('date'), $get('time'))),
+                    Checkbox::make('verified')->label('Lo vi reflejado en el banco')->accepted()->columnSpanFull(),
+                ]),
+                Callout::make('Resumen')->info()->columnSpanFull()->description(fn (Get $get) => $this->moneyLine($get)),
+                TextInput::make('expires_days')->label('El enlace vence en (días)')->integer()->minValue(1)->maxValue(60)->required(),
+            ]),
+        ]);
+    }
+
+    public function content(Schema $schema): Schema
+    {
+        return $schema->components([
+            Form::make([EmbeddedSchema::make('form')])->id('form')->livewireSubmitHandler('save')->footer([
+                Actions::make([Action::make('save')->label('Guardar reserva y crear enlace')->color('primary')->submit('save')]),
+            ])->visible(fn () => $this->result === null),
+        ]);
+    }
+
+    public function fillEnd(Get $get, Set $set): void
+    {
+        $start = $get('start_time');
+        $minutes = PriceVersion::query()->whereIn('price_versions.id', array_map('intval', $get('price_version_ids') ?? []))
+            ->join('service_variants', 'service_variants.id', '=', 'price_versions.service_variant_id')->max('service_variants.duration_minutes');
+        if ($start && $minutes && preg_match('/^\d{2}:\d{2}/', $start)) {
+            $set('end_time', CarbonImmutable::createFromFormat('H:i', substr($start, 0, 5))->addMinutes((int) $minutes)->format('H:i'));
+        }
+    }
+
+    /** Live money line: total, 50 %, received, balance and due date, before saving. Unknown pieces say so; never $0. */
+    public function moneyLine(Get $get): string
+    {
+        $services = (int) PriceVersion::whereIn('id', array_map('intval', $get('price_version_ids') ?? []))->sum('amount_cents');
+        $fee = $get('travel_fee');
+        if (! $services) {
+            return 'Elige el paquete para ver el total.';
+        }
+        if ($fee === null || $fee === '' || ! preg_match('/^\d{1,7}(\.\d{1,2})?$/', (string) $fee)) {
+            return 'Servicios '.Labels::money($services).' + transporte pendiente: escribe el transporte para ver el total.';
+        }
+        $total = $services + EditServiceVariant::toCents((string) $fee);
+        $target = intdiv($total, 2) + $total % 2;
+        $amount = $get('deposit.amount');
+        $paid = $amount && preg_match('/^\d{1,7}(\.\d{1,2})?$/', (string) $amount) ? EditServiceVariant::toCents((string) $amount) : 0;
+        $line = 'Total '.Labels::money($total).' · depósito 50 % '.Labels::money($target).' · recibido '.Labels::money($paid).' · saldo '.Labels::money(max($total - $paid, 0));
+        if ($paid && $paid < $target) {
+            $line .= ' · faltan '.Labels::money($target - $paid).' para el 50 %';
+        }
+        if ($get('date') && $get('start_time') && ($start = array_values(ChicagoTime::candidates($get('date'), $get('start_time')))[0] ?? null)) {
+            $line .= ' · el saldo vence '.Labels::when(CarbonImmutable::parse($start)->subHours(24));
+        }
+
+        return rtrim($line, '.').'.';
+    }
+
+    public function save(): void
+    {
+        $s = $this->form->getState();
+        $input = $this->toServiceInput($s);
+        try {
+            $r = app(self::SERVICE)->execute(Filament::auth()->user(), $input, $this->key);
+        } catch (ValidationException $e) {
+            throw ValidationException::withMessages(collect($e->errors())->mapWithKeys(fn ($m, $k) => ['data.'.self::formPath($k) => $m])->all());
+        } catch (RecordWriteRejected|AuthorizationException $e) {
+            \Filament\Notifications\Notification::make()->danger()->title('No se guardó')->body($e->getMessage())->persistent()->send();
+
+            return;
+        }
+        $this->result = self::presentResult($r, $s);
+        $this->key = (string) Str::uuid();
+    }
+
+    /** Service field paths -> form paths (deposit.* and services.* stay; new_customer.* and event fields map to their inputs). */
+    public static function formPath(string $key): string
+    {
+        return match (true) {
+            str_starts_with($key, 'new_customer.') => substr($key, strlen('new_customer.')),
+            str_starts_with($key, 'deposit.amount_cents') => 'deposit.amount',
+            str_starts_with($key, 'deposit.received_at') => 'deposit.date',
+            str_starts_with($key, 'deposit.verified_received') => 'deposit.verified',
+            $key === 'travel_fee_cents' => 'travel_fee',
+            $key === 'starts_at' => 'start_time',
+            $key === 'ends_at' => 'end_time',
+            str_starts_with($key, 'services') => 'price_version_ids',
+            default => $key,
+        };
+    }
+
+    public function toServiceInput(array $s): array
+    {
+        $start = ChicagoTime::toIso($s['date'], $s['start_time'], $s['start_time_choice'] ?? null, 'data.start_time');
+        $end = ChicagoTime::toIso($s['date'], $s['end_time'], $s['end_time_choice'] ?? null, 'data.end_time');
+        if (strtotime($end) <= strtotime($start)) {
+            throw ValidationException::withMessages(['data.end_time' => 'La hora de fin debe ser después de la de inicio (mismo día).']);
+        }
+        $d = $s['deposit'];
+
+        return [
+            ...($s['customer_mode'] === 'existing'
+                ? ['customer_id' => (int) $s['customer_id']]
+                : ['new_customer' => ['name' => trim($s['name']), 'phone' => filled($s['phone'] ?? null) ? trim($s['phone']) : null, 'email' => null, 'locale' => $s['locale']]]),
+            'title' => trim((string) $s['title']), 'event_type' => $s['event_type'], 'starts_at' => $start, 'ends_at' => $end, 'timezone' => ChicagoTime::TZ,
+            'postal_code' => trim((string) $s['postal_code']), 'travel_fee_cents' => EditServiceVariant::toCents((string) $s['travel_fee']),
+            'services' => EventResource::servicesInput($s),
+            'deposit' => ['method' => 'zelle', 'amount_cents' => EditServiceVariant::toCents((string) $d['amount']), 'reference' => trim($d['reference']),
+                'received_at' => ChicagoTime::toIso($d['date'], $d['time'], $d['choice'] ?? null, 'data.deposit.date'), 'verified_received' => (bool) ($d['verified'] ?? false)],
+            'portal' => ['expires_at' => now(ChicagoTime::TZ)->addDays((int) $s['expires_days'])->endOfDay()->format('Y-m-d\TH:i:sP')],
+        ];
+    }
+
+    /** Builds the one-time result panel, including the ready-to-copy messages (no sending). */
+    public static function presentResult(object $r, array $s): array
+    {
+        $first = trim(explode(' ', (string) ($r->customer->name ?? ''))[0] ?? '');
+        $f = $r->finance;
+        $when = Labels::when($r->event->starts_at);
+        $paid = Labels::money($f['net_received_cents']);
+        $balance = Labels::money($f['balance_cents']);
+        $due = Labels::when($f['financial_revision']->balance_due_at);
+        $link = $r->portal_url;
+        $exp = $r->portal_expires_at ? Labels::when(CarbonImmutable::parse($r->portal_expires_at)) : '';
+        $whenEn = CarbonImmutable::instance($r->event->starts_at)->setTimezone(ChicagoTime::TZ)->format('D, M j \a\t g:i a');
+
+        return [
+            'event_id' => $r->event->id, 'link' => $link, 'expires' => $exp, 'shown_before' => $link === null,
+            'summary' => 'Total '.Labels::money($f['financial_revision']->total_cents).' · recibido '.$paid.' · saldo '.$balance.' (vence '.$due.')',
+            'msg_es' => "¡Hola {$first}! Gracias por tu depósito de {$paid}. Tu fecha del {$when} quedó apartada. Para terminar tu reserva, completa tus datos y firma tu contrato aquí: {$link} (el enlace vence el {$exp}). Tu saldo es de {$balance}. ¡Estamos emocionados de ser parte de tu celebración!",
+            'msg_en' => "Hi {$first}! Thank you for your deposit of {$paid}. Your date on {$whenEn} is held. To finish your booking, please complete your details and sign your contract here: {$link} (link expires {$exp}). Your remaining balance is {$balance}. We're excited to be part of your celebration!",
+            'locale' => $r->customer->locale ?? 'es',
+        ];
+    }
+
+    public function startOver(): void
+    {
+        $this->result = null;
+        $this->mount();
+    }
+}

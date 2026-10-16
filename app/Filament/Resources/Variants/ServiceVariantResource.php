@@ -57,25 +57,56 @@ class ServiceVariantResource extends Resource
                 ->helperText('Para activarlo, define primero lo que necesita.'),
             Repeater::make('requirements')->label('Qué necesita (al mismo tiempo, todo el evento)')->columnSpanFull()->defaultItems(0)
                 ->addActionLabel('Agregar requisito')->columns(4)
+                ->schema(self::requirementFields()),
+            TextInput::make('character_quantity')->label('Personajes incluidos')->integer()->minValue(0)->maxValue(20)->default(0)->live()
+                ->helperText('0 si el paquete no deja elegir personaje. Si incluye, al crear el evento se eligen cuáles.'),
+            Repeater::make('character_options')->label('Personajes que se pueden elegir')->columnSpanFull()->defaultItems(0)
+                ->visible(fn (Get $get) => (int) $get('character_quantity') > 0)->addActionLabel('Agregar personaje permitido')
+                ->itemLabel(fn (array $state) => filled($state['character_id'] ?? null) ? \App\Models\Character::whereKey($state['character_id'])->value('name') : null)
                 ->schema([
-                    Select::make('kind')->label('Tipo')->options(Labels::KIND)->required()->native(false)->live(),
-                    TextInput::make('quantity')->label('Cantidad')->integer()->minValue(1)->maxValue(20)->default(1)->required(),
-                    Select::make('skill')->label('Rol')->options(Labels::SKILL)->native(false)
-                        ->visible(fn (Get $get) => $get('kind') === 'staff')->required(fn (Get $get) => $get('kind') === 'staff'),
-                    Select::make('character_id')->label('Personaje')->native(false)->searchable()
-                        ->options(fn () => \App\Models\Character::query()->orderBy('name')->pluck('name', 'id'))
-                        ->visible(fn (Get $get) => $get('kind') === 'costume')->required(fn (Get $get) => $get('kind') === 'costume'),
-                    Select::make('equipment_kind')->label('Equipo')->options(Labels::EQUIPMENT)->native(false)
-                        ->visible(fn (Get $get) => $get('kind') === 'equipment')->required(fn (Get $get) => $get('kind') === 'equipment'),
+                    Select::make('character_id')->label('Personaje')->native(false)->searchable()->required()
+                        ->options(fn () => \App\Models\Character::query()->where('active', true)->orderBy('name')->pluck('name', 'id')),
+                    Repeater::make('requirements')->label('Qué necesita cada uno de este personaje')->defaultItems(1)->columns(4)->addActionLabel('Agregar')
+                        ->helperText('Ej.: 1 persona con rol Personaje + 1 traje de este personaje. Un personaje sin traje (p. ej. animador disfrazado) no necesita traje.')
+                        ->schema(self::requirementFields()),
                 ]),
         ]);
+    }
+
+    /** One requirement row (base recipe or one selected character). */
+    public static function requirementFields(): array
+    {
+        return [
+            Select::make('kind')->label('Tipo')->options(Labels::KIND)->required()->native(false)->live(),
+            TextInput::make('quantity')->label('Cantidad')->integer()->minValue(1)->maxValue(20)->default(1)->required(),
+            Select::make('skill')->label('Rol')->options(Labels::SKILL)->native(false)
+                ->visible(fn (Get $get) => $get('kind') === 'staff')->required(fn (Get $get) => $get('kind') === 'staff'),
+            Select::make('character_id')->label('Personaje')->native(false)->searchable()
+                ->options(fn () => \App\Models\Character::query()->orderBy('name')->pluck('name', 'id'))
+                ->visible(fn (Get $get) => $get('kind') === 'costume')->required(fn (Get $get) => $get('kind') === 'costume'),
+            Select::make('equipment_kind')->label('Equipo')->options(Labels::EQUIPMENT)->native(false)
+                ->visible(fn (Get $get) => $get('kind') === 'equipment')->required(fn (Get $get) => $get('kind') === 'equipment'),
+        ];
     }
 
     /** Only the editable fields of the contract, with empty strings as null like the HTTP path. */
     public static function toServiceInput(array $data): array
     {
+        $quantity = (int) ($data['character_quantity'] ?? 0);
+        $options = $quantity > 0 ? collect(array_values($data['character_options'] ?? []))->map(fn ($o) => [
+            'character_id' => (int) ($o['character_id'] ?? 0), 'requirements' => self::normalizeRequirements($o['requirements'] ?? []),
+        ])->all() : [];
+
+        return ['name' => trim((string) ($data['name'] ?? '')), 'status' => $data['status'] ?? 'draft',
+            'duration_minutes' => (int) ($data['duration_minutes'] ?? 0), 'requirements' => self::normalizeRequirements($data['requirements'] ?? []),
+            'character_quantity' => $quantity, 'character_options' => $options];
+    }
+
+    /** Only the key for each requirement kind, ints as ints (contract shape). */
+    public static function normalizeRequirements(array $rows): array
+    {
         $requirements = [];
-        foreach (array_values($data['requirements'] ?? []) as $r) {
+        foreach (array_values($rows) as $r) {
             $kind = $r['kind'] ?? null;
             $requirements[] = array_filter([
                 'kind' => $kind, 'quantity' => (int) ($r['quantity'] ?? 1),
@@ -85,8 +116,7 @@ class ServiceVariantResource extends Resource
             ], fn ($v) => $v !== null);
         }
 
-        return ['name' => trim((string) ($data['name'] ?? '')), 'status' => $data['status'] ?? 'draft',
-            'duration_minutes' => (int) ($data['duration_minutes'] ?? 0), 'requirements' => $requirements];
+        return $requirements;
     }
 
     public static function table(Table $table): Table
