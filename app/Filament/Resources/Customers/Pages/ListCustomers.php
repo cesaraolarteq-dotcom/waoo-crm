@@ -9,5 +9,9 @@ class ListCustomers extends ListRecords
 {
     protected static string $resource = CustomerResource::class;
 
+    protected static ?string $title = 'Clientas';
+
+    protected static ?string $breadcrumb = 'Lista';
+
     protected ?string $subheading = 'Todas las clientas, con su idioma y cuántos eventos tienen.';
 }

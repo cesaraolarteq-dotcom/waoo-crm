@@ -21,6 +21,8 @@ class ResourceUnitResource extends Resource
     protected static ?string $navigationLabel = 'Staff y trajes';
     protected static string|\UnitEnum|null $navigationGroup = 'Operación';
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedUserGroup;
+    protected static ?string $breadcrumb = 'Staff y trajes';
+    protected static bool $hasTitleCaseModelLabel = false;
     protected static ?int $navigationSort = 10;
 
     public static function canCreate(): bool
@@ -47,8 +49,8 @@ class ResourceUnitResource extends Resource
                         'vehicle' => $record->seats ? "{$record->seats} asientos (con conductor)" : null,
                         default => null,
                     })->placeholder('—')->wrap(),
-                TextColumn::make('location')->label('Dónde está')->placeholder('—')->toggleable(),
-                TextColumn::make('upcoming_total')->label('Próximos eventos')->alignEnd(),
+                TextColumn::make('location')->label('Dónde está')->placeholder('—')->toggleable()->visibleFrom('lg'),
+                TextColumn::make('upcoming_total')->label('Próximos eventos')->alignEnd()->visibleFrom('md'),
                 TextColumn::make('status')->label('Estado')->badge()
                     ->formatStateUsing(fn ($state) => Labels::label(Labels::RESOURCE_STATUS, $state))
                     ->color(fn ($state) => Labels::RESOURCE_STATUS_COLOR[$state] ?? 'gray'),

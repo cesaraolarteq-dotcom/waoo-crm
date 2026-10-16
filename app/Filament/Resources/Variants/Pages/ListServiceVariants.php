@@ -9,5 +9,9 @@ class ListServiceVariants extends ListRecords
 {
     protected static string $resource = ServiceVariantResource::class;
 
+    protected static ?string $title = 'Catálogo';
+
+    protected static ?string $breadcrumb = 'Lista';
+
     protected ?string $subheading = 'Paquetes y servicios con su precio vigente y el personal o equipo que necesitan.';
 }

@@ -19,6 +19,8 @@ class CharacterResource extends Resource
     protected static ?string $navigationLabel = 'Personajes';
     protected static string|\UnitEnum|null $navigationGroup = 'Operación';
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedSparkles;
+    protected static ?string $breadcrumb = 'Personajes';
+    protected static bool $hasTitleCaseModelLabel = false;
     protected static ?int $navigationSort = 20;
 
     public static function canCreate(): bool

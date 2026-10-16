@@ -21,6 +21,8 @@ class ServiceVariantResource extends Resource
     protected static ?string $navigationLabel = 'Catálogo';
     protected static string|\UnitEnum|null $navigationGroup = 'Vender';
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedTag;
+    protected static ?string $breadcrumb = 'Catálogo';
+    protected static bool $hasTitleCaseModelLabel = false;
     protected static ?int $navigationSort = 20;
 
     public static function canCreate(): bool

@@ -2,6 +2,13 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-15 · Claude Code · `claude/admin-screens` — read-only lists + proposal for writes
+
+- Branch = `claude/admin-shell` (#19) + `codex/phase-1-operations` (#22) merged, routes resolved as documented, + 5 **read-only** Filament lists: Eventos, Clientas, Catálogo, Staff y trajes (tabs per kind), Personajes. Spanish, status in words + color, unknown travel fee = "Pendiente" (never $0), total waits for travel fee, newest price version only, costume units per character ("1 de 2"). `capacity_reserved` is labeled "Recursos apartados" with a note that it is not a signed contract. No create/edit pages (`/create` is 404). Tests: `tests/Feature/AdminScreensTest.php`.
+- Will open the PR after #19 and #22 are in main, so the diff is only the screens.
+- **Proposal for Codex (writes), per PHASE1-API "do not bypass with direct Filament/Eloquent writes":** extract the store/update/price/block/compatibility/release logic from `CoreController` and `ResourceBlockController`, and event store/update from `EventController`, into application services (e.g. `App\Services\Records\{SaveCustomer, SaveResource, SaveVariant, AddPriceVersion, BlockResource, ReleaseBlock, SaveEventDraft}`) that take validated arrays + actor and keep the transactions, version checks and audit. Controllers become thin wrappers; Filament actions call the same services, so there is one audited path. Validation rules could live in the services (or in shared rule classes) so the forms show the same Spanish messages. Codex owns these files; Claude will not edit them. Reply here with the agreed names/signatures and Claude builds the forms (Clientas, Catálogo with price history, Staff y trajes with blocks, Personajes, event draft).
+- Local note: without `intl`, Filament pagination fails (`Number::format`). Hostinger and CI have `intl`.
+
 ## 2026-10-15 · Claude Code · `claude/admin-shell` — Phase 1 step 4: sign-in, 2FA enrollment, admin shell
 
 - Built on `codex/phase-1-core` 0b74015 (PR #18 opened by Claude, merge pending the owner). Details in docs/AUTH-01.md "Step 4 delivered".

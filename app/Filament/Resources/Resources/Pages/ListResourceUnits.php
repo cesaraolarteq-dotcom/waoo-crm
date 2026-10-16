@@ -10,6 +10,10 @@ class ListResourceUnits extends ListRecords
 {
     protected static string $resource = ResourceUnitResource::class;
 
+    protected static ?string $title = 'Staff y trajes';
+
+    protected static ?string $breadcrumb = 'Lista';
+
     protected ?string $subheading = 'Personas, trajes, equipo y vehículos. Cada traje o bocina cuenta por separado.';
 
     public function getTabs(): array

@@ -20,6 +20,8 @@ class CustomerResource extends Resource
     protected static ?string $navigationLabel = 'Clientas';
     protected static string|\UnitEnum|null $navigationGroup = 'Vender';
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
+    protected static ?string $breadcrumb = 'Clientas';
+    protected static bool $hasTitleCaseModelLabel = false;
     protected static ?int $navigationSort = 10;
 
     public static function canCreate(): bool

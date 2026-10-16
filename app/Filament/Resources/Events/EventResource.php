@@ -21,6 +21,8 @@ class EventResource extends Resource
     protected static ?string $navigationLabel = 'Eventos';
     protected static string|\UnitEnum|null $navigationGroup = 'Día a día';
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedCalendarDays;
+    protected static ?string $breadcrumb = 'Eventos';
+    protected static bool $hasTitleCaseModelLabel = false;
     protected static ?int $navigationSort = 10;
 
     public static function canCreate(): bool
@@ -36,11 +38,11 @@ class EventResource extends Resource
             ->columns([
                 TextColumn::make('starts_at')->label('Fecha y hora')->sortable()
                     ->formatStateUsing(fn ($state) => Labels::when($state))
-                    ->description(fn ($record) => 'hasta '.$record->ends_at->setTimezone(Labels::TZ)->format('g:i a')),
+                    ->description(fn ($record) => 'hasta '.$record->ends_at->setTimezone(Labels::TZ)->locale('es')->translatedFormat('g:i a')),
                 TextColumn::make('title')->label('Evento')->searchable()->weight('bold')
                     ->description(fn ($record) => $record->customer?->name),
-                TextColumn::make('postal_code')->label('ZIP')->placeholder('—'),
-                TextColumn::make('travel_fee_cents')->label('Costo de transporte')
+                TextColumn::make('postal_code')->label('ZIP')->placeholder('—')->visibleFrom('md'),
+                TextColumn::make('travel_fee_cents')->label('Costo de transporte')->visibleFrom('lg')
                     ->formatStateUsing(fn ($state) => Labels::money($state))->placeholder('Pendiente')
                     ->color(fn ($record) => $record->travel_fee_cents === null ? 'warning' : null),
                 TextColumn::make('total')->label('Total')

@@ -10,6 +10,10 @@ class ListEvents extends ListRecords
 {
     protected static string $resource = EventResource::class;
 
+    protected static ?string $title = 'Eventos';
+
+    protected static ?string $breadcrumb = 'Lista';
+
     protected ?string $subheading = 'Horas en hora de Houston. "Recursos apartados" significa staff y trajes asignados con depósito verificado; no es contrato firmado.';
 
     public function getTabs(): array
