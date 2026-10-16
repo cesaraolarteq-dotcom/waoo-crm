@@ -46,17 +46,18 @@ class ConfirmCapacityPageTest extends TestCase
         return $e;
     }
 
+    // Wraps Codex's real ConfirmCapacity service to record the exact payload the page sends.
     private function bindService(): void
     {
         $test = $this;
-        $this->app->instance(ConfirmCapacity::SERVICE, new class($test) {
-            public function __construct(private $test) {}
+        $real = new \App\Services\Records\ConfirmCapacity;
+        $this->app->instance(ConfirmCapacity::SERVICE, new class($test, $real) {
+            public function __construct(private $test, private $real) {}
             public function execute(User $actor, int $eventId, array $input)
             {
                 $this->test->recordCall($actor, $eventId, $input);
-                $input['payment']['received_at'] = CarbonImmutable::parse($input['payment']['received_at'])->utc();
 
-                return app(ConfirmBooking::class)->execute($eventId, $input);
+                return $this->real->execute($actor, $eventId, $input);
             }
         });
     }
@@ -75,10 +76,11 @@ class ConfirmCapacityPageTest extends TestCase
         ], $overrides);
     }
 
-    public function test_page_stays_closed_until_the_service_exists(): void
+    public function test_page_can_be_switched_off_and_is_on_with_the_service(): void
     {
+        config(['waoo.record_forms' => false]);
         $this->get("/admin/eventos/{$this->event->id}/confirmar")->assertForbidden();
-        $this->bindService();
+        config(['waoo.record_forms' => true]);
         $this->get("/admin/eventos/{$this->event->id}/editar")->assertSee('Apartar recursos y confirmar');
     }
 
@@ -100,6 +102,7 @@ class ConfirmCapacityPageTest extends TestCase
         $this->assertSame('capacity_reserved', $this->event->fresh()->status);
         $this->assertSame(2, ResourceReservation::where('event_id', $this->event->id)->count());
         $this->assertSame(6300, BookingEvidence::sole()->amount_cents);
+        $this->assertSame($this->owner->id, (int) BookingEvidence::sole()->verified_by);
     }
 
     public function test_less_than_half_needs_a_reason(): void
