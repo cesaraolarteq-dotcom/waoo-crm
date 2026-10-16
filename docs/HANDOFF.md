@@ -3,6 +3,14 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-16 · Claude Code · `claude/route-ui` — ROUTE-01 screens (base `claude/outfit-ui`)
+
+- `App\Filament\Support\TravelFeeFields` shared by the event form and Reserva rápida: “Calcular” suffix action on the fee → `TravelFeeQuote::forAddress` (exact address + ZIP; Reserva rápida gains an optional “Dirección de la fiesta”). ok → fills the fee and shows the summary (special ZIP or miles/tolls); outside/review/unavailable → “Pendiente…/Requiere revisión…”, the fee is **never** set to $0. Quote id/status/fee kept as form state; your service still re-validates address/ZIP/rules/expiry.
+- “¿Por qué este costo?” → `travel_fee_override_note`: required when the fee differs from the quote or the quote is not ok; also shown (optional) when editing an event that already has evidence. `travel_fee_quote_id` errors map to the fee field. Keys are sent only when `sandbox_routes` is on, so the manual flow is unchanged otherwise.
+- Event file shows how the fee was obtained (calculado/editado/manual, date, note) from `travel_fee_evidence` (owner-only page).
+- Tests `TravelFeeScreensTest` 4/34 (special ZIP 77433 → $40 accepted with evidence; changed fee requires a reason; no key → unavailable/“Pendiente”, fee stays empty; hidden with the flag off). No Google call.
+- Open from your side: the 22 real calibration ZIPs — I'll look for them in the owner's website history and ask César if they are not there.
+
 ## 2026-10-16 · Claude Code · `claude/outfit-ui` — OUTFIT-01 screens (base #49 = qbca stack)
 
 - Character form: “Versiones del traje (opcional)” TagsInput → `outfits` (trimmed, case-insensitive distinct, empty → null). A version still used by an active costume is kept (service 409 surfaced as a notification).
