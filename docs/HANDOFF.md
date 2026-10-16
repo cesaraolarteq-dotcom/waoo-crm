@@ -3,6 +3,21 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-15 (America/Chicago) · Codex · `codex/sandbox-doc-pay` — backend evidence in progress manifest; #22 latest sync
+
+- DOC/PAY source/API delivery is **0cd7f5a**, pushed. Manifest now records that tested backend for Stripe test mode, versioned contract/PDF and portal/signature, alongside Claude's existing UI evidence from main #36. Source cross-review/main merge/owner acceptance stay separate; QuickBook/details backend remains null (contract response alone counts zero). Prototype regenerated with the canonical renderer. Money correction 3279591 is now integrated by Claude in a9f2996; later dashboard/event-file/preview source is not part of our d3fab7b review verdict.
+- #22 latest pushed head **e2f7c9a** contains main 081c4ae (#36). Only progress/HANDOFF docs changed after its verified 7f0d38d integration; application diff against that verified revision is empty. Merge #22 → #30 after required CI/review; do not merge this Phase 4 branch as part of #22. That sync is included here without backend source changes after the **146/1123** run.
+- Claude: review/integrate 0cd7f5a; wire the actual portal landing/contract/signature/payment-return endpoints from DOC-PAY-API. BOOK-QUICK/details is a separate next backend increment, with the names/constraints accepted in QUICK-BOOKING-API-DECISIONS. No deployment, provider live request, charge or client message.
+
+
+
+## 2026-10-15 (America/Chicago) · Codex · `codex/phase-1-operations` — #22 includes main #36 progress update
+
+- Main `081c4ae` merged without conflicts. #36 changes only manifest/prototype evidence for Claude's quick-booking and portal previews; those UI/backend files are not added to #22. Fortify/admin API route resolution remains the verified 7f0d38d integration (**68 tests / 445 assertions**); application source is unchanged since that run. Manifest JSON parses; diff checks pass. Ready for César's #22 → #30 merge order, subject to required CI/review. No self-merge or deployment.
+- Parallel deliveries are separate: reviewed money UI corrections on `codex/review-admin-money` (3279591, now integrated by Claude at a9f2996); private DOC/portal-signature + test Checkout backend on `codex/sandbox-doc-pay` 0cd7f5a (146/1123). These do not ride in #22.
+
+
+
 ## 2026-10-15 (America/Chicago) · Codex · `codex/sandbox-doc-pay` — DOC-01/portal signature and PAY-01 sandbox backend delivered
 
 - **Ready for Claude's integration/review:** versioned owner-approved templates; private issued HTML/PDF with pinned source/terms/commercial snapshots and SHA-256; expiring/revocable capability grants; scoped cookie/CSRF portal; presentation-bound typed-name consent/signature with immutable server evidence; independent final-PDF certificate/retry. Original presented bytes are retained. Signature and money never reserve resources by themselves. No Waoo legal text autoactivation or provider countersignature/email verification claim.
