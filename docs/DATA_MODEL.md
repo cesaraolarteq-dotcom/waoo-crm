@@ -46,3 +46,9 @@ Permisos por objeto y rol; concurrencia real de múltiples recursos/vecinos; rec
 | Objetivo de depósito y saldo exacto | QUOTE-01 calcula objetivo/cotización versionada; PAY-01/PAY-02 aportan ledger, cobros verificados y saldo calculado; BOOK-QUICK integra esos valores en el flujo. La evidencia externa de Fase 1 no sustituye ese ledger ni un campo de saldo editable. |
 
 Esta lista asigna las ampliaciones; no declara esos tickets implementados ni habilita cobros/portal en Fase 1.
+
+## Incremento de personajes por evento y tipo (codex/record-extensions)
+
+Implementado mediante migración aditiva `2026_10_16_140000_add_event_character_selections`: events.event_type nullable, service_variants.character_quantity (0 por defecto) / character_options JSON, event_service_characters (event_service_id, character_id, quantity, character_name_snapshot, único servicio/personaje). Las variantes existentes conservan sus recetas fijas; no se presume un catálogo configurable sin datos del dueño. Los personajes elegidos compilan requisitos efectivos dentro del snapshot por servicio; las selecciones incompletas no permiten confirmar capacidad. Personajes sin traje usan la receta de personal declarada, sin asignarles traje por inferencia. Cantidad de personajes elegidos y unidades físicas disponibles son medidas distintas.
+
+La desvinculación de compatibilidad elimina solo el pivote actual, conserva la evidencia en audit_entries y rechaza una pareja con asignación conjunta futura/en curso bajo los mismos candados que la reserva. No hay registro de pareja/intérprete exacta en resource_reservations, por lo que esta protección es conservadora. La baja no invalida un compromiso ni borra historia de eventos.

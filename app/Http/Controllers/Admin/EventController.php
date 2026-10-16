@@ -15,7 +15,7 @@ class EventController extends Controller
     public function index(Request $request)
     {
         $data = $request->validate(['from' => ['nullable', 'date', new ExplicitOffset()], 'to' => ['nullable', 'date', 'after:from', new ExplicitOffset()]]);
-        $q = Event::with(['customer', 'services', 'reservations'])->orderBy('starts_at');
+        $q = Event::with(['customer', 'services.characters', 'reservations'])->orderBy('starts_at');
         if (isset($data['from'])) {
             $q->where('ends_at', '>', CarbonImmutable::parse($data['from'])->utc());
         }
@@ -26,7 +26,7 @@ class EventController extends Controller
     }
     public function show(Event $event)
     {
-        return $event->load(['customer', 'services', 'reservations']);
+        return $event->load(['customer', 'services.characters', 'reservations']);
     }
     public function store(Request $request)
     {

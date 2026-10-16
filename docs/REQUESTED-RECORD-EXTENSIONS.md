@@ -2,18 +2,18 @@
 
 2026-10-15 (America/Chicago) · Codex · Phase 1 follow-up.
 
-**Status: accepted design for the next backend increment, not implemented by this review.** These are proposed names/contracts, not currently accepted API fields or available service classes. Claude can plan controls but must wait for the backend delivery before enabling them. Existing record and reservation contracts remain in force.
+**Status: implemented on `codex/record-extensions`, awaiting Claude review.** The unlink service/endpoint and new event/catalog fields below are now available after the additive migration. Existing reservation protections remain in force; no owner catalog or UI controls were invented. See PHASE1-API for delivered payloads and omission behavior.
 
 ## 1. Remove a costume compatibility safely
 
-Proposed service in `App\Services\Records`:
+Delivered service in `App\Services\Records`:
 
 ```php
 UnlinkCostumeCompatibility::execute(User $actor, int $staffId, int $costumeId, string $reason): array
 // array{staff_id: int, costume_id: int, removed: bool}
 ```
 
-Proposed endpoint: POST `/admin/api/costume-compatibilities/unlink` with `staff_id`, `costume_id`, `reason` (trimmed string, 10–1000 characters). Use the authenticated, freshly authorized owner with confirmed 2FA, as for the other Records services. Do not take actor identity from form data.
+Delivered endpoint: POST `/admin/api/costume-compatibilities/unlink` with `staff_id`, `costume_id`, `reason` (trimmed string, 10–1000 characters). Use the authenticated, freshly authorized owner with confirmed 2FA, as for the other Records services. Do not take actor identity from form data.
 
 Implementation must acquire both stable resource rows in ascending ID order, matching confirmation/linking, and validate staff/costume kinds. If the link exists, conservatively return 409 when both resources are assigned to the same ongoing/future event. Current reservations do not record the exact wearer/role pairing, so do not guess that another person can cover it. Reassign through the appropriate reviewed workflow before removal. Do not change the committed reservation or make a paid event silently infeasible.
 
@@ -23,7 +23,7 @@ Acceptance before UI wiring: direct service/API authorization, row/kind validati
 
 ## 2. QUICK-BOOKING: event type and selected characters
 
-Proposed input names:
+Delivered input names:
 
 | Location | Field | Meaning |
 | --- | --- | --- |
@@ -38,4 +38,12 @@ Selecting characters must be authoritative for availability: validate the varian
 
 Existing booked snapshots remain immutable; changing a committed event goes through CHANGE-A. Draft saves, child character rows, effective requirements and audit must commit or roll back together and retain expected_version checks. PRICE/QUOTE integration must decide any owner-defined character supplements explicitly; the character array does not silently change a price or invent a charge.
 
-Before implementing, Codex will update DATA_MODEL/PHASE1-API/RECORD-SERVICES together with migrations, validation and capacity tests. Claude should not submit these extra fields to the current API: they have not been added yet. The backend delivery will announce the final accepted fields and any refinement needed to represent the owner's catalog. No new phase, deployment or client messaging is part of this agreement.
+DATA_MODEL/PHASE1-API/RECORD-SERVICES and the additive migration now describe these fields. Claude may wire them after review against this branch; existing deployment/main code does not gain them until merged and migrated. No new phase, deployment or client messaging is part of this agreement.
+
+## Implementation contract — explicit character recipes
+
+The backend increment adds optional catalog fields `character_quantity` (0–20, default 0) and `character_options` (array of `{character_id, requirements}`). Each option's requirements describe **one selected unit of that character**, using the existing requirement keys/kinds. The base `requirements` still apply once per service; option requirements are added once per selected character quantity. This separates shared party roles from character-specific staff/costumes without guessing that every character needs a costume. Owners supply these recipes; this increment seeds no real catalog.
+
+For a configurable variant, selected quantities must total `character_quantity`; missing/partial choices keep a draft operationally incomplete. Unlisted/inactive characters and quantities above the included count are validation errors, not price supplements. A costume requirement inside an option must reference that option's character. Every option needs at least one staff requirement; a costume option also needs a performer requirement. Selecting a non-costume option does not manufacture a costume requirement. Existing variants default to zero configurable characters and keep their current recipes; they reject a nonempty new selection until explicitly configured. Current fixed costume recipes do not automatically become configurable.
+
+Old forms may omit the new catalog fields on update without clearing configuration. Draft edits that omit `characters` for the same saved price retain its persisted choices; explicit `characters: []` clears them and makes a configurable draft incomplete. Event type is preserved if omitted on update; null explicitly leaves it unclassified. Relations returned for event services include `characters` with IDs, quantities and snapshotted names. The existing price service remains append-only and adds no implicit character charge.

@@ -22,6 +22,7 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::get('/resources/{resource}/blocks', [ResourceBlockController::class, 'index']);
     Route::post('/resources/{resource}/blocks/{block}/release', [ResourceBlockController::class, 'release'])->whereNumber('block');
     Route::post('/costume-compatibilities', [CoreController::class, 'compatibility']);
+    Route::post('/costume-compatibilities/unlink', [CoreController::class, 'unlinkCompatibility']);
     Route::get('/events', [EventController::class, 'index']);
     Route::post('/events', [EventController::class, 'store']);
     Route::get('/events/{event}', [EventController::class, 'show']);

@@ -20,7 +20,7 @@ final class SaveEventDraft
     {
         $actor = RecordActor::authorize($actor);
         $id = $eventId;
-        $data = RecordInput::validate($input, ['customer_id' => 'required|integer|exists:customers,id', 'title' => 'required|string|max:255', 'starts_at' => ['required', 'date', new ExplicitOffset()], 'ends_at' => ['required', 'date', 'after:starts_at', new ExplicitOffset()], 'timezone' => ['required', Rule::in(['America/Chicago'])], 'address' => 'nullable|string|max:255', 'postal_code' => ['nullable', 'string', 'regex:/^[0-9]{5}(?:-[0-9]{4})?$/'], 'setup_minutes' => 'nullable|integer|min:0|max:720', 'breakdown_minutes' => 'nullable|integer|min:0|max:720', 'travel_fee_cents' => 'nullable|integer|min:0|max:100000000', 'services' => 'present|array|max:10', 'services.*' => 'array:price_version_id', 'services.*.price_version_id' => 'required|integer|distinct|exists:price_versions,id', 'expected_version' => ($id ? 'required' : 'sometimes') . '|integer|min:1']);
+        $data = RecordInput::validate($input, ['customer_id' => 'required|integer|exists:customers,id', 'title' => 'required|string|max:255', 'event_type' => ['sometimes', 'nullable', Rule::in(['birthday', 'baby_shower', 'gender_reveal', 'corporate', 'other'])], 'starts_at' => ['required', 'date', new ExplicitOffset()], 'ends_at' => ['required', 'date', 'after:starts_at', new ExplicitOffset()], 'timezone' => ['required', Rule::in(['America/Chicago'])], 'address' => 'nullable|string|max:255', 'postal_code' => ['nullable', 'string', 'regex:/^[0-9]{5}(?:-[0-9]{4})?$/'], 'setup_minutes' => 'nullable|integer|min:0|max:720', 'breakdown_minutes' => 'nullable|integer|min:0|max:720', 'travel_fee_cents' => 'nullable|integer|min:0|max:100000000', 'services' => 'present|array|max:10', 'services.*' => 'array:price_version_id,characters', 'services.*.characters' => 'sometimes|array|max:20', 'services.*.characters.*' => 'array:character_id,quantity', 'services.*.characters.*.character_id' => 'required|integer|exists:characters,id', 'services.*.characters.*.quantity' => 'required|integer|min:1|max:20', 'services.*.price_version_id' => 'required|integer|distinct|exists:price_versions,id', 'expected_version' => ($id ? 'required' : 'sometimes') . '|integer|min:1']);
         return DB::transaction(function () use ($actor, $data, $id) {
             $event = $id ? Event::whereKey($id)->lockForUpdate()->firstOrFail() : new Event();
             if ($id) {
@@ -36,18 +36,24 @@ final class SaveEventDraft
                 $event->version++;
             }
             $event->save();
+            $previous = $id ? $event->services()->with('characters')->get()->keyBy('price_version_id') : collect();
             if ($id) {
                 $event->services()->delete();
             }
             // Only a draft; booked snapshots are immutable.
-            foreach ($services as $selection) {
+            $auditServices = [];
+            foreach ($services as $index => $selection) {
                 $price = PriceVersion::findOrFail($selection['price_version_id']);
                 $variant = ServiceVariant::whereKey($price->service_variant_id)->lockForUpdate()->firstOrFail();
                 RecordWriteRejected::when($variant->status === 'retired', 422, 'La variante fue retirada.');
-                EventService::create(['event_id' => $event->id, 'service_variant_id' => $variant->id, 'price_version_id' => $price->id, 'requirements_snapshot' => $variant->requirements, 'duration_minutes' => $variant->duration_minutes, 'operational_ready' => $variant->status === 'active']);
+                $characters = $selection['characters'] ?? ($previous->get($price->id)?->characters->map(fn ($row) => ['character_id' => $row->character_id, 'quantity' => $row->quantity])->all() ?? []);
+                $compiled = CharacterRecipe::compile($variant, $characters, "services.{$index}.characters");
+                $service = EventService::create(['event_id' => $event->id, 'service_variant_id' => $variant->id, 'price_version_id' => $price->id, 'requirements_snapshot' => $compiled['requirements'], 'duration_minutes' => $variant->duration_minutes, 'operational_ready' => $compiled['ready']]);
+                $service->characters()->createMany($compiled['characters']);
+                $auditServices[] = ['price_version_id' => $price->id, 'characters' => $compiled['characters']];
             }
-            Audit::recordFor($actor, $id ? 'event.draft_updated' : 'event.created', $event, $before, [...$event->getAttributes(), 'services' => $services]);
-            return $event->fresh()->load('services');
+            Audit::recordFor($actor, $id ? 'event.draft_updated' : 'event.created', $event, $before, [...$event->getAttributes(), 'services' => $auditServices]);
+            return $event->fresh()->load('services.characters');
         });
     }
 }
