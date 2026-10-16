@@ -38,11 +38,7 @@ class EventContract extends Page
     #[Locked] public string $issueKey = '';
     #[Locked] public string $approveKey = '';
     #[Locked] public ?int $displayedEventVersion = null;
-
-    /** The exact client submission shown in the approval modal: approval sends these, never a newer one fetched at submit time. */
-    #[Locked] public ?int $reviewSubmissionId = null;
-    #[Locked] public ?int $reviewSubmissionRevision = null;
-    #[Locked] public ?int $reviewSubmissionEventVersion = null;
+    #[Locked] public ?array $displayedSubmission = null;
 
     /** Shown once after creating a link; never stored. */
     public ?array $newLink = null;
@@ -52,9 +48,16 @@ class EventContract extends Page
         abort_unless(DocumentsGate::enabled(), 403);
         $this->record = $this->resolveRecord($record);
         $this->displayedEventVersion = $this->record->version;
+        $this->captureSubmission();
         $this->createKey = (string) Str::uuid();
         $this->issueKey = (string) Str::uuid();
         $this->approveKey = (string) Str::uuid();
+    }
+
+    private function captureSubmission(): void
+    {
+        $submission = ClientDetailsSubmission::where('event_id', $this->record->getKey())->orderByDesc('revision')->first();
+        $this->displayedSubmission = $submission ? $submission->only(['id', 'event_version', 'revision']) : null;
     }
 
     public function getSubheading(): ?string
@@ -76,7 +79,8 @@ class EventContract extends Page
         ]);
         $quick = QuickBookingRecord::where('event_id', $e->id)->exists();
         $detailsState = $quick || ClientDetailsSubmission::where('event_id', $e->id)->exists() ? ClientDetailsState::forEvent($e) : null;
-        $submission = ClientDetailsSubmission::where('event_id', $e->id)->orderByDesc('revision')->first();
+        $submission = $this->displayedSubmission
+            ? ClientDetailsSubmission::where('event_id', $e->id)->find($this->displayedSubmission['id']) : null;
         $review = $submission ? ClientDetailsReview::where('submission_id', $submission->id)->first() : null;
         $blockers = [];
         if ($detailsState === 'waiting_details') $blockers[] = 'Esperando que la clienta llene sus datos con su enlace.';
@@ -178,20 +182,7 @@ class EventContract extends Page
         return Action::make('approve')->label('Aprobar datos de la clienta')->icon('heroicon-o-check-badge')->color('primary')
             ->visible(fn () => $this->state()['detailsState'] === 'review_details' && $this->state()['submission'] && ! $this->state()['review'])
             ->modalHeading('Aprobar los datos de la clienta')
-            ->mountUsing(function () {
-                $sub = $this->state()['submission'];
-                $this->reviewSubmissionId = $sub?->id;
-                $this->reviewSubmissionRevision = $sub?->revision;
-                $this->reviewSubmissionEventVersion = $sub?->event_version;
-            })
-            ->modalDescription(function () {
-                $d = \App\Models\ClientDetailsSubmission::whereKey($this->reviewSubmissionId)->value('data') ?? [];
-                $d = is_array($d) ? $d : (json_decode((string) $d, true) ?: []);
-
-                return 'Vas a aprobar la versión '.$this->reviewSubmissionRevision.' de sus datos: '.trim(($d['first_name'] ?? '').' '.($d['last_name'] ?? ''))
-                    .' · fiesta en '.($d['event_address'] ?? '—').(isset($d['event_postal_code']) ? ' (ZIP '.$d['event_postal_code'].')' : '')
-                    .'. Se copian a su ficha y al evento (nombre, contacto y dirección). No cambia la fecha, la hora, los paquetes ni el dinero. Luego preparas el contrato.';
-            })
+            ->modalDescription('Se copian a su ficha y al evento (nombre, contacto y dirección). No cambia la fecha, la hora, los paquetes ni el dinero. Luego preparas el contrato.')
             ->schema(fn () => array_values(array_filter([
                 Checkbox::make('travel_fee_confirmed')->label('Revisé la dirección y el ZIP: el costo de transporte cotizado sigue igual')->accepted(),
                 ($this->state()['submission']->data['start_time_confirmed'] ?? true) ? null
@@ -203,17 +194,14 @@ class EventContract extends Page
             ])))
             ->modalSubmitActionLabel('Aprobar')
             ->action(function (array $data, Action $action) {
-                // If she sent newer details while the modal was open, stop: the owner must refresh and review them again.
-                if ($this->reviewSubmissionId === null || $this->state()['submission']?->id !== $this->reviewSubmissionId) {
-                    Notification::make()->warning()->title('La clienta mandó datos nuevos')->body('No se aprobó nada. Recarga la página y revisa la versión nueva.')->persistent()->send();
-                    $action->halt();
-                }
-                $input = ['expected_event_version' => $this->reviewSubmissionEventVersion, 'expected_revision' => $this->reviewSubmissionRevision, 'travel_fee_confirmed' => (bool) ($data['travel_fee_confirmed'] ?? false),
+                $snapshot = $this->displayedSubmission;
+                abort_unless($snapshot, 409);
+                $input = ['expected_event_version' => $snapshot['event_version'], 'expected_revision' => $snapshot['revision'], 'travel_fee_confirmed' => (bool) ($data['travel_fee_confirmed'] ?? false),
                     'review_note' => trim((string) $data['review_note'])];
                 foreach (['requested_start_resolution', 'setup_minutes', 'breakdown_minutes'] as $k) {
                     if (filled($data[$k] ?? null)) $input[$k] = in_array($k, ['setup_minutes', 'breakdown_minutes'], true) ? (int) $data[$k] : $data[$k];
                 }
-                $this->run($action, fn () => app(ApproveClientDetails::class)->execute(Filament::auth()->user(), $this->record->getKey(), $this->reviewSubmissionId, $input, $this->approveKey), 'Datos aprobados');
+                $this->run($action, fn () => app(ApproveClientDetails::class)->execute(Filament::auth()->user(), $this->record->getKey(), $snapshot['id'], $input, $this->approveKey), 'Datos aprobados');
                 $this->approveKey = (string) Str::uuid();
                 $this->record->refresh();
                 $this->displayedEventVersion = $this->record->version;

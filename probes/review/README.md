@@ -15,9 +15,13 @@ node probes/review/pr42-dst-review.cjs
 
 In this cloud workspace PHP runs in `waoo-phase1-runtime`, repository mounted at `/app`. Prefix each PHP command with `docker exec waoo-phase1-runtime` (run only one at a time). The full PDF suite additionally needs the existing CLI-only `PHP_INI_SCAN_DIR` memory override for spawned child processes; see `/workspace/setup/waoo-phase1/test.sh` locally.
 
-Expected diagnostics before fixes:
+Historical diagnostics before fixes (reviewed head a16166d):
 
 - R1: one review saved for submission 2, with venue TWO, although the owner opened approval on venue ONE. Required assertion expects zero reviews.
 - C1: configured approved SMS wording is missing from the rendered checkbox.
 - R3: at 00:01 Houston, the existing today/00:05 receipt fixture fails the success notification. The probe restores both Carbon clocks afterward.
 - R2: actual inline JavaScript expression sends 03:30 with `-05:00` on 2026-11-01; Houston displays 02:30. The probe extracts the current expression; revise the diagnostic when the encoding implementation changes and add proper regression coverage for the replacement.
+
+## Corrected branch
+
+On `codex/portal-review-fixes`, R1/C1 PHP checks and the frozen-clock R3 check pass. The Node diagnostic now verifies that the actual browser expression sends the local wall time without appending an original-event offset. Permanent normal-suite coverage lives in QuickDetailsFlowTest (stale modal, stale page, locked snapshot, fall/spring DST, invalid/mixed inputs, idempotent retry and exact escaped consent wording) and ZelleNoticeScreensTest (frozen before 00:05). The original review report remains historical evidence for a16166d.

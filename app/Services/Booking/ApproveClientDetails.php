@@ -47,7 +47,7 @@ final class ApproveClientDetails
             $recipe = fn ($services) => $services->map(fn ($s) => ['price_version_id' => $s->price_version_id, 'duration_minutes' => $s->duration_minutes,
                 'requirements' => $s->requirements_snapshot, 'ready' => $s->operational_ready,
                 'characters' => $s->characters->map(fn ($c) => $c->only(['character_id','quantity','character_name_snapshot']))->all()])->values()->all();
-            app(SaveCustomer::class)->execute($actor, ['name' => $values['first_name'].' '.$values['last_name'], 'email' => $values['email'], 'phone' => $values['phone'], 'locale' => $values['locale'] ?? $customer->locale], $customer->id);
+            app(SaveCustomer::class)->execute($actor, ['expected_version' => $customer->version, 'name' => $values['first_name'].' '.$values['last_name'], 'email' => $values['email'], 'phone' => $values['phone'], 'locale' => $values['locale'] ?? $customer->locale], $customer->id);
             $updated = $event; $finance = $previousFinance;
             if (!$reserved) {
                 $updated = app(SaveEventDraft::class)->execute($actor, [...$event->only(['customer_id','title','event_type','timezone','setup_minutes','breakdown_minutes','travel_fee_cents']),

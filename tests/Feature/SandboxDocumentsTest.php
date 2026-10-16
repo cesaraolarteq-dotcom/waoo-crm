@@ -152,6 +152,13 @@ class SandboxDocumentsTest extends TestCase
         $context = app(\App\Services\Documents\ContractPrintContext::class)->build($this->contract, $this->template);
         $this->assertSame(['1 × Face painter', '1 × Staff member', '2 × Foam cannon', '1 × Equipment unit'], $context['services'][0]['includes']);
         $this->assertSame('', $context['services'][0]['long_description']);
+        $equipment = ['mic' => 'Microphone', 'bubbles' => 'Bubble machine', 'robot_tall' => 'Tall LED robot', 'robot_low' => 'Small LED robot',
+            'smoke' => 'Smoke machine', 'foam' => 'Foam equipment', 'disco_ball' => 'Disco ball', 'sparkler' => 'Sparkler', 'table' => 'Table', 'face_kit' => 'Face painting kit'];
+        $snapshot['services'][0]['requirements_snapshot'] = collect(array_keys($equipment))->map(fn ($key) => ['kind' => 'equipment', 'quantity' => 1, 'equipment_kind' => $key])->all();
+        $this->contract->commercial_snapshot = $snapshot;
+        $context = app(\App\Services\Documents\ContractPrintContext::class)->build($this->contract, $this->template);
+        $this->assertSame(array_map(fn ($label) => '1 × '.$label, array_values($equipment)), $context['services'][0]['includes']);
+
     }
     public function test_approved_terms_fields_use_frozen_issue_values_and_preserve_legal_hash(): void
     {

@@ -154,10 +154,10 @@ class RecordServicesTest extends TestCase
         $this->assertDatabaseCount('audit_entries', 4);
     }
 
-    public function test_character_update_needs_no_new_version_field(): void
+    public function test_character_update_requires_the_displayed_version(): void
     {
         $character = app(SaveCharacter::class)->execute($this->owner, ['name' => 'Fixture character', 'active' => true]);
-        $updated = app(SaveCharacter::class)->execute($this->owner, ['name' => 'Renamed fixture', 'active' => false], $character->id);
+        $updated = app(SaveCharacter::class)->execute($this->owner, ['name' => 'Renamed fixture', 'active' => false, 'expected_version' => $character->version], $character->id);
         $this->assertSame('Renamed fixture', $updated->name);
         $this->assertFalse($updated->active);
         $this->assertDatabaseHas('audit_entries', ['action' => 'characters.updated', 'actor_id' => $this->owner->id]);
