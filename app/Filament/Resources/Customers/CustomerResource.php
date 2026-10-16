@@ -4,7 +4,7 @@ namespace App\Filament\Resources\Customers;
 
 use App\Filament\Resources\Customers\Pages\ListCustomers;
 use App\Models\Customer;
-use App\Filament\Resources\Customers\Pages\{CreateCustomer, EditCustomer};
+use App\Filament\Resources\Customers\Pages\{CreateCustomer, EditCustomer, ViewCustomer};
 use App\Filament\Support\RecordServicePageGate;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -82,6 +82,7 @@ class CustomerResource extends Resource
             ->filters([
                 SelectFilter::make('locale')->label('Idioma')->options(['es' => 'Español', 'en' => 'Inglés']),
             ])
+            ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->defaultSort('name')
             ->emptyStateHeading('Todavía no hay clientas')
             ->emptyStateDescription('Aparecen aquí cuando creas una reserva. Para agregarlas desde esta pantalla falta el siguiente paso (formularios).');
@@ -93,6 +94,7 @@ class CustomerResource extends Resource
         // Routes always exist; canCreate()/canEdit() answer 403 until the audited service is available.
         $pages['create'] = CreateCustomer::route('/nuevo');
         $pages['edit'] = EditCustomer::route('/{record}/editar');
+        $pages['view'] = ViewCustomer::route('/{record}');
 
         return $pages;
     }
