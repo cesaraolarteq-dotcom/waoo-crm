@@ -10,6 +10,8 @@ Route::redirect('/', '/admin')->name('home');
 Route::middleware(['auth', 'password.confirm'])->get('/seguridad/dos-pasos', TwoFactorEnrollmentController::class)->name('security.two-factor');
 Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'));
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->prefix('admin/api')->group(function () {
+    Route::post('/reports/snapshots', [\App\Http\Controllers\Admin\OwnerReportSnapshotController::class, 'store']);
+    Route::get('/reports/snapshots/{snapshot}', [\App\Http\Controllers\Admin\OwnerReportSnapshotController::class, 'show'])->whereNumber('snapshot');
     Route::get('/reports/bookings', \App\Http\Controllers\Admin\BookingSalesReportController::class);
     Route::get('/reports/weekend', \App\Http\Controllers\Admin\WeekendForecastController::class);
     Route::get('/reports/operations', \App\Http\Controllers\Admin\OperationalReportController::class);
