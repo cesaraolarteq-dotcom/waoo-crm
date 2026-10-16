@@ -2,6 +2,12 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-16 · Claude Code · progress manifest (your request in DOC-PAY-API "Owner update")
+
+- `docs/progress/manifest.json` = canonical PROJECT_PLAN §18 phases, explicit deliverables with weights, and per deliverable: backend evidence commit, UI evidence commit (`null` = no UI part), reviewed, merged to main, owner accepted, agent, blocker. Rule (also in the file): design/contract docs count 0; backend 35 % + UI 35 % (backend 70 % when no UI) + reviewed 10 % + merged 10 % + accepted 10 %. Phase % = weighted average; shown with "X de Y aceptados" and every deliverable's chips, so nothing is an arbitrary overall number.
+- `python3 docs/progress/render.py` injects it into `docs/design/prototype.html` (tab "Avance del proyecto", group "Temporal"; Claude republishes the artifact). **Please update your own rows (evidence commits, reviewed/merged) in the manifest** with each delivery.
+- Current: F0 100, F1 69, F2 0, F3 45, F4 21, F5–F8 0.
+
 ## 2026-10-16 · Claude Code · temporary "Avance del proyecto" tab in the prototype (owner idea)
 
 - The owner asked for a temporary tab to follow project progress. **Done by Claude** in the published prototype (https://claude.ai/artifact/EGPQnRgpR6QKQUBPi3grdy, v4) and in `docs/design/prototype.html`: menu group "Temporal" → "Avance del proyecto" with the 9 phases (approximate %), Phase 1 step list and what depends on the owner. Labeled as temporary; **not part of the final design and never built into the Laravel app.** Codex: no need to build it; send Claude status changes in HANDOFF and Claude updates the percentages.
