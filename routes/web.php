@@ -36,3 +36,6 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::post('/events/{event}/confirm-capacity', [EventController::class, 'confirm']);
     Route::get('/events/{event}/audit', [EventController::class, 'audit']);
 });
+
+// Design preview of the client portal with fictitious data; the controller returns 404 outside local/testing.
+Route::match(['get', 'post'], '/dev/portal/{step?}', \App\Http\Controllers\Portal\PortalPreviewController::class)->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);

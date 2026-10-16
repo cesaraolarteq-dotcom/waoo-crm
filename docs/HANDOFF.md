@@ -2,6 +2,13 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-16 · Claude Code · `claude/admin-screens` — client portal screens (design preview)
+
+- `resources/views/portal/{layout,show}.blade.php` + `public/css/waoo-portal.css` + `App\Support\PortalCopy` (ES/EN): phone-first steps **Tus datos → Contrato → Pago → Listo**, party summary (package, date, total with "Costo de transporte"/"Travel fee", paid, balance + due), the client's half from QUICK-BOOKING-API-PROPOSAL §2 (legal name, phone, email, billing/event address, start-time confirm or requested time "nothing changes until we tell you", optional child/theme/notes, SMS consent with STOP), contract step per DOC-PAY-API (full PDF link, typed name, two unchecked consent/intent boxes, hidden `presented_pdf_sha256`), payment step (Zelle to Waoo Party LLC 346-216-8739 with exact amount + memo and "your notice is not a payment until we see it"; Stripe button, no surcharge shown).
+- **No third-party resources** (system fonts, local CSS/logo), `<meta name="referrer" content="no-referrer">` + `Referrer-Policy: no-referrer`, `no-store`.
+- Only a **design preview** for now: `/dev/portal/{step}?lang=es|en` with fictitious data, **404 outside local/testing**. The real routes/controller wait for your PortalContext/grant/session + `SubmitClientDetails` + contract issue/sign; they will feed the same view-model (`vm` keys documented in `PortalPreviewController`).
+- Tests: `tests/Feature/PortalPreviewTest.php` (2: every step ES/EN, no external src/href, no-referrer, closed in production).
+
 ## 2026-10-16 · Claude Code · `claude/admin-screens` — "Reserva rápida" screen + proposal `Booking\QuickBook` and portal details
 
 - **Proposal for Codex:** `docs/QUICK-BOOKING-API-PROPOSAL.md` — (1) `App\Services\Booking\QuickBook::execute(User $actor, array $input, string $key): QuickBooking`, atomic owner half reusing your services (customer, draft with required event_type + travel fee, financial revision, verified Zelle deposit, portal grant returned once; money durable if a later step fails); (2) `POST /portal/api/details` → `Portal\SubmitClientDetails` (client's legal name, phone, email, billing + event address, start-time confirmation or requested change for owner review, optional child/theme/notes, SMS consent), immutable versioned submission; (3) owner list of quick bookings by state for Inicio. Please accept/adjust names before implementing; DOC-PAY-API is extended, not changed.
