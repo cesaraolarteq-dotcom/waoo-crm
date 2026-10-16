@@ -91,6 +91,13 @@ final class PortalPageController extends Controller
             'consent' => ['version' => InHouseSignatureProvider::CONSENT_VERSION, 'text' => InHouseSignatureProvider::CONSENT],
             'pay' => ['revision_id' => $revision?->id, 'can_checkout' => in_array('checkout.create', $grant->scopes, true) && ($balance ?? 0) > 0],
             'zelle_memo' => 'WP-'.$event->id,
+            // Her own notices, through Codex's client projection only (never the owner's review note, bank reference or ledger).
+            'zelle' => ['can_notify' => in_array('checkout.create', $grant->scopes, true) && ($balance ?? 0) > 0, 'action' => url('/portal/api/zelle-notices'),
+                'amount' => $balance ? number_format($balance / 100, 2, '.', '') : '',
+                'notices' => \App\Models\ZelleNotice::where('event_id', $event->id)->where('customer_id', $client->customerId)->with('review.ledgerEntry')->orderByDesc('id')->limit(10)->get()
+                    ->map(fn ($n) => \App\Services\Portal\ZelleNoticeView::client($n))
+                    ->map(fn ($n) => ['state' => $n['state'], 'amount' => $fmt($n['amount_cents']), 'verified' => $n['verified_amount_cents'] !== null ? $fmt($n['verified_amount_cents']) : null,
+                        'when' => CarbonImmutable::instance($n['submitted_at'])->setTimezone($tz)->locale($lang)->{$lang === 'es' ? 'translatedFormat' : 'format'}($lang === 'es' ? 'D j M, g:i a' : 'D, M j, g:i a')])->all()],
             'actions' => ['details' => '#', 'sign' => $contract ? url('/portal/api/contracts/'.$contract->id.'/sign') : '#', 'checkout' => url('/portal/api/checkout-intents')],
         ];
     }

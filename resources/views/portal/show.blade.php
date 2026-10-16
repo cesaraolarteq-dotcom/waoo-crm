@@ -105,6 +105,23 @@
         <div><dt>{{ $t('zelle_memo') }}</dt><dd><code>{{ $vm['zelle_memo'] }}</code></dd></div>
       </dl>
       <p class="p-hint">{{ $t('zelle_note') }}</p>
+      @foreach ($vm['zelle']['notices'] ?? [] as $n)
+        <p class="p-notice p-notice-{{ $n['state'] }}" role="status">{{ $t('zelle_state_'.$n['state'], ['amount' => $n['amount'], 'verified' => $n['verified'] ?? '', 'when' => $n['when']]) }}</p>
+      @endforeach
+      @if ($vm['zelle']['can_notify'] ?? false)
+      @php($hasPending = collect($vm['zelle']['notices'])->contains('state', 'pending'))
+      <details class="p-zelle" @if (! $hasPending) open @endif>
+        <summary>{{ $hasPending ? $t('zelle_again') : $t('zelle_sent_btn') }}</summary>
+        <form class="p-form p-zelle-form" method="POST" action="{{ $vm['zelle']['action'] }}" id="zelle-form" data-revision="{{ $vm['pay']['revision_id'] ?? '' }}" novalidate>
+          @csrf
+          <label class="p-field"><span>{{ $t('zelle_amount_sent') }} (USD)</span><input name="amount" inputmode="decimal" value="{{ $vm['zelle']['amount'] }}" required autocomplete="off"></label>
+          <label class="p-field"><span>{{ $t('zelle_payer') }} <em>({{ $t('optional') }})</em></span><input name="payer_name" maxlength="120" autocomplete="name"></label>
+          <label class="p-field"><span>{{ $t('zelle_ref') }} <em>({{ $t('optional') }})</em></span><input name="reference" maxlength="255" autocomplete="off"></label>
+          <p class="p-test" id="zelle-error" role="alert" hidden></p>
+          <button class="p-btn" type="submit">{{ $t('zelle_sent_btn') }}</button>
+        </form>
+      </details>
+      @endif
     </div>
     <form class="p-opt" method="POST" action="{{ $vm['actions']['checkout'] }}" id="pay-form" data-revision="{{ $vm['pay']['revision_id'] ?? '' }}" @if (isset($vm['pay']) && ! $vm['pay']['can_checkout']) hidden @endif>
       @csrf
@@ -158,6 +175,20 @@
     post(sign.action, {expected_version: Number(sign.dataset.version), presented_pdf_sha256: sign.presented_pdf_sha256.value, signer_name: sign.signer_name.value.trim(),
       consent: sign.consent.checked, intent_to_sign: sign.intent_to_sign.checked, consent_version: sign.dataset.consentVersion}, key('waoo-sign-' + sign.dataset.version))
       .then(function () { try { sessionStorage.removeItem('waoo-sign-' + sign.dataset.version); } catch (e) {} location.reload(); })
+      .catch(function (e) { err.textContent = e.message; err.hidden = false; b.disabled = false; });
+  });
+  var zf = document.getElementById('zelle-form');
+  if (zf) zf.addEventListener('submit', function (ev) {
+    ev.preventDefault(); var err = document.getElementById('zelle-error'); err.hidden = true;
+    var raw = zf.amount.value.replace(/[$,\s]/g, ''), b = zf.querySelector('button[type=submit]');
+    if (!/^\d{1,7}(\.\d{1,2})?$/.test(raw) || Number(raw) <= 0) { err.textContent = @js($t('zelle_amount_bad')); err.hidden = false; return; }
+    b.disabled = true;
+    var body = {financial_revision_id: Number(zf.dataset.revision), amount_cents: Math.round(Number(raw) * 100)};
+    if (zf.payer_name.value.trim()) body.payer_name = zf.payer_name.value.trim();
+    if (zf.reference.value.trim().length >= 3) body.reference = zf.reference.value.trim();
+    // One key per attempt: a double tap or retry after a timeout sends one notice. A notice is never a payment.
+    post(zf.action, body, key('waoo-zelle-' + zf.dataset.revision))
+      .then(function () { try { sessionStorage.removeItem('waoo-zelle-' + zf.dataset.revision); } catch (e) {} location.reload(); })
       .catch(function (e) { err.textContent = e.message; err.hidden = false; b.disabled = false; });
   });
   var pay = document.getElementById('pay-form');

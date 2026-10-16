@@ -35,6 +35,26 @@
             @endif
         @endif
 
+        @php($notices = $this->notices())
+        @if ($notices->isNotEmpty())
+            <x-filament::section>
+                <x-slot name="heading">Avisos de Zelle de la clienta</x-slot>
+                <x-slot name="description">Un aviso no es un pago. Revisa tu banco y verifica lo que de verdad llegó, o recházalo.</x-slot>
+                @foreach ($notices as $n)
+                    <div class="wmoney-row">
+                        <div><b>Dice {{ $n->amount }}</b> ·
+                            @if ($n->state === 'pending') <b class="wmoney-pending">Por verificar</b> · {{ ($this->verifyNoticeAction)(['id' => $n->id]) }} {{ ($this->rejectNoticeAction)(['id' => $n->id]) }}
+                            @elseif ($n->state === 'verified') <b class="ok">Verificado</b> · llegó {{ $n->real }}
+                            @else <b class="wmoney-rejected">Rechazado</b> @endif
+                        </div>
+                        <small>Avisó {{ $n->when }}@if ($n->sent) · dice que lo envió {{ $n->sent }}@endif @if ($n->reference) · su ref. {{ $n->reference }}@endif @if ($n->payer) · a nombre de {{ $n->payer }}@endif @if ($n->note) · “{{ $n->note }}”@endif
+                            @if ($n->old_amounts) · lo hizo sobre montos anteriores @endif
+                            @if ($n->reviewed) <br>Revisado {{ $n->reviewed }} · {{ $n->review_note }}@endif</small>
+                    </div>
+                @endforeach
+            </x-filament::section>
+        @endif
+
         <x-filament::section>
             <x-slot name="heading">Pagos registrados</x-slot>
             @forelse ($this->payments() as $p)
