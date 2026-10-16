@@ -128,3 +128,16 @@ a.wcal-name:hover{text-decoration:underline}
 .wterms-body{max-height:360px;overflow:auto;border:1px solid rgba(20,26,51,.1);border-radius:10px;padding:12px 14px;margin-top:8px;font-size:.88rem;line-height:1.55}
 .wterms-body h3{font-size:.95rem;margin:.8em 0 .3em}
 .wwarn-inline{color:#8F5B00;background:#FFF1D2;border-radius:6px;padding:1px 6px;font-weight:700}
+.wcost-top{grid-template-columns:repeat(3,minmax(0,1fr))}
+.wcost-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.wcost-rev{font-weight:500;opacity:.6;margin-left:6px;font-size:.8rem}
+.wcost-margin{display:flex;flex-direction:column;gap:3px;border-radius:14px;padding:14px;background:#E8F7EF;margin-bottom:10px}
+.wcost-margin span{font-size:.8rem;font-weight:700;opacity:.75}
+.wcost-margin b{font-size:1.6rem;font-weight:800;font-variant-numeric:tabular-nums;color:#11734A}
+.wcost-margin small{font-size:.78rem;opacity:.8}
+.wcost-margin.neg{background:#FDECEC}.wcost-margin.neg b{color:#B42318}
+.wcost-margin.pending{background:#FFF1D2}.wcost-margin.pending b{color:#8F5B00}
+.dark .wcost-margin{background:rgba(91,214,155,.1)}.dark .wcost-margin b{color:#5BD69B}
+.dark .wcost-margin.neg{background:rgba(255,138,128,.1)}.dark .wcost-margin.neg b{color:#FF8A80}
+.dark .wcost-margin.pending{background:rgba(249,201,48,.1)}.dark .wcost-margin.pending b{color:#F9C930}
+@media (max-width:900px){.wcost-cols,.wcost-top{grid-template-columns:minmax(0,1fr)}}

@@ -300,6 +300,6 @@ class EventResource extends Resource
     public static function getPages(): array
     {
         // Routes always exist; canCreate()/canEdit() answer 403 until the audited service is available.
-        return ['index' => ListEvents::route('/'), 'create' => CreateEvent::route('/nuevo'), 'edit' => EditEvent::route('/{record}/editar'), 'confirm' => ConfirmCapacity::route('/{record}/confirmar'), 'money' => EventMoney::route('/{record}/dinero'), 'contract' => EventContract::route('/{record}/contrato'), 'view' => ViewEvent::route('/{record}')];
+        return ['index' => ListEvents::route('/'), 'create' => CreateEvent::route('/nuevo'), 'edit' => EditEvent::route('/{record}/editar'), 'confirm' => ConfirmCapacity::route('/{record}/confirmar'), 'money' => EventMoney::route('/{record}/dinero'), 'costs' => \App\Filament\Resources\Events\Pages\EventCosts::route('/{record}/costos'), 'contract' => EventContract::route('/{record}/contrato'), 'view' => ViewEvent::route('/{record}')];
     }
 }
