@@ -24,6 +24,22 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::post('/resources/{resource}/blocks/{block}/release', [ResourceBlockController::class, 'release'])->whereNumber('block');
     Route::post('/costume-compatibilities', [CoreController::class, 'compatibility']);
     Route::post('/costume-compatibilities/unlink', [CoreController::class, 'unlinkCompatibility']);
+    Route::get('/contract-templates', [\App\Http\Controllers\Admin\DocumentController::class, 'templates']);
+    Route::get('/contract-templates/{template}', [\App\Http\Controllers\Admin\DocumentController::class, 'template']);
+    Route::post('/contract-templates', [\App\Http\Controllers\Admin\DocumentController::class, 'createTemplate']);
+    Route::post('/contract-templates/{template}/activate', [\App\Http\Controllers\Admin\DocumentController::class, 'activate']);
+    Route::post('/events/{event}/contracts', [\App\Http\Controllers\Admin\DocumentController::class, 'create']);
+    Route::post('/contracts/{contract}/issue', [\App\Http\Controllers\Admin\DocumentController::class, 'issue']);
+    Route::get('/contracts/{contract}', [\App\Http\Controllers\Admin\DocumentController::class, 'show']);
+    Route::get('/contracts/{contract}/pdf', [\App\Http\Controllers\Admin\DocumentController::class, 'pdf']);
+    Route::post('/contracts/{contract}/final-pdf/retry', [\App\Http\Controllers\Admin\DocumentController::class, 'retryFinal']);
+    Route::get('/contracts/{contract}/evidence', [\App\Http\Controllers\Admin\DocumentController::class, 'evidence']);
+    Route::post('/events/{event}/portal-grants', [\App\Http\Controllers\Admin\DocumentController::class, 'grant']);
+    Route::post('/portal-grants/{grant}/revoke', [\App\Http\Controllers\Admin\DocumentController::class, 'revoke']);
+    Route::post('/events/{event}/checkout-intents', [\App\Http\Controllers\Admin\CheckoutController::class, 'create']);
+    Route::get('/payment-intents/{intent}', [\App\Http\Controllers\Admin\CheckoutController::class, 'show']);
+    Route::post('/stripe-webhooks/{receipt}/retry', [\App\Http\Controllers\Admin\CheckoutController::class, 'retryWebhook']);
+    Route::get('/stripe-webhooks', [\App\Http\Controllers\Admin\CheckoutController::class, 'webhooks']);
     Route::get('/payment-exceptions', [\App\Http\Controllers\Admin\FinanceController::class, 'exceptions']);
     Route::post('/events/{event}/confirm-paid-capacity', [\App\Http\Controllers\Admin\FinanceController::class, 'confirm']);
     Route::post('/events/{event}/financial-revisions', [\App\Http\Controllers\Admin\FinanceController::class, 'revision']);
@@ -37,3 +53,16 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::post('/events/{event}/confirm-capacity', [EventController::class, 'confirm']);
     Route::get('/events/{event}/audit', [EventController::class, 'audit']);
 });
+
+Route::post('/portal/api/session', [\App\Http\Controllers\Portal\PortalController::class, 'session'])->middleware('throttle:30,1');
+Route::middleware([\App\Http\Middleware\AuthenticatePortal::class, 'throttle:60,1'])->prefix('portal/api')->group(function () {
+    Route::post('/checkout-intents', [\App\Http\Controllers\Portal\CheckoutController::class, 'create']);
+    Route::get('/payment-intents/{intent}', [\App\Http\Controllers\Portal\CheckoutController::class, 'show']);
+    Route::get('/event', [\App\Http\Controllers\Portal\PortalController::class, 'event']);
+    Route::get('/contracts/{contract}', [\App\Http\Controllers\Portal\PortalController::class, 'show']);
+    Route::get('/contracts/{contract}/pdf', [\App\Http\Controllers\Portal\PortalController::class, 'pdf']);
+    Route::post('/contracts/{contract}/sign', [\App\Http\Controllers\Portal\PortalController::class, 'sign']);
+    Route::get('/contracts/{contract}/signature', [\App\Http\Controllers\Portal\PortalController::class, 'signature']);
+});
+
+Route::post('/webhooks/stripe', \App\Http\Controllers\Webhooks\StripeWebhookController::class)->middleware('throttle:120,1');
