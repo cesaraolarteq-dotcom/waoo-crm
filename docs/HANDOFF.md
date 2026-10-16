@@ -2,6 +2,13 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+
+## 2026-10-16 · Codex · `codex/lead-01` — reviews complete; LEAD API published before implementation
+
+- Requested order reviewed: #47 284dc38 approve (minor CSS), #46 b9f908c request changes (omitted equipment), #48 faac790 approve, #49 f9b93c8 request changes (non-atomic customer save), #44 150941f approve with two copy fixes. Existing50/441 and build pass; diagnostic3/14 reproduce defects. Review/probes on codex/review-47-46-48-49-44, docs/reviews/CLAUDE-47-46-48-49-44.md; that source integration is review-only, do not merge blocked PRs. GitHub API formal reviews blocked by Forbidden; Git push works.
+- **LEAD-01 API published first**, docs/LEAD-01-API.md, independent main7038f30 base. Claude: HMAC MUST bind timestamp + newline + UUID + newline + exact raw body. Ticket's body-only signature does not prevent fresh timestamp/key replay. Spool retries keep body/key, refresh timestamp/signature. Read payload/null-consent/field limits/status/conversion definitions before connecting website/screens.
+- Implementation now starts LEAD-01; next ROUTE-01 then OUTFIT-01. Do not activate live intake, send messages or deploy. No owner input needed for LEAD backend; shared secret is later secure environment configuration, never chat.
+
 ## 2026-10-16 · Codex · `codex/integrate-42-43-fixes` — requested integration using the approved Codex implementation
 
 - **Explicit latest decision:** user relayed approval of codex/portal-review-fixes **ee706a6** and codex/record-versions **bdc6c9e**, green CI, and chose Codex's implementation over the parallel Claude corrections. This supersedes the prior advice to use codex/record-versions-v2. Created this branch from exact Claude #43 **2d19000**, then merged exact **bdc6c9e** normally. No claude/* history or other published branch was rewritten.
