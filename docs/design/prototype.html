@@ -196,6 +196,12 @@ dialog::backdrop{background:rgba(10,14,40,.55)}
 .phase .pct{font-size:22px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums}
 .phase .bar{grid-column:1/-1;height:10px}
 .phase.now{background:linear-gradient(90deg,rgba(255,1,124,.06),transparent);margin:0 -14px;padding:14px}
+.phase{cursor:pointer}.phase:focus-visible{outline:none;box-shadow:var(--focus);border-radius:10px}
+.dl{border-top:1px solid var(--line);padding:10px 0;display:grid;gap:6px}.dl:first-child{border-top:0}
+.dl b{font-size:var(--fs-sm)}.dl small{color:var(--muted);font-size:var(--fs-xs)}
+.stg{display:flex;flex-wrap:wrap;gap:4px}.stg span{font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;background:var(--surface-2);color:var(--faint)}
+.stg span.on{background:var(--ok-bg);color:var(--ok)}.stg span.na{opacity:.45}
+.blk{font-size:var(--fs-xs);color:var(--warn);background:var(--warn-bg);border-radius:8px;padding:3px 8px;justify-self:start}
 .steps-list{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .steps-list li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;font-size:var(--fs-sm)}
 .steps-list li b{font-weight:700}
@@ -538,29 +544,19 @@ dialog::backdrop{background:rgba(10,14,40,.55)}
 <!-- ============ AVANCE (TEMPORAL: se quita del diseño final) ============ -->
 <template id="t-avance">
   <section class="screen">
-    <header class="page"><div><h1>Avance del <em>proyecto</em></h1><p class="sub">Actualizado el viernes 16 de octubre de 2026 · porcentajes aproximados</p></div></header>
+    <header class="page"><div><h1>Avance del <em>proyecto</em></h1><p class="sub" id="av-updated"></p></div></header>
     <div class="temp-note"><span>⏳</span><span>Pestaña temporal para seguir la construcción del CRM. No forma parte del diseño final: se quita cuando terminemos.</span></div>
     <div class="grid g2">
       <div class="card">
         <h2>Las 9 fases</h2>
-        <p class="hint">La primera versión que ya sirve para trabajar llega al terminar la fase 5. La reserva rápida se adelanta.</p>
+        <p class="hint" id="av-how"></p>
         <div id="phases"></div>
       </div>
       <div style="display:grid;gap:16px;align-content:start">
-        <div class="card">
-          <h2>Fase 1, paso por paso</h2>
-          <ul class="steps-list" id="p1steps"></ul>
-        </div>
+        <div class="card"><h2 id="av-detail-title">Detalle</h2><p class="hint">Toca una fase para ver sus entregables.</p><div id="av-detail"></div></div>
         <div class="card">
           <h2>Lo que depende de ti</h2>
-          <ul class="steps-list">
-            <li><span class="st wip">…</span><span><b>Catálogo:</b> precios faltantes, quién va a cada paquete, trajes, bocinas y tarifas del staff.</span></li>
-            <li><span class="st todo">·</span><span><b>Fusionar en GitHub</b> los PR #22 y #30 cuando Codex apruebe el #19.</span></li>
-            <li><span class="st todo">·</span><span><b>Recargo del 3 %:</b> confirmar las reglas con Stripe (débito, Klarna, Afterpay, Zip).</span></li>
-            <li><span class="st todo">·</span><span><b>Affirm:</b> terminar tu verificación.</span></li>
-            <li><span class="st todo">·</span><span><b>Abogado:</b> revisar el contrato y la firma electrónica antes de usarlos con clientas.</span></li>
-            <li><span class="st todo">·</span><span><b>Permiso</b> para subir el CRM al sitio de prueba y hacer la prueba contigo (30 a 60 min).</span></li>
-          </ul>
+          <ul class="steps-list" id="av-blockers"></ul>
         </div>
       </div>
     </div>
@@ -625,39 +621,42 @@ dialog::backdrop{background:rgba(10,14,40,.55)}
 
 
   // ---- Avance (temporal) ----
-  var PHASES=[
-    ["0. Auditoría y reglas","Hostinger, contrato, decisiones, pruebas técnicas",100,"var(--ok)"],
-    ["1. Base y operación","Entrar con 2 pasos, clientas, eventos, catálogo, staff y trajes, apartar recursos, calendario",88,"var(--pink)",true],
-    ["2. Cotización y logística","Formulario de la web → CRM, costo de transporte, cotizaciones",10,"var(--teal)"],
-    ["3. Disponibilidad","Que el sistema sepa solo qué staff y trajes están libres",22,"var(--teal)"],
-    ["4. Portal, firma y pagos","Reserva rápida, contrato con firma, Stripe, Zelle, recibos",15,"var(--teal)"],
-    ["5. Piloto y comunicaciones","Correos y recordatorios, eventos reales en paralelo con HoneyBook",10,"var(--teal)"],
-    ["6. Staff y gestión avanzada","Pago al staff, SMS, reportes de costos",5,"var(--purple)"],
-    ["7. Autoservicio ampliado","WhatsApp, upsells, \u00abUn año después\u00bb",3,"var(--purple)"],
-    ["8. Migración final","Pasar HoneyBook y cancelarlo",5,"var(--purple)"]
-  ];
-  var P1=[
-    ["ok","Base del sistema (Laravel) y pruebas automáticas"],
-    ["ok","Base de datos de clientas, eventos, catálogo y recursos"],
-    ["ok","Entrar con contraseña + código de 6 dígitos (2 pasos)"],
-    ["wip","Panel con el diseño de Waoo · esperando la última revisión de Codex"],
-    ["ok","Catálogo: crear, editar y precios con historial"],
-    ["ok","Staff y trajes: fichas, bloqueos y quién puede usar cada traje"],
-    ["ok","Clientas y borradores de eventos (hora de Houston, cambios de horario)"],
-    ["wip","Apartar staff y trajes y confirmar con el depósito · pantalla lista, falta un servicio de Codex"],
-    ["ok","Calendario de mes, semana y día (colores por paquete, aviso de menos de 45 min)"],
-    ["todo","Prueba contigo en el sitio de prueba"]
-  ];
-  function avance(){
-    document.getElementById("phases").innerHTML=PHASES.map(function(f){
-      return '<div class="phase'+(f[4]?' now':'')+'"><div><h3>'+f[0]+(f[4]?' <span class="pill warn">En curso</span>':'')+'</h3><p>'+f[1]+'</p></div><div class="pct">'+f[2]+'%</div>'+
-        '<div class="bar" role="img" aria-label="'+f[2]+' por ciento"><i style="width:'+f[2]+'%;background:'+f[3]+'"></i></div></div>';
-    }).join("");
-    document.getElementById("p1steps").innerHTML=P1.map(function(x){
-      return '<li><span class="st '+x[0]+'">'+(x[0]==="ok"?"✓":x[0]==="wip"?"…":"·")+'</span><span>'+x[1]+'</span></li>';
-    }).join("");
+  /*PROGRESS-START*/var PROGRESS={"_about":"Temporary owner progress view (prototype tab 'Avance del proyecto'). Phases = docs/PROJECT_PLAN.md §18. Each agent updates its own evidence; Claude renders. Rules: a design/contract doc counts 0; a part counts only with a tested commit; review, merge to main and owner acceptance are separate steps. Phase % = sum(weight × stage score) / sum(weight).","updated":"2026-10-16","stage_scores":{"backend":0.35,"ui":0.35,"reviewed":0.1,"merged":0.1,"accepted":0.1},"stage_scores_note":"If a deliverable has no UI part (ui: null), its backend counts 0.7. No UI-only deliverable without backend counts backend as 0.","phases":[{"id":0,"name":"Auditoría y reglas","deliverables":[{"name":"Hostinger verificado (PHP, base de datos, cron, Stripe de prueba)","weight":3,"agent":"Claude+Codex","backend":"probes/phase0 P1–P5","ui":null,"reviewed":true,"merged":true,"accepted":true},{"name":"Contrato, catálogo borrador y decisiones D1–D9","weight":2,"agent":"Claude","backend":"docs main","ui":null,"reviewed":true,"merged":true,"accepted":true},{"name":"Arquitectura ARCH-01 firmada","weight":1,"agent":"Codex","backend":"docs/arch/ARCH-01-ADR.md","ui":null,"reviewed":true,"merged":true,"accepted":true}]},{"id":1,"name":"Base y operación","deliverables":[{"name":"Base Laravel + pruebas automáticas (CI)","weight":1,"agent":"Codex","backend":"0b74015","ui":null,"reviewed":true,"merged":true,"accepted":false},{"name":"Datos: clientas, eventos, catálogo, recursos, auditoría","weight":2,"agent":"Codex","backend":"0b74015","ui":null,"reviewed":true,"merged":true,"accepted":false},{"name":"Entrar con contraseña + 2 pasos","weight":2,"agent":"Codex+Claude","backend":"0b74015","ui":"094982c","reviewed":true,"merged":true,"accepted":false},{"name":"Panel con el diseño de Waoo","weight":1,"agent":"Claude","backend":"0b74015","ui":"094982c","reviewed":true,"merged":true,"accepted":false},{"name":"Catálogo (precios con historial, personajes incluidos)","weight":2,"agent":"Codex+Claude","backend":"ce2c3db","ui":"d3fab7b","reviewed":false,"merged":false,"accepted":false,"blocker":"Hoja de catálogo de César"},{"name":"Staff, trajes, equipo, vehículos, bloqueos","weight":2,"agent":"Codex+Claude","backend":"ce2c3db","ui":"d3fab7b","reviewed":false,"merged":false,"accepted":false,"blocker":"Inventario de César"},{"name":"Clientas y borradores de eventos","weight":2,"agent":"Codex+Claude","backend":"ce2c3db","ui":"d3fab7b","reviewed":false,"merged":false,"accepted":false},{"name":"Apartar recursos sin choques (con depósito)","weight":3,"agent":"Codex+Claude","backend":"cbaefa7","ui":"d3fab7b","reviewed":false,"merged":false,"accepted":false},{"name":"Calendario con márgenes de 45 min","weight":2,"agent":"Claude","backend":"ce2c3db","ui":"b2839dd","reviewed":false,"merged":false,"accepted":false},{"name":"Prueba con César en el sitio de prueba","weight":2,"agent":"Ambos + César","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false,"blocker":"Permiso para subir a crm-test + catálogo"}]},{"id":2,"name":"Cotización y logística","deliverables":[{"name":"Formulario de la web → prospecto en el CRM","weight":3,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Costo de transporte por ZIP dentro del CRM","weight":2,"agent":"Codex","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Cotizaciones con versiones","weight":3,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Costos y margen por paquete","weight":2,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false,"blocker":"Tarifas del staff (César)"}]},{"id":3,"name":"Disponibilidad","deliverables":[{"name":"Recetas por paquete y personaje","weight":3,"agent":"Codex+Claude","backend":"ce2c3db","ui":"d3fab7b","reviewed":false,"merged":false,"accepted":false},{"name":"Motor sin choques (habilidades, trajes, vehículos, concurrencia)","weight":3,"agent":"Codex","backend":"cbaefa7","ui":null,"reviewed":true,"merged":false,"accepted":false},{"name":"Rutas y tiempos de manejo automáticos","weight":2,"agent":"Codex","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Disponibilidad automática para la web","weight":2,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false}]},{"id":4,"name":"Portal, firma y pagos","deliverables":[{"name":"Montos acordados por evento (revisión financiera)","weight":2,"agent":"Codex+Claude","backend":"cbaa83b","ui":"d3fab7b","reviewed":true,"merged":false,"accepted":false},{"name":"Registro de Zelle verificado y saldo","weight":3,"agent":"Codex+Claude","backend":"cbaa83b","ui":"d3fab7b","reviewed":true,"merged":false,"accepted":false},{"name":"Stripe (modo prueba, sin Affirm)","weight":3,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false,"blocker":"Reglas del 3 % (César)"},{"name":"Contrato con versiones y PDF","weight":3,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false,"blocker":"Revisión de abogado antes de clientas reales"},{"name":"Portal de la clienta y firma","weight":3,"agent":"Codex+Claude","backend":null,"ui":"46eed30","reviewed":false,"merged":false,"accepted":false,"blocker":"Portal/firma del lado de Codex (DOC-PAY-API)"},{"name":"Reserva rápida (tu mitad + la de la clienta)","weight":3,"agent":"Codex+Claude","backend":null,"ui":"bf6f06e","reviewed":false,"merged":false,"accepted":false,"blocker":"Servicio QuickBook (Codex, propuesta en docs/QUICK-BOOKING-API-PROPOSAL.md)"}]},{"id":5,"name":"Piloto y comunicaciones","deliverables":[{"name":"Correos a clientas (envío real)","weight":3,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Recordatorios (7 días, saldo, gracias + reseña)","weight":2,"agent":"Codex","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Importar eventos futuros de HoneyBook","weight":2,"agent":"Codex","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Piloto en paralelo con HoneyBook","weight":3,"agent":"Ambos + César","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false}]},{"id":6,"name":"Staff y gestión avanzada","deliverables":[{"name":"Portal del staff y aceptación de asignaciones","weight":3,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"SMS (Twilio)","weight":2,"agent":"Codex","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Pago al staff y gastos","weight":2,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Reportes del lunes y del mes","weight":2,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false}]},{"id":7,"name":"Autoservicio ampliado","deliverables":[{"name":"Cambios y reprogramaciones (CHANGE-A)","weight":3,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Correo «Un año después» (ANNIV-01)","weight":2,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"WhatsApp y upsells","weight":2,"agent":"Codex+Claude","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false}]},{"id":8,"name":"Migración final","deliverables":[{"name":"Archivo histórico de HoneyBook (~250 clientas)","weight":3,"agent":"Codex","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false},{"name":"Capacitación y paso definitivo","weight":2,"agent":"Ambos + César","backend":null,"ui":null,"reviewed":false,"merged":false,"accepted":false}]}]};/*PROGRESS-END*/
+  function stageScore(d){
+    var S=PROGRESS.stage_scores, sc=0;
+    if(d.backend) sc+= d.ui===null ? S.backend+S.ui : S.backend;
+    if(d.ui && d.backend) sc+=S.ui;
+    if(d.reviewed) sc+=S.reviewed; if(d.merged) sc+=S.merged; if(d.accepted) sc+=S.accepted;
+    return Math.min(1,sc);
   }
-
+  function phasePct(ph){var w=0,t=0;ph.deliverables.forEach(function(d){w+=d.weight;t+=d.weight*stageScore(d);});return w?Math.round(100*t/w):0;}
+  function esc(t){return String(t).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+  function avance(){
+    if(!PROGRESS.phases) return;
+    var colors=["var(--ok)","var(--pink)","var(--teal)","var(--teal)","var(--teal)","var(--teal)","var(--purple)","var(--purple)","var(--purple)"];
+    var current=PROGRESS.phases.filter(function(p){var x=phasePct(p);return x>0&&x<100;})[0];
+    document.getElementById("av-updated").textContent="Actualizado el "+PROGRESS.updated+" · calculado de "+PROGRESS.phases.reduce(function(n,p){return n+p.deliverables.length;},0)+" entregables con evidencia en GitHub";
+    document.getElementById("av-how").textContent="Cada entregable suma por partes: lógica probada 35 %, pantalla probada 35 %, revisado por el otro agente 10 %, en main 10 %, aceptado por ti 10 %. Un documento o diseño solo no suma.";
+    document.getElementById("phases").innerHTML=PROGRESS.phases.map(function(f,i){
+      var pct=phasePct(f), done=f.deliverables.filter(function(d){return d.accepted;}).length, now=current&&current.id===f.id;
+      return '<div class="phase'+(now?' now':'')+'" tabindex="0" role="button" data-phase="'+i+'"><div><h3>'+f.id+'. '+esc(f.name)+(now?' <span class="pill warn">En curso</span>':'')+'</h3><p>'+done+' de '+f.deliverables.length+' entregables aceptados</p></div><div class="pct">'+pct+'%</div>'+
+        '<div class="bar" role="img" aria-label="'+pct+' por ciento"><i style="width:'+pct+'%;background:'+colors[i]+'"></i></div></div>';
+    }).join("");
+    function detail(i){
+      var f=PROGRESS.phases[i];
+      document.getElementById("av-detail-title").textContent="Fase "+f.id+": "+f.name+" · "+phasePct(f)+"%";
+      document.getElementById("av-detail").innerHTML=f.deliverables.map(function(d){
+        function chip(label,on,na){return '<span class="'+(na?'na':(on?'on':''))+'">'+(on&&!na?'✓ ':'')+label+'</span>';}
+        return '<div class="dl"><b>'+esc(d.name)+'</b><div class="stg">'+chip("Lógica",!!d.backend,false)+chip("Pantalla",!!d.ui,d.ui===null)+chip("Revisado",d.reviewed)+chip("En main",d.merged)+chip("Aceptado por ti",d.accepted)+'</div>'+
+          '<small>'+esc(d.agent)+(d.backend||d.ui?' · evidencia: '+esc([d.backend,d.ui].filter(Boolean).join(", ")):'')+' · '+Math.round(stageScore(d)*100)+'%</small>'+(d.blocker?'<span class="blk">Falta: '+esc(d.blocker)+'</span>':'')+'</div>';
+      }).join("");
+    }
+    document.getElementById("phases").addEventListener("click",function(e){var el=e.target.closest("[data-phase]");if(el)detail(+el.dataset.phase);});
+    document.getElementById("phases").addEventListener("keydown",function(e){var el=e.target.closest("[data-phase]");if(el&&(e.key==="Enter"||e.key===" ")){e.preventDefault();detail(+el.dataset.phase);}});
+    detail(current?PROGRESS.phases.indexOf(current):0);
+    var blockers=[];PROGRESS.phases.forEach(function(f){f.deliverables.forEach(function(d){if(d.blocker&&/César|abogado|Permiso/i.test(d.blocker)&&blockers.indexOf(d.blocker)<0)blockers.push(d.blocker);});});
+    document.getElementById("av-blockers").innerHTML=blockers.map(function(b){return '<li><span class="st wip">…</span><span>'+esc(b)+'</span></li>';}).join("");
+  }
   function reserva(){
     var st={p:4,lang:"es",saved:false};
     var g=document.getElementById("r-pkgs");

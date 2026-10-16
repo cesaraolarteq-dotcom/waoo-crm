@@ -148,6 +148,7 @@ class RecordServicesTest extends TestCase
                 $this->fail('Stale update was accepted.');
             } catch (RecordWriteRejected $e) {
                 $this->assertSame(409, $e->status);
+                $this->assertSame(409, $e->getStatusCode());
             }
         }
         $this->assertDatabaseCount('audit_entries', 4);
