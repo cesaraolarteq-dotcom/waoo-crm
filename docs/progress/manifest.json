@@ -418,6 +418,25 @@
       "accepted": false,
       "verification": "API2ff80c1 published before source. Full311/2968 pass (331.15s); targeted17/155 pass, PHP8.3/MariaDB11.8. Actual recipe/bank/audit rollbacks, stale/no-op/version guards, later-correction replay, grant recovery, two real process races, lead conversion. Syntax/strict Composer/diff pass; no schema/dependency change.",
       "remaining": "Claude #49 must remove separate pre-save, send customer_update and pin displayed ID/version in Locked state; Livewire regression/independent review/CI/main merge pending. Existing #49 f9b93c8 not approved. No phase completion or live acceptance."
+     },
+     "comms_01_contract": {
+      "document": "docs/COMMS-01-API.md",
+      "backend": null,
+      "ui": null,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "note": "COMMS-01 A/B/C answered; proposed owner-only recopy API published before implementation. Manual phone apps first; Postmark/email auth recommended, SMS automation/WhatsApp eligibility later. No implementation credit/provider/DNS/send. #54 b30d209 review requests recipient/lifecycle fixes;41/446 tests +build pass, diagnostic2/5 reproduces bug; no new full/browser/provider proof.",
+      "recovery_evidence": "Backend A follow-up68c02a5 on phase4 row; full326/3148. This documentation entry itself counts0; email/SMS/WhatsApp provider implementation remains pending."
+     },
+     "comms_link_recovery_followup": {
+      "backend": "68c02a5",
+      "ui": null,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "Contractb3c9edd published first; owner SMS-first main62f898e preserved5920ae4 before source. Full326/3148 (352.01s) and new14/168 pass, PHP8.3/MariaDB11.8. Real grant revoke/reveal race, crypto/binding/key/auth/CSRF/TLS/privacy/rollback, actual paid-core link-storage failure/recovery, SQLite up/down/up. Local guarded290000 migration and /up200; syntax14 PHP/strict Composer/diff pass.",
+      "remaining": "Claude explicit copy action/presenter/fallback and independent review/CI/main/acceptance. Existing hash-only links cannot be reconstructed; no expiry/rotation change. B/C sending providers, DNS, automated SMS/email/WhatsApp not activated. No completion credit for those parts."
      }
     }
    ]
@@ -434,7 +453,17 @@
      "ui": null,
      "reviewed": false,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "comms_01_contract": {
+      "document": "docs/COMMS-01-API.md",
+      "backend": null,
+      "ui": null,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "note": "COMMS-01 A/B/C answered; proposed owner-only recopy API published before implementation. Manual phone apps first; Postmark/email auth recommended, SMS automation/WhatsApp eligibility later. No implementation credit/provider/DNS/send. #54 b30d209 review requests recipient/lifecycle fixes;41/446 tests +build pass, diagnostic2/5 reproduces bug; no new full/browser/provider proof.",
+      "recovery_evidence": "Backend A follow-up68c02a5 on phase4 row; full326/3148. This documentation entry itself counts0; email/SMS/WhatsApp provider implementation remains pending."
+     }
     },
     {
      "name": "Recordatorios (7 días, saldo, gracias + reseña)",
@@ -490,7 +519,17 @@
      "ui": null,
      "reviewed": false,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "comms_01_contract": {
+      "document": "docs/COMMS-01-API.md",
+      "backend": null,
+      "ui": null,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "note": "COMMS-01 A/B/C answered; proposed owner-only recopy API published before implementation. Manual phone apps first; Postmark/email auth recommended, SMS automation/WhatsApp eligibility later. No implementation credit/provider/DNS/send. #54 b30d209 review requests recipient/lifecycle fixes;41/446 tests +build pass, diagnostic2/5 reproduces bug; no new full/browser/provider proof.",
+      "recovery_evidence": "Backend A follow-up68c02a5 on phase4 row; full326/3148. This documentation entry itself counts0; email/SMS/WhatsApp provider implementation remains pending."
+     }
     },
     {
      "name": "Pago al staff y gastos",

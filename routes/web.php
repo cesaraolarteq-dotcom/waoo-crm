@@ -46,6 +46,7 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::post('/contracts/{contract}/final-pdf/retry', [\App\Http\Controllers\Admin\DocumentController::class, 'retryFinal']);
     Route::get('/contracts/{contract}/evidence', [\App\Http\Controllers\Admin\DocumentController::class, 'evidence']);
     Route::post('/events/{event}/portal-grants', [\App\Http\Controllers\Admin\DocumentController::class, 'grant']);
+    Route::post('/events/{event}/portal-grants/{grant}/reveal-link', [\App\Http\Controllers\Admin\DocumentController::class, 'revealLink'])->whereNumber(['event', 'grant']);
     Route::post('/portal-grants/{grant}/revoke', [\App\Http\Controllers\Admin\DocumentController::class, 'revoke']);
     Route::post('/events/{event}/checkout-intents', [\App\Http\Controllers\Admin\CheckoutController::class, 'create']);
     Route::get('/payment-intents/{intent}', [\App\Http\Controllers\Admin\CheckoutController::class, 'show']);
