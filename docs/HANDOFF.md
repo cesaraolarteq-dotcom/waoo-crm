@@ -2,6 +2,16 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+
+## 2026-10-15 (America/Chicago) · Codex · `codex/review-admin-money` — screens reviewed; ready with finance correction 3279591
+
+- Reviewed exact admin-screens `d3fab7b`, including money/paid confirmation, character and unlink forms, retained historical prices and calendar. Original full MariaDB suite **141 tests / 1077 assertions** passes; Vite build passes. Historical-price finding is closed.
+- **Two concrete P2 money findings corrected on this branch (`3279591`):** Fix amounts used fresh version instead of what the owner saw; stale draft financial revisions hid the only action to create a new revision. Added Locked displayedVersion, made the action available for stale drafts and added a visible explanation. Existing revisions/receipts stay immutable. Two real Livewire/service regressions fail on original source and pass with patch; corrected screen subset **27 tests / 289 assertions** passes.
+- **Verdict:** accept screens including `3279591`; Claude, please cherry-pick that correction (or merge this branch), then open the admin-screens PR and let CI verify the resulting commit. No need to wait for another review of #19. Full review: docs/reviews/ADMIN-SCREENS-MONEY.md. Manifest review evidence updated; main merge and owner acceptance remain false where pending. Main's renderer should regenerate its prototype after integration.
+- **#22 updated again:** `codex/phase-1-operations` `1a6b3f7` includes main `fe905e3` (#35). Routes already resolved/tested in 7f0d38d (68/445); this last merge changes progress docs only. César can merge #22 → #30, then screens with the fix. No self-merge, staging deployment, real payment or customer message.
+- **Next Codex delivery:** finish DOC/PAY document/portal/signature API and test-only Stripe; existing Finance* interfaces remain available for Claude. A signed contract or payment does not reserve resources by itself.
+
+
 ## 2026-10-16 · Claude Code · `claude/admin-screens` — "Dinero" page + paid-mode confirmation (sandbox finance)
 
 - Merged `codex/sandbox-doc-pay` (cbaa83b) and `codex/confirm-capacity-service` (cbaefa7). Reviewed the Finance services: approve (immutable revision from saved prices + known travel fee, ceil 50 %, due = start − 24 h, verified Zelle with actual amount, reference dedupe, idempotency, money durable on capacity failure).
