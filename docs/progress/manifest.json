@@ -1,0 +1,66 @@
+{
+  "_about": "Temporary owner progress view (prototype tab 'Avance del proyecto'). Phases = docs/PROJECT_PLAN.md §18. Each agent updates its own evidence; Claude renders. Rules: a design/contract doc counts 0; a part counts only with a tested commit; review, merge to main and owner acceptance are separate steps. Phase % = sum(weight × stage score) / sum(weight).",
+  "updated": "2026-10-16",
+  "stage_scores": {"backend": 0.35, "ui": 0.35, "reviewed": 0.1, "merged": 0.1, "accepted": 0.1},
+  "stage_scores_note": "If a deliverable has no UI part (ui: null), its backend counts 0.7. No UI-only deliverable without backend counts backend as 0.",
+  "phases": [
+    {"id": 0, "name": "Auditoría y reglas", "deliverables": [
+      {"name": "Hostinger verificado (PHP, base de datos, cron, Stripe de prueba)", "weight": 3, "agent": "Claude+Codex", "backend": "probes/phase0 P1–P5", "ui": null, "reviewed": true, "merged": true, "accepted": true},
+      {"name": "Contrato, catálogo borrador y decisiones D1–D9", "weight": 2, "agent": "Claude", "backend": "docs main", "ui": null, "reviewed": true, "merged": true, "accepted": true},
+      {"name": "Arquitectura ARCH-01 firmada", "weight": 1, "agent": "Codex", "backend": "docs/arch/ARCH-01-ADR.md", "ui": null, "reviewed": true, "merged": true, "accepted": true}
+    ]},
+    {"id": 1, "name": "Base y operación", "deliverables": [
+      {"name": "Base Laravel + pruebas automáticas (CI)", "weight": 1, "agent": "Codex", "backend": "0b74015", "ui": null, "reviewed": true, "merged": true, "accepted": false},
+      {"name": "Datos: clientas, eventos, catálogo, recursos, auditoría", "weight": 2, "agent": "Codex", "backend": "0b74015", "ui": null, "reviewed": true, "merged": true, "accepted": false},
+      {"name": "Entrar con contraseña + 2 pasos", "weight": 2, "agent": "Codex+Claude", "backend": "0b74015", "ui": "094982c", "reviewed": true, "merged": true, "accepted": false},
+      {"name": "Panel con el diseño de Waoo", "weight": 1, "agent": "Claude", "backend": "0b74015", "ui": "094982c", "reviewed": true, "merged": true, "accepted": false},
+      {"name": "Catálogo (precios con historial, personajes incluidos)", "weight": 2, "agent": "Codex+Claude", "backend": "ce2c3db", "backend_review": "Claude approved and integrated in 1ff3f89; combined UI review remains pending", "ui": "1ff3f89", "reviewed": false, "merged": false, "accepted": false, "blocker": "Hoja de catálogo de César"},
+      {"name": "Staff, trajes, equipo, vehículos, bloqueos", "weight": 2, "agent": "Codex+Claude", "backend": "ce2c3db", "backend_review": "Claude approved and integrated in 1ff3f89; combined UI review remains pending", "ui": "1ff3f89", "reviewed": false, "merged": false, "accepted": false, "blocker": "Inventario de César"},
+      {"name": "Clientas y borradores de eventos", "weight": 2, "agent": "Codex+Claude", "backend": "ce2c3db", "backend_review": "Claude approved and integrated in 1ff3f89; combined UI review remains pending", "ui": "1ff3f89", "reviewed": false, "merged": false, "accepted": false},
+      {"name": "Apartar recursos sin choques (con depósito)", "weight": 3, "agent": "Codex+Claude", "backend": "cbaefa7", "backend_review": "Claude integrated ConfirmCapacity in admin-screens; combined UI review remains pending", "ui": "admin-screens", "reviewed": false, "merged": false, "accepted": false},
+      {"name": "Calendario con márgenes de 45 min", "weight": 2, "agent": "Claude", "backend": "ce2c3db", "ui": "b2839dd", "reviewed": false, "merged": false, "accepted": false},
+      {"name": "Prueba con César en el sitio de prueba", "weight": 2, "agent": "Ambos + César", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false, "blocker": "Permiso para subir a crm-test + catálogo"}
+    ]},
+    {"id": 2, "name": "Cotización y logística", "deliverables": [
+      {"name": "Formulario de la web → prospecto en el CRM", "weight": 3, "agent": "Codex+Claude", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false},
+      {"name": "Costo de transporte por ZIP dentro del CRM", "weight": 2, "agent": "Codex", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false},
+      {"name": "Cotizaciones con versiones", "weight": 3, "agent": "Codex+Claude", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false},
+      {"name": "Costos y margen por paquete", "weight": 2, "agent": "Codex+Claude", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false, "blocker": "Tarifas del staff (César)"}
+    ]},
+    {"id": 3, "name": "Disponibilidad", "deliverables": [
+      {"name": "Recetas por paquete y personaje", "weight": 3, "agent": "Codex+Claude", "backend": "ce2c3db", "backend_review": "Claude approved and integrated in 1ff3f89; combined UI review remains pending", "ui": "1ff3f89", "reviewed": false, "merged": false, "accepted": false},
+      {"name": "Motor sin choques (habilidades, trajes, vehículos, concurrencia)", "weight": 3, "agent": "Codex", "backend": "cbaefa7", "ui": null, "reviewed": true, "merged": false, "accepted": false},
+      {"name": "Rutas y tiempos de manejo automáticos", "weight": 2, "agent": "Codex", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false},
+      {"name": "Disponibilidad automática para la web", "weight": 2, "agent": "Codex+Claude", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false}
+    ]},
+    {"id": 4, "name": "Portal, firma y pagos", "deliverables": [
+      {"name": "Montos acordados por evento (revisión financiera)", "weight": 2, "agent": "Codex+Claude", "backend": "cbaa83b", "ui": null, "reviewed": false, "merged": false, "accepted": false},
+      {"name": "Registro de Zelle verificado y saldo", "weight": 3, "agent": "Codex+Claude", "backend": "cbaa83b", "ui": null, "reviewed": false, "merged": false, "accepted": false},
+      {"name": "Stripe (modo prueba, sin Affirm)", "weight": 3, "agent": "Codex+Claude", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false, "blocker": "Reglas del 3 % (César)"},
+      {"name": "Contrato con versiones y PDF", "weight": 3, "agent": "Codex+Claude", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false, "blocker": "Revisión de abogado antes de clientas reales"},
+      {"name": "Portal de la clienta y firma", "weight": 3, "agent": "Codex+Claude", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false},
+      {"name": "Reserva rápida (tu mitad + la de la clienta)", "weight": 3, "agent": "Codex+Claude", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false}
+    ]},
+    {"id": 5, "name": "Piloto y comunicaciones", "deliverables": [
+      {"name": "Correos a clientas (envío real)", "weight": 3, "agent": "Codex+Claude", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false},
+      {"name": "Recordatorios (7 días, saldo, gracias + reseña)", "weight": 2, "agent": "Codex", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false},
+      {"name": "Importar eventos futuros de HoneyBook", "weight": 2, "agent": "Codex", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false},
+      {"name": "Piloto en paralelo con HoneyBook", "weight": 3, "agent": "Ambos + César", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false}
+    ]},
+    {"id": 6, "name": "Staff y gestión avanzada", "deliverables": [
+      {"name": "Portal del staff y aceptación de asignaciones", "weight": 3, "agent": "Codex+Claude", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false},
+      {"name": "SMS (Twilio)", "weight": 2, "agent": "Codex", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false},
+      {"name": "Pago al staff y gastos", "weight": 2, "agent": "Codex+Claude", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false},
+      {"name": "Reportes del lunes y del mes", "weight": 2, "agent": "Codex+Claude", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false}
+    ]},
+    {"id": 7, "name": "Autoservicio ampliado", "deliverables": [
+      {"name": "Cambios y reprogramaciones (CHANGE-A)", "weight": 3, "agent": "Codex+Claude", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false},
+      {"name": "Correo «Un año después» (ANNIV-01)", "weight": 2, "agent": "Codex+Claude", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false},
+      {"name": "WhatsApp y upsells", "weight": 2, "agent": "Codex+Claude", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false}
+    ]},
+    {"id": 8, "name": "Migración final", "deliverables": [
+      {"name": "Archivo histórico de HoneyBook (~250 clientas)", "weight": 3, "agent": "Codex", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false},
+      {"name": "Capacitación y paso definitivo", "weight": 2, "agent": "Ambos + César", "backend": null, "ui": null, "reviewed": false, "merged": false, "accepted": false}
+    ]}
+  ]
+}

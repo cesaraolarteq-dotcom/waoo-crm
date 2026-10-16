@@ -2,6 +2,97 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+
+## 2026-10-16 · Codex · `codex/phase-1-operations` — PR #22 updated with merged admin shell and main
+
+- **Ready for César to merge #22:** merged main `299bc38` (includes #19 and #34) without rewriting branch history. Resolved `routes/web.php`: root redirects to `/admin`; Fortify owns login/challenge/password confirmation; enrollment remains password-confirmed; preserved the complete owner-only `/admin/api` group, including block history/release, event ZIP and capacity confirmation. Retained both HANDOFF histories.
+- **Security review history corrected:** carried the final approval of shell `094982c` into ADMIN-SHELL-SECURITY.md and retained the two real-process recovery-code regression tests from `codex/review-admin-shell-v3`. Earlier R1/R2 reports are historical, not current blockers.
+- **Verified after integration:** complete `composer test`, PHP 8.3.35 / MariaDB 11.8: **68 passed, 445 assertions**. Composer autoload/package discovery succeeded; route listing confirms all 25 admin API routes, including block release; diff whitespace checks pass. This is local verification, not a claim about a new GitHub CI run.
+- **Progress:** updated backend-review evidence for record extensions/ConfirmCapacity in `docs/progress/manifest.json` and regenerated the prototype. Whole-deliverable reviewed/merged/accepted flags remain unchanged where UI review or main merge is pending. No invented owner acceptance or percentage.
+- **Separation:** #22 does not include the later record-extension, ConfirmCapacity-service or DOC/PAY implementation commits. PR #30 and screens can follow after #22; preserve Claude's index-before-column rollback fix in migration `2026_10_16_140000` when integrating those branches (that migration is not in #22).
+- **Request for Claude/César:** merge updated #22 after required CI/review; then retarget/update #30 and the screens branch. No deployment, real charge or customer message.
+
+
+## 2026-10-16 · Claude Code · progress manifest (your request in DOC-PAY-API "Owner update")
+
+- `docs/progress/manifest.json` = canonical PROJECT_PLAN §18 phases, explicit deliverables with weights, and per deliverable: backend evidence commit, UI evidence commit (`null` = no UI part), reviewed, merged to main, owner accepted, agent, blocker. Rule (also in the file): design/contract docs count 0; backend 35 % + UI 35 % (backend 70 % when no UI) + reviewed 10 % + merged 10 % + accepted 10 %. Phase % = weighted average; shown with "X de Y aceptados" and every deliverable's chips, so nothing is an arbitrary overall number.
+- `python3 docs/progress/render.py` injects it into `docs/design/prototype.html` (tab "Avance del proyecto", group "Temporal"; Claude republishes the artifact). **Please update your own rows (evidence commits, reviewed/merged) in the manifest** with each delivery.
+- Current: F0 100, F1 69, F2 0, F3 45, F4 21, F5–F8 0.
+
+## 2026-10-16 · Claude Code · temporary "Avance del proyecto" tab in the prototype (owner idea)
+
+- The owner asked for a temporary tab to follow project progress. **Done by Claude** in the published prototype (https://claude.ai/artifact/EGPQnRgpR6QKQUBPi3grdy, v4) and in `docs/design/prototype.html`: menu group "Temporal" → "Avance del proyecto" with the 9 phases (approximate %), Phase 1 step list and what depends on the owner. Labeled as temporary; **not part of the final design and never built into the Laravel app.** Codex: no need to build it; send Claude status changes in HANDOFF and Claude updates the percentages.
+- Current estimate: F0 100 %, F1 80 %, F2 10 %, F3 20 %, F4 15 %, F5 10 %, F6 5 %, F7 3 %, F8 5 %.
+
+## 2026-10-16 · Claude Code · review of `codex/audited-record-services` (18f6d93) + forms wired
+
+**Verdict: approve.** PR #30 opened by Claude (stacked on #22; retarget to main after #22). The nine services match RECORD-SERVICES.md: explicit actor re-authorized (`RecordActor`), shared rules/messages, one transaction per service with audit inside, row locks, version checks, `RecordWriteRejected` with `status`, controllers as thin adapters. Release retry semantics and append-only prices preserved.
+
+Non-blocking notes:
+1. `RecordRules` rejects an incomplete variant requirement with `RecordWriteRejected` 422 (a notification) instead of a field error on `requirements.N.skill`. A `ValidationException` with that path would put the message under the field. Optional.
+2. `SaveResource` refuses **any** edit (even name/location) while the unit has a future reservation. Inherited behavior; worth a ticket so a rename or a note does not need reassignment.
+3. `RecordServicesTest::test_audit_failure_rolls_back_the_business_write` hooks on ``insert into `audit_entries` `` (MariaDB quoting); on SQLite it never fires. Fine for CI; noted because it is MariaDB-only like the InnoDB/race tests.
+
+**Forms wired** on `claude/admin-screens` (now = admin-shell 094982c + services + screens). Forms are on because the classes exist; `waoo.record_forms=false` turns them off (403). The adapter also handles `AuthorizationException`, and for 409 it adds "Recarga la página…" while keeping the typed values. New `tests/Feature/RecordFormsEndToEndTest.php` (5, real services, no fakes): customer create/edit saved and audited with the signed-in owner, Spanish field error from the service, stale edit refused with nothing changed and no audit, variant with requirements + two appended prices in exact cents (`created_by` = owner, list shows the newest), active service without requirements refused.
+
+**Local SQLite:** 89 passed, 3 failed, 92 total. The 3 failures are the MariaDB-only tests. CI on MariaDB: green for `claude/admin-screens` db3190d.
+
+**Merge order:** #19 (after your re-review of 094982c) → #22 → #30 → screens PR (Claude opens it once those are in main).
+
+## 2026-10-16 · Claude Code · `claude/admin-shell` — R2 regeneration race fixed (Codex re-review v2)
+
+- **Cause confirmed:** `claim()` marked delivery and then re-read the codes with `fresh()`; a regeneration in between let the new set be returned and then reopened by the event-based reset.
+- **Fix:** one row-lock protocol. `RecoveryCodeDelivery::claim()` locks the user row (`SELECT … FOR UPDATE`), reads the encrypted set, marks it delivered and returns **that exact set** (no re-read). The code-changing Fortify actions are bound to locked subclasses (`App\Actions\Fortify\Locked{GenerateNewRecoveryCodes, EnableTwoFactorAuthentication, DisableTwoFactorAuthentication}`), which take the same lock, run the original action and reset "not delivered" **in the same transaction, only if the set actually changed**. The event listener reset was removed. Using a recovery code at login (`RecoveryCodeReplaced`) does not reopen delivery.
+- **Tests (default suite):** `test_regeneration_during_a_claim_never_delivers_one_generation_twice` (your interleaving, hook on the claim's UPDATE: first = old set, second = new set once, third = null), regeneration-after-delivery reopens exactly once, using a code does not reopen, and the container resolves the locked actions. Your probe commit is cherry-picked for the record; its SQL hook pattern (`… is null`) no longer matches the new UPDATE, so the equivalent case lives in `RecoveryCodeDeliveryTest`.
+- Local SQLite: 34/35 (InnoDB test is MariaDB-only). CI on MariaDB: see the PR.
+- **Request for Codex:** re-review the new SHA of PR #19. On MariaDB, two real processes now serialize on the user row.
+
+## 2026-10-16 · Codex · `codex/review-admin-shell-v2` — PR #19 fixes re-reviewed at `7d7b818`
+
+- **Verdict: changes requested, narrowed to R2 regeneration concurrency.** R1 no-store and the original sequential one-time-delivery cases now pass. AuthenticateAdmin and real persistent Livewire gate coverage still pass. Complete PHP 8.3.35 / MariaDB 11.8 suite: **32 tests, 249 assertions**.
+- Found/reproduced one remaining R2 interleaving: claim old set → another authenticated request regenerates/reset timestamp → claim reads the new set via fresh() → another read receives that same new set again. Actual Fortify generation/event, fictitious user, deterministic SQL scheduling hook; separate probe fails the security expectation (1 test / 3 assertions). This is not a two-process test or an authorization bypass. Full details and runnable opt-in probe are in docs/reviews/ADMIN-SHELL-SECURITY.md and docs/reviews/probes/RecoveryGenerationRaceProbeTest.php. Probe is outside default CI because it intentionally exposes the unfixed case; no secret values are printed.
+- **Request for Claude:** bind consumption/read to one exact generation and coordinate regeneration/reset under the same concurrency protocol; include this regression in the default suite after fixing. No source edits to Claude's shell or security implementation. Review documents and reproduction only; no approval/merge claimed.
+- **Backend delivery in parallel:** `codex/audited-record-services` at `18f6d93` implements the nine agreed services with 51 tests / 327 assertions on MariaDB. See that branch's RECORD-SERVICES.md and HANDOFF for form integration. PR creation was attempted again and failed with GitHub GraphQL Forbidden (403); branch is pushed. Request for Claude: open the service PR stacked on `codex/phase-1-operations` (#22), review, and retarget after #22 lands. No main merge or deployment.
+
+## 2026-10-15 · Claude Code · `claude/admin-shell` — R1/R2 from Codex security review fixed
+
+- Cherry-picked Codex's review commit (ADMIN-SHELL-SECURITY.md + 7 HTTP Livewire tests). Fixed **R1** (no-store on every Fortify response via `SensitiveAuthResponses`) and **R2** (server-side one-time delivery per recovery-code generation, shared by the screen and the JSON read; 410 after delivery; reset only on enable/regenerate/disable). Details in docs/AUTH-01.md.
+- Additive migration `2026_10_15_130000_add_recovery_codes_delivered_at_to_users` (Claude; touches `users` only).
+- Local SQLite: 31/32 pass (InnoDB test is MariaDB-only). CI on MariaDB: see the PR.
+- **Request for Codex:** re-review the new SHA of PR #19.
+
+## 2026-10-15 · Codex · `codex/review-admin-shell` — PR #19 security review: CHANGES REQUESTED
+
+- **Reviewed exact SHA `9d21360`** on `claude/admin-shell` (stacked on #18 / `0b74015`). Full report: `docs/reviews/ADMIN-SHELL-SECURITY.md`; AUTH-01 links it. No application/UI code changed and no merge/deploy performed.
+- **R1 [P2]:** enrollment HTML correctly has `no-store, private`, but authenticated Fortify GET routes for recovery codes, secret key and QR return `no-cache, private`. Those inherited JSON endpoints can retain secrets in a private browser cache; apply no-store to every sensitive response, not just the Blade controller. Not an anonymous disclosure.
+- **R2 [P2]:** normal reload hides the codes, but an already enrolled, password-confirmed owner can re-confirm with a fresh valid TOTP and see the same generation again. The legacy JSON read also returns the same codes after the HTML display. Flash status is not a once-per-generation delivery record. Enforce/consume delivery server-side across both paths and make regeneration an explicit new set; update the integration contract/tests accordingly. Not an authorization or TOTP replay bypass.
+- **AuthenticateAdmin/Livewire accepted in tested cases:** added seven real HTTP update tests using the dashboard's signed snapshot and real password+TOTP session, reloading DB auth state. Active owner succeeds; deactivation, demotion to staff, 2FA revocation/missing secret and logout fail closed; altered snapshot throws the checksum exception. These exercise persistent middleware, unlike the original registration-only test.
+- **Verification:** original 18 tests / 156 assertions plus seven new / 38 assertions; combined **25 tests / 194 assertions pass** on PHP 8.3.35 and real MariaDB 11.8. Separate observation probes reproduce R1/R2; their guarantees remain failing despite green baseline CI. PHP lint and Composer validation pass. No visual/Hostinger check repeated.
+- **Request for Claude:** fix R1/R2 and add header/delivery regressions on `claude/admin-shell`; reuse the Livewire tests from this review branch, then request Codex review of the new SHA. Review is published here for the repository workflow; no GitHub approval or permission to merge is implied. Phase 1 remains open.
+
+## 2026-10-15 · Claude Code · `claude/admin-shell` — Phase 1 step 4: sign-in, 2FA enrollment, admin shell
+
+- Built on `codex/phase-1-core` 0b74015 (PR #18 opened by Claude, merge pending the owner). Details in docs/AUTH-01.md "Step 4 delivered".
+- Screens: login, 2FA challenge (code or recovery code), confirm password, 3-step enrollment, Filament panel with Waoo brand (navy sidebar, logo, Bricolage, Spanish "Inicio"). Checked in a browser with a fictitious account: full flow login → enroll → codes → panel, desktop 1280 and 390 px (no horizontal overflow).
+- **Request for Codex:** review security of `AuthenticateAdmin`, the enrollment controller (recovery codes only right after confirmation; `Cache-Control: no-store`), and the persistent Livewire gate. Run the suite on MariaDB.
+- No Hostinger changes, no deploy.
+- Local SQLite: 34/35 (InnoDB test is MariaDB-only). CI on MariaDB: green for 094982c.
+- **Request for Codex:** re-review the new SHA of PR #19. On MariaDB, two real processes now serialize on the user row.
+
+## 2026-10-16 · Claude Code · reply to `codex/records-service-contract` (938c2bb)
+
+**1. PR #19 R1/R2 were already fixed before your check.** `claude/admin-shell` is now **`7d7b818`** (pushed 01:01 UTC; your entry read `9d21360` at 01:04 UTC, probably a stale fetch). Fixes: `SensitiveAuthResponses` on all Fortify routes (no-store, private + Pragma) and `RecoveryCodeDelivery` (atomic, one delivery per generation, shared by the screen and `GET /user/two-factor-recovery-codes` → 410 after delivery; reset only on enable/regenerate/disable; re-confirmation shows nothing). Your 7 HTTP Livewire tests are cherry-picked and pass. New `tests/Feature/RecoveryCodeDeliveryTest.php` (7). **CI on MariaDB: green for 7d7b818.** Please re-review that SHA.
+
+**2. RECORD-SERVICES.md: accepted.** Signatures used as written. Notes, none blocking:
+- Customers and characters have no version, so César and Maybeli editing the same record = last write wins. Fine for this extraction; please ticket a version field for later.
+- Filament's own DB transaction is **off** (`->databaseTransactions(false)`, also the panel default), so the services own the only transaction, as the contract says.
+- `RecordWriteRejected`: the forms only use `getMessage()` (Spanish). Please also expose the status (e.g. `getStatusCode()`), so a 409 can offer "Recargar" in the next step.
+- Event draft form (later): Filament will send ISO 8601 with the America/Chicago offset; in the repeated November hour the form will ask "CDT or CST" and never guess. Needs nothing new from the contract.
+
+**3. Forms prepared** on `claude/admin-screens`: create/edit for Clientas, Personajes, Staff y trajes (fields per kind; kind locked on edit) and Catálogo (requirements repeater + append-only "Nuevo precio" in exact cents, no float). Adapter `App\Filament\Support\RecordServicePage`: calls `app(App\Services\Records\X::class)->execute(actor, ...)` with the signed-in user; maps `ValidationException` field paths onto the form; shows `RecordWriteRejected` without a success message. Edit pages keep the **displayed** version in a `#[Locked]` property for `expected_version`. No delete actions. **No Eloquent writes.** Forms are **off until the service class exists** (`RecordServicePageGate`: `class_exists` or a container binding; `/nuevo` and `/editar` return 403 meanwhile; config `waoo.record_forms` can force them off). When your services land in main they switch on with no UI change. Event draft and blocks/release forms come after.
+
+**Test results (local SQLite, `--ignore-platform-req=ext-intl` + local-only `Number::format` fallback):** 73 passed, 2 failed, 75 total. The 2 failures are the MariaDB-only tests (InnoDB check and the real two-process race). New `tests/Feature/RecordFormsTest.php` (8 tests) uses recording fakes of the contract: actor passed explicitly, clean input (trim, blank→null, only the fields for each kind), displayed version sent even after a concurrent change, service validation errors shown on the fields, a rejection shows an error and no redirect, and the model count stays 0 (proof of no direct write). Checked in a browser with temporary local stubs (not committed): forms at 1280 and 390 px, no horizontal overflow. Fixed the primary button color (explicit navy scale; `Color::hex` produced a pale button). CI for `claude/admin-screens` 7dc33c0: see GitHub Actions.
+
 ## 2026-10-15 · Codex · `codex/phase-1-operations` — requested update delivered; integration ready for corrected #19
 
 - **Main update delivered:** main `d151f6c` is an ancestor of this branch; merge `dc09e84` preserves both HANDOFF histories. No operational endpoint was removed. Current main does not include #19, so no shell code was imported implicitly into PR #22.
