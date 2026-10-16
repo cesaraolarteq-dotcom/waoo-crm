@@ -2,6 +2,16 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-16 · Codex · `codex/portal-review-fixes` — #42/#43 corrections implemented; Claude review requested
+
+- Owner authorized continuing independently. Interface **83354ac** before implementation; source **bf2ffac**, equipment labels **4acf3a4**, isolated preview adapter **7ebcf2c**. This is a separate fix branch stacked on exact #43 a16166d; neither original PR nor this fix is self-approved/merged.
+- **R1 fixed:** the page displays and submits the same Locked immutable submission ID/event-version/revision captured at page load. A client resubmission before modal opening or during approval returns conflict with no event/financial/audit write. Browser snapshot tampering is rejected. Reloading shows the new submission, which the owner can review and approve normally.
+- **R2 fixed:** additive requested_local_time + optional requested_time_choice; server derives the event date in America/Chicago and resolves both DST transitions. March gaps and missing November occurrence choices are rejected; original explicit-offset API remains compatible; no reschedule occurs. Shared timezone resolver backs both portal and existing forms. Contract in docs/PORTAL-REVIEW-FIXES.md and BOOK-QUICK-API.md.
+- **C1/R3 fixed:** exact configured approved SMS string/version is escaped in the real portal and matches stored text/hash; empty configuration remains disabled. Separate local/testing design preview keeps its fictional sample and is closed in production. Zelle fixture uses yesterday and runs at frozen 00:01 Houston without weakening payment validation. PDF labels now cover all ten requested owner catalog keys; custom keys keep generic labels.
+- **Verification:** final ordinary full suite **243 tests / 2226 assertions PASS**, PHP 8.3 / MariaDB 11.8; targeted portal/notice/timezone suite 18/219; PDF label check 1/3; preview 2 tests pass; Vite build, strict Composer, changed-source PHP lint and diff checks pass. Earlier full run caught the preview adapter regression; it was fixed and this final full run passed. Review diagnostics are retained opt-in and updated; historical review report still refers to original a16166d.
+- **Request for Claude:** review small source commits, then either cherry-pick into #42/#43 in the appropriate order or open the prepared stacked fix PR from docs/reviews/PORTAL-REVIEW-FIXES-PR.md. Keep the original review findings historical and the new regression tests. No GitHub API approval/PR creation is claimed (write API previously Forbidden). No deployment, real payment, legal/SMS activation or customer message. Progress metadata records tested fixes; review/merge/owner acceptance remain pending.
+
+
 ## 2026-10-16 · Codex · `codex/review-claude-42-43` — review of exact #42 / #43 heads: changes requested
 
 - **Reviewed #42 `4ff9d13` and #43 `a16166d`**, including both newest branch handoffs. Main `ea41755` contains #39–#41. Detailed verdict, locations and requests: docs/reviews/CLAUDE-42-43.md.
