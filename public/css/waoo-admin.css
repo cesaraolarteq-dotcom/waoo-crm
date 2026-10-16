@@ -1,0 +1,21 @@
+/* Brand layer over Filament (no build step). Sidebar in Waoo night navy, pink accents. */
+.waoo-brand{display:inline-flex;align-items:center;gap:10px;font-weight:800;font-size:1.05rem;letter-spacing:-.01em;white-space:nowrap}
+.waoo-brand img{height:2.1rem;width:auto}
+.waoo-brand b{color:#FF017C;font-weight:800}
+.fi-sidebar{background:#0E1B52}
+.fi-sidebar .fi-sidebar-header{background:#0E1B52;border-color:rgba(255,255,255,.08)}
+.fi-sidebar .waoo-brand{color:#fff}
+.fi-sidebar .fi-sidebar-group-label,.fi-sidebar .fi-sidebar-item-label{color:#C3CAEC}
+.fi-sidebar .fi-sidebar-item-icon{color:#8C96C9}
+.fi-sidebar .fi-sidebar-item.fi-active .fi-sidebar-item-btn{background:rgba(255,255,255,.10)}
+.fi-sidebar .fi-sidebar-item.fi-active .fi-sidebar-item-label,.fi-sidebar .fi-sidebar-item.fi-active .fi-sidebar-item-icon{color:#fff}
+.fi-sidebar .fi-sidebar-item-btn:hover{background:rgba(255,255,255,.06)}
+.fi-sidebar .fi-icon-btn{color:#C3CAEC}
+.waoo-welcome h2{font-size:1.6rem;font-weight:800;letter-spacing:-.02em;margin:0 0 .25rem}
+.waoo-welcome h2 em{font-family:"Bodoni Moda",Georgia,serif;font-style:italic;font-weight:500;color:#FF017C}
+.waoo-welcome p{color:rgb(var(--gray-500, 100 116 139));margin:0}
+.waoo-next{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-top:1.25rem}
+.waoo-next div{border-radius:14px;padding:16px;border:1px solid rgba(20,26,51,.08);background:rgba(18,47,148,.03)}
+.dark .waoo-next div{border-color:rgba(255,255,255,.08);background:rgba(255,255,255,.03)}
+.waoo-next b{display:block;margin-bottom:4px}
+.waoo-next span{font-size:.875rem;opacity:.75}

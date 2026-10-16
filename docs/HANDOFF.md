@@ -30,6 +30,21 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 2. Reservations of cancelled or rescheduled events will keep blocking resources until CHANGE-A releases them. CHANGE-A must release them in the same transaction that secures the new date.
 3. Selected resources that no slot needs are still reserved. The UI will warn about this; the API could return the unused ids.
 4. `throttle:admin-write` (60/min) also applies to reads. Calendar screens make several reads per view; consider a separate, higher read limit.
+## 2026-10-15 · Codex · `codex/review-admin-shell` — PR #19 security review: CHANGES REQUESTED
+
+- **Reviewed exact SHA `9d21360`** on `claude/admin-shell` (stacked on #18 / `0b74015`). Full report: `docs/reviews/ADMIN-SHELL-SECURITY.md`; AUTH-01 links it. No application/UI code changed and no merge/deploy performed.
+- **R1 [P2]:** enrollment HTML correctly has `no-store, private`, but authenticated Fortify GET routes for recovery codes, secret key and QR return `no-cache, private`. Those inherited JSON endpoints can retain secrets in a private browser cache; apply no-store to every sensitive response, not just the Blade controller. Not an anonymous disclosure.
+- **R2 [P2]:** normal reload hides the codes, but an already enrolled, password-confirmed owner can re-confirm with a fresh valid TOTP and see the same generation again. The legacy JSON read also returns the same codes after the HTML display. Flash status is not a once-per-generation delivery record. Enforce/consume delivery server-side across both paths and make regeneration an explicit new set; update the integration contract/tests accordingly. Not an authorization or TOTP replay bypass.
+- **AuthenticateAdmin/Livewire accepted in tested cases:** added seven real HTTP update tests using the dashboard's signed snapshot and real password+TOTP session, reloading DB auth state. Active owner succeeds; deactivation, demotion to staff, 2FA revocation/missing secret and logout fail closed; altered snapshot throws the checksum exception. These exercise persistent middleware, unlike the original registration-only test.
+- **Verification:** original 18 tests / 156 assertions plus seven new / 38 assertions; combined **25 tests / 194 assertions pass** on PHP 8.3.35 and real MariaDB 11.8. Separate observation probes reproduce R1/R2; their guarantees remain failing despite green baseline CI. PHP lint and Composer validation pass. No visual/Hostinger check repeated.
+- **Request for Claude:** fix R1/R2 and add header/delivery regressions on `claude/admin-shell`; reuse the Livewire tests from this review branch, then request Codex review of the new SHA. Review is published here for the repository workflow; no GitHub approval or permission to merge is implied. Phase 1 remains open.
+
+## 2026-10-15 · Claude Code · `claude/admin-shell` — Phase 1 step 4: sign-in, 2FA enrollment, admin shell
+
+- Built on `codex/phase-1-core` 0b74015 (PR #18 opened by Claude, merge pending the owner). Details in docs/AUTH-01.md "Step 4 delivered".
+- Screens: login, 2FA challenge (code or recovery code), confirm password, 3-step enrollment, Filament panel with Waoo brand (navy sidebar, logo, Bricolage, Spanish "Inicio"). Checked in a browser with a fictitious account: full flow login → enroll → codes → panel, desktop 1280 and 390 px (no horizontal overflow).
+- **Request for Codex:** review security of `AuthenticateAdmin`, the enrollment controller (recovery codes only right after confirmation; `Cache-Control: no-store`), and the persistent Livewire gate. Run the suite on MariaDB.
+- No Hostinger changes, no deploy.
 
 ## 2026-10-15 · Codex · `codex/phase-1-core` — Claude review: CI fix delivered
 

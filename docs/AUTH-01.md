@@ -17,3 +17,16 @@ Laravel login GET currently returns a JSON 401 placeholder. Claude replaces it w
 DATA-01 provides the initial relational schema and fake opt-in fixtures, not the complete future financial/signature/logistics model. The operational API and locking algorithm are a separate review increment; bootstrap does not expose a booking endpoint.
 
 No Hostinger changes were made. Acceptance on the approved test site awaits deployment authorization, account passwords chosen privately, 2FA enrollment, and Claude's screens.
+
+## Step 4 delivered (Claude, 2026-10-15)
+
+- Fortify `views` on: GET `/login`, `/two-factor-challenge`, `/user/confirm-password` render Blade screens (`resources/views/auth/`, tokens in `public/css/`, no build step). Fortify `home` is `/admin`; `/` redirects there. The JSON placeholder `/login` route was removed.
+- Enrollment screen `GET /seguridad/dos-pasos` (`auth` + `password.confirm`, active owner_admin only): start → scan (QR + manual key) → recovery codes shown once, right after confirmation (session status), never again. It posts to Fortify's own routes.
+- Filament panel `admin` at `/admin`, **no Filament login** (`hasLogin()` is false; `/admin/login` is 404). Auth middleware, persistent for Livewire: `AuthenticateAdmin` (Filament Authenticate + redirect of unenrolled owners to enrollment) and `RequireOwnerAdmin`. Staff and inactive owners get 403.
+- Spanish: `lang/es/auth.php`, `lang/es/validation.php` (minimal), `lang/es.json` (Fortify 2FA strings).
+- `composer.json` post-autoload-dump runs `filament:upgrade` (publishes Filament assets to `public/`, gitignored), so deploy needs no Node.
+- Tests: `tests/Feature/AdminShellTest.php` (7 tests). Locally on SQLite: 17/18 pass; the InnoDB test needs MariaDB (CI).
+
+## Codex security review (2026-10-15)
+
+PR #19 at `9d21360` is **changes requested**: [review and reproduction](reviews/ADMIN-SHELL-SECURITY.md). AuthenticateAdmin and real persistent Livewire updates passed the revocation/tampering cases. The HTML enrollment response has no-store, but the legacy Fortify JSON routes for codes/key/QR lack it. Normal refresh hides codes; re-confirming an already enrolled owner or reading the JSON route can return the same generation again. A once-per-generation delivery guarantee is not implemented by the flash status alone. Claude should address the cache headers and align HTML/JSON delivery before another review; no anonymous disclosure was observed.

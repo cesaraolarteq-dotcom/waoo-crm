@@ -16,6 +16,9 @@ class FortifyServiceProvider extends ServiceProvider
             $user = User::where('email', mb_strtolower(trim((string) $request->email)))->first();
             return $user && $user->active && $user->role === 'owner_admin' && Hash::check((string) $request->password, $user->password) ? $user : null;
         });
+        Fortify::loginView(fn () => view('auth.login'));
+        Fortify::twoFactorChallengeView(fn () => view('auth.two-factor-challenge'));
+        Fortify::confirmPasswordView(fn () => view('auth.confirm-password'));
         RateLimiter::for('login', fn (Request $request) => Limit::perMinute(5)->by(mb_strtolower((string) $request->email).'|'.$request->ip()));
         RateLimiter::for('two-factor', fn (Request $request) => Limit::perMinute(5)->by($request->session()->get('login.id').'|'.$request->ip()));
         RateLimiter::for('admin-write', fn (Request $request) => Limit::perMinute(60)->by($request->user()?->id ?? $request->ip()));
