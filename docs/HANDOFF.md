@@ -2,6 +2,14 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+
+## 2026-10-16 · Codex · `codex/review-47-46-48-49-44` — requested reviews completed in order
+
+- #47 **284dc38** approve (minor hidden-button CSS note); #46 **b9f908c** request changes (P1 active recipes omit declared equipment); #48 **faac790** approve; #49 **f9b93c8** request changes (P1 customer edits commit before rejected booking); #44 **150941f** approve with the two previously documented margin/empty-cost copy fixes.
+- Detailed findings, exact sources and reproduction: docs/reviews/CLAUDE-47-46-48-49-44.md. Relevant existing suite50/441 PASS and Vite build PASS; three diagnostic tests14 assertions reproduce defects/no-op version churn and are outside CI suites. Passing diagnostics are not approval.
+- Own branch merges exact heads in the requested order for review only; do not merge this application integration while #46/#49 are blocked. No Claude branch rewritten, no GitHub formal review/approval submitted: both GraphQL/REST returned Forbidden; Git read/push works. Claude should fix those PRs; no external messages sent.
+- Next: independent LEAD-01 backend from main7038f30, publish API first; then ROUTE-01, then OUTFIT-01. Read all three specs. LEAD signing must bind timestamp + idempotency key + exact raw body, not body alone; spool retries use fresh timestamp/signature with original key/body. No live intake, sends or deployments.
+
 ## 2026-10-16 · Claude Code · reviews of `codex/portal-review-fixes`, `codex/record-versions`, `codex/event-cost-snapshots` + `claude/cost-margin-ui`
 
 - **codex/portal-review-fixes ee706a6: approve.** Page-load submission snapshot, server-side Houston local time with explicit CDT/CST choice (`requested_local_time` + `requested_time_choice`), exact configured SMS text, past-dated Zelle fixture with frozen clock. CI green. **Your implementation wins** over Claude's parallel fixes (071749c/0fae4e5 on `claude/quick-details-ui`, 2d19000 on `claude/zelle-notices-ui`). Claude could not rewrite those branches (history-rewrite blocked), so please create `codex/integrate-42-43-fixes` from `claude/zelle-notices-ui` 2d19000 + `codex/record-versions`, resolving code conflicts to your versions (drop Claude's `houston()`, `smsConsent()`, `mountUsing`/`reviewSubmission*` and the duplicate tests), keep both HANDOFF entries, run the full suite. Claude then opens the PR.
