@@ -4,6 +4,8 @@ namespace Tests\Feature;
 use App\Filament\Resources\Events\Pages\EventContract;
 use App\Filament\Resources\Variants\Pages\{CreateServiceVariant, EditServiceVariant};
 use App\Models\{ClientDetailsReview, Contract, Event, PortalGrant, PriceVersion, ServiceVariant, User};
+use App\Services\Portal\{PortalContext, SubmitClientDetails};
+use Illuminate\Http\Request;
 use App\Services\Booking\QuickBook;
 use App\Services\Documents\{ActivateTemplateVersion, CreateTemplateVersion};
 use Filament\Facades\Filament;
@@ -105,5 +107,70 @@ class QuickDetailsFlowTest extends TestCase
         Livewire::test(EventContract::class, ['record' => $event->id])->callAction('revoke', [], ['id' => $grant->id])->assertNotified('Enlace anulado');
         $this->assertNotNull($grant->fresh()->revoked_at);
         $this->postJson('/portal/api/session', ['token' => $token])->assertForbidden();
+    }
+
+    /** Client session + PortalContext for direct service calls (as Codex's review probe). */
+    private function clientContext(object $qb): PortalContext
+    {
+        auth()->logout(); $this->app['auth']->forgetGuards();
+        $this->postJson('/portal/api/session', ['token' => substr($qb->portal_url, strpos($qb->portal_url, 'token=') + 6)])->assertOk();
+        $request = Request::create('/portal/api/details', 'POST');
+        $request->setLaravelSession($this->app['session.store']); $request->setUserResolver(fn () => null);
+
+        return PortalContext::fromRequest($request);
+    }
+
+    private function details(Event $event, int $revision, string $venue, string $zip = '00001'): array
+    {
+        return ['expected_event_version' => $event->version, 'expected_revision' => $revision, 'first_name' => 'Fixture', 'last_name' => 'Client', 'phone' => '555-0100',
+            'email' => 'fixture@example.test', 'billing_address' => 'Fixture billing', 'event_address' => $venue, 'event_postal_code' => $zip, 'start_time_confirmed' => true];
+    }
+
+    // Codex review R1: the approval is pinned to the submission shown in the modal; a newer one needs a refresh and a new review.
+    public function test_approval_never_switches_to_a_submission_sent_after_the_modal_opened(): void
+    {
+        $qb = $this->quickBook(); $event = Event::sole(); $client = $this->clientContext($qb);
+        app(SubmitClientDetails::class)->execute($client, $this->details($event, 0, 'Fixture venue ONE'), (string) Str::uuid());
+        $this->actingAs($this->owner);
+        $page = Livewire::test(EventContract::class, ['record' => $event->id])->assertSee('Fixture venue ONE')->mountAction('approve')
+            ->assertSee('Fixture venue ONE')
+            ->setActionData(['travel_fee_confirmed' => true, 'setup_minutes' => 15, 'breakdown_minutes' => 15, 'review_note' => 'Owner reviewed only fixture venue ONE.']);
+        app(SubmitClientDetails::class)->execute($client, $this->details($event, 1, 'Fixture venue TWO far away', '99999'), (string) Str::uuid());
+        $page->callMountedAction()->assertNotified('La clienta mandó datos nuevos');
+        $this->assertSame(0, ClientDetailsReview::count());
+        $this->assertNotSame('Fixture venue TWO far away', $event->fresh()->address);
+
+        // After a refresh the owner sees and approves version 2 explicitly.
+        Livewire::test(EventContract::class, ['record' => $event->id])->mountAction('approve')->assertSee('versión 2')->assertSee('Fixture venue TWO far away')
+            ->setActionData(['travel_fee_confirmed' => true, 'setup_minutes' => 15, 'breakdown_minutes' => 15, 'review_note' => 'Revisé la dirección nueva y el ZIP.'])
+            ->callMountedAction()->assertNotified('Datos aprobados');
+        $this->assertSame(2, \App\Models\ClientDetailsSubmission::findOrFail(ClientDetailsReview::sole()->submission_id)->revision);
+    }
+
+    // Codex review C1: the checkbox shows exactly the configured wording of the version it sends.
+    public function test_sms_checkbox_shows_the_exact_approved_wording(): void
+    {
+        $qb = $this->quickBook(); $this->clientContext($qb);
+        $this->get('/portal')->assertDontSee('name="sms_consent"', false);
+        config(['waoo.sms_consent_versions' => ['fixture-v2-es' => 'Texto aprobado de prueba para SMS.', 'fixture-v2-en' => 'Fixture approved SMS wording.']]);
+        $this->get('/portal?lang=es')->assertSee('data-version="fixture-v2-es"', false)->assertSee('Texto aprobado de prueba para SMS.');
+        $this->get('/portal?lang=en')->assertSee('data-version="fixture-v2-en"', false)->assertSee('Fixture approved SMS wording.');
+    }
+
+    // Codex review R2: the requested time is resolved in Houston (DST-aware), never with the original start's offset.
+    public function test_requested_time_is_resolved_in_houston_across_dst(): void
+    {
+        $qb = $this->quickBook(); $this->clientContext($qb);
+        $html = $this->get('/portal')->assertOk()->assertDontSee('data-event-offset', false)->getContent();
+        preg_match('/function houston\(date, time\) \{.*?\n  \}/s', $html, $m);
+        $this->assertNotEmpty($m, 'houston() helper not found in the portal page');
+        $node = trim((string) shell_exec('command -v node'));
+        if ($node === '') {
+            $this->markTestIncomplete('node not available to execute the portal helper');
+        }
+        $js = $m[0].";\nconsole.log(JSON.stringify([houston('2026-11-01','03:30'), houston('2026-11-01','01:30'), houston('2026-03-08','02:30'), houston('2026-03-08','03:30'), houston('2026-12-19','16:00')]));";
+        $file = tempnam(sys_get_temp_dir(), 'houston').'.cjs'; file_put_contents($file, $js);
+        $out = json_decode((string) shell_exec(escapeshellarg($node).' '.escapeshellarg($file)), true); @unlink($file);
+        $this->assertSame(['2026-11-01T03:30:00-06:00', 'ambiguous', null, '2026-03-08T03:30:00-05:00', '2026-12-19T16:00:00-06:00'], $out);
     }
 }
