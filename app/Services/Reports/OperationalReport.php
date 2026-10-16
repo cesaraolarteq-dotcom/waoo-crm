@@ -4,10 +4,8 @@ namespace App\Services\Reports;
 
 use App\Models\{Event, EventCostSnapshot, FinancialRevision, LedgerEntry, User};
 use App\Services\Finance\Sandbox;
-use App\Services\Records\{RecordActor, RecordInput};
-use Carbon\CarbonImmutable;
+use App\Services\Records\RecordActor;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 
 final class OperationalReport
 {
@@ -15,17 +13,11 @@ final class OperationalReport
     {
         Sandbox::require();
         RecordActor::authorize($actor);
-        $data = RecordInput::validate($input, [
-            'period' => ['required', Rule::in(['week', 'month'])],
-            'anchor' => 'required|date_format:Y-m-d|after_or_equal:2000-01-01|before:2101-01-01',
-        ]);
-        $anchor = CarbonImmutable::createFromFormat('!Y-m-d', $data['anchor'], 'America/Chicago');
-        $start = $data['period'] === 'week' ? $anchor->startOfWeek(1) : $anchor->startOfMonth();
-        $end = $data['period'] === 'week' ? $start->addWeek() : $start->addMonth();
-        $from = $start->utc()->format('Y-m-d H:i:s');
-        $until = $end->utc()->format('Y-m-d H:i:s');
+        $period = ReportPeriod::resolve($input);
+        $from = $period['starts_at_utc'];
+        $until = $period['ends_before_utc'];
 
-        return DB::transaction(function () use ($data, $start, $end, $from, $until) {
+        return DB::transaction(function () use ($period, $from, $until) {
             // Parent-row locks are shared with financial/cost/receipt writers. Fixed order avoids
             // different report requests taking these locks in opposite orders. No ledger writes.
             $events = Event::where('starts_at', '>=', $from)->where('starts_at', '<', $until)
@@ -75,7 +67,7 @@ final class OperationalReport
                 }
             }
             return ['environment' => 'test', 'timezone' => 'America/Chicago', 'generated_at' => now()->toIso8601String(),
-                'period' => ['kind' => $data['period'], 'starts_on' => $start->toDateString(), 'ends_before' => $end->toDateString(), 'starts_at_utc' => $from, 'ends_before_utc' => $until],
+                'period' => $period,
                 'cash' => ['basis' => 'ledger.received_at', 'received_cents' => $received, 'refunded_cents' => $refunded, 'net_received_cents' => $received - $refunded], 'scheduled' => $scheduled];
         }, 3);
     }

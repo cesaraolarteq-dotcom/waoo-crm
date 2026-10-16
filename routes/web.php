@@ -10,6 +10,7 @@ Route::redirect('/', '/admin')->name('home');
 Route::middleware(['auth', 'password.confirm'])->get('/seguridad/dos-pasos', TwoFactorEnrollmentController::class)->name('security.two-factor');
 Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'));
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->prefix('admin/api')->group(function () {
+    Route::get('/reports/bookings', \App\Http\Controllers\Admin\BookingSalesReportController::class);
     Route::get('/reports/weekend', \App\Http\Controllers\Admin\WeekendForecastController::class);
     Route::get('/reports/operations', \App\Http\Controllers\Admin\OperationalReportController::class);
     Route::get('/session', fn(Request $r) => ['user' => $r->user()->only(['id', 'name', 'email', 'role']), 'timezone' => 'America/Chicago']);
