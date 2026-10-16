@@ -2,6 +2,11 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-16 · Claude Code · `claude/admin-screens` — event file (read-only)
+
+- `/admin/eventos/{id}` for drafts **and** booked events (list rows, calendar cards and Inicio items now open it): separate pills Recursos / Pago / Contrato / Tipo, place & logistics (address "pendiente (la clienta la completa)", travel fee "Pendiente" when null), services with price snapshot, duration, chosen characters and "Incompleto" badge, assigned units, money (sandbox), and the **history** from `audit_entries` for the event, its financial revisions and ledger entries (Spanish action labels, actor, Houston time). Actions only link to the screens that change things (edit draft, Dinero, Apartar recursos); booked events stay non-editable (403 on /editar).
+- Tests: `tests/Feature/EventFileTest.php` (3). Local SQLite: all pass except the 6 MariaDB-only.
+
 ## 2026-10-16 · Claude Code · `claude/admin-screens` — Inicio "Necesita tu atención"
 
 - Dashboard computes only real signals (read-only, each item links to where it is solved; a card disappears when empty; "Todo al día" otherwise): drafts starting in < 7 days without staff, travel fee pending, incomplete drafts (no service / `operational_ready` false), and in the finance sandbox: balances due within 7 days (FinanceSummary) and open `payment_exceptions`; units in maintenance. Plus "Esta semana" (today → Sunday, Houston) with status pills and a calendar link.

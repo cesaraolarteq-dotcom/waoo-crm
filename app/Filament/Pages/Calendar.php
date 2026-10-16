@@ -122,7 +122,7 @@ class Calendar extends Page
                 'zip' => $e->postal_code,
                 'travel' => Labels::money($e->travel_fee_cents),
                 'warnings' => $gaps[$e->id] ?? [],
-                'url' => \App\Filament\Resources\Events\EventResource::canEdit($e) ? \App\Filament\Resources\Events\EventResource::getUrl('edit', ['record' => $e]) : null,
+                'url' => \App\Filament\Resources\Events\EventResource::getUrl('view', ['record' => $e]),
             ];
         })->groupBy('day');
     }

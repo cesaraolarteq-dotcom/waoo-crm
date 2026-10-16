@@ -84,6 +84,6 @@ class Dashboard extends BaseDashboard
 
     private function eventUrl(Event $e): ?string
     {
-        return EventResource::canEdit($e) ? EventResource::getUrl('edit', ['record' => $e]) : EventResource::getUrl('index');
+        return EventResource::getUrl('view', ['record' => $e]);
     }
 }

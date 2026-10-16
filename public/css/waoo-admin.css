@@ -114,3 +114,8 @@ a.wcal-name:hover{text-decoration:underline}
 .wdash-row:first-child{border-top:0}.wdash-row b{display:block}.wdash-row small{opacity:.75}
 .wdash-ok{margin:0;font-weight:700;color:#11734A}
 .wdash-row>:last-child{flex:none}
+/* Event file */
+.wfile{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.wfile-dl{margin:0;display:grid;gap:8px}.wfile-dl div{display:grid;grid-template-columns:160px minmax(0,1fr);gap:8px}
+.wfile-dl dt{opacity:.7;font-size:.85rem}.wfile-dl dd{margin:0;font-weight:600}.wfile-dl dd.ok{color:#11734A}
+@media (max-width:900px){.wfile{grid-template-columns:1fr}.wfile-dl div{grid-template-columns:120px minmax(0,1fr)}}
