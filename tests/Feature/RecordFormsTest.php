@@ -11,11 +11,6 @@ use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Tests\TestCase;
 
-if (! class_exists(\App\Exceptions\RecordWriteRejected::class)) {
-    // Stand-in until Codex delivers the real exception (docs/RECORD-SERVICES.md). Only getMessage() is used by the forms.
-    eval('namespace App\Exceptions; class RecordWriteRejected extends \RuntimeException {}');
-}
-
 // Forms against the agreed service contract, using recording fakes. Proves: forms write only through
 // App\Services\Records\*, pass the signed-in actor and the displayed version, and surface service errors.
 class RecordFormsTest extends TestCase
@@ -45,8 +40,9 @@ class RecordFormsTest extends TestCase
         return $fake;
     }
 
-    public function test_forms_stay_closed_until_the_audited_services_exist(): void
+    public function test_forms_can_be_forced_closed_even_when_the_audited_services_exist(): void
     {
+        config(['waoo.record_forms' => false]);
         foreach (['clientas', 'personajes', 'staff-y-trajes', 'catalogo'] as $slug) {
             $this->get("/admin/{$slug}")->assertOk()->assertDontSee("/admin/{$slug}/nuevo");
             $this->get("/admin/{$slug}/nuevo")->assertForbidden();
@@ -81,7 +77,7 @@ class RecordFormsTest extends TestCase
 
     public function test_business_rejection_is_shown_and_nothing_is_reported_as_saved(): void
     {
-        $this->fake('SaveCustomer', fn () => throw new \App\Exceptions\RecordWriteRejected('La ficha cambió. Actualiza antes de guardar.'));
+        $this->fake('SaveCustomer', fn () => throw new \App\Exceptions\RecordWriteRejected(409, 'La ficha cambió. Actualiza antes de guardar.'));
         Livewire::test(CreateCustomer::class)
             ->fillForm(['name' => 'Fictitious Client', 'locale' => 'es'])
             ->call('create')->assertNotified('No se guardó')->assertNoRedirect();

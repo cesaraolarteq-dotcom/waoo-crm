@@ -46,8 +46,9 @@ class AdminScreensTest extends TestCase
         $this->get('/admin/eventos')->assertOk()->assertSee('Fictitious Party')->assertSee('Pendiente')->assertSee('Falta transporte')->assertSee('Borrador')->assertDontSee('$0');
     }
 
-    public function test_lists_are_read_only_for_now(): void
+    public function test_lists_stay_read_only_when_record_forms_are_disabled(): void
     {
+        config(['waoo.record_forms' => false]);
         $this->actingAs($this->owner());
         foreach (['clientas', 'catalogo', 'staff-y-trajes', 'personajes'] as $slug) {
             $this->get("/admin/{$slug}")->assertOk();
