@@ -43,7 +43,7 @@
 @elseif ($vm['step'] === 'details')
 <form class="p-card p-form" method="POST" action="{{ $vm['details']['action'] ?? $vm['actions']['details'] }}" id="details-form"
   data-event-version="{{ $vm['details']['expected_event_version'] ?? '' }}" data-revision="{{ $vm['details']['expected_revision'] ?? '' }}"
-  data-event-date="{{ $vm['details']['event_date'] ?? '' }}" data-event-offset="{{ $vm['details']['event_offset'] ?? '' }}" data-lang="{{ $vm['lang'] }}">
+  data-lang="{{ $vm['lang'] }}">
   @csrf
   <h2>{{ $t('details_title') }}</h2>
   <p class="p-hint">{{ $t('details_hint') }}</p>
@@ -66,6 +66,7 @@
     <label class="p-check"><input type="radio" name="start_time_confirmed" value="1" checked> {{ $t('start_yes') }}</label>
     <label class="p-check"><input type="radio" name="start_time_confirmed" value="0"> {{ $t('start_no') }}</label>
     <label class="p-field p-sub-field"><span>{{ $t('requested_time') }}</span><input type="time" name="requested_time"><small>{{ $t('requested_hint') }}</small></label>
+    <label class="p-field p-sub-field"><span>{{ $t('requested_occurrence') }}</span><select name="requested_time_choice"><option value="">{{ $t('requested_occurrence_default') }}</option><option value="cdt">{{ $t('requested_occurrence_first') }}</option><option value="cst">{{ $t('requested_occurrence_second') }}</option></select><small>{{ $t('requested_occurrence_hint') }}</small></label>
   </fieldset>
   <div class="p-row">
     <label class="p-field"><span>{{ $t('child_name') }} <em>({{ $t('optional') }})</em></span><input name="child_name"></label>
@@ -73,8 +74,8 @@
   </div>
   <label class="p-field"><span>{{ $t('theme') }} <em>({{ $t('optional') }})</em></span><input name="theme"></label>
   <label class="p-field"><span>{{ $t('notes') }} <em>({{ $t('optional') }})</em></span><textarea name="notes" rows="3"></textarea></label>
-  @if (! empty($vm['details']['sms_versions']) || ($vm['preview'] ?? false))
-  <label class="p-check p-small"><input type="checkbox" name="sms_consent" value="1" data-version="{{ $vm['details']['sms_versions'][0] ?? '' }}"> {{ $t('sms') }}</label>
+  @if (! empty($vm['details']['sms_consent']))
+  <label class="p-check p-small"><input type="checkbox" name="sms_consent" value="1" data-version="{{ $vm['details']['sms_consent']['version'] }}"> {{ $vm['details']['sms_consent']['text'] }}</label>
   @endif
   <p class="p-test" id="details-error" role="alert" hidden></p>
   <button class="p-btn" type="submit">{{ $t('save_details') }}</button>
@@ -158,9 +159,10 @@
       billing_address: f.billing_address.value.trim(), event_address: same ? f.billing_address.value.trim() : f.event_address.value.trim(),
       locale: f.dataset.lang, start_time_confirmed: confirmed};
     if (f.event_postal_code.value.trim()) body.event_postal_code = f.event_postal_code.value.trim();
-    // The requested time is only a request for the owner; it is sent with the party day's own offset.
+    // Send a Houston wall time; the server resolves the event date and DST occurrence.
     if (!confirmed) { if (!f.requested_time.value) { err.textContent = @js($t('requested_missing')); err.hidden = false; b.disabled = false; return; }
-      body.requested_start_at = f.dataset.eventDate + 'T' + f.requested_time.value + ':00' + f.dataset.eventOffset; }
+      body.requested_local_time = f.requested_time.value;
+      if (f.requested_time_choice.value) body.requested_time_choice = f.requested_time_choice.value; }
     ['child_name', 'theme', 'notes'].forEach(function (k) { if (f[k] && f[k].value.trim()) body[k] = f[k].value.trim(); });
     if (f.child_age && f.child_age.value.trim()) body.child_age = Number(f.child_age.value);
     if (f.sms_consent && f.sms_consent.checked) { body.sms_consent = true; body.sms_consent_version = f.sms_consent.dataset.version; }

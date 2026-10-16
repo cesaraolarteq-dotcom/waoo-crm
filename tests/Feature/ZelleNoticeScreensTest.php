@@ -27,6 +27,7 @@ class ZelleNoticeScreensTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->travelTo(\Carbon\CarbonImmutable::parse('2026-10-16T00:01:00-05:00'));
         config(['waoo.sandbox_finance' => true, 'waoo.sandbox_documents' => true, 'app.url' => 'http://localhost']);
         Queue::fake();
         $this->owner = User::factory()->create(['role' => 'owner_admin', 'active' => true, 'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'), 'two_factor_confirmed_at' => now()]);
@@ -85,7 +86,7 @@ class ZelleNoticeScreensTest extends TestCase
 
         // Verify with what really arrived (different from the claim) and a review note.
         Livewire::test(EventMoney::class, ['record' => $this->event->id])
-            ->callAction('verifyNotice', ['amount' => '60', 'reference' => 'BANK-REF-77', 'date' => now('America/Chicago')->format('Y-m-d'), 'time' => '00:05',
+            ->callAction('verifyNotice', ['amount' => '60', 'reference' => 'BANK-REF-77', 'date' => now('America/Chicago')->subDay()->format('Y-m-d'), 'time' => '00:05',
                 'verified' => true, 'review_note' => 'Llegaron 60 en el banco, faltan 2.50.'], ['id' => $id])
             ->assertHasNoActionErrors()->assertNotified('Aviso verificado y pago registrado');
         $this->assertSame('verified', ZelleNoticeReview::sole()->decision);

@@ -36,11 +36,11 @@ class QuickDetailsFlowTest extends TestCase
         app(ActivateTemplateVersion::class)->execute($this->owner, $t->id, ['expected_source_sha256' => $t->source_sha256, 'approval_note' => 'Fixture approval only']);
     }
 
-    private function quickBook(): object
+    private function quickBook(?string $start = null): object
     {
         return app(QuickBook::class)->execute($this->owner, [
             'new_customer' => ['name' => 'Ana Ficticia', 'phone' => '555-0100', 'email' => null, 'locale' => 'es'],
-            'title' => 'Cumpleaños de prueba', 'event_type' => 'birthday', 'starts_at' => '2026-12-19T15:00:00-06:00', 'ends_at' => '2026-12-19T16:00:00-06:00',
+            'title' => 'Cumpleaños de prueba', 'event_type' => 'birthday', 'starts_at' => $start ?? '2026-12-19T15:00:00-06:00', 'ends_at' => $start ? \Carbon\CarbonImmutable::parse($start)->addHour()->toIso8601String() : '2026-12-19T16:00:00-06:00',
             'timezone' => 'America/Chicago', 'postal_code' => '00001', 'travel_fee_cents' => 2500, 'services' => [['price_version_id' => $this->price->id]],
             'deposit' => ['method' => 'zelle', 'amount_cents' => 6250, 'reference' => 'ZELLE-QD-1', 'received_at' => now()->subHour()->toIso8601String(), 'verified_received' => true],
         ], (string) Str::uuid());
@@ -106,4 +106,128 @@ class QuickDetailsFlowTest extends TestCase
         $this->assertNotNull($grant->fresh()->revoked_at);
         $this->postJson('/portal/api/session', ['token' => $token])->assertForbidden();
     }
+    private function clientFixture(?string $start = null): array
+    {
+        $qb = $this->quickBook($start);
+        auth()->logout();
+        $this->app['auth']->forgetGuards();
+        $this->postJson('/portal/api/session', ['token' => substr($qb->portal_url, strpos($qb->portal_url, 'token=') + 6)])->assertOk();
+        $request = \Illuminate\Http\Request::create('/portal/api/details', 'POST');
+        $request->setLaravelSession($this->app['session.store']);
+        $request->setUserResolver(fn () => null);
+        $client = \App\Services\Portal\PortalContext::fromRequest($request);
+        $event = Event::sole();
+        return [$client, $event, ['expected_event_version' => $event->version, 'expected_revision' => 0,
+            'first_name' => 'Fixture', 'last_name' => 'Client', 'phone' => '555-0100', 'email' => 'fixture@example.test',
+            'billing_address' => 'Fixture billing', 'event_address' => 'Fixture venue ONE', 'event_postal_code' => '00001', 'start_time_confirmed' => true]];
+    }
+
+    public function test_approval_pins_the_displayed_submission_across_a_client_resubmission(): void
+    {
+        [$client, $event, $input] = $this->clientFixture();
+        $service = app(\App\Services\Portal\SubmitClientDetails::class);
+        $first = $service->execute($client, $input, (string) Str::uuid());
+        $this->actingAs($this->owner);
+        $page = Livewire::test(EventContract::class, ['record' => $event->id])->assertSee('Fixture venue ONE')->mountAction('approve')
+            ->setActionData(['travel_fee_confirmed' => true, 'setup_minutes' => 15, 'breakdown_minutes' => 15, 'review_note' => 'Owner reviewed only fixture venue ONE.']);
+        $second = $service->execute($client, [...$input, 'expected_revision' => 1, 'event_address' => 'Fixture venue TWO far away', 'event_postal_code' => '99999'], (string) Str::uuid());
+        $before = $event->fresh()->getAttributes();
+        $financeCount = \App\Models\FinancialRevision::count();
+        $auditCount = \Illuminate\Support\Facades\DB::table('audit_entries')->count();
+        $page->callMountedAction();
+        $this->assertSame(0, ClientDetailsReview::count());
+        $this->assertSame($before, $event->fresh()->getAttributes());
+        $this->assertSame($financeCount, \App\Models\FinancialRevision::count());
+        $this->assertSame($auditCount, \Illuminate\Support\Facades\DB::table('audit_entries')->count());
+        $page->assertSet('displayedSubmission.id', $first->id)->assertSee('Fixture venue ONE')->assertDontSee('Fixture venue TWO far away');
+        // Reload shows the new immutable submission; it can be explicitly reviewed and approved normally.
+        Livewire::test(EventContract::class, ['record' => $event->id])->assertSee('Fixture venue TWO far away')
+            ->callAction('approve', ['travel_fee_confirmed' => true, 'setup_minutes' => 15, 'breakdown_minutes' => 15, 'review_note' => 'Owner now reviewed fixture venue TWO.'])
+            ->assertNotified('Datos aprobados');
+        $this->assertSame($second->id, ClientDetailsReview::sole()->submission_id);
+        $this->assertSame('Fixture venue TWO far away', $event->fresh()->address);
+    }
+
+    public function test_approval_snapshot_is_not_replaced_when_the_modal_opens(): void
+    {
+        [$client, $event, $input] = $this->clientFixture();
+        $service = app(\App\Services\Portal\SubmitClientDetails::class);
+        $first = $service->execute($client, $input, (string) Str::uuid());
+        $this->actingAs($this->owner);
+        $page = Livewire::test(EventContract::class, ['record' => $event->id])->assertSee('Fixture venue ONE');
+        $service->execute($client, [...$input, 'expected_revision' => 1, 'event_address' => 'Fixture venue TWO'], (string) Str::uuid());
+        $page->callAction('approve', ['travel_fee_confirmed' => true, 'setup_minutes' => 15, 'breakdown_minutes' => 15, 'review_note' => 'Owner reviewed only fixture venue ONE.'])
+            ->assertSet('displayedSubmission.id', $first->id)->assertSee('Fixture venue ONE');
+        $this->assertSame(0, ClientDetailsReview::count());
+    }
+
+    public function test_browser_cannot_replace_the_locked_approval_snapshot(): void
+    {
+        [$client, $event, $input] = $this->clientFixture();
+        app(\App\Services\Portal\SubmitClientDetails::class)->execute($client, $input, (string) Str::uuid());
+        $this->actingAs($this->owner);
+        $this->expectException(\Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException::class);
+        Livewire::test(EventContract::class, ['record' => $event->id])->set('displayedSubmission.id', 999999);
+    }
+
+    public function test_requested_local_time_uses_its_own_offset_on_the_event_date(): void
+    {
+        [$client, $event, $input] = $this->clientFixture('2026-11-01T00:30:00-05:00');
+        $key = (string) Str::uuid();
+        $input = [...$input, 'start_time_confirmed' => false, 'requested_local_time' => '03:30'];
+        $response = $this->postJson('/portal/api/details', $input, ['Idempotency-Key' => $key])->assertCreated();
+        $response->assertJsonPath('submission.data.requested_start_at', '2026-11-01T03:30:00-06:00');
+        $this->postJson('/portal/api/details', $input, ['Idempotency-Key' => $key])->assertCreated()
+            ->assertJsonPath('submission.id', $response->json('submission.id'));
+        $this->assertSame('00:30', $event->fresh()->starts_at->setTimezone('America/Chicago')->format('H:i'));
+        $this->assertArrayNotHasKey('requested_local_time', $response->json('submission.data'));
+        $this->get('/portal')->assertSee('Recibimos tus datos');
+    }
+
+    public function test_repeated_requested_hour_requires_a_choice_and_preserves_both_occurrences(): void
+    {
+        [$client, $event, $input] = $this->clientFixture('2026-11-01T00:30:00-05:00');
+        $input = [...$input, 'start_time_confirmed' => false, 'requested_local_time' => '01:30'];
+        $this->postJson('/portal/api/details', $input, ['Idempotency-Key' => (string) Str::uuid()])->assertUnprocessable()->assertJsonValidationErrors('requested_time_choice');
+        foreach (['cdt' => '-05:00', 'cst' => '-06:00'] as $choice => $offset) {
+            $this->postJson('/portal/api/details', [...$input, 'expected_revision' => $choice === 'cdt' ? 0 : 1, 'requested_time_choice' => $choice], ['Idempotency-Key' => (string) Str::uuid()])
+                ->assertCreated()->assertJsonPath('submission.data.requested_start_at', '2026-11-01T01:30:00'.$offset);
+        }
+    }
+
+    public function test_nonexistent_requested_hour_is_refused_and_spring_offset_is_resolved(): void
+    {
+        [$client, $event, $input] = $this->clientFixture('2027-03-14T00:30:00-06:00');
+        $input = [...$input, 'start_time_confirmed' => false];
+        $this->postJson('/portal/api/details', [...$input, 'requested_local_time' => '02:30'], ['Idempotency-Key' => (string) Str::uuid()])
+            ->assertUnprocessable()->assertJsonValidationErrors('requested_local_time');
+        $this->assertSame(0, \App\Models\ClientDetailsSubmission::count());
+        $this->postJson('/portal/api/details', [...$input, 'requested_local_time' => '03:30'], ['Idempotency-Key' => (string) Str::uuid()])
+            ->assertCreated()->assertJsonPath('submission.data.requested_start_at', '2027-03-14T03:30:00-05:00');
+    }
+
+    public function test_requested_time_rejects_missing_mixed_and_malformed_inputs(): void
+    {
+        [$client, $event, $input] = $this->clientFixture();
+        $input = [...$input, 'start_time_confirmed' => false];
+        foreach ([[], ['requested_local_time' => '25:00'], ['requested_local_time' => '16:00', 'requested_start_at' => '2026-12-19T16:00:00-06:00']] as $extra) {
+            $this->postJson('/portal/api/details', [...$input, ...$extra], ['Idempotency-Key' => (string) Str::uuid()])->assertUnprocessable();
+        }
+        $this->assertSame(0, \App\Models\ClientDetailsSubmission::count());
+    }
+
+    public function test_portal_shows_and_records_the_exact_configured_sms_wording(): void
+    {
+        [$client, $event, $input] = $this->clientFixture();
+        $text = 'Fixture approved SMS wording <script>never execute</script> & no translation.';
+        config(['waoo.sms_consent_versions' => ['fixture-approved-v2' => $text]]);
+        foreach (['es', 'en'] as $lang) {
+            $this->get('/portal?lang='.$lang)->assertOk()->assertSee($text)->assertDontSee('<script>never execute</script>', false)
+                ->assertSee('data-version="fixture-approved-v2"', false);
+        }
+        $this->postJson('/portal/api/details', [...$input, 'sms_consent' => true, 'sms_consent_version' => 'fixture-approved-v2'], ['Idempotency-Key' => (string) Str::uuid()])
+            ->assertCreated()->assertJsonPath('submission.data.sms_consent_record.text', $text)
+            ->assertJsonPath('submission.data.sms_consent_record.sha256', hash('sha256', $text));
+    }
+
 }

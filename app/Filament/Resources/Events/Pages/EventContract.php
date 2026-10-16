@@ -38,6 +38,7 @@ class EventContract extends Page
     #[Locked] public string $issueKey = '';
     #[Locked] public string $approveKey = '';
     #[Locked] public ?int $displayedEventVersion = null;
+    #[Locked] public ?array $displayedSubmission = null;
 
     /** Shown once after creating a link; never stored. */
     public ?array $newLink = null;
@@ -47,9 +48,16 @@ class EventContract extends Page
         abort_unless(DocumentsGate::enabled(), 403);
         $this->record = $this->resolveRecord($record);
         $this->displayedEventVersion = $this->record->version;
+        $this->captureSubmission();
         $this->createKey = (string) Str::uuid();
         $this->issueKey = (string) Str::uuid();
         $this->approveKey = (string) Str::uuid();
+    }
+
+    private function captureSubmission(): void
+    {
+        $submission = ClientDetailsSubmission::where('event_id', $this->record->getKey())->orderByDesc('revision')->first();
+        $this->displayedSubmission = $submission ? $submission->only(['id', 'event_version', 'revision']) : null;
     }
 
     public function getSubheading(): ?string
@@ -71,7 +79,8 @@ class EventContract extends Page
         ]);
         $quick = QuickBookingRecord::where('event_id', $e->id)->exists();
         $detailsState = $quick || ClientDetailsSubmission::where('event_id', $e->id)->exists() ? ClientDetailsState::forEvent($e) : null;
-        $submission = ClientDetailsSubmission::where('event_id', $e->id)->orderByDesc('revision')->first();
+        $submission = $this->displayedSubmission
+            ? ClientDetailsSubmission::where('event_id', $e->id)->find($this->displayedSubmission['id']) : null;
         $review = $submission ? ClientDetailsReview::where('submission_id', $submission->id)->first() : null;
         $blockers = [];
         if ($detailsState === 'waiting_details') $blockers[] = 'Esperando que la clienta llene sus datos con su enlace.';
@@ -185,13 +194,14 @@ class EventContract extends Page
             ])))
             ->modalSubmitActionLabel('Aprobar')
             ->action(function (array $data, Action $action) {
-                $sub = $this->state()['submission'];
-                $input = ['expected_event_version' => $sub->event_version, 'expected_revision' => $sub->revision, 'travel_fee_confirmed' => (bool) ($data['travel_fee_confirmed'] ?? false),
+                $snapshot = $this->displayedSubmission;
+                abort_unless($snapshot, 409);
+                $input = ['expected_event_version' => $snapshot['event_version'], 'expected_revision' => $snapshot['revision'], 'travel_fee_confirmed' => (bool) ($data['travel_fee_confirmed'] ?? false),
                     'review_note' => trim((string) $data['review_note'])];
                 foreach (['requested_start_resolution', 'setup_minutes', 'breakdown_minutes'] as $k) {
                     if (filled($data[$k] ?? null)) $input[$k] = in_array($k, ['setup_minutes', 'breakdown_minutes'], true) ? (int) $data[$k] : $data[$k];
                 }
-                $this->run($action, fn () => app(ApproveClientDetails::class)->execute(Filament::auth()->user(), $this->record->getKey(), $sub->id, $input, $this->approveKey), 'Datos aprobados');
+                $this->run($action, fn () => app(ApproveClientDetails::class)->execute(Filament::auth()->user(), $this->record->getKey(), $snapshot['id'], $input, $this->approveKey), 'Datos aprobados');
                 $this->approveKey = (string) Str::uuid();
                 $this->record->refresh();
                 $this->displayedEventVersion = $this->record->version;
