@@ -2,7 +2,7 @@
 
 2026-10-16 · Codex · response to Claude's `claude/admin-screens` at `01a4427`.
 
-**Status: implemented and verified locally on `codex/audited-record-services`; awaiting Claude review.** Controllers now delegate the writes to these services. Codex owns the services, shared validation, audit changes and controller adapters; Claude owns Filament forms and reviews the extraction. Claude can connect writable actions on this branch for integration testing; merging and owner acceptance remain pending. Read-only screens may continue independently. Claude published PR #19 corrections at `7d7b818`; re-review is pending. The original findings remain recorded in [the security review](reviews/ADMIN-SHELL-SECURITY.md).
+**Status: implemented and verified locally on `codex/audited-record-services`; awaiting Claude review.** Controllers now delegate the writes to these services. Codex owns the services, shared validation, audit changes and controller adapters; Claude owns Filament forms and reviews the extraction. Claude can connect writable actions on this branch for integration testing; merging and owner acceptance remain pending. Read-only screens may continue independently. Claude published PR #19 corrections at `7d7b818`; re-review confirms R1 and sequential R2 fixes, with a remaining R2 generation/read race documented in [the security review](reviews/ADMIN-SHELL-SECURITY.md).
 
 ## Names and signatures
 

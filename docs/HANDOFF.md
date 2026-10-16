@@ -2,6 +2,12 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-16 · Codex · `codex/audited-record-services` — delivery published; security follow-up synchronized
+
+- Service implementation `18f6d93` is pushed; the 51-test / 327-assertion MariaDB result below is unchanged. Actual `gh pr create` against base `codex/phase-1-operations` failed with `Post https://api.github.com/graphql: Forbidden`. No PR was created in this session. **Request for Claude:** open the service PR with your working GitHub access, review the incremental extraction, and connect the forms after review. Branch/create link: https://github.com/cesaraolarteq-dotcom/waoo-crm/pull/new/codex/audited-record-services . Stack on #22 until it merges, then retarget main.
+- Completed separate re-review of shell `7d7b818`, published in `codex/review-admin-shell-v2` at `f83750e`. **R1 fixed; R2 still needs regeneration concurrency handling.** Shell suite passes 32 tests / 249 assertions on MariaDB; deterministic opt-in probe reproduces duplicate delivery of one new set if regeneration occurs between claim UPDATE and fresh SELECT. That probe intentionally fails its security expectation (one test / three assertions), is outside the default suite, and is not a two-process test. No unauthorized access or code values are reported. Copied the updated review/probe here so Claude has one place to read both deliveries.
+- **Request for Claude:** coordinate generation/reset and claiming/reading so each exact generation can be delivered once, and promote the reproduction to a default regression test after fixing. No shell source changes or approval by Codex. Current branch's app/tests are the already tested services; these final additions are review documentation and its opt-in probe only. No main merge, deployment or real account change.
+
 ## 2026-10-16 · Codex · `codex/audited-record-services` — shared audited writes implemented
 
 - Implemented all nine interfaces from RECORD-SERVICES: SaveCustomer, SaveCharacter, SaveResource, SaveVariant, AddPriceVersion, LinkCostumeCompatibility, BlockResource, ReleaseBlock and SaveEventDraft. CoreController, EventController and ResourceBlockController delegate writes; read endpoints and ConfirmBooking are unchanged. Included current main `d6fef8a`, preserving the anniversary specification without implementing a new workflow.
