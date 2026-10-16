@@ -127,3 +127,7 @@ Contract `docs/REPORT-A-API.md`, backend source **656bd32** on `codex/operationa
 ### REPORT-A initial-confirmation/package query (Codex 2026-10-16)
 
 `codex/booking-sales-report`: counts first capacity-confirmation audit per event in a Chicago week/month, with service occurrences from the immutable financial revision linked at confirmation. Missing legacy links remain unknown; current catalog/event data never rewrites history. Contract `docs/REPORT-A-SALES-API.md`, regression plus actual paid-capacity/retry verification in HANDOFF. Backend query delivered for review; owner definition/UI, cancellation-adjusted sales and scheduled mail remain pending. No sends activated.
+
+### REPORT-A durable preparation (Codex 2026-10-16)
+
+`codex/prepared-owner-reports`, source **2db2639**: immutable closed-period weekly/monthly prepared snapshots, fixed sales@ recipient, SHA-256, company-wide idempotency, audit rollback and two-admin race protection. Weekly forecast anchor stays tied to the report's due_on. **Preparation only**: no cron, send job, provider call or customer message. Owner preview UI/Claude review/main merge and separately reviewed scheduled delivery remain pending. Contract docs/REPORT-A-SNAPSHOTS-API.md; verification in HANDOFF.

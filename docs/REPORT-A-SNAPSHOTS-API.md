@@ -4,7 +4,7 @@ Contract before implementation. Owner-only finance sandbox. No job dispatch, sch
 
 `App\Services\Reports\PrepareOwnerReport::execute(User $actor, array $input): OwnerReportSnapshot`
 
-`POST /admin/api/reports/snapshots` `{kind: weekly|monthly, as_of: YYYY-MM-DD}`; `GET /admin/api/reports/snapshots/{id}` reads the frozen result. Both admins share reports. Exact real date, 2000–2100; previous period must also be supported by ReportPeriod (a date in early January2000 may have no supported prior period).
+`POST /admin/api/reports/snapshots` `{kind: weekly|monthly, as_of: YYYY-MM-DD}`; `GET /admin/api/reports/snapshots/{id}` reads the frozen result. Both admins share reports. Exact real date, 2000–2100, no later than today in Chicago; previous period must also be supported by ReportPeriod (a date in early January2000 may have no supported prior period).
 
 Weekly = the last completed Monday–Monday week before the week containing as_of. Monthly = last completed calendar month before the month containing as_of. America/Chicago, exclusive UTC end; no partial week/month. due_on = that completed period's end date (Monday or month1), **a label, not an activated delivery time**. Multiple as_of dates in the same week/month select the same canonical report. Weekly upcoming_weekend uses due_on as anchor, not the later preparation date, so retries cannot silently switch weekends. Monthly upcoming_weekend=null.
 

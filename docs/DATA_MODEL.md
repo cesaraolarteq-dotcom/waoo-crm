@@ -57,3 +57,7 @@ La desvinculación de compatibilidad elimina solo el pivote actual, conserva la 
 ### COST-A implemented foundation (2026-10-16)
 
 `event_cost_snapshots` / EventCostSnapshot implements only the owner-entered CostSnapshot portion: immutable estimate/actual histories, explicit unknown cents, owner coverage/note, source financial/event versions, audit and per-kind optimistic concurrency. No RateVersion/TimeEntry/StaffCompensation/TransportCost engine is implied. EventMarginSummary is owner-only and suppresses stale/incomplete margin, with cash and revenue labelled separately. API: COST-A-API.md; source08c284a.
+
+### Prepared owner reports (REPORT-A, sandbox)
+
+`owner_report_snapshots` stores immutable prepared weekly/monthly report JSON text and its SHA-256, schema version, explicit Chicago date bounds, fixed owner recipient and preparing admin. Unique environment/kind/period start deduplicates both admins and retries. Payload bytes remain exact across MariaDB/SQLite. Audit failure rolls back preparation; no delivery state, scheduler or mail dispatch exists in this slice. Snapshot data is owner-only; never project it to portal/staff. See docs/REPORT-A-SNAPSHOTS-API.md.
