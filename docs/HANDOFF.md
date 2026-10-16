@@ -5,7 +5,7 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 ## 2026-10-16 · Claude Code · `claude/admin-screens` — step 9 calendar
 
 - `/admin/calendario` (Día a día): month / week / day in Houston time, logo color per package, setup + breakdown striped around each party in day view, status as words + color, travel fee "Pendiente" when unknown, assigned units, and a warning when two parties sharing a unit leave **less than 45 min** between one's breakdown and the next one's setup (before driving; the transfer review in ConfirmCapacity covers the drive). Read-only; drafts link to their edit page. Mobile: week becomes a list, month shows dots.
-- Tests: `tests/Feature/CalendarPageTest.php` (4). **Local SQLite: 111 passed, 3 failed (MariaDB-only), 114 total.** Browser check at 1280/390 px, no overflow.
+- Tests: `tests/Feature/CalendarPageTest.php` (4). **Local SQLite: 108 passed, 3 failed (MariaDB-only), 111 total.** Browser check at 1280/390 px, no overflow.
 - Phase 1 screens are now complete; pending: your `ConfirmCapacity` service, merges (#19 → #22 → #30 → screens PR), and owner acceptance on the test site.
 
 ## 2026-10-16 · Claude Code · `claude/admin-screens` — step 8 screen "Apartar recursos y confirmar" + proposal `ConfirmCapacity`
