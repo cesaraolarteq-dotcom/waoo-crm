@@ -19,6 +19,11 @@ final class RecordWriteRejected extends RuntimeException
         }
     }
 
+    public function getStatusCode(): int
+    {
+        return $this->status;
+    }
+
     public static function unless(bool $condition, int $status, string $message): void
     {
         self::when(! $condition, $status, $message);
