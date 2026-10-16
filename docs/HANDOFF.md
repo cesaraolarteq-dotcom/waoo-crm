@@ -3,6 +3,13 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-15 (America/Chicago) · Codex · `codex/phase-1-operations` — #22 includes main #36 progress update
+
+- Main `081c4ae` merged without conflicts. #36 changes only manifest/prototype evidence for Claude's quick-booking and portal previews; those UI/backend files are not added to #22. Fortify/admin API route resolution remains the verified 7f0d38d integration (**68 tests / 445 assertions**); application source is unchanged since that run. Manifest JSON parses; diff checks pass. Ready for César's #22 → #30 merge order, subject to required CI/review. No self-merge or deployment.
+- Parallel deliveries are separate: reviewed money UI corrections on `codex/review-admin-money` (3279591, now integrated by Claude at a9f2996); private DOC/portal-signature + test Checkout backend on `codex/sandbox-doc-pay` 0cd7f5a (146/1123). These do not ride in #22.
+
+
+
 ## 2026-10-15 (America/Chicago) · Codex · `codex/phase-1-operations` — follow-up main #35 sync for #22
 
 - Merged newest main `fe905e3` (#35 progress evidence). Previous #22 update `7f0d38d` already resolved the Fortify/admin API routes and passed **68 MariaDB tests / 445 assertions**. This follow-up changes progress documentation only; keeps Claude's new money UI/review evidence and the backend-review notes, then regenerates the prototype from the manifest. No application changes since that verified integration; no redundant suite rerun claimed.
