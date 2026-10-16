@@ -238,7 +238,10 @@ class EventResource extends Resource
             if (array_key_exists($id, self::configurablePrices([$id]))) {
                 // Explicit list for configurable services (even empty), so the backend never keeps stale choices silently.
                 $service['characters'] = collect($data['characters'] ?? [])->filter(fn ($c) => (int) ($c['price_version_id'] ?? 0) === (int) $id)
-                    ->map(fn ($c) => ['character_id' => (int) $c['character_id'], 'quantity' => (int) $c['quantity']])->values()->all();
+                    ->map(fn ($c) => ['character_id' => (int) $c['character_id'], 'quantity' => (int) $c['quantity'],
+                        // OUTFIT-01: optional exact costume version and private owner note, kept on every explicit row.
+                        'outfit' => filled($c['outfit'] ?? null) ? (string) $c['outfit'] : null,
+                        'note' => filled($c['note'] ?? null) ? trim((string) $c['note']) : null])->values()->all();
             }
 
             return $service;
@@ -260,7 +263,8 @@ class EventResource extends Resource
             'price_version_ids' => $event->services()->pluck('price_version_id')->all(),
             'event_type' => $event->event_type,
             'characters' => $event->services()->with('characters')->get()->flatMap(fn ($s) => $s->characters->map(fn ($c) => [
-                'price_version_id' => (string) $s->price_version_id, 'character_id' => (string) $c->character_id, 'quantity' => $c->quantity]))->values()->all(),
+                'price_version_id' => (string) $s->price_version_id, 'character_id' => (string) $c->character_id, 'quantity' => $c->quantity,
+                'outfit' => $c->outfit ?? null, 'note' => $c->note ?? null]))->values()->all(),
         ];
     }
 

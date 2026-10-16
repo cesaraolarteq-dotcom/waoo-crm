@@ -120,8 +120,8 @@ class QuickBookingPageTest extends TestCase
         $this->assertSame(1, LedgerEntry::count());
     }
 
-    // Owner request: find a registered client by name/phone/email, verify her details, and correct them in the same step.
-    public function test_search_select_verify_and_update_an_existing_client(): void
+    // Owner request: find a registered client by name/phone/email, verify her details; corrections travel INSIDE the QuickBook call.
+    public function test_search_select_verify_sends_customer_update_in_the_same_call(): void
     {
         $this->bind();
         $claudia = Customer::create(['name' => 'Claudia Martínez', 'phone' => '(346) 555-0199', 'email' => 'old@example.test', 'locale' => 'es']);
@@ -132,11 +132,14 @@ class QuickBookingPageTest extends TestCase
 
         $page = Livewire::test(QuickBooking::class)->assertSchemaStateSet(['customer_mode' => 'existing'])
             ->fillForm(['customer_id' => $claudia->id])
-            ->assertSchemaStateSet(['c_name' => 'Claudia Martínez', 'c_phone' => '(346) 555-0199', 'c_email' => 'old@example.test', 'c_locale' => 'es']);
+            ->assertSchemaStateSet(['c_name' => 'Claudia Martínez', 'c_phone' => '(346) 555-0199', 'c_email' => 'old@example.test', 'c_locale' => 'es'])
+            ->assertSet('displayedCustomerId', $claudia->id)->assertSet('displayedCustomerVersion', 1);
         $page->fillForm($this->form(['customer_mode' => 'existing', 'customer_id' => $claudia->id, 'c_email' => 'new@example.test']))->call('save')->assertHasNoFormErrors();
-        $this->assertSame('new@example.test', $claudia->fresh()->email);
-        $this->assertSame(2, $claudia->fresh()->version);
-        $this->assertSame($claudia->id, $this->calls[0][1]['customer_id']);
+        $sent = $this->calls[0][1];
+        $this->assertSame($claudia->id, $sent['customer_id']);
+        $this->assertSame(['expected_version' => 1, 'name' => 'Claudia Martínez', 'email' => 'new@example.test', 'phone' => '(346) 555-0199', 'locale' => 'es'], $sent['customer_update']);
+        $this->assertSame('old@example.test', $claudia->fresh()->email, 'The page never saves the contact on its own.');
+        $this->assertSame(1, $claudia->fresh()->version);
     }
 
     public function test_unchanged_client_is_not_rewritten_and_new_client_duplicate_is_flagged(): void
@@ -145,7 +148,8 @@ class QuickBookingPageTest extends TestCase
         $claudia = Customer::create(['name' => 'Claudia Martínez', 'phone' => '346-555-0199', 'locale' => 'es']);
         Livewire::test(QuickBooking::class)->fillForm(['customer_id' => $claudia->id])
             ->fillForm($this->form(['customer_mode' => 'existing', 'customer_id' => $claudia->id]))->call('save')->assertHasNoFormErrors();
-        $this->assertSame(1, $claudia->fresh()->version, 'Same details: no customer write.');
+        $this->assertArrayNotHasKey('customer_update', $this->calls[0][1], 'Same details: no contact correction is sent.');
+        $this->assertSame(1, $claudia->fresh()->version);
         $this->assertStringContainsString('Ya tienes registrada a Claudia Martínez', QuickBooking::duplicateHint('Otra persona', '(346) 555 0199'));
         $this->assertStringContainsString('Ya tienes registrada', QuickBooking::duplicateHint('claudia martínez', null));
         $this->assertNull(QuickBooking::duplicateHint('Nadie', '111'));
