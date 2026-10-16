@@ -52,3 +52,8 @@ Esta lista asigna las ampliaciones; no declara esos tickets implementados ni hab
 Implementado mediante migración aditiva `2026_10_16_140000_add_event_character_selections`: events.event_type nullable, service_variants.character_quantity (0 por defecto) / character_options JSON, event_service_characters (event_service_id, character_id, quantity, character_name_snapshot, único servicio/personaje). Las variantes existentes conservan sus recetas fijas; no se presume un catálogo configurable sin datos del dueño. Los personajes elegidos compilan requisitos efectivos dentro del snapshot por servicio; las selecciones incompletas no permiten confirmar capacidad. Personajes sin traje usan la receta de personal declarada, sin asignarles traje por inferencia. Cantidad de personajes elegidos y unidades físicas disponibles son medidas distintas.
 
 La desvinculación de compatibilidad elimina solo el pivote actual, conserva la evidencia en audit_entries y rechaza una pareja con asignación conjunta futura/en curso bajo los mismos candados que la reserva. No hay registro de pareja/intérprete exacta en resource_reservations, por lo que esta protección es conservadora. La baja no invalida un compromiso ni borra historia de eventos.
+
+
+### COST-A implemented foundation (2026-10-16)
+
+`event_cost_snapshots` / EventCostSnapshot implements only the owner-entered CostSnapshot portion: immutable estimate/actual histories, explicit unknown cents, owner coverage/note, source financial/event versions, audit and per-kind optimistic concurrency. No RateVersion/TimeEntry/StaffCompensation/TransportCost engine is implied. EventMarginSummary is owner-only and suppresses stale/incomplete margin, with cash and revenue labelled separately. API: COST-A-API.md; source08c284a.
