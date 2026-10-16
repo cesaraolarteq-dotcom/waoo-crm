@@ -32,6 +32,7 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::confirmPasswordView(fn () => view('auth.confirm-password'));
         RateLimiter::for('login', fn (Request $request) => Limit::perMinute(5)->by(mb_strtolower((string) $request->email).'|'.$request->ip()));
         RateLimiter::for('two-factor', fn (Request $request) => Limit::perMinute(5)->by($request->session()->get('login.id').'|'.$request->ip()));
+        RateLimiter::for('admin-read', fn (Request $request) => Limit::perMinute(60)->by($request->user()?->id ?? $request->ip()));
         RateLimiter::for('admin-write', fn (Request $request) => Limit::perMinute(60)->by($request->user()?->id ?? $request->ip()));
     }
 }
