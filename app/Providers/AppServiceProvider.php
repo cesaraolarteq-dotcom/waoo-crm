@@ -11,7 +11,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(\App\Services\Reports\Outbox\PreviewTransport::class, \App\Services\Reports\Outbox\DatabasePreviewTransport::class);
     }
 
     /**

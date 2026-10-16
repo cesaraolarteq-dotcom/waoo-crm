@@ -15,6 +15,10 @@ final class OwnerReportSnapshotController extends Controller
     {
         return response()->json($service->execute($request->user(), $request->all()), 201)->header('Cache-Control', 'no-store, private');
     }
+    public function preview(Request $request, OwnerReportSnapshot $snapshot, \App\Services\Reports\Outbox\EnqueueReportPreview $service)
+    {
+        return response()->json($service->execute($request->user(), $snapshot->id), 201)->header('Cache-Control', 'no-store, private');
+    }
     public function show(Request $request, OwnerReportSnapshot $snapshot)
     {
         Sandbox::require();
