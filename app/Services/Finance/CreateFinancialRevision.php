@@ -19,6 +19,7 @@ final class CreateFinancialRevision
         return DB::transaction(function () use ($actor, $eventId, $data, $scope, $hash, $key) {
             $event = Event::whereKey($eventId)->lockForUpdate()->firstOrFail();
             if ($saved = MutationKey::find($scope, $key, $hash)) return FinancialRevision::findOrFail($saved->result_id);
+            RecordWriteRejected::when(\Illuminate\Support\Facades\Schema::hasTable('contracts') && \App\Models\Contract::where('event_id', $eventId)->where('state', 'signed')->exists(), 409, 'Un contrato firmado requiere el flujo de cambios financieros.');
             RecordWriteRejected::unless($event->version === $data['expected_version'], 409, 'El evento cambió. Actualiza antes de fijar sus importes.');
             // Changing an already committed agreement belongs to CHANGE-A, not this initial snapshot service.
             RecordWriteRejected::unless($event->status === 'draft', 409, 'Un evento reservado requiere el flujo de cambios financieros.');

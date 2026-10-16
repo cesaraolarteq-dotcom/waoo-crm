@@ -72,6 +72,6 @@ class ContractScreensTest extends TestCase
             ->assertSee('/portal#token=', false)->assertSee('solo se muestra esta vez')->assertSee('¡Hola Ana!');
         $this->assertSame(1, PortalGrant::count());
         $page->call('hideLink')->assertDontSee('/portal#token=', false);
-        $this->get("/admin/eventos/{$this->event->id}/contrato")->assertOk()->assertDontSee('#token=', false)->assertSee('Todavía no lo abre');
+        $this->get("/admin/eventos/{$this->event->id}/contrato")->assertOk()->assertDontSee('#token=', false)->assertSee('Todavía no abre el contrato');
     }
 }

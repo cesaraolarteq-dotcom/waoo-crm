@@ -49,15 +49,33 @@ final class PortalPageController extends Controller
             : null;
         $signed = $contract?->state === 'signed';
         $balance = $f['balance_cents'];
-        $step = ! $contract ? 'waiting' : (! $signed ? 'contract' : (($balance ?? 0) > 0 ? 'pay' : 'done'));
+        // Quick bookings: the client first sends her details; the owner approves them before a contract is issued.
+        $canDetails = in_array('details.submit', $grant->scopes, true);
+        $details = $canDetails ? \App\Services\Booking\ClientDetailsState::portal($event) : null;
+        $step = match (true) {
+            $canDetails && ! $signed && ! $details['submission'] => 'details',
+            $canDetails && ! $signed && ! $details['reviewed'] => 'details_sent',
+            ! $contract => 'waiting',
+            ! $signed => 'contract',
+            ($balance ?? 0) > 0 => 'pay',
+            default => 'done',
+        };
         $tz = 'America/Chicago';
         $start = CarbonImmutable::instance($event->starts_at)->setTimezone($tz)->locale($lang);
         $fmt = fn ($c) => $c === null ? '—' : '$'.number_format($c / 100, $c % 100 ? 2 : 0);
         $services = collect($revision?->lines_snapshot ?? [])->map(fn ($l) => ($l['name'] ?? '').(isset($l['duration_minutes']) ? ' · '.($l['duration_minutes'] >= 60 ? rtrim(rtrim(number_format($l['duration_minutes'] / 60, 1), '0'), '.').' h' : $l['duration_minutes'].' min') : ''))->implode(' + ');
         $due = $revision ? CarbonImmutable::instance($revision->balance_due_at)->setTimezone($tz)->locale($lang) : null;
 
+        $approvedSms = collect((array) config('waoo.sms_consent_versions', []))->filter(fn ($text) => is_string($text) && $text !== '');
+        $smsVersion = $approvedSms->keys()->first();
+
         return [
-            'lang' => $lang, 'step' => $step, 'steps' => ['contract', 'pay'], 'test_mode' => true,
+            'lang' => $lang, 'step' => $step, 'steps' => $canDetails ? ['details', 'contract', 'pay'] : ['contract', 'pay'], 'test_mode' => true,
+            'details' => $details ? ['expected_event_version' => $details['expected_event_version'], 'expected_revision' => $details['expected_revision'],
+                'action' => url('/portal/api/details'),
+                'sms_consent' => $smsVersion !== null ? ['version' => $smsVersion, 'text' => $approvedSms[$smsVersion]] : null] : null,
+            'prefill' => $details && $details['submission'] ? $details['submission']['data']
+                : ['phone' => $event->customer?->phone, 'email' => $event->customer?->email, 'event_address' => $event->address, 'event_postal_code' => $event->postal_code],
             // The contracting party's own first name when a contract exists; otherwise the owner's record.
             'first_name' => trim((string) ($contract?->commercial_snapshot['client']['first_name'] ?? explode(' ', (string) $event->customer?->name)[0] ?? '')),
             'notice' => $request->session()->get('portal_notice'),
@@ -76,6 +94,13 @@ final class PortalPageController extends Controller
             'consent' => ['version' => InHouseSignatureProvider::CONSENT_VERSION, 'text' => InHouseSignatureProvider::CONSENT],
             'pay' => ['revision_id' => $revision?->id, 'can_checkout' => in_array('checkout.create', $grant->scopes, true) && ($balance ?? 0) > 0],
             'zelle_memo' => 'WP-'.$event->id,
+            // Her own notices, through Codex's client projection only (never the owner's review note, bank reference or ledger).
+            'zelle' => ['can_notify' => in_array('checkout.create', $grant->scopes, true) && ($balance ?? 0) > 0, 'action' => url('/portal/api/zelle-notices'),
+                'amount' => $balance ? number_format($balance / 100, 2, '.', '') : '',
+                'notices' => \App\Models\ZelleNotice::where('event_id', $event->id)->where('customer_id', $client->customerId)->with('review.ledgerEntry')->orderByDesc('id')->limit(10)->get()
+                    ->map(fn ($n) => \App\Services\Portal\ZelleNoticeView::client($n))
+                    ->map(fn ($n) => ['state' => $n['state'], 'amount' => $fmt($n['amount_cents']), 'verified' => $n['verified_amount_cents'] !== null ? $fmt($n['verified_amount_cents']) : null,
+                        'when' => CarbonImmutable::instance($n['submitted_at'])->setTimezone($tz)->locale($lang)->{$lang === 'es' ? 'translatedFormat' : 'format'}($lang === 'es' ? 'D j M, g:i a' : 'D, M j, g:i a')])->all()],
             'actions' => ['details' => '#', 'sign' => $contract ? url('/portal/api/contracts/'.$contract->id.'/sign') : '#', 'checkout' => url('/portal/api/checkout-intents')],
         ];
     }

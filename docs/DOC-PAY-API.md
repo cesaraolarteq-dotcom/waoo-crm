@@ -24,6 +24,10 @@ Required configuration (names only): `WAOO_SANDBOX_FINANCE=true` and `WAOO_SANDB
 
 Workers must use the existing durable database queue/Hostinger bounded cron worker. Signature capture and verified webhook intake commit their durable record before dispatch-after-commit; final PDF generation and provider reconciliation retry separately. Configure HTTPS, `APP_URL` and `SESSION_SECURE_COOKIE=true` before portal staging acceptance. Personal links and return URLs use trusted APP_URL, never the browser Host header. Tests intentionally use fake queues and explicitly execute the relevant jobs; deployment/cron operation was not repeated.
 
+## Follow-up: BOOK-QUICK backend delivered
+
+The owner half, scoped client details, explicit owner approval/revision bridge and attention queue are now implemented in `codex/quick-booking-core`; exact payloads/services are in [BOOK-QUICK-API.md](BOOK-QUICK-API.md). Both displayed event version and submission revision are required. The new details.submit scope is opt-in for existing grants; default DOC/PAY four scopes are preserved. Sign now rechecks current event/financial eligibility; generic draft/financial writes after signing are refused, while later verified balance receipts remain possible. Owner HTML and actual Livewire updates also receive no-store/private headers for one-time links. Integrated verification with main #30 and time-independent UI fixtures: **205 tests / 1745 assertions**. No live operation or automatic contract/message workflow is implied.
+
 ## Screen boundaries and shared conventions
 
 - Owner admin session + confirmed 2FA + CSRF for `/admin/api/*`. Use existing error shapes: 401/403 authorization, 404 inaccessible object, 409 stale version/idempotency conflict, 422 field/business errors, 429 throttling. Integers in USD cents; no floating-point money inputs. Dates are ISO 8601 with explicit offset; store UTC, display America/Chicago.
@@ -184,3 +188,8 @@ The owner authorizes crossing phase boundaries where dependencies permit (chat, 
 ## Approved DOC/PAY follow-ups (2026-10-16)
 
 See [DOC-PAY-FOLLOWUPS.md](DOC-PAY-FOLLOWUPS.md): closed three-field legal merge allowlist, audited nullable catalog long_description copied into new financial snapshots, friendly English PDF labels, and explicit-owner `Portal\RevokePortalGrant::execute(User, int): PortalGrant`. Existing revoke endpoint/response is unchanged. QuickBook and SubmitClientDetails are delivered separately per [BOOK-QUICK-API.md](BOOK-QUICK-API.md); real details/review screen wiring remains pending. Legal text edits/activation still need owner approval.
+
+
+## PAY-02 client Zelle notice extension (2026-10-16)
+
+[ZELLE-NOTICES-API.md](ZELLE-NOTICES-API.md) defines the delivered scoped claim/list APIs and explicit-owner verification/rejection service. A notice is not a receipt; balances use only the ledger. Both sandbox flags and existing scopes/CSRF/2FA remain. Claude owns the new notice/review screen wiring.

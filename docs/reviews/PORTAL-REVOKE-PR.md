@@ -1,0 +1,3 @@
+Portal\RevokePortalGrant::execute(User, int): PortalGrant reauthorizes the owner and document sandbox, locks the same grant row as signature acceptance, and revokes with atomic audit. Repeating preserves the original timestamp and audit. Existing controller response is unchanged and cached sessions fail on their next request.
+
+Third small follow-up, stacked on codex/pdf-package-details. Tests cover stale inactive owner, audit rollback, disabled sandbox, existing-session/sign denial and real two-process revoke/sign contention. Claude can wire Anular enlace to this service. QuickBook/SubmitClientDetails already exist on codex/quick-booking-core; integrated branch codex/doc-pay-followups is available for step 4. No live operations.

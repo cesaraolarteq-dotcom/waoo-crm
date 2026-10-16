@@ -63,12 +63,45 @@
         </x-filament::section>
     </div>
 
+    @if ($s['submission'] || $s['detailsState'])
+        <x-filament::section>
+            <x-slot name="heading">Datos de la clienta</x-slot>
+            <x-slot name="afterHeader">
+                <x-filament::badge :color="match ($s['detailsState']) { 'review_details' => 'warning', 'waiting_details' => 'gray', default => 'success' }">
+                    {{ ['waiting_details' => 'Esperando sus datos', 'review_details' => 'Por revisar', 'ready_to_issue' => 'Aprobados', 'waiting_signature' => 'Aprobados', 'signed' => 'Aprobados · firmado'][$s['detailsState']] ?? '' }}
+                </x-filament::badge>
+            </x-slot>
+            @if ($s['submission'])
+                @php
+                    $d = $s['submission']->data;
+                    $tz = 'America/Chicago';
+                    $orig = \App\Filament\Support\Labels::when($s['e']->starts_at);
+                    $req = ! ($d['start_time_confirmed'] ?? true) && ! empty($d['requested_start_at']) ? \App\Filament\Support\Labels::when(\Carbon\CarbonImmutable::parse($d['requested_start_at'])) : null;
+                @endphp
+                <dl class="wfile-dl">
+                    <div><dt>Nombre</dt><dd>{{ $d['first_name'] ?? '' }} {{ $d['last_name'] ?? '' }}</dd></div>
+                    <div><dt>Contacto</dt><dd>{{ $d['phone'] ?? '' }} · {{ $d['email'] ?? '' }}</dd></div>
+                    <div><dt>Su dirección</dt><dd>{{ $d['billing_address'] ?? '' }}</dd></div>
+                    <div><dt>Dirección de la fiesta</dt><dd>{{ $d['event_address'] ?? '' }}@if (! empty($d['event_postal_code'])) · ZIP {{ $d['event_postal_code'] }}@endif</dd></div>
+                    <div><dt>Hora</dt><dd>@if ($req)<span class="wwarn-inline">Pidió otra hora: {{ $req }}</span> (actual: {{ $orig }})@else Confirmó {{ $orig }}@endif</dd></div>
+                    @if (! empty($d['child_name']) || ! empty($d['child_age']))<div><dt>Cumpleañero/a</dt><dd>{{ $d['child_name'] ?? '' }}@if (! empty($d['child_age'])) · cumple {{ $d['child_age'] }}@endif</dd></div>@endif
+                    @if (! empty($d['theme']))<div><dt>Tema</dt><dd>{{ $d['theme'] }}</dd></div>@endif
+                    @if (! empty($d['notes']))<div><dt>Notas</dt><dd>{{ $d['notes'] }}</dd></div>@endif
+                    <div><dt>Envío</dt><dd>versión {{ $s['submission']->revision }} · {{ \App\Filament\Support\Labels::when(\Carbon\CarbonImmutable::parse($s['submission']->submitted_at)) }}</dd></div>
+                </dl>
+                @if ($s['detailsState'] === 'review_details')<p class="wmoney-p" style="margin-top:8px">Revisa la dirección y el ZIP contra el costo de transporte que cotizaste y toca “Aprobar datos de la clienta”.</p>@endif
+            @else
+                <p class="wmoney-p">Todavía no los envía. Con su enlace llena nombre, contacto, dirección y confirma la hora.</p>
+            @endif
+        </x-filament::section>
+    @endif
+
     <x-filament::section>
         <x-slot name="heading">Enlaces creados</x-slot>
         @forelse ($s['grants'] as $g)
-            <div class="wmoney-row"><div><b>{{ $g->state }}</b> · vence {{ $g->expires }}</div><small>{{ $g->opened ? 'La clienta ya abrió el contrato' : 'Todavía no lo abre' }}</small></div>
+            <div class="wmoney-row"><div><b>{{ $g->state }}</b> · vence {{ $g->expires }}@if ($g->details) · incluye sus datos @endif @if ($g->active) · {{ ($this->revokeAction)(['id' => $g->id]) }}@endif</div><small>{{ $g->opened ? 'La clienta ya abrió el contrato' : 'Todavía no abre el contrato' }}</small></div>
         @empty
-            <p class="wmoney-p">Ninguno todavía. Se crea después de emitir el contrato.</p>
+            <p class="wmoney-p">Ninguno todavía. En una reserva rápida se crea al guardarla; si no, después de emitir el contrato.</p>
         @endforelse
     </x-filament::section>
 </x-filament-panels::page>

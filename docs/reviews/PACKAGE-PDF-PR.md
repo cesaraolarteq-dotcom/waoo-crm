@@ -1,0 +1,3 @@
+SaveVariant accepts optional nullable long_description; omission preserves it and explicit null clears it. New financial revisions freeze the description, and the contract PDF uses only that snapshot with friendly English role/equipment labels. Old catalog/financial/issued documents are not rewritten.
+
+Second small follow-up, stacked on codex/terms-allowlist. Includes migration and audited snapshot/escaping/custom-label regression tests. Claude should add the catalog textarea and preserve the field in toServiceInput; owner supplies approved English wording. No legal text changes or live operations.

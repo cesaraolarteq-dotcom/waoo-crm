@@ -24,7 +24,20 @@ class ViewEvent extends Page
     public const ACTIONS = [
         'event.created' => 'Creó el borrador', 'event.draft_updated' => 'Editó el borrador', 'booking.capacity_reserved' => 'Apartó staff y trajes',
         'finance.revision_created' => 'Fijó los montos', 'payment.zelle_received' => 'Registró un Zelle', 'payment.capacity_linked' => 'Vinculó el pago con los recursos',
+        'portal.zelle_notice_submitted' => 'La clienta avisó que envió un Zelle', 'payment.zelle_notice_reviewed' => 'Revisó un aviso de Zelle de la clienta',
     ];
+
+    /** Zelle notice reviews say which way they went; amounts stay on the Dinero screen. */
+    public static function historyLabel(object $a): string
+    {
+        $label = self::ACTIONS[$a->action] ?? $a->action;
+        if ($a->action === 'payment.zelle_notice_reviewed') {
+            $decision = json_decode((string) $a->after, true)['decision'] ?? null;
+            $label .= match ($decision) { 'verified' => ': verificado', 'rejected' => ': rechazado', default => '' };
+        }
+
+        return $label;
+    }
 
     public function mount(int|string $record): void
     {
@@ -67,13 +80,13 @@ class ViewEvent extends Page
             ->map(fn ($u) => (object) ['name' => $u->name, 'kind' => Labels::label(Labels::KIND, $u->kind)]);
         $history = DB::table('audit_entries')->where(function ($q) use ($e) {
             $q->where(fn ($w) => $w->where('subject_type', 'events')->where('subject_id', $e->id));
-            foreach (['financial_revisions', 'ledger_entries'] as $table) {
+            foreach (['financial_revisions', 'ledger_entries', 'zelle_notices', 'zelle_notice_reviews'] as $table) {
                 if (DB::getSchemaBuilder()->hasTable($table)) {
                     $q->orWhere(fn ($w) => $w->where('subject_type', $table)->whereIn('subject_id', DB::table($table)->where('event_id', $e->id)->pluck('id')));
                 }
             }
         })->orderByDesc('id')->limit(50)->get()->map(fn ($a) => (object) [
-            'what' => self::ACTIONS[$a->action] ?? $a->action, 'who' => User::whereKey($a->actor_id)->value('name') ?? 'Sistema',
+            'what' => self::historyLabel($a), 'who' => User::whereKey($a->actor_id)->value('name') ?? (str_starts_with($a->action, 'portal.') ? 'La clienta' : 'Sistema'),
             'when' => Labels::when(\Carbon\CarbonImmutable::parse($a->created_at)),
         ]);
 

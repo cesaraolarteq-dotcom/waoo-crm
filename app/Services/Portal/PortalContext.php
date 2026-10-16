@@ -8,14 +8,14 @@ use Illuminate\Http\Request;
 
 final readonly class PortalContext
 {
-    private function __construct(public int $grantId, public int $eventId, public int $customerId) {}
+    private function __construct(public int $grantId, public int $eventId, public int $customerId, public ?string $ip, public string $userAgent, public bool $adminAuthenticated) {}
     public static function fromRequest(Request $request): self
     {
         Sandbox::require('sandbox_documents');
         self::requireTransport($request);
         $row = PortalGrant::find($request->session()->get('portal_grant_id'));
         if (! $row || $row->revoked_at || ! $row->expires_at->isFuture()) throw new AuthorizationException('Este acceso venció o fue revocado.');
-        return new self($row->id, $row->event_id, $row->customer_id);
+        return new self($row->id, $row->event_id, $row->customer_id, $request->ip(), mb_substr((string) $request->userAgent(), 0, 2000), $request->user() !== null);
     }
     public function authorize(int $eventId, string $scope, bool $lock = false): PortalGrant
     {

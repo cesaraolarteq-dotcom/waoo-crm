@@ -1,0 +1,3 @@
+Terms can now substitute only client.first_name, client.last_name and payments.balance_amount, using escaped frozen issue data. Original terms/hash remain unchanged. Raw fields, sections, partials, delimiter changes and unknown variables are rejected. No legal text is rewritten or activated.
+
+First of three small follow-ups requested by Claude. API contract precedes source. Tests cover actual issued artifacts/hash and injection/invalid expressions. All three increments plus the existing QuickBook backend pass the integrated MariaDB suite (216 tests / 1885 assertions); final standalone stack verification and next UI tasks are in HANDOFF on codex/doc-pay-followups. Sandbox only, no live operations.

@@ -6,8 +6,8 @@ use App\Exceptions\RecordWriteRejected;
 use App\Filament\Resources\Events\EventResource;
 use App\Filament\Resources\Variants\Pages\EditServiceVariant;
 use App\Filament\Support\{ChicagoTime, FinanceGate, Labels};
-use App\Models\{Event, LedgerEntry};
-use App\Services\Finance\{CreateFinancialRevision, FinanceSummary, RecordZellePayment};
+use App\Models\{Event, LedgerEntry, ZelleNotice};
+use App\Services\Finance\{CreateFinancialRevision, FinanceSummary, RecordZellePayment, ReviewZelleNotice};
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\{Checkbox, DatePicker, Radio, Textarea, TextInput, TimePicker};
@@ -43,6 +43,9 @@ class EventMoney extends Page
     #[Locked]
     public string $zelleKey = '';
 
+    #[Locked]
+    public string $noticeKey = '';
+
     public function mount(int|string $record): void
     {
         abort_unless(FinanceGate::enabled(), 403);
@@ -50,6 +53,7 @@ class EventMoney extends Page
         $this->displayedVersion = $this->record->version;
         $this->revisionKey = (string) Str::uuid();
         $this->zelleKey = (string) Str::uuid();
+        $this->noticeKey = (string) Str::uuid();
     }
 
     public function getSubheading(): ?string
@@ -69,6 +73,93 @@ class EventMoney extends Page
             ->map(fn ($e) => (object) ['when' => Labels::when($e->received_at), 'amount' => Labels::money($e->amount_cents), 'method' => $e->method === 'zelle' ? 'Zelle' : 'Tarjeta',
                 'reference' => $e->external_reference, 'kind' => $e->kind === 'receipt' ? 'Recibido' : ucfirst($e->kind), 'note' => $e->note,
                 'by' => \App\Models\User::whereKey($e->verified_by)->value('name')]);
+    }
+
+    /** Client Zelle notices for this event (claims only). The review shows what the owner decided and what really arrived. */
+    public function notices()
+    {
+        if (! \App\Filament\Support\DocumentsGate::enabled()) {
+            return collect();
+        }
+        $current = $this->summary()['financial_revision']?->id;
+
+        return ZelleNotice::query()->where('event_id', $this->record->getKey())->with('review.ledgerEntry')->orderByDesc('id')->get()
+            ->map(fn ($n) => (object) ['id' => $n->id, 'amount' => Labels::money($n->amount_cents), 'when' => Labels::when($n->submitted_at),
+                'sent' => $n->sent_at ? Labels::when($n->sent_at) : null, 'reference' => $n->reference, 'payer' => $n->payer_name, 'note' => $n->note,
+                'old_amounts' => $current !== null && $n->financial_revision_id !== $current,
+                'state' => $n->review?->decision ?? 'pending', 'review_note' => $n->review?->review_note,
+                'real' => $n->review?->ledgerEntry ? Labels::money($n->review->ledgerEntry->amount_cents) : null,
+                'reviewed' => $n->review ? Labels::when($n->review->reviewed_at).' · '.(\App\Models\User::whereKey($n->review->reviewed_by)->value('name') ?? '') : null]);
+    }
+
+    /** Only a still-pending notice of this same event; anything else hides the buttons. */
+    private function notice(array $arguments): ?ZelleNotice
+    {
+        return ZelleNotice::query()->where('event_id', $this->record->getKey())->whereDoesntHave('review')->find((int) ($arguments['id'] ?? 0));
+    }
+
+    private static function claim(?ZelleNotice $n): string
+    {
+        if (! $n) {
+            return '';
+        }
+
+        return 'La clienta dice que envió '.Labels::money($n->amount_cents).($n->reference ? ' (ref. '.$n->reference.')' : '').($n->payer_name ? ' a nombre de '.$n->payer_name : '').'. ';
+    }
+
+    public function verifyNoticeAction(): Action
+    {
+        return Action::make('verifyNotice')->label('Verificar')->icon('heroicon-o-check-circle')->color('success')->size('sm')
+            ->visible(fn (array $arguments) => \App\Filament\Support\DocumentsGate::enabled() && $this->notice($arguments) !== null)
+            ->modalHeading('Verificar el aviso de Zelle')
+            ->modalDescription(fn (array $arguments) => self::claim($this->notice($arguments)).'Escribe lo que de verdad llegó a tu banco, aunque sea distinto. Eso es lo único que cuenta como pago.')
+            ->schema([
+                Grid::make(2)->schema([
+                    TextInput::make('amount')->label('Monto que llegó (USD)')->prefix('$')->required()
+                        ->rule('regex:/^\d{1,7}(\.\d{1,2})?$/')->validationMessages(['regex' => 'Escribe solo el número, por ejemplo 250 o 250.50.']),
+                    TextInput::make('reference')->label('Referencia de Zelle en tu banco')->required()->minLength(3)->maxLength(255)
+                        ->helperText('Si ya lo registraste a mano, usa la misma referencia: no se cuenta dos veces.'),
+                    DatePicker::make('date')->label('Fecha en que llegó')->native()->required()->live()->maxDate(now(ChicagoTime::TZ)),
+                    TimePicker::make('time')->label('Hora (Houston)')->native()->seconds(false)->required()->live(),
+                    Radio::make('choice')->label('Esa hora se repite ese día: ¿cuál?')->options(ChicagoTime::CHOICES)->required()->columnSpanFull()
+                        ->visible(fn (Get $get) => ChicagoTime::isAmbiguous($get('date'), $get('time'))),
+                ]),
+                Checkbox::make('verified')->label('Lo vi reflejado en el banco')->accepted(),
+                Textarea::make('review_note')->label('Nota de revisión (solo la ves tú)')->required()->minLength(10)->maxLength(2000)->rows(2)
+                    ->helperText('Por ejemplo: “Llegó completo al banco”, o por qué el monto es distinto.'),
+            ])
+            ->modalSubmitActionLabel('Verificar y registrar pago')
+            ->action(function (array $data, array $arguments, Action $action) {
+                $notice = $this->notice($arguments) ?? $action->halt();
+                $this->run($action, fn () => app(ReviewZelleNotice::class)->execute(Filament::auth()->user(), $this->record->getKey(), $notice->id, [
+                    'decision' => 'verified', 'review_note' => trim($data['review_note']),
+                    'financial_revision_id' => $this->summary()['financial_revision']?->id,
+                    'amount_cents' => EditServiceVariant::toCents($data['amount']), 'currency' => 'USD', 'reference' => trim($data['reference']),
+                    'received_at' => ChicagoTime::toIso($data['date'], $data['time'], $data['choice'] ?? null, 'date'),
+                    'verified_received' => (bool) $data['verified'],
+                ], $this->noticeKey), 'Aviso verificado y pago registrado');
+                $this->noticeKey = (string) Str::uuid();
+            });
+    }
+
+    public function rejectNoticeAction(): Action
+    {
+        return Action::make('rejectNotice')->label('Rechazar')->icon('heroicon-o-x-circle')->color('danger')->size('sm')
+            ->visible(fn (array $arguments) => \App\Filament\Support\DocumentsGate::enabled() && $this->notice($arguments) !== null)
+            ->modalHeading('Rechazar el aviso de Zelle')
+            ->modalDescription(fn (array $arguments) => self::claim($this->notice($arguments)).'Rechazar no registra ni quita ningún pago. La clienta solo ve que no se pudo verificar.')
+            ->schema([
+                Textarea::make('review_note')->label('Motivo (solo lo ves tú)')->required()->minLength(10)->maxLength(2000)->rows(2)
+                    ->helperText('Por ejemplo: “No aparece en el banco después de 2 días”.'),
+            ])
+            ->modalSubmitActionLabel('Rechazar aviso')
+            ->action(function (array $data, array $arguments, Action $action) {
+                $notice = $this->notice($arguments) ?? $action->halt();
+                $this->run($action, fn () => app(ReviewZelleNotice::class)->execute(Filament::auth()->user(), $this->record->getKey(), $notice->id, [
+                    'decision' => 'rejected', 'review_note' => trim($data['review_note']),
+                ], $this->noticeKey), 'Aviso rechazado');
+                $this->noticeKey = (string) Str::uuid();
+            });
     }
 
     protected function getHeaderActions(): array

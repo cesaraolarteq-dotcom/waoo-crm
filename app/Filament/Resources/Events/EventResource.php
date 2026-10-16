@@ -40,7 +40,8 @@ class EventResource extends Resource
 
     public static function canEdit(Model $record): bool
     {
-        return static::canCreate() && $record->status === 'draft';
+        return static::canCreate() && $record->status === 'draft'
+            && !(\Illuminate\Support\Facades\Schema::hasTable('contracts') && \App\Models\Contract::where('event_id', $record->getKey())->where('state', 'signed')->exists());
     }
 
     public static function canDelete(Model $record): bool
