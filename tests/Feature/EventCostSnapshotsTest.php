@@ -54,6 +54,8 @@ class EventCostSnapshotsTest extends TestCase
     }
     public function test_estimate_and_actual_remain_separate_and_transport_is_not_subtracted_from_customer_fee(): void
     {
+        // Stored row before costs (fresh(), so columns with database defaults added by later migrations are included).
+        $financeBefore = $this->finance->fresh()->getAttributes();
         $this->store()->assertCreated();
         $this->store(['kind' => 'actual', 'lines' => [
             ['label' => 'Fixture actual pay', 'category' => 'staff_labor', 'amount_cents' => 15000],
@@ -64,7 +66,7 @@ class EventCostSnapshotsTest extends TestCase
             ->assertJsonPath('estimate.contribution_margin_cents', 30000)->assertJsonPath('actual.contribution_margin_cents', 27000)
             ->assertJsonPath('actual.total_cost_cents', 18500)->assertJsonPath('cash_received_cents', 0)->assertJsonPath('customer_balance_cents', 45500);
         $this->assertDatabaseCount('ledger_entries', 0); $this->assertDatabaseCount('resource_reservations', 0);
-        $this->assertSame(\App\Services\Finance\MutationKey::hash($this->finance->getAttributes()), \App\Services\Finance\MutationKey::hash($this->finance->fresh()->getAttributes()));
+        $this->assertSame(\App\Services\Finance\MutationKey::hash($financeBefore), \App\Services\Finance\MutationKey::hash($this->finance->fresh()->getAttributes()));
     }
     public function test_zero_cost_needs_explicit_coverage_and_negative_margin_is_not_clamped(): void
     {
