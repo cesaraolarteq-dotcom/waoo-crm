@@ -55,6 +55,7 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make('Operación'),
             ])
             ->pages([Dashboard::class, \App\Filament\Pages\Calendar::class, \App\Filament\Pages\QuickBooking::class, \App\Filament\Pages\Leads::class, \App\Filament\Pages\ContractTemplates::class])
+            ->pages([Dashboard::class, \App\Filament\Pages\Calendar::class, \App\Filament\Pages\QuickBooking::class, \App\Filament\Pages\Quotes::class, \App\Filament\Pages\QuoteDetail::class, \App\Filament\Pages\ContractTemplates::class])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->renderHook(PanelsRenderHook::HEAD_END, fn () => view('filament.head'))
             ->middleware([

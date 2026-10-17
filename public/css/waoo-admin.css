@@ -144,3 +144,8 @@ a.wcal-name:hover{text-decoration:underline}
 .wlead-pages button[disabled]{opacity:.45;cursor:default}
 .wqb-send{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .wqb-url{user-select:all;-webkit-user-select:all;overflow-wrap:anywhere}
+.wquote-row{display:grid;text-decoration:none;color:inherit}.wquote-row:hover b{text-decoration:underline}
+.wlead-st.st-draft{background:#EEF1F9}.wlead-st.st-accepted{background:#E2F5EB;color:#11734A}.wlead-st.st-expired{background:#FDECEC;color:#B42318}
+.wlead-tab.on{background:#122F94;color:#fff}
+.wcost-top{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:900px){.wcost-top{grid-template-columns:minmax(0,1fr)}}

@@ -1,6 +1,6 @@
 {
  "_about": "Temporary owner progress view (prototype tab 'Avance del proyecto'). Phases = docs/PROJECT_PLAN.md §18. Each agent updates its own evidence; Claude renders. Rules: a design/contract doc counts 0; a part counts only with a tested commit; review, merge to main and owner acceptance are separate steps. Phase % = sum(weight × stage score) / sum(weight).",
- "updated": "2026-10-16",
+ "updated": "2026-10-17",
  "stage_scores": {
   "backend": 0.35,
   "ui": 0.35,
@@ -133,12 +133,13 @@
      "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996",
      "outfit_backend_followup": {
       "backend": "d1b00a3",
-      "ui": null,
-      "reviewed": false,
+      "ui": "917e573",
+      "reviewed": true,
       "merged": false,
       "accepted": false,
       "verification": "API7c8dcb1 published first. Final integrated codex/outfit-01 d1b00a3: full300/2864 pass (330.31s), PHP8.3/MariaDB11.8; includes LEAD/ROUTE/OUTFIT, real independent races and populated SQLite/MariaDB roundtrips. Vite/strict Composer/syntax/diff pass. Packagist audit unavailable (proxy403), no dependency changes.",
-      "remaining": "Claude must map optional outfit/note explicitly and add forms/assignment labels; owner version names/unit quantities, independent review/CI/main merge/acceptance pending. No phase completion claimed."
+      "remaining": "Codex approves #56 917e573 with nonblocking zero-name mapper/wording notes. Preserve contact backend tests when integrating its #49 parent. Owner outfit names/unit counts, main merge and owner acceptance remain pending.",
+      "latest_screen_integration_verification": "Full integrated suite369 tests /3672 assertions PASS (407.26s), PHP8.3/MariaDB11.8, source ed8d426; includes restored10 backend contact cases +3 screen cases and22 recorded calibration fixtures. Vite/strict Composer/syntax/diff pass. Review-only stack contains blocked #59/#54 for reproduction; no main merge, browser/provider/deployment or owner acceptance."
      }
     },
     {
@@ -205,41 +206,47 @@
      "name": "Formulario de la web → prospecto en el CRM",
      "weight": 3,
      "agent": "Codex+Claude",
-     "backend": null,
-     "ui": null,
+     "backend": "ea13afd",
+     "ui": "4b4d48b",
      "reviewed": false,
      "merged": false,
      "accepted": false,
      "intake_backend_followup": {
       "backend": "ea13afd",
-      "ui": null,
+      "ui": "4b4d48b",
       "reviewed": false,
       "merged": false,
       "accepted": false,
       "verification": "Published API380b6fe before source. Full272/2583 pass; targeted18/253 includes HMAC replay binding, stateless HTTPS staging/rate limits, concurrent intake/status/conversion races, real QuickBook rollback and post-core portal recovery, SQLite migration.",
-      "remaining": "Claude website email-first fallback/private spool + UI and review/main merge; secure shared-secret configuration and explicit live activation. Backend default off; whole website-to-CRM delivery not accepted yet.",
-      "integration_verification": "Final integrated codex/outfit-01 d1b00a3: full300/2864 pass (330.31s), PHP8.3/MariaDB11.8; includes LEAD/ROUTE/OUTFIT, real independent races and populated SQLite/MariaDB roundtrips. Vite/strict Composer/syntax/diff pass. Packagist audit unavailable (proxy403), no dependency changes."
-     }
+      "remaining": "Claude #59 must forward page to ReadLeads, retain pagination and reset page on status change. Website e4dd1f3 reported by Claude remains off; shared-secret configuration, website integration verification and explicit activation still pending.",
+      "integration_verification": "Final integrated codex/outfit-01 d1b00a3: full300/2864 pass (330.31s), PHP8.3/MariaDB11.8; includes LEAD/ROUTE/OUTFIT, real independent races and populated SQLite/MariaDB roundtrips. Vite/strict Composer/syntax/diff pass. Packagist audit unavailable (proxy403), no dependency changes.",
+      "latest_screen_integration_verification": "Full integrated suite369 tests /3672 assertions PASS (407.26s), PHP8.3/MariaDB11.8, source ed8d426; includes restored10 backend contact cases +3 screen cases and22 recorded calibration fixtures. Vite/strict Composer/syntax/diff pass. Review-only stack contains blocked #59/#54 for reproduction; no main merge, browser/provider/deployment or owner acceptance."
+     },
+     "blocker": "Claude #59 must forward page to ReadLeads, retain pagination and reset page on status change. Website e4dd1f3 reported by Claude remains off; shared-secret configuration, website integration verification and explicit activation still pending.",
+     "review_evidence": "Codex reviewed #59 4b4d48b after #56/#57: request changes, only first50 records reachable, query page2 ignored. Backend page2 works. See docs/reviews/CLAUDE-56-57-59-54.md and opt-in diagnostic. No main merge/acceptance."
     },
     {
      "name": "Costo de transporte por ZIP dentro del CRM",
      "weight": 2,
      "agent": "Codex",
-     "backend": null,
-     "ui": null,
-     "reviewed": false,
+     "backend": "f31361c",
+     "ui": "c57a3dc",
+     "reviewed": true,
      "merged": false,
      "accepted": false,
      "address_quote_followup": {
       "backend": "f31361c",
-      "ui": null,
-      "reviewed": false,
+      "ui": "c57a3dc",
+      "reviewed": true,
       "merged": false,
       "accepted": false,
       "verification": "Contract97c84ac published first. Targeted45/490 pass including105 synthetic differential cases vs website formula,7 fixed ZIPs, bounded provider errors/null fees, true atomic quota race/Chicago midnight, cache, explicit/private/stale quote acceptance, actual lead→QuickBook and client-address reconfirmation, SQLite. Quoted_at metadata is additive; later integrated run will cover the complete stack.",
-      "remaining": "Missing22 actual calibrated ZIP reference fixtures (asked owner/Claude); no real Google/staging probe, UI/review/main merge or live activation. Full ROUTE-01 not complete/accepted.",
-      "integration_verification": "Final integrated codex/outfit-01 d1b00a3: full300/2864 pass (330.31s), PHP8.3/MariaDB11.8; includes LEAD/ROUTE/OUTFIT, real independent races and populated SQLite/MariaDB roundtrips. Vite/strict Composer/syntax/diff pass. Packagist audit unavailable (proxy403), no dependency changes."
-     }
+      "remaining": "Main merge/owner acceptance and explicitly authorized secure Google configuration + real staging probe pending. No new hosting/provider operation performed.",
+      "integration_verification": "Final integrated codex/outfit-01 d1b00a3: full300/2864 pass (330.31s), PHP8.3/MariaDB11.8; includes LEAD/ROUTE/OUTFIT, real independent races and populated SQLite/MariaDB roundtrips. Vite/strict Composer/syntax/diff pass. Packagist audit unavailable (proxy403), no dependency changes.",
+      "latest_screen_integration_verification": "Full integrated suite369 tests /3672 assertions PASS (407.26s), PHP8.3/MariaDB11.8, source ed8d426; includes restored10 backend contact cases +3 screen cases and22 recorded calibration fixtures. Vite/strict Composer/syntax/diff pass. Review-only stack contains blocked #59/#54 for reproduction; no main merge, browser/provider/deployment or owner acceptance."
+     },
+     "blocker": "Main merge/owner acceptance and explicitly authorized secure Google configuration + real staging probe pending. No new hosting/provider operation performed.",
+     "review_evidence": "Codex approves exact #57 c57a3dc. TravelFeeReferenceCalibrationTest: all22 recorded expected fees and route selections match, fixed ZIPs skip provider; rounded recorded measurements with HTTP fakes, no live Google probe. Failed recalculation correctly requires manual reason before saving old fee."
     },
     {
      "name": "Cotizaciones con versiones",
@@ -249,7 +256,19 @@
      "ui": null,
      "reviewed": false,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "foundation": {
+      "api": "2d90794",
+      "backend": "88d53f3",
+      "ui": null,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "scope": "QUOTE A: owner-only CreateQuote/ReviseQuote/ReadQuotes from existing audited event drafts; immutable monetary snapshots/explicit discounts/odd-cent deposit; bounded expiry; default-off sandbox. No portal send/accept/PDF, financial revision, payment or capacity mutation.",
+      "verification": "API2d90794 before source88d53f3. Full345 tests/3269 assertions pass (354.97s), PHP8.3/MariaDB11.8; targeted19/119 (18.443s), three real process races, snapshot/discount/rollback/guards/CSRF/SQLite roundtrip. Strict Composer/15 PHP syntax/diff pass. Guarded local-only300000 migration + /up200, default off. No provider/browser/deploy/owner acceptance.",
+      "remaining": "Claude independent backend review and owner-builder adapters; B scoped portal/PDF/acceptance and C accepted-snapshot finance/capacity bridge. Main merge/owner acceptance pending. Whole QUOTE-01 backend stays null until complete; no premature phase credit."
+     },
+     "blocker": "Foundation88d53f3 delivered for review; no client links/acceptance/PDF/conversion yet. Do not enable those planned UI actions. See docs/QUOTE-01-API.md."
     },
     {
      "name": "Costos y margen por paquete",
@@ -260,7 +279,13 @@
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "blocker": "Tarifas del staff (César)"
+     "blocker": "Base manual por evento con pantalla (Claude 0f8ae91, revisión de 08c284a: aprobado). Pendiente: tarifas reales del staff/horas/transporte de César y margen automático por paquete",
+     "backend_foundation": "08c284a: owner-entered immutable estimated/actual event costs, unknown/coverage states, versioned history and owner-only contribution margin API",
+     "foundation_verification": "Focused 12 MariaDB tests / 101 assertions; full integration 241 / 2119 with CLI-only512M helper after a128M PDF-suite exhaustion; Vite, lint, strict Composer and 9 real HTTP smoke checks pass",
+     "foundation_reviewed": true,
+     "foundation_ui": "7c417c1",
+     "progress_note": "Overall backend remains null: only a tested event-cost foundation is delivered, not complete package/rate automation. Existing weights and stage acceptance credit stay unchanged.",
+     "foundation_review_note": "Codex approves #44 exact7c417c1: agreed-revenue and unconfirmed-zero copy fixed. Overall package/rate automation remains incomplete; no acceptance or main merge credit added."
     }
    ]
   },
@@ -277,7 +302,8 @@
      "reviewed": true,
      "merged": true,
      "accepted": false,
-     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996"
+     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996",
+     "outfit_versions": "Codex d1b00a3/API7c8dcb1 + Claude #56 917e573 reviewed/approved with minor mapper/wording follow-ups; main merge, real inventory and owner acceptance pending."
     },
     {
      "name": "Motor sin choques (habilidades, trajes, vehículos, concurrencia)",
@@ -392,7 +418,7 @@
      "ui_fix_evidence": "Codex implementation bf2ffac/7ebcf2c chosen explicitly; integrated exact bdc6c9e with Claude2d19000. Full 254/2328; server resolves Houston local time with CDT/CST choice. Both HANDOFF histories retained.",
      "ui_fix_reviewed": true,
      "ui_fix_review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed.",
-     "link_recovery": "Codex 68c02a5 (API b3c9edd) + Claude #54: Copiar enlace (mismo enlace activo), teléfonos validados, sin aviso al cerrar; pendiente revisión de Codex."
+     "link_recovery": "Codex68c02a5 approved by Claude; Claude #54 exact81771b2 reviewed/approved by Codex. Same active URL, recipient parsing and manual clipboard fallback; main merge/device QA/owner acceptance pending."
     },
     {
      "name": "Reserva rápida (tu mitad + la de la clienta)",
@@ -413,12 +439,13 @@
      "ui_fix_review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed.",
      "contact_atomicity_followup": {
       "backend": "ad87fae",
-      "ui": null,
-      "reviewed": false,
+      "ui": "1ebafe0",
+      "reviewed": true,
       "merged": false,
       "accepted": false,
       "verification": "API2ff80c1 published before source. Full311/2968 pass (331.15s); targeted17/155 pass, PHP8.3/MariaDB11.8. Actual recipe/bank/audit rollbacks, stale/no-op/version guards, later-correction replay, grant recovery, two real process races, lead conversion. Syntax/strict Composer/diff pass; no schema/dependency change.",
-      "remaining": "Claude #49 must remove separate pre-save, send customer_update and pin displayed ID/version in Locked state; Livewire regression/independent review/CI/main merge pending. Existing #49 f9b93c8 not approved. No phase completion or live acceptance."
+      "remaining": "Atomicity blocker fixed in #49. Review branch preserves original10 backend tests and renames Claude3 screen tests to QuickBookingContactPageTest; integrate both. Main merge/owner acceptance remain pending.",
+      "latest_screen_integration_verification": "Full integrated suite369 tests /3672 assertions PASS (407.26s), PHP8.3/MariaDB11.8, source ed8d426; includes restored10 backend contact cases +3 screen cases and22 recorded calibration fixtures. Vite/strict Composer/syntax/diff pass. Review-only stack contains blocked #59/#54 for reproduction; no main merge, browser/provider/deployment or owner acceptance."
      },
      "comms_01_contract": {
       "document": "docs/COMMS-01-API.md",
@@ -428,17 +455,21 @@
       "merged": false,
       "accepted": false,
       "note": "COMMS-01 A/B/C answered; proposed owner-only recopy API published before implementation. Manual phone apps first; Postmark/email auth recommended, SMS automation/WhatsApp eligibility later. No implementation credit/provider/DNS/send. #54 b30d209 review requests recipient/lifecycle fixes;41/446 tests +build pass, diagnostic2/5 reproduces bug; no new full/browser/provider proof.",
-      "recovery_evidence": "Backend A follow-up68c02a5 on phase4 row; full326/3148. This documentation entry itself counts0; email/SMS/WhatsApp provider implementation remains pending."
+      "recovery_evidence": "Backend A follow-up68c02a5 on phase4 row; full326/3148. This documentation entry itself counts0; email/SMS/WhatsApp provider implementation remains pending.",
+      "latest_ui_review": "Codex approves #54 exact81771b2: recipient parser fixed, global unload/sent state removed, explicit owner same-link reveal and shared clipboard fallback connected. See docs/reviews/COMMS-01-54-REVIEW-V2.md. No browser/provider/deployment/merge/owner acceptance claimed."
      },
      "comms_link_recovery_followup": {
       "backend": "68c02a5",
-      "ui": null,
-      "reviewed": false,
+      "ui": "81771b2",
+      "reviewed": true,
       "merged": false,
       "accepted": false,
       "verification": "Contractb3c9edd published first; owner SMS-first main62f898e preserved5920ae4 before source. Full326/3148 (352.01s) and new14/168 pass, PHP8.3/MariaDB11.8. Real grant revoke/reveal race, crypto/binding/key/auth/CSRF/TLS/privacy/rollback, actual paid-core link-storage failure/recovery, SQLite up/down/up. Local guarded290000 migration and /up200; syntax14 PHP/strict Composer/diff pass.",
-      "remaining": "Claude explicit copy action/presenter/fallback and independent review/CI/main/acceptance. Existing hash-only links cannot be reconstructed; no expiry/rotation change. B/C sending providers, DNS, automated SMS/email/WhatsApp not activated. No completion credit for those parts."
-     }
+      "remaining": "Codex approves UI #54 exact81771b2; normal main merge, browser/phone clipboard and SMS checks, owner acceptance remain. Preserve both contact test classes. Provider email/SMS/WhatsApp automation and activation are separate, still pending.",
+      "backend_review": "Claude HANDOFF in #54 explicitly approves source68c02a5.",
+      "latest_ui_verification": "Codex exact #54 81771b2, source7048acf: targeted78/882 (85.129s) +4/39 LEAD screen checks (4.838s) pass, PHP8.3/MariaDB11.8. Real same-link/revoke/legacy UI and both contact suites; Node actual Alpine clipboard success/rejection/missing API pass; Vite/syntax/diff pass. No new full/browser/device/provider/main merge/owner acceptance."
+     },
+     "contact_atomicity": "Codex ad87fae (API 2ff80c1) + Claude #49 1ebafe0: corrección de contacto dentro de QuickBook; pendiente revisión de Codex."
     }
    ]
   },
@@ -463,7 +494,8 @@
       "merged": false,
       "accepted": false,
       "note": "COMMS-01 A/B/C answered; proposed owner-only recopy API published before implementation. Manual phone apps first; Postmark/email auth recommended, SMS automation/WhatsApp eligibility later. No implementation credit/provider/DNS/send. #54 b30d209 review requests recipient/lifecycle fixes;41/446 tests +build pass, diagnostic2/5 reproduces bug; no new full/browser/provider proof.",
-      "recovery_evidence": "Backend A follow-up68c02a5 on phase4 row; full326/3148. This documentation entry itself counts0; email/SMS/WhatsApp provider implementation remains pending."
+      "recovery_evidence": "Backend A follow-up68c02a5 on phase4 row; full326/3148. This documentation entry itself counts0; email/SMS/WhatsApp provider implementation remains pending.",
+      "latest_ui_review": "Codex approves #54 exact81771b2: recipient parser fixed, global unload/sent state removed, explicit owner same-link reveal and shared clipboard fallback connected. See docs/reviews/COMMS-01-54-REVIEW-V2.md. No browser/provider/deployment/merge/owner acceptance claimed."
      }
     },
     {
@@ -529,7 +561,8 @@
       "merged": false,
       "accepted": false,
       "note": "COMMS-01 A/B/C answered; proposed owner-only recopy API published before implementation. Manual phone apps first; Postmark/email auth recommended, SMS automation/WhatsApp eligibility later. No implementation credit/provider/DNS/send. #54 b30d209 review requests recipient/lifecycle fixes;41/446 tests +build pass, diagnostic2/5 reproduces bug; no new full/browser/provider proof.",
-      "recovery_evidence": "Backend A follow-up68c02a5 on phase4 row; full326/3148. This documentation entry itself counts0; email/SMS/WhatsApp provider implementation remains pending."
+      "recovery_evidence": "Backend A follow-up68c02a5 on phase4 row; full326/3148. This documentation entry itself counts0; email/SMS/WhatsApp provider implementation remains pending.",
+      "latest_ui_review": "Codex approves #54 exact81771b2: recipient parser fixed, global unload/sent state removed, explicit owner same-link reveal and shared clipboard fallback connected. See docs/reviews/COMMS-01-54-REVIEW-V2.md. No browser/provider/deployment/merge/owner acceptance claimed."
      }
     },
     {

@@ -39,9 +39,18 @@ class ViewEvent extends Page
         return $label;
     }
 
+    /** Event version shown on this page; "Crear cotización" snapshots exactly this version or is refused (409). */
+    #[\Livewire\Attributes\Locked]
+    public ?int $displayedVersion = null;
+
+    #[\Livewire\Attributes\Locked]
+    public string $quoteKey = '';
+
     public function mount(int|string $record): void
     {
         $this->record = $this->resolveRecord($record);
+        $this->displayedVersion = $this->record->version;
+        $this->quoteKey = (string) \Illuminate\Support\Str::uuid();
     }
 
     public function getTitle(): string
@@ -61,6 +70,30 @@ class ViewEvent extends Page
         return [
             Action::make('edit')->label('Editar borrador')->color('gray')->visible(fn () => EventResource::canEdit($e))->url(fn () => EventResource::getUrl('edit', ['record' => $e])),
             Action::make('money')->label('Dinero')->icon('heroicon-o-banknotes')->color('gray')->visible(fn () => FinanceGate::enabled())->url(fn () => EventResource::getUrl('money', ['record' => $e])),
+            Action::make('quoteView')->label('Ver cotización')->icon('heroicon-o-document-currency-dollar')->color('gray')
+                ->visible(fn () => \App\Filament\Support\QuoteForm::enabled() && \App\Models\Quote::where('event_id', $e->id)->exists())
+                ->url(fn () => \App\Filament\Pages\QuoteDetail::getUrl(['quote' => \App\Models\Quote::where('event_id', $e->id)->value('id')])),
+            Action::make('quoteCreate')->label('Crear cotización')->icon('heroicon-o-document-currency-dollar')->color('gray')
+                ->visible(fn () => \App\Filament\Support\QuoteForm::enabled() && $e->status === 'draft' && ! \App\Models\Quote::where('event_id', $e->id)->exists())
+                ->modalHeading('Crear cotización')
+                ->modalDescription(fn () => 'Se toma este borrador tal como lo ves (versión '.$this->displayedVersion.'): paquetes, personajes, transporte y fecha. El total y el depósito los calcula el sistema.')
+                ->fillForm(fn () => ['locale' => $e->customer?->locale ?? 'es'])
+                ->schema(\App\Filament\Support\QuoteForm::schema())
+                ->modalSubmitActionLabel('Crear cotización')
+                ->action(function (array $data, Action $action) use ($e) {
+                    try {
+                        $rev = app(\App\Services\Quotes\CreateQuote::class)->execute(\Filament\Facades\Filament::auth()->user(),
+                            ['event_id' => $e->id, 'expected_event_version' => (int) $this->displayedVersion, ...\App\Filament\Support\QuoteForm::input($data)], $this->quoteKey);
+                    } catch (\Illuminate\Validation\ValidationException $ex) {
+                        \Filament\Notifications\Notification::make()->danger()->title('No se creó')->body(collect($ex->errors())->flatten()->first())->persistent()->send();
+                        $action->halt();
+                    } catch (\App\Exceptions\RecordWriteRejected|\Illuminate\Auth\Access\AuthorizationException $ex) {
+                        \Filament\Notifications\Notification::make()->danger()->title('No se creó')->body($ex->getMessage().' Recarga la página.')->persistent()->send();
+                        $action->halt();
+                    }
+                    $this->quoteKey = (string) \Illuminate\Support\Str::uuid();
+                    $this->redirect(\App\Filament\Pages\QuoteDetail::getUrl(['quote' => $rev->quote_id]));
+                }),
             Action::make('contract')->label('Contrato y enlace')->icon('heroicon-o-document-text')->color('gray')->visible(fn () => \App\Filament\Support\DocumentsGate::enabled())->url(fn () => EventResource::getUrl('contract', ['record' => $e])),
             Action::make('confirm')->label('Apartar recursos y confirmar')->visible(fn () => ConfirmCapacity::canAccessFor($e))->url(fn () => EventResource::getUrl('confirm', ['record' => $e])),
         ];

@@ -10,6 +10,10 @@ Route::redirect('/', '/admin')->name('home');
 Route::middleware(['auth', 'password.confirm'])->get('/seguridad/dos-pasos', TwoFactorEnrollmentController::class)->name('security.two-factor');
 Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'));
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->prefix('admin/api')->group(function () {
+    Route::get('/quotes', [\App\Http\Controllers\Admin\QuoteController::class, 'index']);
+    Route::post('/quotes', [\App\Http\Controllers\Admin\QuoteController::class, 'create']);
+    Route::get('/quotes/{quote}', [\App\Http\Controllers\Admin\QuoteController::class, 'show'])->whereNumber('quote');
+    Route::post('/quotes/{quote}/revisions', [\App\Http\Controllers\Admin\QuoteController::class, 'revise'])->whereNumber('quote');
     Route::post('/travel-fee-quotes', [\App\Http\Controllers\Admin\TravelFeeController::class, 'store']);
     Route::get('/events/{event}/travel-fee-evidence', [\App\Http\Controllers\Admin\TravelFeeController::class, 'evidence'])->whereNumber('event');
     Route::get('/leads', [\App\Http\Controllers\Admin\LeadController::class, 'index']);
