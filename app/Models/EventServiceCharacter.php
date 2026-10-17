@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class EventServiceCharacter extends Model
 {
-    protected $fillable = ['event_service_id', 'character_id', 'quantity', 'character_name_snapshot'];
+    protected $fillable = ['event_service_id', 'character_id', 'quantity', 'character_name_snapshot', 'outfit', 'note'];
 
     protected function casts(): array
     {

@@ -6,8 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Event extends Model
 {
+    protected $hidden = ['travel_fee_evidence'];
     protected $fillable = ['customer_id', 'title', 'event_type', 'starts_at', 'ends_at', 'timezone', 'address', 'postal_code', 'setup_minutes', 'breakdown_minutes', 'travel_fee_cents'];
-    protected function casts(): array { return ['starts_at' => 'immutable_datetime', 'ends_at' => 'immutable_datetime', 'version' => 'integer', 'travel_fee_cents' => 'integer', 'setup_minutes' => 'integer', 'breakdown_minutes' => 'integer']; }
+    protected function casts(): array { return ['travel_fee_evidence' => 'array', 'starts_at' => 'immutable_datetime', 'ends_at' => 'immutable_datetime', 'version' => 'integer', 'travel_fee_cents' => 'integer', 'setup_minutes' => 'integer', 'breakdown_minutes' => 'integer']; }
 
     public function services() { return $this->hasMany(EventService::class); }
     public function reservations() { return $this->hasMany(ResourceReservation::class); }
