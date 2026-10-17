@@ -148,4 +148,13 @@ class HoneyBookFutureImportTest extends TestCase
         $this->assertSame(12000,(int)ImportedLedgerLine::sum('amount_cents'));$this->assertDatabaseCount('ledger_entries',0);
     }
 
+    public function test_mapping_suggestion_route_uses_private_row_identity_not_raw_source_query():void
+    {
+        $b=$this->stageFuture();$row=ImportRow::sole();
+        app(CommitHoneyBookEvent::class)->execute($this->owner,$b->id,$row->id,$this->commitInput($b,$row,['remember_mapping'=>true]),(string)Str::uuid());
+        $this->getJson('/admin/api/imports/honeybook/'.$b->id.'/rows/'.$row->id.'/mapping')->assertOk()->assertJsonPath('suggestion.selection.0.price_version_id',$this->price->id);
+        $this->getJson('/admin/api/imports/honeybook/99999/rows/'.$row->id.'/mapping')->assertNotFound();
+        $this->getJson('/admin/api/imports/honeybook/mapping')->assertNotFound();
+    }
+
 }
