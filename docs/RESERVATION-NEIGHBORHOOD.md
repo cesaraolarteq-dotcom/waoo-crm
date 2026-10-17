@@ -1,0 +1,17 @@
+# RESV-A-PERF — bounded reservation hydration
+
+2026-10-16 · Codex · design before source. Base: codex/integrate-42-43-fixes 702b5e4. No API/policy change or UI work required.
+
+`App\Services\Scheduling\ReservationNeighborhood::forResource(Event $candidate, int $resourceId): array{overlaps: bool, before: ?Event, after: ?Event}` is an internal query helper. The caller must already hold the candidate event and sorted stable resource row locks inside the existing transaction. This query is not an availability promise and must not replace those locks or confirmation-time validation.
+
+Join events to resource_reservations for the selected resource, selecting only events.*. Use an SQL existence check for busy-interval overlap: other.start minus setup < candidate.busyEnd AND other.end plus breakdown > candidate.busyStart. Half-open boundaries stay unchanged. Read the current event schedule/prep fields, not a truncated date window or an assumed maximum duration. MariaDB uses DATE_SUB/DATE_ADD; SQLite uses datetime modifiers. Bound values are UTC. Null prep compatibility matches the prior Carbon scan's null/zero behavior; confirmation still requires complete operational times and this query never fills or approves missing values.
+
+If no overlap, fetch one preceding event (other.end <= candidate.start) and one following event (other.start >= candidate.end). Order by the stored reservation start as the previous scan did (descending for preceding, ascending for following), without introducing a different secondary ordering. Valid committed schedules cannot overlap; this retains the prior matching/travel-neighbor semantics rather than changing policy for legacy data. The existing `(resource_id, starts_at, ends_at)` index serves resource filtering/ordered limits; retain it and the unique event/resource index. No migration or historical data rewrite is needed.
+
+At most three schedule SELECTs per resource, and at most two Event models are hydrated (zero if overlap). Previously two eager-load queries could hydrate every reservation plus every event. An extra small query is intentional: the target is bounded application memory/rows, not fewer SQL statements. The overlap predicate may still examine history inside the database; this is not a claim of constant database CPU or latency. Measure queries/hydrated models and timing with a large fictional fixture set; report timing only as a local observation, not a production speed guarantee.
+
+ConfirmBooking keeps the same block checks, matching, sorted row locks, versioned transfer evidence, 45-minute rule, deposit/short-notice checks, idempotent retries, ledger separation and audit. No private customer fields are returned through a new endpoint. No automatic route, resource release or reassignment.
+
+Verification: compare against the old full-scan oracle; long overlaps spanning beyond a date window, midnight setup, distant neighbors on both sides, exact boundaries, unrelated resources, conflicting/sufficient transfer evidence, real simultaneous confirmations and a large historical fixture. Test MariaDB and SQLite query semantics. Roll back only the helper/caller to the prior scan if needed; no data is deleted.
+
+The first measurement showed an unnecessary filesort when an ID tie-breaker was added after starts_at. The implementation retains the original starts_at-only ordering so the existing resource/start/end index can provide the ordered limit; no new index/schema is introduced. Confirmed non-overlapping resource calendars have no competing same-start neighbors.

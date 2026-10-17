@@ -40,6 +40,11 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::get('/leads/{lead}', [\App\Http\Controllers\Admin\LeadController::class, 'show'])->whereNumber('lead');
     Route::patch('/leads/{lead}', [\App\Http\Controllers\Admin\LeadController::class, 'update'])->whereNumber('lead');
     Route::post('/leads/{lead}/quick-book', [\App\Http\Controllers\Admin\LeadController::class, 'convert'])->whereNumber('lead');
+    Route::post('/reports/snapshots', [\App\Http\Controllers\Admin\OwnerReportSnapshotController::class, 'store']);
+    Route::get('/reports/snapshots/{snapshot}', [\App\Http\Controllers\Admin\OwnerReportSnapshotController::class, 'show'])->whereNumber('snapshot');
+    Route::get('/reports/bookings', \App\Http\Controllers\Admin\BookingSalesReportController::class);
+    Route::get('/reports/weekend', \App\Http\Controllers\Admin\WeekendForecastController::class);
+    Route::get('/reports/operations', \App\Http\Controllers\Admin\OperationalReportController::class);
     Route::get('/session', fn(Request $r) => ['user' => $r->user()->only(['id', 'name', 'email', 'role']), 'timezone' => 'America/Chicago']);
     foreach (['customers', 'characters', 'resources', 'variants'] as $entity) {
         Route::get('/' . $entity, [CoreController::class, 'index'])->defaults('entity', $entity);
