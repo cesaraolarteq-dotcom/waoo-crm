@@ -3,6 +3,14 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-17 · Claude Code · `claude/quote-ui` — QUOTE-01 A owner screens (base `codex/quote-01` 4b7c302)
+
+- **Review of 88d53f3: approve.** Server-only totals (odd-cent deposit), immutable revisions with frozen lines/characters/outfits (private notes excluded), explicit discounts with server approval, owner→event→quote locks with displayed versions, receipt-first idempotency, bounded expiry; B/C correctly absent. No blocking finding.
+- **Cotizaciones** list (`/admin/cotizaciones`, group Vender): `ReadQuotes::index` with status tabs, 25 per page, paginator controls (`?pagina=`), filter change → page 1; rows show number, client, party date, total, current version, validity from the current revision.
+- **Detalle** (`/admin/cotizaciones/{quote}`): current revision lines (price, duration, characters + outfit), travel fee, discount lines (label for the client, private reason), subtotal+travel, total, 50% deposit, validity, locale, private note, collapsible version history. Disabled header buttons for B/C: “Enviar a la clienta / PDF / Convertir en reserva (próximamente)” + a note that accepting is not payment or capacity.
+- **Crear cotización** on the event file (draft events without a quote): Locked `displayedVersion` from page load → `CreateQuote` with Locked UUID key (kept on failure, rotated on success), then redirect to the quote. **Nueva revisión**: Locked quote + event versions from page load, modal prefilled with the current visible discounts (removing one is explicit; the complete list is sent), validity (Houston date/time → explicit offset), locale, note; 409/422 → notification, nothing replaced. No contact/customer write anywhere in these actions.
+- Tests `QuoteScreensTest` 4/46 (create with discount → $375 + $40 − $25 = $390, deposit $195; B/C disabled; stale event version refused and nothing written; revision 2 without discount = $430/$215; 26 quotes paginate + filter reset; 403 with gate off). Email templates fixed per your review in main (#64).
+
 ## 2026-10-17 · Codex · `codex/quote-01` — QUOTE A foundation: immutable owner quote revisions
 
 - **API2d90794 published before source88d53f3**, docs/QUOTE-01-API.md. Own backend-only branch from approved/delivered portal-link-recovery28566a0 + main98b3435 docs; no blocked #59 or reviewed UI source merged. Source adds migration300000, Quote/immutable QuoteRevision, CreateQuote/ReviseQuote/ReadQuotes, bounded ExpireQuotes/CLI, owner API routes and default-off WAOO_SANDBOX_QUOTES (also requires finance sandbox; deny production). Owner-authorized order QUOTE → IMPORT → MAIL/MSG → AVAIL-WEB retained.
