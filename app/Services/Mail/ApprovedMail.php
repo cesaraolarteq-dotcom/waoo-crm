@@ -5,7 +5,7 @@ use Illuminate\Validation\ValidationException;
 final class ApprovedMail
 {
     public const KEYS=['inquiry_received','quote_sent','details_request','contract_ready','payment_received','zelle_notice_pending','balance_reminder','week_before','thank_you_review'];
-    public const VARIABLES=['first_name','event_date','address','package','package_price','travel_fee','subtotal','discount_total','total','deposit','amount','paid','balance','has_balance','due','balance_due','valid_until','link','review_link'];
+    public const VARIABLES=['first_name','event_date','subject_date','address','package','package_price','travel_fee','subtotal','discount_total','total','deposit','amount','paid','balance','has_balance','due','balance_due','valid_until','link','review_link'];
     public static function definition(string $key,string $locale):array
     {
         $d=config('waoo.mail_templates.'.$key.'.'.$locale);
