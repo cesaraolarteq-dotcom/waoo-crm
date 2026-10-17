@@ -25,7 +25,7 @@ final class HoneyBookImportController extends Controller
     {
         ImportInput::actor($r->user());$d=\App\Models\ImportRow::whereKey($row)->where('import_batch_id',$batch)->firstOrFail()->source;
         abort_unless(isset($d['services'],$d['characters']),409);
-        return ['suggestion'=>\App\Models\ImportServiceMapping::where('source_key',\App\Services\Finance\MutationKey::hash([$d['services'],$d['characters']]))->first()];
+        return ['suggestion'=>\App\Services\Imports\HoneyBookMappingKey::suggestion($d)];
     }
     public function index(Request $r,ReadHoneyBookImport $read){return $read->index($r->user(),$r->query());}
     public function show(Request $r,int $batch,ReadHoneyBookImport $read){return $read->show($r->user(),$batch);}
