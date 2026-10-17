@@ -144,3 +144,4 @@ a.wcal-name:hover{text-decoration:underline}
 .wimp-pill.is-ready{background:#DDF5EA;color:#11734A}.wimp-pill.is-conflict{background:#FDE2E4;color:#A1162B}
 .wimp-pill.is-needs_mapping{background:#FFF1D6;color:#8A5A00}.wimp-pill.is-skipped{opacity:.6}
 @media (max-width:700px){.wimp-counts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.wimp-diff{margin:12px 0}

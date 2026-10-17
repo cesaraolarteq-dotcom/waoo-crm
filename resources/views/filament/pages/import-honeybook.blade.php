@@ -48,12 +48,19 @@
                 <p>{{ $cov['counts']['draft'] + $cov['counts']['capacity_confirmed'] }} de {{ $cov['counts']['source_rows'] - $cov['counts']['skipped'] }} eventos importados ·
                     {{ $cov['counts']['capacity_confirmed'] }} con personal y equipo confirmados ·
                     {{ $cov['counts']['unresolved'] }} por corregir · {{ $cov['counts']['unmapped'] }} sin importar@if ($cov['counts']['outdated']) · {{ $cov['counts']['outdated'] }} cambiaron en el archivo@endif</p>
-                @if ($cov['domain_complete'] && ! in_array($batch->status, ['imported', 'imported_cleanup_pending'], true))
-                    <label class="wimp-check"><input type="checkbox" wire:model="coverageReviewed"> Revisé que el archivo tiene todos los eventos futuros confirmados de HoneyBook.</label>
+                @if ($cov['accepted_source_differences'] ?? [])
+                    <p class="wqb-hint">{{ count($cov['accepted_source_differences']) }} {{ count($cov['accepted_source_differences']) === 1 ? 'evento importado' : 'eventos importados' }} con una diferencia de total aceptada por ti (con nota).</p>
+                @endif
+                @if ($batch->status === 'imported_cleanup_pending')
+                    <p class="wmoney-warn">Todo quedó importado, pero el archivo original todavía no se pudo borrar.</p>
+                    <button type="button" class="wcal-btn on" wire:click="{{ $coverageVersion ? 'finalize' : 'attestCoverage('.$cov['version'].')' }}">{{ $coverageVersion ? 'Reintentar borrar el archivo' : 'Revisar y reintentar' }}</button>
+                @elseif ($batch->status === 'imported')
+                    <p class="wqb-hint">Lote cerrado: el archivo original se borró.</p>
+                @elseif ($cov['domain_complete'])
+                    {{-- The attestation pins the batch version shown here; any later change requires a new review. --}}
+                    <label class="wimp-check"><input type="checkbox" @checked($coverageReviewed) wire:click="attestCoverage({{ $cov['version'] }})" @disabled($coverageReviewed)> Revisé que el archivo tiene todos los eventos futuros confirmados de HoneyBook.</label>
                     @error('coverageReviewed')<p class="wmoney-warn">{{ $message }}</p>@enderror
-                    <button type="button" class="wcal-btn on" wire:click="finalize">Cerrar lote y borrar el archivo</button>
-                @elseif (in_array($batch->status, ['imported', 'imported_cleanup_pending'], true))
-                    <p class="wqb-hint">Lote cerrado{{ $batch->status === 'imported_cleanup_pending' ? ' (falta borrar el archivo; vuelve a intentarlo)' : '' }}.</p>
+                    <button type="button" class="wcal-btn on" wire:click="finalize" @disabled(! $coverageReviewed)>Cerrar lote y borrar el archivo</button>
                 @else
                     <p class="wqb-hint">Para cerrar el lote, cada fila que no esté omitida tiene que estar importada.</p>
                 @endif
@@ -81,6 +88,15 @@
                         @if ($row['warnings'])<div><dt>Aviso</dt><dd class="wmoney-warn">Hay pagos repetidos idénticos: revisa que no estén duplicados.</dd></div>@endif
                     </dl>
                 </div>
+                @if ($row['difference'])
+                    <div class="wmoney-warn wimp-diff">
+                        <b>El total de HoneyBook no coincide con la suma.</b>
+                        Paquete + transporte − descuento = {{ \App\Filament\Support\Labels::money($row['difference']['expected']) }};
+                        HoneyBook dice {{ \App\Filament\Support\Labels::money($row['difference']['total']) }}
+                        (diferencia {{ $row['difference']['delta'] >= 0 ? '+' : '−' }}{{ \App\Filament\Support\Labels::money(abs($row['difference']['delta'])) }}).
+                        Se guarda tal cual solo si lo aceptas y escribes una nota abajo.
+                    </div>
+                @endif
                 @if ($mappingSuggested)<p class="wqb-hint">Equivalencia sugerida por una fila anterior con el mismo paquete y personajes: revísala antes de importar.</p>@endif
                 @if (! $row['matches'])<p class="wqb-hint">No hay fichas con este correo o teléfono: se creará una clienta nueva.</p>@endif
                 {{ $this->content }}

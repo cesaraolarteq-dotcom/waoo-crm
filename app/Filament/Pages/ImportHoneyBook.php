@@ -5,13 +5,12 @@ namespace App\Filament\Pages;
 use App\Exceptions\RecordWriteRejected;
 use App\Filament\Resources\Events\EventResource;
 use App\Filament\Support\{ChicagoTime, Labels};
-use App\Models\{Customer, ImportBatch, ImportedProjectLink, ImportRow, ImportServiceMapping, PriceVersion, ServiceVariant};
-use App\Services\Finance\MutationKey;
-use App\Services\Imports\{CommitHoneyBookEvent, FinalizeHoneyBookImport, ReadImportCoverage, StageHoneyBookFutureEvents};
+use App\Models\{Customer, ImportBatch, ImportedProjectLink, ImportRow, PriceVersion, ServiceVariant};
+use App\Services\Imports\{CommitHoneyBookEvent, FinalizeHoneyBookImport, HoneyBookMappingKey, HoneyBookPaymentLabels, HoneyBookSourceDifference, ReadImportCoverage, StageHoneyBookFutureEvents};
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
-use Filament\Forms\Components\{Checkbox, Radio, Repeater, Select, TextInput};
+use Filament\Forms\Components\{Checkbox, Radio, Repeater, Select, Textarea, TextInput};
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\{Actions, EmbeddedSchema, Form, Section};
@@ -42,7 +41,7 @@ class ImportHoneyBook extends Page
     /** Spanish meaning of each source finding (codes from HoneyBookFutureSource). */
     public const REASONS = [
         'owner_status_review_required' => 'El estado no dice "confirmed": confírmalo tú al importar',
-        'package_equation_mismatch' => 'Paquete + transporte − descuento no da el total',
+        'package_equation_mismatch' => 'Paquete + transporte − descuento no da el total: acéptalo tú con una nota al importar',
         'balance_equation_mismatch' => 'Total − pagado no da el saldo',
         'payments_equation_mismatch' => 'La suma de los pagos no da lo pagado',
         'source_required' => 'Falta un dato obligatorio',
@@ -55,6 +54,9 @@ class ImportHoneyBook extends Page
         'contact_missing' => 'Sin correo ni teléfono', 'invalid_name' => 'Nombre inválido', 'field_length' => 'Un campo es demasiado largo',
         'duplicate_source_key' => 'El mismo proyecto aparece dos veces',
     ];
+
+    /** Findings the owner resolves explicitly in the row panel; any other finding blocks the row. */
+    public const OWNER_RESOLVABLE = ['owner_status_review_required', 'package_equation_mismatch'];
 
     public const STATUS = ['ready' => 'Lista', 'needs_mapping' => 'Revisar', 'conflict' => 'Diferencia de importes', 'skipped' => 'Omitida'];
 
@@ -74,6 +76,14 @@ class ImportHoneyBook extends Page
     public string $key = '';
 
     public bool $coverageReviewed = false;
+
+    /** Batch version of the coverage the owner attested (C1); any later change in the batch requires a new review. */
+    #[Locked]
+    public ?int $coverageVersion = null;
+
+    /** Finalize key kept while the file deletion is pending, so "Reintentar" repeats the same request (R1). */
+    #[Locked]
+    public ?string $finalizeKey = null;
 
     public ?array $data = [];
 
@@ -117,6 +127,20 @@ class ImportHoneyBook extends Page
         }
         $this->key = (string) Str::uuid();
         $this->batchId = $batch->id;
+        $this->resetAttestation();
+    }
+
+    public function updatedBatchId(): void
+    {
+        $this->closeRow();
+        $this->resetAttestation();
+    }
+
+    private function resetAttestation(): void
+    {
+        $this->coverageReviewed = false;
+        $this->coverageVersion = null;
+        $this->finalizeKey = null;
     }
 
     private static function fileMessage(ValidationException $e): string
@@ -164,7 +188,7 @@ class ImportHoneyBook extends Page
                 'total' => Labels::money($n['total_cents'] ?? null, '—'), 'paid' => Labels::money($n['paid_cents'] ?? null, '—'), 'balance' => Labels::money($n['balance_cents'] ?? null, '—'),
                 'contract' => ($s['contract_signed'] ?? '') === 'yes' ? 'Firmado en HoneyBook' : 'Sin firmar en HoneyBook',
                 'reasons' => collect($codes)->map(fn ($c) => self::REASONS[$c] ?? $c)->unique()->values()->all(),
-                'importable' => $r->status !== 'skipped' && array_diff($codes, ['owner_status_review_required']) === [] && ! $current,
+                'importable' => $r->status !== 'skipped' && array_diff($codes, self::OWNER_RESOLVABLE) === [] && ! $current,
                 'event_id' => $link?->event_id, 'imported_current' => $current, 'outdated' => $link && ! $current,
             ];
         })->all();
@@ -196,16 +220,27 @@ class ImportHoneyBook extends Page
             'variants' => ServiceVariant::query()->pluck('version', 'id')->map(fn ($v) => (int) $v)->all(),
             'customers' => $this->matches($row)->pluck('version', 'id')->map(fn ($v) => (int) $v)->all(),
         ];
-        $suggestion = ImportServiceMapping::where('source_key', MutationKey::hash([$row->source['services'] ?? '', $row->source['characters'] ?? '']))->first();
+        // Shared helper (normalized case/space key with exact legacy fallback); a suggestion is shown, never applied by itself.
+        $suggestion = HoneyBookMappingKey::suggestion($row->source);
         $selection = $suggestion?->selection ?? [];
         $matches = $this->matches($row);
         $this->form->fill([
             'customer_mode' => $matches->isNotEmpty() ? 'existing' : 'new', 'customer_id' => $matches->first()?->id, 'locale' => 'es',
             'price_version_ids' => array_map(fn ($s) => (string) $s['price_version_id'], $selection),
-            'characters' => collect($selection)->flatMap(fn ($s) => collect($s['characters'] ?? [])->map(fn ($c) => ['price_version_id' => (string) $s['price_version_id'], 'character_id' => (string) $c['character_id'], 'quantity' => $c['quantity']]))->values()->all(),
+            // Outfit and note travel with the remembered choice (an exact version stays exact; "0" is a valid version name).
+            'characters' => collect($selection)->flatMap(fn ($s) => collect($s['characters'] ?? [])->map(fn ($c) => ['price_version_id' => (string) $s['price_version_id'], 'character_id' => (string) $c['character_id'],
+                'quantity' => $c['quantity'], 'outfit' => isset($c['outfit']) ? (string) $c['outfit'] : null, 'note' => $c['note'] ?? null]))->values()->all(),
             'setup_minutes' => null, 'breakdown_minutes' => null, 'source_confirmed' => false, 'source_evidence_reviewed' => false, 'remember_mapping' => true,
+            'source_difference_accepted' => false, 'source_difference_note' => null,
         ]);
         $this->mappingSuggested = $suggestion !== null;
+    }
+
+    private function hasDifference(): bool
+    {
+        $r = $this->rowId ? ImportRow::find($this->rowId) : null;
+
+        return $r && in_array('package_equation_mismatch', array_column($r->errors ?? [], 'code'), true);
     }
 
     public function closeRow(): void
@@ -238,7 +273,11 @@ class ImportHoneyBook extends Page
             'line' => $r->source_line, 'source' => $s, 'status_raw' => $s['status'] ?? '', 'confirmed' => ($n['source_status'] ?? null) === 'confirmed',
             'money' => ['Paquete' => $n['package_cents'] ?? null, 'Costo de transporte' => $n['travel_cents'] ?? null, 'Descuento' => $n['discount_cents'] ?? null,
                 'Total' => $n['total_cents'] ?? null, 'Pagado' => $n['paid_cents'] ?? null, 'Saldo' => $n['balance_cents'] ?? null],
-            'payments' => collect($n['payments'] ?? [])->map(fn ($p) => $p['received_date'].' · '.Labels::money($p['amount_cents']).' · '.$p['method'])->all(),
+            // Owner-confirmed label map (cash → Zelle, unverified); the raw source text stays the evidence.
+            'payments' => collect($n['payments'] ?? [])->map(fn ($p) => $p['received_date'].' · '.Labels::money($p['amount_cents']).' · '.HoneyBookPaymentLabels::display($p['method'])['display_method'])->all(),
+            'difference' => in_array('package_equation_mismatch', array_column($r->errors ?? [], 'code'), true) ? [
+                'expected' => ($n['package_cents'] ?? 0) + ($n['travel_cents'] ?? 0) - ($n['discount_cents'] ?? 0),
+                'total' => $n['total_cents'], 'delta' => HoneyBookSourceDifference::delta($n)] : null,
             'warnings' => array_unique($n['payment_warnings'] ?? []),
             'matches' => $this->matches($r)->map(fn ($c) => ['id' => $c->id, 'name' => $c->name])->all(),
         ];
@@ -270,10 +309,20 @@ class ImportHoneyBook extends Page
                         Select::make('character_id')->label('Personaje')->native(false)->required()->searchable()
                             ->options(fn (Get $get) => EventResource::characterOptions($get('price_version_id'))),
                         TextInput::make('quantity')->label('Cuántos')->integer()->minValue(1)->maxValue(20)->default(1)->required(),
+                        Select::make('outfit')->label('Versión del traje (opcional)')->native(false)->placeholder('Cualquiera')
+                            ->options(fn (Get $get) => self::outfitOptions($get('character_id'), $get('outfit')))
+                            ->visible(fn (Get $get) => self::outfitOptions($get('character_id'), $get('outfit')) !== []),
+                        TextInput::make('note')->label('Nota del personaje (opcional)')->maxLength(200)->columnSpan(2),
                     ]),
                 TextInput::make('setup_minutes')->label('Montaje (minutos antes)')->integer()->minValue(0)->maxValue(720)->required(),
                 TextInput::make('breakdown_minutes')->label('Desmontaje (minutos después)')->integer()->minValue(0)->maxValue(720)->required(),
                 Checkbox::make('remember_mapping')->label('Recordar esta equivalencia para filas con el mismo paquete y personajes')->columnSpanFull(),
+            ]),
+            Section::make('Diferencia en el total de HoneyBook')->visible(fn () => $this->hasDifference())->schema([
+                Checkbox::make('source_difference_accepted')->accepted()
+                    ->label('Acepto guardar el total tal como está en HoneyBook, con esta diferencia. No se agrega ningún cargo ni se recalcula nada.'),
+                Textarea::make('source_difference_note')->label('Tu nota: ¿por qué es distinto el total?')->required()->minLength(5)->maxLength(1000)->rows(2)
+                    ->helperText('Queda como evidencia privada del evento. Escríbela tú.'),
             ]),
             Section::make('Confirmación')->schema([
                 Checkbox::make('source_confirmed')->accepted()
@@ -300,7 +349,7 @@ class ImportHoneyBook extends Page
     public function commit(): void
     {
         $s = $this->form->getState();
-        $services = collect(EventResource::servicesInput($s))->map(function ($svc) {
+        $services = collect(self::servicesInput($s))->map(function ($svc) {
             $variant = PriceVersion::whereKey($svc['price_version_id'])->value('service_variant_id');
 
             return ['price_version_id' => $svc['price_version_id'], 'expected_variant_version' => $this->pinned['variants'][$variant] ?? 0,
@@ -312,6 +361,8 @@ class ImportHoneyBook extends Page
             'source_confirmed' => true, 'source_evidence_reviewed' => true,
             'setup_minutes' => (int) $s['setup_minutes'], 'breakdown_minutes' => (int) $s['breakdown_minutes'], 'services' => $services,
             'remember_mapping' => (bool) ($s['remember_mapping'] ?? false),
+            // Sent only for a row whose source total differs; the backend refuses these fields on any other row.
+            ...($this->hasDifference() ? ['source_difference_accepted' => (bool) ($s['source_difference_accepted'] ?? false), 'source_difference_note' => trim((string) ($s['source_difference_note'] ?? ''))] : []),
             ...($s['customer_mode'] === 'existing'
                 ? ['customer_id' => $customerId, 'expected_customer_version' => $this->pinned['customers'][$customerId] ?? 0]
                 : ['create_separate_customer' => true, 'new_customer_locale' => $s['locale']]),
@@ -329,8 +380,34 @@ class ImportHoneyBook extends Page
         }
         Notification::make()->success()->title('Evento importado como borrador')->body('Siguiente paso: confirmar personal y equipo desde el evento.')->send();
         $this->closeRow();
+        $this->resetAttestation();
         $this->key = (string) Str::uuid();
         unset($link);
+    }
+
+    /** Like EventResource::servicesInput, keeping each character's optional outfit and note (same limits as the event form). */
+    public static function servicesInput(array $data): array
+    {
+        return collect($data['price_version_ids'] ?? [])->map(function ($id) use ($data) {
+            $service = ['price_version_id' => (int) $id];
+            if (array_key_exists($id, EventResource::configurablePrices([$id]))) {
+                $service['characters'] = collect($data['characters'] ?? [])->filter(fn ($c) => (int) ($c['price_version_id'] ?? 0) === (int) $id)
+                    ->map(fn ($c) => ['character_id' => (int) $c['character_id'], 'quantity' => (int) $c['quantity'],
+                        ...(($c['outfit'] ?? null) !== null && $c['outfit'] !== '' ? ['outfit' => (string) $c['outfit']] : []),
+                        ...(filled($c['note'] ?? null) ? ['note' => trim((string) $c['note'])] : [])])->values()->all();
+            }
+
+            return $service;
+        })->values()->all();
+    }
+
+    /** The character's outfit versions, plus a remembered value so a suggestion never silently loses its exact version. */
+    public static function outfitOptions($characterId, $current = null): array
+    {
+        $list = filled($characterId) ? collect(\App\Models\Character::find((int) $characterId)?->outfits ?? [])->mapWithKeys(fn ($o) => [(string) $o => (string) $o])->all() : [];
+        if ($current !== null && $current !== '' && ! isset($list[(string) $current])) $list[(string) $current] = $current.' (de la equivalencia guardada)';
+
+        return $list;
     }
 
     public static function formPath(string $key): string
@@ -345,20 +422,42 @@ class ImportHoneyBook extends Page
 
     // ── 4. Finalize ──────────────────────────────────────────────────────────
 
-    public function finalize(): void
+    /** The owner attests the coverage she is looking at; the batch version shown is pinned (C1). */
+    public function attestCoverage(int $shownVersion): void
     {
-        if (! $this->coverageReviewed) {
-            throw ValidationException::withMessages(['coverageReviewed' => 'Confirma que revisaste que el archivo tiene todos los eventos futuros.']);
-        }
-        try {
-            app(FinalizeHoneyBookImport::class)->execute(Filament::auth()->user(), $this->batchId, ['expected_version' => $this->batch()->version, 'source_coverage_reviewed' => true], $this->key);
-        } catch (RecordWriteRejected|AuthorizationException|ValidationException $e) {
-            $this->key = (string) Str::uuid();
-            Notification::make()->danger()->title('No se cerró el lote')->body($e->getMessage())->persistent()->send();
+        if ($this->batch()?->version !== $shownVersion) {
+            $this->resetAttestation();
+            Notification::make()->warning()->title('El lote cambió')->body('Vuelve a revisar la cobertura actualizada.')->send();
 
             return;
         }
-        $this->key = (string) Str::uuid();
-        Notification::make()->success()->title('Lote cerrado')->body('El archivo original se borró. Los eventos y lo pagado en HoneyBook quedan guardados.')->send();
+        $this->coverageReviewed = true;
+        $this->coverageVersion = $shownVersion;
+    }
+
+    public function finalize(): void
+    {
+        if (! $this->coverageReviewed || $this->coverageVersion === null) {
+            throw ValidationException::withMessages(['coverageReviewed' => 'Confirma que revisaste que el archivo tiene todos los eventos futuros.']);
+        }
+        $this->finalizeKey ??= (string) Str::uuid();
+        try {
+            $batch = app(FinalizeHoneyBookImport::class)->execute(Filament::auth()->user(), $this->batchId,
+                ['expected_version' => $this->coverageVersion, 'source_coverage_reviewed' => true], $this->finalizeKey);
+        } catch (RecordWriteRejected|AuthorizationException|ValidationException $e) {
+            $this->resetAttestation();
+            Notification::make()->danger()->title('No se cerró el lote')->body($e->getMessage().' Revisa la cobertura otra vez.')->persistent()->send();
+
+            return;
+        }
+        if ($batch->status === 'imported') {
+            $this->resetAttestation();
+            Notification::make()->success()->title('Lote cerrado')->body('El archivo original se borró. Los eventos y lo pagado en HoneyBook quedan guardados.')->send();
+
+            return;
+        }
+        // imported_cleanup_pending: everything is imported but the private file is still there. Same key = safe retry.
+        Notification::make()->warning()->title('Importación cerrada, falta borrar el archivo')
+            ->body('Los eventos quedaron guardados, pero el archivo original todavía no se pudo borrar. Usa "Reintentar borrar el archivo".')->persistent()->send();
     }
 }
