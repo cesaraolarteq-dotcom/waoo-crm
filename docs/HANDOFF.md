@@ -3,6 +3,14 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-17 · Codex · `codex/quote-portal-contract` — QUOTE B/C detailed API before implementation
+
+- Published docs/QUOTE-PORTAL-API.md before coding: immutable private presentation/PDF + revision-bound quote grants, trusted decision/consent evidence and exact accepted-to-finance binding. First contract extends A2d90794/source88d53f3; no implementation or completion credit in this commit.
+- Owner→sorted quote grants→event→quote versus client grant→event→quote ordering is explicit. Event tokens remain v1; quote tokens v2 bind exact quote_revision_id. Draft consent config stays empty and blocks preparation until exact owner-approved EN/ES text is provided; no template approval inferred. No sending, money or capacity from quote acceptance.
+- Financial bridge must preserve discounts/service snapshots, enforce actual ledger in capacity confirmation, and keep later address-only reconfirmation from repricing the accepted offer. Contract discount lines are commercial data; legal terms unchanged. Source snapshot/decision/PDF hashes and independent states exposed for Claude's screens.
+- Read latest main7288a75: draft mail v1b fixes prior variable/discount/has_balance/timing/subject notes; still unapproved/inactive. Quote A is separately delivered; original review blockers resolved in codex/review-phase-2-followups. No deployment, messages, charges or providers. Next implementation is B/C on own codex branch.
+
+
 ## 2026-10-17 · Codex · `codex/quote-01` — QUOTE A foundation: immutable owner quote revisions
 
 - **API2d90794 published before source88d53f3**, docs/QUOTE-01-API.md. Own backend-only branch from approved/delivered portal-link-recovery28566a0 + main98b3435 docs; no blocked #59 or reviewed UI source merged. Source adds migration300000, Quote/immutable QuoteRevision, CreateQuote/ReviseQuote/ReadQuotes, bounded ExpireQuotes/CLI, owner API routes and default-off WAOO_SANDBOX_QUOTES (also requires finance sandbox; deny production). Owner-authorized order QUOTE → IMPORT → MAIL/MSG → AVAIL-WEB retained.
