@@ -78,6 +78,7 @@ class LeadScreensTest extends TestCase
             ->call('save')->assertHasNoFormErrors();
         $this->assertSame('booked', $lead->fresh()->status);
         $this->assertSame(Event::sole()->id, $lead->fresh()->booked_event_id);
+        $this->assertSame('ana@example.test', Event::sole()->customer->email, 'The supplied email survives the actual new-customer booking.');
         $this->get('/admin/prospectos?status=booked')->assertSee('Ver la reserva');
     }
 
@@ -99,5 +100,20 @@ class LeadScreensTest extends TestCase
         $page->set('status', 'all')->assertSet('leadPage', 1)->assertSee('Prospecto 51');
         $this->get('/admin/prospectos?pagina=2')->assertOk()->assertSee('Primera Ficticia');
         $this->assertSame(51, Lead::count());
+    }
+
+    public function test_conversion_by_phone_hint_never_overwrites_existing_customer_email_or_locale(): void
+    {
+        $customer = Customer::create(['name' => 'Existing Fixture Client', 'phone' => '346-555-0100', 'email' => 'saved@example.test', 'locale' => 'en']);
+        $lead = $this->lead(['email' => 'incoming@example.test', 'locale' => 'es']);
+        Livewire::test(QuickBooking::class)->call('fillFromLead', $lead->id)
+            ->assertSchemaStateSet(['customer_mode' => 'existing', 'customer_id' => $customer->id, 'c_email' => 'saved@example.test', 'c_locale' => 'en'])
+            ->fillForm(['price_version_ids' => [$this->price->id], 'event_type' => 'birthday', 'title' => 'Fixture Existing Client Party', 'end_time' => '16:00', 'travel_fee' => '40',
+                'deposit' => ['amount' => '70', 'reference' => 'ZELLE-EXISTING-LEAD', 'date' => now('America/Chicago')->subDay()->format('Y-m-d'), 'time' => '00:05', 'verified' => true], 'expires_days' => 14])
+            ->call('save')->assertHasNoFormErrors();
+        $this->assertSame($customer->id, Event::sole()->customer_id);
+        $this->assertSame(['saved@example.test', 'en', 1], [$customer->fresh()->email, $customer->fresh()->locale, $customer->fresh()->version]);
+        $this->assertSame(Event::sole()->id, $lead->fresh()->booked_event_id);
+        $this->assertSame(1, Customer::count());
     }
 }
