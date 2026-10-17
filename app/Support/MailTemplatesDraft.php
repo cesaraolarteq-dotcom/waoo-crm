@@ -30,6 +30,32 @@ final class MailTemplatesDraft
                                'en' => ['Thank you for celebrating with us!', ['Hi {first_name}! Thank you for choosing Waoo Party. We hope everyone had an amazing time!', 'If you have a minute, a Google review helps other families find us.'], ['Leave a review', 'review_link'], "We'd love to celebrate with you again!"]],
     ];
 
+    // When each one goes out (for the owner's settings page).
+    public const WHEN = [
+        'inquiry_received' => 'Cuando llega una solicitud desde la web',
+        'quote_sent' => 'Cuando envías una cotización',
+        'details_request' => 'Después del depósito, para completar datos y firmar',
+        'contract_ready' => 'Cuando el contrato está listo para firmar',
+        'payment_received' => 'Cuando confirmas un pago (Zelle verificado o tarjeta)',
+        'zelle_notice_pending' => 'Cuando la clienta avisa que mandó un Zelle',
+        'balance_reminder' => 'Un día antes de que venza el saldo (solo si hay saldo)',
+        'week_before' => '7 días antes de la fiesta',
+        'thank_you_review' => 'El día después de la fiesta',
+    ];
+
+    // Full HTML of one draft with fictitious sample data (preview only).
+    public static function preview(string $key, string $lang): string
+    {
+        $es = $lang === 'es';
+        $vars = ['first_name' => 'Ana', 'event_date' => $es ? 'sábado 21 de noviembre a las 3:00 pm' : 'Sat, Nov 21 at 3:00 pm', 'subject_date' => $es ? 'sábado 21 de noviembre' : 'Sat, Nov 21', 'address' => '123 Sample St, Katy, TX', 'package' => $es ? 'Música y Juegos 2.0' : 'Music & Games 2.0',
+            'deposit' => '$307.50', 'paid' => '$307.50', 'amount' => '$307.50', 'balance' => '$307.50', 'balance_due' => $es ? ' (vence el viernes 20 de noviembre)' : ' (due Fri, Nov 20)', 'due' => $es ? 'viernes 20 de noviembre' : 'Fri, Nov 20',
+            'valid_until' => $es ? 'viernes 30 de octubre' : 'Fri, Oct 30', 'link' => url('/portal/ejemplo'), 'review_link' => 'https://g.page/r/sample'];
+        $totals = [['label' => $es ? 'Paquete' : 'Package', 'amount' => '$600'], ['label' => $es ? 'Costo de transporte' : 'Travel fee', 'amount' => '$40'],
+            ['label' => $es ? 'Descuento por reservar hoy' : 'Book-today discount', 'amount' => '−$25', 'discount' => true], ['label' => 'Total', 'amount' => '$615', 'strong' => true]];
+
+        return view('mail.layout', ['lang' => $lang, 'mail' => self::render($key, $lang, $vars), 'totals' => $totals, 'logo' => url('/img/waoo-logo.png')])->render();
+    }
+
     /** @return array{subject:string, paragraphs:array, closing:?string, button:?array} */
     public static function render(string $key, string $lang, array $vars): array
     {
