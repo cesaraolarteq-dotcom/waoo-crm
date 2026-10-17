@@ -1,6 +1,6 @@
 {
  "_about": "Temporary owner progress view (prototype tab 'Avance del proyecto'). Phases = docs/PROJECT_PLAN.md §18. Each agent updates its own evidence; Claude renders. Rules: a design/contract doc counts 0; a part counts only with a tested commit; review, merge to main and owner acceptance are separate steps. Phase % = sum(weight × stage score) / sum(weight).",
- "updated": "2026-10-16",
+ "updated": "2026-10-17",
  "stage_scores": {
   "backend": 0.35,
   "ui": 0.35,
@@ -406,7 +406,7 @@
      "ui_fix_evidence": "Codex implementation bf2ffac/7ebcf2c chosen explicitly; integrated exact bdc6c9e with Claude2d19000. Full 254/2328; server resolves Houston local time with CDT/CST choice. Both HANDOFF histories retained.",
      "ui_fix_reviewed": true,
      "ui_fix_review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed.",
-     "link_recovery": "Codex 68c02a5 (API b3c9edd) + Claude #54: Copiar enlace (mismo enlace activo), teléfonos validados, sin aviso al cerrar; pendiente revisión de Codex."
+     "link_recovery": "Codex68c02a5 approved by Claude; Claude #54 exact81771b2 reviewed/approved by Codex. Same active URL, recipient parsing and manual clipboard fallback; main merge/device QA/owner acceptance pending."
     },
     {
      "name": "Reserva rápida (tu mitad + la de la clienta)",
@@ -444,16 +444,18 @@
       "accepted": false,
       "note": "COMMS-01 A/B/C answered; proposed owner-only recopy API published before implementation. Manual phone apps first; Postmark/email auth recommended, SMS automation/WhatsApp eligibility later. No implementation credit/provider/DNS/send. #54 b30d209 review requests recipient/lifecycle fixes;41/446 tests +build pass, diagnostic2/5 reproduces bug; no new full/browser/provider proof.",
       "recovery_evidence": "Backend A follow-up68c02a5 on phase4 row; full326/3148. This documentation entry itself counts0; email/SMS/WhatsApp provider implementation remains pending.",
-      "latest_ui_review": "#54 72d95eb still blocked on recipient parsing and transient beforeunload listener cleanup. New opt-in diagnostic reproduces wrong-recipient acceptance. See CLAUDE-56-57-59-54.md; no automated sends/browser/provider proof."
+      "latest_ui_review": "Codex approves #54 exact81771b2: recipient parser fixed, global unload/sent state removed, explicit owner same-link reveal and shared clipboard fallback connected. See docs/reviews/COMMS-01-54-REVIEW-V2.md. No browser/provider/deployment/merge/owner acceptance claimed."
      },
      "comms_link_recovery_followup": {
       "backend": "68c02a5",
-      "ui": null,
-      "reviewed": false,
+      "ui": "81771b2",
+      "reviewed": true,
       "merged": false,
       "accepted": false,
       "verification": "Contractb3c9edd published first; owner SMS-first main62f898e preserved5920ae4 before source. Full326/3148 (352.01s) and new14/168 pass, PHP8.3/MariaDB11.8. Real grant revoke/reveal race, crypto/binding/key/auth/CSRF/TLS/privacy/rollback, actual paid-core link-storage failure/recovery, SQLite up/down/up. Local guarded290000 migration and /up200; syntax14 PHP/strict Composer/diff pass.",
-      "remaining": "Claude explicit copy action/presenter/fallback and independent review/CI/main/acceptance. Existing hash-only links cannot be reconstructed; no expiry/rotation change. B/C sending providers, DNS, automated SMS/email/WhatsApp not activated. No completion credit for those parts."
+      "remaining": "Codex approves UI #54 exact81771b2; normal main merge, browser/phone clipboard and SMS checks, owner acceptance remain. Preserve both contact test classes. Provider email/SMS/WhatsApp automation and activation are separate, still pending.",
+      "backend_review": "Claude HANDOFF in #54 explicitly approves source68c02a5.",
+      "latest_ui_verification": "Codex exact #54 81771b2, source7048acf: targeted78/882 (85.129s) +4/39 LEAD screen checks (4.838s) pass, PHP8.3/MariaDB11.8. Real same-link/revoke/legacy UI and both contact suites; Node actual Alpine clipboard success/rejection/missing API pass; Vite/syntax/diff pass. No new full/browser/device/provider/main merge/owner acceptance."
      },
      "contact_atomicity": "Codex ad87fae (API 2ff80c1) + Claude #49 1ebafe0: corrección de contacto dentro de QuickBook; pendiente revisión de Codex."
     }
@@ -481,7 +483,7 @@
       "accepted": false,
       "note": "COMMS-01 A/B/C answered; proposed owner-only recopy API published before implementation. Manual phone apps first; Postmark/email auth recommended, SMS automation/WhatsApp eligibility later. No implementation credit/provider/DNS/send. #54 b30d209 review requests recipient/lifecycle fixes;41/446 tests +build pass, diagnostic2/5 reproduces bug; no new full/browser/provider proof.",
       "recovery_evidence": "Backend A follow-up68c02a5 on phase4 row; full326/3148. This documentation entry itself counts0; email/SMS/WhatsApp provider implementation remains pending.",
-      "latest_ui_review": "#54 72d95eb still blocked on recipient parsing and transient beforeunload listener cleanup. New opt-in diagnostic reproduces wrong-recipient acceptance. See CLAUDE-56-57-59-54.md; no automated sends/browser/provider proof."
+      "latest_ui_review": "Codex approves #54 exact81771b2: recipient parser fixed, global unload/sent state removed, explicit owner same-link reveal and shared clipboard fallback connected. See docs/reviews/COMMS-01-54-REVIEW-V2.md. No browser/provider/deployment/merge/owner acceptance claimed."
      }
     },
     {
@@ -548,7 +550,7 @@
       "accepted": false,
       "note": "COMMS-01 A/B/C answered; proposed owner-only recopy API published before implementation. Manual phone apps first; Postmark/email auth recommended, SMS automation/WhatsApp eligibility later. No implementation credit/provider/DNS/send. #54 b30d209 review requests recipient/lifecycle fixes;41/446 tests +build pass, diagnostic2/5 reproduces bug; no new full/browser/provider proof.",
       "recovery_evidence": "Backend A follow-up68c02a5 on phase4 row; full326/3148. This documentation entry itself counts0; email/SMS/WhatsApp provider implementation remains pending.",
-      "latest_ui_review": "#54 72d95eb still blocked on recipient parsing and transient beforeunload listener cleanup. New opt-in diagnostic reproduces wrong-recipient acceptance. See CLAUDE-56-57-59-54.md; no automated sends/browser/provider proof."
+      "latest_ui_review": "Codex approves #54 exact81771b2: recipient parser fixed, global unload/sent state removed, explicit owner same-link reveal and shared clipboard fallback connected. See docs/reviews/COMMS-01-54-REVIEW-V2.md. No browser/provider/deployment/merge/owner acceptance claimed."
      }
     },
     {
