@@ -207,7 +207,7 @@
      "weight": 3,
      "agent": "Codex+Claude",
      "backend": "ea13afd",
-     "ui": "4b4d48b",
+     "ui": "d04561a",
      "reviewed": false,
      "merged": false,
      "accepted": false,
@@ -222,7 +222,7 @@
       "integration_verification": "Final integrated codex/outfit-01 d1b00a3: full300/2864 pass (330.31s), PHP8.3/MariaDB11.8; includes LEAD/ROUTE/OUTFIT, real independent races and populated SQLite/MariaDB roundtrips. Vite/strict Composer/syntax/diff pass. Packagist audit unavailable (proxy403), no dependency changes.",
       "latest_screen_integration_verification": "Full integrated suite369 tests /3672 assertions PASS (407.26s), PHP8.3/MariaDB11.8, source ed8d426; includes restored10 backend contact cases +3 screen cases and22 recorded calibration fixtures. Vite/strict Composer/syntax/diff pass. Review-only stack contains blocked #59/#54 for reproduction; no main merge, browser/provider/deployment or owner acceptance."
      },
-     "blocker": "Claude #59 must forward page to ReadLeads, retain pagination and reset page on status change. Website e4dd1f3 reported by Claude remains off; shared-secret configuration, website integration verification and explicit activation still pending.",
+     "blocker": "Pantallas #59 d04561a (paginación + correo) esperan re-revisión de Codex; web web-lead-01 apagada; secreto compartido y OK de César pendientes.",
      "review_evidence": "Codex reviewed #59 4b4d48b after #56/#57: request changes, only first50 records reachable, query page2 ignored. Backend page2 works. See docs/reviews/CLAUDE-56-57-59-54.md and opt-in diagnostic. No main merge/acceptance."
     },
     {
@@ -230,7 +230,7 @@
      "weight": 2,
      "agent": "Codex",
      "backend": "f31361c",
-     "ui": "c57a3dc",
+     "ui": "f096c04",
      "reviewed": true,
      "merged": false,
      "accepted": false,
@@ -245,7 +245,7 @@
       "integration_verification": "Final integrated codex/outfit-01 d1b00a3: full300/2864 pass (330.31s), PHP8.3/MariaDB11.8; includes LEAD/ROUTE/OUTFIT, real independent races and populated SQLite/MariaDB roundtrips. Vite/strict Composer/syntax/diff pass. Packagist audit unavailable (proxy403), no dependency changes.",
       "latest_screen_integration_verification": "Full integrated suite369 tests /3672 assertions PASS (407.26s), PHP8.3/MariaDB11.8, source ed8d426; includes restored10 backend contact cases +3 screen cases and22 recorded calibration fixtures. Vite/strict Composer/syntax/diff pass. Review-only stack contains blocked #59/#54 for reproduction; no main merge, browser/provider/deployment or owner acceptance."
      },
-     "blocker": "Main merge/owner acceptance and explicitly authorized secure Google configuration + real staging probe pending. No new hosting/provider operation performed.",
+     "blocker": "Pantallas #57 aprobadas por Codex; calibración 22/22 en pruebas. Falta fusionar, llave de Google en crm-test (permiso) y prueba real.",
      "review_evidence": "Codex approves exact #57 c57a3dc. TravelFeeReferenceCalibrationTest: all22 recorded expected fees and route selections match, fixed ZIPs skip provider; rounded recorded measurements with HTTP fakes, no live Google probe. Failed recalculation correctly requires manual reason before saving old fee."
     },
     {
@@ -267,7 +267,7 @@
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "blocker": "Base manual por evento con pantalla (Claude 0f8ae91, revisión de 08c284a: aprobado). Pendiente: tarifas reales del staff/horas/transporte de César y margen automático por paquete",
+     "blocker": "Tarifas del staff (César)",
      "backend_foundation": "08c284a: owner-entered immutable estimated/actual event costs, unknown/coverage states, versioned history and owner-only contribution margin API",
      "foundation_verification": "Focused 12 MariaDB tests / 101 assertions; full integration 241 / 2119 with CLI-only512M helper after a128M PDF-suite exhaustion; Vite, lint, strict Composer and 9 real HTTP smoke checks pass",
      "foundation_reviewed": true,
@@ -291,7 +291,7 @@
      "merged": true,
      "accepted": false,
      "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996",
-     "outfit_versions": "Codex d1b00a3/API7c8dcb1 + Claude #56 917e573 reviewed/approved with minor mapper/wording follow-ups; main merge, real inventory and owner acceptance pending."
+     "outfit_versions": "Codex d1b00a3 + Claude #56 b2f5ba2 aprobado por Codex (notas aplicadas)."
     },
     {
      "name": "Motor sin choques (habilidades, trajes, vehículos, concurrencia)",
@@ -406,7 +406,7 @@
      "ui_fix_evidence": "Codex implementation bf2ffac/7ebcf2c chosen explicitly; integrated exact bdc6c9e with Claude2d19000. Full 254/2328; server resolves Houston local time with CDT/CST choice. Both HANDOFF histories retained.",
      "ui_fix_reviewed": true,
      "ui_fix_review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed.",
-     "link_recovery": "Codex68c02a5 approved by Claude; Claude #54 exact81771b2 reviewed/approved by Codex. Same active URL, recipient parsing and manual clipboard fallback; main merge/device QA/owner acceptance pending."
+     "link_recovery": "Codex 68c02a5 + Claude #54 aprobado por Codex (81771b2)."
     },
     {
      "name": "Reserva rápida (tu mitad + la de la clienta)",
@@ -457,7 +457,7 @@
       "backend_review": "Claude HANDOFF in #54 explicitly approves source68c02a5.",
       "latest_ui_verification": "Codex exact #54 81771b2, source7048acf: targeted78/882 (85.129s) +4/39 LEAD screen checks (4.838s) pass, PHP8.3/MariaDB11.8. Real same-link/revoke/legacy UI and both contact suites; Node actual Alpine clipboard success/rejection/missing API pass; Vite/syntax/diff pass. No new full/browser/device/provider/main merge/owner acceptance."
      },
-     "contact_atomicity": "Codex ad87fae (API 2ff80c1) + Claude #49 1ebafe0: corrección de contacto dentro de QuickBook; pendiente revisión de Codex."
+     "contact_atomicity": "Codex ad87fae + Claude #49 619720f (aprobado; clases de prueba de contacto conservadas)."
     }
    ]
   },
