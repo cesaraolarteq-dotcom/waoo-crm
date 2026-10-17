@@ -8,7 +8,7 @@
   "merged": 0.1,
   "accepted": 0.1
  },
- "stage_scores_note": "If a deliverable has no UI part (ui: null), its backend counts 0.7. No UI-only deliverable without backend counts backend as 0.",
+ "stage_scores_note": "If a deliverable has no UI part (ui: null), its backend counts 0.7. No UI-only deliverable without backend counts backend as 0. ui:false means a required UI is still pending and earns no UI credit (null is reserved for no UI part).",
  "phases": [
   {
    "id": 0,
@@ -252,8 +252,8 @@
      "name": "Cotizaciones con versiones",
      "weight": 3,
      "agent": "Codex+Claude",
-     "backend": null,
-     "ui": null,
+     "backend": "5a5433d",
+     "ui": false,
      "reviewed": false,
      "merged": false,
      "accepted": false,
@@ -266,9 +266,20 @@
       "accepted": false,
       "scope": "QUOTE A: owner-only CreateQuote/ReviseQuote/ReadQuotes from existing audited event drafts; immutable monetary snapshots/explicit discounts/odd-cent deposit; bounded expiry; default-off sandbox. No portal send/accept/PDF, financial revision, payment or capacity mutation.",
       "verification": "API2d90794 before source88d53f3. Full345 tests/3269 assertions pass (354.97s), PHP8.3/MariaDB11.8; targeted19/119 (18.443s), three real process races, snapshot/discount/rollback/guards/CSRF/SQLite roundtrip. Strict Composer/15 PHP syntax/diff pass. Guarded local-only300000 migration + /up200, default off. No provider/browser/deploy/owner acceptance.",
-      "remaining": "Claude independent backend review and owner-builder adapters; B scoped portal/PDF/acceptance and C accepted-snapshot finance/capacity bridge. Main merge/owner acceptance pending. Whole QUOTE-01 backend stays null until complete; no premature phase credit."
+      "remaining": "A source88d53f3 extended by B/C5a5433d; independent review and owner/portal UI integration, main merge and owner acceptance pending."
      },
-     "blocker": "Foundation88d53f3 delivered for review; no client links/acceptance/PDF/conversion yet. Do not enable those planned UI actions. See docs/QUOTE-01-API.md."
+     "blocker": "Backend A/B/C5a5433d tested. Required UI is pending (false), not inapplicable (null); backend earns35%, no UI/review/merge/owner credit. Claude review/integration and approved consent wording remain. See docs/QUOTE-PORTAL-API.md.",
+     "portal_financial_bridge": {
+      "api": "112af8e /97348c2 before implementation",
+      "backend": "5a5433d",
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "scope": "Immutable private quote presentation/PDF, exact revision-scoped legacy-compatible recoverable grants, client accept/reject evidence and explicit exact accepted-to-finance binding; actual ledger and all ordinary capacity checks, visible contract discounts, unchanged catalog agreement.",
+      "verification": "Full377 tests /3523 assertions PASS, exit0,461.90s, PHP8.3/MariaDB11.8, source5a5433d. New32 cases with actual decision/revise/revoke/conversion races, audit/crypto/storage rollback, corrupt PDFs/consent/customer drift, exact money, busy resources/short-notice, unchanged legal terms, fake Checkout and populated SQLite roundtrip. Strict Composer/33 PHP syntax/diff pass. Local guarded310000/320000 +up200. No browser/provider/remote-CI/deploy or owner acceptance.",
+      "remaining": "Claude independent review; required owner/portal UI with Locked displayed versions/hashes and stable retry UUID; owner-approved concrete EN/ES outcome consent remains empty. No main merge or whole-phase completion."
+     }
     },
     {
      "name": "Costos y margen por paquete",
