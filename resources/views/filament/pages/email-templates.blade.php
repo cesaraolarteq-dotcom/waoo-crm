@@ -4,6 +4,26 @@
         <p class="wmoney-p">Cada correo lleva un solo botón y va en el idioma de la clienta. Como muchos correos terminan en spam, lo importante también se manda por mensaje de texto. Para cambiar un texto, díselo a Claude; los cambios se aprueban antes de activarse.</p>
     </x-filament::section>
 
+    @if ($ready = $this->readiness())
+        <x-filament::section>
+            <x-slot name="heading">¿Listos para enviar?</x-slot>
+            <x-slot name="afterHeader"><x-filament::badge :color="$ready['missing'] === [] ? 'success' : 'warning'">{{ $ready['missing'] === [] ? 'Falta solo tu activación' : 'Todavía no' }}</x-filament::badge></x-slot>
+            <dl class="wfile-dl">
+                <div><dt>Correos de prueba</dt><dd>{{ $ready['enabled'] ? 'Encendidos (solo entorno de prueba)' : 'Apagados' }}</dd></div>
+                <div><dt>Proveedor de correo</dt><dd>{{ $ready['transport_configured'] ? 'Configurado' : 'Sin configurar' }}</dd></div>
+                <div><dt>Lista de prueba</dt><dd>{{ $ready['allowlist'] ? implode(', ', $ready['allowlist']) : 'Vacía' }}</dd></div>
+                @foreach ($ready['rows'] as $r)
+                    <div><dt>{{ $r->label }}</dt><dd>Español: {{ $r->es ? 'aprobado' : 'sin aprobar' }} · Inglés: {{ $r->en ? 'aprobado' : 'sin aprobar' }}</dd></div>
+                @endforeach
+            </dl>
+            @if ($ready['missing'])
+                <p class="wmoney-p"><b>Falta:</b></p>
+                <ul class="wimp-list">@foreach ($ready['missing'] as $m)<li>• {{ $m }}</li>@endforeach</ul>
+            @endif
+            <p class="wmoney-p">Aunque todo esté listo, ningún correo sale hasta que tú lo actives. Mientras tanto solo pueden ir a la lista de prueba.</p>
+        </x-filament::section>
+    @endif
+
     @foreach ($this->templates() as $t)
         <x-filament::section collapsible collapsed>
             <x-slot name="heading">{{ $t->subject_es }}</x-slot>

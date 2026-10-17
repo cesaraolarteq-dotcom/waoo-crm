@@ -26,7 +26,7 @@ class MailOutboxTest extends TestCase
         Customer::whereKey($this->event->customer_id)->update(['email'=>$this->owner->email]);
         $this->finance=app(CreateFinancialRevision::class)->execute($this->owner,$this->event->id,['expected_version'=>1],(string)Str::uuid());
         $this->payment($this->finance->deposit_target_cents,'MAIL-DEPOSIT');
-        $resources=[Resource::create(['code'=>'MAIL-PERFORMER','name'=>'Fixture Performer','kind'=>'staff','status'=>'active','skills'=>['performer']])->id,
+        $resources=[Resource::create(['code'=>'MAIL-PERFORMER','name'=>'Fixture Performer','kind'=>'staff','status'=>'active','skills'=>['performer','driver']])->id,
             Resource::create(['code'=>'MAIL-SPEAKER','name'=>'Fixture Speaker','kind'=>'equipment','status'=>'active','equipment_kind'=>'speaker','skills'=>[]])->id];
         $this->event=app(ConfirmPaidCapacity::class)->execute($this->owner,$this->event->id,['expected_version'=>1,'financial_revision_id'=>$this->finance->id,'resource_ids'=>$resources,
             'review'=>['staff_confirmed'=>true,'cargo_checked'=>true,'origin_return_note'=>'Fixture origin and return reviewed.','transfers'=>[]]]);

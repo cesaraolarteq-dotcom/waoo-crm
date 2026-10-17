@@ -26,6 +26,7 @@ class ViewEvent extends Page
         'finance.revision_created' => 'Fijó los montos', 'payment.zelle_received' => 'Registró un Zelle', 'payment.capacity_linked' => 'Vinculó el pago con los recursos',
         'portal.zelle_notice_submitted' => 'La clienta avisó que envió un Zelle', 'payment.zelle_notice_reviewed' => 'Revisó un aviso de Zelle de la clienta',
         'cost.snapshot_recorded' => 'Registró costos',
+        'mail.planned' => 'Programó un correo', 'mail.policy_updated' => 'Cambió la pausa de correos',
     ];
 
     /** Zelle notice reviews say which way they went; amounts stay on the Dinero screen. */
@@ -47,11 +48,77 @@ class ViewEvent extends Page
     #[\Livewire\Attributes\Locked]
     public string $quoteKey = '';
 
+    /** MAIL-01: client record version and mail pause version shown on this page; changes are refused if they moved. */
+    #[\Livewire\Attributes\Locked]
+    public ?int $displayedCustomerVersion = null;
+
+    #[\Livewire\Attributes\Locked]
+    public ?int $mailPolicyVersion = null;
+
+    #[\Livewire\Attributes\Locked]
+    public string $mailKey = '';
+
     public function mount(int|string $record): void
     {
         $this->record = $this->resolveRecord($record);
         $this->displayedVersion = $this->record->version;
         $this->quoteKey = (string) \Illuminate\Support\Str::uuid();
+        $this->displayedCustomerVersion = $this->record->customer?->version;
+        $this->mailKey = (string) \Illuminate\Support\Str::uuid();
+        $this->mailPolicyVersion = $this->mail()['policy']['version'] ?? null;
+    }
+
+    /** This event's messages through ReadOutboundMail (owner-only, no body/recipient), or null while mail is off. */
+    public function mail(): ?array
+    {
+        if (! \App\Filament\Support\MailUi::enabled()) {
+            return null;
+        }
+        try {
+            $read = app(\App\Services\Mail\ReadOutboundMail::class)->forEvent(\Filament\Facades\Filament::auth()->user(), $this->record->getKey(), ['per_page' => 50]);
+        } catch (\Illuminate\Auth\Access\AuthorizationException) {
+            return null;
+        }
+        $read['rows'] = collect($read['data'])->map(fn ($m) => (object) [
+            'template' => \App\Filament\Support\MailUi::TEMPLATES[$m['template_key']] ?? $m['template_key'],
+            'when' => Labels::when(\Carbon\CarbonImmutable::parse($m['due_at'])), 'lang' => strtoupper($m['locale']),
+            'status' => \App\Filament\Support\MailUi::STATUS[$m['status']] ?? $m['status'], 'color' => \App\Filament\Support\MailUi::STATUS_COLOR[$m['status']] ?? 'gray',
+            'error' => $m['error_code'] ? (\App\Filament\Support\MailUi::ERRORS[$m['error_code']] ?? $m['error_code']) : null,
+        ])->all();
+
+        return $read;
+    }
+
+    /** Pause/resume this event's reminders with the version shown; a stale screen is refused and refreshed. */
+    public function toggleMailPause(): void
+    {
+        $shown = $this->mail();
+        if ($shown === null) {
+            return;
+        }
+        try {
+            $r = app(\App\Services\Mail\PauseEventMail::class)->execute(\Filament\Facades\Filament::auth()->user(), $this->record->getKey(),
+                ['expected_version' => (int) $this->mailPolicyVersion, 'paused' => ! $shown['policy']['paused']], $this->mailKey);
+        } catch (\App\Exceptions\RecordWriteRejected|\Illuminate\Validation\ValidationException|\Illuminate\Auth\Access\AuthorizationException $e) {
+            $this->mailKey = (string) \Illuminate\Support\Str::uuid();
+            $this->mailPolicyVersion = $this->mail()['policy']['version'] ?? null;
+            \Filament\Notifications\Notification::make()->danger()->title('No se cambió')->body('Alguien cambió la pausa de correos de este evento. Revisa el estado actual.')->persistent()->send();
+
+            return;
+        }
+        $this->mailPolicyVersion = $r['version'];
+        $this->mailKey = (string) \Illuminate\Support\Str::uuid();
+        \Filament\Notifications\Notification::make()->success()->title($r['paused'] ? 'Correos en pausa' : 'Correos reanudados')
+            ->body($r['paused'] ? 'Lo programado no sale mientras esté en pausa.' : 'Lo que ya se omitió no se vuelve a enviar.')->send();
+    }
+
+    /** Active portal links of this event and client that a reminder can carry (never issues or rotates a link). */
+    public function mailGrantOptions(): array
+    {
+        return \App\Models\PortalGrant::query()->where('event_id', $this->record->getKey())->where('customer_id', $this->record->customer_id)
+            ->whereNull('quote_revision_id')->whereNull('revoked_at')->where('expires_at', '>', now())->orderByDesc('expires_at')->get()
+            ->filter(fn ($g) => in_array('payments.read', $g->scopes ?? [], true))
+            ->mapWithKeys(fn ($g) => [$g->id => 'Enlace del '.Labels::when($g->created_at).' · vence '.Labels::when($g->expires_at).(in_array('checkout.create', $g->scopes, true) ? ' · permite pagar' : ' · solo ver')])->all();
     }
 
     public function getTitle(): string
@@ -96,6 +163,34 @@ class ViewEvent extends Page
                     $this->redirect(\App\Filament\Pages\QuoteDetail::getUrl(['quote' => $rev->quote_id]));
                 }),
             Action::make('costs')->label('Costos y margen')->icon('heroicon-o-chart-bar')->color('gray')->visible(fn () => FinanceGate::enabled() && class_exists(\App\Services\Costs\RecordCostSnapshot::class))->url(fn () => EventResource::getUrl('costs', ['record' => $e])),
+            Action::make('mailPlan')->label('Programar recordatorios')->icon('heroicon-o-envelope')->color('gray')
+                ->visible(fn () => \App\Filament\Support\MailUi::enabled() && $e->status === 'capacity_reserved' && ! \App\Models\ImportedProjectLink::where('event_id', $e->id)->exists())
+                ->modalHeading('Programar recordatorios por correo')
+                ->modalDescription('Se programan con los datos que ves ahora (evento y ficha de la clienta). No se envía nada hasta que César active los correos y apruebe los textos; mientras tanto solo pueden ir a la lista de prueba.')
+                ->schema([
+                    \Filament\Forms\Components\Select::make('portal_grant_id')->label('Enlace que lleva el correo')->native(false)->required()
+                        ->options(fn () => $this->mailGrantOptions())->helperText('Debe durar más que el último recordatorio. Para el de saldo, debe permitir pagar.'),
+                    \Filament\Forms\Components\CheckboxList::make('templates')->label('Cuáles')->required()->options(\App\Filament\Support\MailUi::TEMPLATES)
+                        ->default(array_keys(\App\Filament\Support\MailUi::TEMPLATES))
+                        ->helperText('Saldo: 24 h antes de que venza. Una semana: 7 días antes de la fiesta. Gracias: al día siguiente, a la hora en que terminó.'),
+                ])
+                ->modalSubmitActionLabel('Programar')
+                ->action(function (array $data, Action $action) use ($e) {
+                    try {
+                        $r = app(\App\Services\Mail\PlanEventMail::class)->execute(\Filament\Facades\Filament::auth()->user(), $e->id, [
+                            'expected_event_version' => (int) $this->displayedVersion, 'expected_customer_version' => (int) $this->displayedCustomerVersion,
+                            'portal_grant_id' => (int) $data['portal_grant_id'], 'templates' => array_values($data['templates']),
+                        ], $this->mailKey);
+                    } catch (\App\Exceptions\RecordWriteRejected|\Illuminate\Validation\ValidationException|\Illuminate\Auth\Access\AuthorizationException $ex) {
+                        $this->mailKey = (string) \Illuminate\Support\Str::uuid();
+                        \Filament\Notifications\Notification::make()->danger()->title('No se programó nada')->body(\App\Filament\Support\MailUi::refusal($ex))->persistent()->send();
+                        $action->halt();
+                    }
+                    $this->mailKey = (string) \Illuminate\Support\Str::uuid();
+                    $skipped = collect($r['skipped'] ?? [])->map(fn ($x) => (\App\Filament\Support\MailUi::TEMPLATES[$x['template']] ?? $x['template']).': '.(\App\Filament\Support\MailUi::SKIPPED[$x['reason']] ?? $x['reason']))->implode(' · ');
+                    \Filament\Notifications\Notification::make()->success()->title(count($r['message_ids']).' '.(count($r['message_ids']) === 1 ? 'correo programado' : 'correos programados'))
+                        ->body(($skipped ? 'No se programó: '.$skipped.'. ' : '').'Programado no es enviado.')->send();
+                }),
             Action::make('contract')->label('Contrato y enlace')->icon('heroicon-o-document-text')->color('gray')->visible(fn () => \App\Filament\Support\DocumentsGate::enabled())->url(fn () => EventResource::getUrl('contract', ['record' => $e])),
             Action::make('confirm')->label('Apartar recursos y confirmar')->visible(fn () => ConfirmCapacity::canAccessFor($e))->url(fn () => EventResource::getUrl('confirm', ['record' => $e])),
         ];
@@ -116,7 +211,7 @@ class ViewEvent extends Page
             ->map(fn ($u) => (object) ['name' => $u->name, 'kind' => Labels::label(Labels::KIND, $u->kind)]);
         $history = DB::table('audit_entries')->where(function ($q) use ($e) {
             $q->where(fn ($w) => $w->where('subject_type', 'events')->where('subject_id', $e->id));
-            foreach (['financial_revisions', 'ledger_entries', 'zelle_notices', 'zelle_notice_reviews', 'event_cost_snapshots'] as $table) {
+            foreach (['financial_revisions', 'ledger_entries', 'zelle_notices', 'zelle_notice_reviews', 'event_cost_snapshots', 'outbound_messages', 'event_message_policies'] as $table) {
                 if (DB::getSchemaBuilder()->hasTable($table)) {
                     $q->orWhere(fn ($w) => $w->where('subject_type', $table)->whereIn('subject_id', DB::table($table)->where('event_id', $e->id)->pluck('id')));
                 }
