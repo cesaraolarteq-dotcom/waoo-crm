@@ -10,7 +10,7 @@ New pure MatchEventResources::execute(array $slots,array $resources,callable $fi
 
 ## Evidence and reads
 
-Nullable JSON booking_evidence.staff_assignment_snapshot: old rows stay null. New confirmations store policy_version `event-driver-v1`, minimum_drivers, assigned_driver_ids, and assignments with event_service_id, requirement_index, occurrence, resource_id, kind, skills and slot/costume identity. Snapshot records chosen assignment, not a new reservation count. Same transaction as booking evidence, reservations, operational review and audit; failure rolls back all. No editing/rebuilding older snapshots after a resource skill changes. No PII or new client surface. Expose through existing owner booking-evidence reads; no new client field.
+Nullable JSON booking_evidence.staff_assignment_snapshot: old rows stay null. New confirmations store policy_version `event-driver-v1`, minimum_drivers, assigned_driver_ids, and assignments with event_service_id, requirement_index, occurrence, resource_id, kind, skills and slot/costume identity. Snapshot records chosen assignment, not a new reservation count. Same transaction as booking evidence, reservations, operational review and audit; failure rolls back all. No editing/rebuilding older snapshots after a resource skill changes. No PII or new client surface. Owner screens may read BookingEvidence.staff_assignment_snapshot directly; this delivery adds no HTTP read route and no client field.
 
 Claude UI: use the existing server error and show driver among assigned staff, not a new headcount checkbox. Marking someone driver is an owner-maintained factual skill, never inferred from selection. Backend tests use synthetic drivers; do not alter actual catalog or resource data.
 

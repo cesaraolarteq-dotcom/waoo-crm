@@ -52,7 +52,7 @@ class CostumeVersionsTest extends TestCase
     }
     private function performer(Resource $costume): Resource
     {
-        $staff = Resource::create(['code' => 'STAFF-'.Str::random(10), 'name' => 'Fixture performer', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer']]);
+        $staff = Resource::create(['code' => 'STAFF-'.Str::random(10), 'name' => 'Fixture performer', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer', 'driver']]);
         app(LinkCostumeCompatibility::class)->execute($this->owner, $staff->id, $costume->id);
         return $staff;
     }
