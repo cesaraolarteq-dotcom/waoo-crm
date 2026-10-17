@@ -118,4 +118,6 @@ Route::middleware([\App\Http\Middleware\AuthenticatePortal::class, 'throttle:60,
 Route::post('/webhooks/stripe', \App\Http\Controllers\Webhooks\StripeWebhookController::class)->middleware('throttle:120,1');
 // Design preview of the client portal with fictitious data; the controller returns 404 outside local/testing.
 Route::get('/dev/mail/{key?}', \App\Http\Controllers\MailPreviewController::class);
+// Design preview of the REPORT-A Monday owner email (sample data); 404 outside local/testing.
+Route::get('/dev/mail-owner-report', \App\Http\Controllers\OwnerReportPreviewController::class);
 Route::match(['get', 'post'], '/dev/portal/{step?}', \App\Http\Controllers\Portal\PortalPreviewController::class)->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
