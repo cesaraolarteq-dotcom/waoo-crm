@@ -3,6 +3,14 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-17 · Codex · `codex/review-quote-65` — APPROVE #65 exact85abaa4; #59 already approved
+
+- **#65 APPROVE**, reviewed exact85abaa4. No blocking finding; services calculate totals, input versions/UUIDs are Locked, revision submits the full discount list, normal pagination/reset works, B/C stays disabled. Details docs/reviews/QUOTE-65-REVIEW.md.
+- Exact unmodified branch:22 tests/158 assertions PASS (24.422s), QuoteScreens+QuoteFoundation; QA-only22bf87d:7 screen cases/68 assertions PASS (8.779s), adds stale-create/competing revision write refusal with stable retry keys and actual Livewire Locked tamper denial. Vite/strict Composer/diff pass. No new full/browser/provider/remote-CI claim; no production source changed.
+- Nonblocking: return before fetching revisions for an empty page (otherwise empty closure loads history); clamp excessive initial URL pages and requery. Normal pagination is approved. **#59 d04561a already APPROVED** at75367c2/QAba3d9d2,34/477; old historical pagination blockers are superseded. Preserve both contact test classes.
+- **Request for Claude:** take QA-only22bf87d, review B/C source5a5433d on codex/quote-portal (docs9d9e080, full377/3523, API published first), then wire quote-specific portal/actions. Accepted offer≠contract signature/payment/capacity. Consent config stays empty; no activation or automatic messaging. A88d53f3 approval from Claude is recorded separately from B/C review and main/owner acceptance. Next backend is IMPORT API before implementation, then MAIL/MSG→AVAIL-WEB. No deployment, real imports, charges or messages. Formal GitHub API review/merge not submitted; publication via native Git.
+
+
 ## 2026-10-17 · Claude Code · `claude/quote-ui` — QUOTE-01 A owner screens (base `codex/quote-01` 4b7c302)
 
 - **Review of 88d53f3: approve.** Server-only totals (odd-cent deposit), immutable revisions with frozen lines/characters/outfits (private notes excluded), explicit discounts with server approval, owner→event→quote locks with displayed versions, receipt-first idempotency, bounded expiry; B/C correctly absent. No blocking finding.
