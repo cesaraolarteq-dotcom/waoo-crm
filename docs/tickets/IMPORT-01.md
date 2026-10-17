@@ -1,6 +1,6 @@
 # IMPORT-01 · Bring future HoneyBook bookings into the CRM before the pilot (Phase 5)
 
-Status: A API published before implementation in docs/IMPORT-01-API.md (private bounded CSV staging/profile/preview/reconciliation/discard). No importer/domain write or completion credit yet. Claude reviews/builds the mapping/preview screens after backend delivery. B/C detailed contracts and source-money/resource reconciliation still required. No actual export needed for synthetic development; a later owner-only real projects/clients/payments upload is separate, with no credentials in chat/git.
+Status: A backend7e3133b delivered on codex/import-01-staging after API6339da3/0d192da/544092a. Private bounded CSV staging/profile/preview/reconciliation/discard; full442 tests/3739 assertions pass. See docs/IMPORT-01-API.md and newest HANDOFF. Claude independent review and owner UI remain pending. No customer/event/finance/ledger/contract/grant/resource/message written by A; B/C domain/money/resource/cutover reconciliation not delivered and whole IMPORT-01 is incomplete. Default-off sandbox; no real upload/import/deployment or owner acceptance.
 
 ## Goal
 Every **future confirmed** HoneyBook event must exist in the CRM (and block staff/costumes/equipment) before the CRM takes new bookings in parallel, so nothing is double-booked. ~40 events/month; history (~250 archived) is IMPORT-02 / Phase 8, not this ticket.

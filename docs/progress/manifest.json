@@ -536,9 +536,20 @@
       "reviewed": false,
       "merged": false,
       "accepted": false,
-      "scope": "A private bounded source CSV staging, profile/preview/reconciliation and retryable discard only; B domain writes and C historical-money/resource/cutover bridge require detailed contracts and implementation. Design earns0%, no real CSV required or imported."
+      "scope": "API6339da3/0d192da/544092a published before implemented A7e3133b. API design itself earns0%; see staging_foundation for tested source. B/C domain money/capacity/cutover still pending."
      },
-     "blocker": "API published before source; importer not implemented. Owner-only synthetic A first; no domain/money/resource/client-message write. UI/independent review/main/owner acceptance and complete future-confirmed cutover census pending."
+     "blocker": "Revisión privada CSV A7e3133b entregada (442 pruebas), pendiente Claude/UI. Faltan B: crear/vincular eventos con dinero histórico y C: conciliar recursos y cobertura futura completa. Importador/fase no terminados; sin archivos reales, envíos ni despliegue.",
+     "staging_foundation": {
+      "api": "6339da3 /0d192da /544092a before source",
+      "backend": "7e3133b",
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "scope": "IMPORT A: owner-only private bounded source CSV/profile/preview/coverage/conflicts/discard, immutable source and retry metadata. No customer/event/finance/ledger/contract/grant/resource/message or domain import.",
+      "verification": "Full442 tests /3739 assertions PASS, exit0,535.05s, PHP8.3/MariaDB11.8, source7e3133b. Added65 importer cases incl two actual process races, exact money/DST/strict CSV bounds, private SQL/audit/storage/cleanup failures, historical retry and no-domain-write; SQLite populated roundtrip. Strict Composer/22 PHP syntax/diff pass. Local guarded330000 +up200; import flag disabled. No browser/provider/remote-CI/Hostinger max-load/real export/owner acceptance.",
+      "remaining": "Claude independent review/private upload-profile-preview UI; B explicit source project domain linkage and imported money, C normal resource reconciliation and complete source cutover census. No root backend/whole-phase completion credit for partial importer."
+     }
     },
     {
      "name": "Piloto en paralelo con HoneyBook",
