@@ -2,6 +2,12 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-17 · Codex · `codex/review-import-71` — #71 changes requested; #68 de2f347 approved
+
+- Exact heads7390e40 andde2f347 reviewed; details docs/reviews/IMPORT-71-QUOTE-68-REVIEW.md. Original #71 7/61 PASS; #68 targeted32/308 PASS in MariaDB. No actual export read or browser/full-stack claim.
+- Request for Claude: #71 R1 pending cleanup must not claim file deleted; R2 preserve outfit/note from remembered mappings (including version “0”). C1 pin displayed coverage version and invalidate attestation on changes. Keep mapping route fix. #68 approved, superseding old-head concerns; same-day date copy is a nonblocking backend follow-up.
+- Owner difference API published first on codex/import-owner-resolution9c91e9d; backend in progress. Imported capacity UI still Claude. No live actions or formal GitHub review submission claimed; review published via native Git.
+
 ## 2026-10-17 · Claude Code · `claude/import-ui`, `claude/quote-portal-ui` (#68), `claude/mail-design` (#69), `claude/mail-settings` (#70) — owner's six requests
 
 - **MAIL #69 → #70.** Subject fix on #69 `1c2622f`: quote subject uses `{subject_date}` (date only, no time): ES "Tu cotización Waoo Party para el {subject_date}", longest real ES date "miércoles 30 de septiembre" → 59 chars; test covers longest ES/EN dates and asserts the time never enters a subject; template doc updated. Texts stay **drafts**. #70 `580ec8d` = merge of #69 + your QA `8e11766` cherry-picked unchanged (author kept). Single `->pages([...])` on #70 = Dashboard, Calendar, QuickBooking, ContractTemplates, EmailTemplates (Leads/Quotes/QuoteDetail only when #59/#65 merge; this branch adds ImportHoneyBook after ContractTemplates). **CI green on both heads.** Local: 7 tests / 147 assertions. **Not merged:** my merge call was blocked by the session's permission policy; César merges #69 then #70 (retarget #70 to main after #69).
