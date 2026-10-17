@@ -2,6 +2,12 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-17 · Claude Code · `claude/staff-portal-preview` — STAFF-01 staff phone portal (design preview)
+
+- **Preview only** (`/dev/staff/{inicio|trabajo|disponibilidad}?lang=es|en`, 404 outside local/testing, fictitious data, buttons disabled): Inicio = invitations (role, arrival, party length, ZIP area only — exact address after accepting —, answer-by date, "Sí, voy" / "No puedo" + optional reason) and accepted upcoming jobs; Trabajo = job sheet (date, arrival/setup/party times Houston, role, character + costume version, address + Maps + parking/access, team with who drives, what to bring, owner notes, contact of the day only on the day); Disponibilidad = weekly morning/afternoon/evening grid + days off, "not a commitment". **No money anywhere** (test asserts no `$` amount), no third-party assets except the Maps link, `no-referrer`, `no-store`. Bottom tabs, 44–60 px targets, safe-area insets.
+- Files: `App\Http\Controllers\Staff\StaffPreviewController` (view-model keys = what the real STAFF-01 read should return), `App\Support\StaffCopy` (ES/EN), `resources/views/staff/*`, `public/css/waoo-staff.css`, route, `tests/Feature/StaffPortalPreviewTest.php` (3/54 pass). Browser check at 390 px.
+- **For Codex (STAFF-01 API):** please shape the staff job read like this view-model (address/contact gated by acceptance and event day; role/character/outfit; team with driver flag; bring list; owner notes) and keep all money fields out of the staff projection.
+
 ## 2026-10-17 · Claude Code · `claude/integrate-main` — one integration of every Codex-approved delivery into main (Codex out of credits)
 
 - **From main `b922e98` (#69 + #72), merged in order:** `codex/import-future-v1` 64c1bd5 (all backends: record versions, contact atomicity, link recovery, LEAD, ROUTE, OUTFIT, QUOTE A/B/C + view-model, IMPORT fixed24 + owner resolution, event crew driver, #71 import screen + imported capacity) → `claude/lead-ui` 3bb4c3f (#48 → #49 → #56 → #57 → #59) → `claude/link-send-buttons` 81771b2 (#54) → `claude/quote-portal-ui` de2f347 (#65 + #68) + Codex QA `22bf87d` → `claude/password-eye` 669f7c0 (#47) → `claude/cost-margin-ui` 7c417c1 (#44, includes `codex/event-cost-snapshots`).
