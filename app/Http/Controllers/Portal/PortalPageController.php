@@ -20,6 +20,10 @@ final class PortalPageController extends Controller
         $lang = $this->lang($request);
         try {
             $client = PortalContext::fromRequest($request);
+            // A quote link (scopes quote.read + quote.accept only) has its own page; it never opens the booking steps.
+            if (\App\Models\PortalGrant::whereKey($client->grantId)->value('quote_revision_id') !== null) {
+                return redirect('/portal/quote');
+            }
             $client->authorize($client->eventId, 'payments.read');
         } catch (AuthorizationException) {
             // No session yet: the landing script exchanges the #token for a session (or explains an expired link).
@@ -27,6 +31,36 @@ final class PortalPageController extends Controller
         }
 
         return $this->respond(view('portal.show', ['vm' => $this->viewModel($request, $client, $lang)]));
+    }
+
+    /**
+     * QUOTE-01 B client page. Everything shown and every value the decision sends (revision, snapshot/PDF hashes,
+     * each outcome's frozen consent version/hash/text) comes from ONE read of Codex's ReadQuoteViewModel, so a submit
+     * never picks up a newer revision. Accept/reject go to /portal/api/quote/{accept,reject} from the page script.
+     */
+    public function quote(Request $request)
+    {
+        abort_unless(\App\Filament\Support\DocumentsGate::enabled() && config('waoo.sandbox_quotes', false), 404);
+        $lang = $this->lang($request);
+        try {
+            $client = PortalContext::fromRequest($request);
+            $read = app(\App\Services\Quotes\ReadQuoteViewModel::class)->read($client, $lang);
+        } catch (AuthorizationException) {
+            return $this->respond(view('portal.landing', ['lang' => $lang]));
+        } catch (\App\Exceptions\RecordWriteRejected) {
+            // Revoked/replaced revision or unverifiable presentation: show nothing of the offer.
+            return $this->respond(view('portal.quote-unavailable', ['lang' => $lang]));
+        }
+        $vm = $read['view_model'];
+        $vm['decide'] = [
+            'snapshot_sha256' => $read['snapshot_sha256'], 'pdf_sha256' => $read['pdf_sha256'],
+            // Exact frozen wording per outcome, shown verbatim; never draft configuration.
+            'accepted' => collect($read['consents']['accepted'] ?? [])->only(['version', 'sha256', 'text'])->all(),
+            'rejected' => collect($read['consents']['rejected'] ?? [])->only(['version', 'sha256', 'text'])->all(),
+            'pdf_opened' => \Illuminate\Support\Facades\DB::table('quote_pdf_views')->where('portal_grant_id', $client->grantId)->exists(),
+        ];
+
+        return $this->respond(view('portal.quote', ['vm' => $vm]));
     }
 
     /** Stripe returns here; this page never records a payment (only the verified webhook does). */
@@ -82,6 +116,7 @@ final class PortalPageController extends Controller
             'lang_url' => ['es' => url('/portal?lang=es'), 'en' => url('/portal?lang=en')],
             'event' => [
                 'package' => $services ?: $event->title,
+                'characters' => collect($revision?->lines_snapshot ?? [])->flatMap(fn ($l) => $l['characters'] ?? [])->map(fn ($c) => $c['quantity'].' × '.\App\Services\Records\CharacterLabel::fromSnapshot($c))->implode(', '),
                 'when' => $lang === 'es' ? $start->translatedFormat('D j M Y, g:i a') : $start->format('D, M j, Y \a\t g:i a'),
                 'start_time' => $lang === 'es' ? $start->translatedFormat('g:i a') : $start->format('g:i a'),
                 'total' => $fmt($revision?->total_cents), 'travel' => $fmt($revision?->travel_fee_cents),

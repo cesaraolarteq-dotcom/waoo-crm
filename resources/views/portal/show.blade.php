@@ -23,6 +23,7 @@
   <h2>{{ $t('your_party') }}</h2>
   <dl>
     <div><dt>{{ $t('package') }}</dt><dd>{{ $e['package'] }}</dd></div>
+    @if ($e['characters'] ?? '')<div><dt>{{ $vm['lang'] === 'es' ? 'Personajes' : 'Characters' }}</dt><dd>{{ $e['characters'] }}</dd></div>@endif
     <div><dt>{{ $t('when') }}</dt><dd>{{ $e['when'] }}</dd></div>
     <div><dt>{{ $t('total') }}</dt><dd>{{ $e['total'] }} <small>({{ $t('travel') }} {{ $e['travel'] }})</small></dd></div>
     <div><dt>{{ $t('paid') }}</dt><dd class="ok">{{ $e['paid'] }}</dd></div>

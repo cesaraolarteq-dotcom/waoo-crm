@@ -11,8 +11,11 @@ final class PortalPreviewController extends Controller
     public function __invoke(Request $request, string $step = 'details')
     {
         abort_unless(app()->environment(['local', 'testing']), 404);
-        abort_unless(in_array($step, ['details', 'contract', 'pay', 'done'], true), 404);
         $lang = $request->query('lang') === 'en' ? 'en' : 'es';
+        if (str_starts_with($step, 'quote')) {
+            return $this->quote($step, $lang);
+        }
+        abort_unless(in_array($step, ['details', 'contract', 'pay', 'done'], true), 404);
         $next = ['details' => 'contract', 'contract' => 'pay', 'pay' => 'done', 'done' => 'done'][$step];
         $es = $lang === 'es';
 
@@ -27,6 +30,30 @@ final class PortalPreviewController extends Controller
             'contract' => ['pdf_url' => url('/dev/portal/contract?lang='.$lang.'#pdf'), 'sha256' => str_repeat('0', 64)],
             'zelle_memo' => 'WP-0001',
             'actions' => ['details' => url("/dev/portal/{$next}?lang={$lang}"), 'sign' => url("/dev/portal/{$next}?lang={$lang}"), 'checkout' => url("/dev/portal/{$next}?lang={$lang}")],
+        ]])->header('Cache-Control', 'no-store, private')->header('Referrer-Policy', 'no-referrer');
+    }
+
+    /** QUOTE-01 B design preview: the client quote page with fictitious data (states: open, accepted, expired, superseded, rejected). */
+    private function quote(string $step, string $lang)
+    {
+        $state = ['quote' => 'open', 'quote-accepted' => 'accepted', 'quote-expired' => 'expired', 'quote-superseded' => 'superseded', 'quote-rejected' => 'rejected'][$step] ?? null;
+        abort_unless($state !== null, 404);
+        $es = $lang === 'es';
+
+        return response()->view('portal.quote', ['vm' => [
+            'lang' => $lang, 'test_mode' => true, 'preview' => true, 'first_name' => 'Ana',
+            'lang_url' => ['es' => url("/dev/portal/{$step}?lang=es"), 'en' => url("/dev/portal/{$step}?lang=en")],
+            'quote' => ['number' => 'Q-2026-000123', 'revision' => 2, 'state' => $state, 'valid_until' => $es ? 'vie. 30 oct. 2026' : 'Fri, Oct 30, 2026',
+                'when' => $es ? 'sáb. 21 nov. 2026, 3:00 – 5:00 p. m.' : 'Sat, Nov 21, 2026, 3:00 – 5:00 pm', 'where' => '123 Sample St, Katy, TX 77494',
+                'lines' => [['name' => $es ? 'Música y Juegos 2.0' : 'Music & Games 2.0', 'duration' => '2 h', 'characters' => $es ? '1 × Personaje de ejemplo (Disneyland)' : '1 × Sample character (Disneyland)', 'amount' => '$600']],
+                'travel' => '$40', 'discounts' => [['label' => $es ? 'Descuento por reservar hoy' : 'Book-today discount', 'amount' => '$25']],
+                'total' => '$615', 'deposit' => '$307.50', 'pdf_url' => null],
+            'consent' => ['version' => 'preview-only', 'text' => $es ? '(Texto de ejemplo; el texto real lo aprueba César.) Acepto esta cotización.' : '(Sample text; the real wording is approved by César.) I accept this quote.'],
+            'decide' => ['snapshot_sha256' => str_repeat('0', 64), 'pdf_sha256' => str_repeat('0', 64), 'pdf_opened' => true,
+                'accepted' => ['version' => 'preview-only', 'sha256' => str_repeat('0', 64), 'text' => $es ? '(Texto de ejemplo; el texto real lo aprueba César.) Acepto esta cotización.' : '(Sample text; the real wording is approved by César.) I accept this quote.'],
+                'rejected' => ['version' => 'preview-only', 'sha256' => str_repeat('0', 64), 'text' => $es ? '(Texto de ejemplo; el texto real lo aprueba César.) No acepto esta cotización.' : '(Sample text; the real wording is approved by César.) I do not accept this quote.']],
+            'prefill' => ['name' => 'Ana Ejemplo', 'email' => 'ana@example.test'],
+            'actions' => ['accept' => url("/dev/portal/quote-accepted?lang={$lang}"), 'reject' => url("/dev/portal/quote-rejected?lang={$lang}")],
         ]])->header('Cache-Control', 'no-store, private')->header('Referrer-Policy', 'no-referrer');
     }
 }

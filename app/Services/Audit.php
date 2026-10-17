@@ -7,6 +7,12 @@ use Illuminate\Support\Facades\DB;
 
 final class Audit
 {
+    private static int $metadataDepth=0;
+    public static function metadataOnly(callable $work):mixed
+    {
+        self::$metadataDepth++;try{return $work();}finally{self::$metadataDepth--;}
+    }
+
     public static function record(string $action, Model $subject, array $before = [], array $after = []): void
     {
         self::insert(auth()->id(), $action, $subject, $before, $after);
@@ -27,8 +33,8 @@ final class Audit
         DB::table('audit_entries')->insert([
             'actor_id' => $actorId, 'action' => $action,
             'subject_type' => $subject->getTable(), 'subject_id' => $subject->getKey(),
-            'before' => json_encode($before, JSON_THROW_ON_ERROR),
-            'after' => json_encode($after, JSON_THROW_ON_ERROR), 'created_at' => now(),
+            'before' => json_encode(self::$metadataDepth?[]:$before, JSON_THROW_ON_ERROR),
+            'after' => json_encode(self::$metadataDepth?[]:$after, JSON_THROW_ON_ERROR), 'created_at' => now(),
         ]);
     }
 }

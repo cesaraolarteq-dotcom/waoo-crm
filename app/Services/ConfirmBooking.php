@@ -24,7 +24,7 @@ final class ConfirmBooking
                 if ($event->status === 'capacity_reserved') {
                     $existing = BookingEvidence::where('event_id', $event->id)->firstOrFail();
                     $same = $event->reservations()->orderBy('resource_id')->pluck('resource_id')->all() === $ids->all();
-                    abort_unless($same && $existing->method === $data['payment']['method'] && $existing->received_at->equalTo(CarbonImmutable::parse($data['payment']['received_at'])) && OperationalReview::where('event_id', $event->id)->firstOrFail()->evidence == $data['review'] && $existing->reference === $data['payment']['reference'] && $existing->amount_cents === (int) $data['payment']['amount_cents'], 409, 'La reserva ya está confirmada con otros datos.');
+                    abort_unless($same && $existing->method === $data['payment']['method'] && ($existing->received_at===null?($data['payment']['received_at']??null)===null:$existing->received_at->equalTo(CarbonImmutable::parse($data['payment']['received_at']))) && OperationalReview::where('event_id', $event->id)->firstOrFail()->evidence == $data['review'] && $existing->reference === $data['payment']['reference'] && $existing->amount_cents === (int) $data['payment']['amount_cents'], 409, 'La reserva ya está confirmada con otros datos.');
                     return $event;
                 }
                 abort_unless($event->status === 'draft' && $event->version === (int) $data['expected_version'], 409, 'El evento cambió. Actualiza la ficha.');
@@ -50,6 +50,25 @@ final class ConfirmBooking
                     $this->fail('Revisa el costo de transporte; no se asume cero.');
                 }
                 $total = \App\Models\PriceVersion::whereIn('id', $services->pluck('price_version_id'))->sum('amount_cents') + $event->travel_fee_cents;
+                $importLink=\App\Models\ImportedProjectLink::where('event_id',$eventId)->lockForUpdate()->first();
+                if($importLink){
+                    $imported=\App\Models\ImportedProjectRevision::findOrFail($importLink->current_revision_id);
+                    $expected=\App\Services\Imports\ImportedAgreement::payment($importLink,$imported);
+                    \App\Exceptions\RecordWriteRejected::unless(($data['imported_revision_id']??null)===$imported->id&&$event->version===$imported->event_version
+                        &&$data['payment']===$expected&&hash_equals($imported->mapping['operations_sha256'],\App\Services\Imports\ImportedAgreement::operations($event)),409,'Confirma este evento desde su acuerdo y dinero histórico importados.');
+                    $total=$imported->normalized['total_cents'];
+                }else{\App\Exceptions\RecordWriteRejected::unless(($data['payment']['method']??'')!=='honeybook_import',409,'No hay un acuerdo importado para esta evidencia.');}
+                if ($conversion=\App\Models\QuoteConversion::where('event_id',$eventId)->first()) {
+                    $finance=\App\Models\FinancialRevision::where('event_id',$eventId)->orderByDesc('revision')->firstOrFail();
+                    $accepted=\App\Services\Quotes\QuoteAgreement::forEvent($event);
+                    $net=(int)\App\Models\LedgerEntry::where('event_id',$eventId)->where('environment','test')->where('kind','receipt')->sum('amount_cents')
+                        -(int)\App\Models\LedgerEntry::where('event_id',$eventId)->where('environment','test')->where('kind','refund')->sum('amount_cents');
+                    \App\Exceptions\RecordWriteRejected::unless((int)($data['financial_revision_id']??0)===$finance->id&&$finance->event_version===$event->version
+                        &&$finance->quote_revision_id===$conversion->quote_revision_id&&$finance->total_cents===$accepted['total_cents']
+                        &&$net>0&&(int)$data['payment']['amount_cents']===$net&&$data['payment']['reference']==='ledger:test:'.$eventId.':'.$finance->id,
+                        409,'Confirma esta cotización desde sus pagos reales y su revisión financiera vigente.');
+                    $total=$finance->total_cents;
+                }
                 if ((int) $data['payment']['amount_cents'] * 2 < $total && empty($data['review']['deposit_exception_reason'])) {
                     $this->fail('El depósito no alcanza el objetivo. Registra una excepción aprobada o completa el pago.');
                 }
@@ -61,10 +80,18 @@ final class ConfirmBooking
                     if ($event->starts_at->diffInMinutes($event->ends_at) < $service->duration_minutes) {
                         $this->fail('La duración del evento no cubre el servicio.');
                     }
-                    foreach ($service->requirements_snapshot as $req) {
+                    foreach ($service->requirements_snapshot as $requirementIndex => $req) {
                         for ($i = 0; $i < $req['quantity']; $i++) {
-                            $slots[] = $req;
+                            $slots[] = [...$req, 'event_service_id'=>$service->id, 'requirement_index'=>$requirementIndex, 'occurrence'=>$i];
                         }
+                    }
+                }
+                foreach (collect($slots)->where('kind', 'costume')->filter(fn ($s) => isset($s['outfit']))->groupBy(fn ($s) => json_encode([(int) $s['character_id'], $s['outfit']])) as $requested) {
+                    $slot = $requested->first();
+                    $matching = $resources->filter(fn ($r) => $r->kind === 'costume' && (int) $r->character_id === (int) $slot['character_id'] && $r->outfit === $slot['outfit']);
+                    if ($matching->count() < $requested->count()) {
+                        $name = \App\Models\Character::whereKey($slot['character_id'])->value('name');
+                        throw new \App\Exceptions\RecordWriteRejected(409, "Selecciona suficientes trajes {$name} ({$slot['outfit']}); no se sustituye la versión.");
                     }
                 }
                 // Merge costume-wearer constraints into performer roles before matching.
@@ -81,35 +108,41 @@ final class ConfirmBooking
                         }
                     }
                     if ($performerSlot === null) {
-                        $slots[] = ['kind' => 'staff', 'skill' => 'performer', 'costume_unit_id' => $costume->id];
+                        $slots[] = ['kind' => 'staff', 'skill' => 'performer', 'costume_unit_id' => $costume->id, 'event_service_id'=>null, 'requirement_index'=>null, 'occurrence'=>0, 'compiled_role'=>'costume_performer'];
                     } else {
                         $slots[$performerSlot]['costume_unit_id'] = $costume->id;
                     }
                 }
-                $this->match($slots, $resources->all(), function ($slot, $r) use ($compatibilities) {
-                    return $r->kind === $slot['kind'] && (empty($slot['skill']) || in_array($slot['skill'], $r->skills ?? [], true)) && (empty($slot['character_id']) || (int) $r->character_id === (int) $slot['character_id']) && (empty($slot['equipment_kind']) || $r->equipment_kind === $slot['equipment_kind']) && (empty($slot['costume_unit_id']) || $compatibilities->contains(fn($c) => (int) $c->staff_id === $r->id && (int) $c->costume_id === $slot['costume_unit_id']));
-                }, 'No hay una combinación de recursos e intérpretes compatibles que cubra todos los roles simultáneos.');
+                $assignment=app(MatchEventResources::class)->execute($slots, $resources->all(), function ($slot, $r) use ($compatibilities) {
+                    return $r->kind === $slot['kind'] && (!isset($slot['outfit']) || $r->outfit === $slot['outfit']) && (empty($slot['skill']) || in_array($slot['skill'], $r->skills ?? [], true)) && (empty($slot['character_id']) || (int) $r->character_id === (int) $slot['character_id']) && (empty($slot['equipment_kind']) || $r->equipment_kind === $slot['equipment_kind']) && (empty($slot['costume_unit_id']) || $compatibilities->contains(fn($c) => (int) $c->staff_id === $r->id && (int) $c->costume_id === $slot['costume_unit_id']));
+                });
+                $assignedStaff=collect(array_keys($assignment))->map(fn($i)=>$resources[$i])->where('kind','staff');
+                $driverIds=$assignedStaff->filter(fn($r)=>MatchEventResources::driver($r))->pluck('id')->values()->all();
+                if($assignedStaff->isNotEmpty()&&$driverIds===[])$this->fail('Falta alguien que maneje en el equipo.');
                 $vehicles = $resources->where('kind', 'vehicle');
                 if ($vehicles->isNotEmpty()) {
                     if ($vehicles->contains(fn($v) => !$v->seats) || $vehicles->sum('seats') < $resources->where('kind', 'staff')->count()) {
                         $this->fail('La capacidad de pasajeros no alcanza o está incompleta.');
                     }
-                    if ($resources->where('kind', 'staff')->filter(fn($r) => in_array('driver', $r->skills ?? [], true))->count() < $vehicles->count()) {
+                    if (count($driverIds) < $vehicles->count()) {
                         $this->fail('Faltan conductores para los vehículos seleccionados.');
                     }
                 }
                 $busyStart = $event->starts_at->subMinutes($event->setup_minutes);
                 $busyEnd = $event->ends_at->addMinutes($event->breakdown_minutes);
-                foreach ($resources as $resource) {
-                    if (ResourceBlock::where('resource_id', $resource->id)->whereNull('released_at')->where('starts_at', '<', $busyEnd)->where('ends_at', '>', $busyStart)->exists()) {
+                foreach ($resources->sortBy(fn ($r) => $r->kind === 'costume' ? 0 : 1) as $resource) {
+                    if (ResourceBlock::where('resource_id', $resource->id)->whereNull('released_at')->where('starts_at', '<', $busyEnd)->where('ends_at', '>', $busyStart)->lockForUpdate()->first()) {
+                        $this->rejectVersionConflict($resource, $slots);
                         $this->fail("El recurso {$resource->code} tiene un bloqueo horario.");
                     }
-                    $bookings = ResourceReservation::where('resource_id', $resource->id)->with('event')->orderBy('starts_at')->get();
+                    // Current reads after the resource lock: a repeatable-read snapshot may predate a competing commit.
+                    $bookings = ResourceReservation::where('resource_id', $resource->id)->with(['event' => fn ($query) => $query->sharedLock()])->orderBy('starts_at')->lockForUpdate()->get();
                     $before = null;
                     $after = null;
                     foreach ($bookings as $booking) {
                         $other = $booking->event;
                         if ($other->starts_at->subMinutes($other->setup_minutes)->lessThan($busyEnd) && $other->ends_at->addMinutes($other->breakdown_minutes)->greaterThan($busyStart)) {
+                            $this->rejectVersionConflict($resource, $slots);
                             $this->fail("Conflicto de horario: {$resource->code}.");
                         }
                         if ($other->ends_at->lessThanOrEqualTo($event->starts_at)) {
@@ -129,7 +162,10 @@ final class ConfirmBooking
                 if (BookingEvidence::where('reference', $data['payment']['reference'])->exists()) {
                     $this->fail('La referencia de pago ya está asociada a otro evento.');
                 }
-                BookingEvidence::create([...$data['payment'], 'event_id' => $event->id, 'verified_by' => $actor->id]);
+                $staffSnapshot=['policy_version'=>'event-driver-v1','minimum_drivers'=>max($assignedStaff->isNotEmpty()?1:0,$vehicles->count()),'assigned_driver_ids'=>$driverIds,
+                    'assignments'=>collect($assignment)->map(fn($slot,$resource)=>['resource_id'=>$resources[$resource]->id,'kind'=>$resources[$resource]->kind,
+                        'skills'=>$resources[$resource]->skills??[],'slot'=>$slots[$slot]])->values()->all()];
+                BookingEvidence::create([...$data['payment'], 'event_id' => $event->id, 'verified_by' => $actor->id,'staff_assignment_snapshot'=>$staffSnapshot]);
                 foreach ($resources as $resource) {
                     ResourceReservation::create(['event_id' => $event->id, 'resource_id' => $resource->id, 'starts_at' => $event->starts_at, 'ends_at' => $event->ends_at]);
                 }
@@ -143,6 +179,15 @@ final class ConfirmBooking
             }, 3);
         } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
             $this->fail('La referencia o asignación ya fue registrada. Actualiza y revisa el evento.');
+        }
+    }
+    private function rejectVersionConflict(Resource $resource, array $slots): void
+    {
+        if ($resource->kind !== 'costume') return;
+        $versioned = collect($slots)->contains(fn ($slot) => $slot['kind'] === 'costume' && isset($slot['outfit']) && (int) ($slot['character_id'] ?? 0) === (int) $resource->character_id && $slot['outfit'] === $resource->outfit);
+        if ($versioned) {
+            $name = \App\Models\Character::whereKey($resource->character_id)->value('name');
+            throw new \App\Exceptions\RecordWriteRejected(409, "No hay traje {$name} ({$resource->outfit}) libre a esa hora.");
         }
     }
     private function checkTransfer(Event $from, Event $to, array $review, int $resourceId): void
@@ -164,32 +209,5 @@ final class ConfirmBooking
         if ($from->ends_at->addMinutes((int) $route['travel_minutes'] + $extra)->greaterThan($to->starts_at)) {
             $this->fail('No cabe viaje, montaje y margen con el evento vecino.');
         }
-    }
-    private function match(array $slots, array $resources, callable $fits, string $message): array
-    {
-        if (count($slots) > count($resources)) {
-            $this->fail($message);
-        }
-        $assigned = [];
-        $search = function (int $slot, array &$seen) use (&$search, &$assigned, $slots, $resources, $fits): bool {
-            foreach ($resources as $i => $resource) {
-                if (isset($seen[$i]) || !$fits($slots[$slot], $resource)) {
-                    continue;
-                }
-                $seen[$i] = true;
-                if (!isset($assigned[$i]) || $search($assigned[$i], $seen)) {
-                    $assigned[$i] = $slot;
-                    return true;
-                }
-            }
-            return false;
-        };
-        foreach (array_keys($slots) as $i) {
-            $seen = [];
-            if (!$search($i, $seen)) {
-                $this->fail($message);
-            }
-        }
-        return $assigned;
     }
 }

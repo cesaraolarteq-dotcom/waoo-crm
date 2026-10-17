@@ -10,6 +10,31 @@ Route::redirect('/', '/admin')->name('home');
 Route::middleware(['auth', 'password.confirm'])->get('/seguridad/dos-pasos', TwoFactorEnrollmentController::class)->name('security.two-factor');
 Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'));
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->prefix('admin/api')->group(function () {
+    Route::get('/imports/honeybook/{batch}/rows/{row}/mapping', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'mapping'])->whereNumber(['batch','row']);
+    Route::post('/imports/honeybook/{batch}/rows/{row}/commit', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'commit'])->whereNumber(['batch','row']);
+    Route::get('/imports/honeybook/{batch}/coverage', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'coverage'])->whereNumber('batch');
+    Route::post('/imports/honeybook/{batch}/finalize', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'finalize'])->whereNumber('batch');
+    Route::get('/imported-events/{event}', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'imported'])->whereNumber('event');
+    Route::post('/imported-events/{event}/confirm', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'confirm'])->whereNumber('event');
+    Route::post('/imports/honeybook/future', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'future']);
+    Route::get('/imports/honeybook', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'index']);
+    Route::post('/imports/honeybook', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'stage']);
+    Route::get('/imports/honeybook/{batch}', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'show'])->whereNumber('batch');
+    Route::get('/imports/honeybook/{batch}/rows', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'rows'])->whereNumber('batch');
+    Route::post('/imports/honeybook/{batch}/profile', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'profile'])->whereNumber('batch');
+    Route::post('/imports/honeybook/{batch}/discard', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'discard'])->whereNumber('batch');
+    Route::get('/quotes', [\App\Http\Controllers\Admin\QuoteController::class, 'index']);
+    Route::post('/quotes', [\App\Http\Controllers\Admin\QuoteController::class, 'create']);
+    Route::post('/quotes/{quote}/send', [\App\Http\Controllers\Admin\QuoteController::class, 'send'])->whereNumber('quote');
+    Route::post('/quotes/{quote}/convert', [\App\Http\Controllers\Admin\QuoteController::class, 'convert'])->whereNumber('quote');
+    Route::get('/quotes/{quote}', [\App\Http\Controllers\Admin\QuoteController::class, 'show'])->whereNumber('quote');
+    Route::post('/quotes/{quote}/revisions', [\App\Http\Controllers\Admin\QuoteController::class, 'revise'])->whereNumber('quote');
+    Route::post('/travel-fee-quotes', [\App\Http\Controllers\Admin\TravelFeeController::class, 'store']);
+    Route::get('/events/{event}/travel-fee-evidence', [\App\Http\Controllers\Admin\TravelFeeController::class, 'evidence'])->whereNumber('event');
+    Route::get('/leads', [\App\Http\Controllers\Admin\LeadController::class, 'index']);
+    Route::get('/leads/{lead}', [\App\Http\Controllers\Admin\LeadController::class, 'show'])->whereNumber('lead');
+    Route::patch('/leads/{lead}', [\App\Http\Controllers\Admin\LeadController::class, 'update'])->whereNumber('lead');
+    Route::post('/leads/{lead}/quick-book', [\App\Http\Controllers\Admin\LeadController::class, 'convert'])->whereNumber('lead');
     Route::get('/session', fn(Request $r) => ['user' => $r->user()->only(['id', 'name', 'email', 'role']), 'timezone' => 'America/Chicago']);
     foreach (['customers', 'characters', 'resources', 'variants'] as $entity) {
         Route::get('/' . $entity, [CoreController::class, 'index'])->defaults('entity', $entity);
@@ -23,6 +48,9 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::post('/resources/{resource}/blocks/{block}/release', [ResourceBlockController::class, 'release'])->whereNumber('block');
     Route::post('/costume-compatibilities', [CoreController::class, 'compatibility']);
     Route::post('/costume-compatibilities/unlink', [CoreController::class, 'unlinkCompatibility']);
+    Route::get('/events/{event}/costs', [\App\Http\Controllers\Admin\EventCostController::class, 'summary']);
+    Route::get('/events/{event}/cost-snapshots', [\App\Http\Controllers\Admin\EventCostController::class, 'index']);
+    Route::post('/events/{event}/cost-snapshots', [\App\Http\Controllers\Admin\EventCostController::class, 'store']);
     Route::get('/zelle-notices', [\App\Http\Controllers\Admin\ZelleNoticeController::class, 'index']);
     Route::post('/events/{event}/zelle-notices/{notice}/review', [\App\Http\Controllers\Admin\ZelleNoticeController::class, 'review'])->whereNumber('notice');
     Route::get('/quick-bookings', [\App\Http\Controllers\Admin\QuickBookingController::class, 'index']);
@@ -40,6 +68,7 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::post('/contracts/{contract}/final-pdf/retry', [\App\Http\Controllers\Admin\DocumentController::class, 'retryFinal']);
     Route::get('/contracts/{contract}/evidence', [\App\Http\Controllers\Admin\DocumentController::class, 'evidence']);
     Route::post('/events/{event}/portal-grants', [\App\Http\Controllers\Admin\DocumentController::class, 'grant']);
+    Route::post('/events/{event}/portal-grants/{grant}/reveal-link', [\App\Http\Controllers\Admin\DocumentController::class, 'revealLink'])->whereNumber(['event', 'grant']);
     Route::post('/portal-grants/{grant}/revoke', [\App\Http\Controllers\Admin\DocumentController::class, 'revoke']);
     Route::post('/events/{event}/checkout-intents', [\App\Http\Controllers\Admin\CheckoutController::class, 'create']);
     Route::get('/payment-intents/{intent}', [\App\Http\Controllers\Admin\CheckoutController::class, 'show']);
@@ -62,8 +91,13 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
 // Client portal HTML (Claude); data and writes go through Codex's /portal/api endpoints.
 Route::get('/portal', [\App\Http\Controllers\Portal\PortalPageController::class, 'show']);
 Route::get('/portal/payment-return', [\App\Http\Controllers\Portal\PortalPageController::class, 'paymentReturn']);
+Route::get('/portal/quote', [\App\Http\Controllers\Portal\PortalPageController::class, 'quote']);
 Route::post('/portal/api/session', [\App\Http\Controllers\Portal\PortalController::class, 'session'])->middleware('throttle:30,1');
 Route::middleware([\App\Http\Middleware\AuthenticatePortal::class, 'throttle:60,1'])->prefix('portal/api')->group(function () {
+    Route::get('/quote', [\App\Http\Controllers\Portal\QuoteController::class, 'show']);
+    Route::get('/quote/pdf', [\App\Http\Controllers\Portal\QuoteController::class, 'pdf']);
+    Route::post('/quote/accept', [\App\Http\Controllers\Portal\QuoteController::class, 'accept']);
+    Route::post('/quote/reject', [\App\Http\Controllers\Portal\QuoteController::class, 'reject']);
     Route::get('/zelle-notices', [\App\Http\Controllers\Portal\ZelleNoticeController::class, 'index']);
     Route::post('/zelle-notices', [\App\Http\Controllers\Portal\ZelleNoticeController::class, 'store']);
     Route::post('/details', [\App\Http\Controllers\Portal\ClientDetailsController::class, 'store']);

@@ -79,7 +79,7 @@ class QuickBookingPageTest extends TestCase
             ->assertSet('data.end_time', '16:00') // filled from the package duration
             ->assertSee('Total $125 · depósito 50 % $62.50 · recibido $62.50 · saldo $62.50')
             ->call('save')->assertHasNoFormErrors()
-            ->assertSee('https://crm.example.test/p/fixture-secret')->assertSee('solo se muestra esta vez')
+            ->assertSee('https://crm.example.test/p/fixture-secret')->assertSee('Puedes volver a copiarlo desde el evento')
             ->assertSee('¡Hola Ana! Gracias por tu depósito de $62.50')->assertSee('Hi Ana! Thank you for your deposit of $62.50')
             ->assertSee('¡Estamos emocionados de ser parte de tu celebración!');
 
@@ -118,5 +118,59 @@ class QuickBookingPageTest extends TestCase
         // Same Zelle reference again → the service refuses; nothing new is recorded.
         Livewire::test(QuickBooking::class)->fillForm($this->form(['title' => 'Otra fiesta', 'deposit' => ['amount' => '10']]))->call('save')->assertNotified('No se guardó');
         $this->assertSame(1, LedgerEntry::count());
+    }
+
+    // Owner request: find a registered client by name/phone/email, verify her details; corrections travel INSIDE the QuickBook call.
+    public function test_search_select_verify_sends_customer_update_in_the_same_call(): void
+    {
+        $this->bind();
+        $claudia = Customer::create(['name' => 'Claudia Martínez', 'phone' => '(346) 555-0199', 'email' => 'old@example.test', 'locale' => 'es']);
+        Customer::create(['name' => 'Claudia Pérez', 'phone' => '281-555-0000', 'locale' => 'en']);
+        $this->assertSame([$claudia->id], array_keys(QuickBooking::searchCustomers('5550199')), 'Phone digits match regardless of format.');
+        $this->assertCount(2, QuickBooking::searchCustomers('claudia'));
+        $this->assertSame([], QuickBooking::searchCustomers('c'));
+
+        $page = Livewire::test(QuickBooking::class)->assertSchemaStateSet(['customer_mode' => 'existing'])
+            ->fillForm(['customer_id' => $claudia->id])
+            ->assertSchemaStateSet(['c_name' => 'Claudia Martínez', 'c_phone' => '(346) 555-0199', 'c_email' => 'old@example.test', 'c_locale' => 'es'])
+            ->assertSet('displayedCustomerId', $claudia->id)->assertSet('displayedCustomerVersion', 1);
+        $page->fillForm($this->form(['customer_mode' => 'existing', 'customer_id' => $claudia->id, 'c_email' => 'new@example.test']))->call('save')->assertHasNoFormErrors();
+        $sent = $this->calls[0][1];
+        $this->assertSame($claudia->id, $sent['customer_id']);
+        $this->assertSame(['expected_version' => 1, 'name' => 'Claudia Martínez', 'email' => 'new@example.test', 'phone' => '(346) 555-0199', 'locale' => 'es'], $sent['customer_update']);
+        $this->assertSame('old@example.test', $claudia->fresh()->email, 'The page never saves the contact on its own.');
+        $this->assertSame(1, $claudia->fresh()->version);
+    }
+
+    public function test_unchanged_client_is_not_rewritten_and_new_client_duplicate_is_flagged(): void
+    {
+        $this->bind();
+        $claudia = Customer::create(['name' => 'Claudia Martínez', 'phone' => '346-555-0199', 'locale' => 'es']);
+        Livewire::test(QuickBooking::class)->fillForm(['customer_id' => $claudia->id])
+            ->fillForm($this->form(['customer_mode' => 'existing', 'customer_id' => $claudia->id]))->call('save')->assertHasNoFormErrors();
+        $this->assertArrayNotHasKey('customer_update', $this->calls[0][1], 'Same details: no contact correction is sent.');
+        $this->assertSame(1, $claudia->fresh()->version);
+        $this->assertStringContainsString('Ya tienes registrada a Claudia Martínez', QuickBooking::duplicateHint('Otra persona', '(346) 555 0199'));
+        $this->assertStringContainsString('Ya tienes registrada', QuickBooking::duplicateHint('claudia martínez', null));
+        $this->assertNull(QuickBooking::duplicateHint('Nadie', '111'));
+    }
+
+    public function test_result_offers_whatsapp_and_sms_with_the_message_ready(): void
+    {
+        $this->bind();
+        Livewire::test(QuickBooking::class)->fillForm($this->form(['phone' => '(346) 555-0100']))->call('save')->assertHasNoFormErrors()
+            ->assertSee('wa.me\\/13465550100?text=', false)->assertSee('sms:+13465550100?\u0026body=', false)
+            ->assertSee('Abrir WhatsApp con el mensaje')->assertSee('Abrir SMS con el mensaje')->assertDontSee('beforeunload', false);
+        $this->assertSame('13465550100', \App\Filament\Support\ContactLinks::digits('346-555-0100'));
+        // Codex review #54: never guess a recipient for a message that carries the client's link.
+        $d = fn ($p) => \App\Filament\Support\ContactLinks::digits($p);
+        $this->assertSame('5215512345678', $d('+52 1 55 1234 5678'));
+        $this->assertSame('13465550100', $d('+1 (346) 555-0100'));
+        $this->assertSame('13465550100', $d('1-346-555-0100'));
+        foreach (['(346) 555-0100 ext 123', '346-555-0100 x12', 'DO NOT TEXT 346-555-0100', '00000000000', '555-0100', '911-555-0100', '(346) 055-0100',
+            '3465550100123', '+0 123 4567 890', '++1 346 555 0100', '', null] as $bad) {
+            $this->assertNull($d($bad), 'rejected: '.var_export($bad, true));
+        }
+        $this->assertNull(\App\Filament\Support\ContactLinks::whatsapp('DO NOT TEXT 346-555-0100', 'x'));
     }
 }

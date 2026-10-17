@@ -38,6 +38,13 @@ class ConfirmCapacity extends Page
     #[Locked]
     public ?int $displayedVersion = null;
 
+    /** Imported HoneyBook event: the source revision shown here is pinned; its money comes only from that revision. */
+    #[Locked]
+    public ?int $importedRevisionId = null;
+
+    #[Locked]
+    public string $importKey = '';
+
     public const SERVICE = 'App\\Services\\Records\\ConfirmCapacity';
 
     public static function canAccessFor(Event $event): bool
@@ -48,7 +55,7 @@ class ConfirmCapacity extends Page
     /** Paid mode: verified ledger money already exists (sandbox finance), so the deposit is not typed again. */
     public function paidFinance(): ?array
     {
-        if (! \App\Filament\Support\FinanceGate::enabled()) {
+        if ($this->importedRevisionId !== null || ! \App\Filament\Support\FinanceGate::enabled()) {
             return null;
         }
         $f = app(\App\Services\Finance\FinanceSummary::class)->forEvent($this->record);
@@ -61,7 +68,34 @@ class ConfirmCapacity extends Page
         $this->record = $this->resolveRecord($record);
         abort_unless(self::canAccessFor($this->record), 403);
         $this->displayedVersion = $this->record->version;
+        if ($imported = $this->imported()) {
+            $this->importedRevisionId = $imported['revision_id'];
+            $this->importKey = (string) \Illuminate\Support\Str::uuid();
+        }
         $this->form->fill(['payment' => ['method' => 'external_zelle'], 'transfers' => []]);
+    }
+
+    /**
+     * Source agreement of an event imported from HoneyBook (IMPORT-FUTURE-V1 C), or null for a normal draft.
+     * Read at mount for the pinned revision; amounts are HoneyBook's and never re-typed or verified here.
+     */
+    public function imported(): ?array
+    {
+        if (! config('waoo.sandbox_imports', false) || ! class_exists(\App\Services\Imports\ConfirmImportedCapacity::class)) {
+            return null;
+        }
+        $link = \App\Models\ImportedProjectLink::where('event_id', $this->record->getKey())->first();
+        if (! $link) {
+            return null;
+        }
+        $revision = \App\Models\ImportedProjectRevision::findOrFail($this->importedRevisionId ?? $link->current_revision_id);
+        $n = $revision->normalized;
+
+        return ['revision_id' => $revision->id, 'total_cents' => $n['total_cents'], 'paid_cents' => $n['paid_cents'],
+            'shortfall_cents' => max(0, intdiv($n['total_cents'] + 1, 2) - $n['paid_cents']), 'contract_signed' => (bool) ($n['contract_signed'] ?? false),
+            'payments' => \App\Models\ImportedLedgerLine::where('imported_project_revision_id', $revision->id)->orderBy('source_position')->get()
+                ->map(fn ($l) => $l->received_date->format('Y-m-d').' · '.Labels::money($l->amount_cents).' · '
+                    .\App\Services\Imports\HoneyBookPaymentLabels::display($l->method, $revision->mapping['payment_label_map_version'] ?? null)['display_method'])->all()];
     }
 
     public function getSubheading(): ?string
@@ -85,14 +119,21 @@ class ConfirmCapacity extends Page
             Callout::make('Qué necesita esta fiesta')->info()->columnSpanFull()
                 ->description(fn () => $this->needsSummary()),
             Section::make('1. Staff, trajes y equipo')->columns(2)->schema($pickers)
-                ->description('Elige las unidades exactas. Una persona no puede hacer dos roles a la vez; un traje necesita a alguien que pueda usarlo.'),
+                ->description('Elige las unidades exactas. Una persona no puede hacer dos roles a la vez; un traje necesita a alguien que pueda usarlo. Al menos una de las personas que van debe manejar (Conductor/a); no hace falta sumar a nadie.'),
+            Callout::make('2. Pagado según HoneyBook')->warning()->columnSpanFull()
+                ->visible(fn () => $this->importedRevisionId !== null)
+                ->description(fn () => ($i = $this->imported()) ? 'Pagado '.Labels::money($i['paid_cents']).' de '.Labels::money($i['total_cents'])
+                    .' (importado de HoneyBook, no verificado en banco)'.($i['shortfall_cents'] > 0 ? ' · faltan '.Labels::money($i['shortfall_cents']).' para el 50 %.' : ' · depósito cubierto.')
+                    .($i['payments'] ? ' Pagos: '.implode('; ', $i['payments']).'.' : '').' Contrato: '.($i['contract_signed'] ? 'firmado en HoneyBook.' : 'sin firmar en HoneyBook.') : ''),
+            Textarea::make('imported_deposit_exception_reason')->label('Por qué se acepta menos del 50 %')->minLength(10)->maxLength(2000)->required()->columnSpanFull()
+                ->visible(fn () => ($i = $this->imported()) !== null && $i['shortfall_cents'] > 0),
             Callout::make('2. Depósito ya registrado')->success()->columnSpanFull()
                 ->visible(fn () => $this->paidFinance() !== null)
                 ->description(fn () => ($f = $this->paidFinance()) ? 'Recibido '.Labels::money($f['net_received_cents']).' de '.Labels::money($f['financial_revision']->total_cents)
                     .($f['deposit_shortfall_cents'] > 0 ? ' · faltan '.Labels::money($f['deposit_shortfall_cents']).' para el 50 %.' : ' · depósito cubierto.').' Se usa este pago; no lo escribas otra vez.' : ''),
             Textarea::make('paid_deposit_exception_reason')->label('Por qué se acepta menos del 50 %')->minLength(10)->maxLength(2000)->required()->columnSpanFull()
                 ->visible(fn () => ($f = $this->paidFinance()) !== null && $f['deposit_shortfall_cents'] > 0),
-            Section::make('2. Depósito recibido')->columns(2)->visible(fn () => $this->paidFinance() === null)->schema([
+            Section::make('2. Depósito recibido')->columns(2)->visible(fn () => $this->paidFinance() === null && $this->importedRevisionId === null)->schema([
                 Group::make()->statePath('payment')->columns(2)->columnSpanFull()->schema([
                     Radio::make('method')->label('Cómo pagó')->inline()->required()
                         ->options(['external_zelle' => 'Zelle', 'external_card' => 'Tarjeta (Stripe)', 'external_cash' => 'Efectivo'])->columnSpanFull(),
@@ -148,6 +189,11 @@ class ConfirmCapacity extends Page
     public function confirm(): void
     {
         $state = $this->form->getState();
+        if ($this->importedRevisionId !== null) {
+            $this->confirmImported($state);
+
+            return;
+        }
         $paid = $this->paidFinance();
         $input = $paid ? $this->toPaidInput($state, $paid) : $this->toServiceInput($state);
         try {
@@ -170,6 +216,38 @@ class ConfirmCapacity extends Page
         Notification::make()->success()->title('Recursos apartados')
             ->body('El staff, los trajes y el equipo quedaron asignados con el depósito verificado. Esto no es el contrato firmado.')->send();
         $this->redirect(EventResource::getUrl('index'));
+    }
+
+    /** Imported event: same review and units, no payment block, pinned source revision, one key per attempt. */
+    private function confirmImported(array $state): void
+    {
+        try {
+            app(\App\Services\Imports\ConfirmImportedCapacity::class)->execute(Filament::auth()->user(), $this->record->getKey(), $this->toImportedInput($state), $this->importKey);
+        } catch (ValidationException $e) {
+            $this->importKey = (string) \Illuminate\Support\Str::uuid();
+            $this->showFieldErrors($e);
+
+            return;
+        } catch (RecordWriteRejected|AuthorizationException $e) {
+            $this->importKey = (string) \Illuminate\Support\Str::uuid();
+            $this->fail($e->getMessage().' Recarga la página para ver lo actual.');
+
+            return;
+        }
+        Notification::make()->success()->title('Recursos apartados')
+            ->body('El staff, los trajes y el equipo quedaron asignados con lo pagado en HoneyBook. El contrato sigue en HoneyBook.')->send();
+        $this->redirect(EventResource::getUrl('view', ['record' => $this->record]));
+    }
+
+    public function toImportedInput(array $s): array
+    {
+        $input = $this->toServiceInput([...$s, 'payment' => ['date' => now(ChicagoTime::TZ)->format('Y-m-d'), 'time' => '00:00']]);
+        unset($input['payment'], $input['review']['deposit_exception_reason']);
+        if (filled($s['imported_deposit_exception_reason'] ?? null)) {
+            $input['review']['deposit_exception_reason'] = trim($s['imported_deposit_exception_reason']);
+        }
+
+        return [...$input, 'imported_revision_id' => $this->importedRevisionId];
     }
 
     /** Form state -> ConfirmCapacity input (same shape as POST /admin/api/events/{id}/confirm-capacity). */

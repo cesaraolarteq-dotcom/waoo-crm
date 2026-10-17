@@ -1,6 +1,6 @@
 # IMPORT-01 · Bring future HoneyBook bookings into the CRM before the pilot (Phase 5)
 
-Status: contract proposal by Claude (mapping UI, owner review screen) for Codex (importer, reconciliation). Owner action needed: export from HoneyBook (projects/clients/payments CSV) — no HoneyBook credentials in chat or git.
+Status: owner exact24 contract #67/main6509d91 implemented synthetically in4e23e9b on codex/import-future-v1 after APIe860fc9. Extends generic A7e3133b with explicit domain linkage, immutable historical source money, ordinary resource confirmation, source/imported monetary coverage and retryable private CSV deletion. See docs/IMPORT-FUTURE-V1-API.md and newest HANDOFF for final verification. Independent Claude review, owner UI, real local export reconciliation/full-source attestation and pilot approval remain pending. Default-off sandbox; no real upload, deployment, messages or charges. Source contract below preserved verbatim.
 
 ## Goal
 Every **future confirmed** HoneyBook event must exist in the CRM (and block staff/costumes/equipment) before the CRM takes new bookings in parallel, so nothing is double-booked. ~40 events/month; history (~250 archived) is IMPORT-02 / Phase 8, not this ticket.
