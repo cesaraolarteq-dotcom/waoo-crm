@@ -23,6 +23,13 @@ final class CreateFinancialRevision
             RecordWriteRejected::unless($event->version === $data['expected_version'], 409, 'El evento cambió. Actualiza antes de fijar sus importes.');
             // Changing an already committed agreement belongs to CHANGE-A, not this initial snapshot service.
             RecordWriteRejected::unless($event->status === 'draft', 409, 'Un evento reservado requiere el flujo de cambios financieros.');
+            if ($accepted=\App\Services\Quotes\QuoteAgreement::forEvent($event)) {
+                $revision=FinancialRevision::create(['event_id'=>$event->id,'revision'=>(int)FinancialRevision::where('event_id',$eventId)->max('revision')+1,
+                    'event_version'=>$event->version,'created_by'=>$actor->id,...$accepted]);
+                SupersedeCollections::forEvent($eventId,'financial_revision_changed',$actor);
+                Audit::recordFor($actor,'finance.revision_created',$revision,[],['event_id'=>$eventId,'quote_revision_id'=>$revision->quote_revision_id,'total_cents'=>$revision->total_cents]);
+                MutationKey::store($scope,$key,$hash,'financial_revision',$revision->id);return $revision;
+            }
             $services = $event->services()->with('characters')->get();
             if ($services->isEmpty() || $event->travel_fee_cents === null) throw ValidationException::withMessages(['finance' => 'Completa los servicios y el costo de transporte; no se asume cero.']);
             $lines = []; $subtotal = 0;

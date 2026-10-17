@@ -21,6 +21,7 @@ final class ContractPrintContext
             foreach ($service['characters'] ?? [] as $character) $characters[] = $character['quantity'].' × '.\App\Services\Records\CharacterLabel::fromSnapshot($character);
         }
         $lines[] = ['label' => 'Travel fee', 'amount' => self::money($snapshot['travel_fee_cents'])];
+        foreach($snapshot['discounts']??[] as $discount)$lines[]=['label'=>'Discount: '.$discount['label'],'amount'=>'−'.self::money($discount['amount_cents'])];
         $payments = $snapshot['payments'];
         $context = ['client' => [...$snapshot['client'], 'typed_signature' => $signature?->signer_name ?? '', 'signed_at' => $signature?->accepted_at->setTimezone('America/Chicago')->format('M j, Y g:i a T') ?? ''],
             'event' => [...$snapshot['event'], 'requires_characters' => $characters !== [], 'characters' => implode(', ', $characters)],

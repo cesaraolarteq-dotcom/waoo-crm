@@ -17,13 +17,18 @@ final class ReviseQuote
         $eventId = Quote::findOrFail($quoteId)->event_id;
         return DB::transaction(function () use ($actor, $quoteId, $eventId, $data, $scope, $hash, $key) {
             User::whereKey($actor->id)->lockForUpdate()->firstOrFail(); QuoteInput::actor($actor);
+            QuoteProtocol::lockGrants($quoteId);
             $event = Event::whereKey($eventId)->lockForUpdate()->firstOrFail();
             if ($saved = MutationKey::find($scope, $key, $hash)) return QuoteRevision::findOrFail($saved->result_id);
             $quote = Quote::whereKey($quoteId)->lockForUpdate()->firstOrFail();
-            RecordWriteRejected::unless($quote->status === 'draft' && $quote->valid_until->isFuture() && $quote->version === $data['expected_version'] && $quote->customer_id === $event->customer_id, 409, 'La cotización cambió o ya no es un borrador vigente.');
+            RecordWriteRejected::unless(in_array($quote->status,['draft','sent','rejected','expired'],true) && $quote->version === $data['expected_version'] && $quote->customer_id === $event->customer_id, 409, 'La cotización cambió o ya no permite una revisión.');
             $snapshot = QuoteSnapshot::capture($event, $actor, $data);
+            foreach (\App\Models\PortalGrant::whereIn('quote_revision_id',QuoteRevision::where('quote_id',$quoteId)->select('id'))->whereNull('revoked_at')->orderBy('id')->get() as $grant) {
+                $grant->forceFill(['revoked_at'=>now(),'encrypted_token'=>null])->save();
+                Audit::recordFor($actor,'portal.grant_revoked',$grant,[],['reason'=>'quote_revised']);
+            }
             $before = $quote->only(['version','current_revision','valid_until']);
-            $quote->forceFill(['version' => $quote->version + 1, 'current_revision' => $quote->current_revision + 1,
+            $quote->forceFill(['status'=>'draft', 'version' => $quote->version + 1, 'current_revision' => $quote->current_revision + 1,
                 'valid_until' => $snapshot['valid_until'], 'locale' => $data['locale'] ?? $quote->locale,
                 'owner_note' => array_key_exists('owner_note', $data) ? $data['owner_note'] : $quote->owner_note])->save();
             $revision = QuoteRevision::create(['quote_id' => $quote->id, 'revision' => $quote->current_revision, ...$snapshot]);

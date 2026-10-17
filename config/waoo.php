@@ -10,6 +10,8 @@ return [
     'google_routes_key' => env('WAOO_GOOGLE_ROUTES_KEY'),
     'sandbox_finance' => env('WAOO_SANDBOX_FINANCE', false),
     'sandbox_quotes' => env('WAOO_SANDBOX_QUOTES', false),
+    // Empty until the owner approves versioned, outcome-specific ES/EN decision wording.
+    'quote_acceptance_consent' => [],
     'sandbox_documents' => env('WAOO_SANDBOX_DOCUMENTS', false),
     'stripe_test_secret' => env('STRIPE_TEST_SECRET'),
     'stripe_test_webhook_secret' => env('STRIPE_TEST_WEBHOOK_SECRET'),
