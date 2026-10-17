@@ -3,6 +3,24 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-17 · Claude Code · `claude/lead-ui` (#59) — review CLAUDE-56-57-59-54 addressed
+
+- **#59 P2 pagination:** Leads keeps the service's 50 bound and forwards the page: `leadPage` (URL `?pagina=`), `goToPage()` clamps to the paginator's last page, paginator metadata kept for “← Anteriores / Siguientes →” and “x–y de N · página a de b”; changing the status filter resets to page 1. Regression `test_pagination_reaches_every_lead_and_filter_resets_the_page` (51 leads: the oldest is only on page 2 and reached through the controls; `?pagina=2` renders it; out-of-range clamps; filter change → page 1).
+- **#59 note:** new-client email field on Reserva rápida (optional) mapped to `new_customer.email`; lead conversion pre-fills the lead's email only for a new client (never overwrites an existing customer).
+- **Test classes (ed8d426):** #49 now carries your `QuickBookingContactTest` (10 backend tests) unchanged plus the screen class `QuickBookingContactPageTest`; propagated through #56 → #57 → #59.
+- **#56 notes:** outfit filter keeps a version named "0"; ViewEvent uses `filled()`; costume selector says “Sin versión específica” and explains exact requests need an exact unit.
+- **#57:** your `TravelFeeReferenceCalibrationTest` (22/22) and failed-recalculation guard added with the calibration JSON from main.
+- New SHAs below in the PR comments / César's message. No staging deploy.
+
+## 2026-10-16 · Claude Code · `claude/lead-ui` — LEAD-01 screens (base `claude/route-ui`)
+
+- **Prospectos** page (`/admin/prospectos`, group Vender, badge = new leads; gate FinanceGate + `sandbox_lead_intake`): status tabs with counts, rows from `ReadLeads::index` (all website text escaped by Blade), “Fecha muy pedida/casi llena” from demand_flag, website travel text marked informational, duplicate hints shown as a warning only.
+- **Actualizar** modal → `UpdateLead`: lead id/version captured in **Locked** state when the modal opens (values shown are that version); stale → 409 notification, nothing replaced; booked → status locked, note-only.
+- **Convertir en reserva rápida** → Reserva rápida `?lead=`: `fillFromLead` reads `ReadLeads::show`, keeps Locked `leadId/leadVersion`, prefills date/time/ZIP, selects the client only when there is exactly one duplicate hint (else new client with the lead's name/phone/locale); banner reminds the owner nothing from the website is trusted. Save sends `lead_id` + `lead_expected_version` inside the one QuickBook call (no ConvertLead duplicate path; no extra transaction around the post-core grant). Lead becomes booked only through your core.
+- Inicio card “Prospectos sin contestar”. Page registered in AdminPanelProvider.
+- Tests `LeadScreensTest` 4/39 (escaping + hint; Locked version + stale; prefill + booked only after real save + “Ver la reserva”; 403 with gate off).
+- Website side (`waoo-website` branch `web-lead-01`) updated to your signature: timestamp\nUUID\nbody, fresh timestamp/signature on retry, required codes never null. Not live; needs owner OK + shared secret on both sides.
+
 ## 2026-10-16 · Claude Code · `claude/route-ui` — ROUTE-01 screens (base `claude/outfit-ui`)
 
 - `App\Filament\Support\TravelFeeFields` shared by the event form and Reserva rápida: “Calcular” suffix action on the fee → `TravelFeeQuote::forAddress` (exact address + ZIP; Reserva rápida gains an optional “Dirección de la fiesta”). ok → fills the fee and shows the summary (special ZIP or miles/tolls); outside/review/unavailable → “Pendiente…/Requiere revisión…”, the fee is **never** set to $0. Quote id/status/fee kept as form state; your service still re-validates address/ZIP/rules/expiry.

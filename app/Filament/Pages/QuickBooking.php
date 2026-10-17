@@ -55,6 +55,16 @@ class QuickBooking extends Page
     #[Locked]
     public ?array $displayedContact = null;
 
+    /** LEAD-01: the website lead being converted, as it was when this page opened (id + version, server-set only). */
+    #[Locked]
+    public ?int $leadId = null;
+
+    #[Locked]
+    public ?int $leadVersion = null;
+
+    #[Locked]
+    public ?array $leadSummary = null;
+
     public static function canAccess(): bool
     {
         return parent::canAccess() && \App\Filament\Support\FinanceGate::enabled() && config('waoo.sandbox_documents', false) && RecordServicePageGate::ready(self::SERVICE);
@@ -71,6 +81,7 @@ class QuickBooking extends Page
         $this->key = (string) Str::uuid();
         $this->linkExpiryAnchorUtc = now('UTC')->startOfSecond()->toIso8601String();
         $this->form->fill(['customer_mode' => 'existing', 'locale' => 'es', 'deposit' => ['method' => 'zelle'], 'expires_days' => 14, 'characters' => []]);
+        $this->fillFromLead(request()->integer('lead') ?: null);
     }
 
     public function getSubheading(): ?string
@@ -155,6 +166,8 @@ class QuickBooking extends Page
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new')->helperText(fn (Get $get) => self::duplicateHint($get('name'), $get('phone')) ?? 'Ella confirma su nombre completo en el enlace.'),
                 TextInput::make('phone')->label('Teléfono / WhatsApp')->tel()->maxLength(40)->live(onBlur: true)
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new'),
+                TextInput::make('email')->label('Correo (opcional)')->email()->maxLength(255)
+                    ->visible(fn (Get $get) => $get('customer_mode') === 'new'),
                 Select::make('locale')->label('Idioma de sus mensajes')->native(false)->options(['es' => 'Español', 'en' => 'Inglés'])->required()
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new'),
             ]),
@@ -235,6 +248,7 @@ class QuickBooking extends Page
         }
         $this->result = self::presentResult($r, $s);
         $this->key = (string) Str::uuid();
+        $this->leadId = null; $this->leadVersion = null; $this->leadSummary = null;
     }
 
     /** Search by name, phone (digits only) or email; label shows the phone so two people with the same name are told apart. */
@@ -320,11 +334,12 @@ class QuickBooking extends Page
         return [
             ...($s['customer_mode'] === 'existing'
                 ? ['customer_id' => (int) $s['customer_id'], ...$this->customerUpdate($s)]
-                : ['new_customer' => ['name' => trim($s['name']), 'phone' => filled($s['phone'] ?? null) ? trim($s['phone']) : null, 'email' => null, 'locale' => $s['locale']]]),
+                : ['new_customer' => ['name' => trim($s['name']), 'phone' => filled($s['phone'] ?? null) ? trim($s['phone']) : null, 'email' => filled($s['email'] ?? null) ? trim($s['email']) : null, 'locale' => $s['locale']]]),
             'title' => trim((string) $s['title']), 'event_type' => $s['event_type'], 'starts_at' => $start, 'ends_at' => $end, 'timezone' => ChicagoTime::TZ,
             'postal_code' => trim((string) $s['postal_code']), 'travel_fee_cents' => EditServiceVariant::toCents((string) $s['travel_fee']),
             ...(filled($s['address'] ?? null) ? ['address' => trim((string) $s['address'])] : []),
             ...\App\Filament\Support\TravelFeeFields::input($s),
+            ...($this->leadId !== null ? ['lead_id' => $this->leadId, 'lead_expected_version' => (int) $this->leadVersion] : []),
             ...(filled($s['setup_minutes'] ?? null) ? ['setup_minutes' => (int) $s['setup_minutes']] : []),
             ...(filled($s['breakdown_minutes'] ?? null) ? ['breakdown_minutes' => (int) $s['breakdown_minutes']] : []),
             'services' => EventResource::servicesInput($s),
@@ -356,6 +371,40 @@ class QuickBooking extends Page
             'msg_en' => "Hi {$first}! Thank you for your deposit of {$paid}. We recorded your booking request for {$whenEn}. To finish your booking, please complete your details and sign your contract here: {$link} (link expires {$exp}). Your remaining balance is {$balance}. We're excited to be part of your celebration!",
             'locale' => $r->customer->locale ?? 'es',
         ];
+    }
+
+    /**
+     * Prefill from a website lead (never trusted blindly: the owner still picks package/price, checks time, fee and deposit).
+     * A single duplicate hint selects that registered client; otherwise she starts as a new client with the lead's contact.
+     */
+    public function fillFromLead(?int $id): void
+    {
+        if (! $id || ! (bool) config('waoo.sandbox_lead_intake', false) || ! class_exists(\App\Services\Leads\ReadLeads::class)) return;
+        $lead = app(\App\Services\Leads\ReadLeads::class)->show(Filament::auth()->user(), $id);
+        if (! in_array($lead['status'], ['new', 'contacted', 'quoted'], true)) {
+            \Filament\Notifications\Notification::make()->warning()->title('Este prospecto ya no se puede convertir')->body('Está '.(\App\Filament\Pages\Leads::STATUS[$lead['status']] ?? $lead['status']).'.')->send();
+
+            return;
+        }
+        $p = $lead['submission']['payload'];
+        $this->leadId = $lead['id']; $this->leadVersion = $lead['version'];
+        $this->leadSummary = ['name' => $p['name'], 'package' => $p['package'] ?? '', 'type' => $p['event_type'] ?? '', 'travel' => $p['travel_estimate_text'] ?? null, 'message' => $p['message'] ?? null];
+        $state = ['date' => $p['event_date'] ?? null, 'start_time' => $p['start_time'] ?? null, 'postal_code' => $p['zip'] ?? null,
+            // Website event type (English label) → CRM type; anything unknown stays for the owner to choose.
+            'event_type' => \App\Filament\Pages\Leads::EVENT_TYPES[$p['event_type'] ?? ''][0] ?? null];
+        $hints = $lead['duplicate_hints'] ?? [];
+        if (count($hints) === 1) {
+            $state += ['customer_mode' => 'existing', 'customer_id' => $hints[0]['customer_id']];
+        } else {
+            $state += ['customer_mode' => 'new', 'name' => $p['name'], 'phone' => $p['phone'] ?? null, 'email' => $p['email'] ?? null, 'locale' => $p['locale'] ?? 'es'];
+        }
+        $this->form->fill([...$this->form->getRawState(), ...$state]);
+        if (($state['customer_mode'] ?? null) === 'existing') {
+            $c = \App\Models\Customer::find($state['customer_id']);
+            $this->displayedCustomerId = $c?->id; $this->displayedCustomerVersion = $c?->version;
+            $this->displayedContact = $c ? ['name' => $c->name, 'email' => $c->email, 'phone' => $c->phone, 'locale' => $c->locale] : null;
+            $this->form->fill([...$this->form->getRawState(), 'c_name' => $c?->name, 'c_phone' => $c?->phone, 'c_email' => $c?->email, 'c_locale' => $c?->locale ?? 'es']);
+        }
     }
 
     public function startOver(): void

@@ -38,6 +38,14 @@ class Dashboard extends BaseDashboard
         $cards = [];
         $link = fn (Event $e) => ['label' => $e->title.' · '.Labels::when($e->starts_at), 'url' => $this->eventUrl($e)];
 
+        if (\App\Filament\Pages\Leads::canAccess()) {
+            // LEAD-01: website requests nobody has answered yet (newest first).
+            $leads = \App\Models\Lead::with('submission')->where('status', 'new')->orderByDesc('id')->limit(20)->get();
+            $cards[] = ['tone' => 'bad', 'title' => 'Prospectos sin contestar', 'text' => 'Llegaron por el formulario de la web. Contesta primero las fechas muy pedidas.',
+                'items' => $leads->map(fn ($l) => ['label' => ($l->submission->payload['name'] ?? 'Prospecto').' · '.($l->submission->payload['event_date'] ?? '').' · ZIP '.($l->submission->payload['zip'] ?? ''),
+                    'url' => \App\Filament\Pages\Leads::getUrl()])->all()];
+        }
+
         $soon = (clone $upcoming)->where('status', 'draft')->where('starts_at', '<', $now->copy()->addDays(7))->get();
         $cards[] = ['tone' => 'bad', 'title' => 'Fiestas en menos de 7 días sin staff apartado',
             'text' => 'Asigna staff y trajes; por la fecha necesitan tu aprobación.', 'items' => $soon->map($link)->all()];
