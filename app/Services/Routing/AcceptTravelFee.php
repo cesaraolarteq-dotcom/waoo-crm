@@ -26,7 +26,7 @@ final class AcceptTravelFee
             return [...$base, 'mode' => $calculated ? 'calculated' : 'edited', 'note' => $note, 'quote_id' => $quote->id,
                 'rules' => $quote->rules, 'rules_hash' => $quote->rules_hash, 'quoted_at' => $quote->created_at->toIso8601String(), 'calculation' => $quote->breakdown, 'quote_status' => $quote->status, 'quoted_fee_cents' => $quote->fee_cents];
         }
-        if ($prior && $prior['accepted_fee_cents'] === $fee && TravelFeeRules::inputHash($prior['inputs']) === TravelFeeRules::inputHash($inputs)) return $prior;
+        if ($prior && array_key_exists('accepted_fee_cents', $prior) && isset($prior['inputs']) && $prior['accepted_fee_cents'] === $fee && TravelFeeRules::inputHash($prior['inputs']) === TravelFeeRules::inputHash($inputs)) return $prior;
         if ($prior && !$note) throw ValidationException::withMessages(['travel_fee_override_note' => 'Explica el cambio del costo de transporte o calcula de nuevo.']);
         return $note ? [...$base, 'mode' => 'manual', 'note' => $note, 'previous_quote_id' => $prior['quote_id'] ?? $prior['previous_quote_id'] ?? null] : null;
     }

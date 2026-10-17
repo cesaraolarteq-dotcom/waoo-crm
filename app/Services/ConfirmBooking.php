@@ -24,7 +24,7 @@ final class ConfirmBooking
                 if ($event->status === 'capacity_reserved') {
                     $existing = BookingEvidence::where('event_id', $event->id)->firstOrFail();
                     $same = $event->reservations()->orderBy('resource_id')->pluck('resource_id')->all() === $ids->all();
-                    abort_unless($same && $existing->method === $data['payment']['method'] && $existing->received_at->equalTo(CarbonImmutable::parse($data['payment']['received_at'])) && OperationalReview::where('event_id', $event->id)->firstOrFail()->evidence == $data['review'] && $existing->reference === $data['payment']['reference'] && $existing->amount_cents === (int) $data['payment']['amount_cents'], 409, 'La reserva ya está confirmada con otros datos.');
+                    abort_unless($same && $existing->method === $data['payment']['method'] && ($existing->received_at===null?($data['payment']['received_at']??null)===null:$existing->received_at->equalTo(CarbonImmutable::parse($data['payment']['received_at']))) && OperationalReview::where('event_id', $event->id)->firstOrFail()->evidence == $data['review'] && $existing->reference === $data['payment']['reference'] && $existing->amount_cents === (int) $data['payment']['amount_cents'], 409, 'La reserva ya está confirmada con otros datos.');
                     return $event;
                 }
                 abort_unless($event->status === 'draft' && $event->version === (int) $data['expected_version'], 409, 'El evento cambió. Actualiza la ficha.');
@@ -50,6 +50,14 @@ final class ConfirmBooking
                     $this->fail('Revisa el costo de transporte; no se asume cero.');
                 }
                 $total = \App\Models\PriceVersion::whereIn('id', $services->pluck('price_version_id'))->sum('amount_cents') + $event->travel_fee_cents;
+                $importLink=\App\Models\ImportedProjectLink::where('event_id',$eventId)->lockForUpdate()->first();
+                if($importLink){
+                    $imported=\App\Models\ImportedProjectRevision::findOrFail($importLink->current_revision_id);
+                    $expected=\App\Services\Imports\ImportedAgreement::payment($importLink,$imported);
+                    \App\Exceptions\RecordWriteRejected::unless(($data['imported_revision_id']??null)===$imported->id&&$event->version===$imported->event_version
+                        &&$data['payment']===$expected&&hash_equals($imported->mapping['operations_sha256'],\App\Services\Imports\ImportedAgreement::operations($event)),409,'Confirma este evento desde su acuerdo y dinero histórico importados.');
+                    $total=$imported->normalized['total_cents'];
+                }else{\App\Exceptions\RecordWriteRejected::unless(($data['payment']['method']??'')!=='honeybook_import',409,'No hay un acuerdo importado para esta evidencia.');}
                 if ($conversion=\App\Models\QuoteConversion::where('event_id',$eventId)->first()) {
                     $finance=\App\Models\FinancialRevision::where('event_id',$eventId)->orderByDesc('revision')->firstOrFail();
                     $accepted=\App\Services\Quotes\QuoteAgreement::forEvent($event);
@@ -120,11 +128,12 @@ final class ConfirmBooking
                 $busyStart = $event->starts_at->subMinutes($event->setup_minutes);
                 $busyEnd = $event->ends_at->addMinutes($event->breakdown_minutes);
                 foreach ($resources->sortBy(fn ($r) => $r->kind === 'costume' ? 0 : 1) as $resource) {
-                    if (ResourceBlock::where('resource_id', $resource->id)->whereNull('released_at')->where('starts_at', '<', $busyEnd)->where('ends_at', '>', $busyStart)->exists()) {
+                    if (ResourceBlock::where('resource_id', $resource->id)->whereNull('released_at')->where('starts_at', '<', $busyEnd)->where('ends_at', '>', $busyStart)->lockForUpdate()->first()) {
                         $this->rejectVersionConflict($resource, $slots);
                         $this->fail("El recurso {$resource->code} tiene un bloqueo horario.");
                     }
-                    $bookings = ResourceReservation::where('resource_id', $resource->id)->with('event')->orderBy('starts_at')->get();
+                    // Current reads after the resource lock: a repeatable-read snapshot may predate a competing commit.
+                    $bookings = ResourceReservation::where('resource_id', $resource->id)->with(['event' => fn ($query) => $query->sharedLock()])->orderBy('starts_at')->lockForUpdate()->get();
                     $before = null;
                     $after = null;
                     foreach ($bookings as $booking) {

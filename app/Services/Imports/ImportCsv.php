@@ -50,6 +50,7 @@ final class ImportCsv
         if($state==='quoted')ImportInput::fail($field.'.'.$startLine,'unclosed_quote');
         if($cell!==''||$cells!==[]||$state!=='start'){$finishCell();$finishRow();}
         if($headers===null)ImportInput::fail($field,'missing_headers');
+        if(isset($profile['source_format'])&&($role!=='projects'||$headers!==HoneyBookFutureSource::HEADERS))ImportInput::fail('files','exact_24_future_headers_required');
         foreach($profile['columns'][$role]??[] as $index)if($index>=count($headers))ImportInput::fail('profile.columns.'.$role,'column_out_of_range');
         return ['headers'=>$headers,'rows'=>$rows];
     }

@@ -18,6 +18,7 @@ final class CreateFinancialRevision
         $scope = "owner:{$actor->id}:event:{$eventId}:finance"; $hash = MutationKey::hash($data);
         return DB::transaction(function () use ($actor, $eventId, $data, $scope, $hash, $key) {
             $event = Event::whereKey($eventId)->lockForUpdate()->firstOrFail();
+            \App\Services\Imports\ImportedAgreement::blockCrmLifecycle($eventId);
             if ($saved = MutationKey::find($scope, $key, $hash)) return FinancialRevision::findOrFail($saved->result_id);
             RecordWriteRejected::when(\Illuminate\Support\Facades\Schema::hasTable('contracts') && \App\Models\Contract::where('event_id', $eventId)->where('state', 'signed')->exists(), 409, 'Un contrato firmado requiere el flujo de cambios financieros.');
             RecordWriteRejected::unless($event->version === $data['expected_version'], 409, 'El evento cambió. Actualiza antes de fijar sus importes.');

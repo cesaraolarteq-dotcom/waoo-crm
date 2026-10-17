@@ -31,7 +31,7 @@ final class ImportInput
     public static function profile(mixed $value):array
     {
         if(!is_array($value))self::fail('profile','invalid_profile');
-        $p=self::input($value,['schema_version'=>'required|integer|in:1','timezone'=>'required|in:America/Chicago',
+        $p=self::input($value,['source_format'=>'sometimes|in:honeybook_future_v1','schema_version'=>'required|integer|in:1','timezone'=>'required|in:America/Chicago',
             'encoding'=>'required|in:utf-8,windows-1252','delimiter'=>'required|string','date_format'=>'required|in:Y-m-d,m/d/Y',
             'money_format'=>'required|in:usd_dot','columns'=>'present|array','status_map'=>'present|array','payment_state_map'=>'present|array']);
         if($p['delimiter']==='\\t')$p['delimiter']="\t";
@@ -49,6 +49,8 @@ final class ImportInput
                 foreach($values as $v){if(!is_string($v)||trim($v)===''||strlen($v)>255||in_array($v,$seen,true))self::fail('profile.'.$key,'ambiguous_state');$seen[]=$v;}
             }
         }
-        $p['schema_version']=1;return $p;
+        $p['schema_version']=1;
+        if(isset($p['source_format'])&&\App\Services\Finance\MutationKey::hash($p)!==\App\Services\Finance\MutationKey::hash(HoneyBookFutureSource::profile()))self::fail('profile','fixed_future_profile_required');
+        return $p;
     }
 }

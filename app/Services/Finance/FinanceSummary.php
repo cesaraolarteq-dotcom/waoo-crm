@@ -7,6 +7,7 @@ final class FinanceSummary
 {
     public function forEvent(Event $event): array
     {
+        if($imported=\App\Services\Imports\ImportedAgreement::summary($event->id))return $imported;
         $revision = FinancialRevision::where('event_id', $event->id)->orderByDesc('revision')->first();
         $received = (int) LedgerEntry::where('event_id', $event->id)->where('environment', 'test')->where('kind', 'receipt')->sum('amount_cents');
         $refunded = (int) LedgerEntry::where('event_id', $event->id)->where('environment', 'test')->where('kind', 'refund')->sum('amount_cents');

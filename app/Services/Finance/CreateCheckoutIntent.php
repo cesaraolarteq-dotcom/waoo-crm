@@ -24,6 +24,7 @@ final class CreateCheckoutIntent
         $intent = DB::transaction(function () use ($actor, $eventId, $data, $scope, $hash, $key) {
             if ($actor instanceof PortalContext) $actor->authorize($eventId, 'checkout.create', true);
             $event = Event::whereKey($eventId)->lockForUpdate()->firstOrFail();
+            \App\Services\Imports\ImportedAgreement::blockCrmLifecycle($eventId);
             if ($saved = MutationKey::find($scope, $key, $hash)) return PaymentIntent::findOrFail($saved->result_id);
             $revision = FinancialRevision::where('event_id', $eventId)->whereKey($data['financial_revision_id'])->firstOrFail();
             CreateContract::assertCurrent($event, $revision);

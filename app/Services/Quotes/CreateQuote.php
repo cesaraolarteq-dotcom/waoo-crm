@@ -16,6 +16,7 @@ final class CreateQuote
         return DB::transaction(function () use ($actor, $data, $scope, $hash, $key) {
             User::whereKey($actor->id)->lockForUpdate()->firstOrFail(); QuoteInput::actor($actor);
             $event = Event::whereKey($data['event_id'])->lockForUpdate()->firstOrFail();
+            \App\Services\Imports\ImportedAgreement::blockCrmLifecycle($event->id);
             if ($saved = MutationKey::find($scope, $key, $hash)) return QuoteRevision::findOrFail($saved->result_id);
             RecordWriteRejected::unless(!Quote::where('event_id', $event->id)->lockForUpdate()->first(), 409, 'Este borrador ya tiene una cotización. Crea una revisión.');
             $snapshot = QuoteSnapshot::capture($event, $actor, $data);

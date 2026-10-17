@@ -19,6 +19,7 @@ final class ImportPreview
     }
     public function build(#[\SensitiveParameter] array $files,array $profile,CarbonImmutable $at):array
     {
+        if(isset($profile['source_format']))return app(HoneyBookFutureSource::class)->build($files,$at);
         $rows=[];
         foreach($files as $role=>$file)foreach($file['rows'] as $csv){
             $source=[];foreach($profile['columns'][$role]??[] as $field=>$index)$source[$field]=$csv['cells'][$index];

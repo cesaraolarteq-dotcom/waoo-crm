@@ -17,7 +17,7 @@ final class ConvertAcceptedQuote
         $scope="owner:{$actor->id}:quote:{$quoteId}:convert";$hash=MutationKey::hash($data);$eventId=Quote::findOrFail($quoteId)->event_id;
         return DB::transaction(function()use($actor,$quoteId,$eventId,$data,$scope,$hash,$key){
             User::whereKey($actor->id)->lockForUpdate()->firstOrFail();QuoteInput::actor($actor);
-            $e=Event::whereKey($eventId)->lockForUpdate()->firstOrFail();$q=Quote::whereKey($quoteId)->lockForUpdate()->firstOrFail();
+            $e=Event::whereKey($eventId)->lockForUpdate()->firstOrFail();\App\Services\Imports\ImportedAgreement::blockCrmLifecycle($eventId);$q=Quote::whereKey($quoteId)->lockForUpdate()->firstOrFail();
             if($receipt=MutationKey::find($scope,$key,$hash))return FinancialRevision::findOrFail($receipt->result_id);
             RecordWriteRejected::unless($q->status==='accepted'&&$q->version===$data['expected_version']&&$q->current_revision===$data['expected_revision']
                 &&$e->status==='draft'&&$e->version===$data['expected_event_version'],409,'La cotización o el borrador cambió.');

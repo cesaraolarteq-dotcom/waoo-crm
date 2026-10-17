@@ -20,6 +20,7 @@ final class IssuePortalGrant
         try {
             return DB::transaction(function () use ($actor, $eventId, $data) {
                 $event = Event::whereKey($eventId)->lockForUpdate()->firstOrFail();
+                \App\Services\Imports\ImportedAgreement::blockCrmLifecycle($eventId);
                 abort_unless($event->customer_id === (int) $data['customer_id'], 404);
                 $token = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
                 $grant = PortalGrant::create(['event_id' => $eventId, 'customer_id' => $event->customer_id, 'token_hash' => hash('sha256', $token),

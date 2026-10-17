@@ -10,7 +10,7 @@ final class ImportReceipt
     }
     public static function store(ImportBatch $batch,string $scope,string $key,string $hash):ImportBatch
     {
-        $v=ImportPreviewVersion::where('import_batch_id',$batch->id)->where('version',$batch->version)->lockForUpdate()->firstOrFail();
+        $v=ImportPreviewVersion::where('import_batch_id',$batch->id)->orderByDesc('version')->lockForUpdate()->firstOrFail();
         MutationKey::store($scope,$key,$hash,'import_preview_version',$v->id);return self::result($batch,$v);
     }
     private static function result(ImportBatch $batch,ImportPreviewVersion $v):ImportBatch

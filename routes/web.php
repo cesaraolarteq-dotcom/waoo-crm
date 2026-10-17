@@ -10,6 +10,13 @@ Route::redirect('/', '/admin')->name('home');
 Route::middleware(['auth', 'password.confirm'])->get('/seguridad/dos-pasos', TwoFactorEnrollmentController::class)->name('security.two-factor');
 Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'));
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->prefix('admin/api')->group(function () {
+    Route::get('/imports/honeybook/mapping', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'mapping']);
+    Route::post('/imports/honeybook/{batch}/rows/{row}/commit', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'commit'])->whereNumber(['batch','row']);
+    Route::get('/imports/honeybook/{batch}/coverage', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'coverage'])->whereNumber('batch');
+    Route::post('/imports/honeybook/{batch}/finalize', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'finalize'])->whereNumber('batch');
+    Route::get('/imported-events/{event}', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'imported'])->whereNumber('event');
+    Route::post('/imported-events/{event}/confirm', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'confirm'])->whereNumber('event');
+    Route::post('/imports/honeybook/future', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'future']);
     Route::get('/imports/honeybook', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'index']);
     Route::post('/imports/honeybook', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'stage']);
     Route::get('/imports/honeybook/{batch}', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'show'])->whereNumber('batch');

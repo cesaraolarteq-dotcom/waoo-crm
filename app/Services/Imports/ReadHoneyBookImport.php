@@ -7,7 +7,7 @@ final class ReadHoneyBookImport
 {
     public function index(User $actor,array $input):LengthAwarePaginator
     {
-        ImportInput::actor($actor);$d=ImportInput::input($input,['page'=>'sometimes|integer|min:1','per_page'=>'sometimes|integer|min:1|max:50','status'=>'sometimes|in:prepared,needs_review,cleanup_pending,discarded']);
+        ImportInput::actor($actor);$d=ImportInput::input($input,['page'=>'sometimes|integer|min:1','per_page'=>'sometimes|integer|min:1|max:50','status'=>'sometimes|in:prepared,needs_review,cleanup_pending,discarded,partially_committed,imported_cleanup_pending,imported']);
         $q=ImportBatch::query()->orderByDesc('id');if(isset($d['status']))$q->where('status',$d['status']);
         return $this->paginate($q,$d,['id','version','status','profile_sha256','preview_sha256','reconciliation','created_by','received_at']);
     }
@@ -18,7 +18,7 @@ final class ReadHoneyBookImport
     }
     public function rows(User $actor,int $batchId,array $input):LengthAwarePaginator
     {
-        ImportInput::actor($actor);$b=ImportBatch::findOrFail($batchId);RecordWriteRejected::unless(in_array($b->status,['prepared','needs_review'],true),410,'El contenido de esta importación fue descartado.');
+        ImportInput::actor($actor);$b=ImportBatch::findOrFail($batchId);RecordWriteRejected::unless(in_array($b->status,['prepared','needs_review','partially_committed'],true),410,'El contenido de esta importación fue descartado.');
         $d=ImportInput::input($input,['page'=>'sometimes|integer|min:1','per_page'=>'sometimes|integer|min:1|max:50','role'=>'sometimes|in:projects,customers,payments','status'=>'sometimes|in:ready,needs_mapping,conflict,skipped']);
         $q=ImportRow::where('import_batch_id',$batchId)->orderBy('id');foreach(['role','status'] as $f)if(isset($d[$f]))$q->where($f,$d[$f]);return $this->paginate($q,$d);
     }
