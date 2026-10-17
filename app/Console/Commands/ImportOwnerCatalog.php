@@ -78,14 +78,15 @@ class ImportOwnerCatalog extends Command
             $name = trim((string) ($row['name'] ?? ''));
             if ($name === '') continue;
             $versions = self::parseOutfits($row['outfits'] ?? null);
+            $versionNames = array_map('strval', array_keys($versions));
             $character = Character::whereRaw('lower(name) = ?', [mb_strtolower($name)])->first();
             $existed = (bool) $character;
             if (! $dry) {
                 if (! $character) {
-                    $character = app(SaveCharacter::class)->execute($actor, ['name' => $name, 'active' => true, 'outfits' => $versions ? array_keys($versions) : null]);
-                } elseif ($versions && array_values((array) $character->outfits) !== array_keys($versions)) {
+                    $character = app(SaveCharacter::class)->execute($actor, ['name' => $name, 'active' => true, 'outfits' => $versions ? $versionNames : null]);
+                } elseif ($versions && array_values((array) $character->outfits) !== $versionNames) {
                     // Keep existing versions (a costume may still use them) and add the owner's new ones.
-                    $merged = array_values(array_unique([...((array) $character->outfits), ...array_keys($versions)]));
+                    $merged = array_values(array_unique([...((array) $character->outfits), ...$versionNames]));
                     $character = app(SaveCharacter::class)->execute($actor, ['name' => $character->name, 'active' => (bool) $character->active, 'outfits' => $merged, 'expected_version' => $character->version], $character->id);
                 }
             }
@@ -97,8 +98,8 @@ class ImportOwnerCatalog extends Command
                 for ($n = 1; $n <= $count; $n++) {
                     $code = 'TRAJE-'.Str::upper(Str::slug($name)).($version !== null && $version !== '' ? '-'.Str::upper(Str::slug((string) $version)) : '').'-'.$n;
                     if (Resource::where('code', $code)->exists()) continue;
-                    if (! $dry && $character) app(SaveResource::class)->execute($actor, ['code' => $code, 'name' => "Traje {$name}".($version ? " {$version}" : '')." {$n}", 'kind' => 'costume', 'status' => 'active',
-                        'character_id' => $character->id, 'outfit' => $version ?: null, 'location' => null, 'skills' => [], 'equipment_kind' => null, 'seats' => null]);
+                    if (! $dry && $character) app(SaveResource::class)->execute($actor, ['code' => $code, 'name' => "Traje {$name}".($version !== null && $version !== '' ? " {$version}" : '')." {$n}", 'kind' => 'costume', 'status' => 'active',
+                        'character_id' => $character->id, 'outfit' => $version !== null && $version !== '' ? (string) $version : null, 'location' => null, 'skills' => [], 'equipment_kind' => null, 'seats' => null]);
                     $made++;
                 }
             }
@@ -161,6 +162,7 @@ class ImportOwnerCatalog extends Command
         if (str_contains(mb_strtolower($p['gear_other'] ?? '').json_encode($p['gear'] ?? []), 'face_kit') && ($base['face_painter'] ?? 0) === 0 && ($base['host'] ?? 0) > 0) {
             $base['host']--; $base['face_painter'] = 1;
         }
+        $unknownCrew = array_keys(array_filter($base, fn ($count, $role) => $count > 0 && ! isset(self::SKILLS[$role]), ARRAY_FILTER_USE_BOTH));
         $requirements = [];
         foreach ($base as $role => $count) {
             if ($count > 0 && isset(self::SKILLS[$role])) $requirements[] = ['kind' => 'staff', 'quantity' => $count, 'skill' => self::SKILLS[$role]];
@@ -186,10 +188,11 @@ class ImportOwnerCatalog extends Command
             'character_quantity' => $included, 'character_options' => $options === [] ? null : $options,
             'long_description' => $english ? $description : null,
             // Active only when everything declared is represented (staff + equipment); otherwise the owner finishes it in the CRM.
-            'status' => ! empty($p['ready']) && ($requirements !== [] || $options !== []) && $unknownGear === [] && ($included === 0 || $options !== []) ? 'active' : 'draft'];
+            'status' => ! empty($p['ready']) && ($requirements !== [] || $options !== []) && $unknownGear === [] && $unknownCrew === [] && ($included === 0 || $options !== []) ? 'active' : 'draft'];
         $variant = ServiceVariant::where('name', $name)->first();
         $notes = array_filter([
             $included > 0 && $options === [] ? 'sin personajes cargados' : null,
+            $unknownCrew ? 'personal desconocido (queda en borrador): '.implode(', ', $unknownCrew) : null,
             $unknownGear ? 'equipo desconocido (queda en borrador): '.implode(', ', $unknownGear) : null,
             array_filter((array) ($p['gear'] ?? [])) ? 'reserva equipo: '.implode(', ', array_keys(array_filter((array) $p['gear']))).' (carga las unidades en Recursos)' : null,
             ! empty($p['extra_character_price']) ? 'personaje extra $'.$p['extra_character_price'].' (no modelado)' : null,

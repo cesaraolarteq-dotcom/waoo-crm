@@ -118,7 +118,7 @@ class ImportOwnerCatalogTest extends TestCase
         $price = PriceVersion::sole();
         $customer = \App\Models\Customer::create(['name' => 'Fixture Client', 'locale' => 'es']);
         $staff = [1, 2, 3];
-        foreach ($staff as $n) Resource::create(['code' => "STF-$n", 'name' => "Host $n", 'kind' => 'staff', 'status' => 'active', 'skills' => ['host']]);
+        foreach ($staff as $n) Resource::create(['code' => "STF-$n", 'name' => "Host $n", 'kind' => 'staff', 'status' => 'active', 'skills' => ['host', 'driver']]);
         $event = fn () => app(\App\Services\Records\SaveEventDraft::class)->execute($owner, ['customer_id' => $customer->id, 'title' => 'Fixture', 'starts_at' => '2026-12-19T15:00:00-06:00',
             'ends_at' => '2026-12-19T16:00:00-06:00', 'timezone' => 'America/Chicago', 'travel_fee_cents' => 2500, 'address' => 'Fixture address 1', 'postal_code' => '00001', 'setup_minutes' => 15, 'breakdown_minutes' => 15,
             'services' => [['price_version_id' => $price->id]]]);
@@ -136,4 +136,20 @@ class ImportOwnerCatalogTest extends TestCase
         $this->assertNotSame('OK', $reason(fn () => $confirm($b, [Resource::where('code', 'STF-2')->value('id'), $speaker->id], 'REF-B1')), 'Same speaker reserved twice.');
         $this->assertSame('draft', $b->fresh()->status);
     }
+    public function test_unknown_crew_role_never_activates_an_incomplete_package():void
+    {
+        file_put_contents($this->file,json_encode(['packages'=>['x'=>['name'=>'Synthetic unknown role','group'=>'Extras','price'=>100,'duration_min'=>60,'characters_included'=>0,'crew'=>['new_unknown_role'=>1],'gear'=>['speaker'=>1],'ready'=>true]]]));
+        $this->artisan('waoo:import-catalog',['file'=>$this->file,'--actor'=>'owner@example.test'])->assertSuccessful();
+        $this->assertSame('draft',ServiceVariant::where('name','Synthetic unknown role')->sole()->status);
+    }
+    public function test_zero_outfit_is_preserved_and_second_import_has_no_version_or_audit_churn():void
+    {
+        file_put_contents($this->file,json_encode(['characters'=>[['name'=>'Synthetic zero outfit','outfits'=>'0 1','costumes'=>1]],'packages'=>[]]));
+        $this->artisan('waoo:import-catalog',['file'=>$this->file,'--actor'=>'owner@example.test'])->assertSuccessful();
+        $c=Character::sole();$this->assertSame(['0'],$c->outfits);$this->assertSame('0',Resource::sole()->outfit);
+        $version=$c->version;$audits=\Illuminate\Support\Facades\DB::table('audit_entries')->count();
+        $this->artisan('waoo:import-catalog',['file'=>$this->file,'--actor'=>'owner@example.test'])->assertSuccessful();
+        $this->assertSame($version,$c->fresh()->version);$this->assertSame($audits,\Illuminate\Support\Facades\DB::table('audit_entries')->count());$this->assertDatabaseCount('resources',1);
+    }
+
 }
