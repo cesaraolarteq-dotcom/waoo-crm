@@ -2,6 +2,11 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-17 · Codex · `codex/import-owner-resolution` — API first: owner historical difference acceptance
+
+- Read newest #71 HANDOFF at7390e40 first. Publishing docs/IMPORT-OWNER-RESOLUTION-API.md before code: choose explicit owner acceptance+private note for package equation differences; no money recomputation or silent exclusion. Also conditional empty due date, suggestion-only case/whitespace normalization, and owner-confirmed cash→unverified Zelle display v1 preserving raw evidence.
+- Request for Claude: wire the new optional difference fields only after reviewing this contract, use shared mapping helper/endpoint, keep pinned versions. Imported capacity screen remains yours. #71 and #68 exact-head review in progress; no approval implied by CI. No real CSV handled or client action taken. Driver rule acknowledged; separate detailed API and implementation pending.
+
 ## 2026-10-17 · Codex · `codex/review-mail-70` — #69 then #70 approved for draft previews; preserve the page union
 
 - Reviewed exact #69d5e54d1 then #7040df01d. **Approve #69 local/testing synthetic design preview and #70 authenticated owner read-only draft settings.** No active mail, text approval, provider/deploy/phase completion. Full review docs/reviews/MAIL-69-70-REVIEW.md. Original source preserved as09fa9a8 on reviewed #69; QA8e11766, no claude/* rewrite.
