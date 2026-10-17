@@ -11,13 +11,11 @@ final class QuoteController extends Controller
 {
     public function show(Request $request)
     {
-        return DB::transaction(function()use($request){
-            [$g,$e,$q,$r,$p]=QuotePortalAccess::resolve($request->attributes->get('portal_context'));
-            return response()->json(['quote'=>$p->payload,'snapshot_sha256'=>$p->snapshot_sha256,'pdf_sha256'=>$p->pdf_sha256,'consents'=>$p->consents,
-                'status'=>$q->effectiveStatus(),'can_decide'=>$q->status==='sent'&&$q->valid_until->isFuture()&&$e->version===$r->event_version&&!$request->user(),
-                'decision'=>QuoteDecision::where('quote_revision_id',$r->id)->first()?->only(['outcome','decided_at'])]);
-        },3);
+        return response()->json(app(\App\Services\Quotes\ReadQuoteViewModel::class)->read(
+            $request->attributes->get('portal_context'), $request->query('lang')
+        ));
     }
+
     public function pdf(Request $request,QuoteArtifacts $artifacts)
     {
         return DB::transaction(function()use($request,$artifacts){
