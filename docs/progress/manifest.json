@@ -532,6 +532,17 @@
       "verification": "Original5/107 and final7 tests/128 assertions PASS6.132s PHP8.3/MariaDB11.8 in temp app; iframe escaping/sandbox, owner/2FA, real signed Livewire allowed then role-revoked403, no send/queue; no new full/browser/build/provider claim.",
       "merge_requirement": "One ->pages union retaining Leads, Quotes, QuoteDetail, EmailTemplates alongside Dashboard/Calendar/QuickBooking/ContractTemplates. Only add each class with its source. No whole newer #59/#65 review claimed.",
       "remaining": "Read-only synthetic settings only; no root backend/UI completion credit. Real outbox API, event timeline, bounce card, allow-list and approved mail activation still pending. Subject ES72>60 remains nonblocking for draft preview."
+     },
+     "outbox_foundation": {
+      "api": "63605ab/d51ceaa before source",
+      "backend": "b30e1cb",
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "scope": "Immutable encrypted outbox + separate delivery projection/history, exact-source/ciphertext/allow-list guards, three manual confirmed-event reminder adapters, owner read/pause APIs, bounded ID-only job/CLI, fake-only/no-default transport and internal delivery seam.",
+      "verification": "Focal29/143 PASS42.118s includes28 mail cases +1 actual IMPORT mapping route regression; real two-owner/two-worker races with independent one-call counter, payload binding and ambiguous acknowledgment cases. Full494 tests/4120 assertions PASS, exit0,719.49s, PHP8.3.35/MariaDB11.8, sourceb30e1cb. Includes29 focal cases/143 assertions. No app source changes after full run.",
+      "remaining": "Six other business adapters, auto-hooks, actual authenticated provider ingestion/reconciliation/retry, approved text/owner activation, UI/review/merge/acceptance. SMS separate. No root backend completion credit from a partial kernel."
      }
     },
     {
@@ -542,7 +553,16 @@
      "ui": null,
      "reviewed": false,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "reminder_foundation": {
+      "backend": "b30e1cb",
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "scope": "Three explicit-owner planned intents, source recheck/pause/late skip and fake-only dispatch; no cron or automatic business hook/actual provider.",
+      "verification": "Same outbox evidence above, not an independent full phase delivery.",
+      "remaining": "Approved copy/timing, auto-planning hooks, verified real transport/reconciliation, owner activation/review/UI. Root remains incomplete."
+     }
     },
     {
      "name": "Importar eventos futuros de HoneyBook",
@@ -584,6 +604,10 @@
       "scope": "Exact24 owner CSV, explicit immutable historical source agreement/ledger, versioned customer/mapping/draft import, normal capacity with real contention correction, source/imported count+money coverage and retryable private artifact deletion. No fake verified payment or CRM signature; new CRM money/contracts/quote/links blocked pending cutover contract.",
       "verification": "Full465 tests/3973 assertions PASS, exit0,639.22s, PHP8.3.35/MariaDB11.8, integrated source5dbb7d2 (IMPORT4e23e9b plus quote adapter). Targeted20/188 PASS28.773s and earlier38/354 include source normalization/SQLite/legacy quote portal. Strict Composer/39 PHP syntax/diff pass; guarded local340000 migration and container /up200, import flag disabled. No source changes after final full run.",
       "remaining": "Claude review/private mapping+resource screens; local actual export reconciliation and full source attestation; owner pilot acceptance. No real export in git/logs/chat; no public availability activation."
+     },
+     "mapping_route_fix": {
+      "source": "84fdefe",
+      "verification": "Private batch/row route matches controller; HTTP1/4 PASS1.695s, included in final mail full regression; no raw source query values."
      }
     },
     {
