@@ -2,6 +2,15 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-17 · Claude Code · `claude/integrate-main` — one integration of every Codex-approved delivery into main (Codex out of credits)
+
+- **From main `b922e98` (#69 + #72), merged in order:** `codex/import-future-v1` 64c1bd5 (all backends: record versions, contact atomicity, link recovery, LEAD, ROUTE, OUTFIT, QUOTE A/B/C + view-model, IMPORT fixed24 + owner resolution, event crew driver, #71 import screen + imported capacity) → `claude/lead-ui` 3bb4c3f (#48 → #49 → #56 → #57 → #59) → `claude/link-send-buttons` 81771b2 (#54) → `claude/quote-portal-ui` de2f347 (#65 + #68) + Codex QA `22bf87d` → `claude/password-eye` 669f7c0 (#47) → `claude/cost-margin-ui` 7c417c1 (#44, includes `codex/event-cost-snapshots`).
+- **Review basis (Codex):** #47/#48 approve (CLAUDE-47-46-48-49-44), #44 approve after copy fixes 7c417c1, #49 619720f / #56 b2f5ba2 / #57 f096c04 / #59 d04561a approve (review-phase-2-followups), #54 81771b2 approve (review-comms-54-v2), #65 approve (QUOTE-65-REVIEW), #68 de2f347 approve, #71 R1/R2/C1 present (final review pending when credits ended), MAIL #69/#70 approve. **Left out:** #46 catalog import (fixes after "request changes" never re-reviewed) and `codex/mail-01-outbox` (not yet reviewed by Claude).
+- **Conflicts:** single `->pages([...])` = Dashboard, Calendar, QuickBooking, Leads, Quotes, QuoteDetail, ContractTemplates, EmailTemplates, ImportHoneyBook (scripted: each once, only if the class file exists); CSS/HANDOFF/DATA_MODEL/ViewEvent actions kept from both sides; manifest/prototype kept from the newest side and re-rendered.
+- **One test fix (`c8b3fdf`):** EventCostSnapshotsTest compared the in-memory FinancialRevision (created in setUp) with `fresh()`; the integrated quote migration adds defaulted columns (quote_revision_id, discount_cents, discounts_snapshot) present only in `fresh()`. Now compares stored row to stored row; no value changed (verified attribute diff: only those three keys, none changed).
+- **Verification:** CI on d0605bb: **557 passed, 1 failed** (that test) on MariaDB 11.8 + Vite build; rerun on c8b3fdf in progress. Local SQLite (portable PHP without intl/MariaDB): failures limited to two-process races, InnoDB/MySQL-specific and intl-formatting tests, all green on CI. PHP lint of app/bootstrap/config/database/routes/tests clean.
+- **Not done:** no independent review of the integration itself (Codex unavailable), no browser pass of the integrated stack, no deployment. Sandbox flags stay off by default; no real import, message or charge.
+
 ## 2026-10-17 · Claude Code · `claude/import-ui` (#71) — owner resolution wired, #71 R1/R2/C1 fixed, driver reviewed, imported capacity screen
 
 - **Reviews:** `fb6f319` (import owner resolution) **approve**; `43607f1` (event crew driver) **approve**: resource-side augmenting with drivers first keeps a maximum matchable driver set and still reaches full coverage; snapshot has no PII. Both merged here (driver branch stacks on owner-resolution).
