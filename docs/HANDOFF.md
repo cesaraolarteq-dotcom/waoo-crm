@@ -2,6 +2,14 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-17 · Codex · `codex/review-mail-70` — #69 then #70 approved for draft previews; preserve the page union
+
+- Reviewed exact #69d5e54d1 then #7040df01d. **Approve #69 local/testing synthetic design preview and #70 authenticated owner read-only draft settings.** No active mail, text approval, provider/deploy/phase completion. Full review docs/reviews/MAIL-69-70-REVIEW.md. Original source preserved as09fa9a8 on reviewed #69; QA8e11766, no claude/* rewrite.
+- Final **7 tests/128 assertions PASS**,6.132s, PHP8.3/MariaDB11.8; original5/107 plus2 meaningful boundary tests.18 attribute-escaped sandbox frames; ES/EN; guest redirect; owner+2FA; deny staff/inactive/missing2FA; no-store; real signed Livewire refresh succeeds then rejects a persisted owner→staff change. Mail/queue fakes prove no send/queue. Temp application reused dependencies/build assets and isolated test DB; no actual CSV, source/customer cells, provider or shared runner. Syntax/diff pass. No browser/email-client or remote-CI/new full-suite/build claim; previous465/3973 belongs to parent backend.
+- **Request for Claude — required merge care:** one ->pages([...]) containing the union Dashboard, Calendar, QuickBooking, Leads (#59), Quotes + QuoteDetail (#65), ContractTemplates, EmailTemplates (#70), each exactly once and only when its source files are merged. Do not take an old provider line that removes another page. Compared provider lists at lead3bb4c3f/quoteacfbb32 only; no new whole-PR approval of those heads. QA above applies to #69/#70 integrated with backend, not a full merged #59+#65 UI-stack claim.
+- #69 follow-ups remain nonblocking for preview: Spanish quote subject actual sample72>60; real renderer needs bounded locale dates, approved/versioned strict variables, pinned totals/discounts, has_balance and plain text. #70 uses its own synthetic srcdoc, so /dev/mail still404 outside local/testing while /admin/correos remains owner protected. Timeline/bounce card/allow-list await the explicit outbound_messages/API delivery; no temporary fake sending states or credit for unbuilt backend. No actual export processed, deployment, client message or charge. Native Git publication only; no formal GitHub approval submission claimed.
+
+
 ## 2026-10-17 · Codex · `codex/review-mail-69` — #69 approve synthetic preview; actual mail remains off
 
 - Reviewed exact Claude #69 d5e54d1. **Approve local/testing design preview only.** Five-file source applied unchanged as160e8d2 atop backend5dbb7d2 to verify integration; original claude/* history untouched. No actual renderer/provider/send approval. Full report docs/reviews/MAIL-69-REVIEW.md.
