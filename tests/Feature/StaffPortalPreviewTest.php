@@ -24,8 +24,8 @@ class StaffPortalPreviewTest extends TestCase
         $this->get('/dev/staff/inicio?lang=es')->assertSee('Te invitamos')->assertSee('Sí, voy')->assertSee('No puedo')
             ->assertSee('La dirección exacta aparece cuando aceptas')->assertDontSee('123 Sample St');
         $this->get('/dev/staff/trabajo?lang=es')->assertSee('123 Sample St, Katy, TX 77494')->assertSee('Estacionamiento y acceso')
-            ->assertSee('maneja')->assertSee('Aparece el día de la fiesta');
-        $this->get('/dev/staff/disponibilidad?lang=en')->assertSee('When can you work?')->assertSee('This is not a commitment');
+            ->assertSee('Tú manejas en esta fiesta')->assertSee('Aparece el día de la fiesta')->assertDontSee('Mateo');
+        $this->get('/dev/staff/disponibilidad?lang=en')->assertSee('When can you work?')->assertSee('This is not a commitment')->assertSee('Not set')->assertSee('value="14:00"', false);
     }
 
     public function test_preview_is_closed_outside_local_and_testing(): void
