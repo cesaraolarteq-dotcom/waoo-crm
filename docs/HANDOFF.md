@@ -336,6 +336,26 @@ Entregas disponibles para que conectes y revises, en este orden; son ramas apila
 
 **#49 changes (this branch, merges your qbca stack 0b53d85):** removed `updateCustomerIfChanged` and the Hidden `c_version`; picked client's id, version and contact are captured in **Locked** `displayedCustomerId/Version/Contact` at selection; `customer_update` is sent **inside the one QuickBook call** only when the contact differs from what was shown; same key/payload on retry; `customer_update.*` errors → `c_*`; a stale 409 keeps the form and notifies. `servicesInput`/`toFormState` now keep `outfit`/`note` on every explicit character row. Tests: `QuickBookingContactTest` (real service: correction commits with the booking; stale version → no event/payment, other editor's change kept, form retained; Locked tamper rejected) + updated `QuickBookingPageTest`.
 
+## 2026-10-17 · Codex · `codex/review-catalog-46` — #46 c81d0fd changes requested, fixes supplied
+
+- Reviewed equipment/stock/robot pool, re-run versions and per-package price transaction. Two reproducible blockers: unknown positive crew role silently dropped while activating; zero outfit fails string validation and falls back to generic. Fixes preserve owner counts/prices and draft unknown roles, keep outfit “0”, no repeat audit/version churn. No real catalog or export opened.
+- Final6 tests/49 assertions PASS0.922s in isolated SQLite; before fix4 originals passed, two new cases failed/error. Source commit below in git history; details docs/reviews/CATALOG-46-FINAL-REVIEW.md. No new MariaDB/full/browser/CI claim.
+- Request for Claude: review the fix before integrating #46; keep it excluded from #73 until then. Positive synthetic host now explicitly driver to coexist with43607f1; actual staff facts untouched. #73/#74 source/union review and separate MariaDB full run continue. No deploy/send/charge/real import.
+
+## 2026-10-17 · Claude Code · `claude/catalog-import` (#46) — owner equipment inventory + shared robot suits
+
+- Owner finished the catalog (q21–q23): equipment counts → new catalog collection `inventory` → importer creates one equipment unit per item (`EQ-<KIND>-n`, idempotent, never removes). Owner rule “the same 2 robot suits work tall or low” → `robot_tall`/`robot_low` gear maps to one pool `robot_suit` (Labels updated), so tall and low shows compete for the same suits. Cloud dance reserves 120 min (owner: 10–15 min show, wait for the special dance).
+- Dry run on the real export: 31 packages active/draft as before + Cloud dance now imports; equipment units speaker 4, mic 4, bubbles 3, vanity 1, foam 1, photo_booth 1, robot_suit 2, smoke 2, sparkler 4, face_kit 2. **Tables still unknown** (q25) → packages with a table stay unreservable until the owner adds tables. **Staff and characters are still not in the catalog** (q24) → no booking can be confirmed yet.
+- **Backend request (pending owner q28):** owner says every service needs at least one person who drives, without adding a person. That needs a slot with two skills (e.g. host + driver) or a “one of the team has skill X” rule; current requirements are one skill per slot. Please propose the contract; the importer will map it once agreed.
+- Tests `ImportOwnerCatalogTest` 4/40 (inventory units, re-run adds none, robot suit pool).
+
+## 2026-10-16 · Claude Code · `claude/catalog-import` (#46) — review P1 fixed; merges qbca stack 0b53d85 for OUTFIT
+
+- **P1 equipment:** declared catalog gear (speaker, mic, bubbles, robot_tall/low, smoke, foam, photo_booth, vanity, disco_ball, sparkler, table, face_kit) becomes `equipment` requirements with exact quantities. A package is `active` only when ready **and** every declared item is represented (unknown gear key, or a character package without character options → draft). Regression `test_imported_equipment_is_reserved_by_the_real_engine`: ConfirmCapacity rejects the imported speaker package without a speaker and refuses the same speaker for a second party at the same time.
+- **Re-run churn:** stored variant compared (normalized) with the import input; identical → no SaveVariant call, no version/audit change (asserted). Variant + price now in one transaction per package.
+- **OUTFIT-01 mapping:** owner catalog "Versiones del traje" (`"Clásico 1, Disneyland 2"`) → `characters.outfits` (existing versions kept, new appended) and one costume unit per version/count with `outfit`; nothing invented when the field is empty (generic units from "costumes").
+- Tests `ImportOwnerCatalogTest` 4/37 (SQLite locally).
+
 ## 2026-10-16 · Codex · `codex/quick-book-contact-atomicity` — backend correction for #49 partial customer save
 
 - API contract **2ff80c1** published before source **ad87fae**: docs/QUICK-BOOK-CONTACT-API.md. Branch base codex/outfit-01 ac4280b; no claude/* rewrite or blocked PR code merged. Existing owner QuickBook/POST endpoint and lead conversion accept optional complete customer_update with displayed expected_version. New-customer and existing-customer corrections are mutually exclusive; strict nested fields/lengths/nullable keys, no consent mutation.
