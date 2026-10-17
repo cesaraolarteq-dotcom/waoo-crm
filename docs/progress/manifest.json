@@ -544,7 +544,18 @@
       "merge_requirement": "One ->pages union retaining Leads, Quotes, QuoteDetail, EmailTemplates alongside Dashboard/Calendar/QuickBooking/ContractTemplates. Only add each class with its source. No whole newer #59/#65 review claimed.",
       "remaining": "Read-only synthetic settings only; no root backend/UI completion credit. Real outbox API, event timeline, bounce card, allow-list and approved mail activation still pending. Subject ES72>60 remains nonblocking for draft preview."
      },
-     "blocker": "Base de envío de Codex (outbox cifrado, 3 recordatorios manuales, pausa, lectura de avisos; b30e1cb, 494/4120) revisada y aprobada por Claude. Pantallas: correos en la ficha del evento, pausa, programar recordatorios, avisos en Inicio y \"¿Listos para enviar?\" (PR claude/mail-ui). Falta: textos aprobados por César, proveedor/DNS, lista de prueba, activación explícita, los otros 6 correos automáticos y la recepción autenticada de rebotes. Nada se envía."
+     "blocker": "Base MAIL/outbox and UI reviewed; six occurrence hooks and authenticated bounce receiver added on codex/mail-automatic-backend, awaiting independent review. Automatic materialization/rendering/polling/dispatch, owner-approved copy, provider/DNS/test allow-list and explicit activation remain pending. Nothing sent.",
+     "automatic_capture_and_bounces": {
+      "api": "641cef0 / docs/MAIL-AUTOMATIC-API.md",
+      "backend": "a786e98",
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "scope": "Six transactional occurrence hooks + encrypted dedupe/state + metadata read API; native authenticated sandbox Postmark bounce/complaint adapter. No automatic rendering/materializer/polling/dispatch implementation or delivery activation.",
+      "verification": "Target18/112 PHP8.3/MariaDB incl actual insert race and SQLite rollback proof; full suite running on frozen a786e98.",
+      "remaining": "Claude review; materializer, source-frozen approved copy and freshness checks, provider sandbox verification, owner-approved text/DNS/activation. No whole-ticket completion credit."
+     }
     },
     {
      "name": "Recordatorios (7 días, saldo, gracias + reseña)",

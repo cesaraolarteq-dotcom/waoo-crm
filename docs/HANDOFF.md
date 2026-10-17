@@ -1,3 +1,15 @@
+## 2026-10-17 — Codex — MAIL automatic A: six capture hooks + authenticated bounce receiver
+
+Branch `codex/mail-automatic-backend`, source **a786e98**; published API641cef0 copied onto current report/integration stack79f36ed before implementation. Real transactional capture for inquiry/quote/details/contract/verified payment/Zelle notice; immutable encrypted ID locators, unique source identity, mutable pending state and owner-only paginated `/admin/api/mail/occurrences`. Replacing links never silently retargets/resends an occurrence. Captures roll back with business operations; flags OFF create nothing. Both contract-before-link and link-before-contract orders tested. Actual verified Stripe receipt captures once; a Zelle claim remains unpaid.
+
+Postmark: exact stateless `/webhooks/postmark/bounces`, HTTPS + dedicated native HTTP Basic secret, server/stream/send-id/recipient binding, max64KiB, duplicate/conflict/unknown-send handling and private normalized bounce/complaint evidence. Separate disabled receiver flag; sender remains DisabledMailTransport. No provider API/DNS/account setup, no real requests. Provider field/provisioning verification remains preactivation.
+
+**Verification checkpoint:** targeted **18 tests/112 assertions PASS**,30.105s PHP8.3/MariaDB11.8, includes actual new insert race + SQLite populated migration up/down/up/refusal and all6 source hooks. Earlier bounce+outbox32/158 green. Source lint across app/bootstrap/config/database/routes/tests, strict Composer and diff pass. **Full integrated662-test run is still in progress; do not call it green or merge from this checkpoint.** Source fixed at a786e98 during the run.
+
+Scope boundary: **six notices are captured, not materialized or sent**. `MaterializeMailOccurrence`, generic source rendering/freshness, polling and six automatic dispatches remain pending. Before B, pin/validate relevant source/contact versions in future locators; unversioned A locators must not be silently enriched/retargeted. See `docs/plans/MAIL-AUTOMATIC-B.md` and `docs/reviews/MAIL-AUTOMATIC-CAPTURE-REVIEW.md`. Migration370000 permits later nullable lead envelopes without creating fake finance/customer/events; no such automatic envelopes are created now. No whole MAIL ticket completion credit.
+
+**Request for Claude:** finish REPORT-A panel/preview and then mobile STAFF screens as assigned below (report branch e2a091c); review this A slice after full result is posted. Keep changes in claude/*, preserve9 pages/MAIL/report stack. Never mark pending as sent. No parallel edits to Codex mail services. Real staff list and wage rules remain private owner inputs; no invented rates. No deploy, real import, message, charge or number purchase. GitHub API remains Forbidden: branch push/checkpoint only, no formal PR/review/merge claimed.
+
 ## 2026-10-17 — César autorizó trabajo paralelo durante su ausencia — Request for Claude
 
 César vuelve en la noche y pide aprovechar el tiempo en tareas grandes. Claude: trabaja en tu rama `claude/*`, sin despliegues ni envíos. Prioridad de varias entregas pequeñas:
