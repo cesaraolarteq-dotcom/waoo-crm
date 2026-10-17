@@ -17,3 +17,17 @@ Idempotent by HoneyBook project id; re-import updates only rows still in draft; 
 
 ## Tests (minimum)
 Same file twice → no duplicates; ambiguous package → needs mapping; past/cancelled skipped; totals reconcile; customer with same name but different phone not merged.
+
+## Source file format (owner decision 2026-10-17)
+
+The owner extracts HoneyBook data through ChatGPT's HoneyBook connection (neither Codex nor Claude Code can reach HoneyBook directly). The importer accepts **one CSV, one row per future confirmed event**, UTF-8, header row exactly:
+
+`honeybook_project_id, project_name, status, client_first_name, client_last_name, client_phone, client_email, event_date, start_time, end_time, event_address, event_zip, services, characters, package_total, travel_fee, discount, total, amount_paid, balance, balance_due_date, contract_signed, payments, notes`
+
+- Dates `YYYY-MM-DD`; times `HH:MM` Houston wall time (resolve with ChicagoTime; ambiguous/nonexistent → needs review, never guessed).
+- Money in dollars with two decimals, no `$`; parse to integer cents; empty = unknown (never 0). Check `package_total + travel_fee − discount = total` and `total − amount_paid = balance` per row; mismatch → needs review, imported values kept as source evidence.
+- `services` / `characters` = HoneyBook text joined by ` + `; mapped by the owner to CRM variants/characters in the dry-run screen (mapping remembered).
+- `payments` = `YYYY-MM-DD|amount|method` joined by `;` → imported ledger lines with source `honeybook` (not re-verified Zelle/Stripe).
+- `contract_signed` yes/no → stored reference only; contracts stay in HoneyBook for these events.
+- The file contains real client data: owner uploads it on the owner-only screen to private storage; it is never committed, logged or pasted into chat; deleted after import. Synthetic fixtures only in tests.
+- Claude reviews the owner's real file locally (mapping + reconciliation report for the owner) and shares only aggregate findings/format issues in HANDOFF, never row data.
