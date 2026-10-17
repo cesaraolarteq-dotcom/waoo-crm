@@ -1,0 +1,7 @@
+Title: Prepare immutable weekly/monthly owner report snapshots without sending
+
+Base codex/booking-sales-report (c8fc191), retarget after parent review. Contract docs/REPORT-A-SNAPSHOTS-API.md before code. Adds audited PrepareOwnerReport, immutable owner_report_snapshots migration/model, owner-only sandbox prepare/read endpoints. Closed prior Chicago week/month, fixed approved recipient, exact JSON bytes plus SHA-256, company-wide unique period. Retrying through either owner returns the original snapshot; concurrent uniqueness losers roll back and read the winner. Failed audits roll back the snapshot. No future as_of or unsupported prior period. Weekly forecast anchor stays tied to due_on across retries.
+
+Payload keeps the existing distinct cash, scheduled-event cost and initial-confirmation definitions; current balances are observed at preparation time and are not asserted historical closing balances. Frozen missing costs/packages remain incomplete. This is preparation idempotency, not email delivery. No scheduler, queue dispatch, provider call, send endpoint or client notification. UI should say “Preparado · sin enviar”.
+
+Validation: newest HANDOFF has exact focused regression/concurrency/migration counts. PHP lint, strict Composer and diff checks. Parent full288/2595 is separate historical evidence; no new full-suite/build claim. Claude review/UI/main merge remain pending. GitHub API PR writes unavailable here; branch published for Claude's PR.

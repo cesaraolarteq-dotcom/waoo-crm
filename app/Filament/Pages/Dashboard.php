@@ -31,6 +31,25 @@ class Dashboard extends BaseDashboard
     }
 
     /** @return array<int, array{tone: string, count: int, title: string, text: string, items: array}> */
+    /** REPORT-A summary for Inicio: last completed week + the weekend after it (Codex's panel), or null when unavailable. */
+    public function weekSummary(): ?array
+    {
+        if (! \App\Filament\Support\ReportsSource::available()) {
+            return null;
+        }
+        try {
+            $r = \App\Filament\Support\ReportsSource::read(\Filament\Facades\Filament::auth()->user(), 'weekly', now('America/Chicago')->toDateString());
+        } catch (\Throwable) {
+            return null; // the report screen shows the reason; Inicio stays usable
+        }
+
+        return ['sample' => $r['sample'], 'label' => \App\Filament\Support\ReportsSource::periodLabel($r['operations']['period']),
+            'cash' => Labels::money($r['operations']['cash']['net_received_cents'], 'Pendiente'), 'bookings' => $r['bookings']['booking_count'],
+            'packages' => \App\Filament\Support\ReportsSource::packagesLine($r['bookings']),
+            'weekend' => $r['upcoming_weekend'] ? $r['upcoming_weekend']['event_count'] : null,
+            'weekend_staff' => $r['upcoming_weekend'] ? Labels::money($r['upcoming_weekend']['estimate']['staff_cost_cents'], 'Pendiente') : null];
+    }
+
     public function attention(): array
     {
         $now = now();

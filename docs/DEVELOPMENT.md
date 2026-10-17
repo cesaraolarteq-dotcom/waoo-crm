@@ -61,3 +61,19 @@ Isolated containers: `waoo-phase1-runtime` (PHP 8.3.35), `waoo-phase1-db` (Maria
 The expanded integration suite can exceed PHP's default 128M in one long-lived CLI process during repeated dompdf fixtures. This is separate from a single PDF request. In this cloud workspace run `bash /workspace/setup/waoo-phase1/test.sh`: it adds a 512M ini only to that test command and its PHPUnit child while preserving the normal extension ini directory. It does not alter web/production PHP settings. Do not run concurrent suites against `waoo_phase1_test`.
 
 A portable direct-run equivalent, after the usual local environment/database setup, is `php artisan config:clear` followed by `php -d memory_limit=512M vendor/bin/phpunit`. No tests or assertions should be skipped to address the memory budget. Current cloud start helper verifies actual root redirect, authenticated admin boundary, login boot, CSRF/session and private-file protection; the former bootstrap JSON response no longer describes the reviewed UI.
+
+### Expanded report/cost integration suite
+
+The integrated suite may now exceed Composer's default 300-second process limit on the cloud runner. Keep source frozen and run it once with a finite CLI-only allowance:
+
+```sh
+docker exec -e COMPOSER_PROCESS_TIMEOUT=1200 \
+  -e PHP_INI_SCAN_DIR=/usr/local/etc/php/conf.d:/tools/runtime/test-php-ini \
+  waoo-phase1-runtime composer test
+```
+
+This reuses the existing test-only 512M ini created by `/workspace/setup/waoo-phase1/test.sh`, and changes neither application request timeouts nor production configuration. The 300-second timeout is an incomplete run, not a passing result. Inspect the final test footer and command exit status; do not run another suite against the same test database concurrently.
+
+After a Composer timeout, check `docker top waoo-phase1-runtime -eo pid,etime,pcpu,args` before retrying. A PHPUnit child may outlive Composer temporarily; allow that known test process to finish before another runner uses the same test DB. A retry overlapping the child can report missing/already-existing tables during migrations even though application assertions are unchanged. This delivery reproduced that interference and then verified a fresh isolated run (see HANDOFF).
+
+2026-10-17: #73/#74 + QA independent verification took14:13.846 (600 tests), so use the finite1200-second allowance above;600 seconds is insufficient on this runner. REPORT-A additions were separately verified44/300 in MariaDB. Never count a timeout as green.

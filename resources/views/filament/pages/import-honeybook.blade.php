@@ -37,7 +37,7 @@
                     <div><dt>{{ $label }}</dt><dd>{{ \App\Filament\Support\Labels::money($t['sum_cents'] ?? 0) }}@if (($t['unknown_count'] ?? 0) > 0) <small>· {{ $t['unknown_count'] }} sin dato</small>@endif</dd></div>
                 @endforeach
             </dl>
-            <p class="wqb-hint">Lo pagado se guarda como "importado de HoneyBook", no como Zelle o tarjeta verificados. Si el total de una fila no cuadra (por ejemplo, incluye el cargo de tarjeta), puedes importarla aceptando la diferencia con una nota tuya; el importe no cambia.</p>
+            <p class="wqb-hint">Lo pagado se guarda como "importado de HoneyBook", no como Zelle o tarjeta verificados. Si el total de una fila no cuadra (por ejemplo, incluye el cargo de tarjeta), puedes importarla aceptando la diferencia con una nota tuya; los importes originales no cambian. Los demás errores deben corregirse antes de importar.</p>
         </x-filament::section>
 
         @if ($cov)

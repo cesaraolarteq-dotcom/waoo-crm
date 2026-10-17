@@ -10,14 +10,13 @@ use Carbon\CarbonImmutable;
 // Never invents real numbers: production without the services shows nothing.
 final class ReportsSource
 {
-    public const OPERATIONS = 'App\\Services\\Reports\\OperationalReport';
-    public const BOOKINGS = 'App\\Services\\Reports\\BookingSalesReport';
-    public const WEEKEND = 'App\\Services\\Reports\\WeekendForecast';
+    public const PANEL = 'App\\Services\\Reports\\ReadOwnerReport';
     public const PREPARE = 'App\\Services\\Reports\\PrepareOwnerReport';
+    public const EMAIL = 'App\\Services\\Reports\\RenderOwnerReportEmail';
 
     public static function live(): bool
     {
-        return class_exists(self::OPERATIONS) && class_exists(self::BOOKINGS) && class_exists(self::WEEKEND);
+        return class_exists(self::PANEL);
     }
 
     public static function sample(): bool
@@ -30,17 +29,25 @@ final class ReportsSource
         return FinanceGate::enabled() && (self::live() || self::sample());
     }
 
-    /** @return array{operations: array, bookings: array, weekend: array, sample: bool} */
-    public static function read(User $owner, string $period, string $anchor): array
+    /**
+     * Consolidated panel (docs/REPORT-A-PANEL-API.md): the last COMPLETED week/month before $asOf, plus the weekend
+     * after that week. @return array panel + ['sample' => bool]
+     */
+    public static function read(User $owner, string $kind, string $asOf): array
     {
         if (self::live()) {
-            $in = ['period' => $period, 'anchor' => $anchor];
-
-            return ['operations' => app(self::OPERATIONS)->execute($owner, $in), 'bookings' => app(self::BOOKINGS)->execute($owner, $in),
-                'weekend' => app(self::WEEKEND)->execute($owner, ['anchor' => $anchor]), 'sample' => false];
+            return [...app(self::PANEL)->execute($owner, ['kind' => $kind, 'as_of' => $asOf]), 'sample' => false];
         }
+        $closedAnchor = $kind === 'monthly'
+            ? CarbonImmutable::parse($asOf, 'America/Chicago')->startOfMonth()->subDay()->toDateString()
+            : CarbonImmutable::parse($asOf, 'America/Chicago')->startOfWeek(CarbonImmutable::MONDAY)->subDay()->toDateString();
+        $f = self::fixture($kind === 'monthly' ? 'month' : 'week', $closedAnchor);
+        $next = self::fixture('week', $f['operations']['period']['ends_before']);
 
-        return [...self::fixture($period, $anchor), 'sample' => true];
+        return ['schema_version' => 1, 'environment' => 'test', 'timezone' => 'America/Chicago', 'generated_at' => now()->toIso8601String(), 'kind' => $kind, 'as_of' => $asOf,
+            'due_on' => $f['operations']['period']['ends_before'], 'operations' => $f['operations'], 'bookings' => $f['bookings'],
+            'upcoming_weekend' => $kind === 'weekly' ? $next['weekend'] : null,
+            'delivery' => ['recipient' => 'sales@waooparty.com', 'status' => 'not_sent', 'enabled' => false], 'sample' => true];
     }
 
     /** Fictitious payloads shaped exactly like the REPORT-A contracts (local/testing preview only). */
@@ -60,7 +67,7 @@ final class ReportsSource
                 'scheduled' => ['basis' => 'events.starts_at', 'event_count' => 6, 'events' => [], 'pending_balance_cents' => 212000, 'pending_balance_unknown_events' => 1,
                     'estimate' => $agg(93000, 0, 93000, 81000), 'actual' => $agg(41000, 3, null, null)]],
             'bookings' => ['environment' => 'test', 'timezone' => 'America/Chicago', 'generated_at' => now()->toIso8601String(), 'period' => $p,
-                'basis' => 'first_booking.capacity_reserved.created_at', 'booking_count' => 4, 'package_coverage_complete' => false, 'package_unknown_booking_count' => 1,
+                'basis' => 'first_booking.capacity_reserved.created_at', 'booking_count' => 4, 'imported_confirmation_count_excluded' => 2, 'package_coverage_complete' => false, 'package_unknown_booking_count' => 1,
                 'package_occurrence_count' => null, 'known_package_occurrence_count' => 4,
                 'packages' => [['service_variant_id' => 1, 'name' => 'Magic Package', 'occurrence_count' => 1, 'booking_count' => 1],
                     ['service_variant_id' => 2, 'name' => 'Waoo Package', 'occurrence_count' => 2, 'booking_count' => 2],
@@ -84,7 +91,7 @@ final class ReportsSource
         $s = CarbonImmutable::parse($period['starts_on'], 'America/Chicago')->locale('es');
         $e = CarbonImmutable::parse($period['ends_before'], 'America/Chicago')->subDay()->locale('es');
 
-        return $period['kind'] === 'month' ? ucfirst($s->translatedFormat('F Y'))
+        return in_array($period['kind'], ['month', 'monthly'], true) ? ucfirst($s->translatedFormat('F Y'))
             : 'Semana del '.$s->translatedFormat('D j M').' al '.$e->translatedFormat('D j M Y');
     }
 }

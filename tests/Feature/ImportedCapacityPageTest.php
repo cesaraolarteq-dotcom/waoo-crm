@@ -81,4 +81,20 @@ class ImportedCapacityPageTest extends TestCase
         $this->assertSame('draft', $this->event->fresh()->status);
         $this->assertDatabaseCount('resource_reservations', 0);
     }
+    public function test_short_source_deposit_requires_owner_reason_and_preserves_actual_paid_amount():void
+    {
+        $link=ImportedProjectLink::sole();
+        $batch=$this->stageFuture(['amount_paid'=>'50.00','balance'=>'70.00','payments'=>'2026-10-01|50.00|Cash']);
+        $row=ImportRow::where('import_batch_id',$batch->id)->sole();
+        app(CommitHoneyBookEvent::class)->execute($this->owner,$batch->id,$row->id,$this->commitInput($batch,$row,['expected_import_version'=>$link->version,'expected_event_version'=>$this->event->version]),(string)Str::uuid());
+        $this->event->refresh();
+        $page=$this->filled($this->units(true))->assertSee('Por qué se acepta menos del 50 %');
+        $page->call('confirm')->assertHasErrors('data.imported_deposit_exception_reason')->assertNoRedirect();
+        $this->assertDatabaseCount('booking_evidence',0);$this->assertDatabaseCount('resource_reservations',0);
+        $page->set('data.imported_deposit_exception_reason','Owner reviewed the historical short deposit.')->call('confirm')->assertHasNoErrors()->assertRedirect();
+        $this->assertSame(5000,BookingEvidence::sole()->amount_cents);
+        $this->assertSame('Owner reviewed the historical short deposit.',\App\Models\OperationalReview::sole()->evidence['deposit_exception_reason']);
+        $this->assertDatabaseCount('ledger_entries',0);
+    }
+
 }
