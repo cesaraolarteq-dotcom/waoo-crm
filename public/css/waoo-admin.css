@@ -142,3 +142,5 @@ a.wcal-name:hover{text-decoration:underline}
 .wlead-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .wlead-pages{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center}
 .wlead-pages button[disabled]{opacity:.45;cursor:default}
+.wqb-send{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.wqb-url{user-select:all;-webkit-user-select:all;overflow-wrap:anywhere}

@@ -16,7 +16,11 @@ final class RevokePortalGrant
         return DB::transaction(function () use ($actor, $grantId) {
             // Signature acceptance locks this same row before the event/contract.
             $grant = PortalGrant::whereKey($grantId)->lockForUpdate()->firstOrFail();
-            if ($grant->revoked_at) return $grant;
+            if ($grant->revoked_at) {
+                if ($grant->encrypted_token !== null) $grant->forceFill(['encrypted_token' => null])->save();
+                return $grant;
+            }
+            $grant->forceFill(['encrypted_token' => null]);
             $grant->revoked_at = now();
             $grant->save();
             Audit::recordFor($actor, 'portal.grant_revoked', $grant, [], ['revoked_at' => $grant->revoked_at->toIso8601String()]);

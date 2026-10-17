@@ -72,3 +72,9 @@ Financial/contract character snapshots store nonnull outfit with the original ow
 ### Atomic contact corrections during QuickBook
 
 No schema change. Optional customer_update is transient validated input, bound to the existing mutation receipt hash; it is never added to event fields. The existing customer row is locked/version-checked and changed through SaveCustomer inside QuickBook’s core transaction. Its update/version/audit rolls back with failed recipe/payment/booking writes. Successful retry lookup precedes the version check, preserving replay after the original correction and any later independent customer edit. Grant issuance/recovery remains after the durable core commit. See docs/QUICK-BOOK-CONTACT-API.md; Claude’s adapter must remove the separate pre-save.
+
+### COMMS-01 recoverable portal tokens (sandbox)
+
+Migration290000 adds nullable encrypted_token to portal_grants, no backfill. New issuance creates its row/hash, then authenticated encrypted versioned payload bound to grant/event/customer/expiry/scopes, then metadata-only audit, in the same transaction. Existing hashes still authenticate clients; missing old ciphertext cannot be reconstructed. The encrypted field is guarded/hidden and never included in generic owner/client projections or audit snapshots.
+
+RevealPortalGrantLink locks grant→event, verifies active/current identity and cryptographic binding/hash, audits IDs and returns only the same URL/expiry DTO to a fresh authorized owner. It does not mutate link lifetime, money, signature, presentations or existing QuickBook linkage. Revoke clears ciphertext atomically; expired links cannot reveal regardless of deferred purge. Key rotation uses Laravel's existing previous keys; keep key/backup access controlled. A grant-storage failure after QuickBook's durable core commit preserves its payment and existing pending-link exception/recovery. No sending provider or automated communication schema is added.
