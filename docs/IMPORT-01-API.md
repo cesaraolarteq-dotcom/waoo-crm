@@ -30,13 +30,15 @@ The parser handles only mapped fields. Preserve exact private file byte hashes a
 
 | Role | Canonical mapped fields |
 | --- | --- |
-| projects (required) | project_id, project_status, customer_id?, customer_name?, customer_email?, customer_phone?, title?, event_date, start_time, end_time?, duration_minutes?, address?, postal_code?, package_text?, total_amount?, paid_amount?, balance_amount?, travel_amount?, contract_reference? |
+| projects (required) | project_id, project_status, customer_id?, customer_name?, customer_email?, customer_phone?, title?, event_date, start_time, start_choice?, end_date?, end_time?, end_choice?, duration_minutes?, address?, postal_code?, package_text?, total_amount?, paid_amount?, balance_amount?, travel_amount?, contract_reference? |
 | customers (optional) | customer_id, customer_name, customer_email?, customer_phone? |
 | payments (optional) | project_id, payment_id?, amount, state, received_at? |
 
 `?` denotes optional source data, not permission to fabricate it. Project ID is required, opaque/case-sensitive and bounded255; never use a spreadsheet row number as a cross-file/business identity. Unknown customer identity, package, end time, money or route data yields `needs_mapping`, not guessed values. Repeated same-name/different-phone customers never merge. Matching email/phone produces explicit hints only; even exact contact matches need an explicit existing-customer choice at domain commit.
 
 Houston dates use the shared ChicagoTime resolver. Profile declares the source date format; canonical representation is `YYYY-MM-DD` + local `HH:mm` + optional explicit CDT/CST occurrence. DST gaps/ambiguous hours without a choice yield a per-row review error. If both end time and duration exist they must agree; if neither exists the row needs mapping. Never infer party duration from the current catalog. Original source date/time and resolved UTC window remain distinguishable. Same-day vs next-day end is explicit; do not silently roll backward times into tomorrow.
+
+Technical normalization limits: duration1–10080 minutes; monetary magnitude at most9,999,999,999.99 USD per source value. `usd_dot` accepts an optional leading `$`, ordinary decimal point and correctly grouped commas; only balance may carry a leading minus. Negative payment amounts require review rather than inferred refund semantics; positive refunds need the explicit refunded state. Explicit `start_choice`/`end_choice` columns contain `cdt` or `cst`; optional `end_date` uses the same declared format. `received_at` accepts an explicit-offset ISO timestamp only; a missing date remains unknown. These parsing bounds do not invent source values.
 
 Money uses strict decimal parsing to integer USD cents: explicit currency/grouping/decimal profile, no floats, scientific notation, rounding, parenthesis/minus reinterpretation or blank→0. Signed refunds/voids/pending payments require a declared state mapping; they are not positive received money. Unknown payment state/absent required payment identity is review. Existing source totals win over current catalog prices. Travel amount is recorded source evidence, never recalculated from a guessed ZIP or copied from a current package price.
 
