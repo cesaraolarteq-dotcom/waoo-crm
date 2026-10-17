@@ -92,4 +92,30 @@ class QuoteScreensTest extends TestCase
         config(['waoo.sandbox_quotes' => false]);
         $this->get('/admin/cotizaciones')->assertForbidden();
     }
+    public function test_stale_create_keeps_its_retry_key_and_never_creates_a_quote(): void
+    {
+        $e=$this->event();$page=Livewire::test(ViewEvent::class,['record'=>$e->id]);$key=$page->get('quoteKey');
+        $e->forceFill(['version'=>2])->save();
+        $page->callAction('quoteCreate',['locale'=>'es','discounts'=>[]])->assertNotified('No se creó')->assertSet('quoteKey',$key)->assertSet('displayedVersion',1);
+        $this->assertDatabaseCount('quotes',0);$this->assertDatabaseCount('quote_revisions',0);
+    }
+
+    public function test_competing_revision_is_rejected_without_replacing_the_retry_key_or_snapshot(): void
+    {
+        $e=$this->event();$r=app(CreateQuote::class)->execute($this->owner,['event_id'=>$e->id,'expected_event_version'=>1],(string)Str::uuid());
+        $page=Livewire::test(QuoteDetail::class,['quote'=>$r->quote_id]);$key=$page->get('reviseKey');
+        app(\App\Services\Quotes\ReviseQuote::class)->execute($this->owner,$r->quote_id,['expected_version'=>1,'expected_event_version'=>1,'discounts'=>[]],(string)Str::uuid());
+        $before=\App\Models\QuoteRevision::orderBy('revision')->get()->toArray();
+        $page->callAction('revise',['discounts'=>[]])->assertNotified('No se guardó')->assertSet('reviseKey',$key)->assertSet('displayedQuoteVersion',1)->assertSet('displayedEventVersion',1);
+        $this->assertSame($before,\App\Models\QuoteRevision::orderBy('revision')->get()->toArray());$this->assertSame(2,Quote::sole()->version);
+    }
+
+    public function test_browser_cannot_replace_the_quote_version_to_bypass_a_conflict(): void
+    {
+        $e=$this->event();$r=app(CreateQuote::class)->execute($this->owner,['event_id'=>$e->id,'expected_event_version'=>1],(string)Str::uuid());
+        $page=Livewire::test(QuoteDetail::class,['quote'=>$r->quote_id]);
+        $this->expectException(\Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException::class);
+        $page->set('displayedQuoteVersion',2);
+    }
+
 }
