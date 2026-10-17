@@ -10,6 +10,11 @@ Route::redirect('/', '/admin')->name('home');
 Route::middleware(['auth', 'password.confirm'])->get('/seguridad/dos-pasos', TwoFactorEnrollmentController::class)->name('security.two-factor');
 Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'));
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->prefix('admin/api')->group(function () {
+    Route::get('/mail/settings', [\App\Http\Controllers\Admin\MailController::class, 'settings']);
+    Route::get('/messages/warnings', [\App\Http\Controllers\Admin\MailController::class, 'warnings']);
+    Route::get('/events/{event}/messages', [\App\Http\Controllers\Admin\MailController::class, 'messages'])->whereNumber('event');
+    Route::post('/events/{event}/mail/reminders', [\App\Http\Controllers\Admin\MailController::class, 'plan'])->whereNumber('event');
+    Route::patch('/events/{event}/mail/policy', [\App\Http\Controllers\Admin\MailController::class, 'pause'])->whereNumber('event');
     Route::get('/imports/honeybook/{batch}/rows/{row}/mapping', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'mapping'])->whereNumber(['batch','row']);
     Route::post('/imports/honeybook/{batch}/rows/{row}/commit', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'commit'])->whereNumber(['batch','row']);
     Route::get('/imports/honeybook/{batch}/coverage', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'coverage'])->whereNumber('batch');

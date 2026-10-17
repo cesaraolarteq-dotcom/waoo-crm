@@ -78,6 +78,19 @@ class Dashboard extends BaseDashboard
                 'items' => $notices->map(fn ($n) => ['label' => (Event::whereKey($n->event_id)->value('title') ?? 'Evento').' · dice '.Labels::money($n->amount_cents).' · '.Labels::when($n->submitted_at), 'url' => EventResource::getUrl('money', ['record' => $n->event_id])])->all()];
         }
 
+        if (\App\Filament\Support\MailUi::enabled()) {
+            // Bounces only in their own card; other warnings say honestly that the result is unknown or blocked.
+            $read = app(\App\Services\Mail\ReadOutboundMail::class);
+            $owner = \Filament\Facades\Filament::auth()->user();
+            $item = fn ($m) => ['label' => (Event::whereKey($m['event_id'])->value('title') ?? 'Evento').' · '.(\App\Filament\Support\MailUi::TEMPLATES[$m['template_key']] ?? $m['template_key'])
+                .' · '.(\App\Filament\Support\MailUi::STATUS[$m['status']] ?? $m['status']), 'url' => EventResource::getUrl('view', ['record' => $m['event_id']])];
+            $cards[] = ['tone' => 'bad', 'title' => 'Correos que rebotaron', 'text' => 'No llegaron. Confirma el correo de la clienta por WhatsApp; no se reenvía solo.',
+                'items' => collect($read->warnings($owner, ['status' => 'bounced', 'per_page' => 50])['data'])->map($item)->all()];
+            $review = collect(['complained', 'delivery_unknown', 'dispatching', 'blocked'])->flatMap(fn ($st) => $read->warnings($owner, ['status' => $st, 'per_page' => 50])['data']);
+            $cards[] = ['tone' => 'warn', 'title' => 'Correos por revisar', 'text' => 'Bloqueados, marcados como spam, o sin saber si salieron. Nada se reenvía automáticamente.',
+                'items' => $review->map($item)->values()->all()];
+        }
+
         if (\App\Filament\Support\DocumentsGate::enabled() && class_exists(\App\Services\Booking\ClientDetailsState::class)) {
             $quick = Event::query()->whereIn('id', \App\Models\QuickBookingRecord::query()->select('event_id'))->where('ends_at', '>=', $now)->orderBy('starts_at')->get()
                 ->groupBy(fn ($e) => \App\Services\Booking\ClientDetailsState::forEvent($e));
