@@ -10,6 +10,7 @@ Route::redirect('/', '/admin')->name('home');
 Route::middleware(['auth', 'password.confirm'])->get('/seguridad/dos-pasos', TwoFactorEnrollmentController::class)->name('security.two-factor');
 Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'));
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->prefix('admin/api')->group(function () {
+    Route::get('/mail/occurrences', [\App\Http\Controllers\Admin\MailController::class, 'occurrences']);
     Route::get('/mail/settings', [\App\Http\Controllers\Admin\MailController::class, 'settings']);
     Route::get('/messages/warnings', [\App\Http\Controllers\Admin\MailController::class, 'warnings']);
     Route::get('/events/{event}/messages', [\App\Http\Controllers\Admin\MailController::class, 'messages'])->whereNumber('event');

@@ -50,6 +50,7 @@ final class RecordZellePayment
                     'exception_key' => hash('sha256', 'zelle:'.$entry->id.':overpayment'), 'state' => 'open', 'context' => json_encode(['ledger_entry_id' => $entry->id, 'credit_cents' => $summary['credit_cents']], JSON_THROW_ON_ERROR), 'created_at' => now(), 'updated_at' => now()]);
                 Audit::recordFor($actor, 'payment.zelle_received', $entry, [], $entry->getAttributes());
                 MutationKey::store($scope, $key, $hash, 'ledger_entry', $entry->id);
+                app(\App\Services\Mail\CaptureMailOccurrence::class)->record('payment_received', $entry->id, ['event_id'=>$event->id, 'customer_id'=>$event->customer_id, 'financial_revision_id'=>$revision->id, 'ledger_entry_id'=>$entry->id], $actor);
                 return $entry;
             }, 3);
         } catch (QueryException $e) {

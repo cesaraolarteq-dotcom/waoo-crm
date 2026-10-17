@@ -68,6 +68,22 @@ class StripeSandboxTest extends TestCase
         $this->assertDatabaseCount('resource_reservations', 0);
         $this->getJson('/admin/api/events/'.$this->event->id.'/finance')->assertOk()->assertJsonPath('balance_cents', 22750);
     }
+    public function test_verified_stripe_receipt_captures_one_mail_occurrence_without_sending_or_replaying(): void
+    {
+        config(['waoo.sandbox_mail' => true]);
+        \Illuminate\Support\Facades\Mail::fake();
+        $this->create()->assertCreated(); $intent = PaymentIntent::firstOrFail();
+        $this->stripe->paid($intent->stripe_checkout_session_id);
+        $this->webhook($intent)->assertOk(); app(StripeReceiptProcessor::class)->execute('evt_fixture_one');
+        $this->webhook($intent, 'evt_fixture_second')->assertOk(); app(StripeReceiptProcessor::class)->execute('evt_fixture_second');
+        $entry = LedgerEntry::sole(); $occurrence = \App\Models\MailOccurrence::sole();
+        $this->assertSame('verified_stripe_webhook', $entry->source_type);
+        $this->assertSame('payment_received', $occurrence->key);
+        $this->assertSame($entry->id, $occurrence->locator['ledger_entry_id']);
+        $this->assertNull($occurrence->actor_id);
+        $this->assertDatabaseCount('outbound_messages', 0);
+        \Illuminate\Support\Facades\Mail::assertNothingSent();
+    }
     public function test_invalid_signature_live_mode_and_wrong_account_are_refused(): void
     {
         $this->create()->assertCreated(); $intent = PaymentIntent::firstOrFail();

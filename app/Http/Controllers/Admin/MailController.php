@@ -4,6 +4,7 @@ use App\Services\Mail\{PlanEventMail,PauseEventMail,ReadOutboundMail};
 use Illuminate\Http\Request;
 class MailController extends \App\Http\Controllers\Controller
 {
+    public function occurrences(Request $r,\App\Services\Mail\ReadMailOccurrences $read){return $read->execute($r->user(),$r->query());}
     public function settings(Request $r,ReadOutboundMail $read){return $read->settings($r->user());}
     public function messages(Request $r,int $event,ReadOutboundMail $read){return $read->forEvent($r->user(),$event,$r->query());}
     public function warnings(Request $r,ReadOutboundMail $read){return $read->warnings($r->user(),$r->query());}

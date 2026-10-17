@@ -7,10 +7,21 @@ use Carbon\CarbonImmutable;
 use Illuminate\Validation\ValidationException;
 final class RecordMailDelivery
 {
-    // Internal normalized seam only. No public webhook until a concrete authenticated adapter is reviewed.
+    // Internal normalization seam. Public traffic must use the authenticated provider adapter.
     public function execute(string $provider,string $providerMessageId,string $providerEventId,string $outcome,CarbonImmutable $occurredAt):void
     {
-        Sandbox::require('sandbox_mail');if(!in_array($outcome,['delivered','bounced','complained'],true)||!preg_match('/^[a-z][a-z0-9_-]{0,59}$/D',$provider)||$providerMessageId===''||strlen($providerMessageId)>255||$providerEventId===''||strlen($providerEventId)>255||$occurredAt->isFuture())throw ValidationException::withMessages(['mail'=>'invalid_provider_event']);
+        Sandbox::require('sandbox_mail');
+        $this->record($provider,$providerMessageId,$providerEventId,$outcome,$occurredAt);
+    }
+    public function authenticatedBounce(string $provider,string $providerMessageId,string $providerEventId,string $outcome,CarbonImmutable $occurredAt):void
+    {
+        Sandbox::require('sandbox_mail_bounces');
+        if(!in_array($outcome,['bounced','complained'],true))throw ValidationException::withMessages(['mail'=>'invalid_bounce_outcome']);
+        $this->record($provider,$providerMessageId,$providerEventId,$outcome,$occurredAt);
+    }
+    private function record(string $provider,string $providerMessageId,string $providerEventId,string $outcome,CarbonImmutable $occurredAt):void
+    {
+        if(!in_array($outcome,['delivered','bounced','complained'],true)||!preg_match('/^[a-z][a-z0-9_-]{0,59}$/D',$provider)||$providerMessageId===''||strlen($providerMessageId)>255||$providerEventId===''||strlen($providerEventId)>255||$occurredAt->isFuture())throw ValidationException::withMessages(['mail'=>'invalid_provider_event']);
         $key=MutationKey::hash(['provider'=>$provider,'event_id'=>$providerEventId]);$intent=MutationKey::hash(['provider'=>$provider,'message_id'=>$providerMessageId,'outcome'=>$outcome,'at'=>$occurredAt->toIso8601String()]);
         MailGuard::transaction(function()use($provider,$providerMessageId,$outcome,$occurredAt,$key,$intent){
             $s=OutboundMessageState::where('provider_message_sha256',hash('sha256',$provider."\0".$providerMessageId))->lockForUpdate()->firstOrFail();

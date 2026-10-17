@@ -4,6 +4,11 @@ return [
     // Empty until exact owner-approved TCPA wording/version is configured. No provider enrollment is performed.
     'sms_consent_versions' => [],
     'record_forms' => true,
+    'sandbox_mail_bounces' => env('WAOO_SANDBOX_MAIL_BOUNCES', false),
+    'postmark_bounce_username' => env('WAOO_POSTMARK_BOUNCE_USERNAME'),
+    'postmark_bounce_password' => env('WAOO_POSTMARK_BOUNCE_PASSWORD'),
+    'postmark_server_id' => env('WAOO_POSTMARK_SERVER_ID'),
+    'postmark_message_stream' => env('WAOO_POSTMARK_MESSAGE_STREAM'),
     'sandbox_mail' => env('WAOO_SANDBOX_MAIL', false),
     'mail_allowlist' => [],
     'mail_templates' => [], // Only reviewed owner-approved versions; never draft preview copy.
