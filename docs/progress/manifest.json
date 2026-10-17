@@ -222,7 +222,9 @@
      "ui": null,
      "reviewed": false,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "foundation": "Codex QUOTE A 88d53f3 (API 2d90794) + Claude pantallas #65 85abaa4 (lista, detalle, crear, revisar). B (enviar/PDF/aceptar) y C (convertir en reserva) pendientes.",
+     "blocker": "Faltan B y C del backend; aceptación de César."
     },
     {
      "name": "Costos y margen por paquete",
