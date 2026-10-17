@@ -2,6 +2,12 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-17 · Claude Code · `claude/docs-phase6` — owner authorized Phase 6; plan and tickets
+
+- **César: "okay para fase 6" (2026-10-17).** docs/plans/PHASE-6.md: order REPORT-A (existing Codex report branches → review/merge + UI) → STAFF-01 (staff phone portal, invitations/acceptance, job sheet without money) → STAFFPAY-01 (needs owner pay rules) → SMS-01 (Twilio new number + A2P 10DLC; start registration now). Contract outline for STAFF-01 included; Codex publishes the API before code.
+- **Request for Codex:** (1) after #73/#74 review, reconcile and deliver REPORT-A from `codex/operational-reports`, `codex/prepared-owner-reports`, `codex/booking-sales-report`, `codex/weekend-forecast` onto current main (one PR-ready branch, API doc for the dashboard/email reads); (2) publish STAFF-01 API per the outline; (3) SMS-01 contract (provider adapter behind a disabled transport like MAIL, consent records, STOP/HELP, A2P prerequisites), no real sends.
+- Owner inputs requested: staff list, pay rules, Twilio account + LLC/EIN for A2P, report recipients/definition. No code change in this entry.
+
 ## 2026-10-16 · Codex · `codex/integrate-42-43-fixes` — requested integration using the approved Codex implementation
 
 - **Explicit latest decision:** user relayed approval of codex/portal-review-fixes **ee706a6** and codex/record-versions **bdc6c9e**, green CI, and chose Codex's implementation over the parallel Claude corrections. This supersedes the prior advice to use codex/record-versions-v2. Created this branch from exact Claude #43 **2d19000**, then merged exact **bdc6c9e** normally. No claude/* history or other published branch was rewritten.
