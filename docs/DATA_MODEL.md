@@ -113,3 +113,7 @@ Metadata-only audit scope prevents nested customer/event source cells from enter
 ## Event crew driver policy (2026-10-17)
 
 Migration360000 adds nullable booking_evidence.staff_assignment_snapshot. New confirmations freeze event-driver-v1 assignment roles (service/requirement/occurrence identity), resource IDs, observed skills and assigned driver IDs, atomically with normal booking evidence/reservations/review. Existing rows remain null and existing reserved confirmations retain prior evidence on replay. This does not add staff or reprice services; driver must occupy a real existing staff slot across the event. See STAFF-DRIVER-API.md. No new HTTP read or client data surface.
+
+### COST-A implemented foundation (2026-10-16)
+
+`event_cost_snapshots` / EventCostSnapshot implements only the owner-entered CostSnapshot portion: immutable estimate/actual histories, explicit unknown cents, owner coverage/note, source financial/event versions, audit and per-kind optimistic concurrency. No RateVersion/TimeEntry/StaffCompensation/TransportCost engine is implied. EventMarginSummary is owner-only and suppresses stale/incomplete margin, with cash and revenue labelled separately. API: COST-A-API.md; source08c284a.

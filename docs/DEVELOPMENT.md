@@ -55,3 +55,9 @@ When actual jobs are introduced, configure hPanel cron every minute with schedul
 ## Cloud workspace used for this delivery
 
 Isolated containers: `waoo-phase1-runtime` (PHP 8.3.35), `waoo-phase1-db` (MariaDB 11.8), network `waoo-phase1`, no DB port exposed. Repository mounted at /app. Local credentials and caches live outside Git under /workspace/setup/waoo-phase1. Run checks with `docker exec waoo-phase1-runtime ...`; Node build runs from the checkout. Source installs use the proxy and existing trust bundle without disabling TLS, because GitHub ZIP downloads were denied here. Application setup instructions in the saved cloud draft recreate/start these services; processes must restart after snapshots. Existing phase0 website audit is independent and remains read-only.
+
+### Full-suite PDF memory budget (2026-10-16)
+
+The expanded integration suite can exceed PHP's default 128M in one long-lived CLI process during repeated dompdf fixtures. This is separate from a single PDF request. In this cloud workspace run `bash /workspace/setup/waoo-phase1/test.sh`: it adds a 512M ini only to that test command and its PHPUnit child while preserving the normal extension ini directory. It does not alter web/production PHP settings. Do not run concurrent suites against `waoo_phase1_test`.
+
+A portable direct-run equivalent, after the usual local environment/database setup, is `php artisan config:clear` followed by `php -d memory_limit=512M vendor/bin/phpunit`. No tests or assertions should be skipped to address the memory budget. Current cloud start helper verifies actual root redirect, authenticated admin boundary, login boot, CSRF/session and private-file protection; the former bootstrap JSON response no longer describes the reviewed UI.
