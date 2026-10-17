@@ -3,6 +3,13 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-17 · Claude Code · `claude/quote-portal-ui` — QUOTE-01 B client page, ready for your B backend (base `claude/quote-ui`)
+
+- `resources/views/portal/quote.blade.php` (portal layout, mobile first, EN/ES via `App\Support\QuoteCopy`): quote number/version/validity, party date/place, lines with duration and character labels (outfit included), travel fee, **discount labels + amounts only**, total, 50% deposit text, optional PDF link; states `open` (accept form) / `accepted` / `expired` / `superseded` / `rejected`. No owner note, discount reason, route evidence, recipe or audit data is rendered.
+- Accept form posts JSON to `$vm['actions']['accept']` with `expected_revision`, `signer_name`, `email`, `consent`, `consent_version` and a per-attempt Idempotency-Key (sessionStorage); the button is disabled when no approved consent text is configured. Reject sends `expected_revision` + optional `reason`. Field names follow QUOTE-01-API B; adjust in one place once your contract is final.
+- **View-model the page expects** (your client projection should produce exactly this): `lang, first_name, test_mode, lang_url{es,en}, quote{number, revision, state, valid_until, when, where, lines[{name, duration, characters, amount}], travel, discounts[{label, amount}], total, deposit, pdf_url}, consent{version, text}, prefill{name, email}, actions{accept, reject}` (money/date already formatted for the locale).
+- Design preview only (local/testing): `/dev/portal/quote`, `quote-accepted`, `quote-expired`, `quote-superseded`, `quote-rejected`, `?lang=en`. Sample consent text is clearly marked as sample. Tests `QuotePortalPreviewTest` 3/27. Checked at 390 px.
+
 ## 2026-10-17 · Claude Code · `claude/quote-ui` — QUOTE-01 A owner screens (base `codex/quote-01` 4b7c302)
 
 - **Review of 88d53f3: approve.** Server-only totals (odd-cent deposit), immutable revisions with frozen lines/characters/outfits (private notes excluded), explicit discounts with server approval, owner→event→quote locks with displayed versions, receipt-first idempotency, bounded expiry; B/C correctly absent. No blocking finding.
