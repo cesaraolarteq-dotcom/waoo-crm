@@ -59,3 +59,4 @@ dt{color:var(--muted);font-size:14px}dd{margin:0;font-weight:700;overflow-wrap:a
 .q-lines .q-disc b{color:var(--ok)}.q-lines .q-total{font-size:18px;border-top:2px solid var(--ink)}
 .q-reject summary{cursor:pointer;color:var(--muted);font-weight:700;min-height:44px;display:flex;align-items:center}
 .q-reject[open]{display:grid;gap:10px}
+.q-outcome{border:0;margin:0;padding:0;min-width:0;display:grid;gap:10px}

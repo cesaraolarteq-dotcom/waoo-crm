@@ -17,7 +17,9 @@
   if (!m) { title.textContent = @js($t('link_missing')); text.textContent = @js($t('link_missing_hint')); return; }
   fetch('/portal/api/session', {method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json', 'Accept': 'application/json',
     'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content}, body: JSON.stringify({token: m[1]})})
-    .then(function (r) { if (!r.ok) throw r; location.replace(location.pathname + location.search); })
+    .then(function (r) { if (!r.ok) throw r; return r.json(); })
+    // A quote link only carries quote scopes and has its own page.
+    .then(function (j) { location.replace(((j.scopes || []).indexOf('quote.read') >= 0 ? '/portal/quote' : location.pathname) + location.search); })
     .catch(function () { title.textContent = @js($t('link_expired')); text.textContent = @js($t('link_expired_hint')); });
 })();
 </script>

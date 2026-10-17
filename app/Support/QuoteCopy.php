@@ -3,7 +3,7 @@
 namespace App\Support;
 
 // Client quote page copy (QUOTE-01 B screens). Warm, short, the owner's voice; ES says "costo de transporte".
-// Consent wording for acceptance is NOT here: it must come from approved configuration (QUOTE-01-API B).
+// Consent wording for accepting AND rejecting is NOT here: it is the frozen approved text of the presentation (QUOTE-PORTAL-API B).
 final class QuoteCopy
 {
     private const COPY = [
@@ -15,7 +15,9 @@ final class QuoteCopy
             'pdf' => 'Ver PDF', 'accept_title' => '¿Todo bien?', 'name' => 'Tu nombre completo', 'email' => 'Tu correo', 'accept' => 'Aceptar cotización',
             'accept_note' => 'Aceptar no cobra nada ni aparta todavía al equipo: después te pedimos el depósito para confirmar tu fecha.',
             'changes' => '¿Quieres cambiar algo? Escríbenos por WhatsApp al (346) 851-8830 y te mandamos una versión nueva.',
-            'reject' => 'No me interesa por ahora', 'reject_reason' => 'Cuéntanos por qué (opcional)', 'reject_send' => 'Enviar respuesta',
+            'reject' => 'No me interesa por ahora', 'reject_send' => 'Enviar respuesta',
+            'pdf_first' => 'Primero abre el PDF completo de tu cotización; después puedes responder.', 'identity_required' => 'Escribe tu nombre completo y tu correo.',
+            'not_available' => 'Por ahora no puedes responder desde aquí. Escríbenos y te ayudamos.',
             'accepted_title' => '¡Gracias! Aceptaste tu cotización', 'accepted' => 'Te escribimos muy pronto para el depósito y el contrato. ¡Estamos emocionados de ser parte de tu celebración!',
             'expired_title' => 'Esta cotización ya venció', 'expired' => 'Escríbenos y con gusto revisamos disponibilidad y te mandamos una nueva.',
             'superseded_title' => 'Hay una versión más nueva', 'superseded' => 'Esta versión ya no está vigente. Pídenos el enlace actualizado si no lo tienes.',
@@ -30,7 +32,9 @@ final class QuoteCopy
             'pdf' => 'View PDF', 'accept_title' => 'All good?', 'name' => 'Your full name', 'email' => 'Your email', 'accept' => 'Accept quote',
             'accept_note' => 'Accepting does not charge anything or reserve our team yet: next we ask for the deposit to confirm your date.',
             'changes' => 'Want to change something? Message us on WhatsApp at (346) 851-8830 and we will send you a new version.',
-            'reject' => 'Not interested for now', 'reject_reason' => 'Tell us why (optional)', 'reject_send' => 'Send answer',
+            'reject' => 'Not interested for now', 'reject_send' => 'Send answer',
+            'pdf_first' => 'First open the full PDF of your quote; then you can answer.', 'identity_required' => 'Please enter your full name and email.',
+            'not_available' => 'You cannot answer from here right now. Message us and we will help you.',
             'accepted_title' => 'Thank you! You accepted your quote', 'accepted' => "We'll message you very soon about the deposit and contract. We're excited to be part of your celebration!",
             'expired_title' => 'This quote has expired', 'expired' => "Message us and we'll gladly check availability and send you a new one.",
             'superseded_title' => 'There is a newer version', 'superseded' => 'This version is no longer current. Ask us for the updated link if you do not have it.',

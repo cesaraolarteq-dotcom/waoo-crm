@@ -11,7 +11,7 @@ class QuotePortalPreviewTest extends TestCase
     {
         $this->get('/dev/portal/quote?lang=es')->assertOk()->assertSee('Cotización Q-2026-000123 · versión 2')
             ->assertSee('Costo de transporte')->assertSee('Descuento por reservar hoy')->assertSee('−$25', false)->assertSee('$615')
-            ->assertSee('Depósito del 50 %: $307.50')->assertSee('id="quote-accept"', false)->assertSee('Aceptar no cobra nada')
+            ->assertSee('Depósito del 50 %: $307.50')->assertSee('id="quote-decide"', false)->assertSee('Aceptar no cobra nada')
             ->assertDontSee('Motivo')->assertDontSee('reason":', false);
         $this->get('/dev/portal/quote?lang=en')->assertOk()->assertSee('Travel fee')->assertSee('Accept quote');
     }
@@ -20,7 +20,7 @@ class QuotePortalPreviewTest extends TestCase
     {
         foreach (['quote-accepted' => '¡Gracias! Aceptaste tu cotización', 'quote-expired' => 'Esta cotización ya venció',
             'quote-superseded' => 'Hay una versión más nueva', 'quote-rejected' => 'Recibimos tu respuesta'] as $step => $title) {
-            $this->get("/dev/portal/{$step}?lang=es")->assertOk()->assertSee($title)->assertDontSee('id="quote-accept"', false);
+            $this->get("/dev/portal/{$step}?lang=es")->assertOk()->assertSee($title)->assertDontSee('id="quote-decide"', false);
         }
     }
 

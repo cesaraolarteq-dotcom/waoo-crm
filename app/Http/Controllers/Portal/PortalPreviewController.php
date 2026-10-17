@@ -49,6 +49,9 @@ final class PortalPreviewController extends Controller
                 'travel' => '$40', 'discounts' => [['label' => $es ? 'Descuento por reservar hoy' : 'Book-today discount', 'amount' => '$25']],
                 'total' => '$615', 'deposit' => '$307.50', 'pdf_url' => null],
             'consent' => ['version' => 'preview-only', 'text' => $es ? '(Texto de ejemplo; el texto real lo aprueba César.) Acepto esta cotización.' : '(Sample text; the real wording is approved by César.) I accept this quote.'],
+            'decide' => ['snapshot_sha256' => str_repeat('0', 64), 'pdf_sha256' => str_repeat('0', 64), 'pdf_opened' => true,
+                'accepted' => ['version' => 'preview-only', 'sha256' => str_repeat('0', 64), 'text' => $es ? '(Texto de ejemplo; el texto real lo aprueba César.) Acepto esta cotización.' : '(Sample text; the real wording is approved by César.) I accept this quote.'],
+                'rejected' => ['version' => 'preview-only', 'sha256' => str_repeat('0', 64), 'text' => $es ? '(Texto de ejemplo; el texto real lo aprueba César.) No acepto esta cotización.' : '(Sample text; the real wording is approved by César.) I do not accept this quote.']],
             'prefill' => ['name' => 'Ana Ejemplo', 'email' => 'ana@example.test'],
             'actions' => ['accept' => url("/dev/portal/quote-accepted?lang={$lang}"), 'reject' => url("/dev/portal/quote-rejected?lang={$lang}")],
         ]])->header('Cache-Control', 'no-store, private')->header('Referrer-Policy', 'no-referrer');
