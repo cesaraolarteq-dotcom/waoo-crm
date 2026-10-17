@@ -29,7 +29,7 @@ class AcceptedQuoteFinanceTest extends TestCase
     }
     private function resources():array
     {
-        return [Resource::create(['code'=>'QF-STAFF','name'=>'Fixture Performer','kind'=>'staff','status'=>'active','skills'=>['performer']])->id,
+        return [Resource::create(['code'=>'QF-STAFF','name'=>'Fixture Performer','kind'=>'staff','status'=>'active','skills'=>['performer','driver']])->id,
             Resource::create(['code'=>'QF-SPEAKER','name'=>'Fixture Speaker','kind'=>'equipment','status'=>'active','equipment_kind'=>'speaker','skills'=>[]])->id];
     }
     private function receipt(FinancialRevision $f,int $amount=5000):LedgerEntry

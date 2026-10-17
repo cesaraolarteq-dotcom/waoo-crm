@@ -140,6 +140,17 @@
       "verification": "API7c8dcb1 published first. Final integrated codex/outfit-01 d1b00a3: full300/2864 pass (330.31s), PHP8.3/MariaDB11.8; includes LEAD/ROUTE/OUTFIT, real independent races and populated SQLite/MariaDB roundtrips. Vite/strict Composer/syntax/diff pass. Packagist audit unavailable (proxy403), no dependency changes.",
       "remaining": "Codex approves #56 917e573 with nonblocking zero-name mapper/wording notes. Preserve contact backend tests when integrating its #49 parent. Owner outfit names/unit counts, main merge and owner acceptance remain pending.",
       "latest_screen_integration_verification": "Full integrated suite369 tests /3672 assertions PASS (407.26s), PHP8.3/MariaDB11.8, source ed8d426; includes restored10 backend contact cases +3 screen cases and22 recorded calibration fixtures. Vite/strict Composer/syntax/diff pass. Review-only stack contains blocked #59/#54 for reproduction; no main merge, browser/provider/deployment or owner acceptance."
+     },
+     "event_crew_driver_followup": {
+      "api": "ccf1d43",
+      "backend": "43607f1",
+      "ui": "b6bcc71",
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "scope": "Owner q28: ≥1 driver occupying an existing staff role across whole event; maximum-driver augmenting matching; per-vehicle assigned drivers; nullable frozen role/skill/driver snapshot; old reserved retries unchanged. No extra headcount or catalog fact changes.",
+      "verification": "130 relevant test cases covered in MariaDB: original wide run129pass/1 fixture error corrected before source43607f1; final Core31/155 PASS45.395s covers corrected negative driver fixture; other99 suites passed. Exhaustive8192 small-graph/subset cases included; no new whole-suite/CI claim. Strict Composer, PHP syntax, diff pass.",
+      "remaining": "Claude reviewed 43607f1 (approve, docs/HANDOFF claude/import-ui) and shows the driver rule + server reason in ConfirmCapacity, including imported events (b6bcc71). Merge, owner driver skills on real staff and acceptance pending."
      }
     },
     {
@@ -253,7 +264,7 @@
      "weight": 3,
      "agent": "Codex+Claude",
      "backend": "5a5433d",
-     "ui": false,
+     "ui": "de2f347",
      "reviewed": false,
      "merged": false,
      "accepted": false,
@@ -269,7 +280,7 @@
       "remaining": "Normal CI/merge of A screens plus QA22bf87d; B/C5a5433d backend delivered separately for review/UI, no main/owner acceptance.",
       "review_evidence": "Claude approves A88d53f3; Codex approves #65 exact85abaa4 in ddf5291. QA-only22bf87d adds stale form UUID and Locked tamper checks,7/68 pass; original22/158 +Vite/Composer pass. A-only approval, B/C independent review/UI still pending."
      },
-     "blocker": "A source/screens independently approved, not main/owner accepted. B/C5a5433d backend tested377/3523, review and required portal/actions UI pending. Backend35% only; default empty consent stays disabled.",
+     "blocker": "A aprobado. B/C backend 5a5433d + view-model; página real de la clienta /portal/quote (#68 de2f347) aprobada por Codex (32/308). Falta: merge a main de la pila #65/#68 con su backend, consentimiento aprobado por César y aceptación. Consentimiento vacío por defecto sigue desactivado.",
      "portal_financial_bridge": {
       "api": "112af8e /97348c2 before implementation",
       "backend": "5a5433d",
@@ -547,9 +558,9 @@
     {
      "name": "Importar eventos futuros de HoneyBook",
      "weight": 2,
-     "agent": "Codex",
-     "backend": "4e23e9b",
-     "ui": false,
+     "agent": "Codex+Claude",
+     "backend": "fb6f319",
+     "ui": "b6bcc71",
      "reviewed": false,
      "merged": false,
      "accepted": false,
@@ -562,7 +573,7 @@
       "accepted": false,
       "scope": "Original generic A API published before source7e3133b. Fixed24 source/B/C APIe860fc9 before source4e23e9b; source contract main6509d91/#67. API documents themselves earn0%."
      },
-     "blocker": "Backend fixed24 con dinero histórico/capacidad/conciliación entregado; falta revisión de Claude, UI, conciliación local del CSV real y testimonio de cobertura completa de César antes del piloto. No importación real ni aceptación/despliegue.",
+     "blocker": "Backend fixed24 + resolución de la dueña (fb6f319, revisado y aprobado por Claude). Pantalla /admin/importar y confirmación de recursos de importados probadas (c7de7a7, b6bcc71; PR #71), pendiente revisión de Codex de estos cambios. CSV real revisado localmente: 23/23 importables con confirmación de estado y nota en 5 diferencias. Falta: revisión, merge, testimonio de cobertura de César e importación real en el piloto. Sin importación real ni despliegue.",
      "staging_foundation": {
       "api": "6339da3 /0d192da /544092a before source",
       "backend": "7e3133b",
@@ -583,7 +594,18 @@
       "accepted": false,
       "scope": "Exact24 owner CSV, explicit immutable historical source agreement/ledger, versioned customer/mapping/draft import, normal capacity with real contention correction, source/imported count+money coverage and retryable private artifact deletion. No fake verified payment or CRM signature; new CRM money/contracts/quote/links blocked pending cutover contract.",
       "verification": "Full465 tests/3973 assertions PASS, exit0,639.22s, PHP8.3.35/MariaDB11.8, integrated source5dbb7d2 (IMPORT4e23e9b plus quote adapter). Targeted20/188 PASS28.773s and earlier38/354 include source normalization/SQLite/legacy quote portal. Strict Composer/39 PHP syntax/diff pass; guarded local340000 migration and container /up200, import flag disabled. No source changes after final full run.",
-      "remaining": "Claude review/private mapping+resource screens; local actual export reconciliation and full source attestation; owner pilot acceptance. No real export in git/logs/chat; no public availability activation."
+      "remaining": "Claude review/private mapping+resource screens; local actual export reconciliation and full source attestation; owner pilot acceptance. No real export in git/logs/chat; no public availability activation.",
+      "owner_resolution": {
+       "api": "9c91e9d",
+       "backend": "fb6f319",
+       "ui": false,
+       "reviewed": false,
+       "merged": false,
+       "accepted": false,
+       "verification": "46 tests /308 assertions PASS,67.270s, PHP8.3/MariaDB11.8: new owner resolution7, source import16, staging23. No whole-suite or actual export claim.",
+       "scope": "Explicit private owner note for package equation difference only; preserve original totals/errors; coverage/finalize evidence; settled blank due date; suggestion-only normalized key; cash display mapping with unverified provenance.",
+       "remaining": "Claude UI exception fields, same helper, labels; independent backend review; actual source correction/owner completeness/pilot. No phase completion credit."
+      }
      }
     },
     {

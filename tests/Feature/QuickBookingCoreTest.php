@@ -332,7 +332,7 @@ class QuickBookingCoreTest extends TestCase
         $this->input['address'] = '456 Fictitious Venue';
         $response = $this->create()->assertCreated();
         $event = Event::sole();
-        $performer = \App\Models\Resource::create(['code' => 'QB-PERFORMER', 'name' => 'Fictitious performer', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer']]);
+        $performer = \App\Models\Resource::create(['code' => 'QB-PERFORMER', 'name' => 'Fictitious performer', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer', 'driver']]);
         app(\App\Services\Finance\ConfirmPaidCapacity::class)->execute($this->owner, $event->id, ['expected_version' => 1, 'financial_revision_id' => FinancialRevision::sole()->id, 'resource_ids' => [$performer->id],
             'review' => ['staff_confirmed' => true, 'cargo_checked' => true, 'origin_return_note' => 'Fixture origin and return reviewed.', 'deposit_exception_reason' => 'Fixture owner accepts the fifty cent shortfall.', 'transfers' => []]]);
         parse_str(parse_url($response->json('portal_url'), PHP_URL_FRAGMENT), $fragment);

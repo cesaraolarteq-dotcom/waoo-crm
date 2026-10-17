@@ -80,9 +80,9 @@ final class ConfirmBooking
                     if ($event->starts_at->diffInMinutes($event->ends_at) < $service->duration_minutes) {
                         $this->fail('La duración del evento no cubre el servicio.');
                     }
-                    foreach ($service->requirements_snapshot as $req) {
+                    foreach ($service->requirements_snapshot as $requirementIndex => $req) {
                         for ($i = 0; $i < $req['quantity']; $i++) {
-                            $slots[] = $req;
+                            $slots[] = [...$req, 'event_service_id'=>$service->id, 'requirement_index'=>$requirementIndex, 'occurrence'=>$i];
                         }
                     }
                 }
@@ -108,20 +108,23 @@ final class ConfirmBooking
                         }
                     }
                     if ($performerSlot === null) {
-                        $slots[] = ['kind' => 'staff', 'skill' => 'performer', 'costume_unit_id' => $costume->id];
+                        $slots[] = ['kind' => 'staff', 'skill' => 'performer', 'costume_unit_id' => $costume->id, 'event_service_id'=>null, 'requirement_index'=>null, 'occurrence'=>0, 'compiled_role'=>'costume_performer'];
                     } else {
                         $slots[$performerSlot]['costume_unit_id'] = $costume->id;
                     }
                 }
-                $this->match($slots, $resources->all(), function ($slot, $r) use ($compatibilities) {
+                $assignment=app(MatchEventResources::class)->execute($slots, $resources->all(), function ($slot, $r) use ($compatibilities) {
                     return $r->kind === $slot['kind'] && (!isset($slot['outfit']) || $r->outfit === $slot['outfit']) && (empty($slot['skill']) || in_array($slot['skill'], $r->skills ?? [], true)) && (empty($slot['character_id']) || (int) $r->character_id === (int) $slot['character_id']) && (empty($slot['equipment_kind']) || $r->equipment_kind === $slot['equipment_kind']) && (empty($slot['costume_unit_id']) || $compatibilities->contains(fn($c) => (int) $c->staff_id === $r->id && (int) $c->costume_id === $slot['costume_unit_id']));
-                }, 'No hay una combinación de recursos e intérpretes compatibles que cubra todos los roles simultáneos.');
+                });
+                $assignedStaff=collect(array_keys($assignment))->map(fn($i)=>$resources[$i])->where('kind','staff');
+                $driverIds=$assignedStaff->filter(fn($r)=>MatchEventResources::driver($r))->pluck('id')->values()->all();
+                if($assignedStaff->isNotEmpty()&&$driverIds===[])$this->fail('Falta alguien que maneje en el equipo.');
                 $vehicles = $resources->where('kind', 'vehicle');
                 if ($vehicles->isNotEmpty()) {
                     if ($vehicles->contains(fn($v) => !$v->seats) || $vehicles->sum('seats') < $resources->where('kind', 'staff')->count()) {
                         $this->fail('La capacidad de pasajeros no alcanza o está incompleta.');
                     }
-                    if ($resources->where('kind', 'staff')->filter(fn($r) => in_array('driver', $r->skills ?? [], true))->count() < $vehicles->count()) {
+                    if (count($driverIds) < $vehicles->count()) {
                         $this->fail('Faltan conductores para los vehículos seleccionados.');
                     }
                 }
@@ -159,7 +162,10 @@ final class ConfirmBooking
                 if (BookingEvidence::where('reference', $data['payment']['reference'])->exists()) {
                     $this->fail('La referencia de pago ya está asociada a otro evento.');
                 }
-                BookingEvidence::create([...$data['payment'], 'event_id' => $event->id, 'verified_by' => $actor->id]);
+                $staffSnapshot=['policy_version'=>'event-driver-v1','minimum_drivers'=>max($assignedStaff->isNotEmpty()?1:0,$vehicles->count()),'assigned_driver_ids'=>$driverIds,
+                    'assignments'=>collect($assignment)->map(fn($slot,$resource)=>['resource_id'=>$resources[$resource]->id,'kind'=>$resources[$resource]->kind,
+                        'skills'=>$resources[$resource]->skills??[],'slot'=>$slots[$slot]])->values()->all()];
+                BookingEvidence::create([...$data['payment'], 'event_id' => $event->id, 'verified_by' => $actor->id,'staff_assignment_snapshot'=>$staffSnapshot]);
                 foreach ($resources as $resource) {
                     ResourceReservation::create(['event_id' => $event->id, 'resource_id' => $resource->id, 'starts_at' => $event->starts_at, 'ends_at' => $event->ends_at]);
                 }
@@ -203,32 +209,5 @@ final class ConfirmBooking
         if ($from->ends_at->addMinutes((int) $route['travel_minutes'] + $extra)->greaterThan($to->starts_at)) {
             $this->fail('No cabe viaje, montaje y margen con el evento vecino.');
         }
-    }
-    private function match(array $slots, array $resources, callable $fits, string $message): array
-    {
-        if (count($slots) > count($resources)) {
-            $this->fail($message);
-        }
-        $assigned = [];
-        $search = function (int $slot, array &$seen) use (&$search, &$assigned, $slots, $resources, $fits): bool {
-            foreach ($resources as $i => $resource) {
-                if (isset($seen[$i]) || !$fits($slots[$slot], $resource)) {
-                    continue;
-                }
-                $seen[$i] = true;
-                if (!isset($assigned[$i]) || $search($assigned[$i], $seen)) {
-                    $assigned[$i] = $slot;
-                    return true;
-                }
-            }
-            return false;
-        };
-        foreach (array_keys($slots) as $i) {
-            $seen = [];
-            if (!$search($i, $seen)) {
-                $this->fail($message);
-            }
-        }
-        return $assigned;
     }
 }

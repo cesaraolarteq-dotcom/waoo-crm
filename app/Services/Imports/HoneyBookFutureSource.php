@@ -28,7 +28,7 @@ final class HoneyBookFutureSource
                 'source_status'=>$s['status']==='confirmed'?'confirmed':($s['status']==='cancelled'?'cancelled':null),'payments'=>[],'payment_warnings'=>[]];$errors=[];
             $error=function($field,$code)use(&$errors){$errors[]=['field'=>$field,'code'=>$code];};
             foreach($s as $field=>$v)if(mb_strlen($v)>(in_array($field,['services','characters','notes','payments'],true)?32768:255))$error($field,'field_length');
-            foreach(['honeybook_project_id','project_name','event_address','event_zip','services','balance_due_date'] as $field)if($s[$field]==='')$error($field,'source_required');
+            foreach(['honeybook_project_id','project_name','event_address','event_zip','services'] as $field)if($s[$field]==='')$error($field,'source_required');
             if($n['customer_name']===''||mb_strlen($n['customer_name'])>255)$error('client','invalid_name');
             if(!$n['customer_email']&&!$n['customer_phone'])$error('client','contact_missing');
             if($n['customer_email']&&!filter_var($n['customer_email'],FILTER_VALIDATE_EMAIL))$error('client_email','invalid_email');
@@ -47,7 +47,7 @@ final class HoneyBookFutureSource
                 $start=CarbonImmutable::parse(ChicagoTime::toIso($date,$s['start_time'],null,'time'));$end=CarbonImmutable::parse(ChicagoTime::toIso($date,$s['end_time'],null,'time'));
                 if(!$end->greaterThan($start))throw new \InvalidArgumentException();$n['starts_at']=$start->utc()->toIso8601String();$n['ends_at']=$end->utc()->toIso8601String();
             }catch(\InvalidArgumentException|ValidationException){$error('event_time','invalid_or_ambiguous_houston_window');}
-            try{$n['balance_due_date']=self::date($s['balance_due_date']);}catch(\InvalidArgumentException){$n['balance_due_date']=null;$error('balance_due_date','invalid_source_date');}
+            try{$n['balance_due_date']=$s['balance_due_date']===''&&isset($n['balance_cents'])&&$n['balance_cents']<=0?null:self::date($s['balance_due_date']);}catch(\InvalidArgumentException){$n['balance_due_date']=null;$error('balance_due_date','invalid_source_date');}
             $sum=0;$tuples=[];
             if($s['payments']!=='')foreach(explode(';',$s['payments']) as $index=>$raw){
                 try{$tuple=trim($raw);$parts=explode('|',$tuple);if(count($parts)!==3||trim($parts[2])===''||mb_strlen($parts[2])>120)throw new \InvalidArgumentException();
