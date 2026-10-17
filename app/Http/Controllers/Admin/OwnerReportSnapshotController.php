@@ -18,6 +18,7 @@ final class OwnerReportSnapshotController extends Controller
     public function show(Request $request, OwnerReportSnapshot $snapshot)
     {
         Sandbox::require();
+        \App\Services\Portal\PortalContext::requireTransport($request);
         RecordActor::authorize($request->user());
         abort_unless($snapshot->environment === 'test', 404);
         return response()->json($snapshot)->header('Cache-Control', 'no-store, private');

@@ -12,6 +12,7 @@ final class BookingSalesReport
     public function execute(User $actor, array $input): array
     {
         Sandbox::require();
+        \App\Services\Portal\PortalContext::requireTransport(request());
         RecordActor::authorize($actor);
         $period = ReportPeriod::resolve($input);
         // Filter AFTER finding the first confirmation: a later duplicate must never become a sale.
@@ -23,7 +24,10 @@ final class BookingSalesReport
                 $join->on('finance.id', '=', 'links.financial_revision_id')->on('finance.event_id', '=', 'bookings.event_id');
             })
             ->where('bookings.confirmed_at', '>=', $period['starts_at_utc'])->where('bookings.confirmed_at', '<', $period['ends_before_utc'])
-            ->orderBy('bookings.event_id')->get(['finance.currency', 'finance.lines_snapshot']);
+            ->orderBy('bookings.event_id')->get(['bookings.event_id', 'finance.currency', 'finance.lines_snapshot']);
+        $importedIds = DB::table('imported_project_links')->whereIn('event_id', $rows->pluck('event_id'))->pluck('event_id')->all();
+        $importedCount = $rows->whereIn('event_id', $importedIds)->count();
+        $rows = $rows->whereNotIn('event_id', $importedIds);
         $unknown = 0;
         $known = 0;
         $packages = [];
@@ -48,7 +52,7 @@ final class BookingSalesReport
         $packages = array_values($packages);
         usort($packages, fn ($a, $b) => strcmp($a['name'], $b['name']) ?: $a['service_variant_id'] <=> $b['service_variant_id']);
         return ['environment' => 'test', 'timezone' => 'America/Chicago', 'generated_at' => now()->toIso8601String(), 'period' => $period,
-            'basis' => 'first_booking.capacity_reserved.created_at', 'booking_count' => $rows->count(), 'package_coverage_complete' => $unknown === 0,
+            'basis' => 'first_booking.capacity_reserved.created_at', 'booking_count' => $rows->count(), 'imported_confirmation_count_excluded' => $importedCount, 'package_coverage_complete' => $unknown === 0,
             'package_unknown_booking_count' => $unknown, 'package_occurrence_count' => $unknown ? null : $known,
             'known_package_occurrence_count' => $known, 'packages' => $packages];
     }

@@ -40,6 +40,8 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::get('/leads/{lead}', [\App\Http\Controllers\Admin\LeadController::class, 'show'])->whereNumber('lead');
     Route::patch('/leads/{lead}', [\App\Http\Controllers\Admin\LeadController::class, 'update'])->whereNumber('lead');
     Route::post('/leads/{lead}/quick-book', [\App\Http\Controllers\Admin\LeadController::class, 'convert'])->whereNumber('lead');
+    Route::get('/reports/owner', [\App\Http\Controllers\Admin\OwnerReportReadController::class, 'index']);
+    Route::get('/reports/snapshots/{snapshot}/email-preview', [\App\Http\Controllers\Admin\OwnerReportReadController::class, 'preview'])->whereNumber('snapshot');
     Route::post('/reports/snapshots', [\App\Http\Controllers\Admin\OwnerReportSnapshotController::class, 'store']);
     Route::get('/reports/snapshots/{snapshot}', [\App\Http\Controllers\Admin\OwnerReportSnapshotController::class, 'show'])->whereNumber('snapshot');
     Route::get('/reports/bookings', \App\Http\Controllers\Admin\BookingSalesReportController::class);

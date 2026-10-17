@@ -106,6 +106,15 @@ class BookingSalesReportTest extends TestCase
         $this->report('period=week&anchor=2026-11-01')->assertJsonPath('booking_count', 0)
             ->assertJsonPath('period.starts_at_utc', '2026-10-26 05:00:00')->assertJsonPath('period.ends_before_utc', '2026-11-02 06:00:00');
     }
+    public function test_honeybook_import_confirmation_is_not_a_new_crm_sale(): void
+    {
+        $this->confirm($this->event->id); $this->link($this->event->id);
+        DB::table('imported_project_links')->insert(['project_key' => hash('sha256', 'synthetic-project'),
+            'event_id' => $this->event->id, 'customer_id' => $this->event->customer_id,
+            'domain_sha256' => hash('sha256', 'synthetic-domain'), 'created_at' => now(), 'updated_at' => now()]);
+        $this->report()->assertOk()->assertJsonPath('booking_count', 0)
+            ->assertJsonPath('imported_confirmation_count_excluded', 1)->assertJsonPath('packages', []);
+    }
     public function test_empty_report_is_known_zero_and_read_does_not_write(): void
     {
         $before = [DB::table('audit_entries')->count(), DB::table('ledger_entries')->count()];

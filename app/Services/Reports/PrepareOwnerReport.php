@@ -16,6 +16,7 @@ final class PrepareOwnerReport
     public function execute(User $actor, array $input): OwnerReportSnapshot
     {
         Sandbox::require();
+        \App\Services\Portal\PortalContext::requireTransport(request());
         $actor = RecordActor::authorize($actor);
         $data = RecordInput::validate($input, ['kind' => ['required', Rule::in(['weekly', 'monthly'])],
             'as_of' => 'required|date_format:Y-m-d|after_or_equal:2000-01-01|before:2101-01-01|before_or_equal:'.now()->setTimezone('America/Chicago')->toDateString()]);

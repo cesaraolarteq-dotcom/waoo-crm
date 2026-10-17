@@ -12,6 +12,7 @@ final class OperationalReport
     public function execute(User $actor, array $input): array
     {
         Sandbox::require();
+        \App\Services\Portal\PortalContext::requireTransport(request());
         RecordActor::authorize($actor);
         $period = ReportPeriod::resolve($input);
         $from = $period['starts_at_utc'];
