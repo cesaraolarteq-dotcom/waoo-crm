@@ -26,6 +26,9 @@ final class ReadQuotes
     public function show(User $actor, int $quoteId): array
     {
         QuoteInput::actor($actor); $q = Quote::findOrFail($quoteId);
-        return ['quote' => [...$q->toArray(), 'effective_status' => $q->effectiveStatus()], 'revisions' => $q->revisions()->orderByDesc('revision')->get()];
+        return ['quote' => [...$q->toArray(), 'effective_status' => $q->effectiveStatus()], 'revisions' => $q->revisions()->orderByDesc('revision')->get(),
+            'decisions'=>\App\Models\QuoteDecision::where('quote_id',$quoteId)->orderByDesc('id')->get(),
+            'presentations'=>\App\Models\QuotePresentation::whereIn('quote_revision_id',$q->revisions()->select('id'))->get()->map(fn($p)=>$p->only(['id','quote_revision_id','snapshot_sha256','pdf_sha256'])),
+            'conversion'=>\App\Models\QuoteConversion::where('quote_id',$quoteId)->first()];
     }
 }

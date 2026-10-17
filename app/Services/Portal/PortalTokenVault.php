@@ -10,8 +10,9 @@ final class PortalTokenVault
 {
     private static function binding(PortalGrant $grant): array
     {
-        return ['version' => 1, 'grant_id' => (int) $grant->id, 'event_id' => (int) $grant->event_id,
-            'customer_id' => (int) $grant->customer_id, 'expires_at' => $grant->expires_at->toIso8601String(), 'scopes' => $grant->scopes];
+        return ['version' => $grant->quote_revision_id === null ? 1 : 2, 'grant_id' => (int) $grant->id, 'event_id' => (int) $grant->event_id,
+            'customer_id' => (int) $grant->customer_id, 'expires_at' => $grant->expires_at->toIso8601String(), 'scopes' => $grant->scopes,
+            ...($grant->quote_revision_id !== null ? ['quote_revision_id'=>(int)$grant->quote_revision_id] : [])];
     }
     public static function seal(PortalGrant $grant, #[\SensitiveParameter] string $token): string
     {

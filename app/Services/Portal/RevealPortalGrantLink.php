@@ -23,6 +23,12 @@ final class RevealPortalGrantLink
                 $event = Event::whereKey($eventId)->lockForUpdate()->first();
                 if (!$event || (int) $event->customer_id !== (int) $grant->customer_id) throw new PortalLinkRejected(404, 'grant_not_found', 'No se encontró este enlace para el evento.');
                 if ($grant->revoked_at || !$grant->expires_at->isFuture()) throw new PortalLinkRejected(410, 'grant_inactive', 'Este enlace venció o fue anulado. Crea uno nuevo.');
+                if ($grant->quote_revision_id !== null) {
+                    \App\Services\Quotes\QuoteProtocol::portalGate();
+                    $r=\App\Models\QuoteRevision::find($grant->quote_revision_id);
+                    $q=$r?\App\Models\Quote::whereKey($r->quote_id)->lockForUpdate()->first():null;
+                    if (!$q||$q->event_id!==$eventId||$q->customer_id!==$grant->customer_id||$q->current_revision!==$r->revision) throw new PortalLinkRejected(410,'grant_inactive','Este enlace ya no corresponde a la cotización vigente.');
+                }
                 $token = PortalTokenVault::open($grant);
                 $origin = $this->origin();
                 Audit::recordFor($actor, 'portal.link_revealed', $grant, [], ['event_id' => $eventId, 'grant_id' => $grantId]);

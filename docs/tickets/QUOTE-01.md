@@ -1,6 +1,6 @@
 # QUOTE-01 · Versioned quotes the client can accept (Phase 2)
 
-Status: QUOTE A foundation source88d53f3 on codex/quote-01, API2d90794 published first (docs/QUOTE-01-API.md). Owner create/read/revise from existing audited event drafts, immutable prices/discounts, idempotency and bounded expiry implemented for review. Client send/accept/PDF and accepted-snapshot finance/capacity bridge are NOT delivered yet; whole QUOTE-01 remains incomplete. Sandbox/default off; no payments, resource holds or messages created by this increment.
+Status: backend A88d53f3 plus B/C5a5433d delivered for independent review on codex/quote-portal. API2d90794 and detailed112af8e/97348c2 published before code; docs/QUOTE-01-API.md and docs/QUOTE-PORTAL-API.md. Full377 tests/3523 assertions pass. Private quote presentation/PDF/decision, revision-only recoverable links and explicit accepted-snapshot finance→verified-payment/capacity are implemented. Claude UI, independent review, main merge, owner-approved consent wording and owner acceptance remain pending; whole QUOTE-01 is not complete. Sandbox defaults off; no live deployment/message/charge.
 
 ## Owner's real flow (Master Context)
 Inquiry → date → ZIP → service → time → availability → **price** → deposit → contract details → booking confirmed. A quote always shows: service, package price, travel fee, total, discount (only if one applies), final total, 50% deposit, payment method (Zelle preferred; card/pay-later +3% processing), and one clear next step. Prices are base + travel fee. Never invent prices or discounts.

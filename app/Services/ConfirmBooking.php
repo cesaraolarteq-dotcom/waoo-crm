@@ -50,6 +50,17 @@ final class ConfirmBooking
                     $this->fail('Revisa el costo de transporte; no se asume cero.');
                 }
                 $total = \App\Models\PriceVersion::whereIn('id', $services->pluck('price_version_id'))->sum('amount_cents') + $event->travel_fee_cents;
+                if ($conversion=\App\Models\QuoteConversion::where('event_id',$eventId)->first()) {
+                    $finance=\App\Models\FinancialRevision::where('event_id',$eventId)->orderByDesc('revision')->firstOrFail();
+                    $accepted=\App\Services\Quotes\QuoteAgreement::forEvent($event);
+                    $net=(int)\App\Models\LedgerEntry::where('event_id',$eventId)->where('environment','test')->where('kind','receipt')->sum('amount_cents')
+                        -(int)\App\Models\LedgerEntry::where('event_id',$eventId)->where('environment','test')->where('kind','refund')->sum('amount_cents');
+                    \App\Exceptions\RecordWriteRejected::unless((int)($data['financial_revision_id']??0)===$finance->id&&$finance->event_version===$event->version
+                        &&$finance->quote_revision_id===$conversion->quote_revision_id&&$finance->total_cents===$accepted['total_cents']
+                        &&$net>0&&(int)$data['payment']['amount_cents']===$net&&$data['payment']['reference']==='ledger:test:'.$eventId.':'.$finance->id,
+                        409,'Confirma esta cotización desde sus pagos reales y su revisión financiera vigente.');
+                    $total=$finance->total_cents;
+                }
                 if ((int) $data['payment']['amount_cents'] * 2 < $total && empty($data['review']['deposit_exception_reason'])) {
                     $this->fail('El depósito no alcanza el objetivo. Registra una excepción aprobada o completa el pago.');
                 }

@@ -20,4 +20,12 @@ final class QuoteController extends Controller
         $r = $service->execute($request->user(), $quote, $request->all(), (string) $request->header('Idempotency-Key'));
         return response()->json(['quote' => Quote::findOrFail($r->quote_id), 'revision' => $r], 201)->header('Cache-Control', 'no-store, private');
     }
+    public function send(Request $request,int $quote,\App\Services\Quotes\SendQuote $service)
+    {
+        return response()->json($service->execute($request->user(),$quote,$request->all(),(string)$request->header('Idempotency-Key')),201)->header('Cache-Control','no-store, private');
+    }
+    public function convert(Request $request,int $quote,\App\Services\Quotes\ConvertAcceptedQuote $service)
+    {
+        return response()->json(['financial_revision'=>$service->execute($request->user(),$quote,$request->all(),(string)$request->header('Idempotency-Key'))],201)->header('Cache-Control','no-store, private');
+    }
 }
