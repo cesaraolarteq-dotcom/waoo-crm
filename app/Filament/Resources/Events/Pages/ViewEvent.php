@@ -73,7 +73,8 @@ class ViewEvent extends Page
             'name' => ServiceVariant::whereKey($s->service_variant_id)->value('name'),
             'price' => Labels::money(PriceVersion::whereKey($s->price_version_id)->value('amount_cents')),
             'duration' => Labels::duration($s->duration_minutes),
-            'characters' => $s->characters->map(fn ($c) => $c->quantity.' × '.$c->character_name_snapshot)->implode(', '),
+            // OUTFIT-01: "Mickey (Disneyland)"; the owner note is private and only shown here, never to the client.
+            'characters' => $s->characters->map(fn ($c) => $c->quantity.' × '.$c->character_name_snapshot.(filled($c->outfit) ? ' ('.$c->outfit.')' : '').(filled($c->note) ? ' — nota: '.$c->note : ''))->implode(', '),
             'ready' => $s->operational_ready,
         ]);
         $units = Unit::query()->whereIn('id', $e->reservations->pluck('resource_id'))->orderBy('kind')->orderBy('name')->get()

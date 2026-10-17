@@ -1,4 +1,7 @@
 <x-filament-panels::page>
+    @if ($leadSummary && ! $result)
+        <div class="wmoney-warn" role="status">Convirtiendo el prospecto de <b>{{ $leadSummary['name'] }}</b>. En la web eligió: {{ $leadSummary['package'] ?: 'sin paquete' }}{{ $leadSummary['type'] ? ' · '.$leadSummary['type'] : '' }}@if ($leadSummary['travel']) · vio transporte {{ $leadSummary['travel'] }}@endif. Revisa paquete, hora, transporte y depósito: nada se toma de la web sin tu confirmación.</div>
+    @endif
     {{ $this->content }}
     @if ($result)
         <div class="wqb-done" x-data="{ lang: @js($result['locale']), copied: '' }">

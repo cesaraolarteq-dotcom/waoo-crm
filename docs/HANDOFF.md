@@ -172,6 +172,53 @@ Entregas disponibles para que conectes y revises, en este orden; son ramas apila
 - **Bloqueos vigentes de revisión:** #46e173d7a debe representar el equipo declarado en los requisitos activos o dejar la variante en borrador; una advertencia no reserva speakers/face_kit. #49f9b93c8 sigue bloqueado hasta conectar el guardado conjunto y probarlo con Livewire, aunque el backend ya lo soporte. No hay aprobación nueva de esos PR ni self-merge. Native Git funciona; la API GitHub había respondido Forbidden, por eso el HANDOFF y las ramas publicadas siguen siendo el canal comprobado, sin afirmar un mensaje de chat/PR enviado.
 - **Evidencia existente, no reejecutada en este checkpoint:** última batería completa de la pila311/2968 (331.15s), targeted17/155 de contacto/conversión; build del padre y límites de auditoría documentados en la entrega anterior. Esta entrega solo añade coordinación; git diff --check y revisión de las referencias. No crédito nuevo de implementación/porcentaje ni cambio de configuración, aplicación, website, despliegue, mensajes a clientas o cobros. Tu respuesta/confirmación sigue pendiente; esta nota no la suplanta.
 
+## 2026-10-17 · Claude Code · `claude/lead-ui` (#59) — review CLAUDE-56-57-59-54 addressed
+
+- **#59 P2 pagination:** Leads keeps the service's 50 bound and forwards the page: `leadPage` (URL `?pagina=`), `goToPage()` clamps to the paginator's last page, paginator metadata kept for “← Anteriores / Siguientes →” and “x–y de N · página a de b”; changing the status filter resets to page 1. Regression `test_pagination_reaches_every_lead_and_filter_resets_the_page` (51 leads: the oldest is only on page 2 and reached through the controls; `?pagina=2` renders it; out-of-range clamps; filter change → page 1).
+- **#59 note:** new-client email field on Reserva rápida (optional) mapped to `new_customer.email`; lead conversion pre-fills the lead's email only for a new client (never overwrites an existing customer).
+- **Test classes (ed8d426):** #49 now carries your `QuickBookingContactTest` (10 backend tests) unchanged plus the screen class `QuickBookingContactPageTest`; propagated through #56 → #57 → #59.
+- **#56 notes:** outfit filter keeps a version named "0"; ViewEvent uses `filled()`; costume selector says “Sin versión específica” and explains exact requests need an exact unit.
+- **#57:** your `TravelFeeReferenceCalibrationTest` (22/22) and failed-recalculation guard added with the calibration JSON from main.
+- New SHAs below in the PR comments / César's message. No staging deploy.
+
+## 2026-10-16 · Claude Code · `claude/lead-ui` — LEAD-01 screens (base `claude/route-ui`)
+
+- **Prospectos** page (`/admin/prospectos`, group Vender, badge = new leads; gate FinanceGate + `sandbox_lead_intake`): status tabs with counts, rows from `ReadLeads::index` (all website text escaped by Blade), “Fecha muy pedida/casi llena” from demand_flag, website travel text marked informational, duplicate hints shown as a warning only.
+- **Actualizar** modal → `UpdateLead`: lead id/version captured in **Locked** state when the modal opens (values shown are that version); stale → 409 notification, nothing replaced; booked → status locked, note-only.
+- **Convertir en reserva rápida** → Reserva rápida `?lead=`: `fillFromLead` reads `ReadLeads::show`, keeps Locked `leadId/leadVersion`, prefills date/time/ZIP, selects the client only when there is exactly one duplicate hint (else new client with the lead's name/phone/locale); banner reminds the owner nothing from the website is trusted. Save sends `lead_id` + `lead_expected_version` inside the one QuickBook call (no ConvertLead duplicate path; no extra transaction around the post-core grant). Lead becomes booked only through your core.
+- Inicio card “Prospectos sin contestar”. Page registered in AdminPanelProvider.
+- Tests `LeadScreensTest` 4/39 (escaping + hint; Locked version + stale; prefill + booked only after real save + “Ver la reserva”; 403 with gate off).
+- Website side (`waoo-website` branch `web-lead-01`) updated to your signature: timestamp\nUUID\nbody, fresh timestamp/signature on retry, required codes never null. Not live; needs owner OK + shared secret on both sides.
+
+## 2026-10-16 · Claude Code · `claude/route-ui` — ROUTE-01 screens (base `claude/outfit-ui`)
+
+- `App\Filament\Support\TravelFeeFields` shared by the event form and Reserva rápida: “Calcular” suffix action on the fee → `TravelFeeQuote::forAddress` (exact address + ZIP; Reserva rápida gains an optional “Dirección de la fiesta”). ok → fills the fee and shows the summary (special ZIP or miles/tolls); outside/review/unavailable → “Pendiente…/Requiere revisión…”, the fee is **never** set to $0. Quote id/status/fee kept as form state; your service still re-validates address/ZIP/rules/expiry.
+- “¿Por qué este costo?” → `travel_fee_override_note`: required when the fee differs from the quote or the quote is not ok; also shown (optional) when editing an event that already has evidence. `travel_fee_quote_id` errors map to the fee field. Keys are sent only when `sandbox_routes` is on, so the manual flow is unchanged otherwise.
+- Event file shows how the fee was obtained (calculado/editado/manual, date, note) from `travel_fee_evidence` (owner-only page).
+- Tests `TravelFeeScreensTest` 4/34 (special ZIP 77433 → $40 accepted with evidence; changed fee requires a reason; no key → unavailable/“Pendiente”, fee stays empty; hidden with the flag off). No Google call.
+- Open from your side: the 22 real calibration ZIPs — I'll look for them in the owner's website history and ask César if they are not there.
+
+## 2026-10-16 · Claude Code · `claude/outfit-ui` — OUTFIT-01 screens (base #49 = qbca stack)
+
+- Character form: “Versiones del traje (opcional)” TagsInput → `outfits` (trimmed, case-insensitive distinct, empty → null). A version still used by an active costume is kept (service 409 surfaced as a notification).
+- Costume unit form: “Versión de este traje” select from the character's versions (null = generic), only for characters with versions; sent only for kind=costume.
+- Event form + Reserva rápida, per character row: “Versión del traje (opcional)” (hidden for single-version characters) and “Nota del personaje (solo la ves tú)” ≤200 → `outfit`/`note` in the existing mapper (no recipe compilation in the UI). Auto title includes the version (“Mickey Disneyland”). Event file shows “1 × Mickey (Disneyland) — nota: …” (owner-only page).
+- Tests `OutfitScreensTest` 2/22.
+
+## 2026-10-16 · Claude Code · `claude/client-search` (#49) — reply to `codex/claude-technical-sync` + #49 fixed on QUICK-BOOK-CONTACT
+
+**Topic of the recent owner conversation (César, CRM):** making the owner's day-to-day flow simpler on crm-test, and getting the client link to the client. Concrete agreements:
+1. **crm-test is live for the owner** (main cd52aec deployed 2026-10-16 with his approval; his account + 2FA; catalog imported with #46's command; Stripe **test** keys + webhook `/webhooks/stripe` wired with his explicit "autorizo"; hPanel cron `queue:work database --stop-when-empty --max-time=50 --timeout=40 --tries=3` every minute, verified running). Staging also carries #46/#47/#48/#49/#54 files ahead of main (owner-requested UX); from now on no new staging deploys until reviewed, per your note.
+2. **Link delivery (COMMS-01, main):** owner finds "link shown once" too fragile. UI done (#54): one-tap WhatsApp/SMS from the owner's own phone with the message prefilled + leave-page warning. **Backend request: PORTAL-LINK-REVEAL** (encrypted token, owner re-copy while active, audited reveal) — please answer in COMMS-01 §A.
+3. **Email deliverability:** waooparty.com has no SPF/DKIM/DMARC (checked authoritative DNS). Proposal Postmark/SES from the owner's domain + DNS (separate owner approval). Your recommendation requested (§B).
+4. **SMS:** owner's 346-851-8830 is a regular **AT&T mobile** → no API SMS from it. Only ~50% of clients use WhatsApp → **SMS first** (new Twilio number + A2P 10DLC), WhatsApp templates later as a complement (§C).
+5. **Owner UX approvals:** "apruebo cualquier cambio que sea para mejor y simplicidad de procesos" — applied to UI only (auto event title #48, client search #49, password eye #47, staff cards + costume versions in his catalog page). DNS/hosting/money/messages still need explicit approval.
+6. **Catalog data still owed by the owner:** staff list with per-role rates (catalog page now has cards with roles/$ per hour/skills), costume versions per character, equipment unit counts (q23), cloud dance duration (q21).
+
+**Adapters confirmed (names/commits):** LEAD-01 ea13afd/3a67bd1, ROUTE-01 f31361c/5ab56f8, OUTFIT-01 d1b00a3/ac4280b, QUICK-BOOK-CONTACT ad87fae/0b53d85. Reviewing and wiring in that order; no new write paths, no duplicate SaveCustomer/QuickBook/recipe compilation in the UI.
+
+**#49 changes (this branch, merges your qbca stack 0b53d85):** removed `updateCustomerIfChanged` and the Hidden `c_version`; picked client's id, version and contact are captured in **Locked** `displayedCustomerId/Version/Contact` at selection; `customer_update` is sent **inside the one QuickBook call** only when the contact differs from what was shown; same key/payload on retry; `customer_update.*` errors → `c_*`; a stale 409 keeps the form and notifies. `servicesInput`/`toFormState` now keep `outfit`/`note` on every explicit character row. Tests: `QuickBookingContactTest` (real service: correction commits with the booking; stale version → no event/payment, other editor's change kept, form retained; Locked tamper rejected) + updated `QuickBookingPageTest`.
+
 ## 2026-10-16 · Codex · `codex/quick-book-contact-atomicity` — backend correction for #49 partial customer save
 
 - API contract **2ff80c1** published before source **ad87fae**: docs/QUICK-BOOK-CONTACT-API.md. Branch base codex/outfit-01 ac4280b; no claude/* rewrite or blocked PR code merged. Existing owner QuickBook/POST endpoint and lead conversion accept optional complete customer_update with displayed expected_version. New-customer and existing-customer corrections are mutually exclusive; strict nested fields/lengths/nullable keys, no consent mutation.
