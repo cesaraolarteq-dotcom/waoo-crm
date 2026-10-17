@@ -1,6 +1,6 @@
 {
  "_about": "Temporary owner progress view (prototype tab 'Avance del proyecto'). Phases = docs/PROJECT_PLAN.md §18. Each agent updates its own evidence; Claude renders. Rules: a design/contract doc counts 0; a part counts only with a tested commit; review, merge to main and owner acceptance are separate steps. Phase % = sum(weight × stage score) / sum(weight).",
- "updated": "2026-10-16",
+ "updated": "2026-10-17",
  "stage_scores": {
   "backend": 0.35,
   "ui": 0.35,
@@ -197,22 +197,22 @@
      "weight": 3,
      "agent": "Codex+Claude",
      "backend": "ea13afd",
-     "ui": "4b4d48b",
+     "ui": "d04561a",
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "blocker": "Backend Codex ea13afd (API 380b6fe); pantallas Claude #59 4b4d48b; web waoo-website web-lead-01 e4dd1f3 (apagado). Falta: revisión de Codex de las pantallas, secreto compartido, OK de César para subir la web."
+     "blocker": "Pantallas #59 d04561a (paginación + correo) esperan re-revisión de Codex; web web-lead-01 apagada; secreto compartido y OK de César pendientes."
     },
     {
      "name": "Costo de transporte por ZIP dentro del CRM",
      "weight": 2,
      "agent": "Codex",
      "backend": "f31361c",
-     "ui": "claude/route-ui",
-     "reviewed": false,
+     "ui": "f096c04",
+     "reviewed": true,
      "merged": false,
      "accepted": false,
-     "blocker": "Backend Codex f31361c (API 97c84ac); pantallas Claude #57. 22 casos de calibración publicados (docs/calibration, #58). Falta: revisión, llave de Google en crm-test (permiso), prueba real."
+     "blocker": "Pantallas #57 aprobadas por Codex; calibración 22/22 en pruebas. Falta fusionar, llave de Google en crm-test (permiso) y prueba real."
     },
     {
      "name": "Cotizaciones con versiones",
@@ -251,7 +251,7 @@
      "merged": true,
      "accepted": false,
      "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996",
-     "outfit_versions": "Codex d1b00a3 (API 7c8dcb1) + Claude #56: versiones de traje y nota interna; pendiente revisión."
+     "outfit_versions": "Codex d1b00a3 + Claude #56 b2f5ba2 aprobado por Codex (notas aplicadas)."
     },
     {
      "name": "Motor sin choques (habilidades, trajes, vehículos, concurrencia)",
@@ -365,7 +365,8 @@
      "ui_review_evidence": "Codex exact #42 4ff9d13 / #43 a16166d: full MariaDB 235 tests / 2156 assertions pass; opt-in probes reproduce stale unseen-address approval (R1) and requested-time DST error (R2). See docs/reviews/CLAUDE-42-43.md.",
      "ui_fix_evidence": "Codex implementation bf2ffac/7ebcf2c chosen explicitly; integrated exact bdc6c9e with Claude2d19000. Full 254/2328; server resolves Houston local time with CDT/CST choice. Both HANDOFF histories retained.",
      "ui_fix_reviewed": true,
-     "ui_fix_review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed."
+     "ui_fix_review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed.",
+     "link_recovery": "Codex 68c02a5 + Claude #54 aprobado por Codex (81771b2)."
     },
     {
      "name": "Reserva rápida (tu mitad + la de la clienta)",
@@ -384,7 +385,7 @@
      "ui_fix_evidence": "Codex implementation bf2ffac/7ebcf2c chosen explicitly; integrated exact bdc6c9e with Claude2d19000. Full 254/2328; server resolves Houston local time with CDT/CST choice. Both HANDOFF histories retained.",
      "ui_fix_reviewed": true,
      "ui_fix_review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed.",
-     "contact_atomicity": "Codex ad87fae (API 2ff80c1) + Claude #49 1ebafe0: corrección de contacto dentro de QuickBook; pendiente revisión de Codex."
+     "contact_atomicity": "Codex ad87fae + Claude #49 619720f (aprobado; clases de prueba de contacto conservadas)."
     }
    ]
   },
