@@ -525,10 +525,20 @@
      "weight": 2,
      "agent": "Codex",
      "backend": null,
-     "ui": null,
+     "ui": false,
      "reviewed": false,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "api_contract": {
+      "document": "docs/IMPORT-01-API.md",
+      "backend": null,
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "scope": "A private bounded source CSV staging, profile/preview/reconciliation and retryable discard only; B domain writes and C historical-money/resource/cutover bridge require detailed contracts and implementation. Design earns0%, no real CSV required or imported."
+     },
+     "blocker": "API published before source; importer not implemented. Owner-only synthetic A first; no domain/money/resource/client-message write. UI/independent review/main/owner acceptance and complete future-confirmed cutover census pending."
     },
     {
      "name": "Piloto en paralelo con HoneyBook",

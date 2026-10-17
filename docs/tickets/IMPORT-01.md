@@ -1,6 +1,6 @@
 # IMPORT-01 · Bring future HoneyBook bookings into the CRM before the pilot (Phase 5)
 
-Status: contract proposal by Claude (mapping UI, owner review screen) for Codex (importer, reconciliation). Owner action needed: export from HoneyBook (projects/clients/payments CSV) — no HoneyBook credentials in chat or git.
+Status: A API published before implementation in docs/IMPORT-01-API.md (private bounded CSV staging/profile/preview/reconciliation/discard). No importer/domain write or completion credit yet. Claude reviews/builds the mapping/preview screens after backend delivery. B/C detailed contracts and source-money/resource reconciliation still required. No actual export needed for synthetic development; a later owner-only real projects/clients/payments upload is separate, with no credentials in chat/git.
 
 ## Goal
 Every **future confirmed** HoneyBook event must exist in the CRM (and block staff/costumes/equipment) before the CRM takes new bookings in parallel, so nothing is double-booked. ~40 events/month; history (~250 archived) is IMPORT-02 / Phase 8, not this ticket.
