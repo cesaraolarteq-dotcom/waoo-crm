@@ -29,7 +29,7 @@ final class TravelFeeFields
             ->rule('regex:/^\d{1,7}(\.\d{1,2})?$/')->validationMessages(['regex' => 'Escribe solo el número, por ejemplo 40 o 40.50.'])
             ->helperText(fn (Get $get) => self::message($get) ?? $help);
         if (self::enabled()) {
-            $field->suffixAction(Action::make('quoteTravel')->label('Calcular')->icon('heroicon-o-map')
+            $field->suffixAction(Action::make('quoteTravel')->label('Calcular')->tooltip('Calcular el costo de transporte con la dirección')->icon('heroicon-o-map')
                 ->action(fn (Get $get, Set $set) => self::quote($get, $set)));
         }
 
