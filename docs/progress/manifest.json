@@ -279,7 +279,15 @@
       "accepted": false,
       "scope": "Immutable private quote presentation/PDF, exact revision-scoped legacy-compatible recoverable grants, client accept/reject evidence and explicit exact accepted-to-finance binding; actual ledger and all ordinary capacity checks, visible contract discounts, unchanged catalog agreement.",
       "verification": "Full377 tests /3523 assertions PASS, exit0,461.90s, PHP8.3/MariaDB11.8, source5a5433d. New32 cases with actual decision/revise/revoke/conversion races, audit/crypto/storage rollback, corrupt PDFs/consent/customer drift, exact money, busy resources/short-notice, unchanged legal terms, fake Checkout and populated SQLite roundtrip. Strict Composer/33 PHP syntax/diff pass. Local guarded310000/320000 +up200. No browser/provider/remote-CI/deploy or owner acceptance.",
-      "remaining": "Claude independent review; required owner/portal UI with Locked displayed versions/hashes and stable retry UUID; owner-approved concrete EN/ES outcome consent remains empty. No main merge or whole-phase completion."
+      "remaining": "Claude independent review; required owner/portal UI with Locked displayed versions/hashes and stable retry UUID; owner-approved concrete EN/ES outcome consent remains empty. No main merge or whole-phase completion.",
+      "client_projection": {
+       "backend": "3460e59 (same as integrated5dbb7d2)",
+       "branch": "codex/quote-client-view-model",
+       "ui": "Claude #68 068a87b preview, not yet API-wired/approved",
+       "reviewed": false,
+       "scope": "Exact #68 view-model, safe formatted EN/ES display/Houston dates, frozen consent, state-aware actions, compatible pinned API hashes. Decision JS still needs fields/explicit rejection consent/PDF/UUID binding; no consent approval inferred.",
+       "verification": "Four new cases included in targeted20/188 and full465/3973 PASS639.22s at integrated5dbb7d2. Isolated quote3460e59 adapter/test/controller blobs identical; no independent full-suite claim."
+      }
      }
     },
     {
@@ -508,6 +516,13 @@
       "note": "COMMS-01 A/B/C answered; proposed owner-only recopy API published before implementation. Manual phone apps first; Postmark/email auth recommended, SMS automation/WhatsApp eligibility later. No implementation credit/provider/DNS/send. #54 b30d209 review requests recipient/lifecycle fixes;41/446 tests +build pass, diagnostic2/5 reproduces bug; no new full/browser/provider proof.",
       "recovery_evidence": "Backend A follow-up68c02a5 on phase4 row; full326/3148. This documentation entry itself counts0; email/SMS/WhatsApp provider implementation remains pending.",
       "latest_ui_review": "Codex approves #54 exact81771b2: recipient parser fixed, global unload/sent state removed, explicit owner same-link reveal and shared clipboard fallback connected. See docs/reviews/COMMS-01-54-REVIEW-V2.md. No browser/provider/deployment/merge/owner acceptance claimed."
+     },
+     "mail_design_review": {
+      "source": "Claude #69 d5e54d1",
+      "review": "Codex 42445d8 /docs/reviews/MAIL-69-REVIEW.md",
+      "preview_reviewed": true,
+      "verification": "Original3 tests/97 assertions pass,0.295s in isolated temp app/PHP8.3; no DB rows/shared database runner, no sends.",
+      "remaining": "Preview-only approval,0 root completion credit. Subject ES72>60 with actual fixture; approved/versioned renderer, strict variables/plain text/has_balance/server totals, jobs/provider/DNS/owner activation still pending."
      }
     },
     {
@@ -524,7 +539,7 @@
      "name": "Importar eventos futuros de HoneyBook",
      "weight": 2,
      "agent": "Codex",
-     "backend": null,
+     "backend": "4e23e9b",
      "ui": false,
      "reviewed": false,
      "merged": false,
@@ -536,9 +551,9 @@
       "reviewed": false,
       "merged": false,
       "accepted": false,
-      "scope": "API6339da3/0d192da/544092a published before implemented A7e3133b. API design itself earns0%; see staging_foundation for tested source. B/C domain money/capacity/cutover still pending."
+      "scope": "Original generic A API published before source7e3133b. Fixed24 source/B/C APIe860fc9 before source4e23e9b; source contract main6509d91/#67. API documents themselves earn0%."
      },
-     "blocker": "Revisión privada CSV A7e3133b entregada (442 pruebas), pendiente Claude/UI. Faltan B: crear/vincular eventos con dinero histórico y C: conciliar recursos y cobertura futura completa. Importador/fase no terminados; sin archivos reales, envíos ni despliegue.",
+     "blocker": "Backend fixed24 con dinero histórico/capacidad/conciliación entregado; falta revisión de Claude, UI, conciliación local del CSV real y testimonio de cobertura completa de César antes del piloto. No importación real ni aceptación/despliegue.",
      "staging_foundation": {
       "api": "6339da3 /0d192da /544092a before source",
       "backend": "7e3133b",
@@ -548,7 +563,18 @@
       "accepted": false,
       "scope": "IMPORT A: owner-only private bounded source CSV/profile/preview/coverage/conflicts/discard, immutable source and retry metadata. No customer/event/finance/ledger/contract/grant/resource/message or domain import.",
       "verification": "Full442 tests /3739 assertions PASS, exit0,535.05s, PHP8.3/MariaDB11.8, source7e3133b. Added65 importer cases incl two actual process races, exact money/DST/strict CSV bounds, private SQL/audit/storage/cleanup failures, historical retry and no-domain-write; SQLite populated roundtrip. Strict Composer/22 PHP syntax/diff pass. Local guarded330000 +up200; import flag disabled. No browser/provider/remote-CI/Hostinger max-load/real export/owner acceptance.",
-      "remaining": "Claude independent review/private upload-profile-preview UI; B explicit source project domain linkage and imported money, C normal resource reconciliation and complete source cutover census. No root backend/whole-phase completion credit for partial importer."
+      "remaining": "Original A remains compatible; fixed24/source domain/capacity delivery now recorded in future_source_backend. Independent review/UI/actual source completeness and owner pilot acceptance still pending."
+     },
+     "future_source_backend": {
+      "api": "e860fc9",
+      "backend": "4e23e9b",
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "scope": "Exact24 owner CSV, explicit immutable historical source agreement/ledger, versioned customer/mapping/draft import, normal capacity with real contention correction, source/imported count+money coverage and retryable private artifact deletion. No fake verified payment or CRM signature; new CRM money/contracts/quote/links blocked pending cutover contract.",
+      "verification": "Full465 tests/3973 assertions PASS, exit0,639.22s, PHP8.3.35/MariaDB11.8, integrated source5dbb7d2 (IMPORT4e23e9b plus quote adapter). Targeted20/188 PASS28.773s and earlier38/354 include source normalization/SQLite/legacy quote portal. Strict Composer/39 PHP syntax/diff pass; guarded local340000 migration and container /up200, import flag disabled. No source changes after final full run.",
+      "remaining": "Claude review/private mapping+resource screens; local actual export reconciliation and full source attestation; owner pilot acceptance. No real export in git/logs/chat; no public availability activation."
      }
     },
     {
