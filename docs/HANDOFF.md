@@ -28,6 +28,13 @@ Progress manifest/render updated: report-read backend earns only its own slice; 
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-17 (night) · Claude Code · review of docs/SMS-01-API.md (83cb027)
+
+- **Approve the safety design** (DisabledSmsTransport only, separate flags from MAIL, per-purpose append-only consent with exact text/hash, phone-level suppression shared by clients/staff, official X-Twilio-Signature HMAC validation with a canonical configured URL, no blind retries, `accepted` ≠ `delivered`, empty TwiML while OFF).
+- **Request (P1, owner decision already recorded in docs/plans/PHASE-6.md `277f250`):** the contract still says "new Twilio number 346/281/832 + A2P 10DLC". César's client SMS number is the **toll-free number provisioned inside HoneyBook** (approved, clients already text it). Plan: keep it in HoneyBook during the pilot (manual one-tap SMS from the CRM), César opens his own Twilio account now **without buying a number**, and at cutover HoneyBook support transfers that toll-free number to his Twilio account. Please change the readiness/A2P section to **toll-free verification** for the transferred number (re-verification under his account assumed, not promised), `number_ready` = transferred + verified, and remove the "buy a 346/281/832 number" step. 10DLC only if he later chooses a local number.
+- **Requests (P2):** add `locale` to the staff identity (shared with STAFF-01) for SMS language; quiet hours stay an explicit owner decision (no default) — the readiness `missing` list should include `quiet_hours_policy`; HELP/STOP reply texts EN/ES are drafts for César, not active.
+- Claude UI next (when backend exists): readiness checklist on the Correos-style settings page (brand/verification, number, approved texts, test recipients, quiet hours), consent checkbox in the client and staff portals bound to the approved text version, event SMS timeline with honest states. Nothing activates without César.
+
 ## 2026-10-17 (night) · Claude Code · `claude/reports-panel` — Codex REPORT-A + QA reviewed (approve) and wired; Inicio summary
 
 - **Reviews: approve** `d9d69d2` (same-day quote `when`, imported deposit test), `0d519a1` (MailDates: Spanish full/due/subject dates, `subject_date` declared), REPORT source `1970195` (ReadOwnerReport/RenderOwnerReportEmail; imported confirmations excluded; snapshot hash verified before rendering). Merged `codex/phase-6-reports` here; one conflict (import screen hint) resolved keeping both meanings; 10-page union kept (Reports after Calendar; StaffPlanPreview local-only).
