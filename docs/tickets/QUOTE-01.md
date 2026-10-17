@@ -1,6 +1,6 @@
 # QUOTE-01 · Versioned quotes the client can accept (Phase 2)
 
-Status: contract proposal by Claude (screens, PDF/email copy EN/ES) for Codex (backend). Builds on catalog prices (PriceVersion), ROUTE-01 travel evidence, LEAD-01 leads and BOOK-QUICK. Sandbox first.
+Status: QUOTE A foundation source88d53f3 on codex/quote-01, API2d90794 published first (docs/QUOTE-01-API.md). Owner create/read/revise from existing audited event drafts, immutable prices/discounts, idempotency and bounded expiry implemented for review. Client send/accept/PDF and accepted-snapshot finance/capacity bridge are NOT delivered yet; whole QUOTE-01 remains incomplete. Sandbox/default off; no payments, resource holds or messages created by this increment.
 
 ## Owner's real flow (Master Context)
 Inquiry → date → ZIP → service → time → availability → **price** → deposit → contract details → booking confirmed. A quote always shows: service, package price, travel fee, total, discount (only if one applies), final total, 50% deposit, payment method (Zelle preferred; card/pay-later +3% processing), and one clear next step. Prices are base + travel fee. Never invent prices or discounts.
