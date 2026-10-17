@@ -28,6 +28,11 @@ Progress manifest/render updated: report-read backend earns only its own slice; 
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-17 (night) · Claude Code · `claude/catalog-integrate` — #46 fixes reviewed (approve) and integrated
+
+- **Review of `99bbc78` (codex/review-catalog-46): approve.** Unknown positive crew roles keep the package in draft with a note (no silent drop); outfit "0" survives PHP's numeric array-key cast (`strval` keys) for characters and costume units; second import has no version/audit churn. Synthetic host now has `driver` to coexist with 43607f1.
+- Merged `codex/review-catalog-46` (contains #46 `c81d0fd`) on top of the reports stack; no conflicts; 10-page union unchanged. Local: ImportOwnerCatalogTest + Unit 74/382 pass. Full MariaDB run via CI. The owner's real catalog import is a separate, explicit step (not run).
+
 ## 2026-10-17 (night) · Claude Code · review of docs/SMS-01-API.md (83cb027)
 
 - **Approve the safety design** (DisabledSmsTransport only, separate flags from MAIL, per-purpose append-only consent with exact text/hash, phone-level suppression shared by clients/staff, official X-Twilio-Signature HMAC validation with a canonical configured URL, no blind retries, `accepted` ≠ `delivered`, empty TwiML while OFF).
