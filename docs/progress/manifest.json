@@ -264,7 +264,7 @@
      "weight": 3,
      "agent": "Codex+Claude",
      "backend": "5a5433d",
-     "ui": "de2f347",
+     "ui": "6b5f876",
      "reviewed": false,
      "merged": false,
      "accepted": false,
@@ -280,7 +280,7 @@
       "remaining": "Normal CI/merge of A screens plus QA22bf87d; B/C5a5433d backend delivered separately for review/UI, no main/owner acceptance.",
       "review_evidence": "Claude approves A88d53f3; Codex approves #65 exact85abaa4 in ddf5291. QA-only22bf87d adds stale form UUID and Locked tamper checks,7/68 pass; original22/158 +Vite/Composer pass. A-only approval, B/C independent review/UI still pending."
      },
-     "blocker": "A aprobado. B/C backend 5a5433d + view-model; página real de la clienta /portal/quote (#68 de2f347) aprobada por Codex (32/308). Falta: merge a main de la pila #65/#68 con su backend, consentimiento aprobado por César y aceptación. Consentimiento vacío por defecto sigue desactivado.",
+     "blocker": "Página de la clienta aprobada y en main (#73). Tu parte (preparar/copiar enlace, PDF, anular, decisión, pasar a montos) hecha en 6b5f876 (#78), verificada de punta a punta en navegador; falta revisión de Codex, consentimiento aprobado por César (#77) y aceptación.",
      "portal_financial_bridge": {
       "api": "112af8e /97348c2 before implementation",
       "backend": "5a5433d",
@@ -514,7 +514,7 @@
      "agent": "Codex+Claude",
      "backend": "b30e1cb",
      "ui": "d5b5aae",
-     "reviewed": false,
+     "reviewed": true,
      "merged": false,
      "accepted": false,
      "comms_01_contract": {
@@ -544,7 +544,7 @@
       "merge_requirement": "One ->pages union retaining Leads, Quotes, QuoteDetail, EmailTemplates alongside Dashboard/Calendar/QuickBooking/ContractTemplates. Only add each class with its source. No whole newer #59/#65 review claimed.",
       "remaining": "Read-only synthetic settings only; no root backend/UI completion credit. Real outbox API, event timeline, bounce card, allow-list and approved mail activation still pending. Subject ES72>60 remains nonblocking for draft preview."
      },
-     "blocker": "Base de envío de Codex (outbox cifrado, 3 recordatorios manuales, pausa, lectura de avisos; b30e1cb, 494/4120) revisada y aprobada por Claude. Pantallas: correos en la ficha del evento, pausa, programar recordatorios, avisos en Inicio y \"¿Listos para enviar?\" (PR claude/mail-ui). Falta: textos aprobados por César, proveedor/DNS, lista de prueba, activación explícita, los otros 6 correos automáticos y la recepción autenticada de rebotes. Nada se envía."
+     "blocker": "Base + pantallas aprobadas por Codex (#74); falta llegar a main (#81). Para enviar de verdad: textos aprobados, proveedor/DNS, lista de prueba y activación de César; los 6 correos automáticos y rebotes los hace Codex."
     },
     {
      "name": "Recordatorios (7 días, saldo, gracias + reseña)",
@@ -562,8 +562,8 @@
      "agent": "Codex+Claude",
      "backend": "fb6f319",
      "ui": "b6bcc71",
-     "reviewed": false,
-     "merged": false,
+     "reviewed": true,
+     "merged": true,
      "accepted": false,
      "api_contract": {
       "document": "docs/IMPORT-01-API.md",
@@ -574,7 +574,7 @@
       "accepted": false,
       "scope": "Original generic A API published before source7e3133b. Fixed24 source/B/C APIe860fc9 before source4e23e9b; source contract main6509d91/#67. API documents themselves earn0%."
      },
-     "blocker": "Backend fixed24 + resolución de la dueña (fb6f319, revisado y aprobado por Claude). Pantalla /admin/importar y confirmación de recursos de importados probadas (c7de7a7, b6bcc71; PR #71), pendiente revisión de Codex de estos cambios. CSV real revisado localmente: 23/23 importables con confirmación de estado y nota en 5 diferencias. Falta: revisión, merge, testimonio de cobertura de César e importación real en el piloto. Sin importación real ni despliegue.",
+     "blocker": "En main (#73, aprobado por Codex con R1/R2/C1). Revisado en navegador: dos botones arreglados (nombres reservados de Livewire) en #78. Falta: importación real en crm-test con el CSV corregido y aceptación de César.",
      "staging_foundation": {
       "api": "6339da3 /0d192da /544092a before source",
       "backend": "7e3133b",
@@ -683,7 +683,7 @@
      "weight": 1,
      "agent": "Codex+Claude",
      "backend": "1970195",
-     "ui": false,
+     "ui": "ba42fbb",
      "reviewed": false,
      "merged": false,
      "accepted": false,
@@ -692,7 +692,8 @@
       "api": "docs/REPORT-A-PANEL-API.md",
       "verification": "Source1970195: MariaDB44/300 green including concurrent snapshot race; underlying integration0d519a1 full600/29243 green. Build/lint/strict Composer pass. UI, cross-review, main merge and owner acceptance pending."
      },
-     "note": "Dynamic panel and immutable snapshot/email-preview backend tested; separate row tracks actual email delivery, still disabled. No invented wage rates or imported confirmations counted as new sales."
+     "note": "Dynamic panel and immutable snapshot/email-preview backend tested; separate row tracks actual email delivery, still disabled. No invented wage rates or imported confirmations counted as new sales.",
+     "blocker": "Backend 1970195 revisado y aprobado por Claude; pantalla Reportes + resumen en Inicio conectados (ba42fbb, #82), verificados en navegador con los servicios reales. Falta revisión de Codex de la UI, merge y aceptación."
     },
     {
      "name": "REPORT-A: envío del lunes y del mes",
