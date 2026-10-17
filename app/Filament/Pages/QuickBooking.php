@@ -389,7 +389,9 @@ class QuickBooking extends Page
         $p = $lead['submission']['payload'];
         $this->leadId = $lead['id']; $this->leadVersion = $lead['version'];
         $this->leadSummary = ['name' => $p['name'], 'package' => $p['package'] ?? '', 'type' => $p['event_type'] ?? '', 'travel' => $p['travel_estimate_text'] ?? null, 'message' => $p['message'] ?? null];
-        $state = ['date' => $p['event_date'] ?? null, 'start_time' => $p['start_time'] ?? null, 'postal_code' => $p['zip'] ?? null];
+        $state = ['date' => $p['event_date'] ?? null, 'start_time' => $p['start_time'] ?? null, 'postal_code' => $p['zip'] ?? null,
+            // Website event type (English label) → CRM type; anything unknown stays for the owner to choose.
+            'event_type' => \App\Filament\Pages\Leads::EVENT_TYPES[$p['event_type'] ?? ''][0] ?? null];
         $hints = $lead['duplicate_hints'] ?? [];
         if (count($hints) === 1) {
             $state += ['customer_mode' => 'existing', 'customer_id' => $hints[0]['customer_id']];

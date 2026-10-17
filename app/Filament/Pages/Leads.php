@@ -28,6 +28,10 @@ class Leads extends Page
     protected static ?string $title = 'Prospectos de la web';
     protected string $view = 'filament.pages.leads';
 
+    /** Website form event types (as sent) → [CRM event_type, Spanish label]. */
+    public const EVENT_TYPES = ['Birthday' => ['birthday', 'Cumpleaños'], 'Baby Shower' => ['baby_shower', 'Baby shower'], 'Gender Reveal' => ['gender_reveal', 'Gender reveal'],
+        'Corporate Event' => ['corporate', 'Corporativo'], 'Family Celebration' => ['other', 'Celebración familiar'], 'School Event' => ['other', 'Evento escolar'], 'Other' => ['other', 'Otro']];
+
     public const STATUS = ['new' => 'Nuevo', 'contacted' => 'Contactado', 'quoted' => 'Cotizado', 'booked' => 'Reservado', 'lost' => 'Perdido'];
 
     #[Url]
@@ -83,7 +87,8 @@ class Leads extends Page
 
             return (object) ['id' => $l['id'], 'status' => $l['status'], 'version' => $l['version'], 'note' => $l['owner_note'] ?? null, 'event_id' => $l['booked_event_id'] ?? null,
                 'name' => $p['name'] ?? '', 'phone' => $p['phone'] ?? '', 'email' => $p['email'] ?? '', 'date' => $p['event_date'] ?? null, 'time' => $p['start_time'] ?? null,
-                'zip' => $p['zip'] ?? '', 'package' => $p['package'] ?? '', 'type' => $p['event_type'] ?? '', 'message' => $p['message'] ?? null,
+                'zip' => $p['zip'] ?? '', 'package' => in_array($p['package'] ?? '', ['', 'unspecified'], true) ? 'Sin elegir' : $p['package'],
+                'type' => self::EVENT_TYPES[$p['event_type'] ?? ''][1] ?? (in_array($p['event_type'] ?? '', ['', 'unspecified'], true) ? 'Sin elegir' : $p['event_type']), 'message' => $p['message'] ?? null,
                 'travel' => $p['travel_estimate_text'] ?? null, 'demand' => $p['demand_flag'] ?? 'unknown', 'locale' => $p['locale'] ?? 'es',
                 'received' => isset($l['submission']['received_at']) ? Labels::when(\Carbon\CarbonImmutable::parse($l['submission']['received_at'])) : '',
                 'hints' => $l['duplicate_hints'] ?? []];

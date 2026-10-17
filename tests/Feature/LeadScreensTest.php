@@ -36,7 +36,7 @@ class LeadScreensTest extends TestCase
     private function lead(array $over = []): Lead
     {
         $body = json_encode([...['name' => 'Ana Ficticia', 'phone' => '(346) 555-0100', 'email' => 'ana@example.test', 'event_date' => '2026-12-19', 'start_time' => '15:00',
-            'zip' => '77494', 'event_type' => 'birthday', 'package' => 'magic', 'message' => '<script>alert(1)</script> ¡Hola!', 'travel_estimate_text' => '$40',
+            'zip' => '77494', 'event_type' => 'Birthday', 'package' => 'Magic Package', 'message' => '<script>alert(1)</script> ¡Hola!', 'travel_estimate_text' => '$40',
             'locale' => 'es', 'demand_flag' => 'filling', 'submitted_at' => now()->toIso8601String(), 'page' => '/contact', 'consent' => null], ...$over]);
         $ts = (string) time(); $key = (string) Str::uuid();
 
@@ -49,7 +49,7 @@ class LeadScreensTest extends TestCase
         Customer::create(['name' => 'Ana F.', 'phone' => '346-555-0100', 'locale' => 'es']);
         $this->get('/admin/prospectos')->assertOk()->assertSee('Ana Ficticia')->assertSee('Fecha muy pedida')->assertSee('77494')
             ->assertDontSee('<script>alert(1)</script>', false)->assertSee('&lt;script&gt;', false)
-            ->assertSeeText('Puede ser una clienta registrada')->assertSeeText('Ana F. (mismo teléfono)')->assertSee('Convertir en reserva rápida');
+            ->assertSee('Cumpleaños')->assertSee('Magic Package')->assertSeeText('Puede ser una clienta registrada')->assertSeeText('Ana F. (mismo teléfono)')->assertSee('Convertir en reserva rápida');
         $this->get('/admin')->assertSee('Prospectos sin contestar');
     }
 
@@ -70,7 +70,7 @@ class LeadScreensTest extends TestCase
         $lead = $this->lead();
         $page = Livewire::test(QuickBooking::class, [])->call('fillFromLead', $lead->id)
             ->assertSet('leadId', $lead->id)->assertSet('leadVersion', 1)
-            ->assertSchemaStateSet(['customer_mode' => 'new', 'name' => 'Ana Ficticia', 'email' => 'ana@example.test', 'postal_code' => '77494', 'date' => '2026-12-19', 'start_time' => '15:00'])
+            ->assertSchemaStateSet(['customer_mode' => 'new', 'event_type' => 'birthday', 'name' => 'Ana Ficticia', 'email' => 'ana@example.test', 'postal_code' => '77494', 'date' => '2026-12-19', 'start_time' => '15:00'])
             ->assertSee('Convirtiendo el prospecto de');
         $this->assertSame('new', $lead->fresh()->status, 'Opening the conversion changes nothing.');
         $page->fillForm(['price_version_ids' => [$this->price->id], 'event_type' => 'birthday', 'title' => 'Fiesta Ana', 'end_time' => '16:00', 'travel_fee' => '40',
