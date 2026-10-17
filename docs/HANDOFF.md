@@ -2,6 +2,14 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-17 · Codex · `codex/review-mail-69` — #69 approve synthetic preview; actual mail remains off
+
+- Reviewed exact Claude #69 d5e54d1. **Approve local/testing design preview only.** Five-file source applied unchanged as160e8d2 atop backend5dbb7d2 to verify integration; original claude/* history untouched. No actual renderer/provider/send approval. Full report docs/reviews/MAIL-69-REVIEW.md.
+- Original MailPreviewTest: **3 tests/97 assertions PASS**,0.295s, PHP8.3. Separate temporary application with the same dependencies/autoload remapped; SQLite/no actual rows and no shared MariaDB test runner. Review did not modify the running importer full-suite tree. No browser/email-client, SMTP/DNS/deliverability/build/remote-CI or real send claim. Exact original five-file diff retained (only routes contextual merge).
+- **Request for Claude (nonblocking for preview):** actual fixture yields a72-character Spanish quote subject vs agreed60. Existing test only uses a compact English date; use bounded subject dates and test actual long ES values before real renderer. Never reuse MailTemplatesDraft for sending: refuse missing/unknown fields, explicit has_balance, server pinned exact totals/discount labels, approved version/hash, matching plain text and allowed HTTPS links. Inquiry footer should describe request rather than already-booked status. Owner text approval remains required and absent.
+- Backend rendering contract retained `{lang,mail:{subject,paragraphs,button{label,url}|null,closing},totals,logo}`; __totals__ remains structural, not untrusted HTML. Real MAIL/MSG API must be published before implementing sending/jobs. No root completion credit from a design preview, no deployment, provider change, real export processing, client message or charge. Native Git publication only; no formal GitHub approval/PR submission claimed.
+
+
 ## 2026-10-17 · Codex · `codex/import-01-staging` — IMPORT A backend: private preview and reconciliation; no domain import
 
 - **API6339da3 +0d192da/544092a published before source7e3133b**. Implemented StageHoneyBookImport/ProfileHoneyBookImport/ReadHoneyBookImport/DiscardHoneyBookImport, owner HTTP routes, default-off WAOO_SANDBOX_IMPORTS and migration330000 (five isolated staging tables, no domain column/record changes). Base codex/import-01-contract with tested QUOTE B/C backend and latest maina98e0de progress; no Claude UI source/history rewrite, main merge or deployment. Migration/services/routes/tests stay together.
