@@ -1,5 +1,7 @@
 # RESV-A-PERF — bounded reservation hydration
 
+> Integration status 2026-10-17: REPORT-A retains the modern locking full-scan ConfirmBooking. ReservationNeighborhood is present/tested as an isolated helper but is **not called by confirmation**. Its old nonlocking reads must be redesigned and reviewed against repeatable-read concurrency before enabling RESV-A-PERF. Historical implementation notes below describe the older branch, not the active confirmation path.
+
 2026-10-16 · Codex · design before source. Base: codex/integrate-42-43-fixes 702b5e4. No API/policy change or UI work required.
 
 `App\Services\Scheduling\ReservationNeighborhood::forResource(Event $candidate, int $resourceId): array{overlaps: bool, before: ?Event, after: ?Event}` is an internal query helper. The caller must already hold the candidate event and sorted stable resource row locks inside the existing transaction. This query is not an availability promise and must not replace those locks or confirmation-time validation.

@@ -8,9 +8,9 @@ D7, recibida desde main el 2026-10-15, sustituye **todas las propuestas de este 
 
 Para el flujo vigente de pagos, última hora y adelanto de hasta 15 minutos, usar **APPROVAL_FLOW.md**, que prevalece sobre el ciclo anterior de este documento. Los 45 minutos son el estándar sin excepción; puede reducirse mediante revisión explícita cuando operaciones y recursos lo permitan. D8 = sales@waooparty.com; D9 = contrato inglés, portal/mensajes EN/ES.
 
-## Seguimiento implementado RESV-A-PERF (2026-10-16)
+## Seguimiento RESV-A-PERF (rama histórica, no conectado en integración actual)
 
-En `codex/reservation-neighborhood`, la confirmación conserva los bloqueos estables de evento/recursos, pero consulta conflictos mediante EXISTS y carga únicamente los dos vecinos necesarios para traslados. No hay corte por fecha ni duración máxima asumida: se conservan eventos largos y vecinos lejanos, montaje/desmontaje y límites [inicio, fin). Se reutiliza el índice recurso/inicio/fin; no se elimina historial ni cambia el margen de 45 minutos. El objetivo es acotar los registros cargados en PHP; el motor SQL todavía puede examinar historial. Detalles, contrato interno y límites en [RESERVATION-NEIGHBORHOOD.md](RESERVATION-NEIGHBORHOOD.md). Revisión de Claude y merge pendientes; no declara disponibilidad automática ni aceptación de fase.
+En la integración de Fase6 se conserva el recorrido con lecturas bajo candado actual. El helper de consultas acotadas está aislado, pendiente de adaptar sus lecturas a la protección actual de concurrencia. No se activa con REPORT-A. Historial: en `codex/reservation-neighborhood`, la confirmación conserva los bloqueos estables de evento/recursos, pero consulta conflictos mediante EXISTS y carga únicamente los dos vecinos necesarios para traslados. No hay corte por fecha ni duración máxima asumida: se conservan eventos largos y vecinos lejanos, montaje/desmontaje y límites [inicio, fin). Se reutiliza el índice recurso/inicio/fin; no se elimina historial ni cambia el margen de 45 minutos. El objetivo es acotar los registros cargados en PHP; el motor SQL todavía puede examinar historial. Detalles, contrato interno y límites en [RESERVATION-NEIGHBORHOOD.md](RESERVATION-NEIGHBORHOOD.md). Revisión de Claude y merge pendientes; no declara disponibilidad automática ni aceptación de fase.
 
 ## Objetivo y límites
 

@@ -67,7 +67,7 @@ A portable direct-run equivalent, after the usual local environment/database set
 The integrated suite may now exceed Composer's default 300-second process limit on the cloud runner. Keep source frozen and run it once with a finite CLI-only allowance:
 
 ```sh
-docker exec -e COMPOSER_PROCESS_TIMEOUT=600 \
+docker exec -e COMPOSER_PROCESS_TIMEOUT=1200 \
   -e PHP_INI_SCAN_DIR=/usr/local/etc/php/conf.d:/tools/runtime/test-php-ini \
   waoo-phase1-runtime composer test
 ```
@@ -75,3 +75,5 @@ docker exec -e COMPOSER_PROCESS_TIMEOUT=600 \
 This reuses the existing test-only 512M ini created by `/workspace/setup/waoo-phase1/test.sh`, and changes neither application request timeouts nor production configuration. The 300-second timeout is an incomplete run, not a passing result. Inspect the final test footer and command exit status; do not run another suite against the same test database concurrently.
 
 After a Composer timeout, check `docker top waoo-phase1-runtime -eo pid,etime,pcpu,args` before retrying. A PHPUnit child may outlive Composer temporarily; allow that known test process to finish before another runner uses the same test DB. A retry overlapping the child can report missing/already-existing tables during migrations even though application assertions are unchanged. This delivery reproduced that interference and then verified a fresh isolated run (see HANDOFF).
+
+2026-10-17: #73/#74 + QA independent verification took14:13.846 (600 tests), so use the finite1200-second allowance above;600 seconds is insufficient on this runner. REPORT-A additions were separately verified44/300 in MariaDB. Never count a timeout as green.
