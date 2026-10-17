@@ -205,8 +205,8 @@
      "name": "Formulario de la web → prospecto en el CRM",
      "weight": 3,
      "agent": "Codex+Claude",
-     "backend": null,
-     "ui": null,
+     "backend": "ea13afd",
+     "ui": "4b4d48b",
      "reviewed": false,
      "merged": false,
      "accepted": false,
@@ -219,14 +219,15 @@
       "verification": "Published API380b6fe before source. Full272/2583 pass; targeted18/253 includes HMAC replay binding, stateless HTTPS staging/rate limits, concurrent intake/status/conversion races, real QuickBook rollback and post-core portal recovery, SQLite migration.",
       "remaining": "Claude website email-first fallback/private spool + UI and review/main merge; secure shared-secret configuration and explicit live activation. Backend default off; whole website-to-CRM delivery not accepted yet.",
       "integration_verification": "Final integrated codex/outfit-01 d1b00a3: full300/2864 pass (330.31s), PHP8.3/MariaDB11.8; includes LEAD/ROUTE/OUTFIT, real independent races and populated SQLite/MariaDB roundtrips. Vite/strict Composer/syntax/diff pass. Packagist audit unavailable (proxy403), no dependency changes."
-     }
+     },
+     "blocker": "Backend Codex ea13afd (API 380b6fe); pantallas Claude #59 4b4d48b; web waoo-website web-lead-01 e4dd1f3 (apagado). Falta: revisión de Codex de las pantallas, secreto compartido, OK de César para subir la web."
     },
     {
      "name": "Costo de transporte por ZIP dentro del CRM",
      "weight": 2,
      "agent": "Codex",
-     "backend": null,
-     "ui": null,
+     "backend": "f31361c",
+     "ui": "claude/route-ui",
      "reviewed": false,
      "merged": false,
      "accepted": false,
@@ -239,7 +240,8 @@
       "verification": "Contract97c84ac published first. Targeted45/490 pass including105 synthetic differential cases vs website formula,7 fixed ZIPs, bounded provider errors/null fees, true atomic quota race/Chicago midnight, cache, explicit/private/stale quote acceptance, actual lead→QuickBook and client-address reconfirmation, SQLite. Quoted_at metadata is additive; later integrated run will cover the complete stack.",
       "remaining": "Missing22 actual calibrated ZIP reference fixtures (asked owner/Claude); no real Google/staging probe, UI/review/main merge or live activation. Full ROUTE-01 not complete/accepted.",
       "integration_verification": "Final integrated codex/outfit-01 d1b00a3: full300/2864 pass (330.31s), PHP8.3/MariaDB11.8; includes LEAD/ROUTE/OUTFIT, real independent races and populated SQLite/MariaDB roundtrips. Vite/strict Composer/syntax/diff pass. Packagist audit unavailable (proxy403), no dependency changes."
-     }
+     },
+     "blocker": "Backend Codex f31361c (API 97c84ac); pantallas Claude #57. 22 casos de calibración publicados (docs/calibration, #58). Falta: revisión, llave de Google en crm-test (permiso), prueba real."
     },
     {
      "name": "Cotizaciones con versiones",
@@ -277,7 +279,8 @@
      "reviewed": true,
      "merged": true,
      "accepted": false,
-     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996"
+     "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996",
+     "outfit_versions": "Codex d1b00a3 (API 7c8dcb1) + Claude #56: versiones de traje y nota interna; pendiente revisión."
     },
     {
      "name": "Motor sin choques (habilidades, trajes, vehículos, concurrencia)",
@@ -437,7 +440,8 @@
       "accepted": false,
       "verification": "Contractb3c9edd published first; owner SMS-first main62f898e preserved5920ae4 before source. Full326/3148 (352.01s) and new14/168 pass, PHP8.3/MariaDB11.8. Real grant revoke/reveal race, crypto/binding/key/auth/CSRF/TLS/privacy/rollback, actual paid-core link-storage failure/recovery, SQLite up/down/up. Local guarded290000 migration and /up200; syntax14 PHP/strict Composer/diff pass.",
       "remaining": "Claude explicit copy action/presenter/fallback and independent review/CI/main/acceptance. Existing hash-only links cannot be reconstructed; no expiry/rotation change. B/C sending providers, DNS, automated SMS/email/WhatsApp not activated. No completion credit for those parts."
-     }
+     },
+     "contact_atomicity": "Codex ad87fae (API 2ff80c1) + Claude #49 1ebafe0: corrección de contacto dentro de QuickBook; pendiente revisión de Codex."
     }
    ]
   },
