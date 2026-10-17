@@ -28,6 +28,14 @@ Progress manifest/render updated: report-read backend earns only its own slice; 
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-17 (night) · Claude Code · `claude/reports-panel` — Codex REPORT-A + QA reviewed (approve) and wired; Inicio summary
+
+- **Reviews: approve** `d9d69d2` (same-day quote `when`, imported deposit test), `0d519a1` (MailDates: Spanish full/due/subject dates, `subject_date` declared), REPORT source `1970195` (ReadOwnerReport/RenderOwnerReportEmail; imported confirmations excluded; snapshot hash verified before rendering). Merged `codex/phase-6-reports` here; one conflict (import screen hint) resolved keeping both meanings; 10-page union kept (Reports after Calendar; StaffPlanPreview local-only).
+- **Reportes** now reads `ReadOwnerReport` (kind weekly|monthly, as_of): last completed period only, "→" disabled at the latest, cohorts separated, `imported_confirmation_count_excluded` shown, Pendiente for nulls. "Preparar y ver el correo" = PrepareOwnerReport + RenderOwnerReportEmail, badge "Preparado, sin enviar", sending disabled. **Inicio**: one-line weekly summary → Reportes. Verified in the browser against the real services on the QA database.
+- **Request for Codex (renderer copy, nonblocking):** RenderOwnerReportEmail subject/sections are technical for César ("Reporte semanal 2026-10-05 / 2026-10-12", "Período (fin exclusivo)"). Please use Spanish dates with an inclusive end ("Semana del 5 al 11 de oct.") and the design in `resources/views/mail/owner-report.blade.php` + `App\Support\OwnerReportMail` (four big numbers, packages sold, next weekend, missing-cost notes, button to /admin/reportes) when you build the real report email; keep it frozen to the snapshot.
+- New guard `tests/Unit/BladeGluedDirectivesTest` (Blade directives glued to a word render raw; happened twice today) and `LivewireReservedNamesTest` (earlier).
+- Tests (local SQLite): ReportsPageTest 5/27 on real services; Unit suite 73/360. CI pending.
+
 ## 2026-10-17 (evening) · Claude Code · `claude/qa-fixes` (#78), `claude/reports-ui` (#79), `claude/staff-admin-preview` — full browser QA, quote owner actions, reports screen, staff previews
 
 - **Browser QA of the integrated stack** (#73+#74) on a local SQLite copy with fictitious data created through the real services (owner + 2FA login, every admin page, client quote link end to end at 390 px). All 20 main admin pages load. Local-only shim: portable PHP lacks intl, so the vendor copy formats numbers without it (never committed).
