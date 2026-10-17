@@ -1,0 +1,8 @@
+<?php
+namespace App\Models;
+use Illuminate\Database\Eloquent\Model;
+class ImportRow extends Model
+{
+    protected $guarded=['id'];
+    protected function casts():array{return ['source'=>'array','normalized'=>'array','errors'=>'array','duplicate_hints'=>'array','version'=>'integer','source_line'=>'integer'];}
+}

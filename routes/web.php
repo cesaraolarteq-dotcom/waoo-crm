@@ -10,6 +10,12 @@ Route::redirect('/', '/admin')->name('home');
 Route::middleware(['auth', 'password.confirm'])->get('/seguridad/dos-pasos', TwoFactorEnrollmentController::class)->name('security.two-factor');
 Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'));
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->prefix('admin/api')->group(function () {
+    Route::get('/imports/honeybook', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'index']);
+    Route::post('/imports/honeybook', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'stage']);
+    Route::get('/imports/honeybook/{batch}', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'show'])->whereNumber('batch');
+    Route::get('/imports/honeybook/{batch}/rows', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'rows'])->whereNumber('batch');
+    Route::post('/imports/honeybook/{batch}/profile', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'profile'])->whereNumber('batch');
+    Route::post('/imports/honeybook/{batch}/discard', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'discard'])->whereNumber('batch');
     Route::get('/quotes', [\App\Http\Controllers\Admin\QuoteController::class, 'index']);
     Route::post('/quotes', [\App\Http\Controllers\Admin\QuoteController::class, 'create']);
     Route::post('/quotes/{quote}/send', [\App\Http\Controllers\Admin\QuoteController::class, 'send'])->whereNumber('quote');
