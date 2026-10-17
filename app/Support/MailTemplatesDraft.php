@@ -4,6 +4,7 @@ namespace App\Support;
 
 // MAIL-01 v1 DRAFT copy (docs/templates/email/MAIL-01-templates-v1.md), for the design preview only.
 // Not approved by the owner, not used for sending. Each template: subject, paragraphs, optional button (label → link variable), closing line.
+// Subjects take only short values: {subject_date} is the date without the time (longest ES "miércoles 30 de septiembre"), {due} is date-only, first_name is cut to 20.
 final class MailTemplatesDraft
 {
     public const KEYS = ['inquiry_received', 'quote_sent', 'details_request', 'contract_ready', 'payment_received', 'zelle_notice_pending', 'balance_reminder', 'week_before', 'thank_you_review'];
@@ -11,8 +12,8 @@ final class MailTemplatesDraft
     private const T = [
         'inquiry_received' => ['es' => ['¡Recibimos tu solicitud, {first_name}!', ['¡Hola {first_name}! Gracias por escribir a Waoo Party. Recibimos tu solicitud para el {event_date} y ya estamos revisando la disponibilidad para tu código postal.', 'Muy pronto te enviamos opciones y el precio completo, con el costo de transporte incluido. Si prefieres hablar antes, escríbenos o llámanos al (346) 851-8830.'], null, '¡Estamos emocionados de ser parte de tu celebración!'],
                                'en' => ['We got your request, {first_name}!', ["Hi {first_name}! Thank you for contacting Waoo Party. We received your request for {event_date} and we're checking availability for your ZIP code now.", "We'll reply very soon with options and the complete price, including the travel fee. If you'd like to talk sooner, text or call us at (346) 851-8830."], null, "We're excited to be part of your celebration!"]],
-        'quote_sent' => ['es' => ['Tu cotización de Waoo Party para el {event_date}', ['¡Hola {first_name}! Aquí está tu cotización de {package} para el {event_date}.', '__totals__', 'Para apartar tu fecha pedimos un depósito del 50 % ({deposit}). Esta cotización es válida hasta el {valid_until}.'], ['Ver y aceptar mi cotización', 'link'], '¡Estamos emocionados de ser parte de tu celebración!'],
-                         'en' => ['Your Waoo Party quote for {event_date}', ['Hi {first_name}! Here is your quote for {package} on {event_date}.', '__totals__', 'To reserve your date we need a 50% deposit ({deposit}). This quote is valid until {valid_until}.'], ['Review and accept my quote', 'link'], "We're excited to be part of your celebration!"]],
+        'quote_sent' => ['es' => ['Tu cotización Waoo Party para el {subject_date}', ['¡Hola {first_name}! Aquí está tu cotización de {package} para el {event_date}.', '__totals__', 'Para apartar tu fecha pedimos un depósito del 50 % ({deposit}). Esta cotización es válida hasta el {valid_until}.'], ['Ver y aceptar mi cotización', 'link'], '¡Estamos emocionados de ser parte de tu celebración!'],
+                         'en' => ['Your Waoo Party quote for {subject_date}', ['Hi {first_name}! Here is your quote for {package} on {event_date}.', '__totals__', 'To reserve your date we need a 50% deposit ({deposit}). This quote is valid until {valid_until}.'], ['Review and accept my quote', 'link'], "We're excited to be part of your celebration!"]],
         'details_request' => ['es' => ['Termina tu reserva, {first_name}', ['¡Hola {first_name}! Gracias por tu depósito de {paid}: registramos tu solicitud para el {event_date}.', 'Para terminar tu reserva, completa tus datos y firma tu contrato. Solo toma unos minutos.'], ['Completar mis datos', 'link'], '¡Estamos emocionados de ser parte de tu celebración!'],
                               'en' => ['Finish your booking, {first_name}', ['Hi {first_name}! Thank you for your deposit of {paid} — your request for {event_date} is recorded.', 'To finish your booking, please complete your details and sign your contract. It only takes a few minutes.'], ['Complete my details', 'link'], "We're excited to be part of your celebration!"]],
         'contract_ready' => ['es' => ['Tu contrato está listo para firmar', ['¡Hola {first_name}! Tu contrato de Waoo Party para el {event_date} está listo.', 'Ahí también ves tu saldo ({balance}, vence el {due}) y cómo pagarlo.'], ['Leer y firmar', 'link'], '¡Estamos emocionados de ser parte de tu celebración!'],
@@ -46,7 +47,7 @@ final class MailTemplatesDraft
     public static function preview(string $key, string $lang): string
     {
         $es = $lang === 'es';
-        $vars = ['first_name' => 'Ana', 'event_date' => $es ? 'sábado 21 de noviembre a las 3:00 pm' : 'Sat, Nov 21 at 3:00 pm', 'address' => '123 Sample St, Katy, TX', 'package' => $es ? 'Música y Juegos 2.0' : 'Music & Games 2.0',
+        $vars = ['first_name' => 'Ana', 'event_date' => $es ? 'sábado 21 de noviembre a las 3:00 pm' : 'Sat, Nov 21 at 3:00 pm', 'subject_date' => $es ? 'sábado 21 de noviembre' : 'Sat, Nov 21', 'address' => '123 Sample St, Katy, TX', 'package' => $es ? 'Música y Juegos 2.0' : 'Music & Games 2.0',
             'deposit' => '$307.50', 'paid' => '$307.50', 'amount' => '$307.50', 'balance' => '$307.50', 'balance_due' => $es ? ' (vence el viernes 20 de noviembre)' : ' (due Fri, Nov 20)', 'due' => $es ? 'viernes 20 de noviembre' : 'Fri, Nov 20',
             'valid_until' => $es ? 'viernes 30 de octubre' : 'Fri, Oct 30', 'link' => url('/portal/ejemplo'), 'review_link' => 'https://g.page/r/sample'];
         $totals = [['label' => $es ? 'Paquete' : 'Package', 'amount' => '$600'], ['label' => $es ? 'Costo de transporte' : 'Travel fee', 'amount' => '$40'],
