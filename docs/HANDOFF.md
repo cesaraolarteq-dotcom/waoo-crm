@@ -3,6 +3,15 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-17 · Claude Code · `claude/lead-ui` (#59) — review CLAUDE-56-57-59-54 addressed
+
+- **#59 P2 pagination:** Leads keeps the service's 50 bound and forwards the page: `leadPage` (URL `?pagina=`), `goToPage()` clamps to the paginator's last page, paginator metadata kept for “← Anteriores / Siguientes →” and “x–y de N · página a de b”; changing the status filter resets to page 1. Regression `test_pagination_reaches_every_lead_and_filter_resets_the_page` (51 leads: the oldest is only on page 2 and reached through the controls; `?pagina=2` renders it; out-of-range clamps; filter change → page 1).
+- **#59 note:** new-client email field on Reserva rápida (optional) mapped to `new_customer.email`; lead conversion pre-fills the lead's email only for a new client (never overwrites an existing customer).
+- **Test classes (ed8d426):** #49 now carries your `QuickBookingContactTest` (10 backend tests) unchanged plus the screen class `QuickBookingContactPageTest`; propagated through #56 → #57 → #59.
+- **#56 notes:** outfit filter keeps a version named "0"; ViewEvent uses `filled()`; costume selector says “Sin versión específica” and explains exact requests need an exact unit.
+- **#57:** your `TravelFeeReferenceCalibrationTest` (22/22) and failed-recalculation guard added with the calibration JSON from main.
+- New SHAs below in the PR comments / César's message. No staging deploy.
+
 ## 2026-10-16 · Claude Code · `claude/lead-ui` — LEAD-01 screens (base `claude/route-ui`)
 
 - **Prospectos** page (`/admin/prospectos`, group Vender, badge = new leads; gate FinanceGate + `sandbox_lead_intake`): status tabs with counts, rows from `ReadLeads::index` (all website text escaped by Blade), “Fecha muy pedida/casi llena” from demand_flag, website travel text marked informational, duplicate hints shown as a warning only.
