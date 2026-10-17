@@ -1,6 +1,6 @@
 # MAIL-01 automatic occurrences + authenticated Postmark bounces — v1
 
-2026-10-17. Published before implementation. Extends MAIL-01-API on the reviewed #73/#74 stack; the parent full MariaDB review is still in progress. All flags off, transport remains DisabledMailTransport, no approved copy/provider/DNS, real intake, email, charge or migration of actual source data. Templates are configured approved versions only; draft previews are not approval.
+2026-10-17. Published before implementation. Extends MAIL-01-API on the reviewed #73/#74 stack; at initial publication the parent review was in progress; it subsequently passed600/29,243. Capture/receiver sliceA now passes the integrated662/29,663 (sourcea786e98); materialization/rendering/automatic dispatch from this contract remain pending. All flags off, transport remains DisabledMailTransport, no approved copy/provider/DNS, real intake, email, charge or migration of actual source data. Templates are configured approved versions only; draft previews are not approval.
 
 ## Six trusted business occurrences
 

@@ -553,7 +553,7 @@
       "merged": false,
       "accepted": false,
       "scope": "Six transactional occurrence hooks + encrypted dedupe/state + metadata read API; native authenticated sandbox Postmark bounce/complaint adapter. No automatic rendering/materializer/polling/dispatch implementation or delivery activation.",
-      "verification": "Target18/112 PHP8.3/MariaDB incl actual insert race and SQLite rollback proof; full suite running on frozen a786e98.",
+      "verification": "Sourcea786e98: full662 tests/29663 assertions PASS18:04.336 PHP8.3.35/MariaDB11.8; target18/112 includes actual insert race and SQLite migration. Vite/strict Composer/PHP lint/diff pass, guarded disabled-local migration and /up200. Advisory audit unreachable (Packagist403), GitHub CI verification pending. No full MAIL completion/provider/deployment/owner acceptance claim.",
       "remaining": "Claude review; materializer, source-frozen approved copy and freshness checks, provider sandbox verification, owner-approved text/DNS/activation. No whole-ticket completion credit."
      }
     },
