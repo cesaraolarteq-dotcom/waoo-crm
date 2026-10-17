@@ -3,7 +3,7 @@
 Status: wording draft by Claude for César. Not active. Variables in `{{ }}` are filled by the CRM; every variable is escaped. One link per message. Plain text first (HTML version = same text, Waoo logo header, one button). Subjects ≤ 60 characters. ES always says “costo de transporte”.
 
 Variables (all declared; the renderer refuses unknown ones, escapes every value and formats money as $1,234.50):
-`first_name` (≤20 chars in subjects), `event_date`, `address`, `package`, `package_price`, `travel_fee`, `subtotal` (package + travel), `discounts` (list of `{label, amount}`; only visible labels, never the private reason), `discount_total`, `total`, `deposit`, `amount` (this payment), `paid`, `balance`, `has_balance` (boolean, true only when balance > 0 — never test the formatted `$0.00`), `due` (balance due date), `valid_until`, `link` (portal), `review_link` (Google review), owner phone (346) 851-8830.
+`first_name` (≤20 chars in subjects), `event_date`, `subject_date` (event date without the time, for subjects only; longest ES “miércoles 30 de septiembre”), `address`, `package`, `package_price`, `travel_fee`, `subtotal` (package + travel), `discounts` (list of `{label, amount}`; only visible labels, never the private reason), `discount_total`, `total`, `deposit`, `amount` (this payment), `paid`, `balance`, `has_balance` (boolean, true only when balance > 0 — never test the formatted `$0.00`), `due` (balance due date), `valid_until`, `link` (portal), `review_link` (Google review), owner phone (346) 851-8830.
 
 Subjects: rendered subject ≤ 60 characters with real data; `first_name` is cut to 20 characters in subjects only; tests cover long names and long package names in both languages.
 
@@ -25,7 +25,7 @@ Subjects: rendered subject ≤ 60 characters with real data; `first_name` is cut
 
 ## 2. quote_sent — QUOTE-01
 
-**EN** · Subject: Your Waoo Party quote for {{event_date}}
+**EN** · Subject: Your Waoo Party quote for {{subject_date}}
 > Hi {{first_name}}! Here is your quote for {{package}} on {{event_date}}:
 > Package: {{package_price}} · Travel fee: {{travel_fee}}
 > {{#discounts}}{{label}}: −{{amount}}
@@ -33,7 +33,7 @@ Subjects: rendered subject ≤ 60 characters with real data; `first_name` is cut
 > To reserve your date we need a 50% deposit ({{deposit}}). Review and accept your quote here: {{link}}
 > This quote is valid until {{valid_until}}. We're excited to be part of your celebration!
 
-**ES** · Asunto: Tu cotización de Waoo Party para el {{event_date}}
+**ES** · Asunto: Tu cotización Waoo Party para el {{subject_date}}
 > ¡Hola {{first_name}}! Aquí está tu cotización de {{package}} para el {{event_date}}:
 > Paquete: {{package_price}} · Costo de transporte: {{travel_fee}}
 > {{#discounts}}{{label}}: −{{amount}}

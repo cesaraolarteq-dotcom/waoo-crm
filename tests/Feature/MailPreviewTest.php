@@ -24,10 +24,14 @@ class MailPreviewTest extends TestCase
     {
         foreach (MailTemplatesDraft::KEYS as $key) {
             foreach (['es', 'en'] as $lang) {
-                $m = MailTemplatesDraft::render($key, $lang, ['first_name' => 'Maximiliana Guadalupe Fernández', 'event_date' => 'Sat, Dec 19', 'due' => 'Fri, Dec 18']);
+                // Longest real values: ES weekday + month names, EN short dates; the event time never goes in a subject.
+                $long = $lang === 'es' ? 'miércoles 30 de septiembre' : 'Wed, Sep 30';
+                $m = MailTemplatesDraft::render($key, $lang, ['first_name' => 'Maximiliana Guadalupe Fernández', 'event_date' => $long.($lang === 'es' ? ' a las 12:30 pm' : ' at 12:30 pm'), 'subject_date' => $long, 'due' => $long]);
                 $this->assertLessThanOrEqual(60, mb_strlen($m['subject']), "$key/$lang: ".$m['subject']);
+                $this->assertStringNotContainsString('12:30', $m['subject']);
             }
         }
+        $this->get('/dev/mail/quote_sent?lang=es')->assertSee('Tu cotización Waoo Party para el sábado 21 de noviembre', false);
         $html = view('mail.layout', ['lang' => 'es', 'mail' => MailTemplatesDraft::render('inquiry_received', 'es', ['first_name' => '<b>x</b>']), 'totals' => [], 'logo' => '/img/waoo-logo.png'])->render();
         $this->assertStringNotContainsString('<b>x</b>', $html);
     }

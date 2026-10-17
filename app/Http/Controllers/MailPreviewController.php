@@ -17,7 +17,7 @@ final class MailPreviewController extends Controller
         }
         abort_unless(in_array($key, MailTemplatesDraft::KEYS, true), 404);
         $es = $lang === 'es';
-        $vars = ['first_name' => 'Ana', 'event_date' => $es ? 'sábado 21 de noviembre a las 3:00 pm' : 'Sat, Nov 21 at 3:00 pm', 'address' => '123 Sample St, Katy, TX', 'package' => $es ? 'Música y Juegos 2.0' : 'Music & Games 2.0',
+        $vars = ['first_name' => 'Ana', 'event_date' => $es ? 'sábado 21 de noviembre a las 3:00 pm' : 'Sat, Nov 21 at 3:00 pm', 'subject_date' => $es ? 'sábado 21 de noviembre' : 'Sat, Nov 21', 'address' => '123 Sample St, Katy, TX', 'package' => $es ? 'Música y Juegos 2.0' : 'Music & Games 2.0',
             'deposit' => '$307.50', 'paid' => '$307.50', 'amount' => '$307.50', 'balance' => '$307.50', 'balance_due' => $es ? ' (vence el viernes 20 de noviembre)' : ' (due Fri, Nov 20)', 'due' => $es ? 'viernes 20 de noviembre' : 'Fri, Nov 20',
             'valid_until' => $es ? 'viernes 30 de octubre' : 'Fri, Oct 30', 'link' => url('/dev/portal/quote?lang='.$lang), 'review_link' => 'https://g.page/r/sample'];
         $totals = [['label' => $es ? 'Paquete' : 'Package', 'amount' => '$600'], ['label' => $es ? 'Costo de transporte' : 'Travel fee', 'amount' => '$40'],
