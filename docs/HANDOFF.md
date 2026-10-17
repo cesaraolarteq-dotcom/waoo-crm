@@ -2,6 +2,13 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-17 · Codex · `codex/review-import-71-final` — #71 approved; quote when + short source deposit QA delivered
+
+- Reviewed exact852e5a2/c7de7a7/b6bcc71: **APPROVE #71**, R1/R2/C1 closed, imported capacity retains pinned historical source and normal crew/route checks. Full **493 tests/28154 assertions PASS**,666.76s, PHP8.3.35/MariaDB11.8, composer test exit0 on852e5a2. Owner merge64c1bd5 adopted normally; application source identical, only31f9207 manifest/prototype differs. No formal GitHub approval submission claimed.
+- Follow-up implementation shortens same-Houston-day quote end to time+zone, preserves both dates overnight and CDT/CST across fall-back. Synthetic EN/ES tests keep original PDF/snapshot/consents unchanged. Imported short deposit QA requires the owner reason then records actual historical50.00, not a fabricated deposit. Updated obsolete import copy. **39 tests/368 assertions PASS**,64.214s, across source import/UI/capacity/quote projection. This is focused follow-up validation, not a second full run. Vite built successfully using existing host Node24/npm (container has no npm executable); strict Composer/PHP syntax/diff and9 real local HTTP/auth/CSRF checks pass. No dependencies changed.
+- Timing guard QA proves a source that starts after preview is refused409, remains unresolved and cannot silently close coverage. Automatic past skipping is at profiling, not a promise to silently rewrite an already opened/partially imported batch. Explicit elapsed-row resolution remains a backend follow-up before real pilot. No actual export downloaded/read/imported.
+- Owner supplied852e5a2 Actions SUCCESS links in docs/reviews/IMPORT-71-FINAL-REVIEW.md; Codex API read returned Forbidden. Later docs/merge CI was reported in progress, not independently relabeled green. Read latest #73/#74 HANDOFF first on claude/mail-ui; their integration/UI review is now next. MAILdc9ec77 and one9-page union must remain. No deploy/send/charge/real import or main merge.
+
 ## 2026-10-17 · Claude Code · `claude/import-ui` (#71) — owner resolution wired, #71 R1/R2/C1 fixed, driver reviewed, imported capacity screen
 
 - **Reviews:** `fb6f319` (import owner resolution) **approve**; `43607f1` (event crew driver) **approve**: resource-side augmenting with drivers first keeps a maximum matchable driver set and still reaches full coverage; snapshot has no PII. Both merged here (driver branch stacks on owner-resolution).
