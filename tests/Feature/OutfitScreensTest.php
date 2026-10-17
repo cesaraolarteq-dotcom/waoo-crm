@@ -33,6 +33,8 @@ class OutfitScreensTest extends TestCase
         Livewire::test(CreateResource::class)->fillForm(['kind' => 'costume', 'status' => 'active', 'name' => 'Mickey Disneyland 1', 'code' => 'TRJ-MD-1', 'character_id' => $mickey->id, 'outfit' => 'Disneyland'])
             ->assertFormFieldIsVisible('outfit')->call('create')->assertHasNoFormErrors();
         $this->assertSame('Disneyland', Resource::where('code', 'TRJ-MD-1')->value('outfit'));
+        Livewire::test(CreateCharacter::class)->fillForm(['name' => 'Robot', 'active' => true, 'outfits' => ['0', ' ', 'Alto']])->call('create')->assertHasNoFormErrors();
+        $this->assertSame(['0', 'Alto'], Character::where('name', 'Robot')->value('outfits'), 'A version named "0" is kept.');
         Livewire::test(EditCharacter::class, ['record' => $mickey->id])->fillForm(['outfits' => ['Clásico']])->call('save')->assertNotified();
         $this->assertSame(['Clásico', 'Disneyland'], $mickey->fresh()->outfits, 'A version used by an active costume cannot be removed.');
     }

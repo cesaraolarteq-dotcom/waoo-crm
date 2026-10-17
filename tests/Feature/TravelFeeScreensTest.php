@@ -77,4 +77,20 @@ class TravelFeeScreensTest extends TestCase
         config(['waoo.sandbox_routes' => false]);
         Livewire::test(CreateEvent::class)->assertActionDoesNotExist($this->quote());
     }
+
+    public function test_failed_recalculation_requires_a_manual_reason_before_reusing_the_old_fee(): void
+    {
+        $client = Customer::create(['name' => 'Fixture Recalculation Client', 'locale' => 'es']);
+        Livewire::test(CreateEvent::class)
+            ->fillForm(['customer_id' => $client->id, 'title' => 'Fixture party', 'date' => '2026-12-19',
+                'start_time' => '15:00', 'end_time' => '16:00', 'price_version_ids' => [$this->price->id],
+                'address' => '123 Fictional Venue, TX 77433', 'postal_code' => '77433'])
+            ->callAction($this->quote())->assertSchemaStateSet(['travel_fee' => '40'])
+            ->fillForm(['address' => '456 Other Fictional Venue, TX 77494', 'postal_code' => '77494'])
+            ->callAction($this->quote())
+            ->assertSchemaStateSet(['travel_quote_status' => 'unavailable', 'travel_fee' => '40'])
+            ->assertFormFieldIsVisible('travel_fee_override_note')
+            ->call('create')->assertHasFormErrors(['travel_fee_override_note' => 'required']);
+        $this->assertDatabaseCount('events', 0);
+    }
 }
