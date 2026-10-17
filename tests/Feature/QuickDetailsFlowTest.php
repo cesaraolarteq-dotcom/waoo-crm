@@ -230,4 +230,30 @@ class QuickDetailsFlowTest extends TestCase
             ->assertJsonPath('submission.data.sms_consent_record.sha256', hash('sha256', $text));
     }
 
+
+    // COMMS-01: "Copiar enlace" recovers the SAME active link (no new grant, same expiry, audited) and refuses inactive ones.
+    public function test_copy_link_recovers_the_same_active_link_without_changes(): void
+    {
+        $qb = $this->quickBook(); $event = Event::sole(); $grant = PortalGrant::sole();
+        $expires = $grant->expires_at->toIso8601String();
+        $this->get("/admin/eventos/{$event->id}/contrato")->assertSee('Copiar enlace')->assertDontSee($qb->portal_url);
+        $page = Livewire::test(EventContract::class, ['record' => $event->id])->callAction('copyLink', [], ['id' => $grant->id]);
+        $this->assertSame($qb->portal_url, $page->get('newLink.url'));
+        $page->assertSee('Enlace activo (el mismo de antes)')->assertSee('no es un número claro para enviar')->assertDontSee('beforeunload', false);
+        $this->assertSame(1, PortalGrant::count());
+        $this->assertSame($expires, $grant->fresh()->expires_at->toIso8601String());
+        $this->assertTrue(\Illuminate\Support\Facades\DB::table('audit_entries')->where('action', 'portal.link_revealed')->exists());
+
+        app(\App\Services\Portal\RevokePortalGrant::class)->execute(User::sole(), $grant->id);
+        Livewire::test(EventContract::class, ['record' => $event->id])->callAction('copyLink', [], ['id' => $grant->id])
+            ->assertNotified('No se pudo copiar')->assertSet('newLink', null);
+        $this->assertSame(1, PortalGrant::count(), 'Copy never issues a new link.');
+    }
+
+    public function test_legacy_link_without_encrypted_copy_shows_no_copy_button(): void
+    {
+        $this->quickBook(); $event = Event::sole();
+        PortalGrant::query()->update(['encrypted_token' => null]);
+        $this->get("/admin/eventos/{$event->id}/contrato")->assertDontSee('Copiar enlace')->assertSee('enlace anterior: no se puede volver a copiar');
+    }
 }

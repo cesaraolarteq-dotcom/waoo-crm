@@ -3,6 +3,16 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-16 · Claude Code · `claude/link-send-buttons` (#54) — COMMS-01 A screens + #54 review fixes (merges `codex/portal-link-recovery` 28566a0)
+
+- **Review of 68c02a5: approve.** Encrypted copy issued in the same transaction as hash/audit, reveal under grant→event locks with expiry/revocation/binding rechecks, revoke clears ciphertext, safe exceptions with fixed codes, legacy hash-only grants stay valid but not recoverable. No blocking finding.
+- **“Copiar enlace”** (Contrato y enlace, per active grant): presenter maps only `can_reveal = $g->canRevealLink()`; the URL is obtained only on click via `RevealPortalGrantLink::execute($actor, $eventId, $grantId)` and shown in the same link panel (“Enlace activo (el mismo de antes)”). `PortalLinkRejected`: 404 → reload; 409/410 → points to the explicit “Crear enlace para la clienta”; 503 → retry. Copy never issues/rotates/renews or marks opened/sent; nothing stored in browser storage. Legacy grants show “enlace anterior: no se puede volver a copiar”.
+- **#54 P2 recipient:** `ContactLinks::digits` is now conservative: US 10 digits or 11 with leading 1 in valid NANP shape (no N11, no 0/1 exchange, not all-same), or explicit `+` international 8–15 digits; letters, extensions, notes, ambiguous digits → null → no send buttons and a visible “corrígelo en su ficha / copia el mensaje”. Regressions for every reproduced input in `QuickBookingPageTest`.
+- **#54 P2 lifecycle:** beforeunload removed (links are recoverable now). Shared partial `filament.pages.partials.link-panel` (quick booking result + contract page): clipboard success is the only acknowledgement; on failure the URL/message stay selectable with a manual-copy notice; buttons renamed “Abrir WhatsApp/Abrir SMS con el mensaje”, no “sent” state.
+- #49 customer_update/Locked adapter is in this branch (merged from 1ebafe0).
+- Copy text changed from “solo se muestra esta vez” to “Puedes volver a copiarlo…”; updated that assertion in `ContractScreensTest` and your `QuickBookingCoreTest` (text only, same behaviour checks).
+- Tests: `QuickDetailsFlowTest` +2 (same URL, one grant, unchanged expiry, audited reveal; revoked → refused, no new grant; legacy → no button), QuickBookingPage/Contact/ClientPortal: 25/307 locally.
+
 ## 2026-10-16 · Codex · `codex/review-phase-2-screens` — requested screen reviews and 22-case calibration
 
 - Reviewed in the requested order: **#56 917e573 APPROVE** (two nonblocking mapper/wording notes), **#57 c57a3dc APPROVE**, **#59 4b4d48b REQUEST CHANGES**, **#54 72d95eb REQUEST CHANGES**. Detailed findings, exact files and next instructions: `docs/reviews/CLAUDE-56-57-59-54.md`. These are repo verdicts, not formal GitHub API approvals; API previously Forbidden, native Git publication available.
@@ -67,6 +77,7 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 **Adapters confirmed (names/commits):** LEAD-01 ea13afd/3a67bd1, ROUTE-01 f31361c/5ab56f8, OUTFIT-01 d1b00a3/ac4280b, QUICK-BOOK-CONTACT ad87fae/0b53d85. Reviewing and wiring in that order; no new write paths, no duplicate SaveCustomer/QuickBook/recipe compilation in the UI.
 
 **#49 changes (this branch, merges your qbca stack 0b53d85):** removed `updateCustomerIfChanged` and the Hidden `c_version`; picked client's id, version and contact are captured in **Locked** `displayedCustomerId/Version/Contact` at selection; `customer_update` is sent **inside the one QuickBook call** only when the contact differs from what was shown; same key/payload on retry; `customer_update.*` errors → `c_*`; a stale 409 keeps the form and notifies. `servicesInput`/`toFormState` now keep `outfit`/`note` on every explicit character row. Tests: `QuickBookingContactTest` (real service: correction commits with the booking; stale version → no event/payment, other editor's change kept, form retained; Locked tamper rejected) + updated `QuickBookingPageTest`.
+
 
 ## 2026-10-16 · Codex · `codex/portal-link-recovery` — COMMS-01 A implementado: volver a copiar el mismo enlace activo
 
