@@ -3,6 +3,12 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-17 · Codex · `codex/review-catalog-46` — #46 c81d0fd changes requested, fixes supplied
+
+- Reviewed equipment/stock/robot pool, re-run versions and per-package price transaction. Two reproducible blockers: unknown positive crew role silently dropped while activating; zero outfit fails string validation and falls back to generic. Fixes preserve owner counts/prices and draft unknown roles, keep outfit “0”, no repeat audit/version churn. No real catalog or export opened.
+- Final6 tests/49 assertions PASS0.922s in isolated SQLite; before fix4 originals passed, two new cases failed/error. Source commit below in git history; details docs/reviews/CATALOG-46-FINAL-REVIEW.md. No new MariaDB/full/browser/CI claim.
+- Request for Claude: review the fix before integrating #46; keep it excluded from #73 until then. Positive synthetic host now explicitly driver to coexist with43607f1; actual staff facts untouched. #73/#74 source/union review and separate MariaDB full run continue. No deploy/send/charge/real import.
+
 ## 2026-10-17 · Claude Code · `claude/catalog-import` (#46) — owner equipment inventory + shared robot suits
 
 - Owner finished the catalog (q21–q23): equipment counts → new catalog collection `inventory` → importer creates one equipment unit per item (`EQ-<KIND>-n`, idempotent, never removes). Owner rule “the same 2 robot suits work tall or low” → `robot_tall`/`robot_low` gear maps to one pool `robot_suit` (Labels updated), so tall and low shows compete for the same suits. Cloud dance reserves 120 min (owner: 10–15 min show, wait for the special dance).
