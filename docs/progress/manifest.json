@@ -633,7 +633,13 @@
      "ui": null,
      "reviewed": false,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "contract": {
+      "document": "docs/STAFF-01-API.md",
+      "commit": "7596eaa",
+      "implemented": false,
+      "note": "API only, 0 implementation credit; private staff identity, availability, invitations, acceptance, exclusive pending holds and money-free job sheet."
+     }
     },
     {
      "name": "SMS (Twilio)",
@@ -654,6 +660,12 @@
       "note": "COMMS-01 A/B/C answered; proposed owner-only recopy API published before implementation. Manual phone apps first; Postmark/email auth recommended, SMS automation/WhatsApp eligibility later. No implementation credit/provider/DNS/send. #54 b30d209 review requests recipient/lifecycle fixes;41/446 tests +build pass, diagnostic2/5 reproduces bug; no new full/browser/provider proof.",
       "recovery_evidence": "Backend A follow-up68c02a5 on phase4 row; full326/3148. This documentation entry itself counts0; email/SMS/WhatsApp provider implementation remains pending.",
       "latest_ui_review": "Codex approves #54 exact81771b2: recipient parser fixed, global unload/sent state removed, explicit owner same-link reveal and shared clipboard fallback connected. See docs/reviews/COMMS-01-54-REVIEW-V2.md. No browser/provider/deployment/merge/owner acceptance claimed."
+     },
+     "contract": {
+      "document": "docs/SMS-01-API.md",
+      "commit": "83cb027",
+      "implemented": false,
+      "note": "API only, 0 implementation credit; disabled transport, purpose/channel consent, authenticated STOP/HELP and A2P prerequisites. No live registration or send."
      }
     },
     {
@@ -667,14 +679,31 @@
      "accepted": false
     },
     {
-     "name": "Reportes del lunes y del mes",
-     "weight": 2,
+     "name": "REPORT-A: panel, lecturas y reportes congelados",
+     "weight": 1,
+     "agent": "Codex+Claude",
+     "backend": "1970195",
+     "ui": false,
+     "reviewed": false,
+     "merged": false,
+     "accepted": false,
+     "partial_delivery": {
+      "branch": "codex/phase-6-reports",
+      "api": "docs/REPORT-A-PANEL-API.md",
+      "verification": "Source1970195: MariaDB44/300 green including concurrent snapshot race; underlying integration0d519a1 full600/29243 green. Build/lint/strict Composer pass. UI, cross-review, main merge and owner acceptance pending."
+     },
+     "note": "Dynamic panel and immutable snapshot/email-preview backend tested; separate row tracks actual email delivery, still disabled. No invented wage rates or imported confirmations counted as new sales."
+    },
+    {
+     "name": "REPORT-A: envío del lunes y del mes",
+     "weight": 1,
      "agent": "Codex+Claude",
      "backend": null,
      "ui": null,
      "reviewed": false,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "note": "Separate from tested read/snapshot backend; scheduler, approved copy and MAIL transport/explicit activation remain pending. Nothing sent."
     }
    ]
   },

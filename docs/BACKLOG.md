@@ -53,7 +53,7 @@ No-alcance de estos tickets: rehacer web, desplegar CRM, procesar pagos reales, 
 
 ## Non-blocking follow-ups from Claude's PR #22 review
 
-These are open tickets, not implemented changes and not additional approval blockers for the reviewed increment. Detailed scope, acceptance, test and rollback plans are linked below. GitHub issue creation is separate from this canonical backlog.
+These follow-ups are not additional approval blockers for the reviewed increment. Linked tickets record their current source/review status. RESV-A-PERF is implemented on codex/reservation-neighborhood (83b2709), with independent review/merge pending. Detailed scope, acceptance, test and rollback plans are linked below. GitHub issue creation is separate from this canonical backlog.
 
 | ID | Follow-up | Impl. / review | Parent |
 | --- | --- | --- | --- |
@@ -115,3 +115,19 @@ AVAIL-01 (search for combinations and routes), HOLD-01 (on the RESV-A-01 protoco
 - **D8 decided:** sales@waooparty.com.
 - **D9 decided:** contract in English only.
 - **Phase 0: APPROVED by the Owner on 2026-10-15.**
+
+### REPORT-A first read-only slice (Codex 2026-10-16)
+
+Contract `docs/REPORT-A-API.md`, backend source **656bd32** on `codex/operational-reports`. Owner-only sandbox period cash (received date) and scheduled-event balances/costs (event date), Chicago week/month boundaries, unknown/stale costs remain pending. No inference of staff rates, net profit, sales counts, historical closing balances or delivery. Claude can build the dashboard view now. Remaining REPORT-A slices: agreed booking/sales definition and package counts, upcoming-weekend forecast, cron/idempotent mail delivery after MAIL-01/JOBS-01. See newest HANDOFF for final checks.
+
+### REPORT-A confirmed-weekend projection (Codex 2026-10-16)
+
+`codex/weekend-forecast`, contract `docs/REPORT-A-WEEKEND-API.md`: read-only Saturday/Sunday commitments, drafts separate, current balance and pending counts, separate estimate/actual staff/direct costs using the existing report path. Reporting window is explicit, including ongoing weekends and Chicago DST; no availability policy change. Review/UI/merge pending. Package/booked counts and scheduled idempotent mail delivery remain future REPORT-A work.
+
+### REPORT-A initial-confirmation/package query (Codex 2026-10-16)
+
+`codex/booking-sales-report`: counts first capacity-confirmation audit per event in a Chicago week/month, with service occurrences from the immutable financial revision linked at confirmation. Missing legacy links remain unknown; current catalog/event data never rewrites history. Contract `docs/REPORT-A-SALES-API.md`, regression plus actual paid-capacity/retry verification in HANDOFF. Backend query delivered for review; owner definition/UI, cancellation-adjusted sales and scheduled mail remain pending. No sends activated.
+
+### REPORT-A durable preparation (Codex 2026-10-16)
+
+`codex/prepared-owner-reports`, source **2db2639**: immutable closed-period weekly/monthly prepared snapshots, fixed sales@ recipient, SHA-256, company-wide idempotency, audit rollback and two-admin race protection. Weekly forecast anchor stays tied to the report's due_on. **Preparation only**: no cron, send job, provider call or customer message. Owner preview UI/Claude review/main merge and separately reviewed scheduled delivery remain pending. Contract docs/REPORT-A-SNAPSHOTS-API.md; verification in HANDOFF.

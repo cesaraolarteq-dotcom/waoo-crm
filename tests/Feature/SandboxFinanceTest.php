@@ -126,6 +126,12 @@ class SandboxFinanceTest extends TestCase
         $this->assertDatabaseCount('booking_evidence', 1);
         $this->assertDatabaseHas('booking_evidence', ['amount_cents' => 22705, 'verified_by' => $this->owner->id]);
         $this->assertDatabaseHas('payment_exceptions', ['kind' => 'paid_capacity_pending', 'state' => 'resolved']);
+        // The reporting read must see the real confirmation/link once, including after retries.
+        $anchor = now()->setTimezone('America/Chicago')->toDateString();
+        $this->getJson('/admin/api/reports/bookings?period=week&anchor='.$anchor)->assertOk()
+            ->assertJsonPath('booking_count', 1)->assertJsonPath('package_occurrence_count', 1)
+            ->assertJsonPath('packages.0.name', 'Fixture package')->assertJsonPath('package_unknown_booking_count', 0);
+
     }
 
 }
