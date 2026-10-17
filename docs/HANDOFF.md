@@ -1,3 +1,18 @@
+## 2026-10-17 — Codex — Phase6 REPORT-A delivered; STAFF/SMS APIs published; #73/#74 reviewed
+
+Branch `codex/phase-6-reports`, source `1970195`; owner authorization #75/direct message. API first `3074d6d` (`codex/phase-6-report-api`), merge `1db707d` contains all four requested report branches. Based on the #73/#74 stack + QA/date follow-ups, **not a main merge**. New panel GET `/admin/api/reports/owner`; frozen GET `/admin/api/reports/snapshots/{id}/email-preview`. See `docs/REPORT-A-PANEL-API.md` and `docs/reviews/REPORT-A-PHASE6-INTEGRATION.md`. Imported HoneyBook confirmations excluded from new sales, unknown balances/costs remain explicit, preview fixed to sales@waooparty.com and never sent. Retained modern ConfirmBooking locking/source/driver/outfit guards; old bounded-query helper remains unconnected. All9 pages and MAIL remain.
+
+Verification: underlying #73/#74 + QA source `0d519a1` full **600 tests /29,243 assertions**, PHP8.3/MariaDB11.8,14:13.846; final REPORT source **44/300**,1:00.483, including real concurrent snapshot race. Vite, strict Composer, lint and diff pass. Report additions have a targeted run, not a new combined full-suite claim. Exploratory SQLite all-report run correctly errors at mandatory MariaDB concurrency test; not counted as green. Evidence in review docs.
+
+**Verdict #73/#74: approve source integration**, no blocking finding; `c8b3fdf` finance stored-row comparison is correct. Small Codex QA/date changes `d9d69d2` + `0d519a1` need Claude review. Spanish dates/day-only subject fixed; quote same-day `when` and imported deposit<50% note regression retained. `docs/reviews/INTEGRATION-73-74-CODEX.md` details scopes/nonblocking follow-ups. GitHub API Forbidden: no formal GitHub review/merge or independent remote CI claimed. Owner-provided CI and local runs distinguished.
+
+**Request for Claude:**
+1. Review Codex QA/date commits and REPORT source1970195; connect Inicio/report preview to the API. Show known/unknown, estimate/actual, completed dates; never Enviado. Merge #73 → #74 → reviewed QA → reports when ready, preserving9 pages and MAIL. #46 stays excluded until you review fixes99bbc78 (`codex/review-catalog-46`); two blockers reproduced on c81d0fd, fixed tests6/49 SQLite.
+2. Review `docs/STAFF-01-API.md` (published7596eaa): separate staff identity/grant, availability, invitations, explicit acceptance, money-free job sheet. Pending invitation holds the resource exclusively but is not acceptance; decline alerts without deleting original booking evidence. UI may use synthetic fixtures; backend not implemented.
+3. Review `docs/SMS-01-API.md` (published83cb027): disabled transport, purpose-specific consent, native Twilio signature verification, STOP/HELP and A2P prerequisites. Contract only, no sending/registration/purchase. Actual staff list and pay rules remain private owner inputs; do not invent STAFFPAY formulas.
+
+Progress manifest/render updated: report-read backend earns only its own slice; email delivery, UI, cross-review/main/owner acceptance remain pending. STAFF/SMS docs earn0 implementation. Six automatic MAIL events + authenticated bounce implementation remain pending behind this Phase6 priority, API already published641cef0 in `codex/mail-automatic-v1`. No deployments, messages, charges or real imports.
+
 # Handoff log
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
