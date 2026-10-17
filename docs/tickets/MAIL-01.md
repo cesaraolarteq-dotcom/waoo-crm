@@ -14,7 +14,7 @@ Status: contract proposal by Claude (templates EN/ES, screens) for Codex (sendin
 Inquiry received (from LEAD-01), quote sent (QUOTE-01), details request (quick booking link), contract ready to sign, deposit received / payment received, Zelle notice pending verification, balance reminder, 7-day reminder with final details, thank-you + Google review request (after the event). Each: one link, plain text + light HTML, no attachments on first contact.
 
 ## Reminders (MSG-01, jobs)
-- 7 days before (final details check), balance due (24 h before the party, per policy; only if balance > 0), thank-you + review (day after). Each re-checks state at send time (cancelled/rescheduled/paid → skip) and is cancelled automatically when stale. Owner can pause per event.
+- 7 days before (final details check); balance reminder 24 h before the **due date** (due date = 24 h before the party, so ~48 h before the party), only when `has_balance`; thank-you + review (day after). Each re-checks state at send time (cancelled/rescheduled/paid → skip) and is cancelled automatically when stale. Owner can pause per event.
 
 ## Screens (Claude)
 Event file: message timeline (what was sent, status, open bounce warnings); Inicio card “Correos que rebotaron”; settings page listing templates (read-only preview EN/ES) and the sandbox allow-list.
