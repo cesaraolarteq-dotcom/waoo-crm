@@ -12,10 +12,12 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Url;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
-// REPORT-A (owner request 2026-10-15): simple, visual week/month view over Codex's read-only report services.
-// Money in is by payment date; balances and staff cost belong to the parties dated in the period — different
-// groups, never subtracted into a fake "profit". Missing costs say "Pendiente", never $0. Nothing is sent from here.
+// REPORT-A owner screen over Codex's consolidated panel (docs/REPORT-A-PANEL-API.md): the last COMPLETED week or month
+// (never the ongoing one), plus the weekend after that week. Money in is by payment date; balances and staff cost by
+// party date (different groups, never subtracted); unknown → "Pendiente", never $0. "Preparar" freezes the report and
+// shows Codex's email preview; nothing is ever sent from here (delivery stays not_sent / disabled).
 class Reports extends Page
 {
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
@@ -26,13 +28,14 @@ class Reports extends Page
     protected static ?string $title = 'Reportes';
     protected string $view = 'filament.pages.reports';
 
-    #[Url(as: 'periodo')]
-    public string $period = 'week';
+    #[Url(as: 'tipo')]
+    public string $kind = 'weekly';
 
+    /** Any date inside the period AFTER the one shown (the panel reports the completed period before it). */
     #[Url(as: 'fecha')]
-    public string $anchor = '';
+    public string $asOf = '';
 
-    public ?array $prepared = null;
+    public ?array $emailPreview = null;
 
     public static function canAccess(): bool
     {
@@ -42,8 +45,9 @@ class Reports extends Page
     public function mount(): void
     {
         abort_unless(static::canAccess(), 403);
-        $this->period = in_array($this->period, ['week', 'month'], true) ? $this->period : 'week';
-        $this->anchor = self::validDate($this->anchor) ?? now('America/Chicago')->toDateString();
+        $this->kind = in_array($this->kind, ['weekly', 'monthly'], true) ? $this->kind : 'weekly';
+        $today = now('America/Chicago')->toDateString();
+        $this->asOf = ($d = self::validDate($this->asOf)) && $d <= $today ? $d : $today;
     }
 
     private static function validDate(?string $d): ?string
@@ -56,28 +60,41 @@ class Reports extends Page
 
     public function getSubheading(): ?string
     {
-        return 'Lo esencial de la semana o del mes. El dinero cuenta por la fecha en que llegó; los saldos y el costo del staff, por la fecha de cada fiesta.';
+        return 'La última semana o el último mes ya cerrados. El dinero cuenta por la fecha en que llegó; los saldos y el costo del staff, por la fecha de cada fiesta.';
     }
 
-    public function setPeriod(string $period): void
+    public function setKind(string $kind): void
     {
-        $this->period = $period === 'month' ? 'month' : 'week';
+        $this->kind = $kind === 'monthly' ? 'monthly' : 'weekly';
+        $this->emailPreview = null;
     }
 
-    public function move(int $step): void
+    public function shift(int $step): void
     {
-        $a = CarbonImmutable::parse($this->anchor, 'America/Chicago');
-        $this->anchor = ($this->period === 'month' ? $a->addMonthsNoOverflow($step) : $a->addWeeks($step))->toDateString();
+        $a = CarbonImmutable::parse($this->asOf, 'America/Chicago');
+        $next = ($this->kind === 'monthly' ? $a->addMonthsNoOverflow($step) : $a->addWeeks($step))->toDateString();
+        $this->asOf = min($next, now('America/Chicago')->toDateString());
+        $this->emailPreview = null;
     }
 
-    public function today(): void
+    public function latest(): void
     {
-        $this->anchor = now('America/Chicago')->toDateString();
+        $this->asOf = now('America/Chicago')->toDateString();
+        $this->emailPreview = null;
+    }
+
+    /** The shown period is the latest completed one: there is no "next" beyond today. */
+    public function atLatest(): bool
+    {
+        $today = now('America/Chicago');
+        $a = CarbonImmutable::parse($this->asOf, 'America/Chicago');
+
+        return $this->kind === 'monthly' ? $a->isSameMonth($today) : $a->startOfWeek(CarbonImmutable::MONDAY)->equalTo($today->startOfWeek(CarbonImmutable::MONDAY)->startOfDay());
     }
 
     public function report(): array
     {
-        return ReportsSource::read(Filament::auth()->user(), $this->period, $this->anchor);
+        return ReportsSource::read(Filament::auth()->user(), $this->kind, $this->asOf);
     }
 
     public function money(?int $cents): string
@@ -85,25 +102,22 @@ class Reports extends Page
         return Labels::money($cents, 'Pendiente');
     }
 
-    /** Freeze last completed week's/month's report (PrepareOwnerReport). It is NOT sent: MAIL activation is separate. */
-    public function prepare(string $kind): void
+    /** Freeze this completed period (first preparation wins) and show the email preview. Never sends. */
+    public function prepare(): void
     {
-        if (! class_exists(ReportsSource::PREPARE)) {
+        if (! class_exists(ReportsSource::PREPARE) || ! class_exists(ReportsSource::EMAIL)) {
             Notification::make()->warning()->title('Todavía no disponible')->body('Preparar el reporte llega con la parte de Codex.')->send();
 
             return;
         }
         try {
-            $s = app(ReportsSource::PREPARE)->execute(Filament::auth()->user(), ['kind' => $kind === 'monthly' ? 'monthly' : 'weekly', 'as_of' => now('America/Chicago')->toDateString()]);
-        } catch (ValidationException|RecordWriteRejected|AuthorizationException $e) {
+            $snapshot = app(ReportsSource::PREPARE)->execute(Filament::auth()->user(), ['kind' => $this->kind, 'as_of' => $this->asOf]);
+            $this->emailPreview = app(ReportsSource::EMAIL)->execute(Filament::auth()->user(), (int) $snapshot->id);
+        } catch (ValidationException|RecordWriteRejected|AuthorizationException|HttpExceptionInterface $e) {
             Notification::make()->danger()->title('No se preparó')->body($e instanceof ValidationException ? collect($e->errors())->flatten()->first() : $e->getMessage())->persistent()->send();
 
             return;
         }
-        $payload = json_decode($s->payload_json ?? json_encode($s->payload ?? []), true) ?: [];
-        $this->prepared = ['kind' => $s->kind, 'starts' => $s->period_starts_on, 'ends' => $s->period_ends_before, 'recipient' => $s->recipient,
-            'net' => $payload['operations']['cash']['net_received_cents'] ?? null, 'bookings' => $payload['bookings']['booking_count'] ?? null,
-            'packages' => ReportsSource::packagesLine($payload['bookings'] ?? []), 'staff' => $payload['operations']['scheduled']['actual']['staff_cost_cents'] ?? null];
-        Notification::make()->success()->title('Reporte preparado')->body('Quedó guardado tal cual. No se envió: los correos todavía no están activos.')->send();
+        Notification::make()->success()->title('Reporte preparado, sin enviar')->body('Quedó guardado tal cual; los correos todavía no están activos.')->send();
     }
 }

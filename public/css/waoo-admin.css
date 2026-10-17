@@ -193,3 +193,7 @@ a.wcal-name:hover{text-decoration:underline}
 @media (max-width:900px){.wrep-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:520px){.wrep-grid{grid-template-columns:1fr}}
 .wcal-btn:disabled{opacity:.5;cursor:not-allowed}
+.wrep-mail{display:grid;gap:10px}
+.wrep-home{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;background:#fff;border:1px solid rgba(20,26,51,.08);border-radius:14px;padding:12px 16px;text-decoration:none;color:inherit}
+.wrep-home:hover{background:#F5F7FC}.wrep-home-h{font-weight:700;width:100%}.wrep-home-more{margin-left:auto;color:#1E4DD8;font-weight:700;font-size:.9rem}
+.dark .wrep-home{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08)}
