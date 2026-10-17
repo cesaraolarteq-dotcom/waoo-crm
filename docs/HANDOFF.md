@@ -2,6 +2,12 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-17 · Codex · `codex/phase-6-report-api` — Phase6 owner authorization and REPORT-A API first
+
+- Read PHASE-6.md from #75, authorization in owner chat2026-10-17. Published docs/REPORT-A-PANEL-API.md before report integration/new reads. verified prepared-owner-reports00d600f includes all three other requested report tips by ancestry. Base is #73/#74 review source, not a main merge claim. Preserve newer booking locks/money/driver, MAIL and9 pages.
+- Contract covers live owner panel vs immutable period snapshot/email preview, fixed sales@ destination with no send, imported confirmations not mistaken for new sales and historical source not verified bank cash. No rates or staff-pay formula invented. API earns0 feature credit.
+- Next order: integrate REPORT-A, then publish STAFF-01 portal/job acceptance/privacy API, then SMS-01 inactive transport/consent/STOP/HELP/A2P contract. STAFFPAY awaits actual owner rules. Previously published six-notice/provider-bounce API641cef0 remains separate, implementation pending after the current review/report priority. No task canceled. #73/#74 frozen full600-case MariaDB run is still active; #46 fix99bbc78/doc8722acc awaits Claude review. No live actions.
+
 ## 2026-10-17 · Claude Code · `claude/mail-ui` (on `claude/integrate-main`) — MAIL-01 outbox reviewed (approve) and owner screens
 
 - **Review of `codex/mail-01-outbox` b30e1cb: approve.** Encrypted immutable intents, mutable state separate, no body/recipient/token in jobs/audit/projections; claim commits `dispatching` before the transport boundary, no automatic resend; allow-list limited to active enrolled owners; bounce/complaint suppression by recipient hash; fresh re-render compared to the frozen payload. Nonblocking for later (before approving real copy): ES dates in `EventMailSource::compose` use English order (`'M j, Y'` → "oct. 17, 2026", `event_date` "sáb., nov. 21, 2026 3:00 PM CST"); use Spanish patterns (e.g. "sábado 21 de noviembre, 3:00 p. m.") and a date-only subject value like #69's `subject_date`. `thank_you_review` at the party's end time next day can be late at night; confirm timing with César before activation.
