@@ -33,6 +33,7 @@ class ImportHoneyBook extends Page
 
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowUpTray;
     protected static ?string $navigationLabel = 'Importar HoneyBook';
+    protected static string|\UnitEnum|null $navigationGroup = 'Operación';
     protected static ?int $navigationSort = 90;
     protected static ?string $slug = 'importar';
     protected static ?string $title = 'Importar eventos de HoneyBook';
@@ -108,7 +109,8 @@ class ImportHoneyBook extends Page
 
     // ── 1. Upload ────────────────────────────────────────────────────────────
 
-    public function upload(): void
+    // Not named upload(): Livewire reserves $wire.upload() for file uploads, which broke the real form in the browser.
+    public function stageFile(): void
     {
         $this->validate(['csv' => 'required|file|max:5120'], ['csv.required' => 'Elige el archivo CSV.']);
         try {
@@ -305,8 +307,10 @@ class ImportHoneyBook extends Page
                     ->helperText(fn (Get $get) => EventResource::charactersHint($get('price_version_ids') ?? []))
                     ->schema([
                         Select::make('price_version_id')->label('Para')->native(false)->required()->live()
-                            ->options(fn (Get $get) => EventResource::configurablePrices($get('../../price_version_ids') ?? [])),
-                        Select::make('character_id')->label('Personaje')->native(false)->required()->searchable()
+                            ->options(fn (Get $get) => EventResource::configurablePrices($get('../../price_version_ids') ?? []))
+                            // One package with characters: chosen for her, one click less.
+                            ->default(fn (Get $get) => count($o = EventResource::configurablePrices($get('../../price_version_ids') ?? [])) === 1 ? (string) array_key_first($o) : null),
+                        Select::make('character_id')->label('Personaje')->native(false)->required()->searchable()->live()
                             ->options(fn (Get $get) => EventResource::characterOptions($get('price_version_id'))),
                         TextInput::make('quantity')->label('Cuántos')->integer()->minValue(1)->maxValue(20)->default(1)->required(),
                         Select::make('outfit')->label('Versión del traje (opcional)')->native(false)->placeholder('Cualquiera')
@@ -337,16 +341,17 @@ class ImportHoneyBook extends Page
     public function content(Schema $schema): Schema
     {
         return $schema->components([
-            Form::make([EmbeddedSchema::make('form')])->id('form')->livewireSubmitHandler('commit')->footer([
+            Form::make([EmbeddedSchema::make('form')])->id('form')->livewireSubmitHandler('importRow')->footer([
                 Actions::make([
-                    Action::make('commit')->label('Importar este evento')->color('primary')->submit('commit'),
+                    Action::make('importRow')->label('Importar este evento')->color('primary')->submit('importRow'),
                     Action::make('cancel')->label('Cancelar')->color('gray')->action('closeRow'),
                 ]),
             ])->visible(fn () => $this->rowId !== null),
         ]);
     }
 
-    public function commit(): void
+    // Not named commit(): Livewire 4 aliases $wire.commit (like upload), so the real button never reached it.
+    public function importRow(): void
     {
         $s = $this->form->getState();
         $services = collect(self::servicesInput($s))->map(function ($svc) {

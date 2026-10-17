@@ -9,7 +9,7 @@
         @if ($f['finance'])
             <span>Pago: <b>{{ $f['finance']['net_received_cents'] > 0 ? ($f['finance']['financial_revision'] && $f['finance']['balance_cents'] === 0 ? 'Pagado completo' : 'Pago recibido') : 'Sin pagos' }}</b></span>
         @endif
-        <span>Contrato: <b>Sin emitir</b></span>
+        <span>Contrato: <b>{{ $f['contract'] }}</b></span>
         <span>Tipo: <b>{{ $f['type'] }}</b></span>
     </div>
     <div class="wfile">

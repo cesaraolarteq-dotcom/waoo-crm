@@ -33,7 +33,35 @@
                 @if (! empty($q['owner_note']))<p class="wmoney-p" style="margin-top:8px"><b>Nota privada:</b> {{ $q['owner_note'] }}</p>@endif
             </x-filament::section>
         @endif
-        <div class="wmoney-warn" role="note">Enviar la cotización a la clienta, el PDF y convertirla en reserva llegan en la siguiente entrega. Aceptar una cotización no cobra ni aparta staff.</div>
+        @php($side = $this->clientSide())
+        @if ($newLink)
+            @include('filament.pages.partials.link-panel', ['panel' => $newLink])
+        @endif
+        <x-filament::section>
+            <x-slot name="heading">La clienta</x-slot>
+            <x-slot name="description">Aceptar una cotización no cobra, no aparta staff y no es el contrato.</x-slot>
+            <dl class="wfile-dl">
+                <div><dt>Enlace</dt><dd>
+                    @if ($side['grant'])
+                        Activo hasta {{ $side['grant_expires'] }} · {{ $side['opened'] ? 'ya abrió el PDF' : 'todavía no abre el PDF' }} · {{ $this->revokeLinkAction }}
+                    @elseif ($side['presentation'])
+                        Sin enlace activo (anulado o vencido). Prepara uno nuevo si lo necesita.
+                    @else
+                        Todavía no preparas el enlace.
+                    @endif
+                </dd></div>
+                <div><dt>Su respuesta</dt><dd>
+                    @if ($side['decision'])
+                        {{ $side['decision']->outcome === 'accepted' ? 'Aceptó' : 'No aceptó' }} · {{ $side['decision']->name }} · {{ \App\Filament\Support\Labels::when(\Carbon\CarbonImmutable::parse($side['decision']->decided_at)) }}
+                    @else
+                        Sin respuesta todavía
+                    @endif
+                </dd></div>
+                @if ($side['conversion'])
+                    <div><dt>Montos</dt><dd class="ok">Fijados. <a class="wcal-name" href="{{ \App\Filament\Resources\Events\EventResource::getUrl('money', ['record' => $q['event_id']]) }}">Ir a Dinero →</a></dd></div>
+                @endif
+            </dl>
+        </x-filament::section>
         @if ($revs->count() > 1)
             <x-filament::section collapsible collapsed>
                 <x-slot name="heading">Historial de versiones</x-slot>
