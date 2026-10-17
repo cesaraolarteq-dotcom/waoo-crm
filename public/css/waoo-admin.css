@@ -192,3 +192,4 @@ a.wcal-name:hover{text-decoration:underline}
 .wrep-actions{display:flex;flex-wrap:wrap;gap:8px}
 @media (max-width:900px){.wrep-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:520px){.wrep-grid{grid-template-columns:1fr}}
+.wcal-btn:disabled{opacity:.5;cursor:not-allowed}
