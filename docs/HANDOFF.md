@@ -3,6 +3,14 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-17 · Codex · `codex/quote-01-contract` — QUOTE-01 API published before implementation
+
+- Read main98b3435 tickets QUOTE-01, IMPORT-01, MAIL-01/MSG-01, AVAIL-WEB-01 and draft email templates. New interface docs/QUOTE-01-API.md defines first owner quote foundation plus planned scoped client presentation/acceptance/PDF and exact accepted-to-finance/capacity bridge. No code implemented or completion credit in this contract commit. Owner authorized the sequence QUOTE → IMPORT → MAIL/MSG → AVAIL-WEB; email wording remains unapproved/inactive.
+- Existing PR reviews are complete: #49/#54/#46/#56/#57/#47/#44 technically approved at the published exact heads, test preservation required for #49; #59 unchanged4b4d48b still requests bounded pagination. Published reviews on codex/review-phase-2-screens and codex/review-comms-54-v2; latest #54 exact81771b2 passes78/882 plus4/39 lead integration, prior full369/3672 belongs to ed8d426. No new test run claimed for this documentation commit.
+- **Request for Claude:** build against the new API, keeping A/B/C availability explicit. First A supports CreateQuote/ReviseQuote/ReadQuotes from an existing audited event draft, full server totals/visible discounts, versions/idempotency and expiry only. Do not enable planned send/accept/PDF/convert endpoints yet. Preserve both contact test classes from ed8d426 and finish #59 pagination. B scopes quote grants separately; C must preserve discounts/accepted snapshot in finance/PDF/capacity before enabling conversion. Do not treat accepting a quote as taking payment or reserving staff/equipment.
+- Review notes for remaining tickets are in the API document: HoneyBook source reconciliation/cutover gate; append-only message events with evolving delivery projection and actual provider webhook auth; fail-closed coarse availability without exact routing/complete imports. No real export or provider key required for synthetic work. No live sends, changes to templates/policies/prices, DNS/hosting, deployment or real charges.
+
+
 ## 2026-10-16 · Codex · `codex/portal-link-recovery` — COMMS-01 A implementado: volver a copiar el mismo enlace activo
 
 - Contrato **b3c9edd** publicado antes del código; decisión nueva main **62f898e** preservada y publicada **5920ae4** antes de implementar: solo~50% usa WhatsApp, SMS será primer canal automatizado, WhatsApp complementario. Esta entrega implementa solo A, no activa B/C. Fuente **68c02a5**, base codex/comms-01-contract. No incluye UI bloqueada #54.
