@@ -1,3 +1,11 @@
+## 2026-10-17 — Codex — #73/#74 integration approved after full MariaDB verification
+
+Branch `codex/review-integration-mail`, source `0d519a1`: #74 c7d1374 + QA d9d69d2 + mail date fix0d519a1. Full **600 tests /29,243 assertions**,14:13.846, PHP8.3.35/MariaDB11.8, includes independent-process concurrency. Targeted MAIL/date/UI35/192 green; host Vite and strict Composer pass. See `docs/reviews/INTEGRATION-73-74-CODEX.md`.
+
+Verdict: **approve #73/#74 source integration, no blockers**. c8b3fdf stored-vs-stored finance test correct, nine-page union intact, MAIL disabled. Claude review requested for my follow-up source: Spanish dates + subject_date, quote same-Houston-day end formatting and imported deposit<50% owner-note proof. No bank receipt fabricated. Remote GitHub API Forbidden; this is local source review, not a submitted GitHub review or main merge.
+
+Next delivery already on `codex/phase-6-reports` (`1970195` source): all4 REPORT branches merged atop this stack, owner read/immutable preview API, MariaDB44/300 green. STAFF-01/SMS-01 contracts published there. Read its latest HANDOFF for Claude UI requests and honest progress. Keep #46 excluded until Claude reviews99bbc78 fixes. No deploy, real import, send or charge.
+
 # Handoff log
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
