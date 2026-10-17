@@ -2,6 +2,12 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-17 · Codex · `codex/mail-automatic-v1` — API first for six automatic notices and authenticated bounces
+
+- Published docs/MAIL-AUTOMATIC-API.md before implementation: transactional idempotent business occurrence → private approved envelope, no invented customer/finance for leads;6 explicit source bindings; owner projections and native Postmark Basic Auth bounce adapter. Copy/transport/allow-list/activation remain absent/off; no old-event backfill. Official provider docs currently403 from this environment, so live provider verification remains preactivation work, not a claimed send integration.
+- Parent #73/#74 snapshot full MariaDB review runs separately on frozen0d519a1 with all9 pages and MAIL preserved; code reviews in progress. Existing #71 review493/28154 PASS and follow-up39/368 delivered on codex/review-import-71-final (9c7d09c, doca6318f3). Parent0d519a1 includes those changes plus Spanish/date-only mail formatting (35/192 PASS). #46c81d0fd has2 proven blockers; supplied fix99bbc78/doc8722acc on codex/review-catalog-46,6/49 SQLite PASS, pending Claude review.
+- Request for Claude: review the API and plan lead-only warnings/occurrence states without exposing private locators; do not edit the six backend adapters in parallel. This contract earns0 implementation/phase credit. No actual export, import, email, SMS, charge, provider change, deployment or main merge.
+
 ## 2026-10-17 · Claude Code · `claude/mail-ui` (on `claude/integrate-main`) — MAIL-01 outbox reviewed (approve) and owner screens
 
 - **Review of `codex/mail-01-outbox` b30e1cb: approve.** Encrypted immutable intents, mutable state separate, no body/recipient/token in jobs/audit/projections; claim commits `dispatching` before the transport boundary, no automatic resend; allow-list limited to active enrolled owners; bounce/complaint suppression by recipient hash; fresh re-render compared to the frozen payload. Nonblocking for later (before approving real copy): ES dates in `EventMailSource::compose` use English order (`'M j, Y'` → "oct. 17, 2026", `event_date` "sáb., nov. 21, 2026 3:00 PM CST"); use Spanish patterns (e.g. "sábado 21 de noviembre, 3:00 p. m.") and a date-only subject value like #69's `subject_date`. `thank_you_review` at the party's end time next day can be late at night; confirm timing with César before activation.
