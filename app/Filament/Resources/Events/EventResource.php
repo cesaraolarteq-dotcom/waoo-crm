@@ -166,7 +166,7 @@ class EventResource extends Resource
                 $name = \App\Models\Character::whereKey((int) $c['character_id'])->value('name');
                 $n = max(1, (int) ($c['quantity'] ?? 1));
 
-                $name = $name && filled($c['outfit'] ?? null) ? "{$name} {$c['outfit']}" : $name;
+                $name = $name !== null && ($c['outfit'] ?? null) !== null && $c['outfit'] !== '' ? "{$name} {$c['outfit']}" : $name;
 
                 return $name ? ($n > 1 ? "{$n} {$name}" : $name) : null;
             })->filter()->values();
