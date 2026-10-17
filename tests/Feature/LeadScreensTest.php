@@ -70,7 +70,7 @@ class LeadScreensTest extends TestCase
         $lead = $this->lead();
         $page = Livewire::test(QuickBooking::class, [])->call('fillFromLead', $lead->id)
             ->assertSet('leadId', $lead->id)->assertSet('leadVersion', 1)
-            ->assertSchemaStateSet(['customer_mode' => 'new', 'name' => 'Ana Ficticia', 'postal_code' => '77494', 'date' => '2026-12-19', 'start_time' => '15:00'])
+            ->assertSchemaStateSet(['customer_mode' => 'new', 'name' => 'Ana Ficticia', 'email' => 'ana@example.test', 'postal_code' => '77494', 'date' => '2026-12-19', 'start_time' => '15:00'])
             ->assertSee('Convirtiendo el prospecto de');
         $this->assertSame('new', $lead->fresh()->status, 'Opening the conversion changes nothing.');
         $page->fillForm(['price_version_ids' => [$this->price->id], 'event_type' => 'birthday', 'title' => 'Fiesta Ana', 'end_time' => '16:00', 'travel_fee' => '40',
@@ -85,5 +85,19 @@ class LeadScreensTest extends TestCase
     {
         config(['waoo.sandbox_lead_intake' => false]);
         $this->get('/admin/prospectos')->assertForbidden();
+    }
+
+    // Codex review #59: lead 51 is reachable through the page controls; changing the filter goes back to page 1.
+    public function test_pagination_reaches_every_lead_and_filter_resets_the_page(): void
+    {
+        $first = $this->lead(['name' => 'Primera Ficticia', 'email' => 'primera@example.test']);
+        foreach (range(2, 51) as $n) $this->lead(['name' => "Prospecto $n", 'email' => "p$n@example.test"]);
+        $page = Livewire::test(Leads::class)->assertSee('Prospecto 51')->assertDontSee('Primera Ficticia')
+            ->assertSee('1–50 de 51 · página 1 de 2')->assertSee('Siguientes →');
+        $page->call('goToPage', 2)->assertSet('leadPage', 2)->assertSee('Primera Ficticia')->assertDontSee('Prospecto 51')->assertSee('51–51 de 51 · página 2 de 2');
+        $page->call('goToPage', 9)->assertSet('leadPage', 2);
+        $page->set('status', 'all')->assertSet('leadPage', 1)->assertSee('Prospecto 51');
+        $this->get('/admin/prospectos?pagina=2')->assertOk()->assertSee('Primera Ficticia');
+        $this->assertSame(51, Lead::count());
     }
 }

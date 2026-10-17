@@ -58,7 +58,7 @@ class CharacterResource extends Resource
     /** Only the editable fields of the contract, with empty strings as null like the HTTP path. */
     public static function toServiceInput(array $data): array
     {
-        $outfits = collect($data['outfits'] ?? [])->map(fn ($o) => trim((string) $o))->filter()->unique(fn ($o) => mb_strtolower($o))->values()->all();
+        $outfits = collect($data['outfits'] ?? [])->map(fn ($o) => trim((string) $o))->filter(fn ($o) => $o !== '')->unique(fn ($o) => mb_strtolower($o))->values()->all();
 
         return ['name' => trim((string) ($data['name'] ?? '')) ?: null, 'active' => (bool) ($data['active'] ?? false), 'outfits' => $outfits === [] ? null : $outfits];
     }

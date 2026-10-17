@@ -33,6 +33,24 @@ class Leads extends Page
     #[Url]
     public string $status = 'new';
 
+    /** Page of the current filter (50 per page, the service's bound). Changing the filter goes back to page 1. */
+    #[Url(as: 'pagina')]
+    public int $leadPage = 1;
+
+    public ?int $lastPage = null;
+
+    public array $pageInfo = [];
+
+    public function updatedStatus(): void
+    {
+        $this->leadPage = 1;
+    }
+
+    public function goToPage(int $page): void
+    {
+        $this->leadPage = max(1, min($page, $this->lastPage ?? $page));
+    }
+
     /** The lead open in the "Actualizar" modal, as shown when it opened; a save sends this version only. */
     #[Locked]
     public ?int $editingLeadId = null;
@@ -55,7 +73,10 @@ class Leads extends Page
 
     public function rows(): array
     {
-        $page = app(ReadLeads::class)->index(Filament::auth()->user(), [...(array_key_exists($this->status, self::STATUS) ? ['status' => $this->status] : []), 'per_page' => 50]);
+        $page = app(ReadLeads::class)->index(Filament::auth()->user(), [...(array_key_exists($this->status, self::STATUS) ? ['status' => $this->status] : []),
+            'per_page' => 50, 'page' => max(1, $this->leadPage)]);
+        $this->lastPage = $page->lastPage();
+        $this->pageInfo = ['current' => $page->currentPage(), 'last' => $page->lastPage(), 'total' => $page->total(), 'from' => $page->firstItem(), 'to' => $page->lastItem()];
 
         return collect($page->items())->map(function ($l) {
             $p = $l['submission']['payload'] ?? [];

@@ -3,6 +3,15 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-17 · Claude Code · `claude/lead-ui` (#59) — review CLAUDE-56-57-59-54 addressed
+
+- **#59 P2 pagination:** Leads keeps the service's 50 bound and forwards the page: `leadPage` (URL `?pagina=`), `goToPage()` clamps to the paginator's last page, paginator metadata kept for “← Anteriores / Siguientes →” and “x–y de N · página a de b”; changing the status filter resets to page 1. Regression `test_pagination_reaches_every_lead_and_filter_resets_the_page` (51 leads: the oldest is only on page 2 and reached through the controls; `?pagina=2` renders it; out-of-range clamps; filter change → page 1).
+- **#59 note:** new-client email field on Reserva rápida (optional) mapped to `new_customer.email`; lead conversion pre-fills the lead's email only for a new client (never overwrites an existing customer).
+- **Test classes (ed8d426):** #49 now carries your `QuickBookingContactTest` (10 backend tests) unchanged plus the screen class `QuickBookingContactPageTest`; propagated through #56 → #57 → #59.
+- **#56 notes:** outfit filter keeps a version named "0"; ViewEvent uses `filled()`; costume selector says “Sin versión específica” and explains exact requests need an exact unit.
+- **#57:** your `TravelFeeReferenceCalibrationTest` (22/22) and failed-recalculation guard added with the calibration JSON from main.
+- New SHAs below in the PR comments / César's message. No staging deploy.
+
 ## 2026-10-17 · Codex · `codex/review-comms-54-v2` — APPROVE #54 81771b2; #59 still needs pagination
 
 - Fetched actual PR refs and branches. **#54 new head81771b2 APPROVE**, superseding the request-changes verdict for72d95eb only. Extension/free-text/invalid-number inputs now reject instead of guessing a recipient; US formatting and explicit international numbers retained. Removed anonymous global unload handlers and sent claims. Shared panel offers selectable manual copy on clipboard failure and correctly labels opening messaging apps. Detailed exact-head review: docs/reviews/COMMS-01-54-REVIEW-V2.md.

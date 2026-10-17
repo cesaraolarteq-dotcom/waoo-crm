@@ -166,6 +166,8 @@ class QuickBooking extends Page
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new')->helperText(fn (Get $get) => self::duplicateHint($get('name'), $get('phone')) ?? 'Ella confirma su nombre completo en el enlace.'),
                 TextInput::make('phone')->label('Teléfono / WhatsApp')->tel()->maxLength(40)->live(onBlur: true)
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new'),
+                TextInput::make('email')->label('Correo (opcional)')->email()->maxLength(255)
+                    ->visible(fn (Get $get) => $get('customer_mode') === 'new'),
                 Select::make('locale')->label('Idioma de sus mensajes')->native(false)->options(['es' => 'Español', 'en' => 'Inglés'])->required()
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new'),
             ]),
@@ -332,7 +334,7 @@ class QuickBooking extends Page
         return [
             ...($s['customer_mode'] === 'existing'
                 ? ['customer_id' => (int) $s['customer_id'], ...$this->customerUpdate($s)]
-                : ['new_customer' => ['name' => trim($s['name']), 'phone' => filled($s['phone'] ?? null) ? trim($s['phone']) : null, 'email' => null, 'locale' => $s['locale']]]),
+                : ['new_customer' => ['name' => trim($s['name']), 'phone' => filled($s['phone'] ?? null) ? trim($s['phone']) : null, 'email' => filled($s['email'] ?? null) ? trim($s['email']) : null, 'locale' => $s['locale']]]),
             'title' => trim((string) $s['title']), 'event_type' => $s['event_type'], 'starts_at' => $start, 'ends_at' => $end, 'timezone' => ChicagoTime::TZ,
             'postal_code' => trim((string) $s['postal_code']), 'travel_fee_cents' => EditServiceVariant::toCents((string) $s['travel_fee']),
             ...(filled($s['address'] ?? null) ? ['address' => trim((string) $s['address'])] : []),
@@ -393,7 +395,7 @@ class QuickBooking extends Page
         if (count($hints) === 1) {
             $state += ['customer_mode' => 'existing', 'customer_id' => $hints[0]['customer_id']];
         } else {
-            $state += ['customer_mode' => 'new', 'name' => $p['name'], 'phone' => $p['phone'] ?? null, 'locale' => $p['locale'] ?? 'es'];
+            $state += ['customer_mode' => 'new', 'name' => $p['name'], 'phone' => $p['phone'] ?? null, 'email' => $p['email'] ?? null, 'locale' => $p['locale'] ?? 'es'];
         }
         $this->form->fill([...$this->form->getRawState(), ...$state]);
         if (($state['customer_mode'] ?? null) === 'existing') {

@@ -45,5 +45,12 @@
         @empty
             <x-filament::section><p class="wmoney-p">No hay prospectos en este estado.</p></x-filament::section>
         @endforelse
+        @if (($this->pageInfo['last'] ?? 1) > 1)
+            <nav class="wlead-pages" aria-label="Páginas de prospectos">
+                <button type="button" class="wcal-btn" wire:click="goToPage({{ $this->pageInfo['current'] - 1 }})" @disabled($this->pageInfo['current'] <= 1)>← Anteriores</button>
+                <span>{{ $this->pageInfo['from'] }}–{{ $this->pageInfo['to'] }} de {{ $this->pageInfo['total'] }} · página {{ $this->pageInfo['current'] }} de {{ $this->pageInfo['last'] }}</span>
+                <button type="button" class="wcal-btn" wire:click="goToPage({{ $this->pageInfo['current'] + 1 }})" @disabled($this->pageInfo['current'] >= $this->pageInfo['last'])>Siguientes →</button>
+            </nav>
+        @endif
     </div>
 </x-filament-panels::page>
