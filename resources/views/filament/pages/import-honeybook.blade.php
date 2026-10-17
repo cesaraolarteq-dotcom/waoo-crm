@@ -39,7 +39,7 @@
                     <div><dt>{{ $label }}</dt><dd>{{ \App\Filament\Support\Labels::money($t['sum_cents'] ?? 0) }}@if (($t['unknown_count'] ?? 0) > 0) <small>· {{ $t['unknown_count'] }} sin dato</small>@endif</dd></div>
                 @endforeach
             </dl>
-            <p class="wqb-hint">Lo pagado se guarda como "importado de HoneyBook", no como Zelle o tarjeta verificados. Las filas con diferencias de importes no se pueden importar hasta corregirlas en el archivo.</p>
+            <p class="wqb-hint">Lo pagado se guarda como "importado de HoneyBook", no como Zelle o tarjeta verificados. Una diferencia en el total puede aceptarse con tu nota, conservando los importes originales. Los demás errores deben corregirse antes de importar.</p>
         </section>
 
         @if ($cov)

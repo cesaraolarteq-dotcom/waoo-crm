@@ -148,4 +148,16 @@ class HoneyBookFutureImportTest extends TestCase
         $this->assertSame(12000,(int)ImportedLedgerLine::sum('amount_cents'));$this->assertDatabaseCount('ledger_entries',0);
     }
 
+    public function test_source_start_is_rechecked_after_preview_and_never_silently_imported_as_past():void
+    {
+        $batch=$this->stageFuture(['event_date'=>'2026-10-17','start_time'=>'07:30','end_time'=>'08:30']);$row=ImportRow::sole();
+        $this->assertSame('ready',$row->status);$this->travelTo(\Carbon\CarbonImmutable::parse('2026-10-17T12:31:00Z'));
+        try{app(CommitHoneyBookEvent::class)->execute($this->owner,$batch->id,$row->id,$this->commitInput($batch,$row),(string)Str::uuid());$this->fail('Elapsed source accepted');}
+        catch(RecordWriteRejected $e){$this->assertSame(409,$e->status);$this->assertSame('El evento de origen ya no es futuro.',$e->getMessage());}
+        $this->assertDatabaseCount('events',0);$this->assertDatabaseCount('imported_project_links',0);$this->assertSame('ready',$row->fresh()->status);
+        $coverage=app(ReadImportCoverage::class)->execute($this->owner,$batch->id);$this->assertFalse($coverage['domain_complete']);$this->assertSame(1,$coverage['counts']['unmapped']);
+        try{app(FinalizeHoneyBookImport::class)->execute($this->owner,$batch->id,['expected_version'=>$batch->version,'source_coverage_reviewed'=>true],(string)Str::uuid());$this->fail('Elapsed unresolved source hidden at finalization');}
+        catch(RecordWriteRejected $e){$this->assertSame(409,$e->status);}
+    }
+
 }
