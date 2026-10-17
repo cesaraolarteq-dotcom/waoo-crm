@@ -33,6 +33,9 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::post('/resources/{resource}/blocks/{block}/release', [ResourceBlockController::class, 'release'])->whereNumber('block');
     Route::post('/costume-compatibilities', [CoreController::class, 'compatibility']);
     Route::post('/costume-compatibilities/unlink', [CoreController::class, 'unlinkCompatibility']);
+    Route::get('/events/{event}/costs', [\App\Http\Controllers\Admin\EventCostController::class, 'summary']);
+    Route::get('/events/{event}/cost-snapshots', [\App\Http\Controllers\Admin\EventCostController::class, 'index']);
+    Route::post('/events/{event}/cost-snapshots', [\App\Http\Controllers\Admin\EventCostController::class, 'store']);
     Route::get('/zelle-notices', [\App\Http\Controllers\Admin\ZelleNoticeController::class, 'index']);
     Route::post('/events/{event}/zelle-notices/{notice}/review', [\App\Http\Controllers\Admin\ZelleNoticeController::class, 'review'])->whereNumber('notice');
     Route::get('/quick-bookings', [\App\Http\Controllers\Admin\QuickBookingController::class, 'index']);
