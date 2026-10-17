@@ -583,7 +583,18 @@
       "accepted": false,
       "scope": "Exact24 owner CSV, explicit immutable historical source agreement/ledger, versioned customer/mapping/draft import, normal capacity with real contention correction, source/imported count+money coverage and retryable private artifact deletion. No fake verified payment or CRM signature; new CRM money/contracts/quote/links blocked pending cutover contract.",
       "verification": "Full465 tests/3973 assertions PASS, exit0,639.22s, PHP8.3.35/MariaDB11.8, integrated source5dbb7d2 (IMPORT4e23e9b plus quote adapter). Targeted20/188 PASS28.773s and earlier38/354 include source normalization/SQLite/legacy quote portal. Strict Composer/39 PHP syntax/diff pass; guarded local340000 migration and container /up200, import flag disabled. No source changes after final full run.",
-      "remaining": "Claude review/private mapping+resource screens; local actual export reconciliation and full source attestation; owner pilot acceptance. No real export in git/logs/chat; no public availability activation."
+      "remaining": "Claude review/private mapping+resource screens; local actual export reconciliation and full source attestation; owner pilot acceptance. No real export in git/logs/chat; no public availability activation.",
+      "owner_resolution": {
+       "api": "9c91e9d",
+       "backend": "fb6f319",
+       "ui": false,
+       "reviewed": false,
+       "merged": false,
+       "accepted": false,
+       "verification": "46 tests /308 assertions PASS,67.270s, PHP8.3/MariaDB11.8: new owner resolution7, source import16, staging23. No whole-suite or actual export claim.",
+       "scope": "Explicit private owner note for package equation difference only; preserve original totals/errors; coverage/finalize evidence; settled blank due date; suggestion-only normalized key; cash display mapping with unverified provenance.",
+       "remaining": "Claude UI exception fields, same helper, labels; independent backend review; actual source correction/owner completeness/pilot. No phase completion credit."
+      }
      }
     },
     {

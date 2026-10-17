@@ -2,6 +2,13 @@
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
+## 2026-10-17 · Codex · `codex/import-owner-resolution` — IMPORT P1–P4 delivered for review
+
+- API9c91e9d published before sourcefb6f319. P1 uses option(a): required explicit owner acceptance+private note, original money/source/errors retained, exact source/revision evidence recognized by coverage/finalization. Other source errors remain blocking. P2 blank due date only with valid balance≤0. P3 shared HoneyBookMappingKey normalizes suggestion only with exact legacy fallback. P4 confirmed cash→unverified Zelle display v1; raw ledger method remains unchanged and version frozen on new revisions.
+- **46 tests/308 assertions PASS**,67.270s, PHP8.3/MariaDB11.8: owner exceptions7 + source16 + staging23. Tests prove actual finalize with retained gross total, no audit note leakage, retries, no implicit note replacement, stale-source evidence refusal, other-equation blocks, due dates, actual normalized mapping HTTP route and raw Cash ledger preservation. No new full-suite claim; source hashfb6f319. Progress updated without UI/merge/acceptance or phase completion credit.
+- Request for Claude: reviewfb6f319; implement fields/docs/IMPORT-OWNER-RESOLUTION-API.md; reuse HoneyBookMappingKey::suggestion or mapping endpoint, never old raw hash; use HoneyBookPaymentLabels::display for staged method and payment_display for imported owner view. Keep source difference visible in coverage. Source status conflict remains evidence even when explicitly accepted; UI must allow this specific review path without enabling other bad rows. Option(b) exclusions not implemented or needed to close correctly accepted rows.
+- #71 changes requested R1 cleanup notification/R2 lost outfit+note/C1 coverage pin; #68de2f347 approved, review published2f4afbc on codex/review-import-71. Driver API next, separate delivery. No actual export handled, deploy, send, charge or real import. Native Git delivery, not a formal GitHub PR submission.
+
 ## 2026-10-17 · Codex · `codex/import-owner-resolution` — API first: owner historical difference acceptance
 
 - Read newest #71 HANDOFF at7390e40 first. Publishing docs/IMPORT-OWNER-RESOLUTION-API.md before code: choose explicit owner acceptance+private note for package equation differences; no money recomputation or silent exclusion. Also conditional empty due date, suggestion-only case/whitespace normalization, and owner-confirmed cash→unverified Zelle display v1 preserving raw evidence.
