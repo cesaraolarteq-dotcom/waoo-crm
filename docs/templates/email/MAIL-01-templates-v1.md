@@ -2,7 +2,10 @@
 
 Status: wording draft by Claude for César. Not active. Variables in `{{ }}` are filled by the CRM; every variable is escaped. One link per message. Plain text first (HTML version = same text, Waoo logo header, one button). Subjects ≤ 60 characters. ES always says “costo de transporte”.
 
-Variables: `first_name`, `event_date` (e.g. “Sat, Dec 19 at 3:00 pm” / “sáb. 19 dic., 3:00 p. m.”), `package`, `total`, `travel_fee`, `deposit`, `paid`, `balance`, `due` (balance due date), `link` (portal), `review_link` (Google review), `owner_phone` = (346) 851-8830.
+Variables (all declared; the renderer refuses unknown ones, escapes every value and formats money as $1,234.50):
+`first_name` (≤20 chars in subjects), `event_date`, `address`, `package`, `package_price`, `travel_fee`, `subtotal` (package + travel), `discounts` (list of `{label, amount}`; only visible labels, never the private reason), `discount_total`, `total`, `deposit`, `amount` (this payment), `paid`, `balance`, `has_balance` (boolean, true only when balance > 0 — never test the formatted `$0.00`), `due` (balance due date), `valid_until`, `link` (portal), `review_link` (Google review), owner phone (346) 851-8830.
+
+Subjects: rendered subject ≤ 60 characters with real data; `first_name` is cut to 20 characters in subjects only; tests cover long names and long package names in both languages.
 
 ---
 
@@ -24,13 +27,17 @@ Variables: `first_name`, `event_date` (e.g. “Sat, Dec 19 at 3:00 pm” / “s�
 
 **EN** · Subject: Your Waoo Party quote for {{event_date}}
 > Hi {{first_name}}! Here is your quote for {{package}} on {{event_date}}:
-> Package: {{package_price}} · Travel fee: {{travel_fee}} · **Total: {{total}}**
+> Package: {{package_price}} · Travel fee: {{travel_fee}}
+> {{#discounts}}{{label}}: −{{amount}}
+> {{/discounts}}**Total: {{total}}**
 > To reserve your date we need a 50% deposit ({{deposit}}). Review and accept your quote here: {{link}}
 > This quote is valid until {{valid_until}}. We're excited to be part of your celebration!
 
 **ES** · Asunto: Tu cotización de Waoo Party para el {{event_date}}
 > ¡Hola {{first_name}}! Aquí está tu cotización de {{package}} para el {{event_date}}:
-> Paquete: {{package_price}} · Costo de transporte: {{travel_fee}} · **Total: {{total}}**
+> Paquete: {{package_price}} · Costo de transporte: {{travel_fee}}
+> {{#discounts}}{{label}}: −{{amount}}
+> {{/discounts}}**Total: {{total}}**
 > Para apartar tu fecha pedimos un depósito del 50 % ({{deposit}}). Revisa y acepta tu cotización aquí: {{link}}
 > Esta cotización es válida hasta el {{valid_until}}. ¡Estamos emocionados de ser parte de tu celebración!
 
@@ -57,11 +64,11 @@ Variables: `first_name`, `event_date` (e.g. “Sat, Dec 19 at 3:00 pm” / “s�
 ## 5. payment_received — only after the owner verifies (Zelle) or Stripe confirms
 
 **EN** · Subject: Payment received — thank you!
-> Thanks so much, {{first_name}}! We received your payment of {{amount}}. Paid so far: {{paid}} · Balance: {{balance}}{{#balance}} (due {{due}}){{/balance}}.
+> Thanks so much, {{first_name}}! We received your payment of {{amount}}. Paid so far: {{paid}} · Balance: {{balance}}{{#has_balance}} (due {{due}}){{/has_balance}}.
 > We're excited to be part of your celebration!
 
 **ES** · Asunto: Pago recibido, ¡gracias!
-> ¡Muchas gracias, {{first_name}}! Recibimos tu pago de {{amount}}. Pagado hasta hoy: {{paid}} · Saldo: {{balance}}{{#balance}} (vence el {{due}}){{/balance}}.
+> ¡Muchas gracias, {{first_name}}! Recibimos tu pago de {{amount}}. Pagado hasta hoy: {{paid}} · Saldo: {{balance}}{{#has_balance}} (vence el {{due}}){{/has_balance}}.
 > ¡Estamos emocionados de ser parte de tu celebración!
 
 ## 6. zelle_notice_pending — after the client says “I sent my Zelle”
@@ -72,7 +79,7 @@ Variables: `first_name`, `event_date` (e.g. “Sat, Dec 19 at 3:00 pm” / “s�
 **ES** · Asunto: Recibimos tu aviso de Zelle
 > ¡Hola {{first_name}}! Gracias por avisarnos que enviaste {{amount}} por Zelle. En cuanto lo veamos en el banco te lo confirmamos. Mientras tanto tu saldo no cambia.
 
-## 7. balance_reminder — 24 h before the due date, only if balance > 0
+## 7. balance_reminder — only if `has_balance`; sent 24 h **before the due date** (the due date itself is 24 h before the party, so this goes out ~48 h before the party)
 
 **EN** · Subject: Friendly reminder: balance due {{due}}
 > Hi {{first_name}}! Your party is coming up on {{event_date}}. Your balance of {{balance}} is due {{due}}. You can pay by Zelle to 346-216-8739 (Waoo Party LLC, no fee) or by card here: {{link}}

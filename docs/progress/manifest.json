@@ -207,7 +207,7 @@
      "weight": 3,
      "agent": "Codex+Claude",
      "backend": "ea13afd",
-     "ui": "4b4d48b",
+     "ui": "d04561a",
      "reviewed": false,
      "merged": false,
      "accepted": false,
@@ -230,7 +230,7 @@
      "weight": 2,
      "agent": "Codex",
      "backend": "f31361c",
-     "ui": "c57a3dc",
+     "ui": "f096c04",
      "reviewed": true,
      "merged": false,
      "accepted": false,
@@ -303,7 +303,7 @@
      "merged": true,
      "accepted": false,
      "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996",
-     "outfit_versions": "Codex d1b00a3/API7c8dcb1 + Claude #56 917e573 reviewed/approved with minor mapper/wording follow-ups; main merge, real inventory and owner acceptance pending."
+     "outfit_versions": "Codex d1b00a3 + Claude #56 b2f5ba2 aprobado por Codex (notas aplicadas)."
     },
     {
      "name": "Motor sin choques (habilidades, trajes, vehículos, concurrencia)",
@@ -418,7 +418,7 @@
      "ui_fix_evidence": "Codex implementation bf2ffac/7ebcf2c chosen explicitly; integrated exact bdc6c9e with Claude2d19000. Full 254/2328; server resolves Houston local time with CDT/CST choice. Both HANDOFF histories retained.",
      "ui_fix_reviewed": true,
      "ui_fix_review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed.",
-     "link_recovery": "Codex68c02a5 approved by Claude; Claude #54 exact81771b2 reviewed/approved by Codex. Same active URL, recipient parsing and manual clipboard fallback; main merge/device QA/owner acceptance pending."
+     "link_recovery": "Codex 68c02a5 + Claude #54 aprobado por Codex (81771b2)."
     },
     {
      "name": "Reserva rápida (tu mitad + la de la clienta)",
@@ -469,7 +469,7 @@
       "backend_review": "Claude HANDOFF in #54 explicitly approves source68c02a5.",
       "latest_ui_verification": "Codex exact #54 81771b2, source7048acf: targeted78/882 (85.129s) +4/39 LEAD screen checks (4.838s) pass, PHP8.3/MariaDB11.8. Real same-link/revoke/legacy UI and both contact suites; Node actual Alpine clipboard success/rejection/missing API pass; Vite/syntax/diff pass. No new full/browser/device/provider/main merge/owner acceptance."
      },
-     "contact_atomicity": "Codex ad87fae (API 2ff80c1) + Claude #49 1ebafe0: corrección de contacto dentro de QuickBook; pendiente revisión de Codex."
+     "contact_atomicity": "Codex ad87fae + Claude #49 619720f (aprobado; clases de prueba de contacto conservadas)."
     }
    ]
   },
