@@ -3,6 +3,13 @@
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
 
 
+## 2026-10-17 · Claude Code · `claude/catalog-import` (#46) — owner equipment inventory + shared robot suits
+
+- Owner finished the catalog (q21–q23): equipment counts → new catalog collection `inventory` → importer creates one equipment unit per item (`EQ-<KIND>-n`, idempotent, never removes). Owner rule “the same 2 robot suits work tall or low” → `robot_tall`/`robot_low` gear maps to one pool `robot_suit` (Labels updated), so tall and low shows compete for the same suits. Cloud dance reserves 120 min (owner: 10–15 min show, wait for the special dance).
+- Dry run on the real export: 31 packages active/draft as before + Cloud dance now imports; equipment units speaker 4, mic 4, bubbles 3, vanity 1, foam 1, photo_booth 1, robot_suit 2, smoke 2, sparkler 4, face_kit 2. **Tables still unknown** (q25) → packages with a table stay unreservable until the owner adds tables. **Staff and characters are still not in the catalog** (q24) → no booking can be confirmed yet.
+- **Backend request (pending owner q28):** owner says every service needs at least one person who drives, without adding a person. That needs a slot with two skills (e.g. host + driver) or a “one of the team has skill X” rule; current requirements are one skill per slot. Please propose the contract; the importer will map it once agreed.
+- Tests `ImportOwnerCatalogTest` 4/40 (inventory units, re-run adds none, robot suit pool).
+
 ## 2026-10-16 · Claude Code · `claude/catalog-import` (#46) — review P1 fixed; merges qbca stack 0b53d85 for OUTFIT
 
 - **P1 equipment:** declared catalog gear (speaker, mic, bubbles, robot_tall/low, smoke, foam, photo_booth, vanity, disco_ball, sparkler, table, face_kit) becomes `equipment` requirements with exact quantities. A package is `active` only when ready **and** every declared item is represented (unknown gear key, or a character package without character options → draft). Regression `test_imported_equipment_is_reserved_by_the_real_engine`: ConfirmCapacity rejects the imported speaker package without a speaker and refuses the same speaker for a second party at the same time.

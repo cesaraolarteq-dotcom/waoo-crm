@@ -31,7 +31,7 @@ final class Labels
     ];
 
     // Same keys as the owner's catalog page and waoo:import-catalog, so a unit created here matches what a package requires.
-    public const EQUIPMENT = ['speaker' => 'Bocina', 'mic' => 'Micrófono', 'bubbles' => 'Máquina de burbujas', 'robot_tall' => 'Robot LED alto', 'robot_low' => 'Robot LED bajo',
+    public const EQUIPMENT = ['speaker' => 'Bocina', 'mic' => 'Micrófono', 'bubbles' => 'Máquina de burbujas', 'robot_tall' => 'Robot LED alto', 'robot_low' => 'Robot LED bajo', 'robot_suit' => 'Traje de robot LED (alto o bajo)',
         'smoke' => 'Pistola de humo / CO₂', 'foam' => 'Cañón de espuma', 'photo_booth' => 'Photo booth', 'vanity' => 'Tocador', 'disco_ball' => 'Bola disco',
         'sparkler' => 'Chisperos', 'table' => 'Mesa', 'face_kit' => 'Maleta de pintacaritas',
         // Earlier keys, kept only so old test data still shows a name. Do not use for new units.

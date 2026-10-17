@@ -22,7 +22,10 @@ class ImportOwnerCatalog extends Command
         'character_head' => 'performer', 'character_wig' => 'performer_wig'];
 
     /** Catalog equipment keys (owner's catalog page). Declared units become equipment requirements; anything else keeps the package in draft. */
-    public const EQUIPMENT = ['speaker', 'mic', 'bubbles', 'robot_tall', 'robot_low', 'smoke', 'foam', 'photo_booth', 'vanity', 'disco_ball', 'sparkler', 'table', 'face_kit'];
+    public const EQUIPMENT = ['speaker', 'mic', 'bubbles', 'robot_tall', 'robot_low', 'robot_suit', 'smoke', 'foam', 'photo_booth', 'vanity', 'disco_ball', 'sparkler', 'table', 'face_kit'];
+
+    /** Owner: the same 2 robot suits work as tall or low, so both packages compete for one pool of suits. */
+    public const EQUIPMENT_ALIAS = ['robot_tall' => 'robot_suit', 'robot_low' => 'robot_suit'];
 
     /** Staff card extra skills (catalog page) → staff skills; a wig performer can also play head characters. */
     public const EXTRA_SKILLS = ['glitter' => 'glitter', 'hair' => 'hair', 'balloons' => 'balloons', 'games' => 'games', 'show' => 'show',
@@ -39,6 +42,7 @@ class ImportOwnerCatalog extends Command
         $dry = (bool) $this->option('dry-run');
 
         $characters = $this->characters($actor, $data['characters'] ?? [], $dry);
+        $this->inventory($actor, $data['inventory'] ?? [], $dry);
         $this->staff($actor, $data['staff'] ?? [], $dry);
         foreach (collect($data['packages'])->sortBy(fn ($p) => [$p['group'] ?? '', $p['order'] ?? 99]) as $key => $p) {
             try {
@@ -105,6 +109,24 @@ class ImportOwnerCatalog extends Command
         return $out;
     }
 
+    /** Owner's equipment counts → one equipment unit per item (EQ-<KIND>-n). Only adds missing units; never removes. */
+    private function inventory(User $actor, array $rows, bool $dry): void
+    {
+        foreach ($rows as $row) {
+            $kind = self::EQUIPMENT_ALIAS[$row['kind'] ?? ''] ?? ($row['kind'] ?? '');
+            if (! in_array($kind, self::EQUIPMENT, true)) { $this->report[] = ['Equipo', (string) ($row['label'] ?? $kind), 'no importado', 'tipo desconocido']; continue; }
+            $made = 0;
+            for ($n = 1; $n <= max(0, (int) ($row['count'] ?? 0)); $n++) {
+                $code = 'EQ-'.Str::upper(str_replace('_', '-', $kind)).'-'.$n;
+                if (Resource::where('code', $code)->exists()) continue;
+                if (! $dry) app(SaveResource::class)->execute($actor, ['code' => $code, 'name' => trim((string) ($row['label'] ?? $kind)).' '.$n, 'kind' => 'equipment', 'status' => 'active',
+                    'character_id' => null, 'location' => null, 'skills' => [], 'equipment_kind' => $kind, 'seats' => null]);
+                $made++;
+            }
+            $this->report[] = ['Equipo', (string) ($row['label'] ?? $kind), ($dry ? 'se crearían ' : 'creados ').$made, $made ? '' : 'ya existían'];
+        }
+    }
+
     private function staff(User $actor, array $rows, bool $dry): void
     {
         foreach ($rows as $row) {
@@ -146,7 +168,7 @@ class ImportOwnerCatalog extends Command
         $unknownGear = [];
         foreach ((array) ($p['gear'] ?? []) as $kind => $count) {
             if ((int) $count <= 0) continue;
-            if (in_array($kind, self::EQUIPMENT, true)) $requirements[] = ['kind' => 'equipment', 'quantity' => (int) $count, 'equipment_kind' => $kind];
+            if (in_array($kind, self::EQUIPMENT, true)) $requirements[] = ['kind' => 'equipment', 'quantity' => (int) $count, 'equipment_kind' => self::EQUIPMENT_ALIAS[$kind] ?? $kind];
             else $unknownGear[] = $kind;
         }
         $options = [];

@@ -71,7 +71,7 @@ class ImportOwnerCatalogTest extends TestCase
         $robot = ServiceVariant::where('name', 'Pistola de humo + Robot alto')->sole();
         $this->assertSame('draft', $robot->status);
         $this->assertSame(0, $robot->character_quantity);
-        $this->assertSame([['kind' => 'staff', 'quantity' => 2, 'skill' => 'operator'], ['kind' => 'equipment', 'quantity' => 1, 'equipment_kind' => 'robot_tall']], $robot->requirements);
+        $this->assertSame([['kind' => 'staff', 'quantity' => 2, 'skill' => 'operator'], ['kind' => 'equipment', 'quantity' => 1, 'equipment_kind' => 'robot_suit']], $robot->requirements, 'Tall and low robots share the same suits.');
 
         // Re-run: nothing duplicated, no new price version, no version/audit churn when nothing changed.
         $versions = ServiceVariant::orderBy('id')->pluck('version')->all();
@@ -94,6 +94,7 @@ class ImportOwnerCatalogTest extends TestCase
     {
         file_put_contents($this->file, json_encode([
             'characters' => ['mickey' => ['name' => 'Mickey', 'costumes' => 2, 'wig' => false, 'outfits' => 'Clásico 1, Disneyland 2']],
+            'inventory' => ['speaker' => ['kind' => 'speaker', 'label' => 'Bocinas', 'count' => 2], 'robot' => ['kind' => 'robot_suit', 'label' => 'Trajes de robot', 'count' => 2], 'x' => ['kind' => 'laser', 'count' => 1]],
             'packages' => ['x' => ['name' => 'Raro', 'group' => 'Extras', 'price' => 100, 'duration_min' => 60, 'characters_included' => 0,
                 'crew' => ['host' => 1], 'gear' => ['laser_show' => 1], 'description' => '', 'ready' => true]],
         ]));
@@ -102,6 +103,9 @@ class ImportOwnerCatalogTest extends TestCase
         $mickey = Character::where('name', 'Mickey')->sole();
         $this->assertSame(['Clásico', 'Disneyland'], $mickey->outfits);
         $this->assertSame(['Clásico' => 1, 'Disneyland' => 2], Resource::where('character_id', $mickey->id)->get()->countBy('outfit')->all());
+        $this->assertSame(['robot_suit' => 2, 'speaker' => 2], Resource::where('kind', 'equipment')->get()->countBy('equipment_kind')->sortKeys()->all());
+        $this->artisan('waoo:import-catalog', ['file' => $this->file, '--actor' => 'owner@example.test'])->assertSuccessful();
+        $this->assertSame(4, Resource::where('kind', 'equipment')->count(), 'Re-run adds no units.');
     }
 
     // Codex review P1: an active imported speaker package cannot reserve without a speaker and competes for the same unit.
