@@ -62,9 +62,8 @@ class QuoteDetail extends Page
     {
         return [
             $this->reviseAction(),
-            Action::make('send')->label('Enviar a la clienta (próximamente)')->disabled()->color('gray'),
-            Action::make('pdf')->label('PDF (próximamente)')->disabled()->color('gray'),
-            Action::make('convert')->label('Convertir en reserva (próximamente)')->disabled()->color('gray'),
+            // B/C are not delivered: one disabled button keeps the page simple on a phone.
+            Action::make('soon')->label('Enviar · PDF · Convertir (próximamente)')->disabled()->color('gray'),
             Action::make('event')->label('Ver evento')->color('gray')->url(fn () => \App\Filament\Resources\Events\EventResource::getUrl('view', ['record' => $this->data()['quote']['event_id']])),
         ];
     }
