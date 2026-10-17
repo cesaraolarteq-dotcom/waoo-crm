@@ -184,3 +184,4 @@ a.wcal-name:hover{text-decoration:underline}
 .dark .wcost-margin.neg{background:rgba(255,138,128,.1)}.dark .wcost-margin.neg b{color:#FF8A80}
 .dark .wcost-margin.pending{background:rgba(249,201,48,.1)}.dark .wcost-margin.pending b{color:#F9C930}
 @media (max-width:900px){.wcost-cols,.wcost-top{grid-template-columns:minmax(0,1fr)}}
+.wimp-table td:last-child{white-space:nowrap}

@@ -1,53 +1,52 @@
 <x-filament-panels::page>
     @php($batch = $this->batch())
     @if (! $batch)
-        <section class="wdash-card wimp-upload">
-            <h2>1. Sube el archivo</h2>
+        <x-filament::section class="wimp-upload">
+            <x-slot name="heading">1. Sube el archivo</x-slot>
             <p class="wqb-hint">Un CSV en UTF-8 con las 24 columnas acordadas (honeybook_project_id … notes). No lo mandes por chat ni correo: súbelo solo aquí.</p>
-            <form wire:submit="upload" class="wimp-form">
+            <form wire:submit="stageFile" class="wimp-form">
                 <input type="file" wire:model="csv" accept=".csv,text/csv" aria-label="Archivo CSV de HoneyBook">
-                <button type="submit" class="wcal-btn on" wire:loading.attr="disabled" wire:target="csv,upload">Revisar archivo</button>
+                <button type="submit" class="wcal-btn on" wire:loading.attr="disabled" wire:target="csv,stageFile">Revisar archivo</button>
             </form>
             @error('csv')<p class="wmoney-warn">{{ $message }}</p>@enderror
-        </section>
+        </x-filament::section>
         @if ($list = $this->batches())
-            <section class="wdash-card">
-                <h2>Archivos subidos</h2>
+            <x-filament::section>
+            <x-slot name="heading">Archivos subidos</x-slot>
                 <ul class="wimp-list">
                     @foreach ($list as $b)
                         <li><button type="button" class="wcal-btn" wire:click="$set('batchId', {{ $b['id'] }})">Lote {{ $b['id'] }} · {{ $b['rows'] }} filas · {{ $b['when'] }} · {{ $b['status'] }}</button></li>
                     @endforeach
                 </ul>
-            </section>
+            </x-filament::section>
         @endif
     @else
         @php($rec = $batch->reconciliation)
         @php($cov = $this->coverage())
-        <section class="wdash-card">
-            <div class="wimp-head">
-                <h2>2. Revisión del lote {{ $batch->id }}</h2>
-                <button type="button" class="wcal-btn" wire:click="$set('batchId', null)">Otro archivo</button>
-            </div>
+        <x-filament::section>
+            <x-slot name="heading">2. Revisión del lote {{ $batch->id }}</x-slot>
+            <x-slot name="afterHeader"><button type="button" class="wcal-btn" wire:click="$set('batchId', null)">Otro archivo</button></x-slot>
             <div class="wimp-counts">
                 @foreach (\App\Filament\Pages\ImportHoneyBook::STATUS as $k => $label)
                     <div><b>{{ $rec['counts'][$k] ?? 0 }}</b><span>{{ $label }}</span></div>
                 @endforeach
             </div>
-            <dl class="wfile-dl wimp-totals">
+            <dl class="wfile-dl wimp-totals" style="margin:12px 0">
                 @foreach (['total_cents' => 'Total vendido', 'paid_cents' => 'Pagado (según HoneyBook)', 'balance_cents' => 'Saldo pendiente', 'travel_cents' => 'Costo de transporte'] as $f => $label)
                     @php($t = $rec['totals'][$f] ?? null)
                     <div><dt>{{ $label }}</dt><dd>{{ \App\Filament\Support\Labels::money($t['sum_cents'] ?? 0) }}@if (($t['unknown_count'] ?? 0) > 0) <small>· {{ $t['unknown_count'] }} sin dato</small>@endif</dd></div>
                 @endforeach
             </dl>
-            <p class="wqb-hint">Lo pagado se guarda como "importado de HoneyBook", no como Zelle o tarjeta verificados. Las filas con diferencias de importes no se pueden importar hasta corregirlas en el archivo.</p>
-        </section>
+            <p class="wqb-hint">Lo pagado se guarda como "importado de HoneyBook", no como Zelle o tarjeta verificados. Si el total de una fila no cuadra (por ejemplo, incluye el cargo de tarjeta), puedes importarla aceptando la diferencia con una nota tuya; el importe no cambia.</p>
+        </x-filament::section>
 
         @if ($cov)
-            <section class="wdash-card">
-                <h2>Cobertura</h2>
+            <x-filament::section>
+            <x-slot name="heading">Cobertura</x-slot>
                 <p>{{ $cov['counts']['draft'] + $cov['counts']['capacity_confirmed'] }} de {{ $cov['counts']['source_rows'] - $cov['counts']['skipped'] }} eventos importados ·
                     {{ $cov['counts']['capacity_confirmed'] }} con personal y equipo confirmados ·
-                    {{ $cov['counts']['unresolved'] }} por corregir · {{ $cov['counts']['unmapped'] }} sin importar@if ($cov['counts']['outdated']) · {{ $cov['counts']['outdated'] }} cambiaron en el archivo@endif</p>
+                    {{ $cov['counts']['unresolved'] }} por corregir · {{ $cov['counts']['unmapped'] }} sin importar
+                    @if ($cov['counts']['outdated']) · {{ $cov['counts']['outdated'] }} cambiaron en el archivo @endif</p>
                 @if ($cov['accepted_source_differences'] ?? [])
                     <p class="wqb-hint">{{ count($cov['accepted_source_differences']) }} {{ count($cov['accepted_source_differences']) === 1 ? 'evento importado' : 'eventos importados' }} con una diferencia de total aceptada por ti (con nota).</p>
                 @endif
@@ -64,12 +63,12 @@
                 @else
                     <p class="wqb-hint">Para cerrar el lote, cada fila que no esté omitida tiene que estar importada.</p>
                 @endif
-            </section>
+            </x-filament::section>
         @endif
 
         @if ($row = $this->row())
-            <section class="wdash-card wimp-row">
-                <h2>3. Importar la fila {{ $row['line'] }} · {{ $row['source']['project_name'] }}</h2>
+            <x-filament::section class="wimp-row" x-data x-init="$el.scrollIntoView({ behavior: 'smooth', block: 'start' })" wire:key="row-panel-{{ $rowId }}">
+            <x-slot name="heading">3. Importar la fila {{ $row['line'] }} · {{ $row['source']['project_name'] }}</x-slot>
                 <div class="wfile">
                     <dl class="wfile-dl">
                         <div><dt>Clienta</dt><dd>{{ $row['source']['client_first_name'] }} {{ $row['source']['client_last_name'] }}</dd></div>
@@ -100,11 +99,11 @@
                 @if ($mappingSuggested)<p class="wqb-hint">Equivalencia sugerida por una fila anterior con el mismo paquete y personajes: revísala antes de importar.</p>@endif
                 @if (! $row['matches'])<p class="wqb-hint">No hay fichas con este correo o teléfono: se creará una clienta nueva.</p>@endif
                 {{ $this->content }}
-            </section>
+            </x-filament::section>
         @endif
 
-        <section class="wdash-card">
-            <h2>Filas del archivo</h2>
+        <x-filament::section>
+            <x-slot name="heading">Filas del archivo</x-slot>
             <div class="wimp-table-wrap">
                 <table class="wimp-table">
                     <thead><tr><th>Línea</th><th>Fecha (Houston)</th><th>Clienta</th><th>En HoneyBook</th><th>Total</th><th>Pagado</th><th>Saldo</th><th>Estado</th><th></th></tr></thead>
@@ -115,9 +114,9 @@
                             <td>{{ $r['services'] }}@if ($r['characters'])<br><small>{{ $r['characters'] }}</small>@endif<br><small>{{ $r['contract'] }}</small></td>
                             <td>{{ $r['total'] }}</td><td>{{ $r['paid'] }}</td><td>{{ $r['balance'] }}</td>
                             <td>
-                                <span @class(['wimp-pill', 'is-'.$r['status']])>{{ $r['imported_current'] ? 'Importada' : (\App\Filament\Pages\ImportHoneyBook::STATUS[$r['status']] ?? $r['status']) }}</span>
+                                <span @class(['wimp-pill', 'is-'.($r['imported_current'] ? 'ready' : $r['status'])])>{{ $r['imported_current'] ? 'Importada' : (\App\Filament\Pages\ImportHoneyBook::STATUS[$r['status']] ?? $r['status']) }}</span>
                                 @if ($r['skip'])<br><small>{{ $r['skip'] === 'past' ? 'Ya pasó' : 'Cancelado' }}</small>@endif
-                                @foreach ($r['reasons'] as $why)<br><small>{{ $why }}</small>@endforeach
+                                @unless ($r['imported_current'])@foreach ($r['reasons'] as $why)<br><small>{{ $why }}</small>@endforeach @endunless
                                 @if ($r['outdated'])<br><small>Cambió en el archivo: vuelve a importarla</small>@endif
                             </td>
                             <td>
@@ -129,6 +128,6 @@
                     </tbody>
                 </table>
             </div>
-        </section>
+        </x-filament::section>
     @endif
 </x-filament-panels::page>
