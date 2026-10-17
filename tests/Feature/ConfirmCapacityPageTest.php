@@ -33,7 +33,7 @@ class ConfirmCapacityPageTest extends TestCase
             ['kind' => 'staff', 'quantity' => 1, 'skill' => 'performer'], ['kind' => 'equipment', 'quantity' => 1, 'equipment_kind' => 'speaker']]]);
         $price = PriceVersion::create(['service_variant_id' => $variant->id, 'amount_cents' => 10000, 'currency' => 'USD', 'created_by' => $this->owner->id]);
         $this->event = $this->makeEvent($customer, 'Fictitious Party', CarbonImmutable::parse('2026-12-19 21:00:00', 'UTC'), $variant, $price);
-        $this->performer = Resource::create(['code' => 'STF-1', 'name' => 'Fictitious Performer', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer']]);
+        $this->performer = Resource::create(['code' => 'STF-1', 'name' => 'Fictitious Performer', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer', 'driver']]);
         $this->speaker = Resource::create(['code' => 'SPK-1', 'name' => 'Speaker 1', 'kind' => 'equipment', 'status' => 'active', 'equipment_kind' => 'speaker', 'skills' => []]);
     }
 

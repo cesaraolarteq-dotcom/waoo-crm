@@ -46,16 +46,17 @@ final class ApproveClientDetails
             $beforeServices = $event->services()->with('characters')->orderBy('price_version_id')->get();
             $recipe = fn ($services) => $services->map(fn ($s) => ['price_version_id' => $s->price_version_id, 'duration_minutes' => $s->duration_minutes,
                 'requirements' => $s->requirements_snapshot, 'ready' => $s->operational_ready,
-                'characters' => $s->characters->map(fn ($c) => $c->only(['character_id','quantity','character_name_snapshot']))->all()])->values()->all();
+                'characters' => $s->characters->map(fn ($c) => $c->only(['character_id','quantity','character_name_snapshot','outfit','note']))->all()])->values()->all();
             app(SaveCustomer::class)->execute($actor, ['expected_version' => $customer->version, 'name' => $values['first_name'].' '.$values['last_name'], 'email' => $values['email'], 'phone' => $values['phone'], 'locale' => $values['locale'] ?? $customer->locale], $customer->id);
             $updated = $event; $finance = $previousFinance;
             if (!$reserved) {
                 $updated = app(SaveEventDraft::class)->execute($actor, [...$event->only(['customer_id','title','event_type','timezone','setup_minutes','breakdown_minutes','travel_fee_cents']),
                     'starts_at' => $event->starts_at->toIso8601String(), 'ends_at' => $event->ends_at->toIso8601String(),
                     'setup_minutes' => $data['setup_minutes'] ?? $event->setup_minutes, 'breakdown_minutes' => $data['breakdown_minutes'] ?? $event->breakdown_minutes,
+                    ...($event->travel_fee_evidence ? ['travel_fee_override_note' => mb_substr($data['review_note'], 0, 1000)] : []),
                     'address' => $values['event_address'], 'postal_code' => $values['event_postal_code'] ?? $event->postal_code,
                     'expected_version' => $event->version, 'services' => $beforeServices->map(fn ($s) => ['price_version_id' => $s->price_version_id,
-                        'characters' => $s->characters->map(fn ($c) => $c->only(['character_id','quantity']))->all()])->all(),
+                        'characters' => $s->characters->map(fn ($c) => $c->only(['character_id','quantity','outfit','note']))->all()])->all(),
                 ], $event->id);
                 RecordWriteRejected::unless($recipe($beforeServices) === $recipe($updated->services->sortBy('price_version_id')), 409, 'La receta del catálogo cambió. Revisa los servicios antes de aplicar la dirección.');
                 $finance = app(CreateFinancialRevision::class)->execute($actor, $event->id, ['expected_version' => $updated->version], (string) Str::uuid());

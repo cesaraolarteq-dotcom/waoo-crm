@@ -332,7 +332,7 @@ class QuickBookingCoreTest extends TestCase
         $this->input['address'] = '456 Fictitious Venue';
         $response = $this->create()->assertCreated();
         $event = Event::sole();
-        $performer = \App\Models\Resource::create(['code' => 'QB-PERFORMER', 'name' => 'Fictitious performer', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer']]);
+        $performer = \App\Models\Resource::create(['code' => 'QB-PERFORMER', 'name' => 'Fictitious performer', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer', 'driver']]);
         app(\App\Services\Finance\ConfirmPaidCapacity::class)->execute($this->owner, $event->id, ['expected_version' => 1, 'financial_revision_id' => FinancialRevision::sole()->id, 'resource_ids' => [$performer->id],
             'review' => ['staff_confirmed' => true, 'cargo_checked' => true, 'origin_return_note' => 'Fixture origin and return reviewed.', 'deposit_exception_reason' => 'Fixture owner accepts the fifty cent shortfall.', 'transfers' => []]]);
         parse_str(parse_url($response->json('portal_url'), PHP_URL_FRAGMENT), $fragment);
@@ -460,6 +460,56 @@ class QuickBookingCoreTest extends TestCase
             $this->assertNull($expired->portal_url); $this->assertTrue($expired->link_issue_pending);
             $this->assertDatabaseCount('ledger_entries', 1); $this->assertDatabaseCount('events', 1);
         } finally { $this->travelBack(); }
+    }
+
+    public function test_route_address_approval_records_manual_reconfirmation_without_reusing_old_calculation(): void
+    {
+        config(['waoo.sandbox_routes' => true]); \Illuminate\Support\Facades\Http::fake();
+        $address = '123 Fictional Venue, TX 77433';
+        $quote = app(\App\Services\Routing\TravelFeeQuote::class)->forAddress($this->owner, $address, '77433');
+        $this->input = [...$this->input, 'address' => $address, 'postal_code' => '77433', 'travel_fee_cents' => 4000, 'travel_fee_quote_id' => $quote['quote_id']];
+        $event = $this->client();
+        $this->submit(['event_address' => '456 Different Fictional Venue, TX 77433', 'event_postal_code' => '77433'])->assertCreated();
+        $this->approve()->assertOk(); $evidence = $event->fresh()->travel_fee_evidence;
+        $this->assertSame('manual', $evidence['mode']); $this->assertSame($quote['quote_id'], $evidence['previous_quote_id']);
+        $this->assertSame(4000, $evidence['accepted_fee_cents']);
+        $this->assertSame(1, LedgerEntry::count()); \Illuminate\Support\Facades\Http::assertNothingSent();
+    }
+
+    public function test_quick_booking_and_client_detail_approval_preserve_private_costume_selection(): void
+    {
+        $hero = \App\Models\Character::create(['name' => 'Fixture versioned hero','active' => true,'outfits' => ['Racing']]);
+        $variant = ServiceVariant::sole();
+        $variant->update(['character_quantity' => 1, 'character_options' => [['character_id' => $hero->id,'requirements' => [
+            ['kind' => 'costume','character_id' => $hero->id,'quantity' => 1], ['kind' => 'staff','skill' => 'performer','quantity' => 1]]]]]);
+        $this->input['services'][0]['characters'] = [['character_id' => $hero->id,'quantity' => 1,'outfit' => 'Racing','note' => 'PRIVATE costume adjustment']];
+        $event = $this->client();
+        $this->assertSame('Racing',$event->services()->with('characters')->sole()->characters->sole()->outfit);
+        $this->submit()->assertCreated();
+        $this->approve()->assertOk();
+        $row = $event->fresh()->services()->with('characters')->sole()->characters->sole();
+        $this->assertSame('Racing',$row->outfit); $this->assertSame('PRIVATE costume adjustment',$row->note);
+        $revision = FinancialRevision::latest('revision')->firstOrFail();
+        $this->assertSame('Racing',$revision->lines_snapshot[0]['characters'][0]['outfit']);
+        $this->assertStringNotContainsString('PRIVATE',json_encode($revision->lines_snapshot));
+    }
+
+    public function test_actual_encrypted_grant_write_failure_keeps_paid_core_and_allows_manual_link_recovery(): void
+    {
+        $fail = true;
+        DB::connection()->beforeExecuting(function ($query) use (&$fail) {
+            if ($fail && str_contains($query,'portal_grants') && str_starts_with(strtolower(ltrim($query)),'update')) throw new \RuntimeException('Fixture encrypted grant write failure');
+        });
+        try { $this->create()->assertCreated()->assertJsonPath('portal_url',null)->assertJsonPath('link_issue_pending',true); }
+        finally { $fail = false; }
+        $this->assertDatabaseCount('events',1); $this->assertDatabaseCount('ledger_entries',1); $this->assertDatabaseCount('portal_grants',0);
+        $this->assertDatabaseHas('payment_exceptions',['kind' => 'portal_link_pending','state' => 'open']);
+        $event = Event::sole();
+        $grant = app(IssuePortalGrant::class)->execute($this->owner,$event->id,['customer_id' => $event->customer_id,'expires_at' => now()->addDays(5)->toIso8601String(),'scopes' => ['details.submit','contract.read','contract.sign','payments.read','checkout.create']]);
+        $link = app(\App\Services\Portal\RevealPortalGrantLink::class)->execute($this->owner,$event->id,$grant->id);
+        $this->assertSame($grant->url,$link->url); $this->assertDatabaseCount('ledger_entries',1); $this->assertDatabaseCount('quick_bookings',1);
+        $this->assertSame($grant->id,QuickBookingRecord::sole()->portal_grant_id);
+        $this->assertDatabaseHas('payment_exceptions',['kind' => 'portal_link_pending','state' => 'resolved']);
     }
 
 }

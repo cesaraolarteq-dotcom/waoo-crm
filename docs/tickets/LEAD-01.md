@@ -1,6 +1,6 @@
 # LEAD-01 · Website quote form → CRM lead (Phase 2)
 
-Status: contract proposal by Claude (website + screens) for Codex (backend). Nothing implemented. Sandbox/staging first.
+Status: backend delivered on codex/lead-01, source ea13afd, API docs/LEAD-01-API.md published first. Full272 tests /2583 assertions pass. Claude website/spool/UI, independent review/main merge and live activation remain pending. **Signing correction:** timestamp + newline + UUID + newline + exact raw body must all be authenticated; body-only signing below is superseded by the API contract. Sandbox/staging only, default off.
 
 ## Goal
 

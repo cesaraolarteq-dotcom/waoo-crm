@@ -84,7 +84,7 @@ class EventMoneyPageTest extends TestCase
 
     public function test_paid_mode_reserves_with_the_recorded_money(): void
     {
-        $performer = Resource::create(['code' => 'STF-1', 'name' => 'Fictitious Performer', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer']]);
+        $performer = Resource::create(['code' => 'STF-1', 'name' => 'Fictitious Performer', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer', 'driver']]);
         Livewire::test(EventMoney::class, ['record' => $this->event->id])->callAction('fixAmounts');
         Livewire::test(EventMoney::class, ['record' => $this->event->id])->callAction('zelle', $this->zelle('62.50'))->assertSee('Siguiente paso');
 

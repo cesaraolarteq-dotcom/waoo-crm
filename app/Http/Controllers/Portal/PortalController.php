@@ -31,12 +31,15 @@ final class PortalController extends Controller
         $client = $request->attributes->get('portal_context'); $grant = $client->authorize($client->eventId, 'payments.read');
         $event = Event::whereKey($client->eventId)->where('customer_id', $client->customerId)->firstOrFail();
         $summary = $finance->forEvent($event);
-        if ($summary['financial_revision']) $summary['financial_revision'] = $summary['financial_revision']->only(['id','revision','currency','total_cents','deposit_target_cents','balance_due_at']);
+        if ($summary['financial_revision']) {
+            $discounts=array_map(fn($d)=>['label'=>$d['label'],'amount_cents'=>$d['amount_cents']],$summary['financial_revision']->discounts_snapshot??[]);
+            $summary['financial_revision'] = [...$summary['financial_revision']->only(['id','revision','currency','total_cents','deposit_target_cents','balance_due_at','discount_cents']),'discounts'=>$discounts];
+        }
         $revision = \App\Models\FinancialRevision::where('event_id', $event->id)->orderByDesc('revision')->first();
         $services = collect($revision?->lines_snapshot ?? [])->map(fn ($line) => [
             'name' => $line['name'] ?? null, 'duration_minutes' => $line['duration_minutes'] ?? null,
             'amount_cents' => $line['amount_cents'], 'characters' => collect($line['characters'] ?? [])->map(fn ($character) => [
-                'name' => $character['name'], 'quantity' => $character['quantity'],
+                'name' => \App\Services\Records\CharacterLabel::fromSnapshot($character), ...(isset($character['outfit']) ? ['outfit' => $character['outfit']] : []), 'quantity' => $character['quantity'],
             ])->all(),
         ])->all();
         $current = null;

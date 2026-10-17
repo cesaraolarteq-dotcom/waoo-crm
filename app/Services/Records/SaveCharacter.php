@@ -22,6 +22,12 @@ final class SaveCharacter
             if ($id) {
                 RecordWriteRejected::unless($model->version === $version, 409, 'La ficha cambió. Actualiza antes de guardar.');
             }
+            if ($id && array_key_exists('outfits', $data)) {
+                $referenced = \App\Models\Resource::where('character_id', $id)->where('kind', 'costume')->where('status', 'active')->whereNotNull('outfit')->pluck('outfit');
+                foreach ($referenced as $outfit) {
+                    RecordWriteRejected::unless(in_array($outfit, $data['outfits'] ?? [], true), 409, "La versión {$outfit} sigue vinculada a un traje activo.");
+                }
+            }
             $before = $model->getAttributes();
             $model->fill($data);
             if ($id) $model->version++;

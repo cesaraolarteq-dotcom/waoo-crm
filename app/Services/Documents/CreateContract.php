@@ -26,6 +26,7 @@ final class CreateContract
         $scope = "owner:{$actor->id}:event:{$eventId}:contract"; $hash = MutationKey::hash($data);
         return DB::transaction(function () use ($actor, $eventId, $data, $key, $scope, $hash) {
             $event = Event::whereKey($eventId)->lockForUpdate()->firstOrFail();
+            \App\Services\Imports\ImportedAgreement::blockCrmLifecycle($eventId);
             if ($saved = MutationKey::find($scope, $key, $hash)) return Contract::findOrFail($saved->result_id);
             RecordWriteRejected::unless($event->version === (int) $data['expected_version'], 409, 'El evento cambió. Actualiza la ficha.');
             $finance = FinancialRevision::where('event_id', $eventId)->whereKey($data['financial_revision_id'])->firstOrFail(); self::assertCurrent($event, $finance);
@@ -36,7 +37,9 @@ final class CreateContract
             }
             $snapshot = ['client' => $data['client'], 'event' => ['date_long' => $event->starts_at->setTimezone('America/Chicago')->locale('en')->translatedFormat('D, M j, Y'),
                 'start_time' => $event->starts_at->setTimezone('America/Chicago')->format('g:i a'), 'end_time' => $event->ends_at->setTimezone('America/Chicago')->format('g:i a'), 'address' => $event->address],
-                'services' => $finance->lines_snapshot, 'travel_fee_cents' => $finance->travel_fee_cents, 'total_cents' => $finance->total_cents, 'balance_due_at' => $finance->balance_due_at->toIso8601String()];
+                'services' => $finance->lines_snapshot, 'travel_fee_cents' => $finance->travel_fee_cents, 'total_cents' => $finance->total_cents,
+                'discounts'=>array_map(fn($d)=>['label'=>$d['label'],'amount_cents'=>$d['amount_cents']],$finance->discounts_snapshot??[]),
+                'balance_due_at' => $finance->balance_due_at->toIso8601String()];
             foreach ($snapshot['services'] as $line) {
                 if (empty($line['name']) || !isset($line['duration_minutes'])) throw ValidationException::withMessages(['contract' => 'La revisión financiera necesita descripciones de servicio completas.']);
             }

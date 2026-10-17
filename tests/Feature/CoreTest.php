@@ -86,7 +86,7 @@ class CoreTest extends TestCase
     public function test_one_multiskilled_person_does_not_satisfy_two_simultaneous_roles(): void
     {
         $e = $this->event(null, [['kind' => 'staff', 'skill' => 'entertainer', 'quantity' => 1], ['kind' => 'staff', 'skill' => 'face_painter', 'quantity' => 1]]);
-        $person = $this->resource('staff', ['skills' => ['entertainer', 'face_painter']]);
+        $person = $this->resource('staff', ['skills' => ['entertainer', 'face_painter', 'driver']]);
         $this->confirm($e, $this->payload($e, [$person->id]))->assertUnprocessable();
         $second = $this->resource('staff', ['skills' => ['face_painter']]);
         $this->confirm($e, $this->payload($e, [$person->id, $second->id]))->assertOk();
@@ -96,7 +96,7 @@ class CoreTest extends TestCase
         $char = \App\Models\Character::create(['name' => 'Fictitious character', 'active' => true]);
         $e = $this->event(null, [['kind' => 'costume', 'character_id' => $char->id, 'quantity' => 1], ['kind' => 'staff', 'skill' => 'performer', 'quantity' => 1]]);
         $costume = $this->resource('costume', ['character_id' => $char->id]);
-        $staff = $this->resource('staff', ['skills' => ['performer']]);
+        $staff = $this->resource('staff', ['skills' => ['performer', 'driver']]);
         $p = $this->payload($e, [$costume->id, $staff->id]);
         $this->confirm($e, $p)->assertUnprocessable();
         $this->postJson('/admin/api/costume-compatibilities', ['staff_id' => $staff->id, 'costume_id' => $costume->id])->assertOk();
@@ -213,10 +213,10 @@ class CoreTest extends TestCase
         $character = \App\Models\Character::create(['name' => 'Fictitious character', 'active' => true]);
         $e = $this->event(null, [['kind' => 'costume', 'character_id' => $character->id, 'quantity' => 1], ['kind' => 'staff', 'skill' => 'face_painter', 'quantity' => 1]]);
         $costume = $this->resource('costume', ['character_id' => $character->id]);
-        $person = $this->resource('staff', ['skills' => ['performer', 'face_painter']]);
+        $person = $this->resource('staff', ['skills' => ['performer', 'face_painter', 'driver']]);
         DB::table('costume_compatibilities')->insert(['staff_id' => $person->id, 'costume_id' => $costume->id]);
         $this->confirm($e, $this->payload($e, [$costume->id, $person->id]))->assertUnprocessable();
-        $performer = $this->resource('staff', ['skills' => ['performer']]);
+        $performer = $this->resource('staff', ['skills' => ['performer', 'driver']]);
         DB::table('costume_compatibilities')->insert(['staff_id' => $performer->id, 'costume_id' => $costume->id]);
         $this->confirm($e, $this->payload($e, [$costume->id, $person->id, $performer->id]))->assertOk();
     }
@@ -224,9 +224,9 @@ class CoreTest extends TestCase
     {
         $character = \App\Models\Character::create(['name' => 'Fictitious character', 'active' => true]);
         $e = $this->event(null, [['kind' => 'staff', 'skill' => 'performer', 'quantity' => 1], ['kind' => 'staff', 'skill' => 'face_painter', 'quantity' => 1], ['kind' => 'costume', 'character_id' => $character->id, 'quantity' => 1]]);
-        $onlyWearer = $this->resource('staff', ['skills' => ['performer', 'face_painter']]);
+        $onlyWearer = $this->resource('staff', ['skills' => ['performer', 'face_painter', 'driver']]);
         $painter = $this->resource('staff', ['skills' => ['face_painter']]);
-        $otherPerformer = $this->resource('staff', ['skills' => ['performer']]);
+        $otherPerformer = $this->resource('staff', ['skills' => ['performer', 'driver']]);
         $costume = $this->resource('costume', ['character_id' => $character->id]);
         DB::table('costume_compatibilities')->insert(['staff_id' => $onlyWearer->id, 'costume_id' => $costume->id]);
         $this->confirm($e, $this->payload($e, [$onlyWearer->id, $painter->id, $otherPerformer->id, $costume->id]))->assertOk();

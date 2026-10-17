@@ -2,7 +2,7 @@
 
 Owner: “Sometimes they ask for Mickey in a specific costume (Disneyland, Racing), or one of the two K-Pop Demon Hunters outfits. Only a few characters have more than one version; the rest have one. Ideally optional, or a note when adding the character.”
 
-Status: contract proposal by Claude for Codex (backend) + Claude (screens). Nothing implemented. No price change: a version never changes the price unless the owner later says so.
+Status: backend implementation on `codex/outfit-01`; API contract `docs/OUTFIT-01-API.md` published first (7c8dcb1). Final verification evidence is recorded in HANDOFF; Claude screens, independent review/main merge and owner inventory remain pending. No price change: a version never changes the price unless the owner later says so.
 
 ## Data (additive, nullable, backfill-free)
 
