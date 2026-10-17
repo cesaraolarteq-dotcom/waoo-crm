@@ -65,7 +65,7 @@ class RecordExtensionsTest extends TestCase
         $response = $this->postJson('/admin/api/events', $this->input($this->hero))->assertCreated()->assertJsonPath('event_type', 'birthday')
             ->assertJsonPath('services.0.characters.0.character_name_snapshot', $this->hero->name);
         $event = Event::findOrFail($response->json('id'));
-        $staff = $this->resource('staff', ['skills' => ['performer']]);
+        $staff = $this->resource('staff', ['skills' => ['performer', 'driver']]);
         $speaker = $this->resource('equipment');
         $wrong = $this->resource('costume', ['character_id' => $this->princess->id]);
         $right = $this->resource('costume', ['character_id' => $this->hero->id]);
@@ -81,7 +81,7 @@ class RecordExtensionsTest extends TestCase
     {
         $event = app(SaveEventDraft::class)->execute($this->owner, $this->input($this->princess));
         $this->assertFalse(collect($event->services->first()->requirements_snapshot)->contains('kind', 'costume'));
-        $staff = $this->resource('staff', ['skills' => ['performer']]);
+        $staff = $this->resource('staff', ['skills' => ['performer', 'driver']]);
         $speaker = $this->resource('equipment');
         $this->postJson('/admin/api/events/'.$event->id.'/confirm-capacity', $this->booking($event, [$staff->id, $speaker->id]))->assertOk();
     }
@@ -141,7 +141,7 @@ class RecordExtensionsTest extends TestCase
 
     public function test_unlink_is_audited_idempotent_authorized_and_requires_reason(): void
     {
-        $staff = $this->resource('staff', ['skills' => ['performer']]);
+        $staff = $this->resource('staff', ['skills' => ['performer', 'driver']]);
         $costume = $this->resource('costume', ['character_id' => $this->hero->id]);
         app(LinkCostumeCompatibility::class)->execute($this->owner, $staff->id, $costume->id);
         $payload = ['staff_id' => $staff->id, 'costume_id' => $costume->id, 'reason' => 'Fixture staff leaving company'];
@@ -156,7 +156,7 @@ class RecordExtensionsTest extends TestCase
 
     public function test_unlink_cannot_invalidate_a_shared_future_commitment(): void
     {
-        $staff = $this->resource('staff', ['skills' => ['performer']]);
+        $staff = $this->resource('staff', ['skills' => ['performer', 'driver']]);
         $costume = $this->resource('costume', ['character_id' => $this->hero->id]);
         $event = app(SaveEventDraft::class)->execute($this->owner, $this->input($this->hero));
         app(LinkCostumeCompatibility::class)->execute($this->owner, $staff->id, $costume->id);
@@ -187,7 +187,7 @@ class RecordExtensionsTest extends TestCase
     {
         $this->assertSame('mysql', DB::connection()->getDriverName());
         $this->assertTrue(function_exists('pcntl_fork'));
-        $staff = $this->resource('staff', ['skills' => ['performer']]);
+        $staff = $this->resource('staff', ['skills' => ['performer', 'driver']]);
         $costume = $this->resource('costume', ['character_id' => $this->hero->id]);
         $speaker = $this->resource('equipment');
         app(LinkCostumeCompatibility::class)->execute($this->owner, $staff->id, $costume->id);

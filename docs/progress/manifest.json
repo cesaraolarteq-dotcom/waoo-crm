@@ -140,6 +140,17 @@
       "verification": "API7c8dcb1 published first. Final integrated codex/outfit-01 d1b00a3: full300/2864 pass (330.31s), PHP8.3/MariaDB11.8; includes LEAD/ROUTE/OUTFIT, real independent races and populated SQLite/MariaDB roundtrips. Vite/strict Composer/syntax/diff pass. Packagist audit unavailable (proxy403), no dependency changes.",
       "remaining": "Codex approves #56 917e573 with nonblocking zero-name mapper/wording notes. Preserve contact backend tests when integrating its #49 parent. Owner outfit names/unit counts, main merge and owner acceptance remain pending.",
       "latest_screen_integration_verification": "Full integrated suite369 tests /3672 assertions PASS (407.26s), PHP8.3/MariaDB11.8, source ed8d426; includes restored10 backend contact cases +3 screen cases and22 recorded calibration fixtures. Vite/strict Composer/syntax/diff pass. Review-only stack contains blocked #59/#54 for reproduction; no main merge, browser/provider/deployment or owner acceptance."
+     },
+     "event_crew_driver_followup": {
+      "api": "ccf1d43",
+      "backend": "43607f1",
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "scope": "Owner q28: ≥1 driver occupying an existing staff role across whole event; maximum-driver augmenting matching; per-vehicle assigned drivers; nullable frozen role/skill/driver snapshot; old reserved retries unchanged. No extra headcount or catalog fact changes.",
+      "verification": "130 relevant test cases covered in MariaDB: original wide run129pass/1 fixture error corrected before source43607f1; final Core31/155 PASS45.395s covers corrected negative driver fixture; other99 suites passed. Exhaustive8192 small-graph/subset cases included; no new whole-suite/CI claim. Strict Composer, PHP syntax, diff pass.",
+      "remaining": "Claude backend review and driver indication in existing confirmation screens; merge and owner inventory facts/acceptance. No phase completion credit."
      }
     },
     {
