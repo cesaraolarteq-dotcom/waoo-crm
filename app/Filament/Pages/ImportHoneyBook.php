@@ -33,6 +33,7 @@ class ImportHoneyBook extends Page
 
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowUpTray;
     protected static ?string $navigationLabel = 'Importar HoneyBook';
+    protected static string|\UnitEnum|null $navigationGroup = 'Operación';
     protected static ?int $navigationSort = 90;
     protected static ?string $slug = 'importar';
     protected static ?string $title = 'Importar eventos de HoneyBook';
