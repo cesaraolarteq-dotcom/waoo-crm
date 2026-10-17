@@ -8,7 +8,7 @@
   "merged": 0.1,
   "accepted": 0.1
  },
- "stage_scores_note": "If a deliverable has no UI part (ui: null), its backend counts 0.7. No UI-only deliverable without backend counts backend as 0.",
+ "stage_scores_note": "If a deliverable has no UI part (ui: null), its backend counts 0.7. No UI-only deliverable without backend counts backend as 0. ui:false means a required UI is still pending and earns no UI credit (null is reserved for no UI part).",
  "phases": [
   {
    "id": 0,
@@ -207,7 +207,7 @@
      "weight": 3,
      "agent": "Codex+Claude",
      "backend": "ea13afd",
-     "ui": "4b4d48b",
+     "ui": "d04561a",
      "reviewed": false,
      "merged": false,
      "accepted": false,
@@ -230,7 +230,7 @@
      "weight": 2,
      "agent": "Codex",
      "backend": "f31361c",
-     "ui": "c57a3dc",
+     "ui": "f096c04",
      "reviewed": true,
      "merged": false,
      "accepted": false,
@@ -252,8 +252,8 @@
      "name": "Cotizaciones con versiones",
      "weight": 3,
      "agent": "Codex+Claude",
-     "backend": null,
-     "ui": null,
+     "backend": "5a5433d",
+     "ui": false,
      "reviewed": false,
      "merged": false,
      "accepted": false,
@@ -266,9 +266,20 @@
       "accepted": false,
       "scope": "QUOTE A: owner-only CreateQuote/ReviseQuote/ReadQuotes from existing audited event drafts; immutable monetary snapshots/explicit discounts/odd-cent deposit; bounded expiry; default-off sandbox. No portal send/accept/PDF, financial revision, payment or capacity mutation.",
       "verification": "API2d90794 before source88d53f3. Full345 tests/3269 assertions pass (354.97s), PHP8.3/MariaDB11.8; targeted19/119 (18.443s), three real process races, snapshot/discount/rollback/guards/CSRF/SQLite roundtrip. Strict Composer/15 PHP syntax/diff pass. Guarded local-only300000 migration + /up200, default off. No provider/browser/deploy/owner acceptance.",
-      "remaining": "Claude independent backend review and owner-builder adapters; B scoped portal/PDF/acceptance and C accepted-snapshot finance/capacity bridge. Main merge/owner acceptance pending. Whole QUOTE-01 backend stays null until complete; no premature phase credit."
+      "remaining": "A source88d53f3 extended by B/C5a5433d; independent review and owner/portal UI integration, main merge and owner acceptance pending."
      },
-     "blocker": "Foundation88d53f3 delivered for review; no client links/acceptance/PDF/conversion yet. Do not enable those planned UI actions. See docs/QUOTE-01-API.md."
+     "blocker": "Backend A/B/C5a5433d tested. Required UI is pending (false), not inapplicable (null); backend earns35%, no UI/review/merge/owner credit. Claude review/integration and approved consent wording remain. See docs/QUOTE-PORTAL-API.md.",
+     "portal_financial_bridge": {
+      "api": "112af8e /97348c2 before implementation",
+      "backend": "5a5433d",
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "scope": "Immutable private quote presentation/PDF, exact revision-scoped legacy-compatible recoverable grants, client accept/reject evidence and explicit exact accepted-to-finance binding; actual ledger and all ordinary capacity checks, visible contract discounts, unchanged catalog agreement.",
+      "verification": "Full377 tests /3523 assertions PASS, exit0,461.90s, PHP8.3/MariaDB11.8, source5a5433d. New32 cases with actual decision/revise/revoke/conversion races, audit/crypto/storage rollback, corrupt PDFs/consent/customer drift, exact money, busy resources/short-notice, unchanged legal terms, fake Checkout and populated SQLite roundtrip. Strict Composer/33 PHP syntax/diff pass. Local guarded310000/320000 +up200. No browser/provider/remote-CI/deploy or owner acceptance.",
+      "remaining": "Claude independent review; required owner/portal UI with Locked displayed versions/hashes and stable retry UUID; owner-approved concrete EN/ES outcome consent remains empty. No main merge or whole-phase completion."
+     }
     },
     {
      "name": "Costos y margen por paquete",
@@ -303,7 +314,7 @@
      "merged": true,
      "accepted": false,
      "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996",
-     "outfit_versions": "Codex d1b00a3/API7c8dcb1 + Claude #56 917e573 reviewed/approved with minor mapper/wording follow-ups; main merge, real inventory and owner acceptance pending."
+     "outfit_versions": "Codex d1b00a3 + Claude #56 b2f5ba2 aprobado por Codex (notas aplicadas)."
     },
     {
      "name": "Motor sin choques (habilidades, trajes, vehículos, concurrencia)",
@@ -418,7 +429,7 @@
      "ui_fix_evidence": "Codex implementation bf2ffac/7ebcf2c chosen explicitly; integrated exact bdc6c9e with Claude2d19000. Full 254/2328; server resolves Houston local time with CDT/CST choice. Both HANDOFF histories retained.",
      "ui_fix_reviewed": true,
      "ui_fix_review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed.",
-     "link_recovery": "Codex68c02a5 approved by Claude; Claude #54 exact81771b2 reviewed/approved by Codex. Same active URL, recipient parsing and manual clipboard fallback; main merge/device QA/owner acceptance pending."
+     "link_recovery": "Codex 68c02a5 + Claude #54 aprobado por Codex (81771b2)."
     },
     {
      "name": "Reserva rápida (tu mitad + la de la clienta)",
@@ -469,7 +480,7 @@
       "backend_review": "Claude HANDOFF in #54 explicitly approves source68c02a5.",
       "latest_ui_verification": "Codex exact #54 81771b2, source7048acf: targeted78/882 (85.129s) +4/39 LEAD screen checks (4.838s) pass, PHP8.3/MariaDB11.8. Real same-link/revoke/legacy UI and both contact suites; Node actual Alpine clipboard success/rejection/missing API pass; Vite/syntax/diff pass. No new full/browser/device/provider/main merge/owner acceptance."
      },
-     "contact_atomicity": "Codex ad87fae (API 2ff80c1) + Claude #49 1ebafe0: corrección de contacto dentro de QuickBook; pendiente revisión de Codex."
+     "contact_atomicity": "Codex ad87fae + Claude #49 619720f (aprobado; clases de prueba de contacto conservadas)."
     }
    ]
   },

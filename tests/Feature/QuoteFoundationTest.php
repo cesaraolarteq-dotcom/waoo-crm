@@ -188,8 +188,9 @@ class QuoteFoundationTest extends TestCase
         $this->getJson('/admin/api/quotes?per_page=1&page=2')->assertOk()->assertJsonCount(0, 'data');
         $this->getJson('/admin/api/quotes?per_page=51')->assertUnprocessable();
         $this->getJson('/admin/api/quotes/'.$r->quote_id)->assertOk()->assertJsonPath('quote.owner_note','Private fixture note')->assertJsonCount(1,'revisions');
-        $this->postJson('/admin/api/quotes/'.$r->quote_id.'/send', [])->assertNotFound();
-        $this->getJson('/portal/api/quote')->assertNotFound();
+        config(['waoo.sandbox_documents'=>true]);
+        $this->withHeader('Idempotency-Key',(string)Str::uuid())->postJson('/admin/api/quotes/'.$r->quote_id.'/send', ['expected_version'=>1,'expected_revision'=>1])->assertUnprocessable()->assertJsonValidationErrors('consent');
+        $this->getJson('/portal/api/quote')->assertForbidden();
         $this->assertDatabaseCount('portal_grants', 0);
     }
     public function test_direct_and_http_gates_reauthorize_stale_actor_and_default_off_feature(): void
