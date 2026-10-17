@@ -99,10 +99,8 @@ class EventResource extends Resource
             Section::make('Lugar y logística')->columns(2)->columnSpanFull()->schema([
                 TextInput::make('address')->label('Dirección')->maxLength(255)->columnSpanFull(),
                 TextInput::make('postal_code')->label('ZIP')->maxLength(10)->placeholder('77494'),
-                TextInput::make('travel_fee')->label('Costo de transporte (USD)')->prefix('$')
-                    ->rule('nullable')->rule('regex:/^\d{1,7}(\.\d{1,2})?$/')
-                    ->validationMessages(['regex' => 'Escribe solo el número, por ejemplo 40 o 40.50.'])
-                    ->helperText('Déjalo vacío si aún no está calculado: se muestra "Pendiente", nunca $0.'),
+                \App\Filament\Support\TravelFeeFields::feeField(false, 'Déjalo vacío si aún no está calculado: se muestra "Pendiente", nunca $0.'),
+                ...\App\Filament\Support\TravelFeeFields::extraFields(),
                 TextInput::make('setup_minutes')->label('Montaje (minutos antes)')->integer()->minValue(0)->maxValue(720),
                 TextInput::make('breakdown_minutes')->label('Desmontaje (minutos después)')->integer()->minValue(0)->maxValue(720),
             ]),
@@ -241,6 +239,7 @@ class EventResource extends Resource
             'travel_fee_cents' => $fee === '' ? null : \App\Filament\Resources\Variants\Pages\EditServiceVariant::toCents($fee),
             'event_type' => $data['event_type'] ?? null,
             'services' => self::servicesInput($data),
+            ...\App\Filament\Support\TravelFeeFields::input($data),
         ];
     }
 
@@ -271,7 +270,7 @@ class EventResource extends Resource
         return [
             'customer_id' => $event->customer_id, 'title' => $event->title, 'date' => $date,
             'start_time' => $start, 'start_time_choice' => $startChoice, 'end_time' => $end, 'end_time_choice' => $endChoice,
-            'address' => $event->address, 'postal_code' => $event->postal_code,
+            'address' => $event->address, 'postal_code' => $event->postal_code, 'travel_has_evidence' => filled($event->travel_fee_evidence ?? null) ? '1' : null,
             'setup_minutes' => $event->setup_minutes, 'breakdown_minutes' => $event->breakdown_minutes,
             'travel_fee' => $event->travel_fee_cents === null ? null : rtrim(rtrim(number_format($event->travel_fee_cents / 100, 2, '.', ''), '0'), '.'),
             'price_version_ids' => $event->services()->pluck('price_version_id')->all(),

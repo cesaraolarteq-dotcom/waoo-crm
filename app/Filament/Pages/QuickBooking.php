@@ -124,10 +124,11 @@ class QuickBooking extends Page
                 TextInput::make('setup_minutes')->label('Montaje (minutos antes)')->integer()->minValue(0)->maxValue(720)
                     ->helperText('Si aún no lo sabes, complétalo al revisar los datos de la clienta.'),
                 TextInput::make('breakdown_minutes')->label('Desmontaje (minutos después)')->integer()->minValue(0)->maxValue(720),
+                TextInput::make('address')->label('Dirección de la fiesta (opcional)')->maxLength(255)->columnSpan(2)
+                    ->placeholder('Calle, ciudad, TX ZIP')->helperText('Con la dirección exacta puedes calcular el transporte. La clienta la confirma en su enlace.'),
                 TextInput::make('postal_code')->label('ZIP')->required()->maxLength(10)->placeholder('77494'),
-                TextInput::make('travel_fee')->label('Costo de transporte (USD)')->prefix('$')->required()->live(onBlur: true)
-                    ->rule('regex:/^\d{1,7}(\.\d{1,2})?$/')->validationMessages(['regex' => 'Escribe solo el número, por ejemplo 40.'])
-                    ->helperText('Obligatorio aquí: con el depósito se fija el total.'),
+                \App\Filament\Support\TravelFeeFields::feeField(true, 'Obligatorio aquí: con el depósito se fija el total.'),
+                ...\App\Filament\Support\TravelFeeFields::extraFields(),
             ]),
             Section::make('3. Clienta')->columns(2)->schema([
                 Radio::make('customer_mode')->hiddenLabel()->inline()->options(['existing' => 'Buscar clienta registrada', 'new' => 'Clienta nueva'])->live()->columnSpanFull()
@@ -299,7 +300,7 @@ class QuickBooking extends Page
             str_starts_with($key, 'deposit.amount_cents') => 'deposit.amount',
             str_starts_with($key, 'deposit.received_at') => 'deposit.date',
             str_starts_with($key, 'deposit.verified_received') => 'deposit.verified',
-            $key === 'travel_fee_cents' => 'travel_fee',
+            $key === 'travel_fee_cents', $key === 'travel_fee_quote_id' => 'travel_fee',
             $key === 'starts_at' => 'start_time',
             $key === 'ends_at' => 'end_time',
             str_starts_with($key, 'services') => 'price_version_ids',
@@ -322,6 +323,8 @@ class QuickBooking extends Page
                 : ['new_customer' => ['name' => trim($s['name']), 'phone' => filled($s['phone'] ?? null) ? trim($s['phone']) : null, 'email' => null, 'locale' => $s['locale']]]),
             'title' => trim((string) $s['title']), 'event_type' => $s['event_type'], 'starts_at' => $start, 'ends_at' => $end, 'timezone' => ChicagoTime::TZ,
             'postal_code' => trim((string) $s['postal_code']), 'travel_fee_cents' => EditServiceVariant::toCents((string) $s['travel_fee']),
+            ...(filled($s['address'] ?? null) ? ['address' => trim((string) $s['address'])] : []),
+            ...\App\Filament\Support\TravelFeeFields::input($s),
             ...(filled($s['setup_minutes'] ?? null) ? ['setup_minutes' => (int) $s['setup_minutes']] : []),
             ...(filled($s['breakdown_minutes'] ?? null) ? ['breakdown_minutes' => (int) $s['breakdown_minutes']] : []),
             'services' => EventResource::servicesInput($s),
