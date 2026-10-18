@@ -59,8 +59,8 @@
   @if ($canAccept)
     <fieldset class="q-outcome" data-outcome="accepted" data-action="{{ $vm['actions']['accept'] }}"
               data-consent-version="{{ $d['accepted']['version'] }}" data-consent-sha="{{ $d['accepted']['sha256'] }}">
-      <label class="p-check"><input type="checkbox" name="consent_accepted" value="1"> <span>{{ $d['accepted']['text'] }}</span></label>
-      <p class="p-hint">{{ $t('accept_note') }}</p>
+      {{-- The approved text sits right above its own button: tapping the button is the agreement (no extra checkbox). --}}
+      <p class="q-consent">{{ $d['accepted']['text'] }}</p>
       <button class="p-btn p-btn-pink" type="button" data-submit disabled>{{ $t('accept') }}</button>
     </fieldset>
   @else
@@ -73,7 +73,7 @@
     <details class="q-reject"><summary>{{ $t('reject') }}</summary>
       <fieldset class="q-outcome" data-outcome="rejected" data-action="{{ $vm['actions']['reject'] }}"
                 data-consent-version="{{ $d['rejected']['version'] }}" data-consent-sha="{{ $d['rejected']['sha256'] }}">
-        <label class="p-check"><input type="checkbox" name="consent_rejected" value="1"> <span>{{ $d['rejected']['text'] }}</span></label>
+        <p class="q-consent">{{ $d['rejected']['text'] }}</p>
         <button class="p-btn p-btn-quiet" type="button" data-submit disabled>{{ $t('reject_send') }}</button>
       </fieldset>
     </details>
@@ -93,9 +93,7 @@
   var outcomes = Array.prototype.slice.call(f.querySelectorAll('.q-outcome'));
   // The server also refuses a decision until this link opened the PDF; this only avoids a useless attempt.
   if (pdf) pdf.addEventListener('click', function () { pdfOpened = true; if (pdfFirst) pdfFirst.hidden = true; refresh(); });
-  function box(o) { return o.querySelector('input[type=checkbox]'); }
-  function refresh() { outcomes.forEach(function (o) { o.querySelector('[data-submit]').disabled = !(pdfOpened && box(o).checked); }); }
-  outcomes.forEach(function (o) { box(o).addEventListener('change', refresh); });
+  function refresh() { outcomes.forEach(function (o) { o.querySelector('[data-submit]').disabled = !pdfOpened; }); }
   // One key per quote number + revision + outcome, stored with the exact payload it was used for. An uncertain
   // failure keeps both, so a retry resends the same payload under the same key; any edit gets a new key.
   function slot(outcome) { return 'waoo-quote:' + f.dataset.number + ':' + f.dataset.revision + ':' + outcome; }
@@ -114,7 +112,7 @@
       var nm = f.elements['name'], em = f.elements['email'];
       if (!nm.value.trim() || !em.value.trim() || !em.checkValidity()) { err.textContent = @js($t('identity_required')); err.hidden = false; return; }
       var body = {expected_revision: Number(f.dataset.revision), snapshot_sha256: f.dataset.snapshot, pdf_sha256: f.dataset.pdf,
-        consent_version: o.dataset.consentVersion, consent_sha256: o.dataset.consentSha, name: nm.value.trim(), email: em.value.trim(), consent: box(o).checked};
+        consent_version: o.dataset.consentVersion, consent_sha256: o.dataset.consentSha, name: nm.value.trim(), email: em.value.trim(), consent: true};
       var idem = keyFor(outcome, body); b.disabled = true;
       fetch(o.dataset.action, {method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json', 'Accept': 'application/json',
         'X-CSRF-TOKEN': csrf, 'Idempotency-Key': idem}, body: JSON.stringify(body)})

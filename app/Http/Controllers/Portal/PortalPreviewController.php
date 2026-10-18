@@ -50,8 +50,8 @@ final class PortalPreviewController extends Controller
                 'total' => '$615', 'deposit' => '$307.50', 'pdf_url' => null],
             'consent' => ['version' => 'preview-only', 'text' => $es ? '(Texto de ejemplo; el texto real lo aprueba César.) Acepto esta cotización.' : '(Sample text; the real wording is approved by César.) I accept this quote.'],
             'decide' => ['snapshot_sha256' => str_repeat('0', 64), 'pdf_sha256' => str_repeat('0', 64), 'pdf_opened' => true,
-                'accepted' => ['version' => 'preview-only', 'sha256' => str_repeat('0', 64), 'text' => $es ? '(Texto de ejemplo; el texto real lo aprueba César.) Acepto esta cotización.' : '(Sample text; the real wording is approved by César.) I accept this quote.'],
-                'rejected' => ['version' => 'preview-only', 'sha256' => str_repeat('0', 64), 'text' => $es ? '(Texto de ejemplo; el texto real lo aprueba César.) No acepto esta cotización.' : '(Sample text; the real wording is approved by César.) I do not accept this quote.']],
+                'accepted' => ['version' => 'preview-only', 'sha256' => str_repeat('0', 64), 'text' => $es ? 'Me interesa esta cotización y quiero reservar. Sé que esto todavía no aparta mi fecha ni cobra nada: Waoo Party me enviará el contrato y el depósito para confirmarla.' : 'I like this quote and want to book. I know this does not reserve my date or charge anything yet: Waoo Party will send me the contract and deposit to confirm it.'],
+                'rejected' => ['version' => 'preview-only', 'sha256' => str_repeat('0', 64), 'text' => $es ? 'Por ahora no me interesa. Puedo pedir una cotización nueva cuando quiera.' : 'Not for now. I can ask for a new quote anytime.']],
             'prefill' => ['name' => 'Ana Ejemplo', 'email' => 'ana@example.test'],
             'actions' => ['accept' => url("/dev/portal/quote-accepted?lang={$lang}"), 'reject' => url("/dev/portal/quote-rejected?lang={$lang}")],
         ]])->header('Cache-Control', 'no-store, private')->header('Referrer-Policy', 'no-referrer');

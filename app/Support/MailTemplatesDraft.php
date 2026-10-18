@@ -26,8 +26,8 @@ final class MailTemplatesDraft
                                'en' => ['Friendly reminder: balance due {due}', ['Hi {first_name}! Your party is coming up on {event_date}. Your balance of {balance} is due {due}.', 'You can pay by Zelle to 346-216-8739 (Waoo Party LLC, no fee) or by card.'], ['Pay my balance', 'link'], "We're excited to be part of your celebration!"]],
         'week_before' => ['es' => ['¡Falta una semana, {first_name}!', ['¡Hola {first_name}! Falta una semana para tu celebración con Waoo Party: {event_date} en {address}.', 'Revisa que la dirección, la hora y los detalles estén bien. Si algo cambió, respóndenos o escríbenos al (346) 851-8830.'], ['Revisar mi fiesta', 'link'], '¡Nos vemos pronto!'],
                           'en' => ['One week to go, {first_name}!', ['Hi {first_name}! Your Waoo Party celebration is one week away: {event_date} at {address}.', 'Please check that the address, start time and details are right. If anything changed, reply or text us at (346) 851-8830.'], ['Check my party', 'link'], 'See you soon!']],
-        'thank_you_review' => ['es' => ['¡Gracias por celebrar con nosotros!', ['¡Hola {first_name}! Gracias por elegir Waoo Party. ¡Esperamos que todos la hayan pasado increíble!', 'Si tienes un minuto, una reseña en Google ayuda a otras familias a encontrarnos.'], ['Dejar una reseña', 'review_link'], '¡Nos encantaría celebrar contigo otra vez!'],
-                               'en' => ['Thank you for celebrating with us!', ['Hi {first_name}! Thank you for choosing Waoo Party. We hope everyone had an amazing time!', 'If you have a minute, a Google review helps other families find us.'], ['Leave a review', 'review_link'], "We'd love to celebrate with you again!"]],
+        'thank_you_review' => ['es' => ['¡Gracias por celebrar con nosotros!', ['¡Hola {first_name}! Gracias por elegir Waoo Party: apreciamos mucho tu apoyo y esperamos que todos la hayan pasado increíble.', 'Si tienes un minuto, una reseña en Google nos ayuda muchísimo a que otras familias nos encuentren.', 'Y si quieres agradecerle al equipo, también puedes dejar una propina por Zelle al 346-216-8739 (Waoo Party LLC) con la nota «Propina». El 100 % de la propina es para el staff de tu fiesta.'], ['Dejar una reseña', 'review_link'], '¡Nos encantaría celebrar contigo otra vez!'],
+                               'en' => ['Thank you for celebrating with us!', ['Hi {first_name}! Thank you for choosing Waoo Party: we truly appreciate your support and hope everyone had an amazing time.', 'If you have a minute, a Google review helps other families find us so much.', 'And if you would like to thank the team, you can also leave a tip by Zelle to 346-216-8739 (Waoo Party LLC) with the memo "Tip". 100% of the tip goes to the staff of your party.'], ['Leave a review', 'review_link'], "We'd love to celebrate with you again!"]],
     ];
 
     // When each one goes out (for the owner's settings page).
@@ -40,7 +40,7 @@ final class MailTemplatesDraft
         'zelle_notice_pending' => 'Cuando la clienta avisa que mandó un Zelle',
         'balance_reminder' => 'Un día antes de que venza el saldo (solo si hay saldo)',
         'week_before' => '7 días antes de la fiesta',
-        'thank_you_review' => 'El día después de la fiesta',
+        'thank_you_review' => 'El día después de la fiesta, a las 10 a. m.',
     ];
 
     // Full HTML of one draft with fictitious sample data (preview only).

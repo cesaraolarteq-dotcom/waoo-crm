@@ -23,11 +23,12 @@ final class EventMailSource
         $net=(int)$ledger->sum(fn($line)=>$line->kind==='receipt'?$line->amount_cents:-$line->amount_cents);
         return [$event,$customer,$finance,$grant,$net];
     }
+    // Thank-you: owner 2026-10-18, next Houston day at 10:00 am.
     public static function due(string $key,Event $e,FinancialRevision $f):CarbonImmutable
     {
         return match($key){'balance_reminder'=>$f->balance_due_at->subHours(24),
             'week_before'=>$e->starts_at->setTimezone('America/Chicago')->subDays(7)->utc(),
-            'thank_you_review'=>$e->ends_at->setTimezone('America/Chicago')->addDay()->utc(),default=>throw new \InvalidArgumentException('Unsupported reminder.')};
+            'thank_you_review'=>$e->ends_at->setTimezone('America/Chicago')->addDay()->setTime(10,0)->utc(),default=>throw new \InvalidArgumentException('Unsupported reminder.')};
     }
     public static function compose(string $key,#[\SensitiveParameter] array $source):array
     {

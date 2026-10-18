@@ -11,14 +11,14 @@ class QuotePortalPreviewTest extends TestCase
     {
         $this->get('/dev/portal/quote?lang=es')->assertOk()->assertSee('Cotización Q-2026-000123 · versión 2')
             ->assertSee('Costo de transporte')->assertSee('Descuento por reservar hoy')->assertSee('−$25', false)->assertSee('$615')
-            ->assertSee('Depósito del 50 %: $307.50')->assertSee('id="quote-decide"', false)->assertSee('Aceptar no cobra nada')
+            ->assertSee('Depósito del 50 %: $307.50')->assertSee('id="quote-decide"', false)->assertSee('Me interesa, quiero reservar')->assertSee('no aparta mi fecha ni cobra nada')->assertDontSee('type="checkbox"', false)
             ->assertDontSee('Motivo')->assertDontSee('reason":', false);
-        $this->get('/dev/portal/quote?lang=en')->assertOk()->assertSee('Travel fee')->assertSee('Accept quote');
+        $this->get('/dev/portal/quote?lang=en')->assertOk()->assertSee('Travel fee')->assertSee("I'm interested, let's book");
     }
 
     public function test_final_states_show_no_form(): void
     {
-        foreach (['quote-accepted' => '¡Gracias! Aceptaste tu cotización', 'quote-expired' => 'Esta cotización ya venció',
+        foreach (['quote-accepted' => '¡Gracias! Recibimos tu respuesta', 'quote-expired' => 'Esta cotización ya venció',
             'quote-superseded' => 'Hay una versión más nueva', 'quote-rejected' => 'Recibimos tu respuesta'] as $step => $title) {
             $this->get("/dev/portal/{$step}?lang=es")->assertOk()->assertSee($title)->assertDontSee('id="quote-decide"', false);
         }
