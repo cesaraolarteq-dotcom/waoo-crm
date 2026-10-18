@@ -26,9 +26,5 @@
   @yield('content')
   <p class="p-help">{{ $t('help') }}</p>
 </main>
-<nav class="s-tabs" aria-label="Staff">
-  <a href="{{ $vm['nav']['inicio'] }}" @if (in_array($vm['screen'], ['inicio', 'trabajo'], true)) aria-current="page" @endif>{{ $t('tab_home') }}</a>
-  <a href="{{ $vm['nav']['disponibilidad'] }}" @if ($vm['screen'] === 'disponibilidad') aria-current="page" @endif>{{ $t('tab_availability') }}</a>
-</nav>
 </body>
 </html>
