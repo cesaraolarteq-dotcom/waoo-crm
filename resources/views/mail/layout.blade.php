@@ -1,4 +1,4 @@
-{{-- Waoo Party transactional email (MAIL-01). Table layout + inline styles for email clients; one button; plain and light.
+{{-- Waoo Party transactional email (MAIL-01). Table layout + inline styles for email clients; one button (thank-you may add a second, TIP-01); plain and light.
      All values escaped. Logo from the CRM's own domain (same as the link) to avoid mixed-domain spam signals. --}}
 <!doctype html>
 <html lang="{{ $lang }}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ $mail['subject'] }}</title></head>
@@ -21,7 +21,8 @@
       @endforeach
     </td></tr>
     @if ($mail['button'] && $mail['button']['url'])
-      <tr><td style="padding:4px 28px 24px 28px"><a href="{{ $mail['button']['url'] }}" style="display:inline-block;background:#FF017C;color:#FFFFFF;text-decoration:none;font-weight:700;padding:13px 22px;border-radius:12px">{{ $mail['button']['label'] }}</a></td></tr>
+      <tr><td style="padding:4px 28px 24px 28px"><a href="{{ $mail['button']['url'] }}" style="display:inline-block;background:#FF017C;color:#FFFFFF;text-decoration:none;font-weight:700;padding:13px 22px;border-radius:12px">{{ $mail['button']['label'] }}</a>@if (! empty($mail['button2']['url']))&nbsp;
+        <a href="{{ $mail['button2']['url'] }}" style="display:inline-block;background:#FFFFFF;color:#1F2A6B;text-decoration:none;font-weight:700;padding:11px 20px;border-radius:12px;border:2px solid #1F2A6B;margin-top:8px">{{ $mail['button2']['label'] }}</a>@endif</td></tr>
     @endif
     <tr><td style="padding:0 28px 26px 28px;font-size:16px;line-height:1.55"><p style="margin:0">@if ($mail['closing']){{ $mail['closing'] }}<br>@endif— Waoo Party</p></td></tr>
     <tr><td style="background:#F3F4FA;padding:16px 28px;font-size:12px;line-height:1.5;color:#59618A">Waoo Party LLC · Katy / Houston, TX · (346) 851-8830<br>{{ $lang === 'es' ? 'Recibes este correo por tu reserva con Waoo Party.' : 'You are receiving this email about your booking with Waoo Party.' }}</td></tr>
