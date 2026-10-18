@@ -650,6 +650,12 @@
       "commit": "7596eaa",
       "implemented": false,
       "note": "API only, 0 implementation credit; private staff identity, availability, invitations, acceptance, exclusive pending holds and money-free job sheet."
+     },
+     "preview_review": {
+      "ui": "44b6941 / bbcbc86",
+      "reviewed": true,
+      "backend": null,
+      "scope": "Local/testing synthetic preview only, no money/team directory; no real STAFF or payroll completion credit. Locale/upcoming API updated, session policy owner answer pending."
      }
     },
     {
@@ -676,7 +682,7 @@
       "document": "docs/SMS-01-API.md",
       "commit": "83cb027",
       "implemented": false,
-      "note": "API only, 0 implementation credit; disabled transport, purpose/channel consent, authenticated STOP/HELP and A2P prerequisites. No live registration or send."
+      "note": "API amended after Claude review: keep HoneyBook toll-free through pilot, transfer+verify at cutover; no new number/10DLC registration. Quiet hours/consent copy and actual transfer require owner decisions. Contract only, no implementation credit."
      }
     },
     {
@@ -695,16 +701,16 @@
      "agent": "Codex+Claude",
      "backend": "1970195",
      "ui": "ba42fbb",
-     "reviewed": false,
+     "reviewed": true,
      "merged": false,
      "accepted": false,
      "partial_delivery": {
       "branch": "codex/phase-6-reports",
       "api": "docs/REPORT-A-PANEL-API.md",
-      "verification": "Source1970195: MariaDB44/300 green including concurrent snapshot race; underlying integration0d519a1 full600/29243 green. Build/lint/strict Composer pass. UI, cross-review, main merge and owner acceptance pending."
+      "verification": "Report UI/base independently reviewed; related57/597 MariaDB pass (source0835fd2, 1:46.106), Vite/PHP lint/strict Composer pass. No new full/browser/provider/merge/owner acceptance claim."
      },
      "note": "Dynamic panel and immutable snapshot/email-preview backend tested; separate row tracks actual email delivery, still disabled. No invented wage rates or imported confirmations counted as new sales.",
-     "blocker": "Backend 1970195 revisado y aprobado por Claude; pantalla Reportes + resumen en Inicio conectados (ba42fbb, #82), verificados en navegador con los servicios reales. Falta revisión de Codex de la UI, merge y aceptación."
+     "blocker": "Backend1970195 aprobado por Claude y UIba42fbb/reports-panel444a914 aprobada por Codex. Parches9bfd1d8 de fechas para review; merge a main/aceptación y remitente siguen pendientes."
     },
     {
      "name": "REPORT-A: envío del lunes y del mes",

@@ -4,7 +4,7 @@
 
 ## Identidad y acceso
 
-`staff_identities`: user_id único (role=staff), resource_id único (Resource kind=staff), active, version. Mantener usuarios owner_admin y acceso /admin separados; no convertir una cuenta de dueño en personal. Una persona = un recurso. Desactivar cualquiera de los dos revoca inmediatamente el acceso.
+`staff_identities`: user_id único (role=staff), resource_id único (Resource kind=staff), active, locale obligatorio es|en, version. El dueño registra el idioma explícitamente; portal y SMS usan ese valor, no el nombre/teléfono. Mantener usuarios owner_admin y acceso /admin separados; no convertir una cuenta de dueño en personal. Una persona = un recurso. Desactivar cualquiera de los dos revoca inmediatamente el acceso.
 
 `staff_access_grants`: identidad, hash del token aleatorio de alta entropía, scopes cerrados, expiry, revoked_at, versión; bóveda cifrada solo si la dueña necesita volver a copiar. Máximo 7 días de vigencia inicial, configurable por la dueña dentro del límite; no extender al consultar. Nunca token en URL de consulta, logs, auditoría o jobs. Enlace con fragmento → POST de intercambio → sesión exclusiva del portal, con rotación. Cookies HttpOnly/SameSite/secure en staging; respuestas privadas no-store, sin analytics y sin referrer. El intercambio rechaza sesiones admin/clienta y no inicia una sesión de admin. CSRF después del intercambio, límites de intentos; token expirado/revocado no sirve aunque quede cookie. El PIN es opcional y queda fuera de v1: no fingir que el enlace es 2FA.
 
@@ -66,3 +66,15 @@ Nada de total, depósito, saldo, pagos, precios, financial_revision_id, contrato
 ## Pruebas y salida
 
 Cross-staff y acceso admin/clienta denegados; revocación inmediata; expiración/cambio de rol; doble invitación y carreras aceptar/rechazar/expirar; horario de verano; cambio de disponibilidad incompatible; conductor que rechaza; reemplazo con conflicto de traslado; idempotencia; hoja sin dinero y contacto restringido al día local. CI MariaDB y render móvil antes de review. Este documento suma 0% de implementación. No agenda ni envío real hasta aprobación correspondiente.
+
+## Respuesta a Claude — próxima invitación y sesión
+
+`GET /staff/api/me` incluye `staff:{display_name,locale}` y `upcoming[]` con este esquema cerrado, compatible con la vista previa44b6941:
+
+```json
+{ "id": 41, "version": 1, "status": "pending", "deadline_at": "2026-10-28T23:00:00Z", "deadline": "mié. 28 oct., 6:00 p. m. CDT", "instruction_revision": 1, "event": { "date": "sáb. 7 nov.", "hours": "2:00–4:00 p. m. CST", "arrival": "1:15 p. m. CST", "area": "Katy, TX 77494" }, "assignment": { "role": "Personaje", "character": "Personaje de ejemplo", "outfit_version": "Gala" } }
+```
+
+Ejemplo ficticio; el servidor produce las etiquetas según locale y la fecha Houston, incluyendo CDT/CST cuando aplica. deadline_at es el instante UTC autoritativo; deadline es etiqueta, no entrada para decisiones. Sin vencimiento pendiente: ambos null. `url` opcional solo para trabajo propio aceptado, construida en servidor sin token ni dirección dentro de la URL. Área antes de aceptar = ciudad/ZIP desde datos estructurados aprobados por el dueño; si falta ciudad, mostrar ZIP/zona pendiente, nunca extraer o filtrar una dirección completa a ciegas. Sin calle, contacto ni directorio del equipo en invitación pendiente.
+
+Sesión larga: Claude propone canjear enlace de≤7d por sesión30–60d. Pregunta enviada a César; **hasta su respuesta se conserva el límite vigente de7d y la sesión no sobrevive al grant**. No implementar prórroga silenciosa. Cualquier futuro plazo mayor requiere entidad de sesión separada y revocación inmediata por identidad/recurso/grant; no una cookie que ignore su expiración. Los holds pendientes exclusivos fueron acordados, sin cambiar la regla de aceptación explícita.
