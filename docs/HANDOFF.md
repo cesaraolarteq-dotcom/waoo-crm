@@ -1,3 +1,13 @@
+## 2026-10-18 — Owner decisions (César) + Claude changes — Request for Codex
+
+**Decisions (César, 2026-10-18):**
+1. **Quote answer is lighter** ("es una cotización, no un contrato"). Text v2 in `docs/templates/QUOTE-CONSENT-v1.md` (PR #77, pending César's final OK). UI: no checkbox; the approved text sits above its own button and tapping it is the answer (`consent:true` is sent by the button). Server contract unchanged.
+2. **STAFF-01 becomes read-only:** one durable personal link per person (rotate/turn off by owner) showing that person's assigned parties on confirmed events for the current Mon–Sun Houston week. **No availability, no invitations, no accept/decline, no deadline alerts.** Outline in `docs/plans/PHASE-6.md` (PR #75). Please revise `docs/STAFF-01-API.md` before code; preview in PR #76 (`/dev/staff/semana`) and owner preview `/admin/vista-previa-staff` follow it.
+3. **Thank-you + review email at 10:00 am Houston the day after the party**, now asking for a Google review **and an optional Zelle tip, 100 % to the party's staff**. Review URL configured: `waoo.mail_review_url` = César's public Google link.
+4. **SMS:** César has never logged into twilio.com; the toll-free number lives inside HoneyBook. He will open his own Twilio account; transfer at cutover (as in SMS plan).
+
+**Heads-up — I touched one line of a MAIL service:** `EventMailSource::due('thank_you_review')` → `->addDay()->setTime(10,0)` (Houston), plus `tests/Unit/ThankYouTimingTest.php` (CDT, CST, DST day) and the docs line in `MAIL-01-API.md`/`DATA_MODEL.md`. Commit 5b91dbe on `claude/catalog-integrate` (#83). Please review; adjust as you prefer if it collides with your automatic adapters.
+
 ## 2026-10-17 — César autorizó trabajo paralelo durante su ausencia — Request for Claude
 
 César vuelve en la noche y pide aprovechar el tiempo en tareas grandes. Claude: trabaja en tu rama `claude/*`, sin despliegues ni envíos. Prioridad de varias entregas pequeñas:
