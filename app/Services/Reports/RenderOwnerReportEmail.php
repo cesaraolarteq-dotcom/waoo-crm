@@ -17,12 +17,16 @@ final class RenderOwnerReportEmail
         abort_unless(hash_equals($snapshot->payload_sha256, hash('sha256', $snapshot->payload_json)), 409, 'El reporte guardado no coincide con su evidencia.');
         $payload = json_decode($snapshot->payload_json, true, flags: JSON_THROW_ON_ERROR);
         abort_unless(($payload['schema_version'] ?? null) === 1, 409, 'Versión de reporte no compatible.');
-        $subject = 'Reporte '.($snapshot->kind === 'weekly' ? 'semanal' : 'mensual').' '.$snapshot->period_starts_on.' / '.$snapshot->period_ends_before;
+        $start = \Carbon\CarbonImmutable::parse($snapshot->period_starts_on, 'America/Chicago')->locale('es');
+        $end = \Carbon\CarbonImmutable::parse($snapshot->period_ends_before, 'America/Chicago')->subDay()->locale('es');
+        $range = $snapshot->kind === 'monthly' ? ucfirst($start->translatedFormat('F \d\e Y'))
+            : 'Semana del '.$start->translatedFormat($start->year === $end->year ? 'j \d\e M' : 'j \d\e M Y').' al '.$end->translatedFormat('j \d\e M Y');
+        $subject = $snapshot->kind === 'monthly' ? 'Reporte de '.$range : $range;
         // Explicit aggregates only: never forward a full financial payload into email copy.
         $money = static fn ($value): string => is_int($value) ? '$'.number_format($value / 100, 2, '.', ',').' USD' : 'Pendiente';
         $scheduled = $payload['operations']['scheduled'] ?? [];
         $sections = [
-            ['label' => 'Período (fin exclusivo)', 'value' => $snapshot->period_starts_on.' / '.$snapshot->period_ends_before],
+            ['label' => 'Período', 'value' => $range],
             ['label' => 'Reservas nuevas', 'value' => (string) ($payload['bookings']['booking_count'] ?? 0)],
             ['label' => 'Cobrado neto en CRM (prueba)', 'value' => $money($payload['operations']['cash']['net_received_cents'] ?? null)],
             ['label' => 'Saldo conocido de eventos programados', 'value' => $money($scheduled['pending_balance_cents'] ?? null)],
