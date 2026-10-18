@@ -40,6 +40,8 @@ class OwnerReportReadTest extends TestCase
         $this->travelTo(CarbonImmutable::parse('2026-12-01 10:00', 'America/Chicago'));
         $this->assertSame($before, app(RenderOwnerReportEmail::class)->execute($this->owner, $snapshot->id));
         $this->assertLessThanOrEqual(60, mb_strlen($before['subject']));
+        $this->assertSame('Semana del 2 de nov. al 8 de nov. 2026', $before['subject']);
+        $this->assertStringNotContainsString('fin exclusivo', $before['text']);
         $this->assertFalse($before['sending_enabled']);
         $this->assertStringContainsString('sin enviar', $before['text']);
         $this->getJson('/admin/api/reports/snapshots/'.$snapshot->id.'/email-preview')->assertOk()->assertJsonPath('approved', false);
