@@ -7,7 +7,7 @@ return [
     'sandbox_mail' => env('WAOO_SANDBOX_MAIL', false),
     'mail_allowlist' => [],
     'mail_templates' => [], // Only reviewed owner-approved versions; never draft preview copy.
-    'mail_review_url' => null,
+    'mail_review_url' => 'https://g.page/r/CVT57MD29OwXEAE/review', // Waoo Party's public Google review link (owner 2026-10-18).
     'sandbox_lead_intake' => env('WAOO_SANDBOX_LEAD_INTAKE', false),
     'lead_shared_secret' => env('WAOO_LEAD_SHARED_SECRET'),
     'sandbox_routes' => env('WAOO_SANDBOX_ROUTES', false),
