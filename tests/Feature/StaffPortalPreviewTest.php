@@ -14,7 +14,16 @@ class StaffPortalPreviewTest extends TestCase
                 $html = $this->get("/dev/staff/{$screen}?lang={$lang}")->assertOk()->assertHeader('Referrer-Policy', 'no-referrer')
                     ->assertHeader('Cache-Control', 'no-store, private')->getContent();
                 $this->assertDoesNotMatchRegularExpression('/\$\s?\d/', $html, "money on {$screen}/{$lang}");
-                $this->assertDoesNotMatchRegularExpression('/(src|href)="https?:\/\/(?!localhost|maps\.google\.com)/', $html, "external asset on {$screen}/{$lang}");
+                preg_match_all('/(?:src|href)="(https?:[^" ]+)"/', $html, $urls);
+                $origin = parse_url(config('app.url'));
+                foreach ($urls[1] as $url) {
+                    $parts = parse_url(html_entity_decode($url));
+                    $sameOrigin = ($parts['scheme'] ?? null) === ($origin['scheme'] ?? null)
+                        && ($parts['host'] ?? null) === ($origin['host'] ?? null)
+                        && ($parts['port'] ?? null) === ($origin['port'] ?? null);
+                    $map = ($parts['scheme'] ?? null) === 'https' && ($parts['host'] ?? null) === 'maps.google.com';
+                    $this->assertTrue($sameOrigin || $map, "external URL on {$screen}/{$lang}");
+                }
             }
         }
     }
