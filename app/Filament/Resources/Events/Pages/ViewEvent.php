@@ -196,6 +196,20 @@ class ViewEvent extends Page
         ];
     }
 
+    /** Real contract state for the header pill (imported events keep their contract in HoneyBook). */
+    private function contractLabel(\App\Models\Event $e): string
+    {
+        $link = class_exists(\App\Models\ImportedProjectLink::class) ? \App\Models\ImportedProjectLink::where('event_id', $e->id)->first() : null;
+        if ($link) {
+            $signed = (bool) (\App\Models\ImportedProjectRevision::find($link->current_revision_id)?->normalized['contract_signed'] ?? false);
+
+            return $signed ? 'Firmado en HoneyBook' : 'Sin firmar en HoneyBook';
+        }
+        $state = \App\Models\Contract::where('event_id', $e->id)->orderByDesc('revision')->value('state');
+
+        return match ($state) { 'signed' => 'Firmado', 'issued' => 'Enviado para firmar', 'draft' => 'Preparado (sin enviar)', default => 'Sin emitir' };
+    }
+
     public function file(): array
     {
         $e = $this->record->fresh(['customer', 'services.characters', 'reservations']);
@@ -226,6 +240,7 @@ class ViewEvent extends Page
             'type' => $e->event_type ? (EventResource::EVENT_TYPES[$e->event_type] ?? $e->event_type) : 'Sin clasificar',
             'status' => Labels::label(Labels::EVENT_STATUS, $e->status), 'status_color' => Labels::EVENT_STATUS_COLOR[$e->status] ?? 'gray',
             'finance' => FinanceGate::enabled() ? app(FinanceSummary::class)->forEvent($e) : null,
+            'contract' => $this->contractLabel($e),
         ];
     }
 }

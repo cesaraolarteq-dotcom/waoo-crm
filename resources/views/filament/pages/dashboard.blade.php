@@ -8,6 +8,16 @@
         <p>{{ ucfirst($this->now()->locale('es')->translatedFormat('l j \d\e F')) }} · {{ $week->count() }} {{ $week->count() === 1 ? 'fiesta' : 'fiestas' }} de aquí al domingo</p>
     </div>
 
+    @if ($sum = $this->weekSummary())
+        <a class="wrep-home" href="{{ \App\Filament\Pages\Reports::getUrl() }}">
+            <span class="wrep-home-h">{{ $sum['label'] }}@if ($sum['sample']) · ejemplo @endif</span>
+            <span><b>{{ $sum['cash'] }}</b> entraron</span>
+            <span><b>{{ $sum['bookings'] }}</b> {{ $sum['bookings'] === 1 ? 'reserva nueva' : 'reservas nuevas' }}@if ($sum['packages']) <small>({{ $sum['packages'] }})</small>@endif</span>
+            @if ($sum['weekend'] !== null)<span>Fin de semana: <b>{{ $sum['weekend'] }}</b> {{ $sum['weekend'] === 1 ? 'fiesta' : 'fiestas' }} · staff estimado {{ $sum['weekend_staff'] }}</span>@endif
+            <span class="wrep-home-more">Ver reportes →</span>
+        </a>
+    @endif
+
     <x-filament::section>
         <x-slot name="heading">Necesita tu atención</x-slot>
         <x-slot name="description">Toca cualquiera para resolverlo. Cuando todo está al día, esta sección queda vacía.</x-slot>
