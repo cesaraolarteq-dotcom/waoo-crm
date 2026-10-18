@@ -1,25 +1,24 @@
-# Quote decision consent — v1 DRAFT for César's approval
+# Quote decision text — v2 DRAFT for César's approval
 
-Status: **draft by Claude, not approved, not active.** Used by the client quote page (/portal/quote): the client must check the box with this exact text before "Aceptar" or "No me interesa". Once a quote is sent, its text is frozen with that quote; changing the wording later needs a new version and only affects new quotes. Config key `waoo.quote_acceptance_consent` (`version` + `es`/`en` → `accepted`/`rejected`), plain text, no placeholders.
+Status: **draft, not active.** v1 (2026-10-17) was too heavy for a quote; César asked for a lighter text on 2026-10-18 ("es una cotización, no un contrato"). Used by the client quote page (/portal/quote): the text sits right above its own button and **tapping the button is the answer** (no checkbox). Once a quote is sent, its text is frozen with that quote; a later wording change needs a new version and only affects new quotes. Config key `waoo.quote_acceptance_consent` (`version` + `es`/`en` → `accepted`/`rejected`), plain text, no placeholders.
 
-Based only on owner rules (CLAUDE.md): deposit 50 % of package + travel fee, non-refundable; balance due 24 h before the event; contract = the owner's contract, signed separately. Accepting a quote is **not** the contract signature and does not reserve the date.
+Answering a quote is **not** the contract, does not reserve the date and does not charge anything. Deposit (50 %, non-refundable) and balance terms are explained in the contract the client signs afterwards.
 
-Version: `quote-consent-v1-2026-10-17`
+Version: `quote-consent-v2-2026-10-18`
 
-## Accept
+## "Me interesa, quiero reservar" button
 
-**ES:** Acepto esta cotización de Waoo Party con los servicios, la fecha, el lugar y el total que aparecen arriba. Entiendo que aceptarla todavía no aparta mi fecha: la reserva se confirma cuando Waoo Party recibe el depósito del 50 % (paquete + costo de transporte), que no es reembolsable, y yo firmo el contrato. El saldo se paga a más tardar 24 horas antes de la fiesta.
+**ES:** Me interesa esta cotización y quiero reservar. Sé que esto todavía no aparta mi fecha ni cobra nada: Waoo Party me enviará el contrato y el depósito para confirmarla.
 
-**EN:** I accept this Waoo Party quote with the services, date, place and total shown above. I understand that accepting does not reserve my date yet: the booking is confirmed when Waoo Party receives the 50% deposit (package + travel fee), which is non-refundable, and I sign the contract. The balance is due no later than 24 hours before the party.
+**EN:** I like this quote and want to book. I know this does not reserve my date or charge anything yet: Waoo Party will send me the contract and deposit to confirm it.
 
-## Reject
+## "No me interesa por ahora" button
 
-**ES:** No acepto esta cotización. Entiendo que esto no me compromete a nada y que puedo pedirle a Waoo Party una cotización nueva cuando quiera.
+**ES:** Por ahora no me interesa. Puedo pedir una cotización nueva cuando quiera.
 
-**EN:** I do not accept this quote. I understand this does not commit me to anything and that I can ask Waoo Party for a new quote at any time.
+**EN:** Not for now. I can ask for a new quote anytime.
 
 ## Owner checklist
 
 - [ ] Wording OK in Spanish and English (or tell Claude what to change).
-- [ ] Optional: your lawyer reviews it together with the contract.
 - [ ] After approval Claude puts it in the configuration with this version; nothing changes for quotes already sent.
