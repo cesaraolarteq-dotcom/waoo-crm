@@ -38,6 +38,31 @@ class QuoteOwnerActionsTest extends TestCase
         $this->assertSame(1, PortalGrant::whereNotNull('quote_revision_id')->count());
     }
 
+    public function test_copy_does_not_advance_quote_version_or_prepare_again(): void
+    {
+        $this->prepare(); $page = $this->page();
+        $before = Quote::findOrFail($this->offer->quote_id)->version;
+        $audits = \Illuminate\Support\Facades\DB::table('audit_entries')->where('action', 'quote.prepared')->count();
+        $page->callAction('send');
+        $this->assertSame($before, Quote::findOrFail($this->offer->quote_id)->version);
+        $this->assertSame($audits, \Illuminate\Support\Facades\DB::table('audit_entries')->where('action', 'quote.prepared')->count());
+    }
+    public function test_copy_of_a_grant_revoked_after_the_modal_opened_never_creates_a_replacement(): void
+    {
+        $prepared = $this->prepare(); $page = $this->page()->mountAction('send');
+        app(\App\Services\Portal\RevokePortalGrant::class)->execute($this->owner, $prepared['portal_grant_id']);
+        $page->callMountedAction();
+        $this->assertSame(1, PortalGrant::whereNotNull('quote_revision_id')->count());
+        $page->assertSet('newLink', null)->assertNotified('No se preparó');
+    }
+    public function test_revoke_never_switches_to_a_replacement_link_created_after_the_modal_opened(): void
+    {
+        $prepared = $this->prepare(); $page = $this->page()->mountAction('revokeLink');
+        app(\App\Services\Portal\RevokePortalGrant::class)->execute($this->owner, $prepared['portal_grant_id']);
+        $replacement = $this->prepare();
+        $page->callMountedAction();
+        $this->assertNull(PortalGrant::findOrFail($replacement['portal_grant_id'])->revoked_at);
+    }
     public function test_pdf_is_the_frozen_presentation_and_revoking_hides_the_link(): void
     {
         $page = $this->page()->callAction('send');

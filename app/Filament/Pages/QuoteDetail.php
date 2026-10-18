@@ -17,7 +17,7 @@ use Livewire\Attributes\Locked;
 
 // QUOTE-01: one quote, its current revision and history. "Nueva revisión" recaptures the CURRENT event draft with
 // the versions this page showed (Locked); a replay keeps the returned historical revision apart from the header.
-// B/C owner side over Codex's services: prepare the client link (SendQuote: frozen PDF + consent, link shown once,
+// B/C owner side over Codex's services: prepare the client link (SendQuote: frozen PDF + consent, link recoverable while active,
 // re-copy returns the same active link), view the exact PDF, revoke the link, see her decision, and convert an
 // accepted quote into the agreed money (ConvertAcceptedQuote). Nothing is sent; accepting never charges or books.
 class QuoteDetail extends Page
@@ -29,6 +29,8 @@ class QuoteDetail extends Page
     #[Locked] public int $quoteId = 0;
     #[Locked] public ?int $displayedQuoteVersion = null;
     #[Locked] public ?int $displayedEventVersion = null;
+    #[Locked] public ?int $displayedRevision = null;
+    #[Locked] public ?int $displayedGrantId = null;
     #[Locked] public string $reviseKey = '';
     #[Locked] public string $sendKey = '';
     #[Locked] public string $convertKey = '';
@@ -46,6 +48,8 @@ class QuoteDetail extends Page
         $this->quoteId = $quote;
         $data = $this->data();
         $this->displayedQuoteVersion = (int) $data['quote']['version'];
+        $this->displayedRevision = (int) $data['quote']['current_revision'];
+        $this->displayedGrantId = $this->clientSide()['grant']?->id;
         $this->displayedEventVersion = Event::whereKey($data['quote']['event_id'])->value('version');
         $this->reviseKey = (string) Str::uuid();
         $this->sendKey = (string) Str::uuid();
@@ -100,27 +104,35 @@ class QuoteDetail extends Page
     public function sendAction(): Action
     {
         return Action::make('send')->icon('heroicon-o-link')->color('primary')
-            ->label(fn () => $this->clientSide()['grant'] ? 'Copiar enlace para la clienta' : 'Preparar enlace para la clienta')
+            ->label(fn () => $this->displayedGrantId !== null ? 'Copiar enlace para la clienta' : 'Preparar enlace para la clienta')
             ->visible(fn () => QuoteForm::enabled() && $this->clientSide()['can_send'])
-            ->modalHeading(fn () => $this->clientSide()['grant'] ? 'Copiar el enlace activo' : 'Preparar el enlace de la cotización')
-            ->modalDescription(fn () => $this->clientSide()['grant']
+            ->modalHeading(fn () => $this->displayedGrantId !== null ? 'Copiar el enlace activo' : 'Preparar el enlace de la cotización')
+            ->modalDescription(fn () => $this->displayedGrantId !== null
                 ? 'Se muestra el mismo enlace que ya tiene la clienta. No se crea uno nuevo.'
                 : 'Se congela esta versión (PDF y texto de aceptación) y se crea un enlace privado. Nada se envía: tú lo mandas por WhatsApp o SMS.')
             ->modalSubmitActionLabel('Mostrar enlace')
             ->action(function (Action $action) {
                 try {
-                    $r = app(\App\Services\Quotes\SendQuote::class)->execute(Filament::auth()->user(), $this->quoteId,
-                        ['expected_version' => (int) $this->displayedQuoteVersion, 'expected_revision' => (int) $this->data()['quote']['current_revision']], $this->sendKey);
+                    if ($this->displayedGrantId !== null) {
+                        $link = app(\App\Services\Portal\RevealPortalGrantLink::class)->execute(Filament::auth()->user(),
+                            (int) $this->data()['quote']['event_id'], $this->displayedGrantId);
+                        $r = ['url' => $link->url, 'expires_at' => $link->expires_at];
+                    } else {
+                        $r = app(\App\Services\Quotes\SendQuote::class)->execute(Filament::auth()->user(), $this->quoteId,
+                            ['expected_version' => (int) $this->displayedQuoteVersion, 'expected_revision' => (int) $this->displayedRevision], $this->sendKey);
+                        $this->displayedQuoteVersion = (int) $r['quote']->version;
+                        $this->displayedGrantId = (int) $r['portal_grant_id'];
+                    }
                 } catch (ValidationException $e) {
                     Notification::make()->danger()->title('No se preparó')->body(collect($e->errors())->flatten()->first())->persistent()->send();
                     $action->halt();
                 } catch (RecordWriteRejected|AuthorizationException|\App\Exceptions\PortalLinkRejected $e) {
+                    $this->newLink = null;
                     $this->sendKey = (string) Str::uuid();
                     Notification::make()->danger()->title('No se preparó')->body($e->getMessage().' Recarga la página para ver lo último.')->persistent()->send();
                     $action->halt();
                 }
                 $this->sendKey = (string) Str::uuid();
-                $this->displayedQuoteVersion = (int) Quote::whereKey($this->quoteId)->value('version');
                 $this->newLink = $this->linkPanel($r['url'], $r['expires_at']);
             });
     }
@@ -165,9 +177,10 @@ class QuoteDetail extends Page
             ->modalDescription('La clienta ya no podrá abrirla con ese enlace. Si ya decidió, su respuesta se conserva. Puedes preparar uno nuevo después.')
             ->modalSubmitActionLabel('Anular')
             ->action(function () {
-                $grant = $this->clientSide()['grant'];
-                if (! $grant) return;
-                app(\App\Services\Portal\RevokePortalGrant::class)->execute(Filament::auth()->user(), $grant->id);
+                if ($this->displayedGrantId === null) return;
+                app(\App\Services\Portal\RevokePortalGrant::class)->execute(Filament::auth()->user(), $this->displayedGrantId);
+                $this->displayedGrantId = null;
+                $this->sendKey = (string) Str::uuid();
                 $this->newLink = null;
                 Notification::make()->success()->title('Enlace anulado')->send();
             });
@@ -190,7 +203,7 @@ class QuoteDetail extends Page
                 $side = $this->clientSide();
                 try {
                     app(\App\Services\Quotes\ConvertAcceptedQuote::class)->execute(Filament::auth()->user(), $this->quoteId, [
-                        'expected_version' => (int) $this->displayedQuoteVersion, 'expected_revision' => (int) $this->data()['quote']['current_revision'],
+                        'expected_version' => (int) $this->displayedQuoteVersion, 'expected_revision' => (int) $this->displayedRevision,
                         'expected_event_version' => (int) $this->displayedEventVersion, 'decision_id' => (int) $side['decision']->id], $this->convertKey);
                 } catch (ValidationException|RecordWriteRejected|AuthorizationException $e) {
                     $this->convertKey = (string) Str::uuid();
@@ -230,6 +243,9 @@ class QuoteDetail extends Page
                     $action->halt();
                 }
                 Notification::make()->success()->title('Revisión '.$rev->revision.' guardada')->send();
+                $this->displayedRevision = $rev->revision;
+                $this->displayedGrantId = null;
+                $this->newLink = null;
                 $this->reviseKey = (string) Str::uuid();
                 $this->displayedQuoteVersion = (int) Quote::whereKey($this->quoteId)->value('version');
                 $this->displayedEventVersion = Event::whereKey(Quote::whereKey($this->quoteId)->value('event_id'))->value('version');
