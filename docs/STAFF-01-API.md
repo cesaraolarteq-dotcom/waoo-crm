@@ -1,6 +1,6 @@
 # STAFF-01 — página semanal de solo lectura, contrato v2
 
-2026-10-18 · Backend Codex, pantallas Claude. Contrato publicado antes de implementar. Sustituye por completo v1 de invitaciones/disponibilidad según decisión de César registrada en PHASE-6.md y HANDOFF de Claude. No hay backend real en esta entrega; los previews siguen siendo sintéticos y exclusivos de local/testing. La propuesta anterior de acceso de 7/30 días queda sustituida por el enlace duradero aprobado, no pendiente de esa pregunta.
+2026-10-18 · Backend Codex, pantallas Claude. Contrato publicado antes de implementar. Sustituye por completo v1 de invitaciones/disponibilidad según decisión de César registrada en PHASE-6.md y HANDOFF de Claude. La publicación de este contrato precede al backend; los previews siguen siendo sintéticos y exclusivos de local/testing. La propuesta anterior de acceso de 7/30 días queda sustituida por el enlace duradero aprobado, no pendiente de esa pregunta.
 
 ## Alcance y capacidad
 
@@ -10,11 +10,11 @@ Semana actual de lunes 00:00 a lunes siguiente 00:00, America/Chicago; convertir
 
 ## Identidad y enlace
 
-`staff_identities`: resource_id único, active, locale es|en, version. No necesita cuenta owner ni acceso /admin. Prohibir usar una identidad de dueño para impersonar staff.
+`staff_identities`: resource_id único, active, locale es|en, phone cifrado opcional (solo dueño), version. No necesita cuenta owner ni acceso /admin. Prohibir usar una identidad de dueño para impersonar staff.
 
 `staff_access_grants`: identity_id, token_hash único (SHA-256 de al menos 32 bytes aleatorios), token cifrado para volver a copiar, generation/version, revoked_at, created_by, last_opened_at. Un solo grant activo por identidad. **Sin vencimiento automático del enlace**; rotar o desactivar invalida inmediatamente también sus sesiones. Claves de cifrado fuera de git. Lecturas y auditorías nunca devuelven hash/token/ciphertext.
 
-Enlace `/staff#token` → intercambio POST → sesión exclusiva staff, HttpOnly/SameSite, Secure fuera de local/testing. Token solo en fragmento/payload de intercambio, nunca path/query/logs/jobs. El cliente elimina el fragmento tras intercambio. Sesión corta con techo de 7 días, sin extender el grant; al vencer basta reabrir el mismo enlace personal. Eso no convierte el enlace duradero en invitación con vencimiento. Cada lectura revalida identidad, recurso y generación del grant; revocación/rotación corta cookies previas. Rechazar intercambio desde una sesión admin/clienta; no transformar su identidad. CSRF y protección de origen en intercambio y logout; rate limit en intercambio/lecturas. Mismo error genérico para token desconocido/desactivado.
+Enlace `/staff#token` → intercambio POST → sesión exclusiva staff, HttpOnly/SameSite, Secure fuera de local/testing. Token solo en fragmento/payload de intercambio, nunca path/query/logs/jobs. El cliente elimina el fragmento tras intercambio. Sesión separada mediante cookie staff opaca HttpOnly y token almacenado solo como hash, con techo de 7 días, sin extender el grant; al vencer basta reabrir el mismo enlace personal. Eso no convierte el enlace duradero en invitación con vencimiento. Cada lectura revalida identidad, recurso y generación del grant; revocación/rotación corta cookies previas. Rechazar intercambio desde una sesión admin/clienta; no transformar su identidad. CSRF y protección de origen en intercambio y logout; rate limit en intercambio/lecturas. Mismo error genérico para token desconocido/desactivado.
 
 Respuestas privadas `Cache-Control: no-store, private`, `Referrer-Policy: no-referrer`, noindex/nofollow; sin analytics ni terceros salvo Maps abierto explícitamente con noreferrer. Un enlace reenviado expone la semana de esa persona hasta rotación; la dueña tiene acción para hacerlo. No alegar 2FA del staff.
 
@@ -23,6 +23,7 @@ Respuestas privadas `Cache-Control: no-store, private`, `Referrer-Policy: no-ref
 Actor owner activo con 2FA, sandbox_staff habilitado, CSRF en mutaciones; UUID `Idempotency-Key` y expected_version obligatorios. Registrar IDs, transición y versiones, sin enlaces/teléfonos/instrucciones. Bloquear identidad/grant con orden estable; mismo UUID/payload devuelve misma respuesta, UUID reutilizado con otro payload o versión antigua →409. Nunca reproducir un enlace revocado mediante un replay; responder conflicto.
 
 ```php
+SaveStaffIdentity::execute(User $actor, array $input, string $key): array;
 IssueStaffGrant::execute(User $actor, int $staffId, array $input, string $key): array;
 RevealStaffGrantLink::execute(User $actor, int $grantId, array $input): array;
 RotateStaffGrant::execute(User $actor, int $grantId, array $input, string $key): array;
@@ -31,8 +32,9 @@ ReadStaffLinks::execute(User $actor, array $filters): array;
 ReadStaffWeek::execute(StaffContext $staff): array;
 ```
 
+- POST `/admin/api/staff/identities` `{resource_id,expected_resource_version,locale,phone?,active,expected_version?}` + Idempotency-Key: registra/actualiza explícitamente la identidad de un recurso staff existente. expected_version obligatorio al actualizar. No crea personas ni inventa teléfonos. Respuesta cerrada owner sin phone salvo issue/reveal/rotate. Desactivar revoca grants; reactivar no los revive.
 - GET `/admin/api/staff/links?page=1`: listado paginado, `data:[{staff_id,resource_id,display_name,locale,active,version,grant:{id,version,last_opened_at}|null}],current_page,last_page`. Sin token. Sin conteos de aceptación.
-- POST `/admin/api/staff/{staff}/grants` `{expected_version}`: emisión explícita; si ya tiene uno, conflicto y ofrecer copiar/rotar. Devuelve `{staff_id,version,grant:{id,version},link}` no-store.
+- POST `/admin/api/staff/{staff}/grants` `{expected_version}`: emisión explícita; si ya tiene uno, conflicto y ofrecer copiar/rotar. Devuelve `{staff_id,version,grant:{id,version},link,phone}` no-store. phone es string|null del registro explícito, exclusivo del dueño; igual en reveal/rotate, nunca en listados o portal staff.
 - POST `/admin/api/staff/grants/{grant}/reveal` `{expected_version}`: copiar grant mostrado bajo validación; no emite/reemplaza otro ni cambia versión. No marca enviado.
 - POST `/admin/api/staff/grants/{grant}/rotate` `{expected_version}`: nuevo token, grant/generación nuevo, anterior inválido; devuelve envelope como issue. Owner modal queda fijado al ID/versión mostrados.
 - POST `/admin/api/staff/grants/{grant}/revoke` `{expected_version}`: invalida acceso y sesiones; devuelve `{id,version,revoked:true}`. Desactivar staff/recurso también corta acceso. Reactivar no revive un grant revocado.
@@ -68,3 +70,9 @@ jobs: [{
 ## Verificación necesaria antes de activar
 
 Cruce de personas, identidad/recurso inactivo, rotación/revocación con cookie antigua, replay de emisión/rotación tras revocar, owner/client session aisladas, semanas Houston con DST y límites de lunes, eventos terminados/cancelados/borrador, assignments liberadas, falta de hora real, traje "0", privacidad en HTML y JSON, contacto solo el día local, control de origen/CSRF, no-store/noindex, sin tokens en logs y filtros por ID cerrados. Previews y pruebas exclusivamente sintéticos. No envíos ni deploys; la lista privada del staff y activación requieren el flujo separado del dueño.
+
+## Datos operativos iniciales y límites (2026-10-19, antes de código)
+
+Las reservas y BookingEvidence actuales aportan roles/recursos, personajes/trajes y equipos. arrival se deriva exclusivamente del starts_at y setup_minutes registrados; si setup_minutes es null, arrival queda pendiente. is_driver usa el driver_staff_ids del snapshot confirmado, no basta tener la habilidad driver. Un snapshot que no reconoce el recurso actual no se completa con otro staff ni datos de otro evento.
+
+Parking/access/bring/instructions/contact se leen solo de una revisión operativa explícita, nunca de notas privadas ni teléfono/email general de la clienta. Servicio owner `SaveStaffJobInstructions::execute(User $actor,int $eventId,array $input,string $key):array`, POST `/admin/api/events/{event}/staff-instructions` con `{expected_event_version,expected_version,parking?,access?,bring:[],instructions?,contact_name?,contact_phone?}`. expected_version0 crea; versión positiva actualiza. Contacto incompleto422. No altera capacidad, horarios ni importes. Hasta registrar esos datos, null/lista vacía y texto pendiente. Identidad y revisión operativa se auditan por IDs/versiones, no texto/teléfono.
