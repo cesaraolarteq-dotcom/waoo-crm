@@ -56,12 +56,20 @@ class StaffLinks extends Page
         return StaffLinksSource::links(Filament::auth()->user(), $this->page);
     }
 
+    #[Locked] public array $shownNew = [];
+
     private function pin(): void
     {
+        $this->shownNew = [];
+        foreach (StaffLinksSource::unconfigured() as $u) {
+            $this->shownNew[$u['resource_id']] = $u;
+            $this->keys['r'.$u['resource_id']] ??= (string) Str::uuid();
+        }
         $this->shown = [];
         foreach ($this->rows()['data'] as $r) {
             $this->shown[$r['staff_id']] = ['version' => $r['version'], 'grant_id' => $r['grant']['id'] ?? null,
-                'grant_version' => $r['grant']['version'] ?? null, 'name' => $r['display_name'], 'locale' => $r['locale']];
+                'grant_version' => $r['grant']['version'] ?? null, 'name' => $r['display_name'], 'locale' => $r['locale'],
+                'resource_id' => $r['resource_id'], 'resource_version' => StaffLinksSource::resourceVersion($r['resource_id']), 'active' => $r['active']];
             $this->keys[$r['staff_id']] ??= (string) Str::uuid();
         }
     }
@@ -126,6 +134,53 @@ class StaffLinks extends Page
             });
 
         return $confirm ? $a->requiresConfirmation()->modalHeading($label.' de esta persona')->modalDescription($confirm)->modalSubmitActionLabel($label) : $a;
+    }
+
+    /** Set language, phone and active for a person: new (arguments.resource) or existing (arguments.staff). */
+    public function configureAction(): Action
+    {
+        return Action::make('configure')->label(fn (array $arguments) => isset($arguments['staff']) ? 'Editar' : 'Configurar')
+            ->icon('heroicon-o-pencil-square')->color('gray')->size('sm')
+            ->modalHeading(fn (array $arguments) => 'Datos de '.($this->target($arguments)['name'] ?? 'la persona'))
+            ->modalDescription('Idioma de su página y teléfono para abrir WhatsApp con su enlace. El teléfono solo lo ves tú.')
+            ->fillForm(fn (array $arguments) => ['locale' => $this->target($arguments)['locale'] ?? 'es', 'active' => (bool) ($this->target($arguments)['active'] ?? true)])
+            ->schema([
+                \Filament\Forms\Components\Select::make('locale')->label('Idioma')->options(['es' => 'Español', 'en' => 'English'])->required()->native(false),
+                \Filament\Forms\Components\TextInput::make('phone')->label('Teléfono (opcional)')->tel()->maxLength(40)
+                    ->helperText('Si ya tiene uno guardado y lo dejas vacío, no cambia.'),
+                \Filament\Forms\Components\Toggle::make('active')->label('Activa')->helperText('Si la desactivas, su enlace deja de funcionar al instante.'),
+            ])
+            ->modalSubmitActionLabel('Guardar')
+            ->action(function (array $data, array $arguments) {
+                $t = $this->target($arguments);
+                if (! $t) return;
+                $slot = isset($arguments['staff']) ? (int) $arguments['staff'] : 'r'.$t['resource_id'];
+                $input = ['resource_id' => (int) $t['resource_id'], 'expected_resource_version' => (int) $t['resource_version'],
+                    'locale' => $data['locale'], 'active' => (bool) $data['active']];
+                if (isset($arguments['staff'])) $input['expected_version'] = (int) $t['version'];
+                if (filled($data['phone'] ?? null) || ! isset($arguments['staff'])) $input['phone'] = filled($data['phone'] ?? null) ? trim($data['phone']) : null;
+                try {
+                    StaffLinksSource::saveIdentity(Filament::auth()->user(), $input, $this->keys[$slot] ?? (string) Str::uuid());
+                } catch (ValidationException $e) {
+                    $this->keys[$slot] = (string) Str::uuid();
+                    Notification::make()->danger()->title('No se guardó')->body(collect($e->errors())->flatten()->first())->persistent()->send();
+
+                    return;
+                } catch (RecordWriteRejected|AuthorizationException|HttpExceptionInterface $e) {
+                    $this->keys[$slot] = (string) Str::uuid();
+                    Notification::make()->danger()->title('No se guardó')->body($e->getMessage())->persistent()->send();
+
+                    return;
+                }
+                $this->keys[$slot] = (string) Str::uuid();
+                Notification::make()->success()->title('Datos guardados')->send();
+                $this->pin();
+            });
+    }
+
+    private function target(array $arguments): ?array
+    {
+        return isset($arguments['staff']) ? ($this->shown[(int) $arguments['staff']] ?? null) : ($this->shownNew[(int) ($arguments['resource'] ?? 0)] ?? null);
     }
 
     private function fail(?string $message, int $id): void

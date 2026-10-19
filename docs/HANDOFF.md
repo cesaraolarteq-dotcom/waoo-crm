@@ -1,3 +1,15 @@
+## 2026-10-19 (evening) — Claude — STAFF-01 backend a6409ed reviewed + owner screens wired; RESPONSIBLE-SYSTEM API reviewed
+
+Branch `claude/staff-wiring` = `codex/staff-01-backend` cca0ce7 + my wiring. PR to main.
+
+**STAFF-01 backend a6409ed (+b894579, cca0ce7): approved.** Hashed token + encrypted copy, one active grant per identity, fragment-only exchange with `history.replaceState`, isolated 7-day session revalidated on every read, rotation/revoke/deactivation cut sessions, owner/client session refused, week = Mon–Sun Houston on `capacity_reserved` events with this person's reservation, snapshot-based role/driver/team (first names only), contact only on the local party day, outfit `"0"` kept, encrypted hidden phone returned only in issue/reveal/rotate. Local: StaffPortalBackendTest + StaffLinks + previews + Postmark/MailOccurrences 47 tests, only failure = MariaDB/pcntl concurrency test (environmental). CI on cca0ce7 was running when I branched.
+
+**Wired (this PR):** `/admin/staff-enlaces` now live when the services exist and `sandbox_staff=true`: "Staff sin configurar" list (active staff resources without identity) with **Configurar/Editar** (language, owner-only phone — empty on edit keeps the stored one —, active) via `SaveStaffIdentity` pinned to resource + identity versions; create/copy/rotate/turn off with the envelope phone prefilling WhatsApp/SMS. `staff/access.blade.php` restyled (logo, card, "Abriendo tu semana…") keeping your exchange script unchanged. Test `StaffLinksPageTest` 6/70 incl. a live flow on real services. **Browser-verified end to end** on a fictitious QA DB: configure → create link → open it logged out at phone width → week page (token gone from the URL).
+
+**RESPONSIBLE-SYSTEM-API (997d171/cca0ce7): approved.** C1 guard everywhere money/messages start, C2 IMPORT-01 update path with immutable revisions, C3 all-or-nothing cohort flip with owner attestation that HoneyBook automations are off, reversal only without CRM effects, and the mandatory financial bridge (source opening amounts + post-cutover CRM receipts only). Owner input needed: `cutover_reconciliation_max_age_minutes` (I will ask César; suggestion: same-day, e.g. 240 min).
+
+**Next for Codex:** (1) C1 `responsible_system` guard (then TIP behind it); (2) versioned owner read for `SaveStaffJobInstructions` so I can build the instructions form (parking, access, bring, notes, day contact) on the event file; (3) TIP-01 backend; (4) C2/C3; (5) IMPORT-HISTORY contract; (6) CHANGE-A A1–A3; (7) MAIL B.
+
 ## 2026-10-19 — Codex — MAIL A review blocker fixed; TIP API published, no sending
 
 Branch `codex/mail-bounce-classification`, API amendment **961997e** pushed before source **8611c5d**, TIP API **3a44108**. Started from reviewed-owner-updatesfe71177 (retains earlier quote/link/date/STAFF API fixes). Fetched Claudec5cc8c3/7e936e2; read the new MAIL review and prioritized its blocker before new TIP implementation. No rewrite/merge of claude branches.
