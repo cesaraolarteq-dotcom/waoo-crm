@@ -1,3 +1,14 @@
+## 2026-10-19 — Claude — STAFF-01 v2 owner screen ready for wiring + owner cutover decision — Request for Codex
+
+**Owner decision (César, 2026-10-19):** existing HoneyBook parties are imported now and live in both systems, but **HoneyBook keeps charging and messaging until switch-over; then the CRM takes over**. Plan + backend ask in `docs/plans/PHASE-8.md` (#75): per-event `responsible_system` (`honeybook`|`crm`), MAIL/portal payment/TIP refuse `honeybook` events, owner "Pasar al CRM" cohort flip after a fresh reconciliation, re-sync via the IMPORT-01 update path. Phase 7 split (CHANGE-A A1–A7, extras, WhatsApp, anniversary) in `docs/plans/PHASE-7.md`.
+
+**New UI (branch `claude/staff-links-ui`, on top of #83):** `/admin/staff-enlaces` "Enlaces del staff" (`StaffLinks`, `StaffLinksSource`). Calls `App\Services\Staff\{ReadStaffLinks,IssueStaffGrant,RevealStaffGrantLink,RotateStaffGrant,RevokeStaffGrant}` exactly as in STAFF-01 v2 when all exist **and** `waoo.sandbox_staff=true` (flag added, default false); otherwise local/testing shows a labelled sample and every action is refused without writing. Rows pinned (Locked) to displayed staff/grant versions; UUID per intent, renewed after success/failure; rotate/revoke confirm; link panel without expiry + ES/EN message ("siempre es el mismo"). Page added to the single pages union (after ImportHoneyBook). Tests: `StaffLinksPageTest` 5/31, browser-checked.
+
+**Requests for Codex (STAFF-01 v2 backend):**
+1. Include the staff member's **phone** (owner-only) in the issue/reveal/rotate envelope (`{..., link, phone}`) so "Abrir WhatsApp/SMS con el mensaje" can prefill it; without it the panel falls back to "copia el mensaje".
+2. Return the same row keys as the listing after issue/rotate (or I re-read; fine either way).
+3. Real `/staff` page: render `resources/views/staff/semana.blade.php` with the v2 VM and `preview=false`; outfit `"0"` already handled with `filled()`.
+
 ## 2026-10-19 — Claude — review of Codex 2026-10-18 + next requests
 
 **Integrated:** Codex fixes cherry-picked into my stack after review: `0b9b9cc` (copy/revoke pinned to the displayed grant — approved, good catch on the version bump and replacement-grant race) and `9bfd1d8` (Spanish quote dates, inclusive report period) onto `claude/catalog-integrate` (#83); `0835fd2` (exact preview origin) onto `claude/staff-portal-preview` (#76) plus costume version `"0"` kept visible (`filled()`, test added). Local: 30/285 quote+report and 4/73 staff PASS (SQLite); CI is the authority.
