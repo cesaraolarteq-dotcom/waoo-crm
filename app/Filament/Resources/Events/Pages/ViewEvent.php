@@ -255,30 +255,35 @@ class ViewEvent extends Page
                     ->helperText('Bájalo de HoneyBook (Imprimir → Guardar como PDF). Se guarda cifrado; no se puede descargar desde el CRM.'),
                 \Filament\Forms\Components\Checkbox::make('owner_attests_signed_original')->label('Este PDF es el contrato original firmado por la clienta')->accepted(),
                 \Filament\Schemas\Components\Grid::make(2)->schema([
-                    \Filament\Forms\Components\DatePicker::make('observed_date')->label('Día en que revisaste las cuentas en HoneyBook')->native(false)->required()->maxDate(now(\App\Filament\Support\ChicagoTime::TZ)),
-                    \Filament\Forms\Components\TimePicker::make('observed_time')->label('Hora (Houston)')->seconds(false)->required(),
+                    \Filament\Forms\Components\DatePicker::make('observed_date')->label('Día en que revisaste las cuentas en HoneyBook')->native(false)->required()->maxDate(now(\App\Filament\Support\ChicagoTime::TZ))->live(),
+                    \Filament\Forms\Components\TimePicker::make('observed_time')->label('Hora (Houston)')->seconds(false)->required()->live(),
+                    \Filament\Forms\Components\Radio::make('observed_choice')->label('Esa hora se repite ese día (cambio de horario): ¿cuál?')->options(\App\Filament\Support\ChicagoTime::CHOICES)->required()->columnSpanFull()
+                        ->visible(fn ($get) => \App\Filament\Support\ChicagoTime::isAmbiguous(substr((string) $get('observed_date'), 0, 10) ?: null, substr((string) $get('observed_time'), 0, 5) ?: null)),
                 ]),
                 \Filament\Forms\Components\Checkbox::make('owner_money_reviewed')->label('Revisé en HoneyBook el total, lo pagado y el saldo de esta fiesta')->accepted(),
                 \Filament\Forms\Components\TextInput::make('source_reference')->label('Referencia de tu revisión')->required()->minLength(5)->maxLength(255)
                     ->placeholder('Ej.: HoneyBook › Payments, captura 2026-11-02 9:10'),
                 \Filament\Forms\Components\Textarea::make('owner_note')->label('Nota (solo la ves tú)')->required()->minLength(5)->maxLength(1000)->rows(2),
                 \Filament\Schemas\Components\Grid::make(2)->visible(fn () => ($this->cutBalance ?? 0) > 0)->schema([
-                    \Filament\Forms\Components\DatePicker::make('due_date')->label('El saldo vence el (para el CRM)')->native(false),
-                    \Filament\Forms\Components\TimePicker::make('due_time')->label('Hora (Houston)')->seconds(false),
+                    \Filament\Forms\Components\DatePicker::make('due_date')->label('El saldo vence el (para el CRM)')->native(false)->live(),
+                    \Filament\Forms\Components\TimePicker::make('due_time')->label('Hora (Houston)')->seconds(false)->live(),
+                    \Filament\Forms\Components\Radio::make('due_choice')->label('Esa hora se repite ese día (cambio de horario): ¿cuál?')->options(\App\Filament\Support\ChicagoTime::CHOICES)->required()->columnSpanFull()
+                        ->visible(fn ($get) => \App\Filament\Support\ChicagoTime::isAmbiguous(substr((string) $get('due_date'), 0, 10) ?: null, substr((string) $get('due_time'), 0, 5) ?: null)),
                 ]),
                 \Filament\Forms\Components\Checkbox::make('honeybook_automations_disabled')->label('Ya apagué los avisos automáticos de HoneyBook para esta fiesta'),
                 \Filament\Forms\Components\Checkbox::make('external_collections_retired')->label('Ya quité los cobros pendientes de HoneyBook para esta fiesta'),
             ])
             ->modalSubmitActionLabel('Guardar evidencia')
             ->action(function (array $data, Action $action) use ($e) {
-                $tz = fn ($d, $t, $field) => \App\Filament\Support\ChicagoTime::toIso(substr((string) $d, 0, 10), substr((string) $t, 0, 5), null, $field);
+                // An hour that repeats on the fall-back day needs the owner's explicit CDT/CST choice; never picked silently.
+                $tz = fn ($d, $t, $choice, $field) => \App\Filament\Support\ChicagoTime::toIso(substr((string) $d, 0, 10), substr((string) $t, 0, 5), $choice ?: null, $field);
                 $file = $data['file'] ?? null;
                 if (is_array($file)) $file = reset($file) ?: null;
                 $input = ['expected_version' => (int) $this->cutVersion, 'expected_binding_sha256' => (string) $this->cutBinding,
                     'owner_attests_signed_original' => (bool) ($data['owner_attests_signed_original'] ?? false), 'owner_money_reviewed' => (bool) ($data['owner_money_reviewed'] ?? false),
-                    'source_observed_at' => $tz($data['observed_date'], $data['observed_time'], 'observed_date'),
+                    'source_observed_at' => $tz($data['observed_date'], $data['observed_time'], $data['observed_choice'] ?? null, 'observed_date'),
                     'source_reference' => trim((string) $data['source_reference']), 'owner_note' => trim((string) $data['owner_note']),
-                    'crm_balance_due_at' => filled($data['due_date'] ?? null) && filled($data['due_time'] ?? null) ? $tz($data['due_date'], $data['due_time'], 'due_date') : null,
+                    'crm_balance_due_at' => filled($data['due_date'] ?? null) && filled($data['due_time'] ?? null) ? $tz($data['due_date'], $data['due_time'], $data['due_choice'] ?? null, 'due_date') : null,
                     'honeybook_automations_disabled' => (bool) ($data['honeybook_automations_disabled'] ?? false), 'external_collections_retired' => (bool) ($data['external_collections_retired'] ?? false),
                     ...(($data['reuse_document'] ?? false) && $this->cutDocumentId ? ['original_document_id' => $this->cutDocumentId] : ($file ? ['file' => $file] : []))];
                 try {

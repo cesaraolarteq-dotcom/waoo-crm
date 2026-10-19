@@ -35,6 +35,10 @@ class HoneyBookCutover extends Page
 
     public bool $scopeReviewed = false;
 
+    /** The group hash the owner had on screen when ticking the scope box; the attestation never carries to another group. */
+    #[Locked]
+    public ?string $reviewedCohort = null;
+
     public static function canAccess(): bool
     {
         return parent::canAccess() && CutoverUi::enabled();
@@ -58,9 +62,24 @@ class HoneyBookCutover extends Page
         } catch (\Throwable) {
             return null;
         }
+        if ($this->displayedCohort !== null && $this->displayedCohort !== $r['cohort_sha256']) {
+            $this->forgetScopeReview(); // the group changed under the owner: a new explicit review is required
+        }
         $this->displayedCohort = $r['cohort_sha256'];
 
         return $r;
+    }
+
+    public function updatedScopeReviewed(bool $value): void
+    {
+        $this->reviewedCohort = $value ? $this->displayedCohort : null;
+    }
+
+    private function forgetScopeReview(): void
+    {
+        $this->scopeReviewed = false;
+        $this->reviewedCohort = null;
+        $this->prepareKey = (string) Str::uuid();
     }
 
     /** Per-party missing items (read one by one; no client names beyond the event title the owner already sees). */
@@ -86,27 +105,27 @@ class HoneyBookCutover extends Page
 
     public function prepare(): void
     {
-        if (! $this->scopeReviewed) {
+        if (! $this->scopeReviewed || $this->reviewedCohort === null || $this->reviewedCohort !== $this->displayedCohort) {
+            $this->forgetScopeReview();
             Notification::make()->warning()->title('Falta confirmar el alcance')->body('Marca que el archivo de HoneyBook tiene todas las fiestas que siguen activas.')->send();
 
             return;
         }
         try {
             app(\App\Services\Imports\PrepareHoneyBookCutoverReconciliation::class)->execute(Filament::auth()->user(),
-                ['expected_cohort_sha256' => (string) $this->displayedCohort, 'source_scope_reviewed' => true], $this->prepareKey);
+                ['expected_cohort_sha256' => $this->reviewedCohort, 'source_scope_reviewed' => true], $this->prepareKey);
         } catch (ValidationException $e) {
-            $this->prepareKey = (string) Str::uuid();
+            $this->forgetScopeReview();
             Notification::make()->danger()->title('No se preparó')->body(collect($e->errors())->flatten()->map(fn ($m) => CutoverUi::label((string) $m))->first())->persistent()->send();
 
             return;
         } catch (RecordWriteRejected|AuthorizationException|HttpExceptionInterface $e) {
-            $this->prepareKey = (string) Str::uuid();
+            $this->forgetScopeReview();
             Notification::make()->danger()->title('No se preparó')->body($e->getMessage().' Recarga para ver lo actual.')->persistent()->send();
 
             return;
         }
-        $this->prepareKey = (string) Str::uuid();
-        $this->scopeReviewed = false;
+        $this->forgetScopeReview();
         Notification::make()->success()->title('Evidencia del grupo preparada')->body('Vale por 4 horas desde tu revisión más antigua. Todavía no se pasa nada al CRM.')->send();
     }
 }

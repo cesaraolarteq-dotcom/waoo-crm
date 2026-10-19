@@ -54,6 +54,38 @@ class HoneyBookCutoverScreensTest extends TestCase
         $this->get('/admin/cambio-final')->assertForbidden();
     }
 
+    public function test_scope_attestation_is_bound_to_the_displayed_group_and_cleared_when_it_changes(): void
+    {
+        $this->confirmed();
+        $page = Livewire::test(HoneyBookCutover::class);
+        $groupA = $page->get('displayedCohort');
+        $page->set('scopeReviewed', true)->assertSet('reviewedCohort', $groupA);
+
+        // Another owner imports one more party: the group on screen is now stale.
+        $batch = $this->stageFuture(['honeybook_project_id' => 'CUT-UI-2']); $row = ImportRow::where('import_batch_id', $batch->id)->sole();
+        app(CommitHoneyBookEvent::class)->execute($this->owner, $batch->id, $row->id, $this->commitInput($batch, $row), (string) Str::uuid());
+
+        $key = $page->get('prepareKey');
+        $page->call('prepare')->assertNotified();
+        $this->assertSame(0, DB::table('cutover_reconciliations')->count());
+        $page->assertSet('scopeReviewed', false)->assertSet('reviewedCohort', null);
+        $this->assertNotSame($key, $page->get('prepareKey'));
+        $this->assertNotSame($groupA, $page->get('displayedCohort'));
+
+        // Without a fresh tick nothing is sent, even though the screen now shows group B.
+        $page->call('prepare')->assertNotified('Falta confirmar el alcance');
+        $this->assertSame(0, DB::table('cutover_reconciliations')->count());
+    }
+
+    public function test_a_render_that_shows_a_new_group_clears_an_earlier_tick(): void
+    {
+        $this->confirmed();
+        $page = Livewire::test(HoneyBookCutover::class)->set('scopeReviewed', true);
+        $batch = $this->stageFuture(['honeybook_project_id' => 'CUT-UI-3']); $row = ImportRow::where('import_batch_id', $batch->id)->sole();
+        app(CommitHoneyBookEvent::class)->execute($this->owner, $batch->id, $row->id, $this->commitInput($batch, $row), (string) Str::uuid());
+        $page->call('$refresh')->assertSet('scopeReviewed', false)->assertSet('reviewedCohort', null);
+    }
+
     public function test_event_evidence_action_saves_a_pinned_review_reusing_the_original_and_nothing_is_prechecked(): void
     {
         $link = $this->confirmed();
@@ -71,5 +103,21 @@ class HoneyBookCutoverScreensTest extends TestCase
         $this->assertSame(2, HoneyBookCutoverReview::where('event_id', $link->event_id)->max('version'));
         $after = app(ReadHoneyBookCutoverReview::class)->execute($this->owner, $link->event_id);
         $this->assertNotContains('honeybook_automations_active', $after['missing']);
+    }
+
+    public function test_a_repeated_fall_back_hour_needs_an_explicit_cdt_or_cst_choice(): void
+    {
+        $link = $this->confirmed();
+        $data = ['owner_attests_signed_original' => true, 'owner_money_reviewed' => true,
+            'file' => [UploadedFile::fake()->createWithContent('x.pdf', "%PDF-1.4\n% FICTIONAL\n%%EOF\n")],
+            'observed_date' => now('America/Chicago')->toDateString(), 'observed_time' => now('America/Chicago')->subMinutes(2)->format('H:i'),
+            'source_reference' => 'Fixture DST review', 'owner_note' => 'Fixture DST note', 'due_date' => '2026-11-01', 'due_time' => '01:30',
+            'honeybook_automations_disabled' => false, 'external_collections_retired' => false];
+        Livewire::test(ViewEvent::class, ['record' => $link->event_id])->mountAction('cutoverEvidence')->setActionData($data)
+            ->callMountedAction()->assertHasActionErrors(['due_choice' => 'required']);
+        $this->assertSame(0, HoneyBookCutoverReview::where('event_id', $link->event_id)->count());
+        Livewire::test(ViewEvent::class, ['record' => $link->event_id])->mountAction('cutoverEvidence')->setActionData([...$data, 'due_choice' => 'cst'])
+            ->callMountedAction()->assertHasNoActionErrors()->assertNotified('Evidencia guardada');
+        $this->assertSame(1, HoneyBookCutoverReview::where('event_id', $link->event_id)->count());
     }
 }

@@ -7,7 +7,7 @@ final class CutoverUi
 {
     public static function enabled(): bool
     {
-        return config('waoo.sandbox_cutover') === true && config('waoo.sandbox_imports') === true
+        return app()->environment(['local', 'testing', 'staging']) && config('waoo.sandbox_cutover') === true && config('waoo.sandbox_imports') === true
             && class_exists(\App\Services\Imports\ReadHoneyBookCutoverReadiness::class);
     }
 
