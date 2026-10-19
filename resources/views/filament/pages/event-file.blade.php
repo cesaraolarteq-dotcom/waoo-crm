@@ -11,6 +11,7 @@
         @endif
         <span>Contrato: <b>{{ $f['contract'] }}</b></span>
         <span>Tipo: <b>{{ $f['type'] }}</b></span>
+        @if ($f['responsible'])<span title="Solo un sistema cobra y manda avisos por fiesta">Cobro y avisos: <b>{{ $f['responsible'] }}</b></span>@endif
     </div>
     <div class="wfile">
         <x-filament::section>

@@ -11,7 +11,7 @@
     <x-filament::section>
         <x-slot name="heading">Tu equipo</x-slot>
         <x-slot name="description">Cuando confirmas una fiesta con alguien, aparece sola en su enlace. Tú le preguntas antes por WhatsApp; aquí no responden nada.</x-slot>
-        @forelse ($list['data'] as $r)
+        @foreach ($list['data'] as $r)
             <div class="wmoney-row">
                 <div><b>{{ $r['display_name'] }}</b> · {{ $r['locale'] === 'en' ? 'English' : 'Español' }}
                     @if (! $r['active'])<x-filament::badge color="gray" size="sm">Inactiva</x-filament::badge>
@@ -32,9 +32,17 @@
                 @endif
                 </div>
             </div>
-        @empty
+        @endforeach
+        @if ($list['last_page'] > 1)
+            <div class="wrep-actions" style="margin-top:8px">
+                <button type="button" class="wcal-btn" wire:click="goToPage({{ $list['current_page'] - 1 }})" @disabled($list['current_page'] <= 1)>← Anteriores</button>
+                <span>Página {{ $list['current_page'] }} de {{ $list['last_page'] }}</span>
+                <button type="button" class="wcal-btn" wire:click="goToPage({{ $list['current_page'] + 1 }})" @disabled($list['current_page'] >= $list['last_page'])>Siguientes →</button>
+            </div>
+        @endif
+        @if (! $list['data'])
             <p class="wqb-hint">Todavía nadie tiene su página. Configura a tu staff abajo y crea su enlace.</p>
-        @endforelse
+        @endif
     </x-filament::section>
 
     @php($new = \App\Filament\Support\StaffLinksSource::unconfigured())
