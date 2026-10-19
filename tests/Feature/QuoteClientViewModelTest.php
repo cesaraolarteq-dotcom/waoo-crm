@@ -69,6 +69,7 @@ class QuoteClientViewModelTest extends TestCase
         $p=$this->prepare();$client=$this->client($p['portal_grant_id']);
         $en=app(ReadQuoteViewModel::class)->read($client,'en');$es=app(ReadQuoteViewModel::class)->read($client,'es');
         $this->assertSame($english,$en['view_model']['quote']['when']);
+        $this->assertMatchesRegularExpression('/^\S+ \d{1,2} de \S+ de 2026/u',$es['view_model']['quote']['when']);
         foreach([$en,$es] as $read)$this->assertSame($dates,substr_count($read['view_model']['quote']['when'],'2026'));
         $this->assertSame($en['snapshot_sha256'],$es['snapshot_sha256']);$this->assertSame($en['pdf_sha256'],$es['pdf_sha256']);$this->assertSame($en['consents'],$es['consents']);
     }

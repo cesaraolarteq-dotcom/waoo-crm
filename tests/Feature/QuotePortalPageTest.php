@@ -71,7 +71,7 @@ class QuotePortalPageTest extends TestCase
         $this->postJson($o['action'], $body, ['Idempotency-Key' => $key])->assertCreated()->assertJsonPath('decision.outcome', 'accepted');
         $this->postJson($o['action'], $body, ['Idempotency-Key' => $key])->assertCreated(); // uncertain retry: same key + same payload
         $this->assertDatabaseCount('quote_decisions', 1);
-        $this->page($p['portal_grant_id'])->assertOk()->assertSee('¡Gracias! Aceptaste tu cotización')->assertDontSee('id="quote-decide"', false);
+        $this->page($p['portal_grant_id'])->assertOk()->assertSee('¡Gracias! Recibimos tu respuesta')->assertDontSee('id="quote-decide"', false);
         $this->assertDatabaseCount('ledger_entries', 0); $this->assertDatabaseCount('resource_reservations', 0);
     }
 

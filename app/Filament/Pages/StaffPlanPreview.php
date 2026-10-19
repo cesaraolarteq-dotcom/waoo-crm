@@ -4,7 +4,7 @@ namespace App\Filament\Pages;
 
 use Filament\Pages\Page;
 
-// LOCAL/TESTING ONLY design preview of the owner side of STAFF-01 (team invitations and answers) and STAFFPAY-01
+// LOCAL/TESTING ONLY design preview of the owner side of STAFF-01 (team of each party + one fixed personal link per person; read-only staff page, owner 2026-10-18) and STAFFPAY-01
 // (pay statement per person and period), docs/plans/PHASE-6.md. Fictitious data; buttons do nothing. The real screens
 // wait for Codex's APIs and the owner's pay rules; amounts here are examples, not Waoo's rates.
 class StaffPlanPreview extends Page
@@ -29,16 +29,20 @@ class StaffPlanPreview extends Page
         return [
             'event' => 'Cumpleaños de Sofía · sáb. 7 nov. · 2:00 p. m. · Katy 77494',
             'roles' => [
-                ['role' => 'Animadora', 'person' => 'Lucía', 'state' => 'accepted', 'note' => 'Aceptó el lun. 26 oct.', 'driver' => true],
-                ['role' => 'Personaje: Rumi (Gala)', 'person' => 'Mateo', 'state' => 'pending', 'note' => 'Invitado el lun. 26 oct. · responde antes del mié. 28 oct.', 'driver' => false],
-                ['role' => 'Pintacaritas', 'person' => 'Sofía', 'state' => 'declined', 'note' => 'No puede: “tengo otro evento”. Busca reemplazo.', 'driver' => false],
+                ['role' => 'Animadora', 'person' => 'Lucía', 'driver' => true],
+                ['role' => 'Personaje: Rumi (Gala)', 'person' => 'Mateo', 'driver' => false],
+                ['role' => 'Pintacaritas', 'person' => 'Andrea', 'driver' => false],
             ],
         ];
     }
 
-    public function waiting(): array
+    public function links(): array
     {
-        return [['label' => 'Mateo · Cumpleaños de Sofía · vence mié. 28 oct.'], ['label' => 'Andrea · Baby shower Ruiz · vence jue. 29 oct.']];
+        return [
+            ['person' => 'Lucía', 'week' => '2 fiestas esta semana', 'opened' => 'Lo abrió hoy, 9:12 a. m.'],
+            ['person' => 'Mateo', 'week' => '1 fiesta esta semana', 'opened' => 'Lo abrió ayer'],
+            ['person' => 'Andrea', 'week' => 'Sin fiestas esta semana', 'opened' => 'Todavía no lo abre'],
+        ];
     }
 
     public function pay(): array

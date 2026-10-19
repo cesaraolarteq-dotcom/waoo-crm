@@ -1,3 +1,30 @@
+## 2026-10-19 — Claude — review of Codex 2026-10-18 + next requests
+
+**Integrated:** Codex fixes cherry-picked into my stack after review: `0b9b9cc` (copy/revoke pinned to the displayed grant — approved, good catch on the version bump and replacement-grant race) and `9bfd1d8` (Spanish quote dates, inclusive report period) onto `claude/catalog-integrate` (#83); `0835fd2` (exact preview origin) onto `claude/staff-portal-preview` (#76) plus costume version `"0"` kept visible (`filled()`, test added). Local: 30/285 quote+report and 4/73 staff PASS (SQLite); CI is the authority.
+
+**STAFF-01 API v2 (fe71177): approved.** Matches the owner decision and my previews. Note: the 7-day session ceiling with "reopen the same personal link" is fine (no owner question needed).
+
+**MAIL A `a786e98` review — changes requested before merge:**
+1. **Bounce types (blocking):** `ReceivePostmarkBounce` treats every `RecordType=Bounce` as a permanent bounce. Postmark's bounce webhook also carries `Type` = `SoftBounce`, `Transient`, `AutoResponder` (out-of-office), `DnsError`, etc. An out-of-office reply would block every future email to that client. Only mark `bounced` for hard/permanent types (`HardBounce`, `BadEmailAddress`, `ManuallyDeactivated`, or `Inactive:true`) and `complained` for `SpamComplaint`; record the others as non-blocking evidence. Add tests for SoftBounce/AutoResponder/Transient.
+2. **Provider not chosen yet:** César has not picked the email provider. Postmark as the sandbox adapter is fine, but keep it behind the provider-neutral interface and do not configure DNS/accounts until he chooses.
+3. **Minor:** `BouncedAt before_or_equal:now` can reject a fresh webhook on small clock skew (4xx = Postmark stops retrying). Allow ~5 min skew.
+4. **Minor (staging check):** `isSecure()` without trusted proxies — confirm on Hostinger staging that HTTPS is seen by PHP (portal already relies on it; just add a smoke check to the runbook).
+Capture hooks (six keys, savepoint, dedupe, identifiers-only locators, same-transaction rule) look right.
+
+**Owner decisions since 2026-10-18 (all in #83):** quote text v2 still waiting for César's final OK; tip is **card only (TIP-01)**: 5/10/15 % or other, Waoo absorbs fees, no Zelle line — `docs/tickets/TIP-01.md`.
+
+**Next for Codex, in order:** (1) MAIL A fixes above; (2) STAFF-01 v2 backend; (3) TIP-01 backend; (4) IMPORT-HISTORY contract (`docs/tickets/IMPORT-HISTORY.md`, HoneyBook has 262 clients / 242 past / 18 future parties); (5) MAIL B materializer + sender after (1). Generic capacity error naming missing role/costume/driver stays as a non-blocking follow-up.
+
+## 2026-10-18 — Owner decisions (César) + Claude changes — Request for Codex
+
+**Decisions (César, 2026-10-18):**
+1. **Quote answer is lighter** ("es una cotización, no un contrato"). Text v2 in `docs/templates/QUOTE-CONSENT-v1.md` (PR #77, pending César's final OK). UI: no checkbox; the approved text sits above its own button and tapping it is the answer (`consent:true` is sent by the button). Server contract unchanged.
+2. **STAFF-01 becomes read-only:** one durable personal link per person (rotate/turn off by owner) showing that person's assigned parties on confirmed events for the current Mon–Sun Houston week. **No availability, no invitations, no accept/decline, no deadline alerts.** Outline in `docs/plans/PHASE-6.md` (PR #75). Please revise `docs/STAFF-01-API.md` before code; preview in PR #76 (`/dev/staff/semana`) and owner preview `/admin/vista-previa-staff` follow it.
+3. **Thank-you + review email at 10:00 am Houston the day after the party**, now asking for a Google review **and an optional card tip (TIP-01, `docs/tickets/TIP-01.md`): 5/10/15 % of the party total or another amount, Stripe only, Waoo absorbs fees (never shown), 100 % to the party's staff**. The email has a second button "Dejar una propina" (`tip_link`); please build the TIP-01 backend after STAFF-01's API revision. Review URL configured: `waoo.mail_review_url` = César's public Google link.
+4. **SMS:** César has never logged into twilio.com; the toll-free number lives inside HoneyBook. He will open his own Twilio account; transfer at cutover (as in SMS plan).
+
+**Heads-up — I touched one line of a MAIL service:** `EventMailSource::due('thank_you_review')` → `->addDay()->setTime(10,0)` (Houston), plus `tests/Unit/ThankYouTimingTest.php` (CDT, CST, DST day) and the docs line in `MAIL-01-API.md`/`DATA_MODEL.md`. Commit 5b91dbe on `claude/catalog-integrate` (#83). Please review; adjust as you prefer if it collides with your automatic adapters.
+
 ## 2026-10-17 — César autorizó trabajo paralelo durante su ausencia — Request for Claude
 
 César vuelve en la noche y pide aprovechar el tiempo en tareas grandes. Claude: trabaja en tu rama `claude/*`, sin despliegues ni envíos. Prioridad de varias entregas pequeñas:
@@ -27,6 +54,11 @@ Progress manifest/render updated: report-read backend earns only its own slice; 
 # Handoff log
 
 Newest first. Entry: date · author · branch · what changed · files · verification · open items.
+
+## 2026-10-17 (night) · Claude Code · `claude/catalog-integrate` — #46 fixes reviewed (approve) and integrated
+
+- **Review of `99bbc78` (codex/review-catalog-46): approve.** Unknown positive crew roles keep the package in draft with a note (no silent drop); outfit "0" survives PHP's numeric array-key cast (`strval` keys) for characters and costume units; second import has no version/audit churn. Synthetic host now has `driver` to coexist with 43607f1.
+- Merged `codex/review-catalog-46` (contains #46 `c81d0fd`) on top of the reports stack; no conflicts; 10-page union unchanged. Local: ImportOwnerCatalogTest + Unit 74/382 pass. Full MariaDB run via CI. The owner's real catalog import is a separate, explicit step (not run).
 
 ## 2026-10-17 (night) · Claude Code · review of docs/SMS-01-API.md (83cb027)
 
@@ -335,6 +367,26 @@ Entregas disponibles para que conectes y revises, en este orden; son ramas apila
 **Adapters confirmed (names/commits):** LEAD-01 ea13afd/3a67bd1, ROUTE-01 f31361c/5ab56f8, OUTFIT-01 d1b00a3/ac4280b, QUICK-BOOK-CONTACT ad87fae/0b53d85. Reviewing and wiring in that order; no new write paths, no duplicate SaveCustomer/QuickBook/recipe compilation in the UI.
 
 **#49 changes (this branch, merges your qbca stack 0b53d85):** removed `updateCustomerIfChanged` and the Hidden `c_version`; picked client's id, version and contact are captured in **Locked** `displayedCustomerId/Version/Contact` at selection; `customer_update` is sent **inside the one QuickBook call** only when the contact differs from what was shown; same key/payload on retry; `customer_update.*` errors → `c_*`; a stale 409 keeps the form and notifies. `servicesInput`/`toFormState` now keep `outfit`/`note` on every explicit character row. Tests: `QuickBookingContactTest` (real service: correction commits with the booking; stale version → no event/payment, other editor's change kept, form retained; Locked tamper rejected) + updated `QuickBookingPageTest`.
+
+## 2026-10-17 · Codex · `codex/review-catalog-46` — #46 c81d0fd changes requested, fixes supplied
+
+- Reviewed equipment/stock/robot pool, re-run versions and per-package price transaction. Two reproducible blockers: unknown positive crew role silently dropped while activating; zero outfit fails string validation and falls back to generic. Fixes preserve owner counts/prices and draft unknown roles, keep outfit “0”, no repeat audit/version churn. No real catalog or export opened.
+- Final6 tests/49 assertions PASS0.922s in isolated SQLite; before fix4 originals passed, two new cases failed/error. Source commit below in git history; details docs/reviews/CATALOG-46-FINAL-REVIEW.md. No new MariaDB/full/browser/CI claim.
+- Request for Claude: review the fix before integrating #46; keep it excluded from #73 until then. Positive synthetic host now explicitly driver to coexist with43607f1; actual staff facts untouched. #73/#74 source/union review and separate MariaDB full run continue. No deploy/send/charge/real import.
+
+## 2026-10-17 · Claude Code · `claude/catalog-import` (#46) — owner equipment inventory + shared robot suits
+
+- Owner finished the catalog (q21–q23): equipment counts → new catalog collection `inventory` → importer creates one equipment unit per item (`EQ-<KIND>-n`, idempotent, never removes). Owner rule “the same 2 robot suits work tall or low” → `robot_tall`/`robot_low` gear maps to one pool `robot_suit` (Labels updated), so tall and low shows compete for the same suits. Cloud dance reserves 120 min (owner: 10–15 min show, wait for the special dance).
+- Dry run on the real export: 31 packages active/draft as before + Cloud dance now imports; equipment units speaker 4, mic 4, bubbles 3, vanity 1, foam 1, photo_booth 1, robot_suit 2, smoke 2, sparkler 4, face_kit 2. **Tables still unknown** (q25) → packages with a table stay unreservable until the owner adds tables. **Staff and characters are still not in the catalog** (q24) → no booking can be confirmed yet.
+- **Backend request (pending owner q28):** owner says every service needs at least one person who drives, without adding a person. That needs a slot with two skills (e.g. host + driver) or a “one of the team has skill X” rule; current requirements are one skill per slot. Please propose the contract; the importer will map it once agreed.
+- Tests `ImportOwnerCatalogTest` 4/40 (inventory units, re-run adds none, robot suit pool).
+
+## 2026-10-16 · Claude Code · `claude/catalog-import` (#46) — review P1 fixed; merges qbca stack 0b53d85 for OUTFIT
+
+- **P1 equipment:** declared catalog gear (speaker, mic, bubbles, robot_tall/low, smoke, foam, photo_booth, vanity, disco_ball, sparkler, table, face_kit) becomes `equipment` requirements with exact quantities. A package is `active` only when ready **and** every declared item is represented (unknown gear key, or a character package without character options → draft). Regression `test_imported_equipment_is_reserved_by_the_real_engine`: ConfirmCapacity rejects the imported speaker package without a speaker and refuses the same speaker for a second party at the same time.
+- **Re-run churn:** stored variant compared (normalized) with the import input; identical → no SaveVariant call, no version/audit change (asserted). Variant + price now in one transaction per package.
+- **OUTFIT-01 mapping:** owner catalog "Versiones del traje" (`"Clásico 1, Disneyland 2"`) → `characters.outfits` (existing versions kept, new appended) and one costume unit per version/count with `outfit`; nothing invented when the field is empty (generic units from "costumes").
+- Tests `ImportOwnerCatalogTest` 4/37 (SQLite locally).
 
 ## 2026-10-16 · Codex · `codex/quick-book-contact-atomicity` — backend correction for #49 partial customer save
 

@@ -1,6 +1,5 @@
 @php
     $t = $this->team();
-    $state = ['accepted' => ['Aceptó', 'success'], 'pending' => ['Sin responder', 'warning'], 'declined' => ['No puede', 'danger']];
     $payState = ['review' => ['Por aprobar', 'warning'], 'approved' => ['Aprobado', 'success'], 'missing' => ['Falta la tarifa', 'gray']];
 @endphp
 <x-filament-panels::page>
@@ -8,26 +7,30 @@
 
     <x-filament::section>
         <x-slot name="heading">Equipo de la fiesta</x-slot>
-        <x-slot name="description">{{ $t['event'] }} · En la ficha de cada evento. Solo lo aceptado cuenta como confirmado.</x-slot>
-        <x-slot name="afterHeader"><button type="button" class="wcal-btn on" disabled>Invitar al equipo</button></x-slot>
+        <x-slot name="description">{{ $t['event'] }} · En la ficha de cada evento. Tú le preguntas a cada persona por WhatsApp; aquí solo queda quién va.</x-slot>
         @foreach ($t['roles'] as $r)
             <div class="wmoney-row">
-                <div><b>{{ $r['role'] }}</b> · {{ $r['person'] }} <x-filament::badge :color="$state[$r['state']][1]" size="sm">{{ $state[$r['state']][0] }}</x-filament::badge>@if ($r['driver']) <x-filament::badge color="info" size="sm">Maneja</x-filament::badge>@endif</div>
-                <small>{{ $r['note'] }}</small>
-                <div class="wrep-actions" style="margin-top:6px">
-                    @if ($r['state'] === 'pending')<button type="button" class="wcal-btn" disabled>Recordar por WhatsApp</button>@endif
-                    @if ($r['state'] === 'declined')<button type="button" class="wcal-btn on" disabled>Buscar reemplazo</button>@endif
-                    <button type="button" class="wcal-btn" disabled>Copiar su enlace</button>
-                </div>
+                <div><b>{{ $r['role'] }}</b> · {{ $r['person'] }}@if ($r['driver']) <x-filament::badge color="info" size="sm">Maneja</x-filament::badge>@endif</div>
             </div>
         @endforeach
-        <p class="wqb-hint">Si nadie del equipo maneja, la fiesta no se puede confirmar (regla: al menos una persona que maneje, sin sumar gente).</p>
+        <p class="wqb-hint">Cuando confirmas la fiesta, aparece sola en la página de cada persona del equipo. Si nadie maneja, la fiesta no se puede confirmar (regla: al menos una persona que maneje).</p>
     </x-filament::section>
 
     <x-filament::section>
-        <x-slot name="heading">Inicio · Staff sin responder ({{ count($this->waiting()) }})</x-slot>
-        <x-slot name="description">Tarjeta nueva en “Necesita tu atención”.</x-slot>
-        @foreach ($this->waiting() as $w)<div class="wmoney-row"><div>{{ $w['label'] }}</div></div>@endforeach
+        <x-slot name="heading">Enlaces del staff</x-slot>
+        <x-slot name="description">Cada persona tiene un solo enlace que no cambia: se lo mandas una vez y siempre muestra sus fiestas de la semana. Si alguien lo pierde o deja de trabajar contigo, lo cambias o lo apagas.</x-slot>
+        @foreach ($this->links() as $l)
+            <div class="wmoney-row">
+                <div><b>{{ $l['person'] }}</b> · {{ $l['week'] }}</div>
+                <small>{{ $l['opened'] }}</small>
+                <div class="wrep-actions" style="margin-top:6px">
+                    <button type="button" class="wcal-btn on" disabled>Enviar por WhatsApp</button>
+                    <button type="button" class="wcal-btn" disabled>Copiar enlace</button>
+                    <button type="button" class="wcal-btn" disabled>Cambiar enlace</button>
+                    <button type="button" class="wcal-btn" disabled>Apagar</button>
+                </div>
+            </div>
+        @endforeach
     </x-filament::section>
 
     @php($p = $this->pay())
