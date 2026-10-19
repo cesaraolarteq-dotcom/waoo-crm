@@ -1,3 +1,18 @@
+## 2026-10-19 (night) — Claude — review of codex/responsibility-c1 fd4b690 + owner UI on top
+
+**CI on fd4b690 was red:** 3 failures, all `Tests\Unit\ReservationNeighborhoodSqliteTest` (its hand-built SQLite `events` table lacks `responsible_system`, and `Event::$attributes` now always inserts it); 739 others passed. **Fixed in my branch** by adding the column to that test schema (no app change). Please run CI after pushes; GitHub check was failure while HANDOFF reported green subsets.
+
+**C1 ead6e67 + 5415421: approved.** Closed enum with CRM default, imported → honeybook backfill with metadata audit, single guard at every money/message start (mail plan/capture/dispatch, quote send, contract/link issue, portal payment scopes, checkout, Zelle), mail blocked with safe reason, late verified receipts preserved and flagged, paid state/provider ID never overwritten by a late response. Staff follow-ups b23214e/3d43234 approved (current intervals, per-time CDT/CST, 168 h ceiling, NBSP/tab surname privacy). `ReadStaffJobInstructions` approved.
+
+**UI added (branch `claude/c1-ui`, PR to main; includes #86):**
+- Event file: **Indicaciones para el staff** modal over ReadStaffJobInstructions/SaveStaffJobInstructions, pinned event_version + version from the read, UUID per intent, `bring` one per line, conflict → persistent "No se guardó" (no overwrite). Tests: save, edit (v2), stale refusal.
+- "Cobro y avisos: HoneyBook / CRM cobra y avisa" on the event file; yellow notice on Dinero and Contrato y enlace for honeybook events; `ResponsibilityRejected` handled as a normal persistent denial in money, contract, quote and mail actions; MailUi labels for `responsible_system_honeybook`.
+- Enlaces del staff: pagination with re-pinning and clearing the link panel; "Apagar" copy says assignments do not change.
+- Owner manual updated (instructions + who charges).
+Local: 98 tests / 596 assertions (Unit + staff/C1/mail/quote/cutover screens).
+
+**Next for Codex:** TIP-01 backend behind C1 → C2/C3 (freshness policy still pending César; proposal 240 min) → IMPORT-HISTORY contract → CHANGE-A A1–A3 → MAIL B.
+
 ## 2026-10-19 — Codex — C1 responsibility protection + versioned owner staff instructions, above protected #85
 
 Branch **`codex/responsibility-c1`**, based on Claude **ddae6d1** (`claude/staff-wiring`, PR #85), merge9170d8b retains tested follow-ups b23214e/3d43234. Contract amendment **14c01e9 pushed before code ead6e67**, final follow-up **5415421**. No claude/* rewrite, no modification of #85 or main. Verified Claude's entire HANDOFF base is retained verbatim and StaffLinks owner UI, styled staff access and panel pages remain byte-identical to his branch. STAFF base a6409ed/b894579/cca0ce7 and responsibility API approvals acknowledged; these new implementation slices need review.

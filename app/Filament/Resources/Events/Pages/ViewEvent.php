@@ -42,6 +42,14 @@ class ViewEvent extends Page
     }
 
     /** Event version shown on this page; "Crear cotización" snapshots exactly this version or is refused (409). */
+    /** STAFF-01 instructions: versions the modal showed (ReadStaffJobInstructions) and one UUID per save intent. */
+    #[\Livewire\Attributes\Locked]
+    public ?int $instrEventVersion = null;
+    #[\Livewire\Attributes\Locked]
+    public ?int $instrVersion = null;
+    #[\Livewire\Attributes\Locked]
+    public string $instrKey = '';
+
     #[\Livewire\Attributes\Locked]
     public ?int $displayedVersion = null;
 
@@ -99,7 +107,7 @@ class ViewEvent extends Page
         try {
             $r = app(\App\Services\Mail\PauseEventMail::class)->execute(\Filament\Facades\Filament::auth()->user(), $this->record->getKey(),
                 ['expected_version' => (int) $this->mailPolicyVersion, 'paused' => ! $shown['policy']['paused']], $this->mailKey);
-        } catch (\App\Exceptions\RecordWriteRejected|\Illuminate\Validation\ValidationException|\Illuminate\Auth\Access\AuthorizationException $e) {
+        } catch (\App\Exceptions\RecordWriteRejected|\Illuminate\Validation\ValidationException|\Illuminate\Auth\Access\AuthorizationException|\App\Exceptions\ResponsibilityRejected $e) {
             $this->mailKey = (string) \Illuminate\Support\Str::uuid();
             $this->mailPolicyVersion = $this->mail()['policy']['version'] ?? null;
             \Filament\Notifications\Notification::make()->danger()->title('No se cambió')->body('Alguien cambió la pausa de correos de este evento. Revisa el estado actual.')->persistent()->send();
@@ -155,13 +163,14 @@ class ViewEvent extends Page
                     } catch (\Illuminate\Validation\ValidationException $ex) {
                         \Filament\Notifications\Notification::make()->danger()->title('No se creó')->body(collect($ex->errors())->flatten()->first())->persistent()->send();
                         $action->halt();
-                    } catch (\App\Exceptions\RecordWriteRejected|\Illuminate\Auth\Access\AuthorizationException $ex) {
+                    } catch (\App\Exceptions\RecordWriteRejected|\Illuminate\Auth\Access\AuthorizationException|\App\Exceptions\ResponsibilityRejected $ex) {
                         \Filament\Notifications\Notification::make()->danger()->title('No se creó')->body($ex->getMessage().' Recarga la página.')->persistent()->send();
                         $action->halt();
                     }
                     $this->quoteKey = (string) \Illuminate\Support\Str::uuid();
                     $this->redirect(\App\Filament\Pages\QuoteDetail::getUrl(['quote' => $rev->quote_id]));
                 }),
+            $this->staffInstructionsAction(),
             Action::make('costs')->label('Costos y margen')->icon('heroicon-o-chart-bar')->color('gray')->visible(fn () => FinanceGate::enabled() && class_exists(\App\Services\Costs\RecordCostSnapshot::class))->url(fn () => EventResource::getUrl('costs', ['record' => $e])),
             Action::make('mailPlan')->label('Programar recordatorios')->icon('heroicon-o-envelope')->color('gray')
                 ->visible(fn () => \App\Filament\Support\MailUi::enabled() && $e->status === 'capacity_reserved' && ! \App\Models\ImportedProjectLink::where('event_id', $e->id)->exists())
@@ -181,7 +190,7 @@ class ViewEvent extends Page
                             'expected_event_version' => (int) $this->displayedVersion, 'expected_customer_version' => (int) $this->displayedCustomerVersion,
                             'portal_grant_id' => (int) $data['portal_grant_id'], 'templates' => array_values($data['templates']),
                         ], $this->mailKey);
-                    } catch (\App\Exceptions\RecordWriteRejected|\Illuminate\Validation\ValidationException|\Illuminate\Auth\Access\AuthorizationException $ex) {
+                    } catch (\App\Exceptions\RecordWriteRejected|\Illuminate\Validation\ValidationException|\Illuminate\Auth\Access\AuthorizationException|\App\Exceptions\ResponsibilityRejected $ex) {
                         $this->mailKey = (string) \Illuminate\Support\Str::uuid();
                         \Filament\Notifications\Notification::make()->danger()->title('No se programó nada')->body(\App\Filament\Support\MailUi::refusal($ex))->persistent()->send();
                         $action->halt();
@@ -197,6 +206,59 @@ class ViewEvent extends Page
     }
 
     /** Real contract state for the header pill (imported events keep their contract in HoneyBook). */
+    /** What the assigned staff see on their week page: parking, access, what to bring, notes, contact of the day. */
+    public function staffInstructionsAction(): Action
+    {
+        $e = $this->record;
+
+        return Action::make('staffInstructions')->label('Indicaciones para el staff')->icon('heroicon-o-clipboard-document-list')->color('gray')
+            ->visible(fn () => config('waoo.sandbox_staff') === true && class_exists(\App\Services\Staff\ReadStaffJobInstructions::class))
+            ->modalHeading('Indicaciones para el staff')
+            ->modalDescription('Lo ve cada persona apartada en esta fiesta en su página de la semana. No pongas aquí notas privadas ni dinero. El contacto del día solo aparece el día de la fiesta.')
+            ->fillForm(function () use ($e) {
+                $r = app(\App\Services\Staff\ReadStaffJobInstructions::class)->execute(\Filament\Facades\Filament::auth()->user(), $e->id);
+                $this->instrEventVersion = (int) $r['event_version'];
+                $this->instrVersion = (int) $r['version'];
+                $this->instrKey = (string) \Illuminate\Support\Str::uuid();
+                $i = $r['instructions'];
+
+                return ['parking' => $i['parking'], 'access' => $i['access'], 'bring' => implode("\n", $i['bring'] ?? []),
+                    'instructions' => $i['instructions'], 'contact_name' => $i['contact_name'], 'contact_phone' => $i['contact_phone']];
+            })
+            ->schema([
+                \Filament\Forms\Components\TextInput::make('parking')->label('Estacionamiento')->maxLength(1000)->placeholder('Ej.: en la calle, frente a la casa'),
+                \Filament\Forms\Components\TextInput::make('access')->label('Acceso')->maxLength(1000)->placeholder('Ej.: entrar por el portón del lado izquierdo'),
+                \Filament\Forms\Components\Textarea::make('bring')->label('Qué llevar (una cosa por línea)')->rows(4),
+                \Filament\Forms\Components\Textarea::make('instructions')->label('Indicaciones')->rows(3)->maxLength(3000)->placeholder('Ej.: la piñata es a las 4:15; el cumpleañero se llama…'),
+                \Filament\Schemas\Components\Grid::make(2)->schema([
+                    \Filament\Forms\Components\TextInput::make('contact_name')->label('Contacto del día (nombre)')->maxLength(150),
+                    \Filament\Forms\Components\TextInput::make('contact_phone')->label('Teléfono del contacto')->tel()->maxLength(40),
+                ]),
+            ])
+            ->modalSubmitActionLabel('Guardar indicaciones')
+            ->action(function (array $data, Action $action) use ($e) {
+                $bring = array_values(array_filter(array_map('trim', preg_split('/\R/', (string) ($data['bring'] ?? ''))), fn ($l) => $l !== ''));
+                $blank = fn ($v) => filled($v) ? trim((string) $v) : null;
+                try {
+                    app(\App\Services\Staff\SaveStaffJobInstructions::class)->execute(\Filament\Facades\Filament::auth()->user(), $e->id, [
+                        'expected_event_version' => (int) $this->instrEventVersion, 'expected_version' => (int) $this->instrVersion,
+                        'parking' => $blank($data['parking'] ?? null), 'access' => $blank($data['access'] ?? null), 'bring' => $bring,
+                        'instructions' => $blank($data['instructions'] ?? null), 'contact_name' => $blank($data['contact_name'] ?? null), 'contact_phone' => $blank($data['contact_phone'] ?? null),
+                    ], $this->instrKey ?: (string) \Illuminate\Support\Str::uuid());
+                } catch (\Illuminate\Validation\ValidationException $ex) {
+                    $this->instrKey = (string) \Illuminate\Support\Str::uuid();
+                    \Filament\Notifications\Notification::make()->danger()->title('No se guardó')->body(collect($ex->errors())->flatten()->first())->persistent()->send();
+                    $action->halt();
+                } catch (\App\Exceptions\RecordWriteRejected|\Illuminate\Auth\Access\AuthorizationException|\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $ex) {
+                    $this->instrKey = (string) \Illuminate\Support\Str::uuid();
+                    \Filament\Notifications\Notification::make()->danger()->title('No se guardó')->body($ex->getMessage())->persistent()->send();
+                    $action->halt();
+                }
+                $this->instrKey = '';
+                \Filament\Notifications\Notification::make()->success()->title('Indicaciones guardadas')->body('Las ve el staff de esta fiesta al abrir su página.')->send();
+            });
+    }
+
     private function contractLabel(\App\Models\Event $e): string
     {
         $link = class_exists(\App\Models\ImportedProjectLink::class) ? \App\Models\ImportedProjectLink::where('event_id', $e->id)->first() : null;

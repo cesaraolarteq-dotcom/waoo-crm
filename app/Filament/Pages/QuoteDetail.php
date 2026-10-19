@@ -126,7 +126,7 @@ class QuoteDetail extends Page
                 } catch (ValidationException $e) {
                     Notification::make()->danger()->title('No se preparó')->body(collect($e->errors())->flatten()->first())->persistent()->send();
                     $action->halt();
-                } catch (RecordWriteRejected|AuthorizationException|\App\Exceptions\PortalLinkRejected $e) {
+                } catch (RecordWriteRejected|AuthorizationException|\App\Exceptions\PortalLinkRejected|\App\Exceptions\ResponsibilityRejected $e) {
                     $this->newLink = null;
                     $this->sendKey = (string) Str::uuid();
                     Notification::make()->danger()->title('No se preparó')->body($e->getMessage().' Recarga la página para ver lo último.')->persistent()->send();
@@ -205,7 +205,7 @@ class QuoteDetail extends Page
                     app(\App\Services\Quotes\ConvertAcceptedQuote::class)->execute(Filament::auth()->user(), $this->quoteId, [
                         'expected_version' => (int) $this->displayedQuoteVersion, 'expected_revision' => (int) $this->displayedRevision,
                         'expected_event_version' => (int) $this->displayedEventVersion, 'decision_id' => (int) $side['decision']->id], $this->convertKey);
-                } catch (ValidationException|RecordWriteRejected|AuthorizationException $e) {
+                } catch (ValidationException|RecordWriteRejected|AuthorizationException|\App\Exceptions\ResponsibilityRejected $e) {
                     $this->convertKey = (string) Str::uuid();
                     $msg = $e instanceof ValidationException ? collect($e->errors())->flatten()->first() : $e->getMessage();
                     Notification::make()->danger()->title('No se fijaron los montos')->body($msg.' Recarga la página para ver lo último.')->persistent()->send();
@@ -238,7 +238,7 @@ class QuoteDetail extends Page
                 } catch (ValidationException $e) {
                     Notification::make()->danger()->title('No se guardó')->body(collect($e->errors())->flatten()->first())->persistent()->send();
                     $action->halt();
-                } catch (RecordWriteRejected|AuthorizationException $e) {
+                } catch (RecordWriteRejected|AuthorizationException|\App\Exceptions\ResponsibilityRejected $e) {
                     Notification::make()->danger()->title('No se guardó')->body($e->getMessage().' Recarga la página para ver lo último.')->persistent()->send();
                     $action->halt();
                 }

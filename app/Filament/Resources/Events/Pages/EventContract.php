@@ -166,7 +166,7 @@ class EventContract extends Page
                 } catch (ValidationException $e) {
                     Notification::make()->danger()->title('No se creó')->body(collect($e->errors())->flatten()->first())->persistent()->send();
                     $action->halt();
-                } catch (RecordWriteRejected|AuthorizationException $e) {
+                } catch (RecordWriteRejected|AuthorizationException|\App\Exceptions\ResponsibilityRejected $e) {
                     Notification::make()->danger()->title('No se creó')->body($e->getMessage())->persistent()->send();
                     $action->halt();
                 }
@@ -199,7 +199,7 @@ class EventContract extends Page
                 $grant = PortalGrant::where('event_id', $this->record->getKey())->find((int) ($arguments['id'] ?? 0));
                 try {
                     $r = app(\App\Services\Portal\RevealPortalGrantLink::class)->execute(Filament::auth()->user(), $this->record->getKey(), (int) ($arguments['id'] ?? 0));
-                } catch (\App\Exceptions\PortalLinkRejected $e) {
+                } catch (\App\Exceptions\PortalLinkRejected|\App\Exceptions\ResponsibilityRejected $e) {
                     $n = Notification::make()->danger()->title('No se pudo copiar')->body($e->getMessage())->persistent();
                     if (in_array($e->status, [409, 410], true) && $this->linkAction()->isVisible()) {
                         $n->body($e->getMessage().' Usa «Crear enlace para la clienta» (arriba) para hacer uno nuevo.');
@@ -269,7 +269,7 @@ class EventContract extends Page
         } catch (ValidationException $e) {
             Notification::make()->danger()->title('No se guardó')->body(collect($e->errors())->flatten()->first())->persistent()->send();
             $action->halt();
-        } catch (RecordWriteRejected|AuthorizationException $e) {
+        } catch (RecordWriteRejected|AuthorizationException|\App\Exceptions\ResponsibilityRejected $e) {
             Notification::make()->danger()->title('No se guardó')->body($e->getMessage())->persistent()->send();
             $action->halt();
         }

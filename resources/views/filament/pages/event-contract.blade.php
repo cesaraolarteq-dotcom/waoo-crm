@@ -4,6 +4,7 @@
     $stateLabel = ['draft' => 'Borrador', 'issued' => 'Emitido · esperando firma', 'signed' => 'Firmado', 'superseded' => 'Reemplazado', 'void' => 'Anulado'];
 @endphp
 <x-filament-panels::page>
+    @include('filament.pages.partials.honeybook-responsible', ['event' => $this->record])
     <div class="wmoney-states">
         <span>Contrato: <b>{{ $c ? ($stateLabel[$c->state] ?? $c->state) : 'Sin preparar' }}</b></span>
         <span>Plantilla: <b>{{ $s['template'] ? 'versión '.$s['template']->version : 'ninguna activa' }}</b></span>

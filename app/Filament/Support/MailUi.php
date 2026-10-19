@@ -32,10 +32,12 @@ final class MailUi
         'source_unavailable' => 'El evento o su enlace ya no cumplen las condiciones.',
         'transport_outcome_unknown' => 'No sabemos si salió: revísalo antes de pensar en reenviar.',
         'unsupported_environment_or_channel' => 'Canal o entorno no permitido.',
+        'responsible_system_honeybook' => 'HoneyBook cobra y avisa esta fiesta: el CRM no le manda correos hasta el cambio final.',
     ];
 
     /** Server refusals of planning, in plain Spanish (codes from PlanEventMail / EventMailSource / ApprovedMail). */
     public const PLAN_ERRORS = [
+        'responsible_system_honeybook' => 'HoneyBook cobra y avisa esta fiesta: el CRM no le programa correos hasta el cambio final.',
         'mail_source_changed' => 'El evento o la ficha de la clienta cambió. Recarga la página.',
         'mail_link_expires_before_reminder' => 'El enlace vence antes de algún recordatorio. Crea un enlace que dure más.',
         'mail_event_requires_current_confirmed_finance' => 'El evento necesita recursos apartados con su pago vinculado y montos al día.',

@@ -95,6 +95,14 @@ La clienta abre el enlace, llena sus datos y firma el contrato ahí mismo. Tú l
 ### Costos y margen
 - Registra lo que te costó la fiesta (staff, gasolina, materiales). Un costo que falta dice **"Pendiente"**, nunca $0.
 
+### Indicaciones para el staff
+- Botón **Indicaciones para el staff** en la ficha: estacionamiento, acceso, qué llevar (una cosa por línea), indicaciones y el **contacto del día**.
+- Lo ve cada persona apartada en esa fiesta en su página de la semana. El contacto del día solo aparece **el día de la fiesta**. No pongas notas privadas ni dinero.
+
+### Cobro y avisos: HoneyBook o CRM
+- Arriba de la ficha dice **"Cobro y avisos: HoneyBook cobra y avisa"** o **"CRM cobra y avisa"**.
+- Si dice HoneyBook, en **Dinero** y **Contrato y enlace** verás un aviso amarillo: el CRM no cobra, no crea enlaces de pago ni manda correos de esa fiesta hasta el cambio final. Es a propósito.
+
 ### Correos
 - **Programar recordatorios por correo** (saldo, una semana antes, gracias + reseña al día siguiente a las 10 a. m.). Hoy están **desactivados**: se ven, pero no se envían hasta que tú lo autorices.
 

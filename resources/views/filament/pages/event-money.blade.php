@@ -5,6 +5,7 @@
     $paid = $f['net_received_cents'];
 @endphp
 <x-filament-panels::page>
+    @include('filament.pages.partials.honeybook-responsible', ['event' => $this->record])
     <div class="wmoney">
         <div class="wmoney-states" aria-label="Estados por separado">
             <span>Pago: <b>{{ $paid > 0 ? ($rev && $f['balance_cents'] === 0 ? 'Pagado completo' : 'Pago recibido') : 'Sin pagos' }}</b></span>
