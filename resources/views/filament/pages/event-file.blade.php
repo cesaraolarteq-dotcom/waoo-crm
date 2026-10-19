@@ -24,7 +24,10 @@
                 @endphp
                 <div><dt>Costo de transporte</dt><dd>{{ $money($e->travel_fee_cents) }}@if ($tfe)
                     {{-- Imported HoneyBook evidence has no accepted_at/mode: show where it came from instead of failing. --}}
-                    <small>· @if (isset($tfe['mode'])){{ ['calculated' => 'calculado', 'edited' => 'editado', 'manual' => 'manual'][$tfe['mode']] ?? '' }}@else importado de HoneyBook @endif @if (! empty($tfe['accepted_at']))el {{ \App\Filament\Support\Labels::when(\Carbon\CarbonImmutable::parse($tfe['accepted_at'])) }}@endif @if (! empty($tfe['note'])) · “{{ $tfe['note'] }}”@endif</small>@endif</dd></div>
+                    @php($tfeText = (isset($tfe['mode']) ? (['calculated' => 'calculado', 'edited' => 'editado', 'manual' => 'manual'][$tfe['mode']] ?? '') : 'importado de HoneyBook')
+                        .(! empty($tfe['accepted_at']) ? ' el '.\App\Filament\Support\Labels::when(\Carbon\CarbonImmutable::parse($tfe['accepted_at'])) : '')
+                        .(! empty($tfe['note']) ? ' · “'.$tfe['note'].'”' : ''))
+                    <small>· {{ $tfeText }}</small>@endif</dd></div>
                 <div><dt>Montaje / desmontaje</dt><dd>{{ $e->setup_minutes !== null ? $e->setup_minutes.' min antes' : '—' }} · {{ $e->breakdown_minutes !== null ? $e->breakdown_minutes.' min después' : '—' }}</dd></div>
             </dl>
         </x-filament::section>
