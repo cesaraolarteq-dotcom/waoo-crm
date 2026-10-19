@@ -189,6 +189,22 @@ class StaffPortalBackendTest extends TestCase
         $this->assertNotNull(StaffAccessGrant::find($a['grant']['id'])->revoked_at);
         config(['waoo.sandbox_staff'=>true]);auth()->logout();$this->week($cookie)->assertUnauthorized();
     }
+    public function test_main_owner_screen_calls_real_services_and_does_not_reveal_a_replacement(): void
+    {
+        $page=\Livewire\Livewire::test(\App\Filament\Pages\StaffLinks::class)
+            ->assertDontSee('Vista previa con personas de ejemplo')
+            ->callAction('issue',arguments:['staff'=>$this->identity['staff_id']])
+            ->assertSet('newLink.phone','+13465550100');
+        $link=$page->get('newLink.url');
+        $page->callAction('reveal',arguments:['staff'=>$this->identity['staff_id']])->assertSet('newLink.url',$link);
+        $old=StaffAccessGrant::sole();
+        $new=app(RotateStaffGrant::class)->execute($this->owner,$old->id,['expected_version'=>1],(string)Str::uuid());
+        $page->callAction('reveal',arguments:['staff'=>$this->identity['staff_id']])->assertSet('newLink',null)->assertNotified('No se hizo el cambio');
+        $this->assertNotSame($link,$new['link']);
+        \Livewire\Livewire::test(\App\Filament\Pages\StaffLinks::class)
+            ->callAction('revoke',arguments:['staff'=>$this->identity['staff_id']])->assertNotified('Enlace apagado');
+        $this->assertNull(StaffAccessGrant::find($new['grant']['id'])->encrypted_token);
+    }
     public function test_owner_api_crypto_binding_and_stale_version_cannot_retarget_a_link(): void
     {
         $a=$this->issue(); $other=$this->configure($this->teammate); $b=$this->issue($other);
