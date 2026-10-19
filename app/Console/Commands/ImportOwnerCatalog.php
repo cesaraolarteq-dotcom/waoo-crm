@@ -172,6 +172,11 @@ class ImportOwnerCatalog extends Command
         if (str_contains(mb_strtolower($p['gear_other'] ?? '').json_encode($p['gear'] ?? []), 'face_kit') && ($base['face_painter'] ?? 0) === 0 && ($base['host'] ?? 0) > 0) {
             $base['host']--; $base['face_painter'] = 1;
         }
+        // Owner rule (2026-10-19, catalog Q28): whoever drives is one of the people already going, never one more. The
+        // capacity check enforces "at least one assigned person can drive" (STAFF-DRIVER), so "driver" is not headcount
+        // unless nobody else goes. External drivers are rare and handled by hand.
+        $driverByRule = ($base['driver'] ?? 0) > 0 && collect($base)->except('driver')->sum() > 0;
+        if ($driverByRule) unset($base['driver']);
         $unknownCrew = array_keys(array_filter($base, fn ($count, $role) => $count > 0 && ! isset(self::SKILLS[$role]), ARRAY_FILTER_USE_BOTH));
         $requirements = [];
         foreach ($base as $role => $count) {
@@ -208,6 +213,7 @@ class ImportOwnerCatalog extends Command
             ! empty($p['extra_character_price']) ? 'personaje extra $'.$p['extra_character_price'].' (no modelado)' : null,
             $english ? null : 'descripción en español: escribe la del contrato en inglés',
             $isHoraLoca && ($p['characters_included'] ?? 0) > 0 ? 'robot tratado como equipo + operador' : null,
+            $driverByRule ? 'conductor: una de las personas del equipo (no una más)' : null,
         ]);
         if ($dry) { $this->report[] = ['Paquete', $name, ($variant ? 'se actualizaría' : 'se crearía').' ('.$input['status'].')', implode(' · ', $notes)]; return; }
 
