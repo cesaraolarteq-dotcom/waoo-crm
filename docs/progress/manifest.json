@@ -1,6 +1,6 @@
 {
  "_about": "Temporary owner progress view (prototype tab 'Avance del proyecto'). Phases = docs/PROJECT_PLAN.md §18. Each agent updates its own evidence; Claude renders. Rules: a design/contract doc counts 0; a part counts only with a tested commit; review, merge to main and owner acceptance are separate steps. Phase % = sum(weight × stage score) / sum(weight).",
- "updated": "2026-10-17",
+ "updated": "2026-10-19",
  "stage_scores": {
   "backend": 0.35,
   "ui": 0.35,
@@ -544,7 +544,7 @@
       "merge_requirement": "One ->pages union retaining Leads, Quotes, QuoteDetail, EmailTemplates alongside Dashboard/Calendar/QuickBooking/ContractTemplates. Only add each class with its source. No whole newer #59/#65 review claimed.",
       "remaining": "Read-only synthetic settings only; no root backend/UI completion credit. Real outbox API, event timeline, bounce card, allow-list and approved mail activation still pending. Subject ES72>60 remains nonblocking for draft preview."
      },
-     "blocker": "Base MAIL/outbox and UI reviewed; six occurrence hooks and authenticated bounce receiver added on codex/mail-automatic-backend, awaiting independent review. Automatic materialization/rendering/polling/dispatch, owner-approved copy, provider/DNS/test allow-list and explicit activation remain pending. Nothing sent.",
+     "blocker": "MAIL A Claude review requests addressed in8611c5d, pending re-review. Automatic materialization/rendering/polling/dispatch, provider selection and explicit activation remain pending; nothing sent.",
      "automatic_capture_and_bounces": {
       "api": "641cef0 / docs/MAIL-AUTOMATIC-API.md",
       "backend": "a786e98",
@@ -554,7 +554,14 @@
       "accepted": false,
       "scope": "Six transactional occurrence hooks + encrypted dedupe/state + metadata read API; native authenticated sandbox Postmark bounce/complaint adapter. No automatic rendering/materializer/polling/dispatch implementation or delivery activation.",
       "verification": "Sourcea786e98: full662 tests/29663 assertions PASS18:04.336 PHP8.3.35/MariaDB11.8; target18/112 includes actual insert race and SQLite migration. Vite/strict Composer/PHP lint/diff pass, guarded disabled-local migration and /up200. Advisory audit unreachable (Packagist403), GitHub CI verification pending. No full MAIL completion/provider/deployment/owner acceptance claim.",
-      "remaining": "Claude review; materializer, source-frozen approved copy and freshness checks, provider sandbox verification, owner-approved text/DNS/activation. No whole-ticket completion credit."
+      "remaining": "Claude re-review of8611c5d; materializer/frozen source validation; provider selection and staging HTTPS/auth verification; approved copy and explicit activation. No send or full-ticket completion.",
+      "review_followup": {
+       "api": "961997e",
+       "backend": "8611c5d",
+       "reviewed": false,
+       "scope": "Claude blocking review addressed: transient/out-of-office evidence never suppresses recipient; only permanent/inactive/complaint outcomes change delivery state. Authenticated provider observation accepts at most5min clock skew. Provider not chosen; HTTPS Hostinger smoke documented, not executed. Tests recorded in HANDOFF when finished.",
+       "verification": "Source8611c5d final44 tests/267 assertions PASS2:00.326 PHP8.3.35/MariaDB11.8 (PostmarkBounce,MailOutbox,MailScreens); regression reproduced red before fix. Source lint, strict Composer and diff pass. No new full suite/browser/Hostinger/provider/send proof."
+      }
      }
     },
     {
@@ -637,7 +644,7 @@
    "name": "Staff y gestión avanzada",
    "deliverables": [
     {
-     "name": "Portal del staff y aceptación de asignaciones",
+     "name": "Página semanal del staff (solo lectura)",
      "weight": 3,
      "agent": "Codex+Claude",
      "backend": null,
@@ -647,15 +654,15 @@
      "accepted": false,
      "contract": {
       "document": "docs/STAFF-01-API.md",
-      "commit": "7596eaa",
+      "commit": "fe71177",
       "implemented": false,
-      "note": "API only, 0 implementation credit; private staff identity, availability, invitations, acceptance, exclusive pending holds and money-free job sheet."
+      "note": "API v2 replaces invitations/availability per owner: durable personal link, rotate/disable, own current Houston week, confirmed assigned events only, no money. Claude approved contract in HANDOFF c5cc8c3; docs0 implementation credit."
      },
      "preview_review": {
-      "ui": "44b6941 / bbcbc86",
+      "ui": "e66f5d9 / #83 owner preview",
       "reviewed": true,
       "backend": null,
-      "scope": "Local/testing synthetic preview only, no money/team directory; no real STAFF or payroll completion credit. Locale/upcoming API updated, session policy owner answer pending."
+      "scope": "Local/testing synthetic read-only weekly preview reviewed in codex/review-owner-updates; no real STAFF backend completion. Durable link decision replaces previous session-policy question."
      }
     },
     {
@@ -693,7 +700,13 @@
      "ui": null,
      "reviewed": false,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "tip_contract": {
+      "document": "docs/TIP-01-API.md",
+      "implemented": false,
+      "reviewed": false,
+      "note": "Card-only5/10/15percent or custom; no fee to client, separate tip receipts never reduce booking balance. Contract only0 implementation; staff split policy awaits owner, no real charges."
+     }
     },
     {
      "name": "REPORT-A: panel, lecturas y reportes congelados",
