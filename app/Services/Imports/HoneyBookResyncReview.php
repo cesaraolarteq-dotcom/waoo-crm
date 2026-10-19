@@ -11,7 +11,7 @@ final class HoneyBookResyncReview
 {
     public const MONEY_FIELDS = ['amount_paid', 'balance', 'payments', 'balance_due_date'];
 
-    public static function commercialHash(array $source): string
+    public static function commercialHash(#[\SensitiveParameter] array $source): string
     {
         return MutationKey::hash(array_diff_key($source, array_flip(self::MONEY_FIELDS)));
     }

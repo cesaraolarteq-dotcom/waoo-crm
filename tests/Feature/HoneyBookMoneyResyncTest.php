@@ -223,6 +223,8 @@ class HoneyBookMoneyResyncTest extends TestCase
         $this->withHeader('Idempotency-Key', (string)Str::uuid())->postJson($url.'/commit', $input)->assertForbidden();
         config(['waoo.sandbox_imports' => true]); $this->app['env'] = 'staging';
         $this->getJson($url.'/diff')->assertForbidden();
+        $csrf = Str::random(40);
+        $this->withSession(['_token' => $csrf])->withHeader('X-CSRF-TOKEN', $csrf);
         $this->withHeader('Idempotency-Key', (string)Str::uuid())->postJson($url.'/commit', $input)->assertForbidden();
         $this->assertDatabaseCount('imported_project_revisions', 1);
     }
@@ -310,5 +312,28 @@ class HoneyBookMoneyResyncTest extends TestCase
             $this->assertDatabaseCount('imported_project_revisions', 2);
             $this->assertSame(1, DB::table('mutation_receipts')->where('request_key', $key)->count());
         } finally { foreach (glob($dir.'/*') as $file) unlink($file); rmdir($dir); }
+    }
+
+    public function test_owner_projection_never_mixes_old_source_ledger_with_new_balance_during_resync(): void
+    {
+        if (DB::connection()->getDriverName() !== 'mysql') $this->markTestSkipped('Independent MariaDB writer required');
+        $original = $this->confirmed(); [$batch, $row, , $input] = $this->update();
+        config(['database.connections.resync_writer' => config('database.connections.'.DB::getDefaultConnection())]);
+        $armed = true;
+        DB::connection()->beforeExecuting(function ($sql) use (&$armed, $batch, $row, $input) {
+            if ($armed && str_contains($sql, 'from `imported_ledger_lines`') && str_contains($sql, 'order by')) {
+                $armed = false;
+                DB::usingConnection('resync_writer', fn () => $this->save($batch, $row, $input));
+            }
+        });
+        try {
+            $read = app(\App\Services\Imports\ReadImportedEvent::class)->execute($this->owner, $original->event_id);
+            $this->assertFalse($armed, 'The independent writer really updated the head during this read');
+            $this->assertNotSame($original->current_revision_id, $original->fresh()->current_revision_id);
+            $this->assertSame($original->current_revision_id, $read['revision']->id);
+            $this->assertSame(6000, (int)$read['ledger']->sum('amount_cents'));
+            $this->assertSame(6000, $read['summary']['net_received_cents']);
+            $this->assertSame(6000, $read['summary']['balance_cents']);
+        } finally { DB::purge('resync_writer'); }
     }
 }

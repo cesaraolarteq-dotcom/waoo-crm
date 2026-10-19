@@ -45,6 +45,8 @@ Use current reads under actor → importer singleton → batch → event → lin
 
 The projected `current.operations_sha256` binds the frozen service selections (including notes), actual reservation rows and original assignment evidence; the legacy service-only hash remains private in the import mapping for comparison. MariaDB11.8 may reject a locking read against a changed row in an old repeatable-read snapshot (error1020). Top-level commands retry the whole transaction; an enclosing transaction must also retry as a whole, never retry only a savepoint or suppress the conflict. A source head cannot be changed by replaying an older source snapshot.
 
+The existing owner imported-event projection must bind its revision, ledger, payment labels and money summary to **one immutable source revision**. A simultaneous resync may make that read historical, but must never mix an old ledger/detail with a newly read balance. No public response shape changes are required for this read binding.
+
 ## Claude
 
 Review this contract and later backend source before wiring a separate **Revisar pagos de HoneyBook** action. Show exact money differences, source-only/unverified labels and owner note; pin the entire read. Any blocked field or409 requires review/reload. Do not reuse the initial-import mapping controls or infer a fresh bank reconciliation from a page reload. C3, automatic four-hour refresh, real import and live activation are not delivered here.

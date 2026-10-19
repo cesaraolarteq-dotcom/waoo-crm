@@ -39,6 +39,13 @@ final class ImportedAgreement
     public static function summary(int $eventId):?array
     {
         $link=ImportedProjectLink::where('event_id',$eventId)->first();if(!$link)return null;$r=ImportedProjectRevision::findOrFail($link->current_revision_id);
+        return self::summaryOf($link,$r);
+    }
+    /** All money in one projection comes from the same immutable head selected by its reader. */
+    public static function summaryOf(ImportedProjectLink $link,ImportedProjectRevision $r):array
+    {
+        RecordWriteRejected::unless($r->imported_project_link_id===$link->id,409,'La revisión no corresponde al proyecto importado.');
+        $eventId=$link->event_id;
         $payment=self::payment($link,$r);$n=$r->normalized;
         $lines=ImportedLedgerLine::where('imported_project_revision_id',$r->id)->get();
         $gross=(int)$lines->where('amount_cents','>',0)->sum('amount_cents');$refunds=-(int)$lines->where('amount_cents','<',0)->sum('amount_cents');
