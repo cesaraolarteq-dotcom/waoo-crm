@@ -9,7 +9,7 @@ final class SensitiveApplicationResponses
 {
     public static function appliesTo(Request $request): bool
     {
-        return $request->is('api/leads', 'admin', 'admin/*', 'portal', 'portal/*')
+        return $request->is('webhooks/postmark/bounces', 'api/leads', 'admin', 'admin/*', 'portal', 'portal/*', 'staff', 'staff/*')
             || str_ends_with((string) $request->route()?->getName(), 'livewire.update');
     }
 
@@ -21,6 +21,7 @@ final class SensitiveApplicationResponses
             $response->headers->set('Pragma', 'no-cache');
             $response->headers->set('Referrer-Policy', 'no-referrer');
             $response->headers->set('X-Content-Type-Options', 'nosniff');
+            if ($request->is('staff', 'staff/*')) $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
         }
         return $response;
     }

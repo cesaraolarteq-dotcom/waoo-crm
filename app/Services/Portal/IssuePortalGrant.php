@@ -31,6 +31,7 @@ final class IssuePortalGrant
                     \App\Models\QuickBookingRecord::where('event_id', $eventId)->update(['portal_grant_id' => $grant->id, 'portal_expires_at' => $grant->expires_at, 'updated_at' => now()]);
                     DB::table('payment_exceptions')->where('event_id', $eventId)->where('kind', 'portal_link_pending')->update(['state' => 'resolved', 'updated_at' => now()]);
                 }
+                \App\Services\Mail\CaptureEventLinkMail::forGrant($event, $grant, $actor);
                 return new IssuedPortalGrant($grant->id, Sandbox::origin().'/portal#token='.$token, $token, $grant->expires_at->toIso8601String());
             }, 3);
         } catch (\Illuminate\Auth\Access\AuthorizationException|\Illuminate\Database\Eloquent\ModelNotFoundException|\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {

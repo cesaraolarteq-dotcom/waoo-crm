@@ -5,11 +5,13 @@ use App\Http\Controllers\Auth\TwoFactorEnrollmentController;
 use App\Http\Middleware\RequireOwnerAdmin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+require __DIR__.'/staff.php';
 Route::redirect('/', '/admin')->name('home');
 // GET /login, /two-factor-challenge and /user/confirm-password are Fortify views (FortifyServiceProvider).
 Route::middleware(['auth', 'password.confirm'])->get('/seguridad/dos-pasos', TwoFactorEnrollmentController::class)->name('security.two-factor');
 Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'));
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->prefix('admin/api')->group(function () {
+    Route::get('/mail/occurrences', [\App\Http\Controllers\Admin\MailController::class, 'occurrences']);
     Route::get('/mail/settings', [\App\Http\Controllers\Admin\MailController::class, 'settings']);
     Route::get('/messages/warnings', [\App\Http\Controllers\Admin\MailController::class, 'warnings']);
     Route::get('/events/{event}/messages', [\App\Http\Controllers\Admin\MailController::class, 'messages'])->whereNumber('event');
@@ -127,6 +129,6 @@ Route::post('/webhooks/stripe', \App\Http\Controllers\Webhooks\StripeWebhookCont
 Route::get('/dev/mail/{key?}', \App\Http\Controllers\MailPreviewController::class);
 // Design preview of the REPORT-A Monday owner email (sample data); 404 outside local/testing.
 Route::get('/dev/mail-owner-report', \App\Http\Controllers\OwnerReportPreviewController::class);
-// Design preview of the STAFF-01 read-only staff page (my week) with fictitious data; 404 outside local/testing.
+// Design preview of the STAFF-01 read-only staff page (my week); 404 outside local/testing.
 Route::get('/dev/staff/{screen?}', \App\Http\Controllers\Staff\StaffPreviewController::class);
 Route::match(['get', 'post'], '/dev/portal/{step?}', \App\Http\Controllers\Portal\PortalPreviewController::class)->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);

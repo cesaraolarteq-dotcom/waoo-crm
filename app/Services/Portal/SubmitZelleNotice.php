@@ -34,6 +34,7 @@ final class SubmitZelleNotice
                 'ip' => $client->ip, 'user_agent' => $client->userAgent, 'submitted_at' => now()]);
             Audit::recordSystem('portal.zelle_notice_submitted', $notice, [], ['event_id' => $event->id, 'customer_id' => $client->customerId, 'portal_grant_id' => $client->grantId, 'amount_cents' => $notice->amount_cents]);
             MutationKey::store($scope, $key, $hash, 'zelle_notice', $notice->id);
+            app(\App\Services\Mail\CaptureMailOccurrence::class)->record('zelle_notice_pending', $notice->id, ['event_id'=>$event->id, 'customer_id'=>$client->customerId, 'financial_revision_id'=>$revision->id, 'portal_grant_id'=>$client->grantId, 'notice_id'=>$notice->id]);
             return $notice;
         }, 3);
     }

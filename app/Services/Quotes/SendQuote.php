@@ -50,6 +50,7 @@ final class SendQuote
             $q->forceFill(['status'=>'sent','version'=>$q->version+1])->save();
             Audit::recordFor($actor,'quote.prepared',$q,[],['revision'=>$r->revision,'presentation_id'=>$p->id,'portal_grant_id'=>$grant->id]);
             MutationKey::store($scope,$key,$hash,'portal_grant',$grant->id);
+            app(\App\Services\Mail\CaptureMailOccurrence::class)->record('quote_sent', $r->id, ['event_id'=>$e->id, 'customer_id'=>$q->customer_id, 'quote_id'=>$q->id, 'quote_revision_id'=>$r->id, 'presentation_id'=>$p->id, 'portal_grant_id'=>$grant->id], $actor);
             return $this->result($q,$grant);
         },3);
     }

@@ -40,6 +40,7 @@ final class IssueContract
                 'state' => 'issued', 'issued_by' => $actor->id, 'issued_at' => now(), 'version' => $contract->version + 1])->save();
             Audit::recordFor($actor, 'contract.issued', $contract, ['state' => 'draft'], ['state' => 'issued', 'presented_pdf_sha256' => $pdfFile['sha256'], 'template_version_id' => $template->id]);
             MutationKey::store($scope, $key, $hash, 'contract', $contract->id);
+            \App\Services\Mail\CaptureEventLinkMail::forContract($contract, null, $actor);
             return $contract->fresh();
         }, 3);
     }

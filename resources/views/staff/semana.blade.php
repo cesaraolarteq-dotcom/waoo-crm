@@ -17,7 +17,7 @@
 
     <div class="s-block">
       <p class="s-line"><b>{{ $j['address'] }}</b></p>
-      <a class="p-btn" href="{{ $j['maps'] }}" target="_blank" rel="noopener noreferrer">{{ $t('maps') }}</a>
+      @if ($j['maps'])<a class="p-btn" href="{{ $j['maps'] }}" target="_blank" rel="noopener noreferrer">{{ $t('maps') }}</a>@endif
       @if ($j['parking'])<p class="p-hint"><b>{{ $t('parking') }}:</b> {{ $j['parking'] }}</p>@endif
       @if ($j['access'])<p class="p-hint"><b>{{ $t('access') }}:</b> {{ $j['access'] }}</p>@endif
     </div>

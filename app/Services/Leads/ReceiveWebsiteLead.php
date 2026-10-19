@@ -46,6 +46,7 @@ final class ReceiveWebsiteLead
                     'submitted_at' => CarbonImmutable::parse($data['submitted_at'])->utc(), 'received_at' => now()]);
                 $lead = Lead::create(['lead_submission_id' => $submission->id, 'status' => 'new', 'version' => 1]);
                 Audit::recordSystem('lead.received', $lead, [], ['lead_submission_id' => $submission->id]);
+                app(\App\Services\Mail\CaptureMailOccurrence::class)->record('inquiry_received', $submission->id, ['lead_id' => $lead->id, 'submission_id' => $submission->id]);
                 return $lead;
             }, 3);
         } catch (UniqueConstraintViolationException $e) {

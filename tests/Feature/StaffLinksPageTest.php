@@ -50,6 +50,29 @@ class StaffLinksPageTest extends TestCase
         $this->get('/admin/staff-enlaces')->assertOk()->assertSee('Enlaces del staff');
     }
 
+    public function test_live_owner_flow_configure_issue_copy_rotate_revoke_with_real_services(): void
+    {
+        config(['waoo.sandbox_staff' => true]);
+        $this->assertTrue(StaffLinksSource::live());
+        $res = \App\Models\Resource::create(['code' => 'LNK-1', 'name' => 'Fixture Person', 'kind' => 'staff', 'status' => 'active', 'skills' => ['host']]);
+        $page = Livewire::test(StaffLinks::class)->assertDontSee('Vista previa con personas de ejemplo')->assertSee('Staff sin configurar (1)')->assertSee('Fixture Person')
+            ->callAction('configure', ['locale' => 'en', 'phone' => '(713) 555-0100', 'active' => true], ['resource' => $res->id])->assertNotified('Datos guardados')
+            ->assertDontSee('Staff sin configurar')->assertSee('Sin enlace');
+        $staffId = \App\Models\StaffIdentity::where('resource_id', $res->id)->value('id');
+        $page->callAction('issue', arguments: ['staff' => $staffId])->assertSee('Enlace de Fixture Person')->assertSee('/staff#')
+            ->assertSee('Abrir WhatsApp con el mensaje')->assertSee('Enlace activo');
+        $this->assertSame('(713) 555-0100', $page->get('newLink')['phone'], 'owner-only phone from the envelope prefills WhatsApp');
+        $first = $page->get('newLink')['url'];
+        $page->callAction('reveal', arguments: ['staff' => $staffId]);
+        $this->assertSame($first, $page->get('newLink')['url'], 'copy returns the same link');
+        $page->callAction('rotate', arguments: ['staff' => $staffId]);
+        $this->assertNotSame($first, $page->get('newLink')['url'], 'rotate creates a new link');
+        $page->callAction('revoke', arguments: ['staff' => $staffId])->assertNotified('Enlace apagado')->assertSet('newLink', null)->assertSee('Sin enlace');
+        // Editing without a phone keeps the stored one.
+        $page->callAction('configure', ['locale' => 'es', 'phone' => '', 'active' => true], ['staff' => $staffId])->assertNotified('Datos guardados');
+        $this->assertSame('(713) 555-0100', \App\Models\StaffIdentity::find($staffId)->phone);
+    }
+
     public function test_closed_outside_local_and_testing_until_the_services_exist(): void
     {
         $this->app['env'] = 'staging';
