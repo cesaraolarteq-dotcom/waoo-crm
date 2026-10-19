@@ -689,7 +689,7 @@
       "source": "f336b32",
       "branch": "codex/tip-01-backend",
       "scope": "Grants/sesión pública aislada, lectura, checkout Stripe test, recibo firmado y lectura de dueño; C1 y bloqueo importado, sin ledger de reservas.",
-      "verification": "46 tests/408 assertions PASS MariaDB, incluye grupos/importador/versiones y SQLite neighborhood. Batería completa en curso; no CI remoto afirmado.",
+      "verification": "Frozen app/tests f336b32:774 tests/30672 assertions PASS29:23.762,157MB,PHP8.3.35/MariaDB11.8; build, strict Composer and PHP lint pass. Earlier46/408 focused pass. GitHub checks API Forbidden; no remote CI/visual/Hostinger claim. New category/audience/generic-outfit amendment not part of this result.",
       "reviewed": false,
       "merged": false,
       "accepted": false
@@ -795,7 +795,13 @@
       "document": "docs/CHANGE-A-API.md",
       "implemented": false,
       "reviewed": false,
-      "note": "Propuesta A1–A3, sin acciones ejecutables. Resolver con Claude A2 check/hold; precio fecha nueva pendiente César. Cancelación A6 requiere contrato/outcome separado."
+      "note": "Propuesta A1–A3 sin acciones ejecutables. César: conservar precio acordado del mismo paquete; cargo de cambio manual/caso por caso, sin agregar automáticamente. Resolver con Claude A2 check/hold. A6 requiere outcome separado.",
+      "owner_price_policy": {
+       "same_package": "preserve_agreed_price",
+       "change_fee": "explicit_manual_case_by_case",
+       "approved_at": "2026-10-19",
+       "implemented": false
+      }
      }
     },
     {
