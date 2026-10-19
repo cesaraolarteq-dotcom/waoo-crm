@@ -70,6 +70,14 @@ class ImportOwnerCatalog extends Command
         return $out;
     }
 
+    /** True when every listed version carries its own unit count ("Clásico 1, Disneyland 2"). */
+    public static function countedOutfits(?string $text): bool
+    {
+        $parts = array_filter(array_map('trim', preg_split('/[,;\n]+/', (string) $text)), fn ($p) => $p !== '');
+
+        return $parts !== [] && collect($parts)->every(fn ($p) => (bool) preg_match('/\s\d+$/u', $p));
+    }
+
     /** @return array<string, array{id:int|null, wig:bool}> by lower-case name */
     private function characters(User $actor, array $rows, bool $dry): array
     {
@@ -101,8 +109,11 @@ class ImportOwnerCatalog extends Command
                 }
             }
             $this->report[] = ['Personaje', $name, $existed ? 'ya existía' : ($dry ? 'se crearía' : 'creado'), (! empty($row['wig']) ? 'peluca' : 'cabeza').($versions ? ' · versiones: '.implode(', ', array_keys($versions)) : '')];
-            // Units: one per version when the owner listed versions; otherwise generic units from "costumes".
-            $plan = $versions ?: [null => max(0, (int) ($row['costumes'] ?? 0))];
+            // Units: one per version when the owner gave a count per version ("Sirena 1, Vestido 1"). Versions listed
+            // without counts are outfits worn by the same costumes (owner 2026-10-19: Mickey = 2 heads, 5 outfits), so
+            // the units come from "costumes" and the versions stay on the character as outfit options.
+            $perVersion = $versions && self::countedOutfits($row['outfits'] ?? null);
+            $plan = $perVersion ? $versions : [null => max(0, (int) ($row['costumes'] ?? 0))];
             $made = 0;
             foreach ($plan as $version => $count) {
                 for ($n = 1; $n <= $count; $n++) {
@@ -113,7 +124,7 @@ class ImportOwnerCatalog extends Command
                     $made++;
                 }
             }
-            if ($made) $this->report[] = ['Trajes', $name, ($dry ? 'se crearían ' : 'creados ').$made, $versions ? 'por versión' : ''];
+            if ($made) $this->report[] = ['Trajes', $name, ($dry ? 'se crearían ' : 'creados ').$made, $perVersion ? 'por versión' : ($versions ? 'vestuarios a elegir: '.implode(', ', $versionNames) : '')];
             $out[mb_strtolower($name)] = ['id' => $character?->id, 'wig' => ! empty($row['wig'])];
         }
 
