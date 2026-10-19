@@ -29,6 +29,8 @@ class ImportOwnerCatalogTest extends TestCase
                 'waoo' => ['name' => 'Waoo', 'group' => 'Paquetes con personaje', 'price' => 800, 'duration_min' => 180, 'characters_included' => 1,
                     'crew' => ['character' => 0, 'entertainer' => 1, 'host' => 2], 'gear' => ['face_kit' => 1, 'speaker' => 1],
                     'description' => 'This three-hour experience starts with face painting and the games, then the character and the show for each guest.', 'ready' => true],
+                'sparklers' => ['name' => '2 chisperos', 'group' => 'Hora loca', 'price' => 300, 'duration_min' => 120, 'characters_included' => 0,
+                    'crew' => ['driver' => 1, 'operator' => 1], 'gear' => ['sparkler' => 2], 'description' => '', 'ready' => true],
                 'robot' => ['name' => 'Pistola de humo + Robot alto', 'group' => 'Hora loca', 'price' => 700, 'duration_min' => 60, 'characters_included' => 1,
                     'crew' => ['character' => 1, 'operator' => 1], 'gear' => ['robot_tall' => 1], 'description' => '', 'ready' => false],
             ],
@@ -79,8 +81,8 @@ class ImportOwnerCatalogTest extends TestCase
         $this->artisan('waoo:import-catalog', ['file' => $this->file, '--actor' => 'owner@example.test'])->assertSuccessful();
         $this->assertSame($versions, ServiceVariant::orderBy('id')->pluck('version')->all());
         $this->assertSame($audits, \Illuminate\Support\Facades\DB::table('audit_entries')->count());
-        $this->assertSame(3, ServiceVariant::count());
-        $this->assertSame(3, PriceVersion::count());
+        $this->assertSame(4, ServiceVariant::count());
+        $this->assertSame(4, PriceVersion::count());
         $this->assertSame(3, Resource::where('kind', 'costume')->count());
     }
 
@@ -152,4 +154,28 @@ class ImportOwnerCatalogTest extends TestCase
         $this->assertSame($version,$c->fresh()->version);$this->assertSame($audits,\Illuminate\Support\Facades\DB::table('audit_entries')->count());$this->assertDatabaseCount('resources',1);
     }
 
+
+    public function test_driver_is_one_of_the_team_not_an_extra_person(): void
+    {
+        $this->artisan('waoo:import-catalog', ['file' => $this->file, '--actor' => 'owner@example.test'])->assertSuccessful();
+        $req = ServiceVariant::where('name', '2 chisperos')->sole()->requirements;
+        $staff = collect($req)->where('kind', 'staff');
+        $this->assertSame(1, $staff->sum('quantity'), 'one operator; whoever drives is that same person');
+        $this->assertNull($staff->firstWhere('skill', 'driver'));
+    }
+
+    public function test_versions_without_counts_are_outfits_of_the_same_costumes(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'cat');
+        file_put_contents($file, json_encode(['packages' => [], 'characters' => [
+            'm' => ['name' => 'Mickey', 'costumes' => 2, 'wig' => false, 'outfits' => 'Black suit, Disneyland, Carreras'],
+            'a' => ['name' => 'Ariel', 'costumes' => 2, 'wig' => true, 'outfits' => 'Sirena 1, Vestido 1']]]));
+        $this->artisan('waoo:import-catalog', ['file' => $file, '--actor' => 'owner@example.test'])->assertSuccessful();
+        @unlink($file);
+        $mickey = Character::where('name', 'Mickey')->sole();
+        $this->assertSame(['Black suit', 'Disneyland', 'Carreras'], $mickey->outfits);
+        $this->assertSame(2, Resource::where('character_id', $mickey->id)->count(), 'two heads, not one unit per outfit');
+        $ariel = Character::where('name', 'Ariel')->sole();
+        $this->assertSame(['Sirena', 'Vestido'], Resource::where('character_id', $ariel->id)->orderBy('outfit')->pluck('outfit')->all());
+    }
 }
