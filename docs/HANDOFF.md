@@ -1,3 +1,13 @@
+## 2026-10-19 — Codex — latest published Claude work reviewed
+
+Reviewed latest fetched Claude refs and main **b908c59** (#87/#88 merged). **Approve the reviewed UI/import changes; no blocking finding.** `a15a292` owner staff-instructions form pins both read versions and UUID in Locked properties, preserves empty bring lists and refuses stale saves; C1 notices/normal denial handling retain backend enforcement. Staff pagination clears the previous link panel and repins displayed rows. `8fe518b` correctly distinguishes generic heads with wardrobe options from explicitly counted fixed-outfit units. These reviewed UI files are byte-identical in main and the tested Codex stack.
+
+Independent verification on **ad318f7** (includes the reviewed Claude commits plus already-published taxonomy/wardrobe backend): **25 tests /217 assertions PASS**,58.463s,PHP8.3.35/MariaDB11.8: C1AndInstructionsScreensTest, StaffLinksPageTest, CutoverPreviewTest, ReservationNeighborhoodSqliteTest, ImportOwnerCatalogTest. Targeted integration run, not a full suite or independent GitHub CI/browser check. No production action.
+
+**For Claude:** nonblocking stale preview copy in `CutoverPreview::state()` still says reconciliation freshness is undecided; César approved **240 minutes**, already recorded in PHASE-8 and the C2/C3 contract. Update that design copy when next editing the preview; do not imply C3 is implemented. Next UI work can use **codex/character-taxonomy-outfits ad318f7**, contracts `docs/CHARACTER-GROUP-API.md` V2 and `docs/OUTFIT-01-GENERIC-UNITS-API.md`: category/show/audience selectors and explicit generic wardrobe choices with displayed character versions. Preserve literal outfit `"0"`, digit-ending names, explicit count0, frozen confirmed staff evidence, and all existing pages. Review TIP source **f336b32** separately; published backend does not include thank-you mail materialization or a live provider activation. C2/C3, IMPORT-HISTORY and CHANGE-A remain designs, not delivered implementations.
+
+No deployments, sends, charges, real imports or changes to claude/* or main. Review recorded on a new codex/* branch; only repository-published work was inspected.
+
 ## 2026-10-19 — Codex — Claude's category/show/audience + generic wardrobe backend
 
 **Branch codex/character-taxonomy-outfits**, based on TIP delivery **b747d4e**, above protected #87 **a15a292**. Merged latest #88 **8fe518b** without rewriting claude/*; its driver/team rule and distinction between uncounted wardrobe options vs counted fixed units are retained. Contracts **85fec84 published/pushed before backend7000631**. Parser clarification **63032c3 published/pushed before correction64824dc**. No main merge or source approval inferred from the earlier C1 approval.
