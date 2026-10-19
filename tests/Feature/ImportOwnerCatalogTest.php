@@ -163,4 +163,19 @@ class ImportOwnerCatalogTest extends TestCase
         $this->assertSame(1, $staff->sum('quantity'), 'one operator; whoever drives is that same person');
         $this->assertNull($staff->firstWhere('skill', 'driver'));
     }
+
+    public function test_versions_without_counts_are_outfits_of_the_same_costumes(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'cat');
+        file_put_contents($file, json_encode(['packages' => [], 'characters' => [
+            'm' => ['name' => 'Mickey', 'costumes' => 2, 'wig' => false, 'outfits' => 'Black suit, Disneyland, Carreras'],
+            'a' => ['name' => 'Ariel', 'costumes' => 2, 'wig' => true, 'outfits' => 'Sirena 1, Vestido 1']]]));
+        $this->artisan('waoo:import-catalog', ['file' => $file, '--actor' => 'owner@example.test'])->assertSuccessful();
+        @unlink($file);
+        $mickey = Character::where('name', 'Mickey')->sole();
+        $this->assertSame(['Black suit', 'Disneyland', 'Carreras'], $mickey->outfits);
+        $this->assertSame(2, Resource::where('character_id', $mickey->id)->count(), 'two heads, not one unit per outfit');
+        $ariel = Character::where('name', 'Ariel')->sole();
+        $this->assertSame(['Sirena', 'Vestido'], Resource::where('character_id', $ariel->id)->orderBy('outfit')->pluck('outfit')->all());
+    }
 }
