@@ -46,6 +46,12 @@ class EventMoney extends Page
     #[Locked]
     public string $noticeKey = '';
 
+    /** TIP-01 owner block: one UUID per intent; the raw link is shown once (no reveal API). */
+    #[Locked]
+    public string $tipKey = '';
+
+    public ?array $tipLink = null;
+
     public function mount(int|string $record): void
     {
         abort_unless(FinanceGate::enabled(), 403);
@@ -54,6 +60,77 @@ class EventMoney extends Page
         $this->revisionKey = (string) Str::uuid();
         $this->zelleKey = (string) Str::uuid();
         $this->noticeKey = (string) Str::uuid();
+        $this->tipKey = (string) Str::uuid();
+    }
+
+    public static function tipsEnabled(): bool
+    {
+        return config('waoo.sandbox_tips') === true && class_exists(\App\Services\Tips\ReadEventTips::class);
+    }
+
+    /** Owner totals (ReadEventTips) + the active link, if any. Unknown net stays null (shown as "Pendiente"). */
+    public function tips(): ?array
+    {
+        if (! self::tipsEnabled()) return null;
+        try {
+            $read = app(\App\Services\Tips\ReadEventTips::class)->execute(Filament::auth()->user(), $this->record->id);
+        } catch (\Throwable) {
+            return null;
+        }
+        $grant = \App\Models\TipGrant::where('event_id', $this->record->id)->whereNull('revoked_at')->where('expires_at', '>', now())->latest('id')->first();
+
+        return [...$read, 'grant' => $grant ? ['id' => $grant->id, 'version' => $grant->version, 'expires' => rtrim(Labels::when($grant->expires_at), '.')] : null,
+            'can_issue' => $this->record->status === 'capacity_reserved' && ! $this->record->ends_at->isFuture() && ($this->record->responsible_system ?? 'crm') === 'crm'];
+    }
+
+    public function tipIssueAction(): Action
+    {
+        return Action::make('tipIssue')->label('Crear enlace de propina')->icon('heroicon-o-heart')->color('primary')
+            ->modalHeading('Enlace de propina para la clienta')
+            ->modalDescription('Para la fiesta ya terminada: la clienta elige 5, 10 o 15 % o el monto que quiera, con tarjeta. El 100 % es para el staff. Vence 14 días después de la fiesta. Nada se envía: tú lo mandas.')
+            ->modalSubmitActionLabel('Crear enlace')
+            ->action(function () {
+                $rev = \App\Models\FinancialRevision::where('event_id', $this->record->id)->latest('revision')->value('id');
+                try {
+                    $r = app(\App\Services\Tips\IssueTipGrant::class)->execute(Filament::auth()->user(), $this->record->id, [
+                        'expected_event_version' => (int) $this->displayedVersion, 'financial_revision_id' => (int) $rev,
+                        'locale' => $this->record->customer?->locale === 'en' ? 'en' : 'es'], $this->tipKey);
+                } catch (ValidationException $e) {
+                    $this->tipKey = (string) Str::uuid();
+                    Notification::make()->danger()->title('No se creó')->body(collect($e->errors())->flatten()->first())->persistent()->send();
+                    return;
+                } catch (RecordWriteRejected|AuthorizationException|\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+                    $this->tipKey = (string) Str::uuid();
+                    Notification::make()->danger()->title('No se creó')->body($e->getMessage())->persistent()->send();
+                    return;
+                }
+                $this->tipKey = (string) Str::uuid();
+                $first = trim(explode(' ', (string) $this->record->customer?->name)[0] ?? '');
+                $until = rtrim(Labels::when(\Carbon\CarbonImmutable::parse($r['expires_at'])), '.');
+                $this->tipLink = ['url' => $r['link'], 'expires' => $until, 'phone' => $this->record->customer?->phone, 'locale' => $this->record->customer?->locale ?? 'es',
+                    'heading' => 'Enlace de propina', 'hint' => 'Cópialo ahora: por seguridad no se vuelve a mostrar. Si lo pierdes, anúlalo y crea otro.',
+                    'msg_es' => "¡Hola {$first}! Gracias por celebrar con Waoo Party. Si quieres agradecerle al equipo de tu fiesta, aquí puedes dejar una propina (el 100 % es para el staff): {$r['link']}",
+                    'msg_en' => "Hi {$first}! Thank you for celebrating with Waoo Party. If you'd like to thank your party's team, you can leave a tip here (100% goes to the staff): {$r['link']}"];
+            });
+    }
+
+    public function tipRevokeAction(): Action
+    {
+        return Action::make('tipRevoke')->label('Anular enlace')->color('danger')->size('sm')->link()->requiresConfirmation()
+            ->modalHeading('Anular el enlace de propina')
+            ->modalDescription('La clienta ya no podrá dejar propina con ese enlace. Las propinas ya pagadas se conservan.')
+            ->action(function (array $arguments) {
+                try {
+                    app(\App\Services\Tips\RevokeTipGrant::class)->execute(Filament::auth()->user(), (int) ($arguments['grant'] ?? 0), ['expected_version' => (int) ($arguments['version'] ?? 0)], $this->tipKey);
+                } catch (ValidationException|RecordWriteRejected|AuthorizationException|\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+                    $this->tipKey = (string) Str::uuid();
+                    Notification::make()->danger()->title('No se anuló')->body($e instanceof ValidationException ? collect($e->errors())->flatten()->first() : $e->getMessage())->persistent()->send();
+                    return;
+                }
+                $this->tipKey = (string) Str::uuid();
+                $this->tipLink = null;
+                Notification::make()->success()->title('Enlace de propina anulado')->send();
+            });
     }
 
     public function getSubheading(): ?string

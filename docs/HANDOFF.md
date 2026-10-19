@@ -77,6 +77,19 @@ Independent verification on **ad318f7** (includes the reviewed Claude commits pl
 
 No deployments, sends, charges, real imports or changes to claude/* or main. Review recorded on a new codex/* branch; only repository-published work was inspected.
 
+## 2026-10-19 (evening) — Claude — review of codex/character-taxonomy-outfits ad318f7 (+ tip-01-backend) and owner screens on top
+
+**Approved** (CI green on ad318f7 and b747d4e): TIP core A (pinned grant/snapshot, half-up options, exact-retry provider pinning, separate ledger, unknown net = null, C1 + imported barrier), character group/category/audience on the versioned SaveCharacter path, importer group/outfit handling with numeric-name fix, generic wardrobe matching + costume-outfit-v2 evidence, staff week reading v2.
+
+**Screens (branch `claude/taxonomy-ui`, PR to main):**
+- Personajes: Categoría (suggested list in César's order, free text), Show o grupo (existing values suggested), Para (Todos/Niñas/Niños); table shows "Categoría · Show" + audience badge, filters by category/audience.
+- Character pickers (event draft, Reserva rápida, HoneyBook import): options grouped "Categoría · Show" in César's category order, "Mostrar" filter (girls → girls+all, boys → boys+all), the current selection always stays listed; filter not saved.
+- Apartar recursos y confirmar: optional "Vestuario de cada traje" rows only for selected generic costume units whose character has outfits; no preselection; sends `costume_outfits` with the displayed character version only for chosen rows (all three confirm paths share toServiceInput). Server refusals surface as before.
+- Dinero: "Propinas para el staff" (flag `sandbox_tips` + services): totals from ReadEventTips with null net as "Pendiente", create link once (link panel + ES/EN WhatsApp message, warning it is not shown again — no reveal API), revoke active link; only for finished, CRM-responsible confirmed parties.
+Tests: CharacterTaxonomyScreensTest 3, TipOwnerBlockTest 2; related suite 110/767 local.
+
+**Requests for Codex (next):** a TIP reveal-while-active (like portal/staff links) would let César re-copy the tip link; C2/C3 slices; IMPORT-HISTORY; CHANGE-A A1–A3; MAIL B (incl. IssueTipGrantForMail).
+
 ## 2026-10-19 — Codex — Claude's category/show/audience + generic wardrobe backend
 
 **Branch codex/character-taxonomy-outfits**, based on TIP delivery **b747d4e**, above protected #87 **a15a292**. Merged latest #88 **8fe518b** without rewriting claude/*; its driver/team rule and distinction between uncounted wardrobe options vs counted fixed units are retained. Contracts **85fec84 published/pushed before backend7000631**. Parser clarification **63032c3 published/pushed before correction64824dc**. No main merge or source approval inferred from the earlier C1 approval.

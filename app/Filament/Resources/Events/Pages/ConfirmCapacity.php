@@ -112,13 +112,27 @@ class ConfirmCapacity extends Page
         foreach ($kinds as $kind => $label) {
             $pickers[] = Select::make("units.{$kind}")->label($label)->multiple()->native(false)->searchable()
                 ->options(fn () => self::unitOptions($kind))->live()
-                ->afterStateUpdated(fn (Get $get, Set $set) => $set('transfers', $this->neighborTransfers(self::selectedIds($get))));
+                ->afterStateUpdated(function (Get $get, Set $set) use ($kind) {
+                    $set('transfers', $this->neighborTransfers(self::selectedIds($get)));
+                    if ($kind === 'costume') $set('wardrobe', self::wardrobeRows((array) ($get('units.costume') ?? []), (array) ($get('wardrobe') ?? [])));
+                });
         }
 
         return $schema->statePath('data')->components([
             Callout::make('Qué necesita esta fiesta')->info()->columnSpanFull()
                 ->description(fn () => $this->needsSummary()),
-            Section::make('1. Staff, trajes y equipo')->columns(2)->schema($pickers)
+            Section::make('1. Staff, trajes y equipo')->columns(2)->schema([...$pickers,
+                // OUTFIT-01 generic units (owner 2026-10-19: Mickey = 2 heads, 5 outfits): optional wardrobe per selected head; no preselection.
+                Repeater::make('wardrobe')->label('Vestuario de cada traje')->columnSpanFull()->addable(false)->deletable(false)->reorderable(false)->defaultItems(0)->columns(2)
+                    ->visible(fn (Get $get) => ($get('wardrobe') ?? []) !== [])
+                    ->helperText('Opcional. Si la clienta pidió un vestuario, elígelo para que el staff lo vea en su página. Si ya estaba pedido en la fiesta, se respeta ese.')
+                    ->schema([
+                        Hidden::make('resource_id'), Hidden::make('expected_character_version'),
+                        TextInput::make('unit')->label('Traje')->disabled()->dehydrated(false),
+                        Select::make('outfit')->label('Vestuario')->native(false)->placeholder('Sin elegir')
+                            ->options(fn (Get $get) => collect(\App\Models\Character::find(Unit::whereKey((int) $get('resource_id'))->value('character_id'))?->outfits ?? [])->mapWithKeys(fn ($o) => [$o => $o])->all()),
+                    ]),
+            ])
                 ->description('Elige las unidades exactas. Una persona no puede hacer dos roles a la vez; un traje necesita a alguien que pueda usarlo. Al menos una de las personas que van debe manejar (Conductor/a); no hace falta sumar a nadie.'),
             Callout::make('2. Pagado según HoneyBook')->warning()->columnSpanFull()
                 ->visible(fn () => $this->importedRevisionId !== null)
@@ -268,9 +282,12 @@ class ConfirmCapacity extends Page
                 'departure_at' => $t['departure_at'], 'note' => trim((string) $t['note'])];
         }
 
+        $wardrobe = self::costumeOutfits((array) ($s['wardrobe'] ?? []));
+
         return [
             'expected_version' => $this->displayedVersion,
             'resource_ids' => self::selectedIds(fn ($path) => data_get($s, $path)),
+            ...($wardrobe !== [] ? ['costume_outfits' => $wardrobe] : []),
             'payment' => ['method' => $p['method'] ?? null, 'reference' => trim((string) ($p['reference'] ?? '')),
                 'amount_cents' => EditServiceVariant::toCents((string) ($p['amount'] ?? '0')),
                 'received_at' => ChicagoTime::toIso($p['date'], $p['time'], $p['choice'] ?? null, 'data.payment.date')],
@@ -288,6 +305,28 @@ class ConfirmCapacity extends Page
         }
 
         return [...$input, 'financial_revision_id' => $finance['financial_revision']->id];
+    }
+
+    /** Rows for the selected generic costume units whose character has outfits; keeps choices already made. */
+    public static function wardrobeRows(array $unitIds, array $current): array
+    {
+        $kept = collect($current)->keyBy(fn ($r) => (int) ($r['resource_id'] ?? 0));
+        return Unit::query()->whereIn('id', array_map('intval', $unitIds))->where('kind', 'costume')->whereNull('outfit')->orderBy('name')->get()
+            ->map(function ($u) use ($kept) {
+                $c = \App\Models\Character::find($u->character_id);
+                if (! $c || empty($c->outfits)) return null;
+                $prev = $kept->get($u->id);
+                return ['resource_id' => $u->id, 'expected_character_version' => (int) $c->version, 'unit' => $u->name,
+                    'outfit' => $prev && in_array($prev['outfit'] ?? null, $c->outfits, true) ? $prev['outfit'] : null];
+            })->filter()->values()->all();
+    }
+
+    /** costume_outfits for the services: only rows where the owner chose a wardrobe. */
+    public static function costumeOutfits(array $rows): array
+    {
+        return collect($rows)->filter(fn ($r) => filled($r['outfit'] ?? null))
+            ->map(fn ($r) => ['resource_id' => (int) $r['resource_id'], 'outfit' => (string) $r['outfit'], 'expected_character_version' => (int) $r['expected_character_version']])
+            ->sortBy('resource_id')->values()->all();
     }
 
     /** Selected unit ids from the four pickers, sorted and unique. $get reads form state by path. */

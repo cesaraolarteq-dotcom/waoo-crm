@@ -83,8 +83,9 @@ class EventResource extends Resource
                     ->schema([
                         Select::make('price_version_id')->label('Para el servicio')->native(false)->required()->live()
                             ->options(fn (Get $get) => self::configurablePrices($get('../../price_version_ids') ?? [])),
+                        self::audienceFilter(),
                         Select::make('character_id')->label('Personaje')->native(false)->required()->searchable()
-                            ->options(fn (Get $get) => self::characterOptions($get('price_version_id')))
+                            ->options(fn (Get $get) => self::characterOptions($get('price_version_id'), $get('audience_filter'), $get('character_id')))
                             ->live()->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set, '../../')),
                         TextInput::make('quantity')->label('Cuántos')->integer()->minValue(1)->maxValue(20)->default(1)->required()
                             ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set, '../../')),
@@ -202,12 +203,29 @@ class EventResource extends Resource
             ->where('service_variants.character_quantity', '>', 0)->pluck('service_variants.name', 'price_versions.id')->all();
     }
 
-    public static function characterOptions(?string $priceId): array
+    /**
+     * Characters allowed by the package, grouped "Categoría · Show" (owner 2026-10-19) and filtered by audience
+     * (girls → girls + all, boys → boys + all). The current selection always stays listed, even if the filter hides it.
+     */
+    public static function characterOptions(?string $priceId, ?string $audience = null, $selected = null): array
     {
         $variant = $priceId ? ServiceVariant::find(PriceVersion::whereKey((int) $priceId)->value('service_variant_id')) : null;
         $ids = collect($variant?->character_options ?? [])->pluck('character_id')->all();
+        $rows = \App\Models\Character::query()->whereIn('id', $ids)->where(fn ($q) => $q->where('active', true)->orWhere('id', (int) $selected))
+            ->get(['id', 'name', 'category', 'group', 'audience'])
+            ->filter(fn ($c) => ! in_array($audience, ['girls', 'boys'], true) || in_array($c->audience ?? 'all', [$audience, 'all'], true) || (int) $c->id === (int) $selected);
+        $order = array_flip(\App\Filament\Resources\Characters\CharacterResource::CATEGORIES);
+        $label = fn ($c) => collect([$c->category, $c->group])->filter()->implode(' · ') ?: 'Sin grupo';
 
-        return \App\Models\Character::query()->whereIn('id', $ids)->where('active', true)->orderBy('name')->pluck('name', 'id')->all();
+        return $rows->sortBy(fn ($c) => [$order[$c->category ?? ''] ?? 99, (string) $c->category, (string) $c->group, $c->name])
+            ->groupBy($label)->map(fn ($g) => $g->pluck('name', 'id')->all())->all();
+    }
+
+    /** "Mostrar" filter next to each character picker; not saved. */
+    public static function audienceFilter(): Select
+    {
+        return Select::make('audience_filter')->label('Mostrar')->native(false)->dehydrated(false)->live()->selectablePlaceholder(false)
+            ->options(['all' => 'Todos', 'girls' => 'Para niñas', 'boys' => 'Para niños'])->default('all');
     }
 
     public static function charactersHint(array $priceIds): string
