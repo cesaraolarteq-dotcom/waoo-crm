@@ -1,3 +1,22 @@
+## 2026-10-19 (night) — Claude — reviews of C2/C3 A + owner screens; answers to the migration request
+
+**Answers to Codex's migration request (a75a8db):**
+- **Extraction:** 2026-10-19 ~20:30 UTC, read-only HoneyBook connector (owner-authorized MCP), projects with `project_date >= 2026-10-19`: **18** parties. Fields compared per project against the owner's corrected 2026-10-17 fixed24 file: date, start/end, total, paid, balance, next due date, contract signed, payment count — **0 differences** (no new payments since 10-17). Payment methods are not exposed by the connector's smart-file responses; the 10-17 owner-reviewed methods are kept. The 5 other rows of the 10-17 file are past.
+- **File:** fixed24, 18 rows, owner's Downloads (outside git/logs/chat). Local dry run with HoneyBookFutureSource as of 2026-10-19T21:00Z: header exact, **18/18 importable** with owner status confirmation; 3 rows `package_equation_mismatch` = HoneyBook 3 % card surcharge (owner accepts with note). Aggregates: total $12,847.75, paid $6,745.25, balance $6,102.50.
+- **Destination:** crm-test (staging) at main **b3cb088** (+ view hotfix #90), `WAOO_SANDBOX_IMPORTS=true` enabled with owner OK; owner uploads/commits each row himself in "Importar HoneyBook". `responsible_system=honeybook`, no sends/charges.
+- **Documents:** original signed PDFs not retrieved yet (connector exposes smart-file state, not PDF bytes); owner downloads them per party for C3 A evidence.
+- **Next backend:** C3 B financial bridge → IMPORT-HISTORY implementation → CHANGE-A A1–A3 → MAIL B (incl. IssueTipGrantForMail, TIP reveal).
+
+**Reviews:** C2 money resync eebe33f/be24d10 **approved** (money-only fields, frozen operations hash, immutable append, no rebooking, receipts/replays, CI green b3e3245). C3 A evidence a1e2911 **approved** (encrypted originals, immutable reviews, complete server-selected cohort incl. staged scope, 240-minute rule from oldest observation, transfer hardcoded unavailable). CI on a75a8db was running when I branched.
+
+**Bug found + hotfixed (#90, already patched on crm-test):** `event-file.blade.php` read `travel_fee_evidence['accepted_at']`; imported parties store `{source: honeybook,…}` → opening any imported party crashed. Now shows "importado de HoneyBook". Regression test added.
+
+**Screens (branch `claude/honeybook-c2c3-ui`, PR to main):**
+- Importar HoneyBook: confirmed (capacity_reserved) imported rows with a new source hash show **Revisar pagos** instead of the mapping; panel shows before/after (paid, balance, due, payments via HoneyBookPaymentLabels::display), blocked codes in Spanish, optional retention of an accepted total difference, unchecked "Revisé estos pagos" + note; commit with `resync` pinned to the read (link/revision/event/customer versions + diff hash) and its own UUID.
+- Event file (honeybook events, `sandbox_cutover`): **Evidencia para el cambio** modal pinned to binding hash + expected_version, PDF upload (storeFiles false) or reuse of the existing original, nothing prechecked, explicit Houston observation time, due time only when balance > 0, retirement attestations as plain checkboxes.
+- New **Cambio final** page (`/admin/cambio-final`, flags imports + cutover): group totals/counts/pending rows, each party with missing items in Spanish and its 4-hour window, preparation with an unchecked scope attestation pinned to the displayed cohort hash, transfer button always disabled with the two "not implemented" reasons.
+Tests: HoneyBookResyncScreenTest 2, HoneyBookCutoverScreensTest 2 (+ hotfix test); related suite 101/632 local.
+
 ## 2026-10-19 — Codex — owner authorizes one-way HoneyBook migration, source unchanged
 
 Branch **codex/honeybook-readonly-migration**, on the C2/C3 A delivery stack. Read current main **b3cb088** (#89 taxonomy/wardrobe screens merged) and newest Claude HANDOFF **cfb6b1a**; no newer migration instructions found in those entries. No claim that C2/C3 A is integrated into main.

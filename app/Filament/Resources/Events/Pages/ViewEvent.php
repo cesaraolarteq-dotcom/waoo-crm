@@ -42,6 +42,18 @@ class ViewEvent extends Page
     }
 
     /** Event version shown on this page; "Crear cotización" snapshots exactly this version or is refused (409). */
+    /** C3 A cutover evidence: binding hash + review version read when the modal opened, one UUID per intent. */
+    #[\Livewire\Attributes\Locked]
+    public ?string $cutBinding = null;
+    #[\Livewire\Attributes\Locked]
+    public ?int $cutVersion = null;
+    #[\Livewire\Attributes\Locked]
+    public ?int $cutDocumentId = null;
+    #[\Livewire\Attributes\Locked]
+    public ?int $cutBalance = null;
+    #[\Livewire\Attributes\Locked]
+    public string $cutKey = '';
+
     /** STAFF-01 instructions: versions the modal showed (ReadStaffJobInstructions) and one UUID per save intent. */
     #[\Livewire\Attributes\Locked]
     public ?int $instrEventVersion = null;
@@ -171,6 +183,7 @@ class ViewEvent extends Page
                     $this->redirect(\App\Filament\Pages\QuoteDetail::getUrl(['quote' => $rev->quote_id]));
                 }),
             $this->staffInstructionsAction(),
+            $this->cutoverEvidenceAction(),
             Action::make('costs')->label('Costos y margen')->icon('heroicon-o-chart-bar')->color('gray')->visible(fn () => FinanceGate::enabled() && class_exists(\App\Services\Costs\RecordCostSnapshot::class))->url(fn () => EventResource::getUrl('costs', ['record' => $e])),
             Action::make('mailPlan')->label('Programar recordatorios')->icon('heroicon-o-envelope')->color('gray')
                 ->visible(fn () => \App\Filament\Support\MailUi::enabled() && $e->status === 'capacity_reserved' && ! \App\Models\ImportedProjectLink::where('event_id', $e->id)->exists())
@@ -206,6 +219,84 @@ class ViewEvent extends Page
     }
 
     /** Real contract state for the header pill (imported events keep their contract in HoneyBook). */
+    /** HoneyBook party: owner's evidence for switch-over day (original signed PDF + money review + retirement attestations). */
+    public function cutoverEvidenceAction(): Action
+    {
+        $e = $this->record;
+        $read = fn () => app(\App\Services\Imports\ReadHoneyBookCutoverReview::class)->execute(\Filament\Facades\Filament::auth()->user(), $e->id);
+
+        return Action::make('cutoverEvidence')->label('Evidencia para el cambio')->icon('heroicon-o-document-check')->color('gray')
+            ->visible(fn () => \App\Filament\Support\CutoverUi::enabled() && $e->getAttribute('responsible_system') === 'honeybook')
+            ->modalHeading('Evidencia para el día del cambio')
+            ->modalDescription(function () use ($read) {
+                try { $v = $read(); } catch (\Throwable) { return 'No se pudo leer el estado de esta fiesta.'; }
+                $s = $v['source'];
+                $money = 'Según HoneyBook (no verificado en tu banco): total '.\App\Filament\Support\Labels::money($s['total_cents']).', pagado '.\App\Filament\Support\Labels::money($s['net_paid_cents'])
+                    .', saldo '.\App\Filament\Support\Labels::money($s['balance_cents']).'. Contrato en el archivo: '.($s['contract_signed'] ? 'firmado' : 'sin firmar').'.';
+                $missing = collect($v['missing'])->map(fn ($c) => \App\Filament\Support\CutoverUi::label($c))->implode(' · ');
+
+                return $money.($missing ? ' Falta: '.$missing : ' Esta fiesta tiene toda su evidencia.').' Esto es solo evidencia: no pasa nada al CRM ni apaga HoneyBook.';
+            })
+            ->fillForm(function () use ($read) {
+                $v = $read();
+                $this->cutBinding = $v['binding_sha256'];
+                $this->cutVersion = (int) $v['expected_version'];
+                $this->cutDocumentId = $v['document']['id'] ?? null;
+                $this->cutBalance = $v['source']['balance_cents'];
+                $this->cutKey = (string) \Illuminate\Support\Str::uuid();
+
+                return ['reuse_document' => $this->cutDocumentId !== null];
+            })
+            ->schema([
+                \Filament\Forms\Components\Checkbox::make('reuse_document')->label('Usar el PDF del contrato que ya subí')->live()
+                    ->visible(fn () => $this->cutDocumentId !== null),
+                \Filament\Forms\Components\FileUpload::make('file')->label('Contrato firmado original (PDF de HoneyBook)')->acceptedFileTypes(['application/pdf'])->maxSize(5120)
+                    ->storeFiles(false)->required(fn ($get) => ! $get('reuse_document'))->visible(fn ($get) => ! $get('reuse_document'))
+                    ->helperText('Bájalo de HoneyBook (Imprimir → Guardar como PDF). Se guarda cifrado; no se puede descargar desde el CRM.'),
+                \Filament\Forms\Components\Checkbox::make('owner_attests_signed_original')->label('Este PDF es el contrato original firmado por la clienta')->accepted(),
+                \Filament\Schemas\Components\Grid::make(2)->schema([
+                    \Filament\Forms\Components\DatePicker::make('observed_date')->label('Día en que revisaste las cuentas en HoneyBook')->native(false)->required()->maxDate(now(\App\Filament\Support\ChicagoTime::TZ)),
+                    \Filament\Forms\Components\TimePicker::make('observed_time')->label('Hora (Houston)')->seconds(false)->required(),
+                ]),
+                \Filament\Forms\Components\Checkbox::make('owner_money_reviewed')->label('Revisé en HoneyBook el total, lo pagado y el saldo de esta fiesta')->accepted(),
+                \Filament\Forms\Components\TextInput::make('source_reference')->label('Referencia de tu revisión')->required()->minLength(5)->maxLength(255)
+                    ->placeholder('Ej.: HoneyBook › Payments, captura 2026-11-02 9:10'),
+                \Filament\Forms\Components\Textarea::make('owner_note')->label('Nota (solo la ves tú)')->required()->minLength(5)->maxLength(1000)->rows(2),
+                \Filament\Schemas\Components\Grid::make(2)->visible(fn () => ($this->cutBalance ?? 0) > 0)->schema([
+                    \Filament\Forms\Components\DatePicker::make('due_date')->label('El saldo vence el (para el CRM)')->native(false),
+                    \Filament\Forms\Components\TimePicker::make('due_time')->label('Hora (Houston)')->seconds(false),
+                ]),
+                \Filament\Forms\Components\Checkbox::make('honeybook_automations_disabled')->label('Ya apagué los avisos automáticos de HoneyBook para esta fiesta'),
+                \Filament\Forms\Components\Checkbox::make('external_collections_retired')->label('Ya quité los cobros pendientes de HoneyBook para esta fiesta'),
+            ])
+            ->modalSubmitActionLabel('Guardar evidencia')
+            ->action(function (array $data, Action $action) use ($e) {
+                $tz = fn ($d, $t, $field) => \App\Filament\Support\ChicagoTime::toIso(substr((string) $d, 0, 10), substr((string) $t, 0, 5), null, $field);
+                $file = $data['file'] ?? null;
+                if (is_array($file)) $file = reset($file) ?: null;
+                $input = ['expected_version' => (int) $this->cutVersion, 'expected_binding_sha256' => (string) $this->cutBinding,
+                    'owner_attests_signed_original' => (bool) ($data['owner_attests_signed_original'] ?? false), 'owner_money_reviewed' => (bool) ($data['owner_money_reviewed'] ?? false),
+                    'source_observed_at' => $tz($data['observed_date'], $data['observed_time'], 'observed_date'),
+                    'source_reference' => trim((string) $data['source_reference']), 'owner_note' => trim((string) $data['owner_note']),
+                    'crm_balance_due_at' => filled($data['due_date'] ?? null) && filled($data['due_time'] ?? null) ? $tz($data['due_date'], $data['due_time'], 'due_date') : null,
+                    'honeybook_automations_disabled' => (bool) ($data['honeybook_automations_disabled'] ?? false), 'external_collections_retired' => (bool) ($data['external_collections_retired'] ?? false),
+                    ...(($data['reuse_document'] ?? false) && $this->cutDocumentId ? ['original_document_id' => $this->cutDocumentId] : ($file ? ['file' => $file] : []))];
+                try {
+                    app(\App\Services\Imports\SaveHoneyBookCutoverReview::class)->execute(\Filament\Facades\Filament::auth()->user(), $e->id, $input, $this->cutKey);
+                } catch (\Illuminate\Validation\ValidationException $ex) {
+                    $this->cutKey = (string) \Illuminate\Support\Str::uuid();
+                    \Filament\Notifications\Notification::make()->danger()->title('No se guardó')->body(collect($ex->errors())->flatten()->first())->persistent()->send();
+                    $action->halt();
+                } catch (\App\Exceptions\RecordWriteRejected|\Illuminate\Auth\Access\AuthorizationException|\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $ex) {
+                    $this->cutKey = (string) \Illuminate\Support\Str::uuid();
+                    \Filament\Notifications\Notification::make()->danger()->title('No se guardó')->body($ex->getMessage().' Vuelve a abrir para ver lo actual.')->persistent()->send();
+                    $action->halt();
+                }
+                $this->cutKey = '';
+                \Filament\Notifications\Notification::make()->success()->title('Evidencia guardada')->body('Queda lista para el día del cambio. HoneyBook sigue cobrando esta fiesta.')->send();
+            });
+    }
+
     /** What the assigned staff see on their week page: parking, access, what to bring, notes, contact of the day. */
     public function staffInstructionsAction(): Action
     {
