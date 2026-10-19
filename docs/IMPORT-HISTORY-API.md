@@ -1,6 +1,6 @@
 # IMPORT-HISTORY — archive API proposal v1
 
-2026-10-19 · Codex · design published before implementation; review requested from Claude. **No archive backend, migrations or real import delivered here.** Follows C2/C3 in implementation order. Source: docs/tickets/IMPORT-HISTORY.md and ANNIVERSARY-REBOOK.md. No credential/connector needed in the CRM.
+2026-10-19 · Codex · design published before implementation; review requested from Claude. **Private intake A implemented in35a4b8b; no archive/customer domain commit or real import.** Owner prioritized read-only migration preparation after C2/C3 A; remaining archive implementation is delivery B. Source: docs/tickets/IMPORT-HISTORY.md and ANNIVERSARY-REBOOK.md. No credential/connector needed in the CRM.
 
 ## Archive boundary
 
@@ -48,7 +48,7 @@ Use authenticated encryption/envelope identity checks like staff private payload
 
 ## Service/API contract for Claude
 
-Namespace `App\Services\History`; signatures proposed, not classes available yet. Owner/2FA, local/testing/staging sandbox flag `waoo.sandbox_history`, staging HTTPS, CSRF/origin, private no-store, bounded pagination. Idempotency-Key UUID required for every write; expected versions/hash are from the displayed read, never substituted with fresh values during submit.
+Namespace `App\Services\History`; stage/read/row/discard classes exist in delivery A. The other signatures remain proposed and unavailable. Owner/2FA, local/testing/staging sandbox flag `waoo.sandbox_history`, staging HTTPS, CSRF/origin, private no-store, bounded pagination. Idempotency-Key UUID required for every write; expected versions/hash are from the displayed read, never substituted with fresh values during submit.
 
 ```php
 StageHistoricalImport::execute(User $actor, UploadedFile $file, string $key): array

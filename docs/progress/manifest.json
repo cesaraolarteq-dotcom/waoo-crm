@@ -874,7 +874,17 @@
       "document": "docs/IMPORT-HISTORY-API.md",
       "implemented": false,
       "reviewed": false,
-      "note": "Perfil CSV separado propuesto, archivo cifrado, dedupe explícito, historial inmutable y cero efectos de dinero/capacidad/correos; implementación después de C2/C3. Cero crédito de implementación."
+      "note": "Delivery A privada implementada35a4b8b; API completa aún no implementada: faltan dedupe/commits de historial/clientas, cierre/correcciones y lecturas de historial. Sin crédito de entrega completa."
+     },
+     "intake_a": {
+      "backend": "35a4b8b",
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "69 tests/389 assertions PASS, PHP8.3.35/MariaDB11.8, 2:07.144; private history intake/parser + future importer/C2 resync. Lint and strict Composer pass. Not a full-suite or remote CI result.",
+      "scope": "Cifrado de CSV/celdas, revisión paginada, datos originales, incidencias, reintentos/concurrencia y descarte atómico. Sin clientas/historial definitivo, cobros, reservas o mensajes.",
+      "note": "Solo subentrega: backend raíz permanece null; no crédito de importación histórica completa. Claude debe revisar y conectar UI. Sin importación real."
      }
     },
     {
