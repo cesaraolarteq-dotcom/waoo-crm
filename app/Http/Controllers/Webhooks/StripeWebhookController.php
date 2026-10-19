@@ -30,6 +30,11 @@ final class StripeWebhookController extends Controller
         $metadata = is_array($object['metadata'] ?? null) ? $object['metadata'] : [];
         $minimal['metadata'] = [];
         if (is_string($metadata['local_intent_id'] ?? null) && \Illuminate\Support\Str::isUuid($metadata['local_intent_id'])) $minimal['metadata']['local_intent_id'] = $metadata['local_intent_id'];
+        if (array_key_exists('kind',$metadata) || array_key_exists('local_tip_intent_id',$metadata) || array_key_exists('grant_id',$metadata)) {
+            $minimal['metadata']['kind']=($metadata['kind']??null)==='tip'?'tip':'invalid';
+            if(is_string($metadata['local_tip_intent_id']??null)&&\Illuminate\Support\Str::isUuid($metadata['local_tip_intent_id']))$minimal['metadata']['local_tip_intent_id']=$metadata['local_tip_intent_id'];
+            if(is_scalar($metadata['grant_id']??null)&&ctype_digit((string)$metadata['grant_id']))$minimal['metadata']['grant_id']=(string)$metadata['grant_id'];
+        }
         foreach (['event_id','financial_revision_id'] as $field) if (is_scalar($metadata[$field] ?? null) && ctype_digit((string) $metadata[$field])) $minimal['metadata'][$field] = (string) $metadata[$field];
         $payload = ['id' => $event['id'], 'type' => $event['type'], 'livemode' => false, 'account' => $event['account'] ?? null, 'created' => $event['created'] ?? null, 'data' => ['object' => $minimal]];
         DB::transaction(function () use ($event, $raw, $payload) {

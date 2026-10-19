@@ -20,11 +20,11 @@ final class FakeStripeGateway implements StripeGateway
         return $this->sessions[$this->keys[$key]];
     }
     public function retrieveCheckout(string $id): array { if ($this->failRetrieve) throw new \RuntimeException('Fixture provider unavailable'); return $this->sessions[$id]; }
-    public function expireCheckout(string $id): void { $this->expired[] = $id; }
+    public function expireCheckout(string $id): void { $this->expired[] = $id; if (isset($this->sessions[$id])) $this->sessions[$id]['status']='expired'; }
     public function paid(string $id): void
     {
         $session = &$this->sessions[$id]; $session['status'] = 'complete'; $session['payment_status'] = 'paid';
-        $session['payment_intent'] = ['id' => 'pi_fixture_'.$session['metadata']['local_intent_id'], 'livemode' => false, 'status' => 'succeeded', 'currency' => 'usd',
+        $session['payment_intent'] = ['id' => 'pi_fixture_'.($session['metadata']['local_intent_id'] ?? str_replace('-', '', $session['metadata']['local_tip_intent_id'])), 'livemode' => false, 'status' => 'succeeded', 'currency' => 'usd',
             'amount_received' => $session['amount_total'], 'latest_charge' => ['paid' => true, 'captured' => true, 'created' => time() - 5]];
     }
 }

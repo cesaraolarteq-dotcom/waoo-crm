@@ -17,6 +17,7 @@ return [
     'lead_shared_secret' => env('WAOO_LEAD_SHARED_SECRET'),
     'sandbox_routes' => env('WAOO_SANDBOX_ROUTES', false),
     'google_routes_key' => env('WAOO_GOOGLE_ROUTES_KEY'),
+    'sandbox_tips' => env('WAOO_SANDBOX_TIPS', false),
     'sandbox_finance' => env('WAOO_SANDBOX_FINANCE', false),
     'sandbox_imports' => env('WAOO_SANDBOX_IMPORTS', false),
     'sandbox_quotes' => env('WAOO_SANDBOX_QUOTES', false),

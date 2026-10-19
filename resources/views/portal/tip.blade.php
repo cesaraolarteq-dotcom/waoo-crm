@@ -5,6 +5,7 @@
 @php($t = fn ($k, $r = []) => \App\Support\TipCopy::get($vm['lang'], $k, $r))
 @php($tip = $vm['tip'])
 @section('content')
+@if (!($vm['preview'] ?? false))<script>if(location.hash){location.replace('/portal/tip?exchange=1'+location.hash);}</script>@endif
 @if ($tip['state'] === 'paid')
   <section class="p-card p-done"><h2>{{ $t('thanks_title') }}</h2><p>{{ $t('thanks') }}</p>
     @if ($vm['review_url'])<a class="p-btn p-btn-pink" href="{{ $vm['review_url'] }}" target="_blank" rel="noopener noreferrer">{{ $t('review') }}</a>@endif
@@ -53,7 +54,7 @@
     var o = chosen(); custom.hidden = !(o && o.value === 'custom');
     var a = amount(); pay.disabled = !a; pay.textContent = a ? label.replace('__A__', a) : none; err.hidden = true;
   }
-  function fail(m) { err.textContent = m; err.hidden = false; refresh(); }
+  function fail(m) { refresh(); err.textContent = m; err.hidden = false; }
   // One key per exact payload, kept across an uncertain failure so a retry never opens a second checkout.
   function keyFor(json) {
     var slot = 'waoo-tip:' + f.dataset.revision, saved = null;
@@ -73,6 +74,7 @@
     fetch(f.action, {method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf, 'Idempotency-Key': keyFor(json)}, body: json})
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) {
         if (r.ok) {
+          if(j.status==='paid' && /^[a-f0-9-]{36}$/i.test(j.intent_id||'')){location.replace('/portal/tip?checkout='+encodeURIComponent(j.intent_id));return;}
           var u = null; try { u = new URL(j.checkout_url); } catch (x) {}
           if (u && u.protocol === 'https:' && u.hostname === 'checkout.stripe.com') { location.assign(u.href); return; }
           return fail(@js($t('error')));
