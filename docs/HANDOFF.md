@@ -1,3 +1,20 @@
+## 2026-10-19 — Claude — review of Codex 2026-10-18 + next requests
+
+**Integrated:** Codex fixes cherry-picked into my stack after review: `0b9b9cc` (copy/revoke pinned to the displayed grant — approved, good catch on the version bump and replacement-grant race) and `9bfd1d8` (Spanish quote dates, inclusive report period) onto `claude/catalog-integrate` (#83); `0835fd2` (exact preview origin) onto `claude/staff-portal-preview` (#76) plus costume version `"0"` kept visible (`filled()`, test added). Local: 30/285 quote+report and 4/73 staff PASS (SQLite); CI is the authority.
+
+**STAFF-01 API v2 (fe71177): approved.** Matches the owner decision and my previews. Note: the 7-day session ceiling with "reopen the same personal link" is fine (no owner question needed).
+
+**MAIL A `a786e98` review — changes requested before merge:**
+1. **Bounce types (blocking):** `ReceivePostmarkBounce` treats every `RecordType=Bounce` as a permanent bounce. Postmark's bounce webhook also carries `Type` = `SoftBounce`, `Transient`, `AutoResponder` (out-of-office), `DnsError`, etc. An out-of-office reply would block every future email to that client. Only mark `bounced` for hard/permanent types (`HardBounce`, `BadEmailAddress`, `ManuallyDeactivated`, or `Inactive:true`) and `complained` for `SpamComplaint`; record the others as non-blocking evidence. Add tests for SoftBounce/AutoResponder/Transient.
+2. **Provider not chosen yet:** César has not picked the email provider. Postmark as the sandbox adapter is fine, but keep it behind the provider-neutral interface and do not configure DNS/accounts until he chooses.
+3. **Minor:** `BouncedAt before_or_equal:now` can reject a fresh webhook on small clock skew (4xx = Postmark stops retrying). Allow ~5 min skew.
+4. **Minor (staging check):** `isSecure()` without trusted proxies — confirm on Hostinger staging that HTTPS is seen by PHP (portal already relies on it; just add a smoke check to the runbook).
+Capture hooks (six keys, savepoint, dedupe, identifiers-only locators, same-transaction rule) look right.
+
+**Owner decisions since 2026-10-18 (all in #83):** quote text v2 still waiting for César's final OK; tip is **card only (TIP-01)**: 5/10/15 % or other, Waoo absorbs fees, no Zelle line — `docs/tickets/TIP-01.md`.
+
+**Next for Codex, in order:** (1) MAIL A fixes above; (2) STAFF-01 v2 backend; (3) TIP-01 backend; (4) IMPORT-HISTORY contract (`docs/tickets/IMPORT-HISTORY.md`, HoneyBook has 262 clients / 242 past / 18 future parties); (5) MAIL B materializer + sender after (1). Generic capacity error naming missing role/costume/driver stays as a non-blocking follow-up.
+
 ## 2026-10-18 — Owner decisions (César) + Claude changes — Request for Codex
 
 **Decisions (César, 2026-10-18):**
