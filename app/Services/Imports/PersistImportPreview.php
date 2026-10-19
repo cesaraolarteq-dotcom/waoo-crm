@@ -12,6 +12,21 @@ final class PersistImportPreview
     public static function execute(ImportBatch $batch,User $actor,array $files,array $profile):void
     {
         $preview=app(ImportPreview::class)->build($files,$profile,CarbonImmutable::now());
+        // The importer singleton is held by stage/profile. Only server-known projects may
+        // review past source money. Keep the original past reason; never unskip cancellations.
+        if(($profile['source_format']??null)==='honeybook_future_v1'){
+            $known=\App\Models\ImportedProjectLink::whereIn('project_key',array_filter(array_column($preview['rows'],'source_key')))->sharedLock()->pluck('id','project_key');
+            foreach($preview['rows'] as &$r){
+                if($r['status']==='skipped'&&$r['skip_reason']==='past'&&$known->has($r['source_key'])){
+                    $preview['reconciliation']['counts']['skipped']--;
+                    $codes=array_column($r['errors'],'code');
+                    $r['status']=array_intersect($codes,['package_equation_mismatch','balance_equation_mismatch','payments_equation_mismatch'])?'conflict':($codes?'needs_mapping':'ready');
+                    $preview['reconciliation']['counts'][$r['status']]++;
+                    if($r['status']==='conflict')foreach($preview['reconciliation']['totals'] as &$total)$total['conflict_count']++;
+                    unset($total);
+                }
+            }unset($r);
+        }
         // Only exact contact hints; deliberately no name-only match, merge or customer write.
         $emails=[];$phones=[];
         foreach($preview['rows'] as $r){if(filter_var($r['normalized']['customer_email']??'',FILTER_VALIDATE_EMAIL))$emails[]=mb_strtolower($r['normalized']['customer_email']);if(filled($r['normalized']['customer_phone']??null)&&mb_strlen($r['normalized']['customer_phone'])<=30)$phones[]=$r['normalized']['customer_phone'];}

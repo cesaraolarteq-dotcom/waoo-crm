@@ -19,6 +19,7 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::post('/events/{event}/mail/reminders', [\App\Http\Controllers\Admin\MailController::class, 'plan'])->whereNumber('event');
     Route::patch('/events/{event}/mail/policy', [\App\Http\Controllers\Admin\MailController::class, 'pause'])->whereNumber('event');
     Route::get('/imports/honeybook/{batch}/rows/{row}/mapping', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'mapping'])->whereNumber(['batch','row']);
+    Route::get('/imports/honeybook/{batch}/rows/{row}/diff', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'diff'])->whereNumber(['batch','row']);
     Route::post('/imports/honeybook/{batch}/rows/{row}/commit', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'commit'])->whereNumber(['batch','row']);
     Route::get('/imports/honeybook/{batch}/coverage', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'coverage'])->whereNumber('batch');
     Route::post('/imports/honeybook/{batch}/finalize', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'finalize'])->whereNumber('batch');

@@ -16,10 +16,11 @@ final class MutationKey
         };
         return hash('sha256', json_encode($sort($input), JSON_THROW_ON_ERROR));
     }
-    public static function find(string $scope, string $key, string $hash): ?object
+    public static function find(string $scope, string $key, string $hash, bool $lock = false): ?object
     {
         RecordInput::validate(['idempotency_key' => $key], ['idempotency_key' => 'required|uuid']);
-        $row = DB::table('mutation_receipts')->where(['scope' => $scope, 'request_key' => $key])->first();
+        $query = DB::table('mutation_receipts')->where(['scope' => $scope, 'request_key' => $key]);
+        $row = ($lock ? $query->lockForUpdate() : $query)->first();
         if ($row) RecordWriteRejected::unless(hash_equals($row->request_hash, $hash), 409, 'Esta clave ya se usó con otros datos.');
         return $row;
     }

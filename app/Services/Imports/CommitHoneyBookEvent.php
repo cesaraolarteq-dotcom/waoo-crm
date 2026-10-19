@@ -10,6 +10,7 @@ final class CommitHoneyBookEvent
 {
     public function execute(User $actor,int $batchId,int $rowId,#[\SensitiveParameter] array $input,string $key):ImportedProjectLink
     {
+        if(array_key_exists('resync',$input))return app(ResyncHoneyBookMoney::class)->execute($actor,$batchId,$rowId,$input,$key);
         $actor=ImportInput::actor($actor);if(is_string($input['source_difference_note']??null))$input['source_difference_note']=trim($input['source_difference_note']);$d=ImportInput::input($input,[
             'expected_batch_version'=>'required|integer|min:1','expected_row_version'=>'required|integer|min:1','expected_preview_sha256'=>'required|string|regex:/^[a-f0-9]{64}$/D',
             'source_confirmed'=>'required|accepted','source_evidence_reviewed'=>'required|accepted','setup_minutes'=>'required|integer|min:0|max:720','breakdown_minutes'=>'required|integer|min:0|max:720',
