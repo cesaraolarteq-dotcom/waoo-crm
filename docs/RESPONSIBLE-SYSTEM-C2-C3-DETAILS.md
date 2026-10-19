@@ -1,6 +1,6 @@
 # C2/C3 — concrete source update and financial bridge contract (draft v2)
 
-2026-10-19 · API/data design before implementation. Supplements the approved `RESPONSIBLE-SYSTEM-API.md`; **no C2/C3 code, migration, switch or implementation credit**. Prepared during TIP core verification. Claude may review this shape before building the cutover screen. The240min freshness value remains an owner proposal, not configuration or authorization.
+2026-10-19 · API/data design before implementation. Supplements the approved `RESPONSIBLE-SYSTEM-API.md`; **no C2/C3 code, migration, switch or implementation credit**. Prepared during TIP core verification. Claude may review this shape before building the cutover screen. César approved a 240-minute maximum reconciliation age on 2026-10-19; C3 enforcement remains unimplemented and no transfer is authorized by that policy choice.
 
 ## C2: use the existing importer and preserve confirmed operations
 
@@ -37,7 +37,7 @@ The operating cohort is the server-selected IMPORT-01 group; IMPORT-HISTORY arch
 
 Readiness missing codes include `freshness_policy_required`, `source_reconciliation_stale`, `cohort_changed`, `source_changed`, `contact_changed`, `source_money_unresolved`, `original_document_required`, `source_due_time_review_required`, `external_collection_not_retired`, `crm_collection_in_flight`, `tip_collection_or_reconciliation_open`, and `message_outcome_unknown`. Codes describe the actual missing evidence; no ready badge just because enum=crm.
 
-Recency must be anchored to an explicit reviewed source observation/export, not refreshed by page loads or re-uploading an old file. If a fresh external review returns identical data, an owner attestation may record that **new review** with its source reference/hash/time and exact membership; it does not fabricate a new source-money revision. This is owner evidence, not a claim that an unavailable HoneyBook connector verified it. Server enforces bounded timestamps and the configured positive max-age policy; missing policy fails closed. No default240.
+Recency must be anchored to an explicit reviewed source observation/export, not refreshed by page loads or re-uploading an old file. If a fresh external review returns identical data, an owner attestation may record that **new review** with its source reference/hash/time and exact membership; it does not fabricate a new source-money revision. This is owner evidence, not a claim that an unavailable HoneyBook connector verified it. Server enforces bounded timestamps and the configured positive max-age policy; missing policy fails closed. César chose 240 minutes: the last actual owner-reviewed source payments must be at most 4 hours old at transfer; older review requires a new review. This does not schedule periodic HoneyBook polling/sync.
 
 The owner's transfer attestation must cover both HoneyBook **automations** and its still-usable payment/invoice links/known collection attempts. Turning off reminder automation alone does not prove an old payment link cannot still collect. Do not claim the CRM remotely disabled HoneyBook. Any unretired/unknown external collection blocks readiness; owner supplies evidence through the private review flow. Late externally observed money after cutover is held for reconciliation, never automatically pasted onto the opening balance or represented as bank-verified CRM cash.
 
@@ -81,4 +81,4 @@ Proposed delivery slices for peer review:
 3. C3 opening-agreement model/common authorization/finance and report-origin adapters, using synthetic source funds; old import guards remain until each path recognizes a valid bridge.
 4. Atomic cohort switch + reversal over those adapters, unknown-outcome blockers, no external provider calls under DB locks, sandbox-only. Nothing live without the separate owner activation.
 
-All public cutover route/service names from RESPONSIBLE-SYSTEM-API.md remain proposals until their slice is implemented and reviewed. This design earns0 implementation; it does not close Phase8 or approve any source file/import, provider, deadline or business freshness policy.
+All public cutover route/service names from RESPONSIBLE-SYSTEM-API.md remain proposals until their slice is implemented and reviewed. This design earns0 implementation; it does not close Phase8 or approve any source file/import, provider, deadline or live transfer. The separate owner 240-minute freshness decision is recorded above.
