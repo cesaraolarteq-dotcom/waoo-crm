@@ -778,7 +778,13 @@
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "design": "docs/plans/PHASE-7.md (CHANGE-A desglosado)"
+     "design": "docs/plans/PHASE-7.md (CHANGE-A desglosado)",
+     "contract": {
+      "document": "docs/CHANGE-A-API.md",
+      "implemented": false,
+      "reviewed": false,
+      "note": "Propuesta A1–A3, sin acciones ejecutables. Resolver con Claude A2 check/hold; precio fecha nueva pendiente César. Cancelación A6 requiere contrato/outcome separado."
+     }
     },
     {
      "name": "Correo «Un año después» (ANNIV-01)",
