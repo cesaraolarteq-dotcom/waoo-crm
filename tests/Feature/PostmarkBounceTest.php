@@ -32,7 +32,7 @@ class PostmarkBounceTest extends TestCase
             'payload' => ['recipient' => 'client@example.test', 'subject' => 'Fixture', 'text' => 'PRIVATE_BODY', 'html' => '<p>Fixture</p>']]);
         OutboundMessageState::create(['outbound_message_id' => $this->message->id, 'status' => 'sent', 'provider' => 'postmark',
             'provider_message_id' => 'fixture-provider-id', 'provider_message_sha256' => hash('sha256', "postmark\0fixture-provider-id")]);
-        $this->record = ['RecordType' => 'Bounce', 'ID' => 123456, 'MessageID' => 'fixture-provider-id', 'ServerID' => 123,
+        $this->record = ['RecordType' => 'Bounce', 'Type' => 'HardBounce', 'Inactive' => true, 'ID' => 123456, 'MessageID' => 'fixture-provider-id', 'ServerID' => 123,
             'MessageStream' => 'fixture-stream', 'Email' => 'client@example.test', 'BouncedAt' => '2026-10-17T12:59:00-05:00',
             'Description' => 'PRIVATE_PROVIDER_BODY', 'Content' => 'PRIVATE_ORIGINAL_EMAIL'];
     }
@@ -58,6 +58,7 @@ class PostmarkBounceTest extends TestCase
         $this->receive(server: ['PHP_AUTH_PW' => 'wrong'], body: 'broken')->assertUnauthorized();
         $this->receive(server: ['PHP_AUTH_USER' => 'another'])->assertUnauthorized();
         $this->receive(url: 'http://localhost/webhooks/postmark/bounces')->assertForbidden();
+        $this->receive(server: ['HTTP_X_FORWARDED_PROTO' => 'https'], url: 'http://localhost/webhooks/postmark/bounces')->assertForbidden();
         config(['waoo.sandbox_mail_bounces' => false]); $this->receive()->assertNotFound();
         $this->assertDatabaseCount('outbound_message_events', 0);
         $this->assertSame('sent', OutboundMessageState::sole()->status);
@@ -91,6 +92,81 @@ class PostmarkBounceTest extends TestCase
         $this->receive(['ID' => 123458])->assertOk();
         $this->assertSame('complained', OutboundMessageState::sole()->status);
         $this->assertDatabaseCount('outbound_message_events', 3);
+    }
+    public function test_transient_and_automatic_responses_are_private_nonblocking_evidence(): void
+    {
+        foreach (['SoftBounce', 'Transient', 'AutoResponder', 'DnsError', 'FutureProviderType'] as $i => $type) {
+            $payload = ['ID' => 200000 + $i, 'Type' => $type, 'Inactive' => false];
+            $this->receive($payload)->assertOk();
+            $this->receive($payload)->assertOk();
+        }
+        $state = OutboundMessageState::sole();
+        $this->assertSame('sent', $state->status);
+        $this->assertSame(1, $state->version);
+        $this->assertNull($state->delivered_at);
+        $this->assertDatabaseCount('outbound_message_events', 5);
+        $this->assertSame(5, DB::table('outbound_message_events')->where('kind', 'provider_notice')->count());
+        $evidence = json_encode(DB::table('outbound_message_events')->get());
+        foreach (['PRIVATE_', 'client@example.test', 'fixture-webhook'] as $secret) $this->assertStringNotContainsString($secret, $evidence);
+        // Absence of Inactive is not the same as true.
+        $withoutInactive = [...$this->record, 'ID' => 200010, 'Type' => 'SoftBounce'];
+        unset($withoutInactive['Inactive']);
+        $this->receive(body: json_encode($withoutInactive))->assertOk();
+        $this->assertSame('sent', OutboundMessageState::sole()->status);
+        Mail::assertNothingSent();
+    }
+    public function test_permanent_types_inactive_flag_and_complaint_type_are_classified(): void
+    {
+        foreach (['HardBounce', 'BadEmailAddress', 'ManuallyDeactivated'] as $i => $type) {
+            $this->receive(['ID' => 210000 + $i, 'Type' => $type, 'Inactive' => false])->assertOk();
+            $this->assertSame('bounced', OutboundMessageState::sole()->status);
+        }
+        $this->receive(['ID' => 210004, 'Type' => 'SoftBounce', 'Inactive' => true])->assertOk();
+        $this->assertSame('bounced', OutboundMessageState::sole()->status);
+        $this->receive(['ID' => 210005, 'Type' => 'SpamComplaint', 'Inactive' => false])->assertOk();
+        $this->assertSame('complained', OutboundMessageState::sole()->status);
+        $this->receive(['ID' => 210006, 'Type' => 'AutoResponder', 'Inactive' => false])->assertOk();
+        $this->assertSame('complained', OutboundMessageState::sole()->status);
+    }
+    public function test_notice_id_cannot_be_reused_for_different_type_inactive_or_timestamp(): void
+    {
+        $this->receive(['Type' => 'SoftBounce', 'Inactive' => false])->assertOk();
+        $this->receive(['Type' => 'AutoResponder', 'Inactive' => false])->assertConflict();
+        $this->receive(['Type' => 'SoftBounce', 'Inactive' => true])->assertConflict();
+        $this->receive(['Type' => 'SoftBounce', 'Inactive' => false, 'BouncedAt' => '2026-10-17T17:58:00Z'])->assertConflict();
+        $this->assertDatabaseCount('outbound_message_events', 1);
+        $this->assertSame('sent', OutboundMessageState::sole()->status);
+    }
+    public function test_authenticated_clock_skew_is_bounded_and_preserves_provider_time(): void
+    {
+        $this->receive(['BouncedAt' => '2026-10-17T18:05:01Z'])->assertUnprocessable();
+        $this->receive(['BouncedAt' => '2026-10-17T18:05:00Z'])->assertOk();
+        $this->receive(['BouncedAt' => '2026-10-17T18:05:00Z'])->assertOk();
+        $this->assertSame('2026-10-17 18:05:00', DB::table('outbound_message_events')->sole()->occurred_at);
+        $this->assertDatabaseCount('outbound_message_events', 1);
+    }
+    public function test_missing_type_and_non_boolean_inactive_are_not_guessed_permanent(): void
+    {
+        $missing = $this->record;
+        unset($missing['Type']);
+        $this->receive(body: json_encode($missing))->assertUnprocessable();
+        foreach (['true', 'false', 1, 0, null] as $inactive) $this->receive(['Inactive' => $inactive])->assertUnprocessable();
+        $this->assertSame('sent', OutboundMessageState::sole()->status);
+        $this->assertDatabaseCount('outbound_message_events', 0);
+    }
+    public function test_generic_delivery_seam_still_rejects_future_events_and_observations(): void
+    {
+        config(['waoo.sandbox_mail' => true]);
+        foreach ([['delivered', CarbonImmutable::now()->addMinute()], ['provider_notice', CarbonImmutable::now()]] as [$outcome, $at]) {
+            try {
+                app(\App\Services\Mail\RecordMailDelivery::class)->execute('postmark', 'fixture-provider-id', 'generic-fixture', $outcome, $at);
+                $this->fail('Generic delivery must keep its original validation.');
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                $this->assertArrayHasKey('mail', $e->errors());
+            }
+        }
+        $this->assertDatabaseCount('outbound_message_events', 0);
+        $this->assertSame('sent', OutboundMessageState::sole()->status);
     }
     public function test_malformed_and_oversize_bodies_cannot_mutate_state(): void
     {

@@ -38,3 +38,9 @@ El objetivo v2 de pérdida máxima de una hora/recuperación de cuatro horas es 
 Localizar el contrato completo ya entregado a Claude y colocarlo anonimizado en un lugar accesible al equipo; añadir cotización e invoice sin datos reales. Proporcionar inventario operativo y roles mediante identificadores, capacidades y horarios, sin información personal innecesaria. Confirmar tiempos por paquete y dirección base por un canal adecuado.
 
 La Fase 0 no se cierra solo con estos requisitos escritos: las pruebas de viabilidad deben ejecutarse después de disponer del entorno autorizado.
+
+## MAIL — comprobación HTTPS antes de habilitar un receptor (2026-10-19)
+
+El adaptador Postmark es opcional de sandbox; el dueño aún no eligió proveedor. No configurar DNS, cuenta ni envío por la existencia del adaptador. Mantener los flags de recepción/envío apagados hasta una prueba autorizada de staging.
+
+En una prueba autorizada, confirmar que la solicitud HTTPS del dominio de staging llega a PHP como `Request::isSecure() === true`, mediante diagnóstico temporal restringido al administrador que solo muestre ese booleano, nunca phpinfo/headers/secretos. Retirar el diagnóstico después. Confirmar además que HTTP no acepta el webhook y que un cliente directo no puede convertir HTTP en seguro enviando `X-Forwarded-Proto: https`. Si hay proxy TLS, documentar sus IPs y headers observados y confiar solo en esos proxies verificados; no habilitar trust-all para pasar el chequeo. Usar un payload sintético y credenciales dedicadas por el mecanismo seguro, nunca en shell history/logs. Verificar receptor deshabilitado404, HTTPS con credencial errónea401, credencial correcta y mapping sintético200. Si PHP no reconoce HTTPS, bloquear la activación hasta resolver el despliegue; no quitar isSecure. Este documento prepara la prueba, no afirma haberla ejecutado en Hostinger.

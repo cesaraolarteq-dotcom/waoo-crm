@@ -41,7 +41,9 @@ final class ReceivePostmarkBounce
             'record.ServerID' => ['required', 'integer', Rule::in([(int) $server])],
             'record.MessageStream' => ['required', 'string', Rule::in([$stream])],
             'record.Email' => 'required|email|max:255',
-            'record.BouncedAt' => ['required', 'date', new ExplicitOffset, 'before_or_equal:now'],
+            'record.BouncedAt' => ['required', 'date', new ExplicitOffset, 'before_or_equal:'.CarbonImmutable::now()->addMinutes(5)->toIso8601String()],
+            'record.Type' => ['required_if:record.RecordType,Bounce', 'string', 'regex:/^[A-Za-z][A-Za-z0-9_-]{0,79}$/D'],
+            'record.Inactive' => ['sometimes', function ($attribute, $value, $fail) { if (!is_bool($value)) $fail('Inactive must be a boolean.'); }],
         ])->validate()['record'];
         $hash = hash('sha256', 'postmark'."\0".$data['MessageID']);
         $state = OutboundMessageState::where('provider', 'postmark')->where('provider_message_sha256', $hash)->first();
@@ -53,7 +55,11 @@ final class ReceivePostmarkBounce
         try { $intendedRecipient = $message->payload['recipient'] ?? null; }
         catch (\Throwable) { abort(409, 'Message evidence unavailable.'); }
         abort_unless(is_string($intendedRecipient) && hash_equals($intendedRecipient, $recipient), 422, 'Recipient binding mismatch.');
-        app(RecordMailDelivery::class)->authenticatedBounce('postmark', $data['MessageID'], (string) $data['ID'],
-            $data['RecordType'] === 'SpamComplaint' ? 'complained' : 'bounced', CarbonImmutable::parse($data['BouncedAt'])->utc());
+        $type = $data['Type'] ?? 'SpamComplaint';
+        $inactive = $data['Inactive'] ?? null;
+        $outcome = $data['RecordType'] === 'SpamComplaint' || $type === 'SpamComplaint' ? 'complained'
+            : ($inactive === true || in_array($type, ['HardBounce', 'BadEmailAddress', 'ManuallyDeactivated'], true) ? 'bounced' : 'provider_notice');
+        app(RecordMailDelivery::class)->authenticatedObservation('postmark', $data['MessageID'], (string) $data['ID'],
+            $outcome, CarbonImmutable::parse($data['BouncedAt'])->utc(), ['type' => $type, 'inactive' => $inactive]);
     }
 }
