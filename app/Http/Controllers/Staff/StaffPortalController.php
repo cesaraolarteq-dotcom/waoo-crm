@@ -36,7 +36,7 @@ final class StaffPortalController
             try { [$grant]=StaffGuard::grant($hint->id); }
             catch (\App\Exceptions\RecordWriteRejected|\Illuminate\Database\Eloquent\ModelNotFoundException) { abort(401,'Este acceso no es válido.'); }
             DB::table('staff_portal_sessions')->insert(['staff_access_grant_id'=>$grant->id,'token_hash'=>hash('sha256',$token),
-                'expires_at'=>now()->addDays(7),'created_at'=>now(),'updated_at'=>now()]);
+                'expires_at'=>\Carbon\CarbonImmutable::now('UTC')->addDays(7),'created_at'=>now(),'updated_at'=>now()]);
             $grant->last_opened_at=now(); $grant->save();
         },3);
         return response()->json(['ok'=>true])->cookie(StaffContext::COOKIE,$token,7*24*60,'/staff',null,
