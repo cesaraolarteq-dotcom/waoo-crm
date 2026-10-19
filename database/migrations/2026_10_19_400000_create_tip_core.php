@@ -15,7 +15,7 @@ return new class extends Migration {
         Schema::create('tip_checkout_intents',function(Blueprint $t){
             $t->uuid('id')->primary();$t->foreignId('tip_grant_id')->constrained()->restrictOnDelete();$t->foreignId('event_id')->constrained()->restrictOnDelete();$t->foreignId('financial_revision_id')->constrained()->restrictOnDelete();
             $t->unsignedBigInteger('active_grant_id')->nullable()->unique();$t->unsignedBigInteger('active_event_id')->nullable()->unique();$t->string('environment',10)->default('test');$t->string('option',10);$t->unsignedBigInteger('amount_cents');$t->char('currency',3)->default('USD');
-            $t->string('status',40);$t->string('provider_account')->nullable();$t->string('provider_session_id')->nullable()->unique();$t->string('provider_payment_id')->nullable()->unique();
+            $t->string('request_locale',2);$t->string('request_origin',255);$t->string('status',40);$t->string('provider_account')->nullable();$t->string('provider_session_id')->nullable()->unique();$t->string('provider_payment_id')->nullable()->unique();
             $t->text('checkout_url')->nullable();$t->dateTime('expires_at');$t->string('last_error',100)->nullable();$t->timestamps();
         });
         Schema::create('tip_receipts',function(Blueprint $t){

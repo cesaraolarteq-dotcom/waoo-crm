@@ -179,5 +179,15 @@ class TipCoreTest extends TestCase {
         $this->checkout($cookie,$input,$key)->assertConflict();$this->assertNotNull($i->fresh()->active_event_id);Queue::assertPushed(\App\Jobs\ExpireTipCheckout::class);
         (new \App\Jobs\ExpireTipCheckout($i->id))->handle();$this->assertSame('expired',$i->fresh()->status);$this->assertNull($i->fresh()->active_event_id);$this->assertDatabaseHas('tip_reconciliations',['reason'=>'checkout_expiry_requires_verification','status'=>'resolved']);$this->checkout($cookie,$input)->assertCreated();
     }
+    public function test_context_language_change_retries_the_exact_original_provider_parameters():void {
+        $cookie=$this->enter();$key=(string)Str::uuid();$input=$this->input();$this->stripe->failAfterCreate=true;$this->checkout($cookie,$input,$key)->assertStatus(503);
+        $r=\Illuminate\Http\Request::create('https://localhost/portal/api/tip/checkout?lang=en','POST',[],[TipContext::COOKIE=>$cookie]);$r->setLaravelSession(app('session')->driver());$r->setUserResolver(fn()=>null);
+        app(\App\Services\Tips\CreateTipCheckout::class)->execute(TipContext::fromRequest($r),$input,$key);
+        $this->assertSame($this->stripe->calls[0]['parameters'],$this->stripe->calls[1]['parameters']);$this->assertSame($this->stripe->calls[0]['key'],$this->stripe->calls[1]['key']);
+    }
+    public function test_account_change_during_unknown_result_cannot_make_a_second_provider_call():void {
+        $cookie=$this->enter();$key=(string)Str::uuid();$input=$this->input();$this->stripe->failAfterCreate=true;$this->checkout($cookie,$input,$key)->assertStatus(503);
+        config(['waoo.stripe_test_account'=>'acct_other_fixture']);$this->checkout($cookie,$input,$key)->assertConflict();$this->assertCount(1,$this->stripe->calls);$this->assertDatabaseCount('tip_checkout_intents',1);
+    }
     protected function tearDown():void {if($this->app)$this->app->detectEnvironment(fn()=>'testing');parent::tearDown();}
 }
