@@ -86,6 +86,80 @@ class ImportOwnerCatalogTest extends TestCase
         $this->assertSame(3, Resource::where('kind', 'costume')->count());
     }
 
+    public function test_character_groups_are_optional_audited_versioned_and_rerunnable(): void
+    {
+        $actor = User::sole();
+        $save = app(\App\Services\Records\SaveCharacter::class);
+        $character = $save->execute($actor, ['name' => 'Synthetic Mouse', 'active' => true]);
+        $this->assertNull($character->group);
+        $export = fn (array $extra) => file_put_contents($this->file, json_encode(['packages' => [], 'characters' => [['name' => 'Synthetic Mouse', ...$extra]]]));
+        $run = fn (bool $dry = false) => $this->artisan('waoo:import-catalog', ['file' => $this->file, '--actor' => $actor->email, '--dry-run' => $dry])->assertSuccessful();
+        $export(['category' => ' Disney ', 'audience' => 'girls', 'group' => '  Synthetic Show  ', 'outfits' => 'Classic 1']);
+        $run(true);
+        $this->assertNull($character->fresh()->group);
+        $run();
+        $character->refresh();
+        $this->assertSame('Synthetic Show', $character->group);
+        $this->assertSame('Disney', $character->category);
+        $this->assertSame('girls', $character->audience);
+        $this->assertSame(['Classic'], $character->outfits);
+        $this->assertSame(2, $character->version, 'One save for group plus outfits.');
+        $audits = \Illuminate\Support\Facades\DB::table('audit_entries')->count();
+        $run();
+        $this->assertSame(2, $character->fresh()->version);
+        $this->assertSame($audits, \Illuminate\Support\Facades\DB::table('audit_entries')->count());
+        $export([]); $run();
+        $this->assertSame('Synthetic Show', $character->fresh()->group, 'Missing key preserves the group.');
+        $export(['group' => '0']); $run();
+        $this->assertSame('0', $character->fresh()->group);
+        $export(['group' => '  ']); $run();
+        $this->assertNull($character->fresh()->group);
+        $this->assertSame('girls', $character->fresh()->audience, 'Omitted audience is preserved.');
+        $export(['category' => '', 'audience' => null]); $run();
+        $this->assertNull($character->fresh()->category);
+        $this->assertSame('all', $character->fresh()->audience);
+        $version = $character->fresh()->version;
+        try {
+            $save->execute($actor, ['name' => $character->name, 'active' => true, 'group' => 'Stale', 'expected_version' => 2], $character->id);
+            $this->fail('Stale version must be refused.');
+        } catch (\App\Exceptions\RecordWriteRejected $e) {
+            $this->assertSame(409, $e->status);
+        }
+        $this->assertSame($version, $character->fresh()->version);
+        $this->assertNull($character->fresh()->group);
+    }
+
+    public function test_taxonomy_api_rejects_invalid_audience_and_preserves_metadata_on_partial_edit(): void
+    {
+        $actor = User::sole(); $this->actingAs($actor);
+        $response = $this->postJson('/admin/api/characters', ['name' => 'Synthetic categorized hero', 'active' => true, 'category' => ' Disney ', 'group' => ' Synthetic Show ', 'audience' => 'boys'])->assertCreated()
+            ->assertJsonPath('category', 'Disney')->assertJsonPath('group', 'Synthetic Show')->assertJsonPath('audience', 'boys');
+        $id = $response->json('id'); $url = '/admin/api/characters/'.$id;
+        $base = ['name' => 'Synthetic categorized hero', 'active' => true, 'expected_version' => 1];
+        foreach (['girl', ['girls'], true] as $invalid) $this->putJson($url, [...$base, 'audience' => $invalid])->assertUnprocessable();
+        $this->putJson($url, [...$base, 'category' => str_repeat('x', 121)])->assertUnprocessable();
+        $this->putJson($url, $base)->assertOk()->assertJsonPath('audience', 'boys')->assertJsonPath('category', 'Disney');
+        $this->putJson($url, [...$base, 'audience' => 'girls'])->assertConflict();
+        $this->putJson($url, [...$base, 'expected_version' => 2, 'category' => null, 'group' => null, 'audience' => null])->assertOk()
+            ->assertJsonPath('audience', 'all')->assertJsonPath('category', null)->assertJsonPath('group', null);
+    }
+
+    public function test_wardrobe_name_digits_and_explicit_zero_never_create_phantom_units(): void
+    {
+        file_put_contents($this->file, json_encode(['packages' => [], 'characters' => [
+            ['name' => 'Synthetic Generic Hero', 'costumes' => 2, 'outfits' => '0, R2D2, V1'],
+            ['name' => 'Synthetic Fixed Hero', 'costumes' => 99, 'outfits' => 'Sirena 0, Vestido 1'],
+        ]]));
+        $this->artisan('waoo:import-catalog', ['file' => $this->file, '--actor' => 'owner@example.test'])->assertSuccessful();
+        $generic = Character::where('name', 'Synthetic Generic Hero')->sole();
+        $this->assertSame(['0', 'R2D2', 'V1'], $generic->outfits);
+        $this->assertSame(2, Resource::where('character_id', $generic->id)->count());
+        $this->assertSame(2, Resource::where('character_id', $generic->id)->whereNull('outfit')->count());
+        $fixed = Character::where('name', 'Synthetic Fixed Hero')->sole();
+        $this->assertSame(['Sirena', 'Vestido'], $fixed->outfits);
+        $this->assertSame(['Vestido'], Resource::where('character_id', $fixed->id)->pluck('outfit')->all());
+    }
+
     public function test_requires_an_existing_owner(): void
     {
         $this->artisan('waoo:import-catalog', ['file' => $this->file, '--actor' => 'nobody@example.test'])->assertFailed();

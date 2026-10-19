@@ -57,14 +57,17 @@ class ImportOwnerCatalog extends Command
         return self::SUCCESS;
     }
 
-    /** "Clásico 1, Disneyland 1, Carreras 1" → ['Clásico' => 1, 'Disneyland' => 1, 'Carreras' => 1]. A name without a number counts as 1. */
+    /** Explicit counts require whitespace; uncounted wardrobe labels retain their digits. */
     public static function parseOutfits(?string $text): array
     {
         $out = [];
         foreach (preg_split('/[,;\n]+/', (string) $text) as $part) {
-            if (! preg_match('/^\s*(.*?)\s*(\d+)?\s*$/u', $part, $m) || trim($m[1]) === '') continue;
-            $name = mb_substr(trim($m[1]), 0, 60);
-            $out[$name] = ($out[$name] ?? 0) + max(1, (int) ($m[2] ?? 1));
+            $part = trim($part);
+            if ($part === '') continue;
+            $counted = preg_match('/^(.*?)\s+(\d+)$/u', $part, $m);
+            $name = mb_substr($counted ? trim($m[1]) : $part, 0, 60);
+            if ($name === '') continue;
+            $out[$name] = ($out[$name] ?? 0) + ($counted ? (int) $m[2] : 1);
         }
 
         return $out;
@@ -89,13 +92,22 @@ class ImportOwnerCatalog extends Command
             $versionNames = array_map('strval', array_keys($versions));
             $character = Character::whereRaw('lower(name) = ?', [mb_strtolower($name)])->first();
             $existed = (bool) $character;
+            $groupInput = array_intersect_key($row, array_flip(['category', 'group', 'audience']));
+            // Validate dry runs too, preserving omitted metadata and literal "0".
+            if ($groupInput) {
+                $groupInput = \App\Services\Records\RecordInput::validate($groupInput, ['category' => 'nullable|string|max:120', 'group' => 'nullable|string|max:120', 'audience' => 'nullable|string|in:girls,boys,all']);
+                if (array_key_exists('audience', $groupInput)) $groupInput['audience'] ??= 'all';
+            }
             if (! $dry) {
                 if (! $character) {
-                    $character = app(SaveCharacter::class)->execute($actor, ['name' => $name, 'active' => true, 'outfits' => $versions ? $versionNames : null]);
-                } elseif ($versions && array_values((array) $character->outfits) !== $versionNames) {
+                    $character = app(SaveCharacter::class)->execute($actor, ['name' => $name, 'active' => true, 'outfits' => $versions ? $versionNames : null, ...$groupInput]);
+                } else {
                     // Keep existing versions (a costume may still use them) and add the owner's new ones.
-                    $merged = array_values(array_unique([...((array) $character->outfits), ...$versionNames]));
-                    $character = app(SaveCharacter::class)->execute($actor, ['name' => $character->name, 'active' => (bool) $character->active, 'outfits' => $merged, 'expected_version' => $character->version], $character->id);
+                    $merged = $versions ? array_values(array_unique([...((array) $character->outfits), ...$versionNames])) : $character->outfits;
+                    $groupChanged = collect($groupInput)->contains(fn ($value, $field) => $character->{$field} !== $value);
+                    if ($merged !== $character->outfits || $groupChanged) {
+                        $character = app(SaveCharacter::class)->execute($actor, ['name' => $character->name, 'active' => (bool) $character->active, 'outfits' => $merged, ...$groupInput, 'expected_version' => $character->version], $character->id);
+                    }
                 }
             }
             $this->report[] = ['Personaje', $name, $existed ? 'ya existía' : ($dry ? 'se crearía' : 'creado'), (! empty($row['wig']) ? 'peluca' : 'cabeza').($versions ? ' · versiones: '.implode(', ', array_keys($versions)) : '')];

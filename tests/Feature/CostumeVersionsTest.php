@@ -113,10 +113,10 @@ class CostumeVersionsTest extends TestCase
         $this->putJson('/admin/api/events/'.$event->id, $update)->assertUnprocessable()->assertJsonValidationErrors('services.0.characters.0.outfit');
         $this->assertSame('Racing', $saved->services->sole()->characters->sole()->fresh()->outfit);
     }
-    public function test_generic_and_wrong_outfits_cannot_replace_selected_version(): void
+    public function test_fixed_wrong_outfit_cannot_replace_selected_version(): void
     {
         $event = app(SaveEventDraft::class)->execute($this->owner, $this->input);
-        foreach ([null,'Classic'] as $outfit) {
+        foreach (['Classic'] as $outfit) {
             $costume = $this->unit($outfit); $staff = $this->performer($costume);
             $this->postJson('/admin/api/events/'.$event->id.'/confirm-capacity', $this->booking($event, [$costume->id, $staff->id]))->assertConflict()->assertSee('Racing');
         }
@@ -125,6 +125,112 @@ class CostumeVersionsTest extends TestCase
         $this->postJson('/admin/api/events/'.$event->id.'/confirm-capacity', $this->booking($event, [$costume->id, $staff->id]))->assertOk();
         $this->putJson('/admin/api/resources/'.$costume->id, [...$costume->only(['code','name','kind','status','skills','character_id']), 'outfit' => 'Classic', 'expected_version' => 1])->assertConflict();
     }
+    public function test_generic_unit_fulfills_requested_wardrobe_and_freezes_the_performer_assignment(): void
+    {
+        $event = app(SaveEventDraft::class)->execute($this->owner, $this->input);
+        $unit = $this->unit(null); $staff = $this->performer($unit);
+        $this->postJson('/admin/api/events/'.$event->id.'/confirm-capacity', $this->booking($event, [$unit->id, $staff->id]))->assertOk();
+        $snapshot = \App\Models\BookingEvidence::sole()->staff_assignment_snapshot;
+        $this->assertSame('costume-outfit-v2', $snapshot['costume_policy_version']);
+        $this->assertSame('Racing', $snapshot['costume_assignments'][0]['outfit']);
+        $slot = collect($snapshot['assignments'])->firstWhere('kind', 'staff')['slot'];
+        $this->assertSame('Racing', $slot['outfit']);
+        $this->assertSame($unit->id, $slot['costume_unit_id']);
+        $this->assertNull($unit->fresh()->outfit, 'The reusable head does not become a fixed-wardrobe unit.');
+    }
+
+    public function test_manual_wardrobe_is_versioned_replay_safe_and_used_by_the_real_staff_portal(): void
+    {
+        config(['waoo.sandbox_staff' => true]);
+        $input = $this->input; unset($input['services'][0]['characters'][0]['outfit']);
+        $event = app(SaveEventDraft::class)->execute($this->owner, $input);
+        $unit = $this->unit(null); $staff = $this->performer($unit);
+        $booking = $this->booking($event, [$unit->id, $staff->id]);
+        $booking['costume_outfits'] = [['resource_id' => $unit->id, 'outfit' => '0', 'expected_character_version' => $this->hero->version]];
+        $url = '/admin/api/events/'.$event->id.'/confirm-capacity';
+        $this->postJson($url, $booking)->assertOk();
+        $this->postJson($url, $booking)->assertOk();
+        $other = $booking; $other['costume_outfits'][0]['outfit'] = 'Classic';
+        $this->postJson($url, $other)->assertConflict();
+        $this->assertDatabaseCount('booking_evidence', 1);
+        $this->assertSame('0', \App\Models\BookingEvidence::sole()->staff_assignment_snapshot['costume_assignments'][0]['outfit']);
+        $this->assertNull($event->services->sole()->characters->sole()->outfit, 'Operational wardrobe does not rewrite the commercial selection.');
+        $this->travelTo($event->starts_at->subMinutes(5));
+        $staff->update(['name' => 'Fixture PRIVATE_LASTNAME']);
+        $identity = app(\App\Services\Staff\SaveStaffIdentity::class)->execute($this->owner, ['resource_id' => $staff->id, 'expected_resource_version' => $staff->fresh()->version, 'locale' => 'es', 'active' => true, 'phone' => '+13465550100'], (string) Str::uuid());
+        $link = app(\App\Services\Staff\IssueStaffGrant::class)->execute($this->owner, $identity['staff_id'], ['expected_version' => $identity['version']], (string) Str::uuid());
+        $unit->update(['outfit' => 'Classic']); $this->hero->update(['name' => 'Renamed catalog']);
+        auth()->logout(); $this->withCredentials();
+        $r = $this->postJson('/staff/session', ['token' => parse_url($link['link'], PHP_URL_FRAGMENT)])->assertOk();
+        $cookie = $r->getCookie(\App\Services\Staff\StaffContext::COOKIE)->getValue();
+        $this->withCookie(\App\Services\Staff\StaffContext::COOKIE, $cookie)->getJson('/staff/api/week')->assertOk()
+            ->assertJsonPath('jobs.0.outfit_version', '0')->assertJsonPath('jobs.0.character', 'Fixture hero')->assertDontSee('PRIVATE_LASTNAME');
+    }
+
+    public function test_wardrobe_choice_rejects_stale_fixed_foreign_and_contradictory_choices_without_effects(): void
+    {
+        $event = app(SaveEventDraft::class)->execute($this->owner, $this->input);
+        $unit = $this->unit(null); $staff = $this->performer($unit); $fixed = $this->unit('Racing');
+        $base = $this->booking($event, [$unit->id, $staff->id]);
+        $url = '/admin/api/events/'.$event->id.'/confirm-capacity';
+        foreach ([['resource_id' => $unit->id, 'outfit' => 'Unknown', 'expected_character_version' => 1],
+                  ['resource_id' => $unit->id, 'outfit' => 'Racing', 'expected_character_version' => 99],
+                  ['resource_id' => $unit->id, 'outfit' => 'Classic', 'expected_character_version' => 1]] as $choice) {
+            $this->postJson($url, [...$base, 'costume_outfits' => [$choice]])->assertConflict();
+        }
+        $this->postJson($url, [...$base, 'costume_outfits' => [['resource_id' => $fixed->id, 'outfit' => 'Racing', 'expected_character_version' => 1]]])->assertUnprocessable();
+        $this->postJson($url, [...$base, 'resource_ids' => [$fixed->id, $staff->id], 'costume_outfits' => [['resource_id' => $fixed->id, 'outfit' => 'Racing', 'expected_character_version' => 1]]])->assertUnprocessable();
+        $this->assertDatabaseCount('resource_reservations', 0); $this->assertDatabaseCount('booking_evidence', 0);
+    }
+
+    public function test_global_matching_preserves_a_generic_head_for_the_other_requested_wardrobe(): void
+    {
+        ServiceVariant::findOrFail($this->price->service_variant_id)->update(['character_quantity' => 2]);
+        $input = $this->input; $input['services'][0]['characters'][] = ['character_id' => $this->hero->id, 'quantity' => 1, 'outfit' => 'Classic'];
+        $event = app(SaveEventDraft::class)->execute($this->owner, $input);
+        $generic = $this->unit(null); $fixed = $this->unit('Racing');
+        $a = $this->performer($generic); $b = $this->performer($fixed);
+        $booking = $this->booking($event, [$generic->id, $fixed->id, $a->id, $b->id]); $booking['payment']['amount_cents'] = 10000;
+        $this->postJson('/admin/api/events/'.$event->id.'/confirm-capacity', $booking)->assertOk();
+        $byUnit = collect(\App\Models\BookingEvidence::sole()->staff_assignment_snapshot['costume_assignments'])->keyBy('resource_id');
+        $this->assertSame('Classic', $byUnit[$generic->id]['outfit']); $this->assertSame('Racing', $byUnit[$fixed->id]['outfit']);
+    }
+
+    public function test_two_real_confirmations_cannot_share_one_generic_head(): void
+    {
+        if (DB::connection()->getDriverName() !== 'mysql' || !function_exists('pcntl_fork')) $this->markTestSkipped('Requires MariaDB and pcntl');
+        $a = app(SaveEventDraft::class)->execute($this->owner, $this->input); $b = app(SaveEventDraft::class)->execute($this->owner, $this->input);
+        $costume = $this->unit(null); $staffA = $this->performer($costume); $staffB = $this->performer($costume);
+        $worker = fn ($event, $staff) => function () use ($event, $staff, $costume) {
+            try { app(ConfirmBooking::class)->execute($event->id, $this->booking($event, [$costume->id, $staff->id]), $this->owner); return 'reserved'; }
+            catch (RecordWriteRejected $e) { return $e->status === 409 ? 'conflict' : 'unexpected'; }
+        };
+        $results = ConcurrentWorkers::run([$worker($a, $staffA), $worker($b, $staffB)]); sort($results);
+        $this->assertSame(['conflict', 'reserved'], $results); $this->assertDatabaseCount('resource_reservations', 2);
+    }
+
+    public function test_generic_unit_without_a_choice_stays_unknown_instead_of_picking_the_first_option(): void
+    {
+        $input = $this->input; unset($input['services'][0]['characters'][0]['outfit']);
+        $event = app(SaveEventDraft::class)->execute($this->owner, $input); $unit = $this->unit(null); $staff = $this->performer($unit);
+        $this->postJson('/admin/api/events/'.$event->id.'/confirm-capacity', $this->booking($event, [$unit->id, $staff->id]))->assertOk();
+        $this->assertNull(\App\Models\BookingEvidence::sole()->staff_assignment_snapshot['costume_assignments'][0]['outfit']);
+    }
+
+    public function test_paid_confirmation_keeps_commercial_money_and_applies_only_operational_wardrobe(): void
+    {
+        $input = $this->input; unset($input['services'][0]['characters'][0]['outfit']);
+        $event = app(SaveEventDraft::class)->execute($this->owner, $input); $unit = $this->unit(null); $staff = $this->performer($unit);
+        $finance = app(CreateFinancialRevision::class)->execute($this->owner, $event->id, ['expected_version' => $event->version], (string) Str::uuid());
+        app(\App\Services\Finance\RecordZellePayment::class)->execute($this->owner, $event->id, ['financial_revision_id' => $finance->id, 'amount_cents' => 5000, 'currency' => 'USD', 'reference' => 'Fictional wardrobe receipt', 'received_at' => now()->subMinute()->toIso8601String(), 'verified_received' => true], (string) Str::uuid());
+        $d = $this->booking($event, [$unit->id, $staff->id]); unset($d['payment']);
+        $d['financial_revision_id'] = $finance->id; $d['costume_outfits'] = [['resource_id' => $unit->id, 'outfit' => '0', 'expected_character_version' => 1]];
+        app(\App\Services\Finance\ConfirmPaidCapacity::class)->execute($this->owner, $event->id, $d);
+        $this->assertSame('0', \App\Models\BookingEvidence::sole()->staff_assignment_snapshot['costume_assignments'][0]['outfit']);
+        $this->assertDatabaseCount('ledger_entries', 1); $this->assertSame(5000, \App\Models\LedgerEntry::sole()->amount_cents);
+        $this->assertSame($finance->lines_snapshot, $finance->fresh()->lines_snapshot);
+    }
+
     public function test_legacy_any_unit_and_string_zero_version_are_not_treated_as_missing(): void
     {
         foreach ([null, '0'] as $outfit) {

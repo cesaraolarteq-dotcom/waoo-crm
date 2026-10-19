@@ -81,6 +81,29 @@ class ImportedCapacityPageTest extends TestCase
         $this->assertSame('draft', $this->event->fresh()->status);
         $this->assertDatabaseCount('resource_reservations', 0);
     }
+    public function test_imported_confirmation_accepts_operational_generic_wardrobe_without_crm_money(): void
+    {
+        $hero = \App\Models\Character::create(['name' => 'Synthetic imported hero', 'active' => true, 'outfits' => ['0']]);
+        $variant = \App\Models\ServiceVariant::findOrFail($this->price->service_variant_id);
+        $variant->update(['character_quantity' => 1, 'character_options' => [['character_id' => $hero->id, 'requirements' => [
+            ['kind' => 'costume', 'quantity' => 1, 'character_id' => $hero->id], ['kind' => 'staff', 'quantity' => 1, 'skill' => 'performer']]]]]);
+        $link = ImportedProjectLink::sole(); $batch = $this->stageFuture(); $row = ImportRow::where('import_batch_id', $batch->id)->sole();
+        $link = app(CommitHoneyBookEvent::class)->execute($this->owner, $batch->id, $row->id, $this->commitInput($batch, $row, [
+            'expected_import_version' => $link->version, 'expected_event_version' => $this->event->version,
+            'services' => [['price_version_id' => $this->price->id, 'expected_variant_version' => $variant->version, 'characters' => [['character_id' => $hero->id, 'quantity' => 1]]]],
+        ]), (string) Str::uuid());
+        $unit = Resource::create(['code' => 'IMP-HEAD', 'name' => 'Synthetic generic head', 'kind' => 'costume', 'status' => 'active', 'character_id' => $hero->id, 'skills' => []]);
+        $staff = Resource::create(['code' => 'IMP-PERFORMER', 'name' => 'Synthetic performer', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer']]);
+        DB::table('costume_compatibilities')->insert(['staff_id' => $staff->id, 'costume_id' => $unit->id]);
+        $ids = [...$this->units(true), $unit->id, $staff->id];
+        $key = (string) Str::uuid(); $d = ['expected_version' => $this->event->fresh()->version, 'imported_revision_id' => $link->current_revision_id, 'resource_ids' => $ids,
+            'costume_outfits' => [['resource_id' => $unit->id, 'outfit' => '0', 'expected_character_version' => 1]],
+            'review' => ['staff_confirmed' => true, 'cargo_checked' => true, 'origin_return_note' => 'Synthetic origin and return review.', 'transfers' => []]];
+        $service = app(\App\Services\Imports\ConfirmImportedCapacity::class); $service->execute($this->owner, $this->event->id, $d, $key); $service->execute($this->owner, $this->event->id, $d, $key);
+        $this->assertSame('0', BookingEvidence::sole()->staff_assignment_snapshot['costume_assignments'][0]['outfit']);
+        $this->assertDatabaseCount('booking_evidence', 1); $this->assertDatabaseCount('ledger_entries', 0);
+    }
+
     public function test_short_source_deposit_requires_owner_reason_and_preserves_actual_paid_amount():void
     {
         $link=ImportedProjectLink::sole();

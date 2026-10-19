@@ -118,6 +118,17 @@
       "accepted": false,
       "verification": "codex/integrate-42-43-fixes: fresh full 254 MariaDB tests / 2328 assertions; code matches approved bdc6c9e, coherent migration/services/approval caller/forms. PR into claude/quick-details-ui pending.",
       "review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed."
+     },
+     "taxonomy_followup": {
+      "api": "docs/CHARACTER-GROUP-API.md V2",
+      "branch": "codex/character-taxonomy-outfits",
+      "backend": "7000631 +64824dc",
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "note": "category/group/audience, expected_version y auditoría; importador idempotente conserva #88 8fe518b, nombres numéricos y cantidad0. Claude hace selectores/filtros; sin importación real.",
+      "verification": "7000631:127/25007 related MariaDB PASS5:20.786; final64824dc:110/858 parser/core/booking PASS4:51.504. Runs overlap; no distinct sum or full-suite current/remote CI/owner acceptance claim. PHP lint515 files PASS."
      }
     },
     {
@@ -151,6 +162,17 @@
       "scope": "Owner q28: ≥1 driver occupying an existing staff role across whole event; maximum-driver augmenting matching; per-vehicle assigned drivers; nullable frozen role/skill/driver snapshot; old reserved retries unchanged. No extra headcount or catalog fact changes.",
       "verification": "130 relevant test cases covered in MariaDB: original wide run129pass/1 fixture error corrected before source43607f1; final Core31/155 PASS45.395s covers corrected negative driver fixture; other99 suites passed. Exhaustive8192 small-graph/subset cases included; no new whole-suite/CI claim. Strict Composer, PHP syntax, diff pass.",
       "remaining": "Claude reviewed 43607f1 (approve, docs/HANDOFF claude/import-ui) and shows the driver rule + server reason in ConfirmCapacity, including imported events (b6bcc71). Merge, owner driver skills on real staff and acceptance pending."
+     },
+     "generic_wardrobe_followup": {
+      "api": "docs/OUTFIT-01-GENERIC-UNITS-API.md",
+      "backend": "7000631",
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "note": "Cabeza/unidad física genérica cumple vestuario vigente; elección operativa opcional en manual/pagado/importado; matching y snapshot v2 congelado para staff. Sin crear cabezas por nombre de vestuario.",
+      "verification": "127/25007 relacionados PASS; incluye dos procesos compitiendo por una cabeza, fija+genérica A/B,0/null, replay y lectura real del staff tras renombre.",
+      "remaining": "Claude: selectores; revisión/CI/main/aceptación pendientes. Corrección posterior a confirmación no implementada."
      }
     },
     {
@@ -654,37 +676,58 @@
      "backend": "a6409ed",
      "ui": "claude/staff-wiring (#85)",
      "reviewed": true,
-     "merged": false,
+     "merged": true,
      "accepted": false,
-     "note": "Alcance de César 2026-10-18: sin disponibilidad ni aceptar/rechazar. Ve sus fiestas confirmadas de la semana; César copia, rota o apaga el enlace.",
-     "blocker": "#85 protegido mientras César revisa. Lectura de instrucciones publicada e implementada en ead6e67, pendiente revisión/CI y formulario de Claude. Sin activación.",
+     "note": "Alcance de César 2026-10-18: sin disponibilidad ni aceptar/rechazar. Ve sus fiestas confirmadas de la semana; César copia, rota o apaga el enlace. Base #85 fusionada en bd54aa4; no implica aceptación/activación del dueño.",
+     "blocker": "Follow-ups e instrucciones aprobados por Claude, UI en #87 a15a292; conservar pendiente de fusión/revisión de César.",
      "follow_up": {
       "branch": "codex/responsibility-c1",
       "source": "5415421",
-      "reviewed": false,
+      "reviewed": true,
       "merged": false,
       "accepted": false,
-      "note": "Encima de #85 sin cambiar claude/*: reserva vigente, CDT/CST por hora, sesión UTC168h, privacidad de apellido tab/NBSP; lectura versionada de instrucciones GET /admin/api/events/{event}/staff-instructions, contacto solo del dueño y no-store. Permite bring=[] explícito. Base STAFF aprobada; lectura y follow-ups pendientes de revisión.",
+      "note": "Encima de #85 sin cambiar claude/*: reserva vigente, CDT/CST por hora, sesión UTC168h, privacidad de apellido tab/NBSP; lectura versionada de instrucciones GET /admin/api/events/{event}/staff-instructions, contacto solo del dueño y no-store. Permite bring=[] explícito. Base STAFF aprobada; lectura y follow-ups pendientes de revisión. Aprobados por Claude; formulario/paginación en #87 a15a292.",
       "verification": "Final5415421:39 tests/336 assertions PASS1:42.872,107MB,PHP8.3.35/MariaDB11.8. Base ead6e67 disjoint127/997 +89/890 PASS. Previous full726/30229 belongs to b894579; no new full/CI/browser/main/owner acceptance claimed."
      }
     },
     {
-     "name": "Propina con tarjeta (TIP-01)",
-     "weight": 2,
+     "name": "Propina con tarjeta: núcleo manual (TIP-01 A)",
+     "weight": 1,
      "agent": "Codex+Claude",
      "design": "docs/tickets/TIP-01.md + preview /dev/portal/tip bfacff5",
+     "backend": "f336b32 (núcleo A; no MAIL/reporte agregado/refund/reparto)",
+     "ui": false,
+     "reviewed": false,
+     "merged": false,
+     "accepted": false,
+     "blocker": "Revisión de Claude y CI remoto pendientes; faltan conector de gracias, reporte agregado, refund y regla de reparto. Flags apagados.",
+     "contract": {
+      "document": "docs/TIP-01-API.md",
+      "implemented": true,
+      "reviewed": true,
+      "note": "Contrato previo f6b6adf +83c7eb3 +d1f90f6; núcleo A implementado en ce1d493, endurecido af27136/f336b32. Aprobación previa de API no es aprobación del código."
+     },
+     "core_a": {
+      "source": "f336b32",
+      "branch": "codex/tip-01-backend",
+      "scope": "Grants/sesión pública aislada, lectura, checkout Stripe test, recibo firmado y lectura de dueño; C1 y bloqueo importado, sin ledger de reservas.",
+      "verification": "Frozen app/tests f336b32:774 tests/30672 assertions PASS29:23.762,157MB,PHP8.3.35/MariaDB11.8; build, strict Composer and PHP lint pass. Earlier46/408 focused pass. GitHub checks API Forbidden; no remote CI/visual/Hostinger claim. New category/audience/generic-outfit amendment not part of this result.",
+      "reviewed": false,
+      "merged": false,
+      "accepted": false
+     }
+    },
+    {
+     "name": "Propina: correo de gracias, reporte agregado y devoluciones",
+     "weight": 1,
+     "agent": "Codex+Claude",
      "backend": null,
      "ui": false,
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "blocker": "API de Codex. Sin cobros reales hasta activación de César; reparto entre el staff pendiente de su regla.",
-     "contract": {
-      "document": "docs/TIP-01-API.md",
-      "implemented": false,
-      "reviewed": true,
-      "note": "API3a44108 approved by Claude; required responsible_system=crm gate added to manual/mail issuance. No TIP backend/checkout/delivery yet; docs0 implementation credit."
-     }
+     "design": "docs/TIP-01-API.md",
+     "blocker": "Núcleo A no entrega IssueTipGrantForMail/materialización, REPORT agregado ni acción de refund. STAFFPAY separado; sin envíos, cobros o reparto real."
     },
     {
      "name": "SMS (Twilio)",
@@ -769,7 +812,19 @@
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "design": "docs/plans/PHASE-7.md (CHANGE-A desglosado)"
+     "design": "docs/plans/PHASE-7.md (CHANGE-A desglosado)",
+     "contract": {
+      "document": "docs/CHANGE-A-API.md",
+      "implemented": false,
+      "reviewed": false,
+      "note": "Propuesta A1–A3 sin acciones ejecutables. César: conservar precio acordado del mismo paquete; cargo de cambio manual/caso por caso, sin agregar automáticamente. Resolver con Claude A2 check/hold. A6 requiere outcome separado.",
+      "owner_price_policy": {
+       "same_package": "preserve_agreed_price",
+       "change_fee": "explicit_manual_case_by_case",
+       "approved_at": "2026-10-19",
+       "implemented": false
+      }
+     }
     },
     {
      "name": "Correo «Un año después» (ANNIV-01)",
@@ -809,7 +864,13 @@
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "design": "docs/tickets/IMPORT-HISTORY.md + docs/plans/PHASE-8.md"
+     "design": "docs/tickets/IMPORT-HISTORY.md + docs/plans/PHASE-8.md + docs/IMPORT-HISTORY-API.md (propuesta, no backend)",
+     "contract": {
+      "document": "docs/IMPORT-HISTORY-API.md",
+      "implemented": false,
+      "reviewed": false,
+      "note": "Perfil CSV separado propuesto, archivo cifrado, dedupe explícito, historial inmutable y cero efectos de dinero/capacidad/correos; implementación después de C2/C3. Cero crédito de implementación."
+     }
     },
     {
      "name": "Capacitación y paso definitivo",
@@ -825,11 +886,25 @@
       "api": "docs/RESPONSIBLE-SYSTEM-API.md",
       "branch": "codex/responsibility-c1",
       "backend": "5415421",
-      "reviewed": false,
+      "reviewed": true,
       "merged": false,
       "accepted": false,
-      "scope": "Enum y backfill auditado; importaciones HoneyBook; bloqueos de MAIL, enlaces/cobros, Zelle y preparación de cotización; recibos autenticados tardíos conservados y conciliación financiera explícita. No transferencia ni puente financiero C2/C3;240min sin aprobar.",
-      "verification": "Final5415421 related39/336 PASS; base ead6e67 disjoint216/1887 PASS. Signed-webhook race first red2/2 then green; verified paid state and provider ID preserved. No whole transfer/import/provider activation or main/owner acceptance."
+      "scope": "Enum y backfill auditado; importaciones HoneyBook; bloqueos de MAIL, enlaces/cobros, Zelle y preparación de cotización; recibos autenticados tardíos conservados y conciliación financiera explícita. No transferencia ni puente financiero C2/C3;240min aprobados por César para antigüedad máxima de revisión antes del traspaso; ejecución C3 pendiente.",
+      "verification": "Final5415421 related39/336 PASS; base ead6e67 disjoint216/1887 PASS. Signed-webhook race first red2/2 then green; verified paid state and provider ID preserved. No whole transfer/import/provider activation or main/owner acceptance.",
+      "note": "Aprobado por Claude, UI y fixture SQLite corregida en #87 a15a292; no modificar #87 mientras revisa César."
+     },
+     "c2_c3_design": {
+      "document": "docs/RESPONSIBLE-SYSTEM-C2-C3-DETAILS.md",
+      "implemented": false,
+      "reviewed": false,
+      "note": "Diseño detallado, cero implementación. César aprobó240min/4h de antigüedad máxima de revisión real de pagos antes del traspaso. No es sincronización automática; C3/activación pendientes.",
+      "freshness_policy": {
+       "max_age_minutes": 240,
+       "approved_by": "César",
+       "approved_at": "2026-10-19",
+       "scope": "Antigüedad máxima de revisión real de pagos al autorizar el traspaso; no polling periódico.",
+       "implemented": false
+      }
      }
     }
    ]

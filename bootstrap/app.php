@@ -29,7 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 $response->headers->set('Pragma', 'no-cache');
                 $response->headers->set('Referrer-Policy', 'no-referrer');
                 $response->headers->set('X-Content-Type-Options', 'nosniff');
-                if (request()->is('staff', 'staff/*')) $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
+                if (request()->is('staff', 'staff/*', 'portal/tip', 'portal/tip/*', 'portal/api/tip', 'portal/api/tip/*')) $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
             }
             return $response;
         });

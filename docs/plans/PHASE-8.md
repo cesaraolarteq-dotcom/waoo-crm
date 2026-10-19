@@ -13,6 +13,10 @@ So, for the parties already booked in HoneyBook:
 
 **For Codex (backend):** a per-event `responsible_system` (`honeybook` | `crm`, default `crm` for CRM-born events, `honeybook` for imported ones), audited; MAIL planning, portal payment links and TIP refuse events with `honeybook`; an owner action "Pasar al CRM" per cohort (all imported events at once, with a preview of what will be planned) requiring a fresh reconciliation; reverse action allowed only before any CRM message was sent. Re-sync of imported events = IMPORT-01 update path with owner-reviewed diffs (payments, date/time, package, status).
 
+## Owner decision 2026-10-19 — reconciliation freshness
+
+César approved a maximum **4 hours (240 minutes)** between the last actual owner-reviewed source payments and authorizing the whole-cohort transfer. If older, review the payments again before switching. A preview reload or old-file re-upload is not a new review. This controls readiness for the switch; it does not configure automatic HoneyBook synchronization every 4 hours. Implementation/enforcement belongs to C3 and remains pending; this policy choice authorizes no real transfer or sends.
+
 ## Steps to the switch (checklist)
 1. **History archive** — IMPORT-HISTORY (262 clients, 242 past parties): dry run → owner OK → import. Needed by ANNIV-01.
 2. **Documents** — for every future party: signed contract PDF and invoice/receipts from HoneyBook (Print → Save as PDF; no bulk export), attached as originals, never re-signed. Past parties: only what César wants to keep.

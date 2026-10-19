@@ -14,7 +14,7 @@ class ProcessStripeWebhook implements ShouldQueue
     public function backoff(): array { return [10,30,120,300]; }
     public function handle(StripeReceiptProcessor $processor): void
     {
-        try { $processor->execute($this->receiptId); }
+        try { app(\App\Services\Finance\StripeReceiptRouter::class)->execute($this->receiptId, $processor); }
         catch (\Throwable $e) {
             WebhookReceipt::whereKey($this->receiptId)->update(['last_error' => 'processing_retry_required', 'updated_at' => now()]);
             throw $e;
