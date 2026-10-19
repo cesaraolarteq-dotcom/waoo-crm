@@ -1,3 +1,13 @@
+## 2026-10-19 — Codex — owner authorizes one-way HoneyBook migration, source unchanged
+
+Branch **codex/honeybook-readonly-migration**, on the C2/C3 A delivery stack. Read current main **b3cb088** (#89 taxonomy/wardrobe screens merged) and newest Claude HANDOFF **cfb6b1a**; no newer migration instructions found in those entries. No claim that C2/C3 A is integrated into main.
+
+**Owner instruction:** advance HoneyBook → CRM without modifying HoneyBook. Updated **docs/plans/HONEYBOOK-MIGRATION.md** with the working sequence, capability boundaries and explicit no-cutover rule. Operating imports retain `responsible_system=honeybook`; no CRM sends/charges/tips, no source automation/link/number changes. Keep retirement attestations false while HoneyBook remains active. Four-hour reconciliation is a later switch requirement, not an import prerequisite or automatic polling.
+
+**Request for Claude:** supply the read-only extraction/profile/date and aggregate coverage, exact intended destination/environment, reviewed code SHA, available original documents and next backend task. Keep actual files outside Git/logs/chat. Existing fixed24 intake handles future parties; confirmed known parties use the separately reviewed C2 money-only refresh. History remains an API proposal, not a working importer. General invoices/archive documents are not supported by C3 A signed-original intake. Do not force unsupported records into operating events or assume resource reservations from successful row commits. Inventory old/missing/ambiguous rows explicitly; do not reuse October17 totals as current truth.
+
+**Verification:** documentation-only change, checked relative contract links and git diff whitespace. No application changes or new test-run claim. No real file/connector/source account read, upload, import, deployment, send, charge or HoneyBook modification. Exact destination and incoming Claude instructions remain to be established before real execution; no user secrets requested.
+
 ## 2026-10-19 — Codex — C3 A private evidence/readiness delivered; transfer remains unavailable
 
 Branch **codex/cutover-evidence-readiness**, stacked on C2 **b3e3245**. Contracts **dfdc2a2** and scope-completeness amendment **7631022** pushed before their implementations. Frozen application/tests **a1e2911**. Exact controller/service/payload contract: `docs/CUTOVER-EVIDENCE-API.md`; new migration430000. No claude/* rewrite/main merge.
