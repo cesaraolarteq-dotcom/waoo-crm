@@ -818,7 +818,13 @@
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "design": "docs/tickets/IMPORT-HISTORY.md + docs/plans/PHASE-8.md"
+     "design": "docs/tickets/IMPORT-HISTORY.md + docs/plans/PHASE-8.md + docs/IMPORT-HISTORY-API.md (propuesta, no backend)",
+     "contract": {
+      "document": "docs/IMPORT-HISTORY-API.md",
+      "implemented": false,
+      "reviewed": false,
+      "note": "Perfil CSV separado propuesto, archivo cifrado, dedupe explícito, historial inmutable y cero efectos de dinero/capacidad/correos; implementación después de C2/C3. Cero crédito de implementación."
+     }
     },
     {
      "name": "Capacitación y paso definitivo",
