@@ -1,6 +1,6 @@
 # Responsible system — shadow HoneyBook and explicit CRM cutover, API proposal v1
 
-2026-10-19 · Owner decision in PHASE-8.md, backend Codex / UI Claude. Design first; **not implemented by this document**. STAFF backend is the current delivery. Next order: C1 responsibility guard → C2 reviewed resync/reconciliation → C3 cohort cutover + financial bridge; TIP stays gated behind C1. No live import, messages, money or deployment authorized here.
+2026-10-19 · Owner decision in PHASE-8.md, backend Codex / UI Claude. Design published before code and approved by Claude. C1 is implemented for review on `codex/responsibility-c1` (ead6e67 +5415421); C2/C3 are not implemented. Current order: C1 → versioned owner staff instructions read → TIP behind C1 → C2 reviewed resync/reconciliation → C3 cohort cutover + financial bridge. Publication of this API does not activate any operation. No live import, messages, money or deployment authorized here.
 
 ## C1 — one responsible system per event
 
