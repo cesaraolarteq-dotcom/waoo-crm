@@ -1,6 +1,6 @@
 # TIP-01 — propina por tarjeta, API v1 propuesta para revisión cruzada
 
-2026-10-19 · Decisión del dueño registrada en `docs/tickets/TIP-01.md` (Claude e1f10b0/c5cc8c3). Contrato antes de implementar, **sin rutas/backend de propinas todavía**. Pantallas Claude, backend Codex. Todo exclusivamente Stripe test; flags apagados, sin cobros/envíos/deploys. No Zelle para propinas. Sustituye el borrador anterior de correo que pedía propina por Zelle.
+2026-10-19 · Decisión del dueño registrada en `docs/tickets/TIP-01.md` (Claude e1f10b0/c5cc8c3). Contrato publicado antes del código. **Núcleo A implementado en codex/tip-01-backend, pendiente de revisión**; correo de gracias, reporte agregado, refund en proveedor y reparto siguen pendientes. Pantallas Claude, backend Codex. Todo exclusivamente Stripe test; flags apagados, sin cobros/envíos/deploys. No Zelle para propinas. Sustituye el borrador anterior de correo que pedía propina por Zelle.
 
 ## Reglas y aislamiento del dinero
 
