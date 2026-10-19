@@ -933,7 +933,9 @@
       "accepted": false,
       "scope": "Revisión y actualización explícita de pagos de fiestas HoneyBook confirmadas/pasadas conocidas; historial inmutable y capacidad original intactos. Sin cambio de sistema ni recibos bancarios ficticios.",
       "verification": "Final PHP source be24d10:59 tests/458 assertions PASS,2:32.406,107MB,PHP8.3.35/MariaDB11.8. Two-owner race, old RR retry, audit rollback and real concurrent source-head read; PHP lint/Composer/diff pass. Earlier wide140 had one new CSRF fixture failure, corrected and verified in final59. No full-suite/remote-CI/browser/live claim.",
-      "note": "C2 es una entrega parcial: C3, puente financiero, documentos/conciliación y traspaso del grupo siguen pendientes. No se eleva el porcentaje de todo el corte por esta entrega."
+      "note": "C2 es una entrega parcial: C3, puente financiero, documentos/conciliación y traspaso del grupo siguen pendientes. No se eleva el porcentaje de todo el corte por esta entrega.",
+      "backend_reviewed": true,
+      "backend_review_evidence": "Claude4b1c967 + owner-relayed approval,2026-10-19. UI#91 reviewed separately; R1 pending at0c7c9c1. No main merge/activation inferred."
      },
      "cutover_evidence_c3_a": {
       "api": "docs/CUTOVER-EVIDENCE-API.md",
@@ -945,7 +947,21 @@
       "accepted": false,
       "scope": "Original PDF cifrado, revisión privada versionada, cobertura completa del origen y snapshot inmutable del grupo; vencimiento por revisión real más antigua+240min. Sin puente financiero, traspaso, cobros ni envíos.",
       "verification": "Frozen PHP a1e2911:96 tests/720 assertions PASS,3:56.453,109MB,PHP8.3.35/MariaDB11.8. Carreras reales de revisión/preparación/nuevo miembro, C2/TIP/UI existentes, privacidad/integridad/rollback y rutas reales. PHP lint/Composer/diff pass. Sin batería completa/CI remoto/browser/Hostinger/SQLite.",
-      "note": "readiness.ready y transfer_available siguen false. Sólo preparación; C3 B financiero y activación pendientes. Fuente sintética, no importación real."
+      "note": "readiness.ready y transfer_available siguen false. Sólo preparación; C3 B financiero y activación pendientes. Fuente sintética, no importación real.",
+      "backend_reviewed": true,
+      "backend_review_evidence": "Claude4b1c967 + owner-relayed approval,2026-10-19. UI#91 reviewed separately; R1 pending at0c7c9c1. No main merge/activation inferred."
+     },
+     "opening_preparation_c3_b1": {
+      "api": "docs/CUTOVER-OPENING-API.md",
+      "branch": "codex/cutover-financial-bridge",
+      "backend": "0e453d5",
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "scope": "Aperturas de origen cifradas/inmutables para el grupo completo; total/gross/refunds/net/saldo preservados, versión real y0 venta/caja CRM nueva. Solo preparación, sin autoridad efectiva ni traspaso.",
+      "verification": "107 tests/632 assertions PASS,3:47.122,97MB,PHP8.3.35/MariaDB11.8; finales PHP0e453d5. Carreras reales, integridad, vencimiento, rollback, reportes/guardas y regresión C2/C3/importación. Lint/Composer/diff pass; no suite completa/CI remoto/browser.",
+      "note": "Subentrega B1: faltan asignación efectiva de recibos, adaptadores Finance/MAIL/TIP/portal/reportes y activación atómica. Raíz backend sigue null; sin crédito al corte completo."
      }
     }
    ]
