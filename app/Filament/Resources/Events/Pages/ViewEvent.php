@@ -241,6 +241,8 @@ class ViewEvent extends Page
             'status' => Labels::label(Labels::EVENT_STATUS, $e->status), 'status_color' => Labels::EVENT_STATUS_COLOR[$e->status] ?? 'gray',
             'finance' => FinanceGate::enabled() ? app(FinanceSummary::class)->forEvent($e) : null,
             'contract' => $this->contractLabel($e),
+            // RESPONSIBLE-SYSTEM C1 (owner decision 2026-10-19): shown only once Codex's column exists; never inferred.
+            'responsible' => match ($e->getAttribute('responsible_system')) { 'honeybook' => 'HoneyBook cobra y avisa', 'crm' => 'CRM cobra y avisa', default => null },
         ];
     }
 }
