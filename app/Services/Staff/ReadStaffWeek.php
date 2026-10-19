@@ -20,13 +20,14 @@ final class ReadStaffWeek
                     ->whereColumn('resource_reservations.starts_at','events.starts_at')->whereColumn('resource_reservations.ends_at','events.ends_at'))
                 ->orderBy('starts_at')->orderBy('id')->get();
             $jobs=$events->map(fn($e)=>$this->job($e,$person,$staff->locale,$now))->filter()->values()->all();
-            return ['lang'=>$staff->locale,'preview'=>false,'staff'=>['display_name'=>explode(' ',trim($person->name))[0]],
+            return ['lang'=>$staff->locale,'preview'=>false,'staff'=>['display_name'=>$this->firstName($person->name)],
                 'week'=>['starts_at'=>$start->utc()->toIso8601String(),'ends_at'=>$end->utc()->toIso8601String(),
                     'from'=>$this->label($start,$staff->locale,'ddd D MMM'),'to'=>$this->label($end->subDay(),$staff->locale,'ddd D MMM')],
                 'updated_at'=>$this->label($now,$staff->locale,'ddd D MMM, h:mm a'),'generated_at'=>$now->utc()->toIso8601String(),
                 'lang_url'=>['es'=>url('/staff?lang=es'),'en'=>url('/staff?lang=en')],'jobs'=>$jobs];
         },3);
     }
+    private function firstName(string $name): string { return preg_split('/[\s\p{Z}]+/u',$name,-1,PREG_SPLIT_NO_EMPTY)[0]??''; }
     private function label(CarbonImmutable $at,string $lang,string $format): string { return $at->locale($lang)->isoFormat($format); }
     private function job(Event $event,Resource $person,string $lang,CarbonImmutable $now): ?array
     {
@@ -59,7 +60,7 @@ final class ReadStaffWeek
             'role'=>$role,'character'=>$character?->name,'outfit_version'=>$costume?->outfit,
             'is_driver'=>$assigned!==null && in_array($person->id,$drivers,true),
             'team'=>$resources->filter(fn($r)=>$r->kind==='staff' && $r->id!==$person->id && ($snapshot===[] || in_array($r->id,$actualStaffIds,true)))->map(fn($r)=>[
-                'first_name'=>explode(' ',trim($r->name))[0],'drives'=>in_array($r->id,$drivers,true)])->values()->all(),
+                'first_name'=>$this->firstName($r->name),'drives'=>in_array($r->id,$drivers,true)])->values()->all(),
             'bring'=>$payload['bring']??[],'instructions'=>$payload['instructions']??null,
             'day_contact'=>$starts->isSameDay($now) && !empty($payload['contact_name']) && !empty($payload['contact_phone'])
                 ?['name'=>$payload['contact_name'],'phone'=>$payload['contact_phone']]:null];

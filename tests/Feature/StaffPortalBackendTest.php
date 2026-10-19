@@ -79,6 +79,8 @@ class StaffPortalBackendTest extends TestCase
     }
     public function test_real_week_uses_confirmed_snapshot_and_never_serializes_private_fields(): void
     {
+        $this->person->forceFill(['name'=>"Lucia\tPRIVATE_LASTNAME"])->save();
+        $this->teammate->forceFill(['name'=>"Carlos\u{00a0}PRIVATE_TEAM_LASTNAME"])->save();
         $cookie=$this->enter($this->issue());
         $json=$this->week($cookie)->assertOk()->assertHeader('Cache-Control','no-store, private')->assertHeader('X-Robots-Tag','noindex, nofollow')
             ->assertJsonPath('preview',false)->assertJsonPath('jobs.0.outfit_version','0')->assertJsonPath('jobs.0.is_driver',true)
