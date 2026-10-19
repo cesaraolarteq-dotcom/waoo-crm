@@ -46,6 +46,7 @@ final class ProcessTipStripeReceipt {
                 'gross_cents'=>$locked->amount_cents,'currency'=>'USD','processing_fee_cents'=>null,'received_at'=>CarbonImmutable::createFromTimestampUTC($c['created']),'webhook_receipt_id'=>$r->id]);
                 Audit::recordSystem('tip.received',$tip,[],['event_id'=>$locked->event_id,'tip_checkout_intent_id'=>$locked->id,'gross_cents'=>$locked->amount_cents]);}
             if(!$current)TipGuard::reconcile($locked->id,$r->id,'late_tip_source_changed');
+            elseif(in_array($locked->status,['expired','failed','reconciliation_required'],true))TipGuard::reconcile($locked->id,$r->id,'late_tip_collection_changed');
             $locked->fill(['status'=>'paid','active_grant_id'=>null,'active_event_id'=>null,'provider_account'=>$s['_verified_account'],'provider_session_id'=>$s['id'],'provider_payment_id'=>$p['id'],'last_error'=>null])->save();
             $r->fill(['state'=>'processed','processed_at'=>now(),'last_error'=>null])->save();
         },3);

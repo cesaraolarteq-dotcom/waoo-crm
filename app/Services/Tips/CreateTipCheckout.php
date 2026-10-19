@@ -46,10 +46,15 @@ final class CreateTipCheckout {
         return $this->result($context,$i->id);
     }
     private function result(TipContext $context,string $id):array {
-        return DB::transaction(function()use($context,$id){[$g]=$context->authorize();$i=TipCheckoutIntent::whereKey($id)->where('tip_grant_id',$g->id)->lockForUpdate()->firstOrFail();
+        $result=DB::transaction(function()use($context,$id){[$g]=$context->authorize();$i=TipCheckoutIntent::whereKey($id)->where('tip_grant_id',$g->id)->lockForUpdate()->firstOrFail();
             RecordWriteRejected::unless(in_array($i->status,['open','paid'],true),409,'Este intento requiere revisión.');
+            if($i->status==='open'&&!$i->expires_at->isFuture()){
+                TipGuard::reconcile($i->id,null,'checkout_expiry_requires_verification');
+                \App\Jobs\ExpireTipCheckout::dispatch($i->id)->afterCommit();return ['_expiry_pending'=>true];
+            }
             $url=$i->status==='open'?$i->checkout_url:null;RecordWriteRejected::unless($url===null||TipProvider::url($url),409,'Este intento requiere revisión.');
             return ['intent_id'=>$i->id,'status'=>$i->status,'checkout_url'=>$url];},3);
+        RecordWriteRejected::unless(!isset($result['_expiry_pending']),409,'El cobro venció; estamos verificando su cierre. No abras otro intento.');return $result;
     }
     private function problem(TipCheckoutIntent $i,string $reason):void {
         DB::transaction(function()use($i,$reason){Event::whereKey($i->event_id)->lockForUpdate()->firstOrFail();$locked=TipCheckoutIntent::whereKey($i->id)->lockForUpdate()->firstOrFail();

@@ -75,7 +75,7 @@ class TipCoreTest extends TestCase {
         $this->assertDatabaseCount('mail_occurrences',0);$this->assertStringNotContainsString('PRIVATE_PROVIDER_NAME',Crypt::decryptString(WebhookReceipt::first()->encrypted_payload));
         $this->withCookie(TipContext::COOKIE,$cookie)->getJson('/portal/api/tip?checkout='.$i->id)->assertOk()->assertJsonPath('tip.state','paid');$this->withCookie(TipContext::COOKIE,$cookie)->getJson('/portal/api/tip')->assertJsonPath('tip.state','open');
         $this->checkout($cookie,key:$key)->assertCreated()->assertJsonPath('status','paid')->assertJsonPath('checkout_url',null);$this->checkout($cookie)->assertCreated();$this->assertDatabaseCount('tip_checkout_intents',2);
-        $this->actingAs($this->owner)->getJson('/admin/api/events/'.$this->event->id.'/tips')->assertOk()->assertJsonPath('gross_cents',1300)->assertJsonPath('net_staff_cents',1300);
+        $this->actingAs($this->owner)->getJson('/admin/api/events/'.$this->event->id.'/tips')->assertOk()->assertJsonPath('gross_cents',1300)->assertJsonPath('net_staff_cents',null)->assertJsonPath('pending_checkout_count',1);
         $this->expectException(\LogicException::class);$tip->update(['gross_cents'=>0]);
     }
     public function test_revoked_or_honeybook_links_cannot_charge_but_real_late_tip_survives_as_reconciliation():void {
@@ -168,6 +168,16 @@ class TipCoreTest extends TestCase {
         $this->postJson('https://localhost/portal/tip/session',['token'=>$token])->assertStatus(419)->assertHeader('Cache-Control','no-store, private');
         $csrf='synthetic-csrf-token';$r=$this->withSession(['_token'=>$csrf])->withHeader('X-CSRF-TOKEN',$csrf)->postJson('https://localhost/portal/tip/session',['token'=>$token])->assertOk();
         $cookie=$r->getCookie(TipContext::COOKIE);$this->assertTrue($cookie->isSecure());$this->assertTrue($cookie->isHttpOnly());$this->assertSame('lax',$cookie->getSameSite());$this->assertSame('/portal',$cookie->getPath());
+    }
+    public function test_owner_does_not_treat_pending_refund_or_collection_as_known_net_staff_money():void {
+        $cookie=$this->enter();$this->checkout($cookie)->assertCreated();$i=TipCheckoutIntent::sole();$this->stripe->paid($i->provider_session_id);$this->webhook($i)->assertOk();$this->process();
+        $this->webhook($i,'evt_tip_pending_refund',extra:['type'=>'charge.refunded'])->assertOk();$this->process('evt_tip_pending_refund');
+        $this->actingAs($this->owner)->getJson('/admin/api/events/'.$this->event->id.'/tips')->assertOk()->assertJsonPath('gross_cents',1300)->assertJsonPath('reconciliation_required',true)->assertJsonPath('reconciliation_count',1)->assertJsonPath('net_staff_cents',null);
+    }
+    public function test_locally_expired_checkout_is_not_revealed_and_slots_wait_for_verified_expiry():void {
+        $cookie=$this->enter();$key=(string)Str::uuid();$input=$this->input();$this->checkout($cookie,$input,$key)->assertCreated();$i=TipCheckoutIntent::sole();$this->travelTo($i->expires_at->addSecond());
+        $this->checkout($cookie,$input,$key)->assertConflict();$this->assertNotNull($i->fresh()->active_event_id);Queue::assertPushed(\App\Jobs\ExpireTipCheckout::class);
+        (new \App\Jobs\ExpireTipCheckout($i->id))->handle();$this->assertSame('expired',$i->fresh()->status);$this->assertNull($i->fresh()->active_event_id);$this->assertDatabaseHas('tip_reconciliations',['reason'=>'checkout_expiry_requires_verification','status'=>'resolved']);$this->checkout($cookie,$input)->assertCreated();
     }
     protected function tearDown():void {if($this->app)$this->app->detectEnvironment(fn()=>'testing');parent::tearDown();}
 }
