@@ -17,9 +17,11 @@ final class OpeningAgreementFacts
         $evidence = BookingEvidence::where('event_id', $m['event']->id)->where('method', 'honeybook_import')
             ->where('imported_revision_id', $capacityRevision)->sharedLock()->firstOrFail();
         $operational = OperationalReview::where('event_id', $m['event']->id)->sharedLock()->firstOrFail();
-        $money = OpeningBalance::calculate(['original_total_cents' => $view['source']['total_cents'],
-            'source_gross_received_cents' => $view['source']['gross_received_cents'], 'source_refund_cents' => $view['source']['refund_cents'],
-            'source_net_received_cents' => $view['source']['net_paid_cents']]);
+        try {
+            $money = OpeningBalance::calculate(['original_total_cents' => $view['source']['total_cents'],
+                'source_gross_received_cents' => $view['source']['gross_received_cents'], 'source_refund_cents' => $view['source']['refund_cents'],
+                'source_net_received_cents' => $view['source']['net_paid_cents']]);
+        } catch (\InvalidArgumentException) { throw new RecordWriteRejected(409, 'Los importes exceden el alcance de esta preparación. Requieren revisión técnica.'); }
         return ['schema_version' => 1, 'origin' => 'honeybook_opening', 'authority' => 'preparation_only', 'effective_at' => null,
             'event_id' => $m['event']->id, 'event_version' => $m['event']->version,
             'customer_id' => $m['link']->customer_id, 'customer_version' => $view['source']['customer_version'],

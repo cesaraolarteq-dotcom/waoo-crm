@@ -166,14 +166,14 @@ class CutoverOpeningTest extends TestCase
     }
     public function test_accepted_source_difference_is_bound_without_inventing_a_card_fee(): void
     {
-        $link = $this->member(source: ['total' => '123.60', 'balance' => '63.60'],
+        $link = $this->member(source: ['total' => '123.60', 'amount_paid' => '70.00', 'balance' => '53.60', 'payments' => '2026-10-01|70.00|Zelle'],
             commit: ['source_difference_accepted' => true, 'source_difference_note' => 'PRIVATE_ACCEPTED_DIFFERENCE fixture source amount accepted.']);
         $r = $this->reconciliation(); $result = $this->prepare($r);
         $f = CutoverOpeningAgreement::sole()->payload['facts'];
         $revision = \App\Models\ImportedProjectRevision::findOrFail($link->current_revision_id);
         $this->assertSame(12360, $f['original_total_cents']);
         $this->assertSame(\App\Services\Finance\MutationKey::hash($revision->mapping['source_difference']), $f['source_difference_sha256']);
-        $this->assertSame(6360, $this->read($result['opening_set_id'])['items'][0]['balance_cents']);
+        $this->assertSame(5360, $this->read($result['opening_set_id'])['items'][0]['balance_cents']);
     }
     public function test_closed_input_replay_authorization_and_encrypted_membership_are_enforced(): void
     {
@@ -221,5 +221,15 @@ class CutoverOpeningTest extends TestCase
         catch (\RuntimeException $e) { $this->assertStringContainsString('forward migration', $e->getMessage()); }
         DB::table('cutover_opening_agreements')->delete(); DB::table('cutover_opening_sets')->delete();
         $migration->down(); $migration->up(); $this->assertTrue(Schema::hasTable('cutover_opening_agreements'));
+    }
+    public function test_source_amount_outside_declared_technical_bound_is_safe_and_not_repriced(): void
+    {
+        $this->member(source: ['package_total' => '1999999975.00', 'discount' => '0.00', 'total' => '2000000000.00',
+            'amount_paid' => '1000000000.00', 'balance' => '1000000000.00', 'payments' => '2026-10-01|1000000000.00|Zelle']);
+        $r = $this->reconciliation();
+        $this->postJson('/admin/api/cutover/openings', $this->input($r), ['Idempotency-Key' => (string)Str::uuid()])->assertStatus(409);
+        $this->assertDatabaseCount('cutover_opening_sets', 0);
+        $this->assertDatabaseCount('cutover_opening_agreements', 0);
+        $this->assertSame(200000000000, \App\Models\ImportedProjectRevision::sole()->normalized['total_cents']);
     }
 }
