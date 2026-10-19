@@ -24,6 +24,7 @@ return [
     // Empty until the owner approves versioned, outcome-specific ES/EN decision wording.
     'quote_acceptance_consent' => [],
     'sandbox_documents' => env('WAOO_SANDBOX_DOCUMENTS', false),
+    'sandbox_staff' => env('WAOO_SANDBOX_STAFF', false), // STAFF-01 v2 owner link actions; read by Codex's services too.
     'stripe_test_secret' => env('STRIPE_TEST_SECRET'),
     'stripe_test_webhook_secret' => env('STRIPE_TEST_WEBHOOK_SECRET'),
     'stripe_test_account' => env('STRIPE_TEST_ACCOUNT'),

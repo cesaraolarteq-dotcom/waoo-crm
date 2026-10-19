@@ -38,6 +38,16 @@ class StaffPortalPreviewTest extends TestCase
         $this->get('/dev/staff/vacia?lang=en')->assertSee('You have no parties assigned this week');
     }
 
+    public function test_costume_version_zero_is_still_shown(): void
+    {
+        // Codex review: a real outfit version "0" must not disappear (PHP treats "0" as false).
+        $html = view('staff.semana', ['vm' => ['lang' => 'es', 'preview' => true, 'lang_url' => ['es' => '#', 'en' => '#'], 'staff' => ['display_name' => 'X'],
+            'week' => ['from' => 'a', 'to' => 'b'], 'updated_at' => 'c', 'jobs' => [['date' => 'd', 'hours' => 'h', 'arrival' => 'r', 'setup_minutes' => 0,
+                'address' => 'x', 'maps' => 'https://maps.google.com/?q=x', 'parking' => null, 'access' => null, 'role' => 'Personaje', 'character' => 'Rumi',
+                'outfit_version' => '0', 'is_driver' => false, 'team' => [], 'bring' => [], 'instructions' => null, 'day_contact' => null]]]])->render();
+        $this->assertStringContainsString('Rumi (0)', $html);
+    }
+
     public function test_preview_is_closed_outside_local_and_testing(): void
     {
         $this->app['env'] = 'staging';

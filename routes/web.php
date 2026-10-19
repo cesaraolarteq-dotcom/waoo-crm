@@ -129,6 +129,4 @@ Route::post('/webhooks/stripe', \App\Http\Controllers\Webhooks\StripeWebhookCont
 Route::get('/dev/mail/{key?}', \App\Http\Controllers\MailPreviewController::class);
 // Design preview of the REPORT-A Monday owner email (sample data); 404 outside local/testing.
 Route::get('/dev/mail-owner-report', \App\Http\Controllers\OwnerReportPreviewController::class);
-// Design preview of the STAFF-01 read-only staff page (my week); 404 outside local/testing.
-Route::get('/dev/staff/{screen?}', \App\Http\Controllers\Staff\StaffPreviewController::class);
-Route::match(['get', 'post'], '/dev/portal/{step?}', \App\Http\Controllers\Portal\PortalPreviewController::class)->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+// Design preview of the STAFF-01 read-only staff page (my week) with fictitious data; 404 outside local/testing.
