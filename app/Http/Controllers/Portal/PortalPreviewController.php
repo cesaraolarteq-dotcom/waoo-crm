@@ -66,12 +66,14 @@ final class PortalPreviewController extends Controller
         $state = ['tip' => 'open', 'tip-thanks' => 'paid', 'tip-closed' => 'closed'][$step] ?? null;
         abort_unless($state !== null, 404);
         $es = $lang === 'es';
-        $options = array_map(fn ($p) => ['key' => 'pct_'.$p, 'percent' => $p, 'amount' => '$'.number_format(round(615 * $p / 100))], [5, 10, 15]);
+        // Same half-up whole-dollar rule as TIP-01-API: intdiv(T*p + 5000, 10000) * 100 cents.
+        $options = array_map(fn ($p) => ['key' => 'pct_'.$p, 'percent' => $p, 'amount_cents' => $c = intdiv(61500 * $p + 5000, 10000) * 100, 'amount' => '$'.number_format($c / 100)], [5, 10, 15]);
 
         return response()->view('portal.tip', ['vm' => [
             'lang' => $lang, 'test_mode' => true, 'preview' => true, 'first_name' => 'Ana',
             'lang_url' => ['es' => url("/dev/portal/{$step}?lang=es"), 'en' => url("/dev/portal/{$step}?lang=en")],
-            'tip' => ['state' => $state, 'when' => $es ? 'sábado 21 de noviembre' : 'Saturday, November 21', 'team' => 'Lucía, Carlos', 'total' => '$615', 'options' => $options],
+            'tip' => ['state' => $state, 'when' => $es ? 'sábado 21 de noviembre' : 'Saturday, November 21', 'team' => 'Lucía, Carlos', 'total' => '$615', 'options' => $options,
+                'financial_revision_id' => 1, 'snapshot_sha256' => str_repeat('0', 64)],
             'review_url' => config('waoo.mail_review_url'),
             'actions' => ['checkout' => url("/dev/portal/tip-thanks?lang={$lang}")],
         ]])->header('Cache-Control', 'no-store, private')->header('Referrer-Policy', 'no-referrer');

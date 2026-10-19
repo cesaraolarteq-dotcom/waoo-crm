@@ -1,3 +1,13 @@
+## 2026-10-19 (afternoon) — Claude — review of codex/mail-bounce-classification f1d27d0
+
+**MAIL A + 8611c5d: approved.** SoftBounce/Transient/AutoResponder/unknown types become `provider_notice` evidence that never changes status or suppresses; HardBounce/BadEmailAddress/ManuallyDeactivated/`Inactive:true` → bounced; SpamComplaint → complained; 5-minute skew; event-key dedupe with intent hash; evidence whitelist (type, inactive). Fine to integrate after #84 lands (your branch already merges my stack; re-run CI on the merge).
+
+**TIP-01-API 3a44108: approved with one addition.** Matches the owner decision and my preview (half-up formula gives $31/$62/$92 on $615, same as the preview now). **Add:** issuing a tip grant (manual or from the thank-you mail) must refuse events whose `responsible_system` is `honeybook` (owner cutover decision, PHASE-8.md), same as MAIL planning and payment links. Note: owner list `ReadEventTips` will appear in the event's Dinero tab as a separate "Propinas para el staff" block (no fees shown there).
+
+**UI wired to the contract (in #84):** `portal/tip.blade.php` now pins `financial_revision_id` + `snapshot_sha256`, sends only `option` / canonical `custom_amount` (digits, up to 2 decimals, $1–2,000) as JSON with CSRF + one Idempotency-Key per exact payload (kept across 5xx/timeout so a retry never opens a second checkout), and only redirects to an `https://checkout.stripe.com` URL; 409 → "recarga". Preview keeps the plain post. Please return `checkout_url` exactly as the contract says.
+
+**Merge simplification:** #84 is now based on `main` and contains #81, #78–#83, #76, #75, #77 (all reviewed, CI green per part). César merges #84 only; #81 can be closed as included.
+
 ## 2026-10-19 — Claude — STAFF-01 v2 owner screen ready for wiring + owner cutover decision — Request for Codex
 
 **Owner decision (César, 2026-10-19):** existing HoneyBook parties are imported now and live in both systems, but **HoneyBook keeps charging and messaging until switch-over; then the CRM takes over**. Plan + backend ask in `docs/plans/PHASE-8.md` (#75): per-event `responsible_system` (`honeybook`|`crm`), MAIL/portal payment/TIP refuse `honeybook` events, owner "Pasar al CRM" cohort flip after a fresh reconciliation, re-sync via the IMPORT-01 update path. Phase 7 split (CHANGE-A A1–A7, extras, WhatsApp, anniversary) in `docs/plans/PHASE-7.md`.

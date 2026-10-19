@@ -15,7 +15,8 @@ final class TipCopy
             'other' => 'Otro monto', 'other_hint' => 'Escribe el monto en dólares.', 'pay' => 'Dejar propina de :amount', 'pay_none' => 'Elige un monto',
             'card' => 'Pago seguro con tarjeta, Apple Pay o Google Pay.', 'optional' => 'La propina es opcional. ¡Gracias de todas formas!',
             'thanks_title' => '¡Gracias por tu propina!', 'thanks' => 'Le llega completa al equipo de tu fiesta. ¡Nos encantaría celebrar contigo otra vez!',
-            'review' => 'Dejar una reseña en Google', 'error_amount' => 'Escribe un monto entre $1 y $2,000.',
+            'review' => 'Dejar una reseña en Google', 'error_amount' => 'Escribe un monto entre $1 y $2,000 (por ejemplo 25 o 25.50).',
+            'error' => 'No se pudo abrir el pago. Inténtalo de nuevo en un momento.', 'stale' => 'Esta página cambió. Recárgala para ver los montos actualizados.',
             'closed_title' => 'Este enlace ya no está activo', 'closed' => 'Si quieres dejar una propina, escríbenos y te mandamos uno nuevo.',
         ],
         'en' => [
@@ -26,7 +27,8 @@ final class TipCopy
             'other' => 'Other amount', 'other_hint' => 'Enter the amount in dollars.', 'pay' => 'Leave a :amount tip', 'pay_none' => 'Choose an amount',
             'card' => 'Secure payment by card, Apple Pay or Google Pay.', 'optional' => 'Tips are optional. Thank you either way!',
             'thanks_title' => 'Thank you for your tip!', 'thanks' => "It goes in full to your party's team. We'd love to celebrate with you again!",
-            'review' => 'Leave a Google review', 'error_amount' => 'Enter an amount between $1 and $2,000.',
+            'review' => 'Leave a Google review', 'error_amount' => 'Enter an amount between $1 and $2,000 (for example 25 or 25.50).',
+            'error' => 'The payment could not be opened. Please try again in a moment.', 'stale' => 'This page changed. Reload it to see the updated amounts.',
             'closed_title' => 'This link is no longer active', 'closed' => 'If you would like to leave a tip, message us and we will send you a new one.',
         ],
     ];
