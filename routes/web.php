@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\TwoFactorEnrollmentController;
 use App\Http\Middleware\RequireOwnerAdmin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+require __DIR__.'/staff.php';
 Route::redirect('/', '/admin')->name('home');
 // GET /login, /two-factor-challenge and /user/confirm-password are Fortify views (FortifyServiceProvider).
 Route::middleware(['auth', 'password.confirm'])->get('/seguridad/dos-pasos', TwoFactorEnrollmentController::class)->name('security.two-factor');

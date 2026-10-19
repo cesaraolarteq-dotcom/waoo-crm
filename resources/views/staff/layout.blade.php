@@ -14,6 +14,9 @@
 <link rel="stylesheet" href="{{ asset('css/waoo-staff.css') }}">
 </head>
 <body class="portal staff">
+@if (! ($vm['preview'] ?? false))
+<script>if(location.hash){location.replace('/staff?exchange=1'+location.hash);}</script>
+@endif
 <header class="p-top">
   <img src="{{ asset('img/waoo-logo.png') }}" alt="Waoo Party" width="96" height="65">
   <nav class="p-lang" aria-label="Idioma / Language">

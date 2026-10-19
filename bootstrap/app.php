@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: ['webhooks/stripe']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->dontFlash(['token']);
         // Denials/validation/CSRF failures need the same privacy headers as successful portal responses.
         $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response) {
             if (\App\Http\Middleware\SensitiveApplicationResponses::appliesTo(request())) {
@@ -28,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 $response->headers->set('Pragma', 'no-cache');
                 $response->headers->set('Referrer-Policy', 'no-referrer');
                 $response->headers->set('X-Content-Type-Options', 'nosniff');
+                if (request()->is('staff', 'staff/*')) $response->headers->set('X-Robots-Tag', 'noindex, nofollow');
             }
             return $response;
         });

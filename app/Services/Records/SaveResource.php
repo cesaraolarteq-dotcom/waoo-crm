@@ -37,6 +37,7 @@ final class SaveResource
             $model->fill($data);
             if ($id && $version !== null) $model->version++;
             $model->save();
+            \App\Services\Staff\StaffGuard::disableResource($model);
             Audit::recordFor($actor, 'resources.' . ($id ? 'updated' : 'created'), $model, $before, $model->getAttributes());
             return $model->fresh();
         }, 3);

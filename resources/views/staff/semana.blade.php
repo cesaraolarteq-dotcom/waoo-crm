@@ -12,12 +12,12 @@
       <div><dt>{{ $t('party') }}</dt><dd>{{ $j['hours'] }}</dd></div>
       @if ($j['setup_minutes'])<div><dt>{{ $t('setup') }}</dt><dd>{{ $j['setup_minutes'] }} min</dd></div>@endif
       <div><dt>{{ $t('role') }}</dt><dd>{{ $j['role'] }}</dd></div>
-      @if ($j['character'])<div><dt>{{ $t('character') }}</dt><dd>{{ $j['character'] }}@if ($j['outfit_version']) ({{ $j['outfit_version'] }})@endif</dd></div>@endif
+      @if ($j['character'])<div><dt>{{ $t('character') }}</dt><dd>{{ $j['character'] }}@if (filled($j['outfit_version'])) ({{ $j['outfit_version'] }})@endif</dd></div>@endif
     </dl>
 
     <div class="s-block">
       <p class="s-line"><b>{{ $j['address'] }}</b></p>
-      <a class="p-btn" href="{{ $j['maps'] }}" target="_blank" rel="noopener noreferrer">{{ $t('maps') }}</a>
+      @if ($j['maps'])<a class="p-btn" href="{{ $j['maps'] }}" target="_blank" rel="noopener noreferrer">{{ $t('maps') }}</a>@endif
       @if ($j['parking'])<p class="p-hint"><b>{{ $t('parking') }}:</b> {{ $j['parking'] }}</p>@endif
       @if ($j['access'])<p class="p-hint"><b>{{ $t('access') }}:</b> {{ $j['access'] }}</p>@endif
     </div>
