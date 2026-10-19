@@ -1,5 +1,7 @@
 # OUTFIT-01 — optional costume version selection
 
+**2026-10-19 amendment:** see [OUTFIT-01-GENERIC-UNITS-API.md](OUTFIT-01-GENERIC-UNITS-API.md). Generic physical units can use a current character wardrobe option; units with a fixed outfit still require an exact match. Optional per-unit operational choices and frozen staff snapshots are defined there. This supersedes the V1 generic-unit exclusion below.
+
 Contract published before code. Source docs/tickets/OUTFIT-01.md; backend follows LEAD then ROUTE. Owner+2FA existing audited services, no price changes, provider calls, messages or automatic customer booking. Claude owns forms/admin displays/importer adaptation. Owner catalog data supplies actual names/quantities later; all tests fictional.
 
 - SaveCharacter / owner customers-style API `/admin/api/characters`: optional outfits=null|list≤20, trimmed nonempty strings1–60, distinct ignoring case; original case/text preserved. Existing update expected_version remains required; omitted outfits preserves current list. Removing/renaming an exact version referenced by any active costume unit409; inactive/generic units do not block. Version change and costume save serialize on the Character row. Case-only rename counts as rename if referenced; no historical rows rewritten.

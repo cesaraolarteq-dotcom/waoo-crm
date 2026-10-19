@@ -151,3 +151,10 @@ Separate tip_grants / tip_portal_sessions / tip_checkout_intents / tip_receipts 
 ## Optional character show grouping (410000)
 
 characters.group is nullable text (120), not a foreign key or availability requirement. SaveCharacter validates and audits it using the existing characters.version/expected_version protocol; missing key preserves, explicit blank/null clears, literal "0" survives. Catalog import reads the optional field, merges existing outfits and applies group changes in one versioned save; identical reruns do not write. Grouping select controls belongs to Claude; IDs, package eligibility and event snapshots remain unchanged. See CHARACTER-GROUP-API.
+
+
+## Character taxonomy and generic wardrobe selection (420000)
+
+V2 adds nullable category120 and audience girls|boys|all (default all), alongside group/show from410000. These are discovery metadata, not gender/availability restrictions or price changes. SaveCharacter and catalog import preserve missing fields, normalize explicit clears and update all metadata/outfits once under the existing version/audit protocol. Importer retains #88 head8fe518b: uncounted wardrobe names do not create heads; only explicit counts per version make fixed units. Existing excess imported inventory is not silently deleted.
+
+ConfirmCapacity/ConfirmPaidCapacity/ConfirmImportedCapacity accept optional costume_outfits[{resource_id,outfit,expected_character_version}] for selected generic units. Character locks precede physical unit locks, compatibility reads are current, and one global matching assigns heads without double use. Slot preference cannot be overridden. BookingEvidence.staff_assignment_snapshot adds costume_policy_version, normalized costume_choices and costume_assignments; linked staff slots freeze character/outfit. ReadStaffWeek v2 uses that evidence (null/"0" preserved), with legacy fallback only for old snapshots. No service/contract/finance rewrite or new unit is caused by operational wardrobe selection. Confirmed replay cannot edit it; post-confirmation corrections require a separate future action. See CHARACTER-GROUP-API V2 and OUTFIT-01-GENERIC-UNITS-API.
