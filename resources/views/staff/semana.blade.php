@@ -12,7 +12,7 @@
       <div><dt>{{ $t('party') }}</dt><dd>{{ $j['hours'] }}</dd></div>
       @if ($j['setup_minutes'])<div><dt>{{ $t('setup') }}</dt><dd>{{ $j['setup_minutes'] }} min</dd></div>@endif
       <div><dt>{{ $t('role') }}</dt><dd>{{ $j['role'] }}</dd></div>
-      @if ($j['character'])<div><dt>{{ $t('character') }}</dt><dd>{{ $j['character'] }}@if ($j['outfit_version']) ({{ $j['outfit_version'] }})@endif</dd></div>@endif
+      @if ($j['character'])<div><dt>{{ $t('character') }}</dt><dd>{{ $j['character'] }}@if (filled($j['outfit_version'])) ({{ $j['outfit_version'] }})@endif</dd></div>@endif
     </dl>
 
     <div class="s-block">
