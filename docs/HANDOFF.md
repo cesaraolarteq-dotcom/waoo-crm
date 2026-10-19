@@ -109,6 +109,20 @@ Newest first. Entry: date · author · branch · what changed · files · verifi
 - **Integration fix:** MailOutboxTest fixture performer gets `driver` (driver rule 43607f1 landed after this suite, same as Codex's own fixture updates).
 - **Tests (local SQLite):** MailScreensTest 6/52; Mail|Dashboard|EmailTemplates|ApprovedMail|OutboundMail pass (EventFileTest list page fails locally only for missing intl). CI pending.
 - Not done: approved copy, provider/DNS, allow-list, activation, other six adapters, provider ingestion. No email sent, no deployment.
+## 2026-10-17 (night) · Claude Code · `claude/staff-portal-preview` (#76) — STAFF-01 API reviewed; preview aligned
+
+- **Review of docs/STAFF-01-API.md (7596eaa): approve the shape**, with requests before implementation:
+  1. Define the `upcoming[]` invitation item explicitly (the preview uses: `id, version, status, deadline (Houston), instruction_revision, event{date, hours, arrival, area}, assignment{role, character, outfit_version}`); `area` = city + ZIP only until acceptance.
+  2. Add `locale` (es|en) to the staff identity so the portal and future SMS use the person's language.
+  3. **Business question for César (do not decide silently):** a 7-day maximum access grant means re-sending every staff link weekly. Proposal: the link stays ≤ 7 days, but the exchanged portal session can live longer (e.g. 30–60 days, rotated, revoked when the identity/resource is deactivated). Keep 7 days until he answers.
+  4. Pending invitations holding the resource exclusively: agreed; the owner UI will label them "Invitada (apartada hasta …)", never "confirmada".
+- **Preview aligned (no backend):** no team directory (job sheet shows only "Tú manejas / Maneja otra persona del equipo" from `assignment.is_driver`); availability as weekly time intervals per weekday + special days, unknown days shown "Sin decir" (never available); job sheet adds setup minutes and access; keys follow the contract. Tests StaffPortalPreviewTest 3/57; checked at 390 px.
+
+## 2026-10-17 · Claude Code · `claude/staff-portal-preview` — STAFF-01 staff phone portal (design preview)
+
+- **Preview only** (`/dev/staff/{inicio|trabajo|disponibilidad}?lang=es|en`, 404 outside local/testing, fictitious data, buttons disabled): Inicio = invitations (role, arrival, party length, ZIP area only — exact address after accepting —, answer-by date, "Sí, voy" / "No puedo" + optional reason) and accepted upcoming jobs; Trabajo = job sheet (date, arrival/setup/party times Houston, role, character + costume version, address + Maps + parking/access, team with who drives, what to bring, owner notes, contact of the day only on the day); Disponibilidad = weekly morning/afternoon/evening grid + days off, "not a commitment". **No money anywhere** (test asserts no `$` amount), no third-party assets except the Maps link, `no-referrer`, `no-store`. Bottom tabs, 44–60 px targets, safe-area insets.
+- Files: `App\Http\Controllers\Staff\StaffPreviewController` (view-model keys = what the real STAFF-01 read should return), `App\Support\StaffCopy` (ES/EN), `resources/views/staff/*`, `public/css/waoo-staff.css`, route, `tests/Feature/StaffPortalPreviewTest.php` (3/54 pass). Browser check at 390 px.
+- **For Codex (STAFF-01 API):** please shape the staff job read like this view-model (address/contact gated by acceptance and event day; role/character/outfit; team with driver flag; bring list; owner notes) and keep all money fields out of the staff projection.
 
 ## 2026-10-17 · Claude Code · `claude/integrate-main` — one integration of every Codex-approved delivery into main (Codex out of credits)
 

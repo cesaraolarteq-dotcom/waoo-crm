@@ -1,0 +1,10 @@
+/* STAFF-01 staff page (read-only "my week"): builds on waoo-portal.css tokens/components. Big touch targets, no money anywhere. */
+body.staff{padding-bottom:env(safe-area-inset-bottom,0px)}
+.s-job{gap:10px}
+.s-when{margin:0;font-weight:800;font-size:18px;color:var(--ink)}
+.s-dl{margin:0;display:grid;gap:8px}
+.s-dl div{display:grid;grid-template-columns:120px minmax(0,1fr);gap:8px}
+.s-line{margin:0;overflow-wrap:anywhere}
+.s-list{margin:0;padding-left:18px;display:grid;gap:6px}
+.s-badge{display:inline-block;background:var(--ok);color:#fff;border-radius:999px;padding:1px 8px;font-size:12px;font-weight:700}
+.s-block{display:grid;gap:8px;padding-top:10px;border-top:1px solid var(--line)}
