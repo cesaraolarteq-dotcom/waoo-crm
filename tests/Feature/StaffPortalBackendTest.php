@@ -189,6 +189,30 @@ class StaffPortalBackendTest extends TestCase
         $this->assertNotNull(StaffAccessGrant::find($a['grant']['id'])->revoked_at);
         config(['waoo.sandbox_staff'=>true]);auth()->logout();$this->week($cookie)->assertUnauthorized();
     }
+    public function test_arrival_uses_its_own_dst_offset_and_stale_reservation_times_are_hidden(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-01T05:00:00Z'));
+        DB::table('events')->where('id',$this->event->id)->update(['starts_at'=>'2026-11-01 07:10:00','ends_at'=>'2026-11-01 08:10:00','setup_minutes'=>30]);
+        $cookie=$this->enter($this->issue());
+        $this->week($cookie)->assertJsonCount(0,'jobs'); // Old resource interval is not an assignment at this new time.
+        DB::table('resource_reservations')->where('event_id',$this->event->id)->update(['starts_at'=>'2026-11-01 07:10:00','ends_at'=>'2026-11-01 08:10:00']);
+        $this->week($cookie)->assertJsonPath('jobs.0.arrival','1:40 a. m. CDT')->assertJsonPath('jobs.0.hours','1:10 a. m. CST – 2:10 a. m. CST');
+        $this->travelTo(CarbonImmutable::parse('2026-03-08T06:00:00Z'));
+        DB::table('events')->where('id',$this->event->id)->update(['starts_at'=>'2026-03-08 08:10:00','ends_at'=>'2026-03-08 09:10:00']);
+        DB::table('resource_reservations')->where('event_id',$this->event->id)->update(['starts_at'=>'2026-03-08 08:10:00','ends_at'=>'2026-03-08 09:10:00']);
+        $this->week($cookie)->assertJsonPath('jobs.0.arrival','1:40 a. m. CST')->assertJsonPath('jobs.0.hours','3:10 a. m. CDT – 4:10 a. m. CDT');
+    }
+    public function test_session_ceiling_is_168_hours_even_with_a_houston_php_timezone(): void
+    {
+        $issued=$this->issue();$zone=date_default_timezone_get();
+        try {
+            date_default_timezone_set('America/Chicago');
+            $this->travelTo(CarbonImmutable::parse('2026-10-30T15:00:00Z'));
+            $this->enter($issued);
+            $expiry=CarbonImmutable::parse(DB::table('staff_portal_sessions')->sole()->expires_at,'UTC');
+            $this->assertSame(604800,(int)CarbonImmutable::now('UTC')->diffInSeconds($expiry));
+        } finally { date_default_timezone_set($zone); }
+    }
     public function test_main_owner_screen_calls_real_services_and_does_not_reveal_a_replacement(): void
     {
         $page=\Livewire\Livewire::test(\App\Filament\Pages\StaffLinks::class)

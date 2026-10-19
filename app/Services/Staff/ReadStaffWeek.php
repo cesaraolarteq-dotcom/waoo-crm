@@ -16,7 +16,8 @@ final class ReadStaffWeek
             $now=CarbonImmutable::now('America/Chicago');
             $start=$now->startOfWeek(CarbonImmutable::MONDAY); $end=$start->addWeek();
             $events=Event::where('status','capacity_reserved')->where('starts_at','>=',$start->utc())->where('starts_at','<',$end->utc())
-                ->where('ends_at','>',$now->utc())->whereHas('reservations',fn($q)=>$q->where('resource_id',$person->id))
+                ->where('ends_at','>',$now->utc())->whereHas('reservations',fn($q)=>$q->where('resource_id',$person->id)
+                    ->whereColumn('resource_reservations.starts_at','events.starts_at')->whereColumn('resource_reservations.ends_at','events.ends_at'))
                 ->orderBy('starts_at')->orderBy('id')->get();
             $jobs=$events->map(fn($e)=>$this->job($e,$person,$staff->locale,$now))->filter()->values()->all();
             return ['lang'=>$staff->locale,'preview'=>false,'staff'=>['display_name'=>explode(' ',trim($person->name))[0]],
@@ -50,8 +51,8 @@ final class ReadStaffWeek
         $roles=['performer'=>['Intérprete','Performer'],'host'=>['Animación','Host'],'face_painter'=>['Pintacaritas','Face painter'],'driver'=>['Conductor','Driver']];
         $role=$roles[$skill][$lang==='es'?0:1]??($lang==='es'?'Personal':'Staff');
         return ['date'=>$this->label($starts,$lang,$lang==='es'?'dddd D [de] MMMM':'dddd, MMMM D'),
-            'hours'=>$this->label($starts,$lang,'h:mm a').' – '.$this->label($ends,$lang,'h:mm a').' '.$ends->format('T'),
-            'arrival'=>$event->setup_minutes!==null?$this->label($starts->subMinutes($event->setup_minutes),$lang,'h:mm a').' '.$starts->format('T'):$unknown,
+            'hours'=>$this->label($starts,$lang,'h:mm a').' '.$starts->format('T').' – '.$this->label($ends,$lang,'h:mm a').' '.$ends->format('T'),
+            'arrival'=>$event->setup_minutes!==null?$this->label($starts->subMinutes($event->setup_minutes),$lang,'h:mm a').' '.$starts->subMinutes($event->setup_minutes)->format('T'):$unknown,
             'setup_minutes'=>$event->setup_minutes,'address'=>$event->address??$unknown,
             'maps'=>$event->address?'https://maps.google.com/?q='.rawurlencode($event->address):null,
             'parking'=>$payload['parking']??null,'access'=>$payload['access']??null,
