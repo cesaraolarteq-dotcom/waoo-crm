@@ -10,6 +10,11 @@ Route::redirect('/', '/admin')->name('home');
 Route::middleware(['auth', 'password.confirm'])->get('/seguridad/dos-pasos', TwoFactorEnrollmentController::class)->name('security.two-factor');
 Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'));
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->prefix('admin/api')->group(function () {
+    Route::get('/mail/settings', [\App\Http\Controllers\Admin\MailController::class, 'settings']);
+    Route::get('/messages/warnings', [\App\Http\Controllers\Admin\MailController::class, 'warnings']);
+    Route::get('/events/{event}/messages', [\App\Http\Controllers\Admin\MailController::class, 'messages'])->whereNumber('event');
+    Route::post('/events/{event}/mail/reminders', [\App\Http\Controllers\Admin\MailController::class, 'plan'])->whereNumber('event');
+    Route::patch('/events/{event}/mail/policy', [\App\Http\Controllers\Admin\MailController::class, 'pause'])->whereNumber('event');
     Route::get('/imports/honeybook/{batch}/rows/{row}/mapping', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'mapping'])->whereNumber(['batch','row']);
     Route::post('/imports/honeybook/{batch}/rows/{row}/commit', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'commit'])->whereNumber(['batch','row']);
     Route::get('/imports/honeybook/{batch}/coverage', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'coverage'])->whereNumber('batch');
@@ -35,6 +40,13 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::get('/leads/{lead}', [\App\Http\Controllers\Admin\LeadController::class, 'show'])->whereNumber('lead');
     Route::patch('/leads/{lead}', [\App\Http\Controllers\Admin\LeadController::class, 'update'])->whereNumber('lead');
     Route::post('/leads/{lead}/quick-book', [\App\Http\Controllers\Admin\LeadController::class, 'convert'])->whereNumber('lead');
+    Route::get('/reports/owner', [\App\Http\Controllers\Admin\OwnerReportReadController::class, 'index']);
+    Route::get('/reports/snapshots/{snapshot}/email-preview', [\App\Http\Controllers\Admin\OwnerReportReadController::class, 'preview'])->whereNumber('snapshot');
+    Route::post('/reports/snapshots', [\App\Http\Controllers\Admin\OwnerReportSnapshotController::class, 'store']);
+    Route::get('/reports/snapshots/{snapshot}', [\App\Http\Controllers\Admin\OwnerReportSnapshotController::class, 'show'])->whereNumber('snapshot');
+    Route::get('/reports/bookings', \App\Http\Controllers\Admin\BookingSalesReportController::class);
+    Route::get('/reports/weekend', \App\Http\Controllers\Admin\WeekendForecastController::class);
+    Route::get('/reports/operations', \App\Http\Controllers\Admin\OperationalReportController::class);
     Route::get('/session', fn(Request $r) => ['user' => $r->user()->only(['id', 'name', 'email', 'role']), 'timezone' => 'America/Chicago']);
     foreach (['customers', 'characters', 'resources', 'variants'] as $entity) {
         Route::get('/' . $entity, [CoreController::class, 'index'])->defaults('entity', $entity);
@@ -113,4 +125,8 @@ Route::middleware([\App\Http\Middleware\AuthenticatePortal::class, 'throttle:60,
 Route::post('/webhooks/stripe', \App\Http\Controllers\Webhooks\StripeWebhookController::class)->middleware('throttle:120,1');
 // Design preview of the client portal with fictitious data; the controller returns 404 outside local/testing.
 Route::get('/dev/mail/{key?}', \App\Http\Controllers\MailPreviewController::class);
+// Design preview of the REPORT-A Monday owner email (sample data); 404 outside local/testing.
+Route::get('/dev/mail-owner-report', \App\Http\Controllers\OwnerReportPreviewController::class);
+// Design preview of the STAFF-01 read-only staff page (my week) with fictitious data; 404 outside local/testing.
+Route::get('/dev/staff/{screen?}', \App\Http\Controllers\Staff\StaffPreviewController::class);
 Route::match(['get', 'post'], '/dev/portal/{step?}', \App\Http\Controllers\Portal\PortalPreviewController::class)->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);

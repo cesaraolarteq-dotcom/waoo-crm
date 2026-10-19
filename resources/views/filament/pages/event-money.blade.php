@@ -23,7 +23,7 @@
                 <div class="wmoney-warn" role="alert">El borrador cambió después de fijar estos montos. Revisa los datos del evento y usa “Fijar montos acordados” para crear una revisión nueva. Los montos anteriores y los pagos recibidos se conservan.</div>
             @endif
             <div class="wmoney-grid">
-                <div><span>Total acordado</span><b>{{ $money($rev->total_cents) }}</b><small>Servicios {{ $money($rev->subtotal_cents) }} + transporte {{ $money($rev->travel_fee_cents) }}</small></div>
+                <div><span>Total acordado</span><b>{{ $money($rev->total_cents) }}</b><small>Servicios {{ $money($rev->subtotal_cents) }} + transporte {{ $money($rev->travel_fee_cents) }}@if (($rev->discount_cents ?? 0) > 0) − descuento {{ $money($rev->discount_cents) }}@endif</small></div>
                 <div><span>Depósito (50 %)</span><b>{{ $money($rev->deposit_target_cents) }}</b>
                     <small>@if ($f['deposit_shortfall_cents'] > 0) Faltan {{ $money($f['deposit_shortfall_cents']) }} para el depósito @else Depósito cubierto ✓ @endif</small></div>
                 <div><span>Recibido</span><b class="ok">{{ $money($paid) }}</b><small>{{ $f['refunded_cents'] ? 'Devuelto '.$money($f['refunded_cents']) : 'Solo pagos verificados' }}</small></div>

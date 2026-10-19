@@ -31,6 +31,7 @@ dt{color:var(--muted);font-size:14px}dd{margin:0;font-weight:700;overflow-wrap:a
 .p-field small{color:var(--faint);font-size:12px}
 .p-sub-field{margin-top:4px}
 .p-narrow{max-width:140px}
+.q-consent{font-size:13px;line-height:1.45;color:#5b6475;margin:4px 0 10px}
 .p-check{display:flex;gap:10px;align-items:flex-start;font-size:15px;cursor:pointer}
 .p-check input{width:22px;height:22px;margin-top:1px;accent-color:var(--navy);flex:none}
 .p-small{font-size:13px;color:var(--muted)}
@@ -60,3 +61,15 @@ dt{color:var(--muted);font-size:14px}dd{margin:0;font-weight:700;overflow-wrap:a
 .q-reject summary{cursor:pointer;color:var(--muted);font-weight:700;min-height:44px;display:flex;align-items:center}
 .q-reject[open]{display:grid;gap:10px}
 .q-outcome{border:0;margin:0;padding:0;min-width:0;display:grid;gap:10px}
+.p-btn:disabled,.p-btn[aria-disabled=true]{opacity:.45;cursor:not-allowed;box-shadow:none}
+/* Elements toggled with the hidden attribute stay hidden even when a component sets display. */
+[hidden]{display:none!important}
+/* TIP-01 tip options: big tap targets, 2×2 on phones. */
+.t-opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.t-opt{position:relative;display:block;cursor:pointer}
+.t-opt input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.t-opt span{display:grid;place-items:center;gap:2px;min-height:72px;border:2px solid var(--line);border-radius:14px;background:var(--surface);text-align:center}
+.t-opt b{font-size:19px}.t-opt small{color:var(--muted);font-weight:700;font-size:15px}
+.t-opt input:checked+span{border-color:var(--pink);background:rgba(255,1,124,.07)}
+.t-opt input:focus-visible+span{box-shadow:var(--focus)}
+.t-center{text-align:center}

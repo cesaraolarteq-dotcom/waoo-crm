@@ -9,7 +9,7 @@
         @if ($f['finance'])
             <span>Pago: <b>{{ $f['finance']['net_received_cents'] > 0 ? ($f['finance']['financial_revision'] && $f['finance']['balance_cents'] === 0 ? 'Pagado completo' : 'Pago recibido') : 'Sin pagos' }}</b></span>
         @endif
-        <span>Contrato: <b>Sin emitir</b></span>
+        <span>Contrato: <b>{{ $f['contract'] }}</b></span>
         <span>Tipo: <b>{{ $f['type'] }}</b></span>
     </div>
     <div class="wfile">
@@ -54,6 +54,22 @@
             </x-filament::section>
         @endif
     </div>
+    @if ($mail = $this->mail())
+        <x-filament::section>
+            <x-slot name="heading">Correos a la clienta</x-slot>
+            <x-slot name="description">Programado no es enviado, y enviado no confirma que llegó. Nada sale sin que César active los correos.</x-slot>
+            <x-slot name="afterHeader">
+                <button type="button" class="wcal-btn {{ $mail['policy']['paused'] ? 'on' : '' }}" wire:click="toggleMailPause">{{ $mail['policy']['paused'] ? 'Reanudar correos' : 'Pausar correos' }}</button>
+            </x-slot>
+            @if ($mail['policy']['paused'])<p class="wmoney-warn">En pausa: lo programado no sale hasta que lo reanudes.</p>@endif
+            @forelse ($mail['rows'] as $m)
+                <div class="wmoney-row"><div><b>{{ $m->template }}</b> · {{ $m->lang }} · {{ $m->when }} <x-filament::badge :color="$m->color" size="sm">{{ $m->status }}</x-filament::badge></div>
+                    @if ($m->error)<small>{{ $m->error }}</small>@endif</div>
+            @empty
+                <p class="wmoney-p">Ningún correo programado para este evento.</p>
+            @endforelse
+        </x-filament::section>
+    @endif
     <x-filament::section>
         <x-slot name="heading">Historial</x-slot>
         <x-slot name="description">Quién hizo cada cambio. No se puede editar.</x-slot>

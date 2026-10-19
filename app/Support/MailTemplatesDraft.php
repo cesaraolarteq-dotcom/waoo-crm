@@ -3,7 +3,8 @@
 namespace App\Support;
 
 // MAIL-01 v1 DRAFT copy (docs/templates/email/MAIL-01-templates-v1.md), for the design preview only.
-// Not approved by the owner, not used for sending. Each template: subject, paragraphs, optional button (label → link variable), closing line.
+// Not approved by the owner, not used for sending. Each template: subject, paragraphs, optional button (label → link variable), closing line,
+// optional second button (thank-you only: the card tip page, TIP-01).
 // Subjects take only short values: {subject_date} is the date without the time (longest ES "miércoles 30 de septiembre"), {due} is date-only, first_name is cut to 20.
 final class MailTemplatesDraft
 {
@@ -26,8 +27,8 @@ final class MailTemplatesDraft
                                'en' => ['Friendly reminder: balance due {due}', ['Hi {first_name}! Your party is coming up on {event_date}. Your balance of {balance} is due {due}.', 'You can pay by Zelle to 346-216-8739 (Waoo Party LLC, no fee) or by card.'], ['Pay my balance', 'link'], "We're excited to be part of your celebration!"]],
         'week_before' => ['es' => ['¡Falta una semana, {first_name}!', ['¡Hola {first_name}! Falta una semana para tu celebración con Waoo Party: {event_date} en {address}.', 'Revisa que la dirección, la hora y los detalles estén bien. Si algo cambió, respóndenos o escríbenos al (346) 851-8830.'], ['Revisar mi fiesta', 'link'], '¡Nos vemos pronto!'],
                           'en' => ['One week to go, {first_name}!', ['Hi {first_name}! Your Waoo Party celebration is one week away: {event_date} at {address}.', 'Please check that the address, start time and details are right. If anything changed, reply or text us at (346) 851-8830.'], ['Check my party', 'link'], 'See you soon!']],
-        'thank_you_review' => ['es' => ['¡Gracias por celebrar con nosotros!', ['¡Hola {first_name}! Gracias por elegir Waoo Party. ¡Esperamos que todos la hayan pasado increíble!', 'Si tienes un minuto, una reseña en Google ayuda a otras familias a encontrarnos.'], ['Dejar una reseña', 'review_link'], '¡Nos encantaría celebrar contigo otra vez!'],
-                               'en' => ['Thank you for celebrating with us!', ['Hi {first_name}! Thank you for choosing Waoo Party. We hope everyone had an amazing time!', 'If you have a minute, a Google review helps other families find us.'], ['Leave a review', 'review_link'], "We'd love to celebrate with you again!"]],
+        'thank_you_review' => ['es' => ['¡Gracias por celebrar con nosotros!', ['¡Hola {first_name}! Gracias por elegir Waoo Party: apreciamos mucho tu apoyo y esperamos que todos la hayan pasado increíble.', 'Si tienes un minuto, una reseña en Google nos ayuda muchísimo a que otras familias nos encuentren.', 'Y si quieres agradecerle al equipo, también puedes dejar una propina: el 100 % es para el staff de tu fiesta.'], ['Dejar una reseña', 'review_link'], '¡Nos encantaría celebrar contigo otra vez!', ['Dejar una propina', 'tip_link']],
+                               'en' => ['Thank you for celebrating with us!', ['Hi {first_name}! Thank you for choosing Waoo Party: we truly appreciate your support and hope everyone had an amazing time.', 'If you have a minute, a Google review helps other families find us so much.', 'And if you would like to thank the team, you can also leave a tip: 100% goes to the staff of your party.'], ['Leave a review', 'review_link'], "We'd love to celebrate with you again!", ['Leave a tip', 'tip_link']]],
     ];
 
     // When each one goes out (for the owner's settings page).
@@ -40,7 +41,7 @@ final class MailTemplatesDraft
         'zelle_notice_pending' => 'Cuando la clienta avisa que mandó un Zelle',
         'balance_reminder' => 'Un día antes de que venza el saldo (solo si hay saldo)',
         'week_before' => '7 días antes de la fiesta',
-        'thank_you_review' => 'El día después de la fiesta',
+        'thank_you_review' => 'El día después de la fiesta, a las 10 a. m.',
     ];
 
     // Full HTML of one draft with fictitious sample data (preview only).
@@ -49,21 +50,22 @@ final class MailTemplatesDraft
         $es = $lang === 'es';
         $vars = ['first_name' => 'Ana', 'event_date' => $es ? 'sábado 21 de noviembre a las 3:00 pm' : 'Sat, Nov 21 at 3:00 pm', 'subject_date' => $es ? 'sábado 21 de noviembre' : 'Sat, Nov 21', 'address' => '123 Sample St, Katy, TX', 'package' => $es ? 'Música y Juegos 2.0' : 'Music & Games 2.0',
             'deposit' => '$307.50', 'paid' => '$307.50', 'amount' => '$307.50', 'balance' => '$307.50', 'balance_due' => $es ? ' (vence el viernes 20 de noviembre)' : ' (due Fri, Nov 20)', 'due' => $es ? 'viernes 20 de noviembre' : 'Fri, Nov 20',
-            'valid_until' => $es ? 'viernes 30 de octubre' : 'Fri, Oct 30', 'link' => url('/portal/ejemplo'), 'review_link' => 'https://g.page/r/sample'];
+            'valid_until' => $es ? 'viernes 30 de octubre' : 'Fri, Oct 30', 'link' => url('/portal/ejemplo'), 'review_link' => 'https://g.page/r/sample', 'tip_link' => url('/dev/portal/tip?lang='.$lang)];
         $totals = [['label' => $es ? 'Paquete' : 'Package', 'amount' => '$600'], ['label' => $es ? 'Costo de transporte' : 'Travel fee', 'amount' => '$40'],
             ['label' => $es ? 'Descuento por reservar hoy' : 'Book-today discount', 'amount' => '−$25', 'discount' => true], ['label' => 'Total', 'amount' => '$615', 'strong' => true]];
 
         return view('mail.layout', ['lang' => $lang, 'mail' => self::render($key, $lang, $vars), 'totals' => $totals, 'logo' => url('/img/waoo-logo.png')])->render();
     }
 
-    /** @return array{subject:string, paragraphs:array, closing:?string, button:?array} */
+    /** @return array{subject:string, paragraphs:array, closing:?string, button:?array, button2:?array} */
     public static function render(string $key, string $lang, array $vars): array
     {
-        [$subject, $paragraphs, $button, $closing] = self::T[$key][$lang] ?? self::T[$key]['es'];
+        [$subject, $paragraphs, $button, $closing, $button2] = (self::T[$key][$lang] ?? self::T[$key]['es']) + [4 => null];
         $fill = fn (string $s) => preg_replace_callback('/\{(\w+)\}/', fn ($m) => (string) ($vars[$m[1]] ?? ''), $s);
         $first = mb_substr((string) ($vars['first_name'] ?? ''), 0, 20);
 
         return ['subject' => $fill(str_replace('{first_name}', $first, $subject)), 'paragraphs' => array_map(fn ($p) => $p === '__totals__' ? $p : $fill($p), $paragraphs),
-            'closing' => $closing, 'button' => $button ? ['label' => $button[0], 'url' => (string) ($vars[$button[1]] ?? '')] : null];
+            'closing' => $closing, 'button' => $button ? ['label' => $button[0], 'url' => (string) ($vars[$button[1]] ?? '')] : null,
+            'button2' => $button2 ? ['label' => $button2[0], 'url' => (string) ($vars[$button2[1]] ?? '')] : null];
     }
 }

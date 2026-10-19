@@ -49,4 +49,29 @@ class QuoteClientViewModelTest extends TestCase
         $p=$this->prepare();app(ReviseQuote::class)->execute($this->owner,$this->offer->quote_id,['expected_version'=>2,'expected_event_version'=>1,'discounts'=>[]],(string)Str::uuid());
         auth()->guard('web')->logout();$this->withSession(['portal_grant_id'=>$p['portal_grant_id']])->getJson('/portal/api/quote')->assertForbidden();
     }
+    public static function houstonWindows():array
+    {
+        return [
+            'UTC midnight remains one Houston day'=>['2026-12-20T23:00:00Z','2026-12-21T00:00:00Z',1,'Sun, Dec 20, 2026 · 5:00 PM CST – 6:00 PM CST'],
+            'Houston midnight on the same UTC day'=>['2026-12-21T05:00:00Z','2026-12-21T07:00:00Z',2,'Sun, Dec 20, 2026 · 11:00 PM CST – Mon, Dec 21, 2026 · 1:00 AM CST'],
+            'repeated hour retains both offsets'=>['2026-11-01T06:15:00Z','2026-11-01T07:45:00Z',1,'Sun, Nov 1, 2026 · 1:15 AM CDT – 1:45 AM CST'],
+        ];
+    }
+    #[\PHPUnit\Framework\Attributes\DataProvider('houstonWindows')]
+    public function test_shortened_window_uses_houston_days_and_keeps_dst_precision(string $start,string $end,int $dates,string $english):void
+    {
+        $this->event=app(\App\Services\Records\SaveEventDraft::class)->execute($this->owner,[
+            ...$this->event->only(['customer_id','title','timezone','address','postal_code','setup_minutes','breakdown_minutes','travel_fee_cents']),
+            'expected_version'=>$this->event->version,'starts_at'=>$start,'ends_at'=>$end,'travel_fee_override_note'=>'Synthetic date formatting check.',
+            'services'=>[['price_version_id'=>$this->price->id]],
+        ],$this->event->id);
+        $this->offer=app(ReviseQuote::class)->execute($this->owner,$this->offer->quote_id,['expected_version'=>Quote::findOrFail($this->offer->quote_id)->version,'expected_event_version'=>$this->event->version,'discounts'=>[]],(string)Str::uuid());
+        $p=$this->prepare();$client=$this->client($p['portal_grant_id']);
+        $en=app(ReadQuoteViewModel::class)->read($client,'en');$es=app(ReadQuoteViewModel::class)->read($client,'es');
+        $this->assertSame($english,$en['view_model']['quote']['when']);
+        $this->assertMatchesRegularExpression('/^\S+ \d{1,2} de \S+ de 2026/u',$es['view_model']['quote']['when']);
+        foreach([$en,$es] as $read)$this->assertSame($dates,substr_count($read['view_model']['quote']['when'],'2026'));
+        $this->assertSame($en['snapshot_sha256'],$es['snapshot_sha256']);$this->assertSame($en['pdf_sha256'],$es['pdf_sha256']);$this->assertSame($en['consents'],$es['consents']);
+    }
+
 }

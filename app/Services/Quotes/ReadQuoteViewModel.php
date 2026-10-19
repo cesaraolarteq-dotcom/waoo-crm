@@ -30,13 +30,16 @@ final class ReadQuoteViewModel
             $consent=$p->consents['accepted'];
             $approved=is_string($consent['version']??null)&&trim($consent['version'])!==''&&is_string($consent['text']??null)&&trim($consent['text'])!=='';
             $canDecide=$state==='open'&&$approved&&!$client->adminAuthenticated;
-            $date=fn($v)=>CarbonImmutable::parse($v)->setTimezone('America/Chicago')->locale($locale)->translatedFormat('D, M j, Y · g:i A T');
+            $date=fn($v)=>CarbonImmutable::parse($v)->setTimezone('America/Chicago')->locale($locale)->translatedFormat($locale==='es'?'D j \d\e M \d\e Y · g:i a T':'D, M j, Y · g:i A T');
+            $start=CarbonImmutable::parse($payload['event']['starts_at'])->setTimezone('America/Chicago');
+            $end=CarbonImmutable::parse($payload['event']['ends_at'])->setTimezone('America/Chicago')->locale($locale);
+            $when=$date($payload['event']['starts_at']).' – '.($start->isSameDay($end)?$end->translatedFormat('g:i A T'):$date($payload['event']['ends_at']));
             $money=static fn(int $c)=>'$'.number_format(intdiv($c,100),0,'.',',').'.'.str_pad((string)($c%100),2,'0',STR_PAD_LEFT);
             $name=$payload['customer_name'];
             $vm=['lang'=>$locale,'first_name'=>Str::before($name,' '),'test_mode'=>true,
                 'lang_url'=>['es'=>'/portal/quote?lang=es','en'=>'/portal/quote?lang=en'],
                 'quote'=>['number'=>$payload['number'],'revision'=>$payload['revision'],'state'=>$state,'valid_until'=>$date($payload['valid_until']),
-                    'when'=>$date($payload['event']['starts_at']).' – '.$date($payload['event']['ends_at']),
+                    'when'=>$when,
                     'where'=>$payload['event']['address']??'',
                     'lines'=>array_map(fn($l)=>['name'=>$l['name'],'duration'=>$l['duration_minutes'].' min',
                         'characters'=>implode(', ',array_map(fn($c)=>$c['name'].($c['quantity']>1?' × '.$c['quantity']:''),$l['characters'])),

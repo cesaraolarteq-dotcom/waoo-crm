@@ -31,6 +31,25 @@ class Dashboard extends BaseDashboard
     }
 
     /** @return array<int, array{tone: string, count: int, title: string, text: string, items: array}> */
+    /** REPORT-A summary for Inicio: last completed week + the weekend after it (Codex's panel), or null when unavailable. */
+    public function weekSummary(): ?array
+    {
+        if (! \App\Filament\Support\ReportsSource::available()) {
+            return null;
+        }
+        try {
+            $r = \App\Filament\Support\ReportsSource::read(\Filament\Facades\Filament::auth()->user(), 'weekly', now('America/Chicago')->toDateString());
+        } catch (\Throwable) {
+            return null; // the report screen shows the reason; Inicio stays usable
+        }
+
+        return ['sample' => $r['sample'], 'label' => \App\Filament\Support\ReportsSource::periodLabel($r['operations']['period']),
+            'cash' => Labels::money($r['operations']['cash']['net_received_cents'], 'Pendiente'), 'bookings' => $r['bookings']['booking_count'],
+            'packages' => \App\Filament\Support\ReportsSource::packagesLine($r['bookings']),
+            'weekend' => $r['upcoming_weekend'] ? $r['upcoming_weekend']['event_count'] : null,
+            'weekend_staff' => $r['upcoming_weekend'] ? Labels::money($r['upcoming_weekend']['estimate']['staff_cost_cents'], 'Pendiente') : null];
+    }
+
     public function attention(): array
     {
         $now = now();
@@ -76,6 +95,19 @@ class Dashboard extends BaseDashboard
             $notices = \App\Models\ZelleNotice::query()->whereDoesntHave('review')->orderBy('id')->limit(50)->get();
             $cards[] = ['tone' => 'bad', 'title' => 'Avisos de Zelle por verificar', 'text' => 'La clienta dice que ya envió el Zelle. Revisa tu banco antes de contarlo como pago.',
                 'items' => $notices->map(fn ($n) => ['label' => (Event::whereKey($n->event_id)->value('title') ?? 'Evento').' · dice '.Labels::money($n->amount_cents).' · '.Labels::when($n->submitted_at), 'url' => EventResource::getUrl('money', ['record' => $n->event_id])])->all()];
+        }
+
+        if (\App\Filament\Support\MailUi::enabled()) {
+            // Bounces only in their own card; other warnings say honestly that the result is unknown or blocked.
+            $read = app(\App\Services\Mail\ReadOutboundMail::class);
+            $owner = \Filament\Facades\Filament::auth()->user();
+            $item = fn ($m) => ['label' => (Event::whereKey($m['event_id'])->value('title') ?? 'Evento').' · '.(\App\Filament\Support\MailUi::TEMPLATES[$m['template_key']] ?? $m['template_key'])
+                .' · '.(\App\Filament\Support\MailUi::STATUS[$m['status']] ?? $m['status']), 'url' => EventResource::getUrl('view', ['record' => $m['event_id']])];
+            $cards[] = ['tone' => 'bad', 'title' => 'Correos que rebotaron', 'text' => 'No llegaron. Confirma el correo de la clienta por WhatsApp; no se reenvía solo.',
+                'items' => collect($read->warnings($owner, ['status' => 'bounced', 'per_page' => 50])['data'])->map($item)->all()];
+            $review = collect(['complained', 'delivery_unknown', 'dispatching', 'blocked'])->flatMap(fn ($st) => $read->warnings($owner, ['status' => $st, 'per_page' => 50])['data']);
+            $cards[] = ['tone' => 'warn', 'title' => 'Correos por revisar', 'text' => 'Bloqueados, marcados como spam, o sin saber si salieron. Nada se reenvía automáticamente.',
+                'items' => $review->map($item)->values()->all()];
         }
 
         if (\App\Filament\Support\DocumentsGate::enabled() && class_exists(\App\Services\Booking\ClientDetailsState::class)) {
