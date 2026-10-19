@@ -1,5 +1,7 @@
 # IMPORT-01: owner 24-column source, domain import and capacity API
 
+**C2 amendment (2026-10-19):** `HONEYBOOK-MONEY-RESYNC-API.md` adds the explicit reviewed money-only update branch on the same row commit route for already-confirmed HoneyBook projects, including known past ones. New/unknown past imports remain refused; initial/draft commands still obey their original future-start and mapping rules. No operational overwrite, fake bank receipt or responsibility switch. See HANDOFF for exact implementation/review evidence.
+
 2026-10-17 · Codex · published before implementation. Owner source contract: main6509d91/#67, docs/tickets/IMPORT-01.md. This supersedes arbitrary project/customer/payment exports as the recommended owner intake; earlier generic staging remains compatible. Synthetic fixtures only; actual file stays outside git, chat and logs. Claude reviews actual exports locally and writes aggregate findings only in HANDOFF.
 
 ## Fixed source and private preview

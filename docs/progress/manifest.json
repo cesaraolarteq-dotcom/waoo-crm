@@ -887,17 +887,17 @@
       "branch": "codex/responsibility-c1",
       "backend": "5415421",
       "reviewed": true,
-      "merged": false,
+      "merged": true,
       "accepted": false,
       "scope": "Enum y backfill auditado; importaciones HoneyBook; bloqueos de MAIL, enlaces/cobros, Zelle y preparación de cotización; recibos autenticados tardíos conservados y conciliación financiera explícita. No transferencia ni puente financiero C2/C3;240min aprobados por César para antigüedad máxima de revisión antes del traspaso; ejecución C3 pendiente.",
       "verification": "Final5415421 related39/336 PASS; base ead6e67 disjoint216/1887 PASS. Signed-webhook race first red2/2 then green; verified paid state and provider ID preserved. No whole transfer/import/provider activation or main/owner acceptance.",
-      "note": "Aprobado por Claude, UI y fixture SQLite corregida en #87 a15a292; no modificar #87 mientras revisa César."
+      "note": "C1 aprobado por Claude e integrado en main (#87; main b908c59 incluye también #88). Activación y aceptación final pendientes."
      },
      "c2_c3_design": {
       "document": "docs/RESPONSIBLE-SYSTEM-C2-C3-DETAILS.md",
       "implemented": false,
       "reviewed": false,
-      "note": "Diseño detallado, cero implementación. César aprobó240min/4h de antigüedad máxima de revisión real de pagos antes del traspaso. No es sincronización automática; C3/activación pendientes.",
+      "note": "Contrato C2/C3 publicado; C2 money-only implementado por separado para revisión (money_resync_c2). C3/puente/traspaso siguen sin implementación. Política240min aprobada, sin polling automático ni activación.",
       "freshness_policy": {
        "max_age_minutes": 240,
        "approved_by": "César",
@@ -905,6 +905,18 @@
        "scope": "Antigüedad máxima de revisión real de pagos al autorizar el traspaso; no polling periódico.",
        "implemented": false
       }
+     },
+     "money_resync_c2": {
+      "api": "docs/HONEYBOOK-MONEY-RESYNC-API.md",
+      "branch": "codex/honeybook-money-resync",
+      "backend": "be24d10",
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "scope": "Revisión y actualización explícita de pagos de fiestas HoneyBook confirmadas/pasadas conocidas; historial inmutable y capacidad original intactos. Sin cambio de sistema ni recibos bancarios ficticios.",
+      "verification": "Final PHP source be24d10:59 tests/458 assertions PASS,2:32.406,107MB,PHP8.3.35/MariaDB11.8. Two-owner race, old RR retry, audit rollback and real concurrent source-head read; PHP lint/Composer/diff pass. Earlier wide140 had one new CSRF fixture failure, corrected and verified in final59. No full-suite/remote-CI/browser/live claim.",
+      "note": "C2 es una entrega parcial: C3, puente financiero, documentos/conciliación y traspaso del grupo siguen pendientes. No se eleva el porcentaje de todo el corte por esta entrega."
      }
     }
    ]
