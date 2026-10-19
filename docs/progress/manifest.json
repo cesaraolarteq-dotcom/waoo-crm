@@ -128,7 +128,9 @@
       "merged": false,
       "accepted": false,
       "note": "category/group/audience, expected_version y auditoría; importador idempotente conserva #88 8fe518b, nombres numéricos y cantidad0. Claude hace selectores/filtros; sin importación real.",
-      "verification": "7000631:127/25007 related MariaDB PASS5:20.786; final64824dc:110/858 parser/core/booking PASS4:51.504. Runs overlap; no distinct sum or full-suite current/remote CI/owner acceptance claim. PHP lint515 files PASS."
+      "verification": "7000631:127/25007 related MariaDB PASS5:20.786; final64824dc:110/858 parser/core/booking PASS4:51.504. Runs overlap; no distinct sum or full-suite current/remote CI/owner acceptance claim. PHP lint515 files PASS.",
+      "backend_reviewed": true,
+      "review_evidence": "Claude aprueba backend ad318f7 en HANDOFF de claude/taxonomy-ui cfb6b1a. Sus pantallas aún requieren revisión de Codex; sin aceptación/despliegue."
      }
     },
     {
@@ -172,7 +174,9 @@
       "accepted": false,
       "note": "Cabeza/unidad física genérica cumple vestuario vigente; elección operativa opcional en manual/pagado/importado; matching y snapshot v2 congelado para staff. Sin crear cabezas por nombre de vestuario.",
       "verification": "127/25007 relacionados PASS; incluye dos procesos compitiendo por una cabeza, fija+genérica A/B,0/null, replay y lectura real del staff tras renombre.",
-      "remaining": "Claude: selectores; revisión/CI/main/aceptación pendientes. Corrección posterior a confirmación no implementada."
+      "remaining": "Claude: selectores; revisión/CI/main/aceptación pendientes. Corrección posterior a confirmación no implementada.",
+      "backend_reviewed": true,
+      "review_evidence": "Claude aprueba backend ad318f7 en HANDOFF de claude/taxonomy-ui cfb6b1a. Sus pantallas aún requieren revisión de Codex; sin aceptación/despliegue."
      }
     },
     {
@@ -700,7 +704,7 @@
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "blocker": "Revisión de Claude y CI remoto pendientes; faltan conector de gracias, reporte agregado, refund y regla de reparto. Flags apagados.",
+     "blocker": "Backend core A aprobado por Claude; pantallas en claude/taxonomy-ui pendientes de revisión/integración y aceptación. MAIL/reporte/refund/reparto quedan en entrega separada; flags apagados.",
      "contract": {
       "document": "docs/TIP-01-API.md",
       "implemented": true,
@@ -712,9 +716,10 @@
       "branch": "codex/tip-01-backend",
       "scope": "Grants/sesión pública aislada, lectura, checkout Stripe test, recibo firmado y lectura de dueño; C1 y bloqueo importado, sin ledger de reservas.",
       "verification": "Frozen app/tests f336b32:774 tests/30672 assertions PASS29:23.762,157MB,PHP8.3.35/MariaDB11.8; build, strict Composer and PHP lint pass. Earlier46/408 focused pass. GitHub checks API Forbidden; no remote CI/visual/Hostinger claim. New category/audience/generic-outfit amendment not part of this result.",
-      "reviewed": false,
+      "reviewed": true,
       "merged": false,
-      "accepted": false
+      "accepted": false,
+      "review_evidence": "Claude aprueba TIP core A b747d4e/f336b32 en claude/taxonomy-ui cfb6b1a; CI verde reportado por Claude, no consulta independiente de Codex."
      }
     },
     {
@@ -897,13 +902,15 @@
       "document": "docs/RESPONSIBLE-SYSTEM-C2-C3-DETAILS.md",
       "implemented": false,
       "reviewed": false,
-      "note": "Contrato C2/C3 publicado; C2 money-only implementado por separado para revisión (money_resync_c2). C3/puente/traspaso siguen sin implementación. Política240min aprobada, sin polling automático ni activación.",
+      "note": "C2 money-only y C3 A evidencia/preparación entregados por separado para revisión; C3 B puente/transferencia/reversión sin implementación. No suma crédito al corte completo ni a la activación.",
       "freshness_policy": {
        "max_age_minutes": 240,
        "approved_by": "César",
        "approved_at": "2026-10-19",
        "scope": "Antigüedad máxima de revisión real de pagos al autorizar el traspaso; no polling periódico.",
-       "implemented": false
+       "implemented": false,
+       "preparation_enforced": true,
+       "preparation_source": "a1e2911 (traspaso todavía no implementado)"
       }
      },
      "money_resync_c2": {
@@ -917,6 +924,18 @@
       "scope": "Revisión y actualización explícita de pagos de fiestas HoneyBook confirmadas/pasadas conocidas; historial inmutable y capacidad original intactos. Sin cambio de sistema ni recibos bancarios ficticios.",
       "verification": "Final PHP source be24d10:59 tests/458 assertions PASS,2:32.406,107MB,PHP8.3.35/MariaDB11.8. Two-owner race, old RR retry, audit rollback and real concurrent source-head read; PHP lint/Composer/diff pass. Earlier wide140 had one new CSRF fixture failure, corrected and verified in final59. No full-suite/remote-CI/browser/live claim.",
       "note": "C2 es una entrega parcial: C3, puente financiero, documentos/conciliación y traspaso del grupo siguen pendientes. No se eleva el porcentaje de todo el corte por esta entrega."
+     },
+     "cutover_evidence_c3_a": {
+      "api": "docs/CUTOVER-EVIDENCE-API.md",
+      "branch": "codex/cutover-evidence-readiness",
+      "backend": "a1e2911",
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "scope": "Original PDF cifrado, revisión privada versionada, cobertura completa del origen y snapshot inmutable del grupo; vencimiento por revisión real más antigua+240min. Sin puente financiero, traspaso, cobros ni envíos.",
+      "verification": "Frozen PHP a1e2911:96 tests/720 assertions PASS,3:56.453,109MB,PHP8.3.35/MariaDB11.8. Carreras reales de revisión/preparación/nuevo miembro, C2/TIP/UI existentes, privacidad/integridad/rollback y rutas reales. PHP lint/Composer/diff pass. Sin batería completa/CI remoto/browser/Hostinger/SQLite.",
+      "note": "readiness.ready y transfer_available siguen false. Sólo preparación; C3 B financiero y activación pendientes. Fuente sintética, no importación real."
      }
     }
    ]
