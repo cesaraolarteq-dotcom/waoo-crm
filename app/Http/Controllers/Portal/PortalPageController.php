@@ -67,6 +67,10 @@ final class PortalPageController extends Controller
     public function paymentReturn(Request $request)
     {
         abort_unless(\App\Filament\Support\DocumentsGate::enabled(), 404);
+        if ($request->session()->has('portal_grant_id')) {
+            $client = PortalContext::fromRequest($request);
+            $client->authorize($client->eventId, 'payments.read');
+        }
         $request->session()->flash('portal_notice', $request->boolean('cancelled') ? 'cancelled' : 'processing');
 
         return redirect('/portal');

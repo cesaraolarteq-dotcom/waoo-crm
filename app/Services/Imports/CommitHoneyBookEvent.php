@@ -61,6 +61,7 @@ final class CommitHoneyBookEvent
                     'travel_fee_cents'=>$n['travel_cents'],'travel_fee_override_note'=>'Historical HoneyBook source travel amount reviewed by owner.','services'=>$selections];
                 if($event)$draft['expected_version']=$event->version;
                 $event=app(SaveEventDraft::class)->execute($actor,$draft,$event?->id);
+                if(!$existing){$event->forceFill(['responsible_system'=>'honeybook'])->save();} // Never flip an existing event during resync.
                 $event->forceFill(['travel_fee_evidence'=>['source'=>'honeybook','amount_cents'=>$n['travel_cents'],'source_sha256'=>$n['source_sha256'],'import_row_id'=>$row->id,'recorded_by'=>$actor->id]])->save();
                 RecordWriteRejected::unless($event->services->every(fn($service)=>$service->operational_ready&&!empty($service->requirements_snapshot)),422,'Completa los personajes y requisitos del paquete antes de importar.');
                 $link=$existing??new ImportedProjectLink(['project_key'=>$row->source_key,'event_id'=>$event->id,'customer_id'=>$customer->id,'version'=>1]);
@@ -76,7 +77,7 @@ final class CommitHoneyBookEvent
             });
             if($d['remember_mapping']){$mapping=ImportServiceMapping::where('source_key',HoneyBookMappingKey::forSource($s))->first()??new ImportServiceMapping(['source_key'=>HoneyBookMappingKey::forSource($s),'version'=>0]);$mapping->version++;$mapping->selection=$d['services'];$mapping->updated_by=$actor->id;$mapping->save();}
             $b->forceFill(['version'=>$b->version+1,'status'=>'partially_committed'])->save();
-            Audit::recordFor($actor,'import.project_committed',$link,[],['import_batch_id'=>$b->id,'imported_revision_id'=>$link->current_revision_id,'source_sha256'=>$n['source_sha256']]);
+            Audit::recordFor($actor,'import.project_committed',$link,[],['import_batch_id'=>$b->id,'imported_revision_id'=>$link->current_revision_id,'source_sha256'=>$n['source_sha256'],'responsible_system'=>Event::whereKey($link->event_id)->value('responsible_system')]);
             MutationKey::store($scope,$key,$hash,'imported_project_link',$link->id);return $link;
         },3);
     }

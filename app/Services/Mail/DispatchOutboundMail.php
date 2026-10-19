@@ -10,10 +10,11 @@ final class DispatchOutboundMail
         $m=OutboundMessage::findOrFail($messageId);$transport=app(MailTransport::class);
         $claimed=MailGuard::transaction(function()use($m,$transport){
             // Mutable source reads happen in the same grant->event lock order as planning.
-            \App\Models\PortalGrant::whereKey($m->portal_grant_id)->lockForUpdate()->firstOrFail();\App\Models\Event::whereKey($m->event_id)->lockForUpdate()->firstOrFail();
+            \App\Models\PortalGrant::whereKey($m->portal_grant_id)->lockForUpdate()->firstOrFail();$event=\App\Models\Event::whereKey($m->event_id)->lockForUpdate()->firstOrFail();
             $state=OutboundMessageState::where('outbound_message_id',$m->id)->lockForUpdate()->firstOrFail();
             if($state->status!=='scheduled'||$m->due_at->isFuture())return false;
             if($m->environment!=='sandbox'||$m->channel!=='email'){$this->transition($m,$state,'blocked','unsupported_environment_or_channel');return false;}
+            if($event->responsible_system!=='crm'){$this->transition($m,$state,'blocked','responsible_system_honeybook');return false;}
             $policy=EventMessagePolicy::where('event_id',$m->event_id)->lockForUpdate()->first();if($policy?->paused)return false;
             try{$actor=User::findOrFail($m->created_by);MailGuard::actor($actor);$source=EventMailSource::lock($m->event_id,$m->portal_grant_id);$rendered=EventMailSource::compose($m->template_key,$source);}
             catch(\Illuminate\Database\QueryException $error){throw $error;}

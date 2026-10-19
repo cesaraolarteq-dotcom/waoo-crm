@@ -1,6 +1,6 @@
 <?php
 namespace App\Http\Controllers\Admin;
-use App\Services\Staff\{SaveStaffIdentity, ReadStaffLinks, IssueStaffGrant, RevealStaffGrantLink, RotateStaffGrant, RevokeStaffGrant, SaveStaffJobInstructions};
+use App\Services\Staff\{SaveStaffIdentity, ReadStaffLinks, IssueStaffGrant, RevealStaffGrantLink, RotateStaffGrant, RevokeStaffGrant, SaveStaffJobInstructions, ReadStaffJobInstructions};
 use Illuminate\Http\Request;
 final class StaffController
 {
@@ -10,5 +10,6 @@ final class StaffController
     public function reveal(Request $r,int $grant,RevealStaffGrantLink $s) { return response()->json($s->execute($r->user(),$grant,$r->all())); }
     public function rotate(Request $r,int $grant,RotateStaffGrant $s) { return response()->json($s->execute($r->user(),$grant,$r->all(),(string)$r->header('Idempotency-Key'))); }
     public function revoke(Request $r,int $grant,RevokeStaffGrant $s) { return response()->json($s->execute($r->user(),$grant,$r->all(),(string)$r->header('Idempotency-Key'))); }
+    public function readInstructions(Request $r,int $event,ReadStaffJobInstructions $s) { return response()->json($s->execute($r->user(),$event))->header('Cache-Control','no-store, private'); }
     public function instructions(Request $r,int $event,SaveStaffJobInstructions $s) { return response()->json($s->execute($r->user(),$event,$r->all(),(string)$r->header('Idempotency-Key'))); }
 }

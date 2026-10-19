@@ -14,6 +14,7 @@ final class EventMailSource
     public static function lock(int $eventId,int $grantId):array
     {
         $grant=PortalGrant::whereKey($grantId)->lockForUpdate()->firstOrFail();$event=Event::whereKey($eventId)->lockForUpdate()->firstOrFail();
+        \App\Services\Responsibility\RequireCrmResponsibility::check($event);
         $customer=Customer::whereKey($event->customer_id)->lockForUpdate()->firstOrFail();ImportedAgreement::blockCrmLifecycle($eventId);
         $finance=FinancialRevision::where('event_id',$eventId)->orderByDesc('revision')->lockForUpdate()->firstOrFail();
         $binding=DB::table('capacity_payment_links')->where('event_id',$eventId)->lockForUpdate()->first();

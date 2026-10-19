@@ -27,6 +27,7 @@ final class RecordZellePayment
         try {
             return DB::transaction(function () use ($actor, $eventId, $data, $scope, $hash, $key, $identity) {
                 $event = Event::whereKey($eventId)->lockForUpdate()->firstOrFail();
+                \App\Services\Responsibility\RequireCrmResponsibility::check($event);
                 \App\Services\Imports\ImportedAgreement::blockCrmLifecycle($eventId);
                 if ($saved = MutationKey::find($scope, $key, $hash)) return LedgerEntry::findOrFail($saved->result_id);
                 $revision = FinancialRevision::where('event_id', $eventId)->whereKey($data['financial_revision_id'])->firstOrFail();

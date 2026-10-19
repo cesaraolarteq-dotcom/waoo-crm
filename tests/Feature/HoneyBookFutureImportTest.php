@@ -35,6 +35,20 @@ class HoneyBookFutureImportTest extends TestCase
         return ['expected_version'=>Event::findOrFail($link->event_id)->version,'imported_revision_id'=>$link->current_revision_id,'resource_ids'=>$ids,
             'review'=>['staff_confirmed'=>true,'cargo_checked'=>true,'origin_return_note'=>'Owner reviewed fictional source travel and return plan.','transfers'=>[]]];
     }
+    public function test_responsibility_migration_classifies_existing_links_and_keeps_source_money_and_versions():void
+    {
+        $link=$this->commit();$imported=Event::findOrFail($link->event_id);
+        $other=Event::create(['customer_id'=>$imported->customer_id,'title'=>'Synthetic CRM event','starts_at'=>$imported->starts_at,'ends_at'=>$imported->ends_at,'timezone'=>'America/Chicago']);
+        $migration=require database_path('migrations/2026_10_19_390000_add_event_responsible_system.php');
+        $migration->down();$migration->up();
+        $this->assertSame('honeybook',$imported->fresh()->responsible_system);$this->assertSame('crm',$other->fresh()->responsible_system);
+        $this->assertSame($imported->version,$imported->fresh()->version);$this->assertSame(6000,(int)ImportedLedgerLine::sum('amount_cents'));
+        $audit=DB::table('audit_entries')->where('action','event.responsibility_classified')->get();$this->assertCount(2,$audit);
+        $this->assertStringNotContainsString('Fictional Source',json_encode($audit));
+        // Even an invalid direct DB flip must not remove the imported-agreement financial barrier.
+        $imported->forceFill(['responsible_system'=>'crm'])->save();
+        $this->expectException(RecordWriteRejected::class);ImportedAgreement::blockCrmLifecycle($imported->id);
+    }
     public function test_exact24_source_arithmetic_and_signed_payment_lines_are_private_and_do_not_create_domain_until_commit():void
     {
         $b=$this->stageFuture();$row=ImportRow::sole();$this->assertSame('ready',$row->status);$n=$row->normalized;
@@ -47,11 +61,11 @@ class HoneyBookFutureImportTest extends TestCase
     {
         $link=$this->commit();$r=ImportedProjectRevision::sole();$event=Event::sole();
         $coverage=app(ReadImportCoverage::class)->execute($this->owner,$r->import_batch_id);$this->assertSame(12000,$coverage['reconciliation']['total_cents']['source_sum_cents']);$this->assertSame(0,$coverage['reconciliation']['paid_cents']['difference_cents']);
-        $this->assertSame(12000,$r->normalized['total_cents']);$this->assertSame(6000,(int)ImportedLedgerLine::sum('amount_cents'));$this->assertSame('honeybook',$event->travel_fee_evidence['source']);
+        $this->assertSame(12000,$r->normalized['total_cents']);$this->assertSame(6000,(int)ImportedLedgerLine::sum('amount_cents'));$this->assertSame('honeybook',$event->travel_fee_evidence['source']);$this->assertSame('honeybook',$event->responsible_system);
         $this->assertSame('2026-10-01',ImportedLedgerLine::orderBy('id')->first()->received_date->format('Y-m-d'));$this->assertFalse(ImportedAgreement::summary($event->id)['funds_verified']);
         foreach(['ledger_entries','financial_revisions','contracts','portal_grants','resource_reservations'] as $t)$this->assertDatabaseCount($t,0);
         $audit=json_encode(DB::table('audit_entries')->get());foreach(['Fictional Source','fixture-source@example.test','PRIVATE_SOURCE_NOTE_FIXTURE','123 Fictional Venue'] as $secret)$this->assertStringNotContainsString($secret,$audit);Queue::assertNothingPushed();
-        $this->getJson('/admin/api/imported-events/'.$event->id)->assertOk()->assertJsonPath('summary.environment','honeybook_import');
+        $this->getJson('/admin/api/imported-events/'.$event->id)->assertOk()->assertJsonPath('summary.environment','honeybook_import')->assertJsonPath('event.responsible_system','honeybook');
     }
     public function test_real_money_bridge_uses_historical_total_and_date_only_evidence_then_capacity_replay():void
     {

@@ -20,6 +20,7 @@ final class IssuePortalGrant
         try {
             return DB::transaction(function () use ($actor, $eventId, $data) {
                 $event = Event::whereKey($eventId)->lockForUpdate()->firstOrFail();
+                \App\Services\Responsibility\RequireCrmResponsibility::check($event);
                 \App\Services\Imports\ImportedAgreement::blockCrmLifecycle($eventId);
                 abort_unless($event->customer_id === (int) $data['customer_id'], 404);
                 $token = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');

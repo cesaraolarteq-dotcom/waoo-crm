@@ -13,6 +13,6 @@ class ExpireTestCheckout implements ShouldQueue
     {
         Sandbox::require();
         $intent = PaymentIntent::findOrFail($this->intentId);
-        if ($intent->stripe_checkout_session_id && in_array($intent->status, ['superseded','expired'], true)) app(StripeGateway::class)->expireCheckout($intent->stripe_checkout_session_id);
+        if ($intent->stripe_checkout_session_id && (in_array($intent->status, ['superseded','expired'], true) || ($intent->status === 'reconciliation_required' && $intent->last_error === 'responsible_system_honeybook'))) app(StripeGateway::class)->expireCheckout($intent->stripe_checkout_session_id);
     }
 }

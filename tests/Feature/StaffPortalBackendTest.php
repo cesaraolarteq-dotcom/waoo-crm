@@ -62,6 +62,30 @@ class StaffPortalBackendTest extends TestCase
     }
     private function week(string $cookie) { return $this->withCookie(StaffContext::COOKIE,$cookie)->getJson('/staff/api/week'); }
 
+    public function test_owner_instructions_read_pins_both_versions_and_does_not_mutate_or_leak_private_notes():void
+    {
+        $url='/admin/api/events/'.$this->event->id.'/staff-instructions';$count=DB::table('audit_entries')->count();
+        $this->getJson($url)->assertOk()->assertJsonPath('event_version',$this->event->version)->assertJsonPath('version',0)
+            ->assertJsonPath('instructions.bring',[])->assertHeader('Cache-Control','no-store, private');
+        $this->assertSame($count,DB::table('audit_entries')->count());
+        $input=['expected_event_version'=>$this->event->version,'expected_version'=>0,'parking'=>'Synthetic parking','bring'=>['Water'],
+            'contact_name'=>'Synthetic day contact','contact_phone'=>'+13465550111'];
+        app(SaveStaffJobInstructions::class)->execute($this->owner,$this->event->id,$input,(string)Str::uuid());
+        $result=$this->getJson($url)->assertOk()->assertJsonPath('version',1)->assertJsonPath('instructions.contact_phone','+13465550111')->json();
+        $this->assertSame(['event_id','event_version','version','instructions'],array_keys($result));
+        $this->postJson($url,$input,['Idempotency-Key'=>(string)Str::uuid()])->assertConflict();
+        $this->event->forceFill(['responsible_system'=>'honeybook'])->save();
+        $this->getJson($url)->assertOk();$this->assertDatabaseCount('staff_job_instructions',1);
+    }
+    public function test_owner_instructions_read_refuses_tampered_payload_and_non_owner_and_disabled_flag():void
+    {
+        $url='/admin/api/events/'.$this->event->id.'/staff-instructions';
+        app(SaveStaffJobInstructions::class)->execute($this->owner,$this->event->id,['expected_event_version'=>$this->event->version,'expected_version'=>0,'bring'=>[]],(string)Str::uuid());
+        DB::table('staff_job_instructions')->update(['sha256'=>str_repeat('0',64)]);
+        $this->getJson($url)->assertConflict()->assertJsonMissingPath('instructions');
+        config(['waoo.sandbox_staff'=>false]);$this->getJson($url)->assertForbidden();
+        config(['waoo.sandbox_staff'=>true]);$this->owner->forceFill(['role'=>'staff'])->save();$this->getJson($url)->assertForbidden();
+    }
     public function test_owner_issue_reveal_rotate_are_pinned_private_and_phone_is_owner_only(): void
     {
         $key=(string)Str::uuid(); $a=$this->issue(key:$key); $again=$this->issue(key:$key);
@@ -79,6 +103,8 @@ class StaffPortalBackendTest extends TestCase
     }
     public function test_real_week_uses_confirmed_snapshot_and_never_serializes_private_fields(): void
     {
+        $this->event->forceFill(['responsible_system'=>'honeybook'])->save(); // Imported assignments remain visible without money.
+
         $this->person->forceFill(['name'=>"Lucia\tPRIVATE_LASTNAME"])->save();
         $this->teammate->forceFill(['name'=>"Carlos\u{00a0}PRIVATE_TEAM_LASTNAME"])->save();
         $cookie=$this->enter($this->issue());
