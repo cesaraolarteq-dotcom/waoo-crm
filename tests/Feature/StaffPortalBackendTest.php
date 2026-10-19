@@ -83,6 +83,8 @@ class StaffPortalBackendTest extends TestCase
         app(SaveStaffJobInstructions::class)->execute($this->owner,$this->event->id,['expected_event_version'=>$this->event->version,'expected_version'=>0,'bring'=>[]],(string)Str::uuid());
         DB::table('staff_job_instructions')->update(['sha256'=>str_repeat('0',64)]);
         $this->getJson($url)->assertConflict()->assertJsonMissingPath('instructions');
+        DB::table('staff_job_instructions')->update(['payload'=>'invalid cipher']);
+        $this->getJson($url)->assertConflict()->assertJsonMissingPath('instructions');
         config(['waoo.sandbox_staff'=>false]);$this->getJson($url)->assertForbidden();
         config(['waoo.sandbox_staff'=>true]);$this->owner->forceFill(['role'=>'staff'])->save();$this->getJson($url)->assertForbidden();
     }
