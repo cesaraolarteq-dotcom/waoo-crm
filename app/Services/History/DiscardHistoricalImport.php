@@ -2,7 +2,7 @@
 namespace App\Services\History;
 
 use App\Exceptions\RecordWriteRejected;
-use App\Models\{HistoryImportBatch, HistoryImportRow, User};
+use App\Models\{HistoryImportBatch, HistoryImportDecision, HistoryImportRow, User};
 use App\Services\Audit;
 use App\Services\Finance\MutationKey;
 use App\Services\Imports\{ImportInput, ImportPersistence};
@@ -24,6 +24,8 @@ final class DiscardHistoricalImport
             $batch = HistoryImportBatch::whereKey($batchId)->lockForUpdate()->firstOrFail();
             $m = HistoryEnvelope::batch($batch);
             if (!$receipt) {
+                RecordWriteRejected::unless(!HistoryImportDecision::where('history_import_batch_id', $batchId)->lockForUpdate()->first(),
+                    409, 'Este lote ya tiene historial guardado. Requiere el cierre revisado, no descarte.');
                 RecordWriteRejected::unless($batch->state === 'reviewing' && $batch->version === (int)$d['expected_batch_version']
                     && hash_equals($batch->coverage_sha256, $d['expected_coverage_sha256']), 409, 'El lote cambió. Revisa antes de descartarlo.');
                 HistoryImportRow::where('history_import_batch_id', $batchId)->delete();

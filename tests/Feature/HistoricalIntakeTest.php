@@ -141,7 +141,7 @@ class HistoricalIntakeTest extends TestCase
         $this->assertStringContainsString('no-store', $r->headers->get('Cache-Control'));
         $id = $r->json('batch_id');
         $this->getJson('/admin/api/history/imports/'.$id)->assertOk()->assertJsonPath('commit_available', false)->assertDontSee('history@example.test');
-        $this->postJson('/admin/api/history/imports/'.$id.'/rows/1/commit')->assertNotFound();
+        $this->postJson('/admin/api/history/imports/'.$id.'/rows/1/commit')->assertForbidden();
         $this->postJson('/admin/api/history/imports/'.$id.'/close')->assertNotFound();
     }
     public function test_feature_role_2fa_and_production_gates_apply_on_every_read_and_replay(): void

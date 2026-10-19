@@ -32,6 +32,7 @@ final class CommitHoneyBookEvent
             $row=ImportRow::whereKey($rowId)->where('import_batch_id',$batchId)->firstOrFail();$n=$row->normalized;$s=$row->source;
             RecordWriteRejected::unless($row->version===$d['expected_row_version']&&hash_equals($row->preview_sha256,$d['expected_preview_sha256'])&&$row->status!=='skipped'
                 &&array_diff(array_column($row->errors,'code'),['owner_status_review_required','package_equation_mismatch'])===[]&&($n['source_format']??null)==='honeybook_future_v1',409,'La fila requiere revisar datos, importes u horario antes de importar.');
+            HoneyBookProjectIdentity::operating($row->source_key);
             $hasDifference=in_array('package_equation_mismatch',array_column($row->errors,'code'),true);
             if($hasDifference&&(!(bool)($d['source_difference_accepted']??false)||mb_strlen(trim($d['source_difference_note']??''))<5))ImportInput::fail('source_difference_note','explicit_source_difference_acceptance_required');
             if(!$hasDifference&&(array_key_exists('source_difference_accepted',$d)||array_key_exists('source_difference_note',$d)))ImportInput::fail('source_difference_note','source_difference_not_present');

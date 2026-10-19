@@ -24,7 +24,8 @@ final class ReadHistoricalImport
             return ['batch' => ['id' => $batch->id, 'version' => $batch->version, 'state' => $batch->state,
                 'profile' => $batch->profile, 'cutoff' => $m['cutoff']], 'counts' => $m['counts'],
                 'coverage_sha256' => $batch->coverage_sha256, 'page' => ['number' => $page, 'last' => $last, 'total' => $total],
-                'rows' => $rows->map(fn ($row) => self::summary($row, HistoryEnvelope::row($row, $m)))->all(), 'commit_available' => false];
+                'rows' => $rows->map(fn ($row) => self::summary($row, HistoryEnvelope::row($row, $m)))->all(),
+                'commit_available' => (bool)config('waoo.sandbox_history_commit')];
         });
     }
 
@@ -37,7 +38,7 @@ final class ReadHistoricalImport
 
     public static function summary(HistoryImportRow $row, array $p): array
     {
-        return ['id' => $row->id, 'version' => $row->version, 'state' => 'needs_review', 'issue_codes' => $p['issue_codes'],
+        return ['id' => $row->id, 'version' => $row->version, 'state' => $p['decision']['state'] ?? 'needs_review', 'issue_codes' => $p['issue_codes'],
             'preview_sha256' => $row->preview_sha256, 'source_date' => $p['normalized']['source_date'],
             'status' => $p['normalized']['status'], 'event_type' => $p['normalized']['event_type'],
             'customer_match' => ['state' => 'not_evaluated', 'candidate_count' => null]];

@@ -16,6 +16,8 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::get('/history/imports/{batch}', [\App\Http\Controllers\Admin\HistoricalImportController::class, 'show'])->whereNumber('batch');
     Route::get('/history/imports/{batch}/rows/{row}', [\App\Http\Controllers\Admin\HistoricalImportController::class, 'row'])->whereNumber(['batch', 'row']);
     Route::post('/history/imports/{batch}/discard', [\App\Http\Controllers\Admin\HistoricalImportController::class, 'discard'])->whereNumber('batch');
+    Route::post('/history/imports/{batch}/rows/{row}/commit', [\App\Http\Controllers\Admin\HistoricalImportController::class, 'commit'])->whereNumber(['batch', 'row']);
+    Route::get('/customers/{customer}/history', [\App\Http\Controllers\Admin\HistoricalImportController::class, 'customer'])->whereNumber('customer');
     Route::get('/cutover/honeybook', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'index']);
     Route::get('/cutover/honeybook/events/{event}', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'show'])->whereNumber('event');
     Route::post('/cutover/honeybook/events/{event}', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'review'])->whereNumber('event');

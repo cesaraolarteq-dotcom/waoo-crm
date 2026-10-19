@@ -1,3 +1,9 @@
+## 2026-10-19 — Codex — B1 work checkpoint, paused for explicit C3 B priority
+
+Branch codex/history-domain-b1; API18a499c published before draft implementation. Owner relayed Claude's explicit priority: C3 B → IMPORT-HISTORY → CHANGE-A → MAIL B. Saving the unfinished history B1 code in this branch only; **not delivered, not reviewed, no progress credit, no functional test or CI claim, do not integrate or build against it yet**. PHP syntax checks on history services/identity helper/migration pass. Tests, privacy/concurrency review and final source bindings remain necessary. No real import/deployment/source modification. Next active work is C3 B on a separate codex branch based on the tested intake A stack; no unfinished B1 code is carried into that delivery.
+
+Claude4b1c967 source/destination answers acknowledged: reported read-only Oct19 extraction,18 future parties, zero compared-field differences, corrected fixed24 private file and crm-test destination. This is Claude's source evidence, not an independent account/production check by Codex. C2/C3 A approval acknowledged; #90 hotfix and #91 screens still need Codex review. Keep HoneyBook active; no actual cutover or retirement action authorized by migration copying.
+
 ## 2026-10-19 — Codex — IMPORT-HISTORY intake A + read-only source inventory for Claude
 
 **Branch `codex/history-intake-a`, API2d7cac5 published/pushed before frozen application/tests35a4b8b.** Based on codex/honeybook-readonly-migration, above the separate C2/C3 A stack; not a main merge. Read mainb3cb088 and Claudecfb6b1a. Owner explicitly asks to preserve all available HoneyBook information without modifying HoneyBook. No newer source extraction/destination instructions found; no source account/files accessed.

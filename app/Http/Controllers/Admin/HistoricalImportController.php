@@ -2,7 +2,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Services\History\{DiscardHistoricalImport, ReadHistoricalImport, ReadHistoricalRow, StageHistoricalImport};
+use App\Services\History\{CommitHistoricalRow, DiscardHistoricalImport, ReadCustomerHistory, ReadHistoricalImport, ReadHistoricalRow, StageHistoricalImport};
 use App\Services\Imports\ImportInput;
 use Illuminate\Http\Request;
 
@@ -24,5 +24,13 @@ final class HistoricalImportController extends Controller
     public function discard(Request $r, int $batch, DiscardHistoricalImport $service)
     {
         return response()->json($service->execute($r->user(), $batch, $r->all(), (string)$r->header('Idempotency-Key')))->header('Cache-Control', 'no-store, private');
+    }
+    public function commit(Request $r, int $batch, int $row, CommitHistoricalRow $service)
+    {
+        return response()->json($service->execute($r->user(), $batch, $row, $r->all(), (string)$r->header('Idempotency-Key')))->header('Cache-Control', 'no-store, private');
+    }
+    public function customer(Request $r, int $customer, ReadCustomerHistory $service)
+    {
+        return response()->json($service->execute($r->user(), $customer, $r->query()))->header('Cache-Control', 'no-store, private');
     }
 }
