@@ -84,6 +84,43 @@ class ImportOwnerCatalogTest extends TestCase
         $this->assertSame(3, Resource::where('kind', 'costume')->count());
     }
 
+    public function test_character_groups_are_optional_audited_versioned_and_rerunnable(): void
+    {
+        $actor = User::sole();
+        $save = app(\App\Services\Records\SaveCharacter::class);
+        $character = $save->execute($actor, ['name' => 'Synthetic Mouse', 'active' => true]);
+        $this->assertNull($character->group);
+        $export = fn (array $extra) => file_put_contents($this->file, json_encode(['packages' => [], 'characters' => [['name' => 'Synthetic Mouse', ...$extra]]]));
+        $run = fn (bool $dry = false) => $this->artisan('waoo:import-catalog', ['file' => $this->file, '--actor' => $actor->email, '--dry-run' => $dry])->assertSuccessful();
+        $export(['group' => '  Synthetic Show  ', 'outfits' => 'Classic 1']);
+        $run(true);
+        $this->assertNull($character->fresh()->group);
+        $run();
+        $character->refresh();
+        $this->assertSame('Synthetic Show', $character->group);
+        $this->assertSame(['Classic'], $character->outfits);
+        $this->assertSame(2, $character->version, 'One save for group plus outfits.');
+        $audits = \Illuminate\Support\Facades\DB::table('audit_entries')->count();
+        $run();
+        $this->assertSame(2, $character->fresh()->version);
+        $this->assertSame($audits, \Illuminate\Support\Facades\DB::table('audit_entries')->count());
+        $export([]); $run();
+        $this->assertSame('Synthetic Show', $character->fresh()->group, 'Missing key preserves the group.');
+        $export(['group' => '0']); $run();
+        $this->assertSame('0', $character->fresh()->group);
+        $export(['group' => '  ']); $run();
+        $this->assertNull($character->fresh()->group);
+        $version = $character->fresh()->version;
+        try {
+            $save->execute($actor, ['name' => $character->name, 'active' => true, 'group' => 'Stale', 'expected_version' => 2], $character->id);
+            $this->fail('Stale version must be refused.');
+        } catch (\App\Exceptions\RecordWriteRejected $e) {
+            $this->assertSame(409, $e->status);
+        }
+        $this->assertSame($version, $character->fresh()->version);
+        $this->assertNull($character->fresh()->group);
+    }
+
     public function test_requires_an_existing_owner(): void
     {
         $this->artisan('waoo:import-catalog', ['file' => $this->file, '--actor' => 'nobody@example.test'])->assertFailed();
