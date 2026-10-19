@@ -20,6 +20,7 @@ return [
     'sandbox_tips' => env('WAOO_SANDBOX_TIPS', false),
     'sandbox_finance' => env('WAOO_SANDBOX_FINANCE', false),
     'sandbox_imports' => env('WAOO_SANDBOX_IMPORTS', false),
+    'sandbox_history' => env('WAOO_SANDBOX_HISTORY', false), // Private staging/review only; no archive commits yet.
     'sandbox_cutover' => env('WAOO_SANDBOX_CUTOVER', false), // Evidence preparation only; no transfer endpoint.
     'cutover_reconciliation_max_age_minutes' => 240, // César approved 2026-10-19; not automatic polling.
     'sandbox_quotes' => env('WAOO_SANDBOX_QUOTES', false),

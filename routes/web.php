@@ -12,6 +12,10 @@ Route::redirect('/', '/admin')->name('home');
 Route::middleware(['auth', 'password.confirm'])->get('/seguridad/dos-pasos', TwoFactorEnrollmentController::class)->name('security.two-factor');
 Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'));
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->prefix('admin/api')->group(function () {
+    Route::post('/history/imports', [\App\Http\Controllers\Admin\HistoricalImportController::class, 'stage']);
+    Route::get('/history/imports/{batch}', [\App\Http\Controllers\Admin\HistoricalImportController::class, 'show'])->whereNumber('batch');
+    Route::get('/history/imports/{batch}/rows/{row}', [\App\Http\Controllers\Admin\HistoricalImportController::class, 'row'])->whereNumber(['batch', 'row']);
+    Route::post('/history/imports/{batch}/discard', [\App\Http\Controllers\Admin\HistoricalImportController::class, 'discard'])->whereNumber('batch');
     Route::get('/cutover/honeybook', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'index']);
     Route::get('/cutover/honeybook/events/{event}', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'show'])->whereNumber('event');
     Route::post('/cutover/honeybook/events/{event}', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'review'])->whereNumber('event');
