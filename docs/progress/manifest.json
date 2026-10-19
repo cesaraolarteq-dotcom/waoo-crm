@@ -657,7 +657,16 @@
      "merged": false,
      "accepted": false,
      "note": "Alcance de César 2026-10-18: sin disponibilidad ni aceptar/rechazar. Ve sus fiestas confirmadas de la semana; César copia, rota o apaga el enlace.",
-     "blocker": "En #85 para fusionar. Luego: César crea su staff de prueba en crm-test y prueba el enlace (runbook docs/STAFF-01-RUNBOOK.md). Falta formulario de instrucciones por fiesta (Codex: lectura versionada)."
+     "blocker": "#85 protegido mientras César revisa. Lectura de instrucciones publicada e implementada en ead6e67, pendiente revisión/CI y formulario de Claude. Sin activación.",
+     "follow_up": {
+      "branch": "codex/responsibility-c1",
+      "source": "5415421",
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "note": "Encima de #85 sin cambiar claude/*: reserva vigente, CDT/CST por hora, sesión UTC168h, privacidad de apellido tab/NBSP; lectura versionada de instrucciones GET /admin/api/events/{event}/staff-instructions, contacto solo del dueño y no-store. Permite bring=[] explícito. Base STAFF aprobada; lectura y follow-ups pendientes de revisión.",
+      "verification": "Final5415421:39 tests/336 assertions PASS1:42.872,107MB,PHP8.3.35/MariaDB11.8. Base ead6e67 disjoint127/997 +89/890 PASS. Previous full726/30229 belongs to b894579; no new full/CI/browser/main/owner acceptance claimed."
+     }
     },
     {
      "name": "Propina con tarjeta (TIP-01)",
@@ -811,7 +820,17 @@
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "design": "docs/plans/PHASE-8.md (corte, conciliación, respaldos, vuelta atrás, número)"
+     "design": "docs/plans/PHASE-8.md (corte, conciliación, respaldos, vuelta atrás, número)",
+     "responsibility_c1": {
+      "api": "docs/RESPONSIBLE-SYSTEM-API.md",
+      "branch": "codex/responsibility-c1",
+      "backend": "5415421",
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "scope": "Enum y backfill auditado; importaciones HoneyBook; bloqueos de MAIL, enlaces/cobros, Zelle y preparación de cotización; recibos autenticados tardíos conservados y conciliación financiera explícita. No transferencia ni puente financiero C2/C3;240min sin aprobar.",
+      "verification": "Final5415421 related39/336 PASS; base ead6e67 disjoint216/1887 PASS. Signed-webhook race first red2/2 then green; verified paid state and provider ID preserved. No whole transfer/import/provider activation or main/owner acceptance."
+     }
     }
    ]
   }

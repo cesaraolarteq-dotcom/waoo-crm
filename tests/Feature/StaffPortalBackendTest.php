@@ -62,6 +62,32 @@ class StaffPortalBackendTest extends TestCase
     }
     private function week(string $cookie) { return $this->withCookie(StaffContext::COOKIE,$cookie)->getJson('/staff/api/week'); }
 
+    public function test_owner_instructions_read_pins_both_versions_and_does_not_mutate_or_leak_private_notes():void
+    {
+        $url='/admin/api/events/'.$this->event->id.'/staff-instructions';$count=DB::table('audit_entries')->count();
+        $this->getJson($url)->assertOk()->assertJsonPath('event_version',$this->event->version)->assertJsonPath('version',0)
+            ->assertJsonPath('instructions.bring',[])->assertHeader('Cache-Control','no-store, private');
+        $this->assertSame($count,DB::table('audit_entries')->count());
+        $input=['expected_event_version'=>$this->event->version,'expected_version'=>0,'parking'=>'Synthetic parking','bring'=>['Water'],
+            'contact_name'=>'Synthetic day contact','contact_phone'=>'+13465550111'];
+        app(SaveStaffJobInstructions::class)->execute($this->owner,$this->event->id,$input,(string)Str::uuid());
+        $result=$this->getJson($url)->assertOk()->assertJsonPath('version',1)->assertJsonPath('instructions.contact_phone','+13465550111')->json();
+        $this->assertSame(['event_id','event_version','version','instructions'],array_keys($result));
+        $this->postJson($url,$input,['Idempotency-Key'=>(string)Str::uuid()])->assertConflict();
+        $this->event->forceFill(['responsible_system'=>'honeybook'])->save();
+        $this->getJson($url)->assertOk();$this->assertDatabaseCount('staff_job_instructions',1);
+    }
+    public function test_owner_instructions_read_refuses_tampered_payload_and_non_owner_and_disabled_flag():void
+    {
+        $url='/admin/api/events/'.$this->event->id.'/staff-instructions';
+        app(SaveStaffJobInstructions::class)->execute($this->owner,$this->event->id,['expected_event_version'=>$this->event->version,'expected_version'=>0,'bring'=>[]],(string)Str::uuid());
+        DB::table('staff_job_instructions')->update(['sha256'=>str_repeat('0',64)]);
+        $this->getJson($url)->assertConflict()->assertJsonMissingPath('instructions');
+        DB::table('staff_job_instructions')->update(['payload'=>'invalid cipher']);
+        $this->getJson($url)->assertConflict()->assertJsonMissingPath('instructions');
+        config(['waoo.sandbox_staff'=>false]);$this->getJson($url)->assertForbidden();
+        config(['waoo.sandbox_staff'=>true]);$this->owner->forceFill(['role'=>'staff'])->save();$this->getJson($url)->assertForbidden();
+    }
     public function test_owner_issue_reveal_rotate_are_pinned_private_and_phone_is_owner_only(): void
     {
         $key=(string)Str::uuid(); $a=$this->issue(key:$key); $again=$this->issue(key:$key);
@@ -79,6 +105,10 @@ class StaffPortalBackendTest extends TestCase
     }
     public function test_real_week_uses_confirmed_snapshot_and_never_serializes_private_fields(): void
     {
+        $this->event->forceFill(['responsible_system'=>'honeybook'])->save(); // Imported assignments remain visible without money.
+
+        $this->person->forceFill(['name'=>"Lucia\tPRIVATE_LASTNAME"])->save();
+        $this->teammate->forceFill(['name'=>"Carlos\u{00a0}PRIVATE_TEAM_LASTNAME"])->save();
         $cookie=$this->enter($this->issue());
         $json=$this->week($cookie)->assertOk()->assertHeader('Cache-Control','no-store, private')->assertHeader('X-Robots-Tag','noindex, nofollow')
             ->assertJsonPath('preview',false)->assertJsonPath('jobs.0.outfit_version','0')->assertJsonPath('jobs.0.is_driver',true)
@@ -188,6 +218,30 @@ class StaffPortalBackendTest extends TestCase
         app(SaveResource::class)->execute($this->owner,$input,$this->person->id);
         $this->assertNotNull(StaffAccessGrant::find($a['grant']['id'])->revoked_at);
         config(['waoo.sandbox_staff'=>true]);auth()->logout();$this->week($cookie)->assertUnauthorized();
+    }
+    public function test_arrival_uses_its_own_dst_offset_and_stale_reservation_times_are_hidden(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-01T05:00:00Z'));
+        DB::table('events')->where('id',$this->event->id)->update(['starts_at'=>'2026-11-01 07:10:00','ends_at'=>'2026-11-01 08:10:00','setup_minutes'=>30]);
+        $cookie=$this->enter($this->issue());
+        $this->week($cookie)->assertJsonCount(0,'jobs'); // Old resource interval is not an assignment at this new time.
+        DB::table('resource_reservations')->where('event_id',$this->event->id)->update(['starts_at'=>'2026-11-01 07:10:00','ends_at'=>'2026-11-01 08:10:00']);
+        $this->week($cookie)->assertJsonPath('jobs.0.arrival','1:40 a. m. CDT')->assertJsonPath('jobs.0.hours','1:10 a. m. CST – 2:10 a. m. CST');
+        $this->travelTo(CarbonImmutable::parse('2026-03-08T06:00:00Z'));
+        DB::table('events')->where('id',$this->event->id)->update(['starts_at'=>'2026-03-08 08:10:00','ends_at'=>'2026-03-08 09:10:00']);
+        DB::table('resource_reservations')->where('event_id',$this->event->id)->update(['starts_at'=>'2026-03-08 08:10:00','ends_at'=>'2026-03-08 09:10:00']);
+        $this->week($cookie)->assertJsonPath('jobs.0.arrival','1:40 a. m. CST')->assertJsonPath('jobs.0.hours','3:10 a. m. CDT – 4:10 a. m. CDT');
+    }
+    public function test_session_ceiling_is_168_hours_even_with_a_houston_php_timezone(): void
+    {
+        $issued=$this->issue();$zone=date_default_timezone_get();
+        try {
+            date_default_timezone_set('America/Chicago');
+            $this->travelTo(CarbonImmutable::parse('2026-10-30T15:00:00Z'));
+            $this->enter($issued);
+            $expiry=CarbonImmutable::parse(DB::table('staff_portal_sessions')->sole()->expires_at,'UTC');
+            $this->assertSame(604800,(int)CarbonImmutable::now('UTC')->diffInSeconds($expiry));
+        } finally { date_default_timezone_set($zone); }
     }
     public function test_main_owner_screen_calls_real_services_and_does_not_reveal_a_replacement(): void
     {

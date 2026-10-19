@@ -74,6 +74,14 @@ class StaffLinks extends Page
         }
     }
 
+    /** Next/previous page of people: re-pins the rows shown and hides any link panel from the other page. */
+    public function goToPage(int $page): void
+    {
+        $this->page = max(1, $page);
+        $this->newLink = null;
+        $this->pin();
+    }
+
     public static function opened(?string $iso): string
     {
         return $iso ? 'Lo abrió '.rtrim(Labels::when(\Carbon\CarbonImmutable::parse($iso)), '.') : 'Todavía no lo abre';
@@ -98,7 +106,7 @@ class StaffLinks extends Page
     public function revokeAction(): Action
     {
         return $this->linkAction('revoke', 'Apagar', 'heroicon-o-no-symbol', 'danger',
-            'Ya no podrá ver sus fiestas con ese enlace. Úsalo si deja de trabajar contigo. Después puedes crearle uno nuevo.');
+            'Ya no podrá ver sus fiestas con ese enlace. Sus fiestas apartadas no cambian (eso se cambia en cada fiesta). Úsalo si deja de trabajar contigo; después puedes crearle uno nuevo.');
     }
 
     private function linkAction(string $what, string $label, string $icon, string $color, ?string $confirm): Action

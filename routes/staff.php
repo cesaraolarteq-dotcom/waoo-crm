@@ -11,6 +11,7 @@ Route::middleware(['auth',RequireOwnerAdmin::class,'throttle:admin-write'])->pre
     Route::post('/staff/grants/{grant}/reveal',[StaffController::class,'reveal'])->whereNumber('grant');
     Route::post('/staff/grants/{grant}/rotate',[StaffController::class,'rotate'])->whereNumber('grant');
     Route::post('/staff/grants/{grant}/revoke',[StaffController::class,'revoke'])->whereNumber('grant');
+    Route::get('/events/{event}/staff-instructions',[StaffController::class,'readInstructions'])->whereNumber('event');
     Route::post('/events/{event}/staff-instructions',[StaffController::class,'instructions'])->whereNumber('event');
 });
 Route::middleware('throttle:60,1')->prefix('staff')->group(function () {

@@ -30,6 +30,11 @@ final class CaptureMailOccurrence
                 throw new \InvalidArgumentException('Mail locators contain identifiers only.');
             }
         }
+        if (isset($locator['event_id'])) {
+            // Inbound verified receipts must commit even if outbound automation is disallowed.
+            $event = \App\Models\Event::whereKey($locator['event_id'])->lockForUpdate()->firstOrFail();
+            if ($event->responsible_system !== 'crm') return null;
+        }
         $identity = MutationKey::hash(['key' => $key, 'source_id' => (string) $sourceId]);
         // A later replacement link never retargets or silently resends a captured occurrence.
         if ($existing = MailOccurrence::where('dedupe_sha256', $identity)->first()) return $existing;

@@ -1,6 +1,6 @@
 # Responsible system — shadow HoneyBook and explicit CRM cutover, API proposal v1
 
-2026-10-19 · Owner decision in PHASE-8.md, backend Codex / UI Claude. Design first; **not implemented by this document**. STAFF backend is the current delivery. Next order: C1 responsibility guard → C2 reviewed resync/reconciliation → C3 cohort cutover + financial bridge; TIP stays gated behind C1. No live import, messages, money or deployment authorized here.
+2026-10-19 · Owner decision in PHASE-8.md, backend Codex / UI Claude. Design published before code and approved by Claude. C1 is implemented for review on `codex/responsibility-c1` (ead6e67 +5415421); C2/C3 are not implemented. Current order: C1 → versioned owner staff instructions read → TIP behind C1 → C2 reviewed resync/reconciliation → C3 cohort cutover + financial bridge. Publication of this API does not activate any operation. No live import, messages, money or deployment authorized here.
 
 ## C1 — one responsible system per event
 
@@ -82,3 +82,9 @@ C2 extends that same reviewed row-commit path. If the operational selection, tot
 Any service/date/address/resource/status change still needs the dedicated logistics/change path and affected-neighbor validation; until that exists, return a precise blocked reason. A raw re-import is not an administrative override. After CRM takeover, conflicting HoneyBook updates are reconciliation evidence, never an automatic rollback of new CRM receipts.
 
 Internal capture is not an owner send command: when a legitimate domain operation records an authenticated late payment on a HoneyBook event, the mail hook must skip the occurrence (return null / safe suppression reason), **not throw and roll back the verified receipt**. Public mail planning/payment/TIP initiation still rejects responsibility conflicts. Test both halves: genuine provider evidence survives, and no message/checkout is created. A thank-you for a HoneyBook event is blocked as a whole; the “tip unavailable → review button only” fallback is for an otherwise permitted CRM email, never a way around the responsibility gate.
+
+## C1 implementation boundary amendment — 2026-10-19
+
+Current delivery branch is based on PR #85, which remains untouched. C1 precedes owner instructions read, TIP, then C2/C3. Responsibility rejection is HTTP409 `{code:"responsible_system_honeybook",message:...}`. Event-born CRM defaults are explicit in the model and database; importer marks new events HoneyBook inside its existing metadata-audited transaction without changing financial/event versions. Migration records metadata-only system classification audit for preexisting events. Owner/import detail projections include the closed enum. There is no toggle/transfer endpoint in C1.
+
+Payment-scoped grant reveal/authorization and checkout return are denied for HoneyBook. Internal occurrence capture checks before dedupe and returns null for HoneyBook, preserving legitimate late provider receipt transactions. Inbound Stripe/mail evidence and collection cleanup retain their existing paths. Dispatch marks scheduled HoneyBook mail blocked with the stable code before pause/source/render/transport; terminal receipts remain unchanged. Public payment/mail commands reject, never silently succeed. Existing imported-agreement blockers stay in place even if the flag is incorrectly changed. In-flight external checkout intents and dispatch states remain reconciliation obligations for C3; no unsafe manual flip is added here.

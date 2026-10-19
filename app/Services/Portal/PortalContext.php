@@ -25,6 +25,9 @@ final readonly class PortalContext
         if (! $row || $row->revoked_at || ! $row->expires_at->isFuture() || $row->event_id !== $eventId || $row->customer_id !== $this->customerId || ! in_array($scope, $row->scopes, true)) {
             throw new AuthorizationException('Este acceso no permite esa operación.');
         }
+        if (in_array($scope, ['payments.read', 'checkout.create'], true)) {
+            \App\Services\Responsibility\RequireCrmResponsibility::forEvent($eventId, $lock);
+        }
         return $row;
     }
     public static function requireTransport(Request $request): void

@@ -40,6 +40,62 @@ class StripeSandboxTest extends TestCase
         $raw = json_encode($event, JSON_THROW_ON_ERROR); $time = time(); $signature = 't='.$time.',v1='.hash_hmac('sha256', $time.'.'.$raw, 'whsec_fixture');
         return $this->call('POST', '/webhooks/stripe', [], [], [], ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json', 'HTTP_STRIPE_SIGNATURE' => $signature], $raw);
     }
+    public function test_honeybook_refuses_checkout_replay_and_old_owner_checkout_url():void
+    {
+        $key=(string)Str::uuid();$this->create($key)->assertCreated();$intent=PaymentIntent::sole();
+        $this->event->forceFill(['responsible_system'=>'honeybook'])->save();
+        $this->create($key)->assertConflict()->assertJsonPath('code','responsible_system_honeybook');
+        $this->create()->assertConflict()->assertJsonPath('code','responsible_system_honeybook');
+        $this->getJson('/admin/api/payment-intents/'.$intent->id)->assertConflict();
+        $this->assertCount(1,$this->stripe->calls);$this->assertDatabaseCount('ledger_entries',0);
+    }
+    public function test_responsibility_change_during_provider_creation_keeps_evidence_and_expires_external_checkout():void
+    {
+        $fake=$this->stripe;$eventId=$this->event->id;
+        $adapter=new class($fake,$eventId) implements StripeGateway {
+            public function __construct(private FakeStripeGateway $fake,private int $eventId){}
+            public function createCheckout(array $p,string $key):array {$session=$this->fake->createCheckout($p,$key);Event::whereKey($this->eventId)->update(['responsible_system'=>'honeybook']);return $session;}
+            public function retrieveCheckout(string $id):array{return $this->fake->retrieveCheckout($id);}
+            public function expireCheckout(string $id):void{$this->fake->expireCheckout($id);}
+        };
+        $this->app->instance(StripeGateway::class,$adapter);$this->create()->assertConflict();$intent=PaymentIntent::sole();
+        $this->assertSame('reconciliation_required',$intent->status);$this->assertNotNull($intent->stripe_checkout_session_id);$this->assertNull($intent->checkout_url);
+        Queue::assertPushed(ExpireTestCheckout::class);(new ExpireTestCheckout($intent->id))->handle();$this->assertSame([$intent->stripe_checkout_session_id],$fake->expired);
+        $this->assertDatabaseHas('payment_exceptions',['kind'=>'stripe_reconciliation','state'=>'open']);$this->assertDatabaseCount('ledger_entries',0);
+    }
+    public static function responsibilityPolicies():array {return ['crm'=>['crm'],'honeybook'=>['honeybook']];}
+    #[\PHPUnit\Framework\Attributes\DataProvider('responsibilityPolicies')]
+    public function test_verified_receipt_before_checkout_response_keeps_paid_state_and_provider_identity(string $policy):void
+    {
+        config(['waoo.sandbox_mail'=>true]);$fake=$this->stripe;
+        $settled=function(array $session)use($policy){
+            Event::whereKey($this->event->id)->update(['responsible_system'=>$policy]);
+            $this->stripe->paid($session['id']);$intent=PaymentIntent::sole();$intent->stripe_checkout_session_id=$session['id'];
+            $this->webhook($intent)->assertOk();app(StripeReceiptProcessor::class)->execute('evt_fixture_one');
+        };
+        $this->app->instance(StripeGateway::class,new class($fake,$settled) implements StripeGateway {
+            public function __construct(private FakeStripeGateway $fake,private \Closure $settled){}
+            public function createCheckout(array $p,string $key):array {$stale=$this->fake->createCheckout($p,$key);($this->settled)($stale);return $stale;}
+            public function retrieveCheckout(string $id):array{return $this->fake->retrieveCheckout($id);}
+            public function expireCheckout(string $id):void{$this->fake->expireCheckout($id);}
+        });
+        $result=$this->create();if($policy==='crm')$result->assertCreated();else $result->assertConflict();
+        $intent=PaymentIntent::sole();$this->assertSame('paid',$intent->status);
+        $this->assertSame('pi_fixture_'.$intent->id,$intent->stripe_payment_intent_id);$this->assertNull($intent->collection_slot);
+        $this->assertDatabaseCount('ledger_entries',1);$this->assertSame('processed',WebhookReceipt::sole()->state);
+        (new ExpireTestCheckout($intent->id))->handle();$this->assertSame([],$fake->expired);
+    }
+    public function test_honeybook_late_verified_money_commits_but_skips_mail_and_flags_reconciliation():void
+    {
+        config(['waoo.sandbox_mail'=>true]);$this->create()->assertCreated();$intent=PaymentIntent::sole();
+        $this->event->forceFill(['responsible_system'=>'honeybook'])->save();$this->stripe->paid($intent->stripe_checkout_session_id);
+        $this->webhook($intent)->assertOk();app(StripeReceiptProcessor::class)->execute('evt_fixture_one');
+        $this->webhook($intent,'evt_second_late')->assertOk();app(StripeReceiptProcessor::class)->execute('evt_second_late');
+        $this->assertDatabaseCount('ledger_entries',1);$this->assertSame('paid',$intent->fresh()->status);
+        $this->assertDatabaseCount('mail_occurrences',0);$this->assertDatabaseCount('outbound_messages',0);
+        $this->assertDatabaseHas('payment_exceptions',['event_id'=>$this->event->id,'kind'=>'responsibility_reconciliation','state'=>'open']);
+        $this->assertSame(1,\Illuminate\Support\Facades\DB::table('payment_exceptions')->where('kind','responsibility_reconciliation')->count());
+    }
     public function test_checkout_uses_server_amount_card_allowlist_no_affirm_and_no_fee(): void
     {
         $key = (string) Str::uuid();

@@ -26,6 +26,7 @@ final class CreateContract
         $scope = "owner:{$actor->id}:event:{$eventId}:contract"; $hash = MutationKey::hash($data);
         return DB::transaction(function () use ($actor, $eventId, $data, $key, $scope, $hash) {
             $event = Event::whereKey($eventId)->lockForUpdate()->firstOrFail();
+            \App\Services\Responsibility\RequireCrmResponsibility::check($event);
             \App\Services\Imports\ImportedAgreement::blockCrmLifecycle($eventId);
             if ($saved = MutationKey::find($scope, $key, $hash)) return Contract::findOrFail($saved->result_id);
             RecordWriteRejected::unless($event->version === (int) $data['expected_version'], 409, 'El evento cambió. Actualiza la ficha.');

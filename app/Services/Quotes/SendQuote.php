@@ -19,6 +19,7 @@ final class SendQuote
         return DB::transaction(function()use($actor,$quoteId,$eventId,$data,$scope,$hash,$key){
             User::whereKey($actor->id)->lockForUpdate()->firstOrFail(); QuoteInput::actor($actor);
             QuoteProtocol::lockGrants($quoteId); $e=Event::whereKey($eventId)->lockForUpdate()->firstOrFail();
+            \App\Services\Responsibility\RequireCrmResponsibility::check($e);
             $q=Quote::whereKey($quoteId)->lockForUpdate()->firstOrFail();
             if ($receipt=MutationKey::find($scope,$key,$hash)) return $this->result($q,PortalGrant::findOrFail($receipt->result_id));
             $r=QuoteRevision::where('quote_id',$quoteId)->where('revision',$q->current_revision)->firstOrFail();

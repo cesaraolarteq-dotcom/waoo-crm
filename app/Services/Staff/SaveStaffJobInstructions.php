@@ -12,7 +12,7 @@ final class SaveStaffJobInstructions
     {
         $actor = StaffGuard::owner($actor);
         $d = RecordInput::validate($input,['expected_event_version'=>'required|integer|min:1','expected_version'=>'required|integer|min:0',
-            'parking'=>'nullable|string|max:1000','access'=>'nullable|string|max:1000','bring'=>'required|array|max:50','bring.*'=>'required|string|max:200',
+            'parking'=>'nullable|string|max:1000','access'=>'nullable|string|max:1000','bring'=>'present|array|max:50','bring.*'=>'required|string|max:200',
             'instructions'=>'nullable|string|max:3000','contact_name'=>'nullable|string|max:150','contact_phone'=>'nullable|string|max:40']);
         RecordWriteRejected::unless(empty($d['contact_name'])===empty($d['contact_phone']),422,'Escribe nombre y teléfono de contacto juntos.');
         return DB::transaction(function () use ($actor,$eventId,$d,$key) {

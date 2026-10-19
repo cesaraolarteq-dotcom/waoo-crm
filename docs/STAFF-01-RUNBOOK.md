@@ -4,7 +4,7 @@
 
 ## Qué hace
 
-Cada persona guarda un enlace que muestra sus fiestas confirmadas de la semana actual de Houston. Las fiestas terminadas desaparecen y el lunes cambia la semana. No tiene que aceptar trabajos ni declarar disponibilidad. César sigue acordando el trabajo directamente y registra las asignaciones en el CRM.
+Cada persona guarda el mensaje original con su enlace que muestra sus fiestas confirmadas de la semana actual de Houston. Las fiestas terminadas desaparecen y el lunes cambia la semana. No tiene que aceptar trabajos ni declarar disponibilidad. César sigue acordando el trabajo directamente y registra las asignaciones en el CRM.
 
 Se muestran hora de llegada calculada con el montaje registrado, hora de la fiesta, dirección, personaje/traje, quién maneja y las instrucciones operativas escritas para el equipo. Si falta el montaje, la llegada dice Pendiente; no inventa una hora. Sin snapshot histórico de asignación, el portal no afirma quién conduce ni qué papel tenía la persona. Una reserva adicional de capacidad sin un papel en el snapshot nuevo no se anuncia como trabajo asignado.
 
@@ -31,6 +31,8 @@ Nunca muestra importes, depósitos, saldos, remuneraciones, teléfonos de compa�
 
 ## Para Claude al conectar formularios
 
-Las versiones de identidad/recurso/grant/instrucciones tienen usos distintos: conservar las que la pantalla mostró y UUID por intento. La API devuelve phone solo en issue/reveal/rotate para el dueño; no lo agregar al listado o VM staff. La pantalla de instrucciones debe usar únicamente campos explícitos para staff, nunca notas generales del evento. SaveStaffJobInstructions requiere versión del evento y versión de instrucciones, con0 para crear; antes de editar revisiones existentes hace falta una lectura owner versionada (contrato adicional), no adivinar la versión desde el portal.
+Las versiones de identidad/recurso/grant/instrucciones tienen usos distintos: conservar las que la pantalla mostró y UUID por intento. La API devuelve phone solo en issue/reveal/rotate para el dueño; no lo agregar al listado o VM staff. La pantalla de instrucciones debe usar únicamente campos explícitos para staff, nunca notas generales del evento. SaveStaffJobInstructions requiere versión del evento y versión de instrucciones, con0 para crear; para editar, usa ReadStaffJobInstructions::execute(User $actor, int $eventId) o GET /admin/api/events/{event}/staff-instructions. La misma respuesta fija event_version y version; envíalas como expected_event_version y expected_version. Version0 significa que todavía no hay instrucciones. Nunca adivines la versión desde el portal. bring=[] es válido para una lista vacía.
 
 `/dev/staff/*` y las vistas previas de pagos continúan siendo ejemplos local/testing. `/staff` usa la misma `staff/semana.blade.php` con preview=false y las reservas reales del entorno de pruebas. El portal no contiene pagos del personal; STAFFPAY es otra entrega pendiente de reglas de César.
+
+«Apagar enlace» solo corta el acceso: conserva fiestas y reservas. Si alguien deja el equipo, primero hay que resolver/reasignar sus compromisos y después desactivar su ficha del personal. El estado de acceso no sustituye al inventario de disponibilidad. El formulario de identidad debe omitir phone cuando no se cambia (se conserva); null es una eliminación explícita. La pantalla necesita controles para páginas de25 personas, recargando los IDs/versiones mostrados al navegar.

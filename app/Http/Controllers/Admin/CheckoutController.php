@@ -10,6 +10,7 @@ final class CheckoutController extends Controller
 {
     public static function data(PaymentIntent $intent): array
     {
+        \App\Services\Responsibility\RequireCrmResponsibility::forEvent($intent->event_id);
         return [...$intent->only(['id','event_id','financial_revision_id','environment','purpose','principal_cents','customer_fee_cents','payable_cents','currency','status','expires_at']),
             'checkout_url' => $intent->status === 'open' ? $intent->checkout_url : null];
     }

@@ -82,6 +82,11 @@ final class StripeReceiptProcessor
                 app(\App\Services\Mail\CaptureMailOccurrence::class)->record('payment_received', $entry->id, ['event_id'=>$event->id, 'customer_id'=>$event->customer_id, 'financial_revision_id'=>$intent->financial_revision_id, 'ledger_entry_id'=>$entry->id]);
                 Audit::recordSystem('payment.stripe_received', $entry, [], ['intent_id' => $intent->id, 'webhook_id' => $receipt->id, 'amount_cents' => $entry->amount_cents]);
             }
+            if ($event->responsible_system !== 'crm') {
+                DB::table('payment_exceptions')->insertOrIgnore(['event_id' => $intent->event_id, 'financial_revision_id' => $intent->financial_revision_id,
+                    'kind' => 'responsibility_reconciliation', 'exception_key' => hash('sha256', $transaction.':responsibility'), 'state' => 'open',
+                    'context' => json_encode(['intent_id' => $intent->id, 'reason' => 'responsible_system_honeybook'], JSON_THROW_ON_ERROR), 'created_at' => now(), 'updated_at' => now()]);
+            }
             $wasSuperseded = $locked->status === 'superseded' || (int) FinancialRevision::where('event_id', $intent->event_id)->max('revision') !== FinancialRevision::findOrFail($intent->financial_revision_id)->revision;
             $locked->fill(['status' => 'paid', 'collection_slot' => null, 'stripe_checkout_session_id' => $session['id'], 'stripe_payment_intent_id' => $payment['id'], 'last_error' => null])->save();
             SupersedeCollections::forEvent($intent->event_id, 'stripe_payment_received', null, $intent->id);

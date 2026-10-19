@@ -24,6 +24,7 @@ final class CreateCheckoutIntent
         $intent = DB::transaction(function () use ($actor, $eventId, $data, $scope, $hash, $key) {
             if ($actor instanceof PortalContext) $actor->authorize($eventId, 'checkout.create', true);
             $event = Event::whereKey($eventId)->lockForUpdate()->firstOrFail();
+            \App\Services\Responsibility\RequireCrmResponsibility::check($event);
             \App\Services\Imports\ImportedAgreement::blockCrmLifecycle($eventId);
             if ($saved = MutationKey::find($scope, $key, $hash)) return PaymentIntent::findOrFail($saved->result_id);
             $revision = FinancialRevision::where('event_id', $eventId)->whereKey($data['financial_revision_id'])->firstOrFail();
@@ -47,6 +48,7 @@ final class CreateCheckoutIntent
         if ($intent->created_at->lessThan(now()->subHours(23))) { $this->reconcile($intent, 'provider_retry_window_exceeded'); throw new RecordWriteRejected(409, 'Este intento requiere conciliación antes de reintentar.'); }
         $origin = Sandbox::origin();
         $metadata = ['local_intent_id' => $intent->id, 'event_id' => (string) $eventId, 'financial_revision_id' => (string) $intent->financial_revision_id];
+        \App\Services\Responsibility\RequireCrmResponsibility::forEvent($eventId);
         try {
             $session = app(StripeGateway::class)->createCheckout(['mode' => 'payment', 'payment_method_types' => ['card'], 'client_reference_id' => $intent->id,
                 'metadata' => $metadata, 'payment_intent_data' => ['metadata' => $metadata], 'line_items' => [['quantity' => 1, 'price_data' => ['currency' => 'usd', 'unit_amount' => $intent->payable_cents, 'product_data' => ['name' => 'Waoo Party · test payment']]]],
@@ -65,10 +67,18 @@ final class CreateCheckoutIntent
             throw new RecordWriteRejected(409, 'La respuesta Stripe necesita conciliación; no se registró un pago.');
         }
         $updated = DB::transaction(function () use ($intent, $session) {
-            Event::whereKey($intent->event_id)->lockForUpdate()->firstOrFail();
+            $event = Event::whereKey($intent->event_id)->lockForUpdate()->firstOrFail();
             $locked = PaymentIntent::whereKey($intent->id)->lockForUpdate()->firstOrFail();
             $locked->stripe_checkout_session_id = $session['id'];
-            $locked->stripe_payment_intent_id = is_string($session['payment_intent'] ?? null) ? $session['payment_intent'] : null;
+            $locked->stripe_payment_intent_id = is_string($session['payment_intent'] ?? null) ? $session['payment_intent'] : $locked->stripe_payment_intent_id;
+            if ($event->responsible_system !== 'crm' && in_array($locked->status, ['creating','open'], true)) {
+                $locked->fill(['status'=>'reconciliation_required','last_error'=>'responsible_system_honeybook'])->save();
+                DB::table('payment_exceptions')->insertOrIgnore(['event_id'=>$locked->event_id,'financial_revision_id'=>$locked->financial_revision_id,
+                    'kind'=>'stripe_reconciliation','exception_key'=>hash('sha256',$locked->id.':responsible_system_honeybook'),'state'=>'open',
+                    'context'=>json_encode(['intent_id'=>$locked->id,'reason'=>'responsible_system_honeybook'],JSON_THROW_ON_ERROR),'created_at'=>now(),'updated_at'=>now()]);
+                \App\Jobs\ExpireTestCheckout::dispatch($locked->id)->afterCommit();
+                return $locked;
+            }
             if ($locked->status !== 'creating') {
                 $locked->save();
                 \App\Jobs\ExpireTestCheckout::dispatch($locked->id)->afterCommit();

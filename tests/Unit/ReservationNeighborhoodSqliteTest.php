@@ -17,7 +17,7 @@ class ReservationNeighborhoodSqliteTest extends TestCase
         config(['database.default' => 'sqlite', 'database.connections.sqlite.database' => ':memory:']);
         DB::purge('sqlite');
         Schema::create('events', function (Blueprint $t) {
-            $t->id(); $t->dateTime('starts_at'); $t->dateTime('ends_at'); $t->unsignedInteger('setup_minutes')->nullable(); $t->unsignedInteger('breakdown_minutes')->nullable(); $t->timestamps();
+            $t->id(); $t->dateTime('starts_at'); $t->dateTime('ends_at'); $t->unsignedInteger('setup_minutes')->nullable(); $t->unsignedInteger('breakdown_minutes')->nullable(); $t->string('responsible_system', 20)->default('crm'); $t->timestamps();
         });
         Schema::create('resource_reservations', function (Blueprint $t) {
             $t->id(); $t->unsignedBigInteger('event_id'); $t->unsignedBigInteger('resource_id'); $t->dateTime('starts_at'); $t->dateTime('ends_at'); $t->timestamps();

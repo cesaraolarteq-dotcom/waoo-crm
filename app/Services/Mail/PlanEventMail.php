@@ -15,6 +15,7 @@ final class PlanEventMail
         return MailGuard::transaction(function()use($actor,$eventId,$d,$hash,$scope,$key){
             // Grant before event, shared with revoke and existing portal operations. Replay before dynamic source checks.
             \App\Models\PortalGrant::whereKey($d['portal_grant_id'])->lockForUpdate()->firstOrFail();$event=\App\Models\Event::whereKey($eventId)->lockForUpdate()->firstOrFail();MailGuard::actor($actor);
+            \App\Services\Responsibility\RequireCrmResponsibility::check($event);
             if($r=MutationKey::find($scope,$key,$hash))return ['message_ids'=>($r->result_id===''?[]:array_map('intval',explode(',',$r->result_id))),'replayed'=>true];
             $source=EventMailSource::lock($eventId,$d['portal_grant_id']);[$e,$c,$f,$g,$net]=$source;
             RecordWriteRejected::unless($e->version===$d['expected_event_version']&&$c->version===$d['expected_customer_version'],409,'mail_source_changed');$ids=[];$skipped=[];

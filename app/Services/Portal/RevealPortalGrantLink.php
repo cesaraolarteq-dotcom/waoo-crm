@@ -29,12 +29,16 @@ final class RevealPortalGrantLink
                     $q=$r?\App\Models\Quote::whereKey($r->quote_id)->lockForUpdate()->first():null;
                     if (!$q||$q->event_id!==$eventId||$q->customer_id!==$grant->customer_id||$q->current_revision!==$r->revision) throw new PortalLinkRejected(410,'grant_inactive','Este enlace ya no corresponde a la cotización vigente.');
                 }
+                if (array_intersect(['payments.read','checkout.create'], $grant->scopes)) {
+                    \App\Services\Responsibility\RequireCrmResponsibility::check($event);
+                    \App\Services\Imports\ImportedAgreement::blockCrmLifecycle($eventId);
+                }
                 $token = PortalTokenVault::open($grant);
                 $origin = $this->origin();
                 Audit::recordFor($actor, 'portal.link_revealed', $grant, [], ['event_id' => $eventId, 'grant_id' => $grantId]);
                 return new RevealedPortalLink($grantId, $eventId, $origin.'/portal#token='.$token, $grant->expires_at->toIso8601String());
             }, 3);
-        } catch (PortalLinkRejected $e) {
+        } catch (PortalLinkRejected|\App\Exceptions\ResponsibilityRejected|\App\Exceptions\RecordWriteRejected $e) {
             throw $e;
         } catch (\Throwable) {
             Log::error('portal.link_reveal_unavailable');

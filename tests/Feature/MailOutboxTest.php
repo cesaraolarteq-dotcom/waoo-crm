@@ -40,6 +40,25 @@ class MailOutboxTest extends TestCase
     private function input(array $templates=['balance_reminder','week_before','thank_you_review']):array{return ['expected_event_version'=>2,'expected_customer_version'=>1,'portal_grant_id'=>$this->grantId,'templates'=>$templates];}
     private function plan(array $templates=['balance_reminder'],?string $key=null):array{return app(PlanEventMail::class)->execute($this->owner,$this->event->id,$this->input($templates),$key??(string)Str::uuid());}
     private function due(OutboundMessage $m):void{$this->travelTo($m->due_at);}
+    public function test_honeybook_blocks_planning_even_on_replay_and_never_dispatches_scheduled_mail():void
+    {
+        $key=(string)Str::uuid();$this->plan(key:$key);$m=OutboundMessage::sole();
+        $this->event->forceFill(['responsible_system'=>'honeybook'])->save();
+        try{$this->plan(key:$key);$this->fail('Replay must recheck responsibility');}
+        catch(\App\Exceptions\ResponsibilityRejected $e){$this->assertSame(409,$e->getStatusCode());}
+        $this->due($m);app(DispatchOutboundMail::class)->execute($m->id);
+        $this->assertSame('blocked',OutboundMessageState::sole()->status);
+        $this->assertSame('responsible_system_honeybook',OutboundMessageState::sole()->error_code);
+        $this->assertSame(0,OutboundMessageState::sole()->attempt_count);$this->assertSame([],$this->transport->sent);
+    }
+    public function test_honeybook_late_delivery_evidence_is_preserved_without_resending():void
+    {
+        $this->plan();$m=OutboundMessage::sole();$this->due($m);app(DispatchOutboundMail::class)->execute($m->id);
+        $this->event->forceFill(['responsible_system'=>'honeybook'])->save();
+        app(RecordMailDelivery::class)->execute('fake-only','fake-'.$m->id,'fixture-late-bounce','bounced',CarbonImmutable::now());
+        app(DispatchOutboundMail::class)->execute($m->id);
+        $this->assertSame('bounced',OutboundMessageState::sole()->status);$this->assertSame([$m->id],$this->transport->sent);
+    }
     public function test_immutable_encrypted_plan_exact_money_times_and_safe_owner_projection():void
     {
         $key=(string)Str::uuid();$a=$this->plan(EventMailSource::REMINDERS,$key);$this->assertCount(3,$a['message_ids']);$this->assertSame($a['message_ids'],$this->plan(EventMailSource::REMINDERS,$key)['message_ids']);$this->assertSame($a['message_ids'],$this->plan(EventMailSource::REMINDERS)['message_ids']);

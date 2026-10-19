@@ -228,7 +228,7 @@ class EventMoney extends Page
         } catch (ValidationException $e) {
             Notification::make()->danger()->title('No se guardó')->body(collect($e->errors())->flatten()->first())->persistent()->send();
             $action->halt();
-        } catch (RecordWriteRejected|AuthorizationException $e) {
+        } catch (RecordWriteRejected|AuthorizationException|\App\Exceptions\ResponsibilityRejected $e) {
             Notification::make()->danger()->title('No se guardó')->body($e->getMessage())->persistent()->send();
             $action->halt();
         }

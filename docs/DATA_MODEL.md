@@ -130,3 +130,15 @@ Claim is durable before the external boundary. A second worker cannot reclaim it
 ### Prepared owner reports (REPORT-A, sandbox)
 
 `owner_report_snapshots` stores immutable prepared weekly/monthly report JSON text and its SHA-256, schema version, explicit Chicago date bounds, fixed owner recipient and preparing admin. Unique environment/kind/period start deduplicates both admins and retries. Payload bytes remain exact across MariaDB/SQLite. Audit failure rolls back preparation; no delivery state, scheduler or mail dispatch exists in this slice. Snapshot data is owner-only; never project it to portal/staff. See docs/REPORT-A-SNAPSHOTS-API.md.
+
+## STAFF-01 durable access and operational instructions (380000)
+
+`staff_identities` binds an existing staff resource to a locale/active/version and encrypted owner-only phone. `staff_access_grants` stores a token hash and an authenticated encrypted recovery envelope, with one active grant per identity. `staff_portal_sessions` stores only opaque session hashes, a grant FK and absolute UTC expiry (at most168h); no shared admin/client identity. Every read revalidates current grant/identity/resource. Revocation preserves reservations. No availability/invitation/acceptance tables are introduced.
+
+`staff_job_instructions` holds immutable encrypted event revisions with SHA-256, author and version; only explicit operational fields, never general private notes or auto-copied client contacts. Owner read locks event then latest revision and returns event_version + instruction version together (0 for absent); writes require both displayed versions. Staff may see day-contact only on the local event date. Staff week is Mon–Sun Houston, confirmed current actual assignments with matching reservation intervals; no money or team surnames/phones.
+
+## Responsible system C1 (390000; financial transfer not implemented)
+
+`events.responsible_system` is the closed non-null honeybook|crm assignment. Defaults CRM for new CRM events; IMPORT-01 explicitly classifies new imports HoneyBook. Migration classifies preexisting linked events HoneyBook, others CRM, with metadata-only system audit; source revisions, ledger, operational version and original agreements remain intact. Ordinary record input/mass assignment cannot flip it. Owner event/import/finance reads expose it; no C1 toggle endpoint exists.
+
+HoneyBook rejects initiating messages/payments and replay of those commands. Scheduled CRM messages are retained as blocked, without transport calls. Payment-capable old links cannot initiate collection or reveal checkout URLs. Authenticated late provider receipts still create immutable actual-money evidence, skip outbound occurrence capture, and open responsibility reconciliation; incoming delivery/bounce evidence remains accepted. Read-only staff/calendar/report functions remain usable. Existing imported-agreement financial blockers remain independent of this flag. Cohort transfer, source resync and imported-source opening financial bridge are separate unimplemented C2/C3;240min reconciliation freshness remains a proposal, no default adopted.
