@@ -57,14 +57,17 @@ class ImportOwnerCatalog extends Command
         return self::SUCCESS;
     }
 
-    /** "Clásico 1, Disneyland 1, Carreras 1" → ['Clásico' => 1, 'Disneyland' => 1, 'Carreras' => 1]. A name without a number counts as 1. */
+    /** Explicit counts require whitespace; uncounted wardrobe labels retain their digits. */
     public static function parseOutfits(?string $text): array
     {
         $out = [];
         foreach (preg_split('/[,;\n]+/', (string) $text) as $part) {
-            if (! preg_match('/^\s*(.*?)\s*(\d+)?\s*$/u', $part, $m) || trim($m[1]) === '') continue;
-            $name = mb_substr(trim($m[1]), 0, 60);
-            $out[$name] = ($out[$name] ?? 0) + max(1, (int) ($m[2] ?? 1));
+            $part = trim($part);
+            if ($part === '') continue;
+            $counted = preg_match('/^(.*?)\s+(\d+)$/u', $part, $m);
+            $name = mb_substr($counted ? trim($m[1]) : $part, 0, 60);
+            if ($name === '') continue;
+            $out[$name] = ($out[$name] ?? 0) + ($counted ? (int) $m[2] : 1);
         }
 
         return $out;

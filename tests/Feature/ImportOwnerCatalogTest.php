@@ -144,6 +144,22 @@ class ImportOwnerCatalogTest extends TestCase
             ->assertJsonPath('audience', 'all')->assertJsonPath('category', null)->assertJsonPath('group', null);
     }
 
+    public function test_wardrobe_name_digits_and_explicit_zero_never_create_phantom_units(): void
+    {
+        file_put_contents($this->file, json_encode(['packages' => [], 'characters' => [
+            ['name' => 'Synthetic Generic Hero', 'costumes' => 2, 'outfits' => '0, R2D2, V1'],
+            ['name' => 'Synthetic Fixed Hero', 'costumes' => 99, 'outfits' => 'Sirena 0, Vestido 1'],
+        ]]));
+        $this->artisan('waoo:import-catalog', ['file' => $this->file, '--actor' => 'owner@example.test'])->assertSuccessful();
+        $generic = Character::where('name', 'Synthetic Generic Hero')->sole();
+        $this->assertSame(['0', 'R2D2', 'V1'], $generic->outfits);
+        $this->assertSame(2, Resource::where('character_id', $generic->id)->count());
+        $this->assertSame(2, Resource::where('character_id', $generic->id)->whereNull('outfit')->count());
+        $fixed = Character::where('name', 'Synthetic Fixed Hero')->sole();
+        $this->assertSame(['Sirena', 'Vestido'], $fixed->outfits);
+        $this->assertSame(['Vestido'], Resource::where('character_id', $fixed->id)->pluck('outfit')->all());
+    }
+
     public function test_requires_an_existing_owner(): void
     {
         $this->artisan('waoo:import-catalog', ['file' => $this->file, '--actor' => 'nobody@example.test'])->assertFailed();
