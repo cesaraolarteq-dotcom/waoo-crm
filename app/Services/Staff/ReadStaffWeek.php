@@ -57,7 +57,8 @@ final class ReadStaffWeek
             'setup_minutes'=>$event->setup_minutes,'address'=>$event->address??$unknown,
             'maps'=>$event->address?'https://maps.google.com/?q='.rawurlencode($event->address):null,
             'parking'=>$payload['parking']??null,'access'=>$payload['access']??null,
-            'role'=>$role,'character'=>$character?->name,'outfit_version'=>$costume?->outfit,
+            'role'=>$role,'character'=>($snapshot['costume_policy_version']??null)==='costume-outfit-v2'?($slot['character_name']??null):$character?->name,
+            'outfit_version'=>($snapshot['costume_policy_version']??null)==='costume-outfit-v2'?($slot['outfit']??null):$costume?->outfit,
             'is_driver'=>$assigned!==null && in_array($person->id,$drivers,true),
             'team'=>$resources->filter(fn($r)=>$r->kind==='staff' && $r->id!==$person->id && ($snapshot===[] || in_array($r->id,$actualStaffIds,true)))->map(fn($r)=>[
                 'first_name'=>$this->firstName($r->name),'drives'=>in_array($r->id,$drivers,true)])->values()->all(),

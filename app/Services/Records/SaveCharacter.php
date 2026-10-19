@@ -15,10 +15,13 @@ final class SaveCharacter
         $actor = RecordActor::authorize($actor);
         $id = $characterId;
         $data = RecordRules::validate('characters', $input, $id);
-        if (array_key_exists('group', $data)) {
-            $data['group'] = $data['group'] === null ? null : trim($data['group']);
-            if ($data['group'] === '') $data['group'] = null;
+        foreach (['category', 'group'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $data[$field] = $data[$field] === null ? null : trim($data[$field]);
+                if ($data[$field] === '') $data[$field] = null;
+            }
         }
+        if (array_key_exists('audience', $data)) $data['audience'] ??= 'all';
         $version = isset($data['expected_version']) ? (int) $data['expected_version'] : null;
         unset($data['expected_version']);
         return DB::transaction(function () use ($actor, $id, $data, $version) {

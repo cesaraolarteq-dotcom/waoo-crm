@@ -89,12 +89,11 @@ class ImportOwnerCatalog extends Command
             $versionNames = array_map('strval', array_keys($versions));
             $character = Character::whereRaw('lower(name) = ?', [mb_strtolower($name)])->first();
             $existed = (bool) $character;
-            $groupInput = array_key_exists('group', $row) ? ['group' => $row['group']] : [];
-            // Validate dry runs too; preserve absence, normalize explicit clearing and literal "0".
+            $groupInput = array_intersect_key($row, array_flip(['category', 'group', 'audience']));
+            // Validate dry runs too, preserving omitted metadata and literal "0".
             if ($groupInput) {
-                $validated = \App\Services\Records\RecordInput::validate($groupInput, ['group' => 'nullable|string|max:120']);
-                $groupInput['group'] = $validated['group'] === null ? null : trim($validated['group']);
-                if ($groupInput['group'] === '') $groupInput['group'] = null;
+                $groupInput = \App\Services\Records\RecordInput::validate($groupInput, ['category' => 'nullable|string|max:120', 'group' => 'nullable|string|max:120', 'audience' => 'nullable|string|in:girls,boys,all']);
+                if (array_key_exists('audience', $groupInput)) $groupInput['audience'] ??= 'all';
             }
             if (! $dry) {
                 if (! $character) {
@@ -102,7 +101,7 @@ class ImportOwnerCatalog extends Command
                 } else {
                     // Keep existing versions (a costume may still use them) and add the owner's new ones.
                     $merged = $versions ? array_values(array_unique([...((array) $character->outfits), ...$versionNames])) : $character->outfits;
-                    $groupChanged = array_key_exists('group', $groupInput) && $character->group !== $groupInput['group'];
+                    $groupChanged = collect($groupInput)->contains(fn ($value, $field) => $character->{$field} !== $value);
                     if ($merged !== $character->outfits || $groupChanged) {
                         $character = app(SaveCharacter::class)->execute($actor, ['name' => $character->name, 'active' => (bool) $character->active, 'outfits' => $merged, ...$groupInput, 'expected_version' => $character->version], $character->id);
                     }
