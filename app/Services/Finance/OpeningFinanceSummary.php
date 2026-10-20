@@ -45,6 +45,9 @@ final class OpeningFinanceSummary
             $complete = array_intersect($missing, ['unallocated_receipt_or_refund', 'allocation_integrity_invalid']) === [];
             $exceptions = DB::table('payment_exceptions')->where('event_id', $event->id)->where('state', 'open')->sharedLock()->get(['id', 'kind', 'state', 'created_at'])->toArray();
             if ($exceptions !== []) $missing[] = 'payment_exception_open';
+            if (array_filter($exceptions, fn ($e) => $e->kind === 'opening_provider_review')) {
+                $complete = false; $missing[] = 'provider_financial_review_required';
+            }
             $original = ImportedProjectRevision::whereKey($o['source_revision_id'])->sharedLock()->firstOrFail()->source_snapshot;
             $sourceDifference = $o['original_total_cents'] - (\App\Services\Imports\HoneyBookFutureSource::cents($original['package_total'])
                 + \App\Services\Imports\HoneyBookFutureSource::cents($original['travel_fee']) - \App\Services\Imports\HoneyBookFutureSource::cents($original['discount']));
