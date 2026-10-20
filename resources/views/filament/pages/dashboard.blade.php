@@ -30,7 +30,7 @@
                         <summary><span class="wdash-n">{{ $c['count'] }}</span><span><b>{{ $c['title'] }}</b><small>{{ $c['text'] }}</small></span></summary>
                         <ul>
                             @foreach ($c['items'] as $item)
-                                <li>@if ($item['url'])<a href="{{ $item['url'] }}">{{ $item['label'] }}</a>@else{{ $item['label'] }}@endif</li>
+                                <li>@if ($item['url'])<a class="wdash-item" href="{{ $item['url'] }}"><b>{{ $item['label'] }}</b>@if ($item['meta'] ?? null)<small>{{ $item['meta'] }}</small>@endif<span aria-hidden="true">›</span></a>@else<span class="wdash-item"><b>{{ $item['label'] }}</b>@if ($item['meta'] ?? null)<small>{{ $item['meta'] }}</small>@endif</span>@endif</li>
                             @endforeach
                         </ul>
                     </details>

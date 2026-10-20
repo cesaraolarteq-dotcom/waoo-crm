@@ -113,7 +113,8 @@ final class PortalPageController extends Controller
                 'action' => url('/portal/api/details'),
                 'sms_consent' => $smsVersion !== null ? ['version' => $smsVersion, 'text' => $approvedSms[$smsVersion]] : null] : null,
             'prefill' => $details && $details['submission'] ? $details['submission']['data']
-                : ['phone' => $event->customer?->phone, 'email' => $event->customer?->email, 'event_address' => $event->address, 'event_postal_code' => $event->postal_code],
+                : ['first_name' => \Illuminate\Support\Str::before($name = trim((string) $event->customer?->name), ' '), 'last_name' => str_contains($name, ' ') ? trim(\Illuminate\Support\Str::after($name, ' ')) : '',
+                    'phone' => $event->customer?->phone, 'email' => $event->customer?->email, 'event_address' => $event->address, 'event_postal_code' => $event->postal_code],
             // The contracting party's own first name when a contract exists; otherwise the owner's record.
             'first_name' => trim((string) ($contract?->commercial_snapshot['client']['first_name'] ?? explode(' ', (string) $event->customer?->name)[0] ?? '')),
             'notice' => $request->session()->get('portal_notice'),
@@ -123,6 +124,8 @@ final class PortalPageController extends Controller
                 'characters' => collect($revision?->lines_snapshot ?? [])->flatMap(fn ($l) => $l['characters'] ?? [])->map(fn ($c) => $c['quantity'].' × '.\App\Services\Records\CharacterLabel::fromSnapshot($c))->implode(', '),
                 'when' => $lang === 'es' ? $start->translatedFormat('D j M Y, g:i a') : $start->format('D, M j, Y \a\t g:i a'),
                 'start_time' => $lang === 'es' ? $start->translatedFormat('g:i a') : $start->format('g:i a'),
+                // Owner 2026-10-20: the time is the one he agreed when she paid; shown as a fixed range, never a choice.
+                'time_range' => ($fmtTime = fn ($c) => $lang === 'es' ? $c->translatedFormat('g:i a') : $c->format('g:i a'))($start).' – '.$fmtTime(CarbonImmutable::instance($event->ends_at)->setTimezone($tz)->locale($lang)),
                 'total' => $fmt($revision?->total_cents), 'travel' => $fmt($revision?->travel_fee_cents),
                 'paid' => $fmt($f['net_received_cents']), 'balance' => $fmt($balance),
                 'due' => $due ? ($lang === 'es' ? $due->translatedFormat('D j M, g:i a') : $due->format('D, M j, g:i a')) : '—',

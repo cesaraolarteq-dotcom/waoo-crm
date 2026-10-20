@@ -56,25 +56,22 @@
     <label class="p-field"><span>{{ $t('phone') }}</span><input name="phone" type="tel" autocomplete="tel" inputmode="tel" required value="{{ old('phone', $vm['prefill']['phone'] ?? '') }}"></label>
     <label class="p-field"><span>{{ $t('email') }}</span><input name="email" type="email" autocomplete="email" inputmode="email" required value="{{ old('email', $vm['prefill']['email'] ?? '') }}"></label>
   </div>
-  <label class="p-field"><span>{{ $t('billing_address') }}</span><input name="billing_address" autocomplete="street-address" required value="{{ old('billing_address', $vm['prefill']['billing_address'] ?? '') }}"></label>
-  <label class="p-check"><input type="checkbox" name="same_address" value="1" @if (empty($vm['prefill']['event_address'])) checked @endif> {{ $t('same_address') }}</label>
   <div class="p-row">
-    <label class="p-field"><span>{{ $t('event_address') }}</span><input name="event_address" autocomplete="off" value="{{ old('event_address', $vm['prefill']['event_address'] ?? '') }}"></label>
-    <label class="p-field p-narrow"><span>ZIP</span><input name="event_postal_code" inputmode="numeric" maxlength="10" value="{{ $vm['prefill']['event_postal_code'] ?? '' }}"></label>
+    <label class="p-field"><span>{{ $t('event_address') }}</span><input name="event_address" autocomplete="street-address" required value="{{ old('event_address', $vm['prefill']['event_address'] ?? '') }}"></label>
+    <label class="p-field p-narrow"><span>ZIP</span><input name="event_postal_code" inputmode="numeric" maxlength="10" required value="{{ $vm['prefill']['event_postal_code'] ?? '' }}"></label>
   </div>
-  <fieldset class="p-field">
-    <legend>{{ $t('start_confirm', ['time' => $e['start_time']]) }}</legend>
-    <label class="p-check"><input type="radio" name="start_time_confirmed" value="1" checked> {{ $t('start_yes') }}</label>
-    <label class="p-check"><input type="radio" name="start_time_confirmed" value="0"> {{ $t('start_no') }}</label>
-    <label class="p-field p-sub-field"><span>{{ $t('requested_time') }}</span><input type="time" name="requested_time"><small>{{ $t('requested_hint') }}</small></label>
-    <label class="p-field p-sub-field"><span>{{ $t('requested_occurrence') }}</span><select name="requested_time_choice"><option value="">{{ $t('requested_occurrence_default') }}</option><option value="cdt">{{ $t('requested_occurrence_first') }}</option><option value="cst">{{ $t('requested_occurrence_second') }}</option></select><small>{{ $t('requested_occurrence_hint') }}</small></label>
-  </fieldset>
+  <div class="p-field"><span>{{ $t('party_time') }}</span><strong class="p-fixed">{{ $e['time_range'] ?? $e['start_time'] }}</strong><small>{{ $t('party_time_hint') }}</small></div>
+  <h3 class="p-sub-title">{{ $t('questions') }}</h3>
   <div class="p-row">
-    <label class="p-field"><span>{{ $t('child_name') }} <em>({{ $t('optional') }})</em></span><input name="child_name"></label>
-    <label class="p-field p-narrow"><span>{{ $t('child_age') }} <em>({{ $t('optional') }})</em></span><input name="child_age" inputmode="numeric" pattern="[0-9]*" maxlength="2"></label>
+    <label class="p-field"><span>{{ $t('child_name') }}</span><input name="child_name" required value="{{ $vm['prefill']['child_name'] ?? '' }}"></label>
+    <label class="p-field p-narrow"><span>{{ $t('child_age') }}</span><input name="child_age" inputmode="numeric" pattern="[0-9]*" maxlength="3" required value="{{ $vm['prefill']['child_age'] ?? '' }}"></label>
   </div>
-  <label class="p-field"><span>{{ $t('theme') }} <em>({{ $t('optional') }})</em></span><input name="theme"></label>
-  <label class="p-field"><span>{{ $t('notes') }} <em>({{ $t('optional') }})</em></span><textarea name="notes" rows="3"></textarea></label>
+  <label class="p-field"><span>{{ $t('event_language') }}</span><select name="event_language" required><option value="">{{ $t('choose') }}</option>
+    @foreach (['es' => 'lang_es', 'en' => 'lang_en', 'bilingual' => 'lang_both'] as $v => $k)<option value="{{ $v }}" @selected(($vm['prefill']['event_language'] ?? '') === $v)>{{ $t($k) }}</option>@endforeach</select></label>
+  <label class="p-field"><span>{{ $t('setup_area') }}</span><select name="setup_area" required><option value="">{{ $t('choose') }}</option>
+    @foreach (['indoor' => 'indoor', 'outdoor' => 'outdoor'] as $v => $k)<option value="{{ $v }}" @selected(($vm['prefill']['setup_area'] ?? '') === $v)>{{ $t($k) }}</option>@endforeach</select></label>
+  <label class="p-field"><span>{{ $t('children_count') }}</span><input name="children_count" inputmode="numeric" pattern="[0-9]*" maxlength="3" required value="{{ $vm['prefill']['children_count'] ?? '' }}"><small>{{ $t('children_hint') }}</small></label>
+  <label class="p-field"><span>{{ $t('notes') }} <em>({{ $t('optional') }})</em></span><textarea name="notes" rows="3">{{ $vm['prefill']['notes'] ?? '' }}</textarea></label>
   @if (! empty($vm['details']['sms_consent']))
   <label class="p-check p-small"><input type="checkbox" name="sms_consent" value="1" data-version="{{ $vm['details']['sms_consent']['version'] }}"> {{ $vm['details']['sms_consent']['text'] }}</label>
   @endif
@@ -154,18 +151,13 @@
   if (det) det.addEventListener('submit', function (ev) {
     ev.preventDefault(); var err = document.getElementById('details-error'); err.hidden = true;
     var f = det, b = f.querySelector('button[type=submit]'); b.disabled = true;
-    var same = f.same_address.checked, confirmed = f.querySelector('input[name=start_time_confirmed]:checked').value === '1';
+    // Owner 2026-10-20: one address (the party's) and the agreed time; she never requests another time here.
     var body = {expected_event_version: Number(f.dataset.eventVersion), expected_revision: Number(f.dataset.revision),
       first_name: f.first_name.value.trim(), last_name: f.last_name.value.trim(), phone: f.phone.value.trim(), email: f.email.value.trim(),
-      billing_address: f.billing_address.value.trim(), event_address: same ? f.billing_address.value.trim() : f.event_address.value.trim(),
-      locale: f.dataset.lang, start_time_confirmed: confirmed};
-    if (f.event_postal_code.value.trim()) body.event_postal_code = f.event_postal_code.value.trim();
-    // Send a Houston wall time; the server resolves the event date and DST occurrence.
-    if (!confirmed) { if (!f.requested_time.value) { err.textContent = @js($t('requested_missing')); err.hidden = false; b.disabled = false; return; }
-      body.requested_local_time = f.requested_time.value;
-      if (f.requested_time_choice.value) body.requested_time_choice = f.requested_time_choice.value; }
-    ['child_name', 'theme', 'notes'].forEach(function (k) { if (f[k] && f[k].value.trim()) body[k] = f[k].value.trim(); });
-    if (f.child_age && f.child_age.value.trim()) body.child_age = Number(f.child_age.value);
+      billing_address: f.event_address.value.trim(), event_address: f.event_address.value.trim(), event_postal_code: f.event_postal_code.value.trim(),
+      locale: f.dataset.lang, start_time_confirmed: true, child_name: f.child_name.value.trim(), child_age: Number(f.child_age.value),
+      event_language: f.event_language.value, setup_area: f.setup_area.value, children_count: Number(f.children_count.value)};
+    if (f.notes.value.trim()) body.notes = f.notes.value.trim();
     if (f.sms_consent && f.sms_consent.checked) { body.sms_consent = true; body.sms_consent_version = f.sms_consent.dataset.version; }
     post(f.action, body, key('waoo-details-' + f.dataset.revision))
       .then(function () { try { sessionStorage.removeItem('waoo-details-' + f.dataset.revision); } catch (e) {} location.reload(); })

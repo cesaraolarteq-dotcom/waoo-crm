@@ -28,12 +28,14 @@ final class Labels
         'performer' => 'Personaje', 'entertainer' => 'Animador/a', 'host' => 'Recreador/a', 'dj' => 'DJ',
         'face_painter' => 'Pintacaritas', 'driver' => 'Conductor/a', 'foam_operator' => 'Espuma',
         'spa_facilitator' => 'Spa', 'photo_booth' => 'Photo booth',
+        // Skills the owner's catalog import writes (ImportOwnerCatalog::SKILLS).
+        'operator' => 'Operador/a', 'spa' => 'Facilitadora de spa', 'performer_wig' => 'Personaje con peluca',
     ];
 
     // Same keys as the owner's catalog page and waoo:import-catalog, so a unit created here matches what a package requires.
     public const EQUIPMENT = ['speaker' => 'Bocina', 'mic' => 'Micrófono', 'bubbles' => 'Máquina de burbujas', 'robot_tall' => 'Robot LED alto', 'robot_low' => 'Robot LED bajo', 'robot_suit' => 'Traje de robot LED (alto o bajo)',
         'smoke' => 'Pistola de humo / CO₂', 'foam' => 'Cañón de espuma', 'photo_booth' => 'Photo booth', 'vanity' => 'Tocador', 'disco_ball' => 'Bola disco',
-        'sparkler' => 'Chisperos', 'table' => 'Mesa', 'face_kit' => 'Maleta de pintacaritas',
+        'sparkler' => 'Chisperos', 'table' => 'Mesa', 'face_kit' => 'Maleta de pintacaritas', 'cloud_machine' => 'Máquina de baile en las nubes',
         // Earlier keys, kept only so old test data still shows a name. Do not use for new units.
         'robot' => 'Robot LED (antiguo)', 'foam_cannon' => 'Cañón de espuma (antiguo)'];
 

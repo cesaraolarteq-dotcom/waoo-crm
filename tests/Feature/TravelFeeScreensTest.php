@@ -40,6 +40,7 @@ class TravelFeeScreensTest extends TestCase
         Livewire::test(CreateEvent::class)
             ->fillForm(['customer_id' => $client->id, 'title' => 'Fiesta', 'date' => '2026-12-19', 'start_time' => '15:00', 'end_time' => '16:00',
                 'price_version_ids' => [$this->price->id], 'address' => '123 Fixture St, Hockley, TX 77433', 'postal_code' => '77433'])
+            ->assertSee('data-places="quote"', false) // the Google address picker presses this button after filling the address
             ->callAction($this->quote())
             ->assertSchemaStateSet(['travel_fee' => '40', 'travel_quote_status' => 'ok'])
             ->assertSee('Calculado: $40 (precio fijo de ese ZIP).')
@@ -91,6 +92,22 @@ class TravelFeeScreensTest extends TestCase
             ->assertSchemaStateSet(['travel_quote_status' => 'unavailable', 'travel_fee' => '40'])
             ->assertFormFieldIsVisible('travel_fee_override_note')
             ->call('create')->assertHasFormErrors(['travel_fee_override_note' => 'required']);
+        $this->assertDatabaseCount('events', 0);
+    }
+
+    // Codex review of the Google address picker: a changed address/ZIP forgets the old quote (and its fee when untouched).
+    public function test_changing_the_address_or_zip_forgets_the_previous_quote(): void
+    {
+        $client = Customer::create(['name' => 'Ana Ficticia', 'locale' => 'es']);
+        $page = Livewire::test(CreateEvent::class)
+            ->fillForm(['customer_id' => $client->id, 'title' => 'Fiesta', 'date' => '2026-12-19', 'start_time' => '15:00', 'end_time' => '16:00',
+                'price_version_ids' => [$this->price->id], 'address' => '123 Fixture St, Hockley, TX 77433', 'postal_code' => '77433'])
+            ->callAction($this->quote())->assertSchemaStateSet(['travel_fee' => '40', 'travel_quote_status' => 'ok']);
+        $page->fillForm(['address' => '500 Other Rd, Katy, TX', 'postal_code' => '77494'])
+            ->assertSchemaStateSet(['travel_fee' => '40', 'travel_quote_status' => 'stale'])
+            ->assertSee('La dirección cambió: vuelve a calcular el transporte')
+            ->assertFormFieldIsVisible('travel_fee_override_note')
+            ->call('create')->assertHasFormErrors(['travel_fee_override_note' => 'required']); // the old fee is never reused silently
         $this->assertDatabaseCount('events', 0);
     }
 }

@@ -10,8 +10,8 @@
 <title>Waoo Party</title>
 <link rel="icon" href="{{ asset('img/favicon.png') }}">
 {{-- No third-party resources on portal pages (personal links are secrets). --}}
-<link rel="stylesheet" href="{{ asset('css/waoo-tokens.css') }}">
-<link rel="stylesheet" href="{{ asset('css/waoo-portal.css') }}">
+<link rel="stylesheet" href="{{ \App\Support\AssetVersion::url('css/waoo-tokens.css') }}">
+<link rel="stylesheet" href="{{ \App\Support\AssetVersion::url('css/waoo-portal.css') }}">
 </head>
 <body class="portal">
 <header class="p-top">

@@ -61,8 +61,14 @@ class Dashboard extends BaseDashboard
             // LEAD-01: website requests nobody has answered yet (newest first).
             $leads = \App\Models\Lead::with('submission')->where('status', 'new')->orderByDesc('id')->limit(20)->get();
             $cards[] = ['tone' => 'bad', 'title' => 'Prospectos sin contestar', 'text' => 'Llegaron por el formulario de la web. Contesta primero las fechas muy pedidas.',
-                'items' => $leads->map(fn ($l) => ['label' => ($l->submission->payload['name'] ?? 'Prospecto').' · '.($l->submission->payload['event_date'] ?? '').' · ZIP '.($l->submission->payload['zip'] ?? ''),
-                    'url' => \App\Filament\Pages\Leads::getUrl()])->all()];
+                'items' => $leads->map(function ($l) {
+                    $p = $l->submission->payload ?? [];
+                    $date = ! empty($p['event_date']) ? \Carbon\CarbonImmutable::parse($p['event_date'])->locale('es')->translatedFormat('D j M') : 'sin fecha';
+                    $package = in_array($p['package'] ?? '', ['', 'unspecified'], true) ? null : $p['package'];
+
+                    return ['label' => $p['name'] ?? 'Prospecto', 'meta' => implode(' · ', array_filter([$date, ! empty($p['zip']) ? 'ZIP '.$p['zip'] : null, $package])),
+                        'url' => \App\Filament\Pages\Leads::getUrl()];
+                })->all()];
         }
 
         $soon = (clone $upcoming)->where('status', 'draft')->where('starts_at', '<', $now->copy()->addDays(7))->get();

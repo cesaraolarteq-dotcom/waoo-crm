@@ -17,6 +17,8 @@ return [
     'lead_shared_secret' => env('WAOO_LEAD_SHARED_SECRET'),
     'sandbox_routes' => env('WAOO_SANDBOX_ROUTES', false),
     'google_routes_key' => env('WAOO_GOOGLE_ROUTES_KEY'),
+    // Browser key (Maps JavaScript + Places New), HTTP-referrer restricted to the CRM hosts; it is visible in the page by design.
+    'google_maps_browser_key' => env('WAOO_GOOGLE_MAPS_BROWSER_KEY'),
     'sandbox_tips' => env('WAOO_SANDBOX_TIPS', false),
     'sandbox_finance' => env('WAOO_SANDBOX_FINANCE', false),
     'sandbox_imports' => env('WAOO_SANDBOX_IMPORTS', false),

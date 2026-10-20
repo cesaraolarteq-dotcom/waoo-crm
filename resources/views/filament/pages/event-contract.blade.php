@@ -76,6 +76,9 @@
                     <div><dt>Hora</dt><dd>@if ($req)<span class="wwarn-inline">Pidió otra hora: {{ $req }}</span> (actual: {{ $orig }})@else Confirmó {{ $orig }}@endif</dd></div>
                     @if (! empty($d['child_name']) || ! empty($d['child_age']))<div><dt>Cumpleañero/a</dt><dd>{{ $d['child_name'] ?? '' }}@if (! empty($d['child_age'])) · cumple {{ $d['child_age'] }}@endif</dd></div>@endif
                     @if (! empty($d['theme']))<div><dt>Tema</dt><dd>{{ $d['theme'] }}</dd></div>@endif
+                    @if (! empty($d['event_language']))<div><dt>Idioma de la fiesta</dt><dd>{{ ['es' => 'Español', 'en' => 'Inglés', 'bilingual' => 'Bilingüe'][$d['event_language']] ?? $d['event_language'] }}</dd></div>@endif
+                    @if (! empty($d['setup_area']))<div><dt>Dónde</dt><dd>{{ ['indoor' => 'Interior', 'outdoor' => 'Exterior'][$d['setup_area']] ?? $d['setup_area'] }}</dd></div>@endif
+                    @if (! empty($d['children_count']))<div><dt>Niños aprox.</dt><dd>{{ $d['children_count'] }}@if ((int) $d['children_count'] > 25) · sugiere recreadores extra @endif</dd></div>@endif
                     @if (! empty($d['notes']))<div><dt>Notas</dt><dd>{{ $d['notes'] }}</dd></div>@endif
                     <div><dt>Envío</dt><dd>versión {{ $s['submission']->revision }} · {{ \App\Filament\Support\Labels::when(\Carbon\CarbonImmutable::parse($s['submission']->submitted_at)) }}</dd></div>
                 </dl>

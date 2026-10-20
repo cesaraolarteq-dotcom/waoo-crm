@@ -45,16 +45,23 @@ final class SaveEventDraft
                 $event->services()->delete();
             }
             // Only a draft; booked snapshots are immutable.
-            $auditServices = [];
+            $auditServices = []; $timingVariants = [];
             foreach ($services as $index => $selection) {
                 $price = PriceVersion::findOrFail($selection['price_version_id']);
                 $variant = ServiceVariant::whereKey($price->service_variant_id)->lockForUpdate()->firstOrFail();
+                $timingVariants[] = $variant;
                 RecordWriteRejected::when($variant->status === 'retired', 422, 'La variante fue retirada.');
                 $characters = $selection['characters'] ?? ($previous->get($price->id)?->characters->map(fn ($row) => $row->only(['character_id', 'quantity', 'outfit', 'note']))->all() ?? []);
                 $compiled = CharacterRecipe::compile($variant, $characters, "services.{$index}.characters");
                 $service = EventService::create(['event_id' => $event->id, 'service_variant_id' => $variant->id, 'price_version_id' => $price->id, 'requirements_snapshot' => $compiled['requirements'], 'duration_minutes' => $variant->duration_minutes, 'operational_ready' => $compiled['ready']]);
                 $service->characters()->createMany($compiled['characters']);
                 $auditServices[] = ['price_version_id' => $price->id, 'characters' => $compiled['characters']];
+            }
+            if (!$id) {
+                foreach (PackageTimingDefaults::fromVariants($timingVariants) as $field => $default) {
+                    if (!isset($data[$field])) $event->{$field} = $default;
+                }
+                if ($event->isDirty()) $event->save();
             }
             Audit::recordFor($actor, $id ? 'event.draft_updated' : 'event.created', $event, $before, [...$event->getAttributes(), 'services' => $auditServices]);
             return $event->fresh()->load('services.characters');

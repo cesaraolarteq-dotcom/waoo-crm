@@ -29,7 +29,7 @@ final class TravelFeeFields
             ->rule('regex:/^\d{1,7}(\.\d{1,2})?$/')->validationMessages(['regex' => 'Escribe solo el número, por ejemplo 40 o 40.50.'])
             ->helperText(fn (Get $get) => self::message($get) ?? $help);
         if (self::enabled()) {
-            $field->suffixAction(Action::make('quoteTravel')->label('Calcular')->tooltip('Calcular el costo de transporte con la dirección')->icon('heroicon-o-map')
+            $field->suffixAction(Action::make('quoteTravel')->label('Calcular')->tooltip('Calcular el costo de transporte con la dirección')->icon('heroicon-o-map')->extraAttributes(['data-places' => 'quote'])
                 ->action(fn (Get $get, Set $set) => self::quote($get, $set)));
         }
 
@@ -75,6 +75,17 @@ final class TravelFeeFields
         if ($q['status'] === 'ok' && $q['fee_cents'] !== null) {
             $set('travel_fee', rtrim(rtrim(number_format($q['fee_cents'] / 100, 2, '.', ''), '0'), '.'));
         }
+    }
+
+    /**
+     * The address or ZIP changed after a quote: that quote no longer describes this address. Mark it stale (never "ok"), so the
+     * fee can only be kept with a written reason or replaced by pressing Calcular again; nothing is silently reused.
+     */
+    public static function invalidate(Get $get, Set $set): void
+    {
+        if (! self::enabled() || ! filled($get('travel_fee_quote_id')) || $get('travel_quote_status') === 'stale') return;
+        $set('travel_quote_status', 'stale');
+        $set('travel_quote_summary', 'La dirección cambió: vuelve a calcular el transporte (o explica por qué mantienes este costo).');
     }
 
     public static function summary(array $q): string

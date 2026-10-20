@@ -75,7 +75,7 @@ class EventResource extends Resource
                 Select::make('price_version_ids')->label('Paquetes y servicios')->multiple()->native(false)->searchable()
                     ->options(fn (?Event $record) => self::priceOptions($record))
                     ->helperText('Precio vigente de cada servicio. Un borrador conserva el precio que ya tenía; para usar el precio nuevo, quita el anterior y elige el actual.')
-                    ->live()->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set)),
+                    ->live()->afterStateUpdated(function (Get $get, Set $set) { self::refreshTitle($get, $set); self::refreshTiming($get, $set); }),
                 Repeater::make('characters')->label('Personajes')->defaultItems(0)->columns(3)->addActionLabel('Agregar personaje')
                     ->live()->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set))
                     ->visible(fn (Get $get) => self::configurablePrices($get('price_version_ids') ?? []) !== [])
@@ -98,12 +98,16 @@ class EventResource extends Resource
                     ]),
             ]),
             Section::make('Lugar y logística')->columns(2)->columnSpanFull()->schema([
-                TextInput::make('address')->label('Dirección')->maxLength(255)->columnSpanFull(),
-                TextInput::make('postal_code')->label('ZIP')->maxLength(10)->placeholder('77494'),
+                TextInput::make('address')->label('Dirección')->maxLength(255)->columnSpanFull()
+                    ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => \App\Filament\Support\TravelFeeFields::invalidate($get, $set)),
+                TextInput::make('postal_code')->label('ZIP')->maxLength(10)->placeholder('77494')
+                    ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => \App\Filament\Support\TravelFeeFields::invalidate($get, $set)),
                 \App\Filament\Support\TravelFeeFields::feeField(false, 'Déjalo vacío si aún no está calculado: se muestra "Pendiente", nunca $0.'),
                 ...\App\Filament\Support\TravelFeeFields::extraFields(),
-                TextInput::make('setup_minutes')->label('Montaje (minutos antes)')->integer()->minValue(0)->maxValue(720),
+                TextInput::make('setup_minutes')->label('Montaje (minutos antes)')->integer()->minValue(0)->maxValue(720)
+                    ->helperText('Se propone con el catálogo del paquete; puedes cambiarlo.'),
                 TextInput::make('breakdown_minutes')->label('Desmontaje (minutos después)')->integer()->minValue(0)->maxValue(720),
+                Hidden::make('setup_minutes_auto')->dehydrated(false), Hidden::make('breakdown_minutes_auto')->dehydrated(false),
             ]),
         ]);
     }
@@ -116,6 +120,7 @@ class EventResource extends Resource
     {
         $label = fn ($variant, $price) => $variant->name.' · '.Labels::duration($variant->duration_minutes).' · '.Labels::money($price->amount_cents);
         $options = ServiceVariant::query()->where('status', '!=', 'retired')->orderBy('name')->get()
+            ->sortBy(fn ($variant) => [self::popularRank($variant->name), $variant->name])
             ->mapWithKeys(function ($variant) use ($label) {
                 $price = PriceVersion::where('service_variant_id', $variant->id)->orderByDesc('id')->first();
 
@@ -134,6 +139,17 @@ class EventResource extends Resource
         }
 
         return $options;
+    }
+
+    /** Owner 2026-10-20: the best sellers first, in this order; everything else alphabetical after them. */
+    public const POPULAR = ['estrella', 'mágico', 'música y juegos', 'música y juegos 2.0', 'waoo'];
+
+    public static function popularRank(string $name): int
+    {
+        $base = mb_strtolower(trim((string) preg_replace('/\s*\([^)]*\)\s*$/u', '', $name)));
+        $rank = array_search($base, self::POPULAR, true);
+
+        return $rank === false ? 99 : $rank;
     }
 
     /** Costume versions of a character (OUTFIT-01); empty for single-version characters, so the selector stays hidden. */
@@ -179,6 +195,23 @@ class EventResource extends Resource
         return trim(preg_replace('/\s+/', ' ', implode(' ', array_filter([$packages, $chars, $short, trim((string) $client)]))));
     }
 
+    /**
+     * PACKAGE-TIMING prefill: catalog setup/breakdown (max of the chosen services, null when any is unknown). A value the owner
+     * typed is kept; a value we filled follows the selection (and clears when the selection empties). Never touches duration.
+     */
+    public static function refreshTiming(Get $get, Set $set, string $p = ''): void
+    {
+        $defaults = \App\Services\Records\PackageTimingDefaults::forPriceIds(array_values(array_filter((array) ($get($p.'price_version_ids') ?? []))));
+        foreach (['setup_minutes', 'breakdown_minutes'] as $field) {
+            $current = $get($p.$field);
+            $auto = $get($p.$field.'_auto');
+            if ($current === null || trim((string) $current) === '' || (string) $current === (string) $auto) {
+                $set($p.$field, $defaults[$field] === null ? null : (string) $defaults[$field]);
+            }
+            $set($p.$field.'_auto', $defaults[$field] === null ? null : (string) $defaults[$field]);
+        }
+    }
+
     /** Fill the title from the suggestion unless the owner already typed her own. $p = path prefix from inside a repeater. */
     public static function refreshTitle(Get $get, Set $set, string $p = ''): void
     {
@@ -187,7 +220,8 @@ class EventResource extends Resource
             : (filled($get($p.'customer_id')) ? Customer::whereKey((int) $get($p.'customer_id'))->value('name') : null);
         $suggestion = self::suggestTitle((array) ($get($p.'price_version_ids') ?? []), (array) ($get($p.'characters') ?? []), $get($p.'date'), $client);
         $current = trim((string) $get($p.'title'));
-        if ($suggestion !== '' && ($current === '' || $current === (string) $get($p.'title_suggested'))) {
+        // Follows the suggestion while the owner hasn't typed her own, including back to empty when the package is removed.
+        if ($current === '' || $current === trim((string) $get($p.'title_suggested'))) {
             $set($p.'title', $suggestion);
         }
         $set($p.'title_suggested', $suggestion);

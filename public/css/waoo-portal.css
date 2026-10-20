@@ -73,3 +73,5 @@ dt{color:var(--muted);font-size:14px}dd{margin:0;font-weight:700;overflow-wrap:a
 .t-opt input:checked+span{border-color:var(--pink);background:rgba(255,1,124,.07)}
 .t-opt input:focus-visible+span{box-shadow:var(--focus)}
 .t-center{text-align:center}
+.p-fixed{display:block;font-size:1.05rem;padding:10px 0 2px}
+.p-sub-title{margin:10px 0 0;font-size:1.05rem}

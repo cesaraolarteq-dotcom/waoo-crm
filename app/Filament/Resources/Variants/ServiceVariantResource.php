@@ -55,6 +55,10 @@ class ServiceVariantResource extends Resource
                 ->helperText('Cómo se desarrolla el servicio, con tus palabras. Se copia al contrato cuando fijas los montos; los contratos ya emitidos no cambian.'),
             TextInput::make('duration_minutes')->label('Duración (minutos)')->integer()->minValue(1)->maxValue(1440)->required()
                 ->helperText('Ej.: 60 = 1 h; 90 = 1 h 30 min.'),
+            TextInput::make('setup_minutes')->label('Montaje (minutos antes)')->integer()->minValue(0)->maxValue(720)
+                ->helperText('Cuánto antes llega el equipo a montar. Vacío = aún no lo sabes. Se propone al crear la reserva; ahí lo puedes cambiar.'),
+            TextInput::make('breakdown_minutes')->label('Desmontaje (minutos después)')->integer()->minValue(0)->maxValue(720)
+                ->helperText('Cuánto se queda después para recoger. Vacío = aún no lo sabes.'),
             Select::make('status')->label('Estado')->options(Labels::VARIANT_STATUS)->default('draft')->required()->native(false)
                 ->helperText('Para activarlo, define primero lo que necesita.'),
             Repeater::make('requirements')->label('Qué necesita (al mismo tiempo, todo el evento)')->columnSpanFull()->defaultItems(0)
@@ -103,7 +107,14 @@ class ServiceVariantResource extends Resource
 
         return ['name' => trim((string) ($data['name'] ?? '')), 'long_description' => $long === '' ? null : $long, 'status' => $data['status'] ?? 'draft',
             'duration_minutes' => (int) ($data['duration_minutes'] ?? 0), 'requirements' => self::normalizeRequirements($data['requirements'] ?? []),
-            'character_quantity' => $quantity, 'character_options' => $options];
+            'character_quantity' => $quantity, 'character_options' => $options,
+            // PACKAGE-TIMING: blank = unknown (null), 0 is a real zero.
+            'setup_minutes' => self::minutesOrNull($data['setup_minutes'] ?? null), 'breakdown_minutes' => self::minutesOrNull($data['breakdown_minutes'] ?? null)];
+    }
+
+    public static function minutesOrNull(mixed $value): ?int
+    {
+        return $value === null || trim((string) $value) === '' ? null : (int) $value;
     }
 
     /** Only the key for each requirement kind, ints as ints (contract shape). */
@@ -136,7 +147,11 @@ class ServiceVariantResource extends Resource
                     ->formatStateUsing(fn ($state) => Labels::money($state))->placeholder('Sin precio')
                     ->description('+ costo de transporte')->alignEnd(),
                 TextColumn::make('requirements')->label('Necesita')
-                    ->state(fn ($record) => self::needs($record->requirements ?? []))->placeholder('Sin definir')->wrap(),
+                    ->state(fn ($record) => self::needs($record->requirements ?? []))->placeholder('Sin definir')->wrap()
+                    // The character's performer (and costume) is added per booking from the chosen character, so say it here.
+                    ->description(fn ($record) => ($record->character_quantity ?? 0) > 0
+                        ? '+ '.($record->character_quantity === 1 ? 'el personaje que elijas, con su traje' : $record->character_quantity.' personajes que elijas, con sus trajes')
+                        : null),
                 TextColumn::make('status')->label('Estado')->badge()
                     ->formatStateUsing(fn ($state) => Labels::label(Labels::VARIANT_STATUS, $state))
                     ->color(fn ($state) => Labels::VARIANT_STATUS_COLOR[$state] ?? 'gray'),

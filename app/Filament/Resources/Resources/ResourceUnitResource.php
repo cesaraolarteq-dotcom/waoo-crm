@@ -14,7 +14,7 @@ use Filament\Schemas\Components\Utilities\Get;
 
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\{Filter, SelectFilter};
 use Filament\Tables\Table;
 
 // Staff, costumes, equipment and vehicles. Each costume or speaker is its own unit (2 Mickey costumes = 2 rows).
@@ -116,6 +116,9 @@ class ResourceUnitResource extends Resource
             ])
             ->filters([
                 SelectFilter::make('status')->label('Estado')->options(Labels::RESOURCE_STATUS),
+                // Retired units (e.g. old costume codes replaced by per-outfit ones) stay for history but out of the daily list.
+                Filter::make('hide_inactive')->label('Ocultar inactivos')->toggle()->default()
+                    ->query(fn ($query) => $query->where('resources.status', '!=', 'inactive')),
             ])
             ->defaultSort('name')
             ->emptyStateHeading('Todavía no hay staff ni trajes')
