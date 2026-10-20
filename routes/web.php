@@ -12,6 +12,8 @@ Route::redirect('/', '/admin')->name('home');
 Route::middleware(['auth', 'password.confirm'])->get('/seguridad/dos-pasos', TwoFactorEnrollmentController::class)->name('security.two-factor');
 Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'));
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->prefix('admin/api')->group(function () {
+    Route::get('/events/{event}/confirmed-agreement', [\App\Http\Controllers\Admin\ConfirmedAgreementController::class, 'show'])->whereNumber('event');
+    Route::get('/events/{event}/opening-refunds', [\App\Http\Controllers\Admin\OpeningRefundController::class, 'index'])->whereNumber('event');
     Route::get('/events/{event}/opening-receipts', [\App\Http\Controllers\Admin\OpeningReceiptController::class, 'index'])->whereNumber('event');
     Route::post('/events/{event}/opening-receipts/{ledger}/allocate', [\App\Http\Controllers\Admin\OpeningReceiptController::class, 'allocate'])->whereNumber(['event', 'ledger']);
     Route::post('/cutover/openings', [\App\Http\Controllers\Admin\CutoverOpeningController::class, 'prepare']);
@@ -21,6 +23,7 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::get('/history/imports/{batch}/rows/{row}', [\App\Http\Controllers\Admin\HistoricalImportController::class, 'row'])->whereNumber(['batch', 'row']);
     Route::post('/history/imports/{batch}/discard', [\App\Http\Controllers\Admin\HistoricalImportController::class, 'discard'])->whereNumber('batch');
     Route::get('/cutover/honeybook', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'index']);
+    Route::get('/cutover/honeybook/members', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'members']);
     Route::get('/cutover/honeybook/events/{event}', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'show'])->whereNumber('event');
     Route::post('/cutover/honeybook/events/{event}', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'review'])->whereNumber('event');
     Route::post('/cutover/reconciliations', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'prepare']);
@@ -95,6 +98,7 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::get('/contracts/{contract}/pdf', [\App\Http\Controllers\Admin\DocumentController::class, 'pdf']);
     Route::post('/contracts/{contract}/final-pdf/retry', [\App\Http\Controllers\Admin\DocumentController::class, 'retryFinal']);
     Route::get('/contracts/{contract}/evidence', [\App\Http\Controllers\Admin\DocumentController::class, 'evidence']);
+    Route::post('/events/{event}/opening-portal-grants', [\App\Http\Controllers\Admin\OpeningPortalGrantController::class, 'store'])->whereNumber('event');
     Route::post('/events/{event}/portal-grants', [\App\Http\Controllers\Admin\DocumentController::class, 'grant']);
     Route::post('/events/{event}/portal-grants/{grant}/reveal-link', [\App\Http\Controllers\Admin\DocumentController::class, 'revealLink'])->whereNumber(['event', 'grant']);
     Route::post('/portal-grants/{grant}/revoke', [\App\Http\Controllers\Admin\DocumentController::class, 'revoke']);
@@ -131,6 +135,8 @@ Route::middleware([\App\Http\Middleware\AuthenticatePortal::class, 'throttle:60,
     Route::post('/details', [\App\Http\Controllers\Portal\ClientDetailsController::class, 'store']);
     Route::post('/checkout-intents', [\App\Http\Controllers\Portal\CheckoutController::class, 'create']);
     Route::get('/payment-intents/{intent}', [\App\Http\Controllers\Portal\CheckoutController::class, 'show']);
+    Route::get('/original-agreement', [\App\Http\Controllers\Portal\OriginalAgreementController::class, 'show']);
+    Route::get('/original-agreement/pdf', [\App\Http\Controllers\Portal\OriginalAgreementController::class, 'pdf']);
     Route::get('/event', [\App\Http\Controllers\Portal\PortalController::class, 'event']);
     Route::get('/contracts/{contract}', [\App\Http\Controllers\Portal\PortalController::class, 'show']);
     Route::get('/contracts/{contract}/pdf', [\App\Http\Controllers\Portal\PortalController::class, 'pdf']);

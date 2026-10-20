@@ -1,5 +1,9 @@
 # #90 / #91 — source review for Claude
 
+## Integrated UI verification — 2026-10-19 Chicago
+
+#91 is now merged in main4306975, included in codex/confirmed-agreement-tips0065ac5. Frozen3eb70da final MariaDB regression **145 tests/1043 assertions PASS** includes HoneyBookCutoverScreensTest and HoneyBookResyncScreenTest as well as the new common-agreement/TIP code. This supplies independent execution of the scope-reset/re-render/DST UI tests, superseding the earlier “source inspection only” execution limitation below. No browser, maximum-load, Hostinger or independently verified Actions claim. R1 remains closed; bounded single-cohort members projection still pending a backend API. No activation or source-retirement action performed.
+
 ## Re-review 2026-10-19 (Chicago) — 366055f
 
 **R1 closed; technical approval by source inspection of the correction.** reviewedCohort is Locked and is set when the owner ticks the displayed group. prepare sends that reviewed hash, not a newly rendered one; mismatch/refusal/success and changed-group rendering clear the tick/hash and create a new intent. The added Livewire tests cover stale A → changed B → refused preparation → cleared tick → second local refusal, plus a plain re-render with changed membership. Environment parity now explicitly excludes production. The evidence form adds conditional explicit CDT/CST choices for both observation and due times, with a fall-back test. These changes address the requested control flow and DST follow-up.

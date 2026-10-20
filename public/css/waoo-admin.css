@@ -201,3 +201,12 @@ a.wcal-name:hover{text-decoration:underline}
 .wchg-checks,.wchg-effects{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:8px}
 .wchg-effects{list-style:disc;padding-left:20px}
 .wchg-reason{width:100%;max-width:520px;margin-top:8px;padding:8px 10px;border:1px solid #DCE1EE;border-radius:10px;font:inherit}
+/* Historial de HoneyBook (IMPORT-HISTORY A) */
+.wimp-pager{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;font-size:.875rem}
+.wimp-issues{margin:10px 0 0;padding-left:1.1em;display:grid;gap:4px;font-size:.875rem;color:#8F5B00}
+.wfile-note{background:#E6EDFF;color:#1E4DD8;border-radius:12px;padding:12px 14px;font-size:.9rem;margin-top:10px}
+.dark .wfile-note{background:rgba(122,147,255,.14);color:#AFC0FF}
+.wfile-h{font-weight:800;font-size:.95rem;margin:14px 0 6px}
+.wqb-input{width:100%;border:1px solid rgba(20,26,51,.16);border-radius:10px;padding:8px 10px;font:inherit;background:transparent}
+.wcal-btn.danger{color:#B4233A;border-color:#B4233A}.wcal-btn.danger:hover{background:#FDE6EA}
+.dark .wcal-btn.danger{color:#FF7A8E;border-color:#FF7A8E}

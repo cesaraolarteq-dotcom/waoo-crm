@@ -27,6 +27,19 @@ final class StripeWebhookController extends Controller
         $minimal = ['id' => is_string($object['id'] ?? null) ? mb_substr($object['id'], 0, 255) : null,
             'object' => is_string($object['object'] ?? null) ? mb_substr($object['object'], 0, 60) : null];
         $minimal['payment_intent'] = is_string($object['payment_intent'] ?? null) && preg_match('/^pi_[A-Za-z0-9_]{1,200}$/', $object['payment_intent']) ? $object['payment_intent'] : null;
+        if (in_array($event['type'], ['refund.created', 'refund.updated', 'charge.refund.updated'], true)) {
+            if (($minimal['object'] ?? null) !== 'refund' || !preg_match('/^re_[A-Za-z0-9_]{1,200}$/D', $minimal['id'] ?? ''))
+                return response()->json(['message' => 'Valid refund event required.'], 400);
+            $minimal['charge'] = is_string($object['charge'] ?? null) && preg_match('/^ch_[A-Za-z0-9_]{1,200}$/D', $object['charge']) ? $object['charge'] : null;
+        }
+        if ($event['type'] === 'charge.refunded' && (($minimal['object'] ?? null) !== 'charge' || !preg_match('/^ch_[A-Za-z0-9_]{1,200}$/D', $minimal['id'] ?? '')))
+            return response()->json(['message' => 'Valid charge event required.'], 400);
+        if (str_starts_with($event['type'], 'charge.dispute.')) {
+            if (($minimal['object'] ?? null) !== 'dispute' || !preg_match('/^dp_[A-Za-z0-9_]{1,200}$/D', $minimal['id'] ?? '')
+                || !is_string($object['charge'] ?? null) || !preg_match('/^ch_[A-Za-z0-9_]{1,200}$/D', $object['charge']))
+                return response()->json(['message' => 'Valid dispute event required.'], 400);
+            $minimal['charge'] = $object['charge'];
+        }
         $metadata = is_array($object['metadata'] ?? null) ? $object['metadata'] : [];
         $minimal['metadata'] = [];
         if (is_string($metadata['local_intent_id'] ?? null) && \Illuminate\Support\Str::isUuid($metadata['local_intent_id'])) $minimal['metadata']['local_intent_id'] = $metadata['local_intent_id'];

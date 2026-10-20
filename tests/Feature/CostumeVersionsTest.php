@@ -35,7 +35,8 @@ class CostumeVersionsTest extends TestCase
                 ['kind' => 'costume', 'character_id' => $this->hero->id, 'quantity' => 1], ['kind' => 'staff', 'skill' => 'performer', 'quantity' => 1]]]]]);
         $this->price = app(AddPriceVersion::class)->execute($this->owner, $variant->id, ['amount_cents' => 10000, 'currency' => 'USD']);
         $customer = Customer::create(['name' => 'Fixture Client', 'email' => 'fiction@example.test', 'locale' => 'es']);
-        $start = now()->addDays(20)->startOfHour();
+        // Noon in Houston: a start at local midnight on a Monday made the staff week page (Mon–Sun) look at the previous week when the suite ran around 06:00 UTC.
+        $start = now('America/Chicago')->addDays(20)->setTime(12, 0)->utc();
         $this->input = ['customer_id' => $customer->id, 'title' => 'Fixture party', 'starts_at' => $start->toIso8601String(), 'ends_at' => $start->copy()->addHour()->toIso8601String(), 'timezone' => 'America/Chicago',
             'address' => 'Fixture venue', 'setup_minutes' => 10, 'breakdown_minutes' => 10, 'travel_fee_cents' => 0,
             'services' => [['price_version_id' => $this->price->id, 'characters' => [['character_id' => $this->hero->id, 'quantity' => 1, 'outfit' => 'Racing', 'note' => 'PRIVATE fictional owner note']]]]];

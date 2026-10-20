@@ -46,11 +46,28 @@ class EventMoney extends Page
     #[Locked]
     public string $noticeKey = '';
 
-    /** TIP-01 owner block: one UUID per intent; the raw link is shown once (no reveal API). */
+    /** TIP-01 owner block: one UUID per intent; the link is shown on creation and can be copied again (RevealTipGrantLink). */
     #[Locked]
     public string $tipKey = '';
 
     public ?array $tipLink = null;
+
+    /** Page of the read-only opening refund list (Codex B1). */
+    public int $refundPage = 1;
+
+    /** Codex B1 issue codes → owner Spanish (labels agreed in docs/OPENING-REFUNDS-API.md). Allocation is never offered here. */
+    public const REFUND_ISSUES = [
+        'refund_evidence_required' => 'La evidencia necesita revisión', 'refund_evidence_invalid' => 'La evidencia necesita revisión',
+        'refund_agreement_mismatch' => 'No corresponde al acuerdo vigente de esta fiesta',
+        'refund_parent_evidence_invalid' => 'El pago original necesita revisión', 'refund_parent_allocation_required' => 'El pago original aún no está conciliado',
+        'refund_parent_allocation_invalid' => 'La conciliación del pago original necesita revisión',
+        'refund_current_observation_conflict' => 'Stripe envió después un aviso distinto: revisar',
+        'refund_parent_provider_review_required' => 'Aviso de Stripe: revisar el pago',
+        'refund_observation_integrity_invalid' => 'Un aviso de Stripe no se pudo verificar',
+        'refund_observation_volume_exceeded' => 'Demasiados avisos: requiere revisión',
+        'refund_parent_gross_exceeded' => 'Las devoluciones suman más que el pago original',
+        'refund_collection_not_current' => 'Los cobros de esta fiesta cambiaron: revisar',
+    ];
 
     public function mount(int|string $record): void
     {
@@ -79,7 +96,7 @@ class EventMoney extends Page
         }
         $grant = \App\Models\TipGrant::where('event_id', $this->record->id)->whereNull('revoked_at')->where('expires_at', '>', now())->latest('id')->first();
 
-        return [...$read, 'grant' => $grant ? ['id' => $grant->id, 'version' => $grant->version, 'expires' => rtrim(Labels::when($grant->expires_at), '.')] : null,
+        return [...$read, 'grant' => $grant ? ['id' => $grant->id, 'version' => $grant->version, 'snapshot' => $grant->snapshot_sha256, 'expires' => rtrim(Labels::when($grant->expires_at), '.')] : null,
             'can_issue' => $this->record->status === 'capacity_reserved' && ! $this->record->ends_at->isFuture() && ($this->record->responsible_system ?? 'crm') === 'crm'];
     }
 
@@ -105,12 +122,36 @@ class EventMoney extends Page
                     return;
                 }
                 $this->tipKey = (string) Str::uuid();
-                $first = trim(explode(' ', (string) $this->record->customer?->name)[0] ?? '');
-                $until = rtrim(Labels::when(\Carbon\CarbonImmutable::parse($r['expires_at'])), '.');
-                $this->tipLink = ['url' => $r['link'], 'expires' => $until, 'phone' => $this->record->customer?->phone, 'locale' => $this->record->customer?->locale ?? 'es',
-                    'heading' => 'Enlace de propina', 'hint' => 'Cópialo ahora: por seguridad no se vuelve a mostrar. Si lo pierdes, anúlalo y crea otro.',
-                    'msg_es' => "¡Hola {$first}! Gracias por celebrar con Waoo Party. Si quieres agradecerle al equipo de tu fiesta, aquí puedes dejar una propina (el 100 % es para el staff): {$r['link']}",
-                    'msg_en' => "Hi {$first}! Thank you for celebrating with Waoo Party. If you'd like to thank your party's team, you can leave a tip here (100% goes to the staff): {$r['link']}"];
+                $this->showTipLink($r['link'], $r['expires_at']);
+            });
+    }
+
+    /** Panel with the link and ready messages (EN/ES) for WhatsApp/SMS; nothing is sent from the CRM. */
+    private function showTipLink(string $link, string $expiresIso): void
+    {
+        $first = trim(explode(' ', (string) $this->record->customer?->name)[0] ?? '');
+        $this->tipLink = ['url' => $link, 'expires' => rtrim(Labels::when(\Carbon\CarbonImmutable::parse($expiresIso)), '.'), 'phone' => $this->record->customer?->phone, 'locale' => $this->record->customer?->locale ?? 'es',
+            'heading' => 'Enlace de propina', 'hint' => 'Es el mismo enlace de siempre: si lo pierdes, usa “Copiar enlace otra vez”.',
+            'msg_es' => "¡Hola {$first}! Gracias por celebrar con Waoo Party. Si quieres agradecerle al equipo de tu fiesta, aquí puedes dejar una propina (el 100 % es para el staff): {$link}",
+            'msg_en' => "Hi {$first}! Thank you for celebrating with Waoo Party. If you'd like to thank your party's team, you can leave a tip here (100% goes to the staff): {$link}"];
+    }
+
+    /** Copies the SAME active link again (no new grant, no renewal); pinned to the version/snapshot shown on screen. */
+    public function tipCopyAction(): Action
+    {
+        return Action::make('tipCopy')->label('Copiar enlace otra vez')->color('gray')->size('sm')->link()
+            ->action(function (array $arguments) {
+                if (! class_exists(\App\Services\Tips\RevealTipGrantLink::class)) return;
+                try {
+                    $r = app(\App\Services\Tips\RevealTipGrantLink::class)->execute(Filament::auth()->user(), (int) ($arguments['grant'] ?? 0),
+                        ['expected_version' => (int) ($arguments['version'] ?? 0), 'expected_snapshot_sha256' => (string) ($arguments['snapshot'] ?? '')], $this->tipKey);
+                } catch (ValidationException|RecordWriteRejected|AuthorizationException|\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+                    $this->tipKey = (string) Str::uuid();
+                    Notification::make()->danger()->title('No se pudo copiar')->body(($e instanceof ValidationException ? collect($e->errors())->flatten()->first() : $e->getMessage()).' Si la fiesta o sus importes cambiaron, anula el enlace y crea otro.')->persistent()->send();
+                    return;
+                }
+                $this->tipKey = (string) Str::uuid();
+                $this->showTipLink($r['link'], $r['expires_at']);
             });
     }
 
@@ -131,6 +172,38 @@ class EventMoney extends Page
                 $this->tipLink = null;
                 Notification::make()->success()->title('Enlace de propina anulado')->send();
             });
+    }
+
+    /**
+     * Read-only list of Stripe refunds on an imported party's opening (ReadOpeningRefundCandidates). Shown only for imported
+     * events with every bridge flag on; no allocation, no budget computed here. A refusal shows its reason instead of the list.
+     */
+    public function openingRefunds(): ?array
+    {
+        $flags = collect(['sandbox_finance', 'sandbox_imports', 'sandbox_cutover', 'sandbox_cutover_bridge'])->every(fn ($f) => config('waoo.'.$f) === true);
+        if (! $flags || ! class_exists(\App\Services\Finance\ReadOpeningRefundCandidates::class)
+            || ! \App\Models\ImportedProjectLink::where('event_id', $this->record->id)->exists()) return null;
+        try {
+            $read = app(\App\Services\Finance\ReadOpeningRefundCandidates::class)->execute(Filament::auth()->user(), $this->record->id, ['page' => $this->refundPage, 'per_page' => 25]);
+        } catch (RecordWriteRejected|AuthorizationException $e) {
+            return ['error' => $e->getMessage(), 'rows' => [], 'page' => ['number' => 1, 'last' => 1, 'total' => 0]];
+        } catch (\Throwable) {
+            return ['error' => 'No se pudo leer las devoluciones ahora. Inténtalo de nuevo.', 'rows' => [], 'page' => ['number' => 1, 'last' => 1, 'total' => 0]];
+        }
+        $read['rows'] = array_map(fn ($r) => [
+            'title' => $r['gross_refund_cents'] !== null ? 'Devolución registrada en Stripe' : 'La evidencia necesita revisión',
+            'amount' => $r['gross_refund_cents'] !== null ? Labels::money($r['gross_refund_cents']) : null,
+            'when' => $r['received_at'] ? Labels::when(\Carbon\CarbonImmutable::parse($r['received_at'])) : null,
+            'issues' => collect($r['issue_codes'])->reject(fn ($c) => $c === 'refund_allocation_not_available')
+                ->map(fn ($c) => self::REFUND_ISSUES[$c] ?? 'Requiere revisión')->unique()->values()->all(),
+        ], $read['rows']);
+
+        return $read;
+    }
+
+    public function refundPageTo(int $page): void
+    {
+        $this->refundPage = max(1, $page);
     }
 
     public function getSubheading(): ?string

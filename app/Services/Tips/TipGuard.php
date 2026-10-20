@@ -3,9 +3,7 @@ namespace App\Services\Tips;
 use App\Exceptions\RecordWriteRejected;
 use App\Models\{Event,FinancialRevision,TipGrant,User};
 use App\Services\Finance\{MutationKey,Sandbox};
-use App\Services\Imports\ImportedAgreement;
 use App\Services\Records\{RecordActor,RecordInput};
-use App\Services\Responsibility\RequireCrmResponsibility;
 use Illuminate\Support\Facades\{Crypt,DB};
 use Illuminate\Validation\ValidationException;
 final class TipGuard {
@@ -16,30 +14,31 @@ final class TipGuard {
             $p=parse_url(Sandbox::origin());$origin=$p['scheme'].'://'.$p['host'].(isset($p['port'])?':'.$p['port']:'');abort_unless($r->header('Origin')===$origin,403);
         }
     }
-    public static function owner(User $actor):User {self::transport(request());return RecordActor::authorize($actor);}
+    public static function owner(User $actor,bool $current=false):User {self::transport(request());return RecordActor::authorize($actor,$current);}
     public static function input(array $input,array $rules):array {
         if(array_diff(array_keys($input),array_keys($rules)))throw ValidationException::withMessages(['tip'=>'Campos no permitidos.']);
         return RecordInput::validate($input,$rules);
     }
     // Event -> immutable finance -> grant -> intent/session. Source reads are authoritative under the event lock.
     public static function source(int $eventId):array {
-        $e=RequireCrmResponsibility::forEvent($eventId,true);ImportedAgreement::blockCrmLifecycle($eventId);
-        RecordWriteRejected::unless($e->status==='capacity_reserved'&&!$e->ends_at->isFuture()&&$e->ends_at->utc()->addDays(14)->isFuture(),409,'La fiesta todavía no permite propinas o el plazo terminó.');
-        $f=FinancialRevision::where('event_id',$eventId)->latest('revision')->lockForUpdate()->firstOrFail();
-        $binding=DB::table('capacity_payment_links')->where('event_id',$eventId)->lockForUpdate()->first();
-        RecordWriteRejected::unless($e->version===$f->event_version+1&&$binding&&(int)$binding->financial_revision_id===$f->id
-            &&$e->reservations()->where('starts_at',$e->starts_at)->where('ends_at',$e->ends_at)->orderBy('id')->lockForUpdate()->first(),409,'Revisa la confirmación y el acuerdo vigente de esta fiesta.');
-        return [$e,$f,self::fingerprint($e,$f)];
+        $a=\App\Services\Agreements\ConfirmedAgreement::lock($eventId);$e=$a['event'];$f=$a['finance'];
+        RecordWriteRejected::unless(!$e->ends_at->isFuture()&&$e->ends_at->utc()->addDays(14)->isFuture(),409,'La fiesta todavía no permite propinas o el plazo terminó.');
+        if($a['origin']==='honeybook_opening'){
+            $money=\App\Services\Finance\OpeningFinanceSummary::forEvent($e);
+            RecordWriteRejected::unless($money&&!$money['collection_blocked']&&$money['net_received_cents']!==null,409,'Revisa la conciliación del acuerdo importado antes de abrir propinas.');
+        }
+        return [$e,$f,$a['snapshot_sha256']];
     }
     public static function fingerprint(Event $e,FinancialRevision $f):string {
-        return MutationKey::hash(['event_id'=>$e->id,'event_version'=>$e->version,'customer_id'=>$e->customer_id,'start'=>$e->starts_at->toIso8601String(),'end'=>$e->ends_at->toIso8601String(),'finance'=>$f->getAttributes()]);
+        return \App\Services\Agreements\ConfirmedAgreement::nativeFingerprint($e,$f);
     }
+
     public static function grant(int $id):array {
         $hint=TipGrant::findOrFail($id);[$e,$f,$sha]=self::source($hint->event_id);$g=TipGrant::whereKey($id)->lockForUpdate()->firstOrFail();
         self::active($g);RecordWriteRejected::unless($g->event_id===$e->id&&$g->customer_id===$e->customer_id&&$g->financial_revision_id===$f->id&&$g->total_cents===$f->total_cents&&hash_equals($g->snapshot_sha256,$sha),409,'La fiesta o sus importes cambiaron. Pide un enlace nuevo.');
         return [$g,$e,$f];
     }
-    public static function active(TipGrant $g):void {RecordWriteRejected::unless(!$g->revoked_at&&$g->expires_at->isFuture(),409,'Este enlace venció o fue anulado.');}
+    public static function active(TipGrant $g):void {RecordWriteRejected::unless($g->snapshot_schema_version===\App\Services\Integrity\EvidenceV1::VERSION,409,'La versión de este enlace requiere revisión.');RecordWriteRejected::unless(!$g->revoked_at&&$g->expires_at->isFuture(),409,'Este enlace venció o fue anulado.');}
     // Current read: a pre-lock grant hint may already have established a REPEATABLE READ snapshot.
     public static function receipt(string $scope,string $key,string $hash):?object {
         RecordInput::validate(['key'=>$key],['key'=>'required|uuid']);

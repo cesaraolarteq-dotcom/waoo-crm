@@ -22,12 +22,18 @@ final class CutoverDocuments
     }
     public function verify(CutoverOriginalDocument $document): void
     {
+        $this->read($document);
+    }
+    public function read(CutoverOriginalDocument $document): string
+    {
         try {
             $cipher = CutoverOriginalDocument::whereKey($document->id)->sharedLock()->value('document_ciphertext');
             $bytes = Crypt::decryptString($cipher);
             $valid = strlen($bytes) === $document->byte_count && strlen($bytes) <= ImportCsv::BYTES
                 && hash_equals($document->sha256, hash('sha256', $bytes)) && str_starts_with($bytes, '%PDF-');
-        } catch (\Throwable) { $valid = false; }
+        } catch (\Illuminate\Database\QueryException $e) { throw $e; }
+        catch (\Throwable) { $valid = false; }
         RecordWriteRejected::unless($valid, 409, 'El documento original requiere revisar su integridad.');
+        return $bytes;
     }
 }

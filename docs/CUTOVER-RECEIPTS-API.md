@@ -1,6 +1,10 @@
 # C3 B2 — effective agreement proof and verified Zelle receipts
 
-2026-10-19 · Codex · contract published before code. Stacks on B1 `0e453d5`. No activation/transfer/reversal writer or route is provided here. A prepared opening, changing responsible_system alone, or enabling a flag cannot authorize collection. Synthetic tests may seed the complete future activation record; that is a fixture, never a production activation or a substitute provider.
+2026-10-19 · Codex · contract published before code.
+
+**Later amendment:** OPENING-STRIPE-API.md S1 adds captured Stripe principal allocation and separate customer-fee reporting; the B2-only Stripe/fee pending statements below describe the original delivery. Refunds remain pending; OPENING-REFUNDS-API.md S2 is design only.
+
+ Stacks on B1 `0e453d5`. No activation/transfer/reversal writer or route is provided here. A prepared opening, changing responsible_system alone, or enabling a flag cannot authorize collection. Synthetic tests may seed the complete future activation record; that is a fixture, never a production activation or a substitute provider.
 
 ## Effective authority, before any source receipt
 
@@ -25,6 +29,8 @@ Lock order is current owner → own event; group financial/evidence rows use ord
 ## Money reads and unknowns
 
 FinanceSummary for a valid effective source binding freezes the opening source gross/refunds/net and adds **allocated verified post-cutover** receipts once. Expose source/CRM components, opening/transfer IDs, origin and collection hash/current state. Preserve original source due precision, reviewed exact CRM deadline and bank-unverified source funds. Already reserved => deposit_shortfall0 (no new deposit demand). Overpayment remains credit plus the normal owner-review exception.
+
+The numerical overpayment exception is calculated only while that summary is complete. Another unallocated/uncertain movement keeps total credit unknown and can hide a possible overpayment until reconciliation; an absent numerical exception does not assert that no overpayment occurred. N4 normalizes a null reference only for identity comparison, never into valid verification or a fabricated reference.
 
 Any event ledger row not covered by a valid allocation, unknown receipt proof, refund, nonzero card fee, foreign/live entry or corrupted allocation makes total net/balance/credit unknown (null), with explicit reasons and collection_blocked=true. Known opening/allocated amounts remain separately labelled. In B2 **Stripe/refund allocation is pending**: existing verified Stripe processing must retain actual late money and show it pending reconciliation, never silently include/reclassify/drop it. Source read-integrity failures return a blocked/unknown summary rather than throw away authenticated incoming money through a processor rollback; initiating/manual writes still fail closed. No amount becomes verified merely through a client return URL.
 
