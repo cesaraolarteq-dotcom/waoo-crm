@@ -29,7 +29,7 @@ final class Labels
         'face_painter' => 'Pintacaritas', 'driver' => 'Conductor/a', 'foam_operator' => 'Espuma',
         'spa_facilitator' => 'Spa', 'photo_booth' => 'Photo booth',
         // Skills the owner's catalog import writes (ImportOwnerCatalog::SKILLS).
-        'operator' => 'Operador/a', 'spa' => 'Facilitadora de spa', 'performer_wig' => 'Personaje de peluca',
+        'operator' => 'Operador/a', 'spa' => 'Facilitadora de spa', 'performer_wig' => 'Personaje con peluca',
     ];
 
     // Same keys as the owner's catalog page and waoo:import-catalog, so a unit created here matches what a package requires.

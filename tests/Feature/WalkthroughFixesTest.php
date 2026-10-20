@@ -25,6 +25,17 @@ class WalkthroughFixesTest extends TestCase
             ['kind' => 'staff', 'quantity' => 1, 'skill' => 'operator'], ['kind' => 'staff', 'quantity' => 3, 'skill' => 'spa'],
             ['kind' => 'equipment', 'quantity' => 1, 'equipment_kind' => 'cloud_machine']]));
         $this->assertContains('cloud_machine', \App\Console\Commands\ImportOwnerCatalog::EQUIPMENT);
-        $this->assertSame('Personaje de peluca', Labels::SKILL['performer_wig']);
+        $this->assertSame('Personaje con peluca', Labels::SKILL['performer_wig']);
+    }
+
+    public function test_retired_units_are_hidden_from_staff_and_costumes_by_default(): void
+    {
+        $owner = \App\Models\User::factory()->create(['role' => 'owner_admin', 'active' => true, 'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'), 'two_factor_confirmed_at' => now()]);
+        $rumi = \App\Models\Character::create(['name' => 'Rumi', 'active' => true]);
+        foreach ([['TRAJE-RUMI-1', 'inactive'], ['TRAJE-RUMI-GOLDEN-1', 'active'], ['TRAJE-RUMI-HOW-1', 'maintenance']] as [$code, $status]) {
+            \App\Models\Resource::create(['code' => $code, 'name' => "Traje {$code}", 'kind' => 'costume', 'status' => $status, 'character_id' => $rumi->id, 'skills' => []]);
+        }
+        $this->actingAs($owner)->get('/admin/staff-y-trajes')->assertOk()
+            ->assertSee('TRAJE-RUMI-GOLDEN-1')->assertSee('TRAJE-RUMI-HOW-1')->assertDontSee('TRAJE-RUMI-1');
     }
 }
