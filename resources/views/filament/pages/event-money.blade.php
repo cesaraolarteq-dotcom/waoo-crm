@@ -68,6 +68,32 @@
             @endforelse
         </x-filament::section>
 
+        @if ($r = $this->openingRefunds())
+            <x-filament::section>
+                <x-slot name="heading">Devoluciones de Stripe (fiesta importada)</x-slot>
+                <x-slot name="description">Solo lectura. Stripe avisó estas devoluciones del pago original; todavía no se descuentan del saldo ni se reparten entre principal y cargo.</x-slot>
+                @if ($r['error'] ?? null)
+                    <p class="wmoney-p">{{ $r['error'] }}</p>
+                @else
+                    @forelse ($r['rows'] as $row)
+                        <div class="wmoney-row">
+                            <div><b>{{ $row['title'] }}</b>@if ($row['amount']) · {{ $row['amount'] }}@endif <span class="wmoney-pending">Pendiente de conciliación</span>
+                                <small>@if ($row['when']){{ $row['when'] }}@endif @foreach ($row['issues'] as $issue) · {{ $issue }}@endforeach</small></div>
+                        </div>
+                    @empty
+                        <p class="wmoney-p">Stripe no ha avisado devoluciones de esta fiesta.</p>
+                    @endforelse
+                    @if ($r['page']['last'] > 1)
+                        <div class="wrep-actions">
+                            <button type="button" class="wcal-btn" wire:click="refundPageTo({{ $r['page']['number'] - 1 }})" @disabled($r['page']['number'] <= 1)>Anteriores</button>
+                            <span>Página {{ $r['page']['number'] }} de {{ $r['page']['last'] }} · {{ $r['page']['total'] }} devoluciones</span>
+                            <button type="button" class="wcal-btn" wire:click="refundPageTo({{ $r['page']['number'] + 1 }})" @disabled($r['page']['number'] >= $r['page']['last'])>Siguientes</button>
+                        </div>
+                    @endif
+                @endif
+            </x-filament::section>
+        @endif
+
         @if ($t = $this->tips())
             <x-filament::section>
                 <x-slot name="heading">Propinas para el staff</x-slot>
