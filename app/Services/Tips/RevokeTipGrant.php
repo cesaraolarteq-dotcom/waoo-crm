@@ -9,7 +9,7 @@ final class RevokeTipGrant {
     public function execute(User $actor,int $grantId,array $input,string $key):array {
         $actor=TipGuard::owner($actor);$d=TipGuard::input($input,['expected_version'=>'required|integer|min:1']);$d['expected_version']=(int)$d['expected_version'];
         return DB::transaction(function()use($actor,$grantId,$d,$key){
-            TipGuard::owner($actor);$hint=TipGrant::findOrFail($grantId);Event::whereKey($hint->event_id)->lockForUpdate()->firstOrFail();$g=TipGrant::whereKey($grantId)->lockForUpdate()->firstOrFail();
+            User::whereKey($actor->id)->lockForUpdate()->firstOrFail();TipGuard::owner($actor,true);$hint=TipGrant::findOrFail($grantId);Event::whereKey($hint->event_id)->lockForUpdate()->firstOrFail();$g=TipGrant::whereKey($grantId)->lockForUpdate()->firstOrFail();
             $scope='owner:'.$actor->id.':tip-revoke:'.$grantId;$hash=MutationKey::hash($d);
             if(!$r=TipGuard::receipt($scope,$key,$hash)){
                 RecordWriteRejected::unless($g->version===$d['expected_version']&&!$g->revoked_at,409,'El enlace cambió.');

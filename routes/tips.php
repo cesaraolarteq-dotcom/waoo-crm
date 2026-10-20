@@ -4,6 +4,7 @@ use App\Http\Middleware\RequireOwnerAdmin;
 use Illuminate\Support\Facades\Route;
 Route::middleware(['auth',RequireOwnerAdmin::class,'throttle:admin-write'])->prefix('admin/api')->group(function(){
     Route::post('/events/{event}/tip-grants',[TipController::class,'issue'])->whereNumber('event');
+    Route::post('/tip-grants/{grant}/reveal',[TipController::class,'reveal'])->whereNumber('grant');
     Route::post('/tip-grants/{grant}/revoke',[TipController::class,'revoke'])->whereNumber('grant');
     Route::get('/events/{event}/tips',[TipController::class,'owner'])->whereNumber('event');
 });

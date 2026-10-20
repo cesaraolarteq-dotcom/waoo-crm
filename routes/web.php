@@ -12,6 +12,7 @@ Route::redirect('/', '/admin')->name('home');
 Route::middleware(['auth', 'password.confirm'])->get('/seguridad/dos-pasos', TwoFactorEnrollmentController::class)->name('security.two-factor');
 Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'));
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->prefix('admin/api')->group(function () {
+    Route::get('/events/{event}/confirmed-agreement', [\App\Http\Controllers\Admin\ConfirmedAgreementController::class, 'show'])->whereNumber('event');
     Route::get('/events/{event}/opening-receipts', [\App\Http\Controllers\Admin\OpeningReceiptController::class, 'index'])->whereNumber('event');
     Route::post('/events/{event}/opening-receipts/{ledger}/allocate', [\App\Http\Controllers\Admin\OpeningReceiptController::class, 'allocate'])->whereNumber(['event', 'ledger']);
     Route::post('/cutover/openings', [\App\Http\Controllers\Admin\CutoverOpeningController::class, 'prepare']);

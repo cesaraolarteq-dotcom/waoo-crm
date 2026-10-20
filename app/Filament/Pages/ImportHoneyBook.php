@@ -90,6 +90,26 @@ class ImportHoneyBook extends Page
 
     public bool $mappingSuggested = false;
 
+    /** C2 money resync (HONEYBOOK-MONEY-RESYNC-API): the whole diff projection read when the panel opened, pinned. */
+    #[Locked]
+    public ?array $resync = null;
+
+    #[Locked]
+    public string $resyncKey = '';
+
+    public string $resyncNote = '';
+
+    public bool $resyncReviewed = false;
+
+    public bool $resyncRetain = false;
+
+    public const RESYNC_FIELDS = ['paid_cents' => 'Pagado', 'balance_cents' => 'Saldo', 'balance_due_date' => 'Saldo vence', 'payments' => 'Pagos'];
+
+    public const RESYNC_BLOCKS = ['source_row_invalid' => 'La fila del archivo no es válida', 'source_field_changed' => 'Cambió algo que no es dinero (fecha, paquete, contacto…)',
+        'operations_changed' => 'Cambió el staff, los trajes o los servicios de la fiesta en el CRM', 'responsibility_changed' => 'Esta fiesta ya la cobra el CRM',
+        'event_not_confirmed' => 'La fiesta todavía no tiene staff apartado: usa “Actualizar”', 'customer_link_changed' => 'La ficha de la clienta cambió',
+        'source_integrity_invalid' => 'Los pagos guardados no cuadran; revisión manual'];
+
     public static function canAccess(): bool
     {
         return parent::canAccess() && app()->environment(['local', 'testing', 'staging']) && (bool) config('waoo.sandbox_imports', false)
@@ -192,6 +212,8 @@ class ImportHoneyBook extends Page
                 'reasons' => collect($codes)->map(fn ($c) => self::REASONS[$c] ?? $c)->unique()->values()->all(),
                 'importable' => $r->status !== 'skipped' && array_diff($codes, self::OWNER_RESOLVABLE) === [] && ! $current,
                 'event_id' => $link?->event_id, 'imported_current' => $current, 'outdated' => $link && ! $current,
+                // Confirmed (staff reserved) parties get only a money review, never the initial mapping controls again.
+                'money_review' => $link && ! $current && \App\Models\Event::whereKey($link->event_id)->value('status') === 'capacity_reserved',
             ];
         })->all();
     }
@@ -236,6 +258,73 @@ class ImportHoneyBook extends Page
             'source_difference_accepted' => false, 'source_difference_note' => null,
         ]);
         $this->mappingSuggested = $suggestion !== null;
+    }
+
+    // ── 3b. Review HoneyBook payments of an already confirmed party (C2) ─────
+
+    public function openResync(int $rowId): void
+    {
+        $this->closeRow();
+        try {
+            $view = app(\App\Services\Imports\ReadHoneyBookProjectDiff::class)->execute(Filament::auth()->user(), (int) $this->batchId, $rowId);
+        } catch (RecordWriteRejected|AuthorizationException|ValidationException $e) {
+            Notification::make()->danger()->title('No se pudo leer')->body($e->getMessage())->persistent()->send();
+
+            return;
+        }
+        $this->resync = $view;
+        $this->resyncKey = (string) Str::uuid();
+        $this->resyncNote = '';
+        $this->resyncReviewed = false;
+        $this->resyncRetain = false;
+    }
+
+    public function closeResync(): void
+    {
+        $this->resync = null;
+    }
+
+    /** Human view of one changed money field (exact cents; payments as "date · amount · method", never bank-verified). */
+    public static function resyncValue(string $field, $value): string
+    {
+        return match ($field) {
+            'paid_cents', 'balance_cents' => Labels::money(is_int($value) ? $value : null),
+            'balance_due_date' => $value ? CarbonImmutable::parse($value, ChicagoTime::TZ)->locale('es')->translatedFormat('D j M Y') : 'Sin fecha',
+            'payments' => collect($value ?? [])->map(fn ($p) => ($p['received_date'] ?? '').' · '.Labels::money($p['amount_cents'] ?? null).' · '.HoneyBookPaymentLabels::display($p['method'] ?? '')['display_method'])->implode('; ') ?: 'Sin pagos',
+            default => (string) $value,
+        };
+    }
+
+    public function applyResync(): void
+    {
+        $v = $this->resync;
+        if (! $v || ($v['kind'] ?? null) !== 'money_only') return;
+        if (! $this->resyncReviewed || mb_strlen(trim($this->resyncNote)) < 5) {
+            Notification::make()->warning()->title('Falta tu revisión')->body('Marca que revisaste los pagos en HoneyBook y escribe una nota corta (mínimo 5 letras).')->send();
+
+            return;
+        }
+        $c = $v['current'];
+        $resync = ['expected_link_version' => $c['link_version'], 'expected_revision_id' => $c['revision_id'], 'expected_event_version' => $c['event_version'],
+            'expected_customer_version' => $c['customer_version'], 'expected_diff_sha256' => $v['diff_sha256'], 'owner_money_reviewed' => true, 'owner_note' => trim($this->resyncNote),
+            ...($this->resyncRetain && ($v['source_difference']['can_retain'] ?? false) ? ['retain_source_difference_revision_id' => $v['source_difference']['revision_id']] : [])];
+        try {
+            app(CommitHoneyBookEvent::class)->execute(Filament::auth()->user(), (int) $this->batchId, (int) $v['row']['id'], [
+                'expected_batch_version' => $v['batch']['version'], 'expected_row_version' => $v['row']['version'], 'expected_preview_sha256' => $v['row']['preview_sha256'],
+                'resync' => $resync], $this->resyncKey);
+        } catch (ValidationException $e) {
+            $this->resyncKey = (string) Str::uuid();
+            Notification::make()->danger()->title('No se actualizó')->body(collect($e->errors())->flatten()->first())->persistent()->send();
+
+            return;
+        } catch (RecordWriteRejected|AuthorizationException $e) {
+            $this->resyncKey = (string) Str::uuid();
+            Notification::make()->danger()->title('No se actualizó')->body($e->getMessage().' Vuelve a abrir “Revisar pagos” para ver lo actual.')->persistent()->send();
+
+            return;
+        }
+        $this->resync = null;
+        Notification::make()->success()->title('Pagos de HoneyBook actualizados')->body('No se volvió a reservar nada. HoneyBook sigue cobrando esta fiesta.')->send();
     }
 
     private function hasDifference(): bool

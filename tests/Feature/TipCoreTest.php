@@ -190,4 +190,20 @@ class TipCoreTest extends TestCase {
         config(['waoo.stripe_test_account'=>'acct_other_fixture']);$this->checkout($cookie,$input,$key)->assertConflict();$this->assertCount(1,$this->stripe->calls);$this->assertDatabaseCount('tip_checkout_intents',1);
     }
     protected function tearDown():void {if($this->app)$this->app->detectEnvironment(fn()=>'testing');parent::tearDown();}
+    public function test_common_native_agreement_keeps_the_legacy_tip_snapshot_and_recopy_contract():void {
+        $e=$this->event->fresh();$f=$this->finance->fresh();
+        $legacy=\App\Services\Finance\MutationKey::hash(['event_id'=>$e->id,'event_version'=>$e->version,'customer_id'=>$e->customer_id,'start'=>$e->starts_at->toIso8601String(),'end'=>$e->ends_at->toIso8601String(),'finance'=>$f->getAttributes()]);
+        $this->getJson('/admin/api/events/'.$e->id.'/confirmed-agreement')->assertOk()->assertJsonPath('origin','crm')->assertJsonPath('snapshot_sha256',$legacy)->assertJsonPath('original_document',null);
+        $g=$this->issue();$this->assertSame($legacy,TipGrant::sole()->snapshot_sha256);$key=(string)Str::uuid();$input=['expected_version'=>1,'expected_snapshot_sha256'=>$legacy];
+        $this->postJson('/admin/api/tip-grants/'.$g['id'].'/reveal',$input,['Idempotency-Key'=>$key])->assertOk()->assertJsonPath('link',$g['link'])->assertHeader('Cache-Control','no-store, private');
+        $this->postJson('/admin/api/tip-grants/'.$g['id'].'/reveal',$input,['Idempotency-Key'=>$key])->assertOk()->assertJsonPath('link',$g['link']);
+        $this->assertSame(1,DB::table('audit_entries')->where('action','tip.grant_link_revealed')->count());$this->assertDatabaseCount('tip_grants',1);
+    }
+    public function test_common_native_agreement_does_not_relax_capacity_or_finance_binding():void {
+        DB::table('capacity_payment_links')->where('event_id',$this->event->id)->delete();
+        $this->getJson('/admin/api/events/'.$this->event->id.'/confirmed-agreement')->assertConflict();
+        $this->postJson('/admin/api/events/'.$this->event->id.'/tip-grants',['expected_event_version'=>$this->event->version,'financial_revision_id'=>$this->finance->id,'locale'=>'es'],['Idempotency-Key'=>(string)Str::uuid()])->assertConflict();
+        $this->assertDatabaseCount('tip_grants',0);
+    }
+
 }
