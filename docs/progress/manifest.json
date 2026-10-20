@@ -163,7 +163,17 @@
       "reviewed": false,
       "merged": false,
       "accepted": false,
-      "note": "Contrato publicado primero. Pendiente backend de apartado sin pago48h, recordatorio24h y webhook; sin endpoints ni cobros activos. Diseño cuenta0."
+      "note": "Contrato y componente monetario/plazos probado. Backend completo sigue pendiente: apartado sin pago48h, recordatorio24h, portal/Checkout/webhook. Sin pagos activos ni crédito de backend completo.",
+      "branch": "codex/quick-stripe-foundation",
+      "foundation": {
+       "backend": "8542c98",
+       "api": "c7f8d18 before source; docs/QUICK-STRIPE-BOOKING-API.md S1",
+       "verification": "30/96 unit PASS; related50/234 PASS,00:47.284,PHP8.3.35/MariaDB11.8 synthetic gateway; lint/strict Composer/diff PASS. Not whole suite/remote CI/provider.",
+       "scope": "Valor inmutable: principal50/100%,3% separado, límites, huella explícita, plazos absolutos24/48h y plazo de Checkout. Sin rutas, persistencia de apartado, webhook ni envío.",
+       "reviewed": false,
+       "merged": false,
+       "accepted": false
+      }
      }
     },
     {
