@@ -66,8 +66,8 @@ class EventResource extends Resource
                     ->helperText('Elígelo tú (no se adivina). Solo los cumpleaños reciben el correo «Un año después».'),
                 DatePicker::make('date')->label('Fecha')->native()->required()->live()
                     ->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set)),
-                TimePicker::make('start_time')->label('Empieza (hora de Houston)')->native()->seconds(false)->required()->live(),
-                TimePicker::make('end_time')->label('Termina')->native()->seconds(false)->required()->live(),
+                TimePicker::make('start_time')->label('Empieza (hora de Houston)')->native(false)->seconds(false)->minutesStep(15)->required()->live(),
+                TimePicker::make('end_time')->label('Termina')->native(false)->seconds(false)->minutesStep(15)->required()->live(),
                 $choice('date', 'start_time'),
                 $choice('date', 'end_time'),
             ]),
@@ -75,27 +75,8 @@ class EventResource extends Resource
                 Select::make('price_version_ids')->label('Paquetes y servicios')->multiple()->native(false)->searchable()
                     ->options(fn (?Event $record) => self::priceOptions($record))
                     ->helperText('Precio vigente de cada servicio. Un borrador conserva el precio que ya tenía; para usar el precio nuevo, quita el anterior y elige el actual.')
-                    ->live()->afterStateUpdated(function (Get $get, Set $set) { self::refreshTitle($get, $set); self::refreshTiming($get, $set); }),
-                Repeater::make('characters')->label('Personajes')->defaultItems(0)->columns(3)->addActionLabel('Agregar personaje')
-                    ->live()->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set))
-                    ->visible(fn (Get $get) => self::configurablePrices($get('price_version_ids') ?? []) !== [])
-                    ->helperText(fn (Get $get) => self::charactersHint($get('price_version_ids') ?? []))
-                    ->schema([
-                        Select::make('price_version_id')->label('Para el servicio')->native(false)->required()->live()
-                            ->options(fn (Get $get) => self::configurablePrices($get('../../price_version_ids') ?? [])),
-                        self::audienceFilter(),
-                        Select::make('character_id')->label('Personaje')->native(false)->required()->searchable()
-                            ->options(fn (Get $get) => self::characterOptions($get('price_version_id'), $get('audience_filter'), $get('character_id')))
-                            ->live()->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set, '../../')),
-                        TextInput::make('quantity')->label('Cuántos')->integer()->minValue(1)->maxValue(20)->default(1)->required()
-                            ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set, '../../')),
-                        Select::make('outfit')->label('Versión del traje (opcional)')->native(false)->placeholder('Cualquiera')
-                            ->options(fn (Get $get) => self::outfitOptions($get('character_id')))
-                            ->visible(fn (Get $get) => self::outfitOptions($get('character_id')) !== [])
-                            ->live()->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set, '../../'))
-                            ->helperText('Solo si la clienta pidió esa versión: se aparta exactamente ese traje.'),
-                        TextInput::make('note')->label('Nota del personaje (solo la ves tú)')->maxLength(200)->placeholder('Ej.: sin orejas grandes'),
-                    ]),
+                    ->live()->afterStateUpdated(function (Get $get, Set $set) { self::syncCharacterSlots($get, $set); self::refreshTitle($get, $set); self::refreshTiming($get, $set); }),
+                ...self::characterFields(),
             ]),
             Section::make('Lugar y logística')->columns(2)->columnSpanFull()->schema([
                 TextInput::make('address')->label('Dirección')->maxLength(255)->columnSpanFull()
@@ -158,6 +139,71 @@ class EventResource extends Resource
         return filled($characterId) ? collect(\App\Models\Character::find((int) $characterId)?->outfits ?? [])->mapWithKeys(fn ($o) => [$o => $o])->all() : [];
     }
 
+    /** Same slot controls in quick booking and drafts; one picker per physical character requested. */
+    public static function characterFields(): array
+    {
+        return [
+            TextInput::make('character_count')->label('Cuántos')->integer()->minValue(1)->maxValue(100)
+                ->dehydrated(false)->live(onBlur: true)
+                ->visible(fn (Get $get) => self::configurablePrices($get('price_version_ids') ?? []) !== [])
+                ->afterStateUpdated(function (Get $get, Set $set) {
+                    self::syncCharacterSlots($get, $set, true); self::refreshTitle($get, $set);
+                }),
+            Hidden::make('character_count_auto')->dehydrated(false),
+            Repeater::make('characters')->label('Personajes')->defaultItems(0)->columns(2)->columnSpanFull()
+                ->addable(false)->deletable(false)->reorderable(false)
+                ->visible(fn (Get $get) => self::configurablePrices($get('price_version_ids') ?? []) !== [])
+                ->helperText(fn (Get $get) => self::charactersHint($get('price_version_ids') ?? []))
+                ->schema([
+                    Select::make('price_version_id')->label('Para')->native(false)->live()->dehydratedWhenHidden()
+                        ->required(fn (Get $get) => filled($get('character_id')))
+                        ->default(fn (Get $get) => count($p = self::configurablePrices($get('../../price_version_ids') ?? [])) === 1 ? (string) array_key_first($p) : null)
+                        ->visible(fn (Get $get) => count(self::configurablePrices($get('../../price_version_ids') ?? [])) > 1)
+                        ->options(fn (Get $get) => self::configurablePrices($get('../../price_version_ids') ?? [])),
+                    Select::make('character_id')->label('Personaje')->native(false)->searchable()->nullable()
+                        ->options(fn (Get $get) => self::characterOptions($get('price_version_id'), null, $get('character_id')))
+                        ->live()->afterStateUpdated(function (Get $get, Set $set) {
+                            $set('outfit', null); self::refreshTitle($get, $set, '../../');
+                        }),
+                    Hidden::make('quantity')->default(1),
+                    Select::make('outfit')->label('Versión del traje (opcional)')->native(false)->placeholder('Cualquiera')
+                        ->options(fn (Get $get) => self::outfitOptions($get('character_id')))
+                        ->visible(fn (Get $get) => self::outfitOptions($get('character_id')) !== [])
+                        ->helperText('Solo aparece en los detalles internos y para el staff, nunca en el nombre del evento.'),
+                    TextInput::make('note')->label('Nota del personaje (solo la ves tú)')->maxLength(200),
+                ]),
+        ];
+    }
+
+    public static function expandCharacterSlots(array $rows): array
+    {
+        $expanded = [];
+        foreach ($rows as $key => $row) {
+            $quantity = max(1, min(20, (int) ($row['quantity'] ?? 1)));
+            for ($i = 0; $i < $quantity; $i++) {
+                $expanded[$i === 0 ? $key : (string) \Illuminate\Support\Str::uuid()] = [...$row, 'quantity' => 1];
+            }
+        }
+        return $expanded;
+    }
+
+    public static function syncCharacterSlots(Get $get, Set $set, bool $manualCount = false): void
+    {
+        $prices = self::configurablePrices($get('price_version_ids') ?? []);
+        $rows = collect(self::expandCharacterSlots($get('characters') ?? []))
+            ->filter(fn ($row) => blank($row['price_version_id'] ?? null) || array_key_exists($row['price_version_id'], $prices))->all();
+        $expected = (int) PriceVersion::whereIn('price_versions.id', array_keys($prices))->join('service_variants', 'service_variants.id', '=', 'price_versions.service_variant_id')->sum('service_variants.character_quantity');
+        $current = $get('character_count');
+        $desired = $prices === [] ? 0 : ((!$manualCount && (blank($current) || (string) $current === (string) $get('character_count_auto')))
+            ? $expected : max(0, min(100, (int) $current)));
+        $rows = array_slice($rows, 0, $desired, true);
+        while (count($rows) < $desired) $rows[(string) \Illuminate\Support\Str::uuid()] = ['price_version_id' => null, 'character_id' => null, 'quantity' => 1, 'outfit' => null, 'note' => null];
+        if (count($prices) === 1) foreach ($rows as &$row) $row['price_version_id'] = (string) array_key_first($prices);
+        unset($row);
+        $set('characters', $rows); $set('character_count', $desired);
+        $set('character_count_auto', $manualCount ? null : $expected);
+    }
+
     public static function titleField(): TextInput
     {
         return TextInput::make('title')->label('Nombre del evento')->required()->maxLength(255)
@@ -181,7 +227,6 @@ class EventResource extends Resource
                 $name = \App\Models\Character::whereKey((int) $c['character_id'])->value('name');
                 $n = max(1, (int) ($c['quantity'] ?? 1));
 
-                $name = $name !== null && ($c['outfit'] ?? null) !== null && $c['outfit'] !== '' ? "{$name} {$c['outfit']}" : $name;
 
                 return $name ? ($n > 1 ? "{$n} {$name}" : $name) : null;
             })->filter()->values();
@@ -298,15 +343,19 @@ class EventResource extends Resource
     /** price_version_ids + characters form state -> services[] for SaveEventDraft / QuickBook. */
     public static function servicesInput(array $data): array
     {
-        return collect($data['price_version_ids'] ?? [])->map(function ($id) use ($data) {
+        $configurable = self::configurablePrices($data['price_version_ids'] ?? []);
+        $solePrice = count($configurable) === 1 ? array_key_first($configurable) : 0;
+        return collect($data['price_version_ids'] ?? [])->map(function ($id) use ($data, $configurable, $solePrice) {
             $service = ['price_version_id' => (int) $id];
-            if (array_key_exists($id, self::configurablePrices([$id]))) {
+            if (array_key_exists($id, $configurable)) {
                 // Explicit list for configurable services (even empty), so the backend never keeps stale choices silently.
-                $service['characters'] = collect($data['characters'] ?? [])->filter(fn ($c) => (int) ($c['price_version_id'] ?? 0) === (int) $id)
+                $service['characters'] = collect($data['characters'] ?? [])->filter(fn ($c) => filled($c['character_id'] ?? null) && (int) ($c['price_version_id'] ?? $solePrice) === (int) $id)
                     ->map(fn ($c) => ['character_id' => (int) $c['character_id'], 'quantity' => (int) $c['quantity'],
                         // OUTFIT-01: optional exact costume version and private owner note, kept on every explicit row.
                         'outfit' => filled($c['outfit'] ?? null) ? (string) $c['outfit'] : null,
-                        'note' => filled($c['note'] ?? null) ? trim((string) $c['note']) : null])->values()->all();
+                        'note' => filled($c['note'] ?? null) ? trim((string) $c['note']) : null])
+                    ->groupBy(fn ($row) => json_encode([$row['character_id'], $row['outfit'], $row['note']], JSON_THROW_ON_ERROR))
+                    ->map(fn ($rows) => [...$rows->first(), 'quantity' => (int) $rows->sum('quantity')])->values()->all();
             }
 
             return $service;
@@ -319,6 +368,10 @@ class EventResource extends Resource
         [$date, $start, $startChoice] = ChicagoTime::toLocalParts($event->starts_at);
         [, $end, $endChoice] = ChicagoTime::toLocalParts($event->ends_at);
 
+        $slots = array_values(self::expandCharacterSlots($event->services()->with('characters')->get()->flatMap(fn ($s) => $s->characters->map(fn ($c) => [
+            'price_version_id' => (string) $s->price_version_id, 'character_id' => (string) $c->character_id, 'quantity' => $c->quantity,
+            'outfit' => $c->outfit, 'note' => $c->note]))->values()->all()));
+
         return [
             'customer_id' => $event->customer_id, 'title' => $event->title, 'date' => $date,
             'start_time' => $start, 'start_time_choice' => $startChoice, 'end_time' => $end, 'end_time_choice' => $endChoice,
@@ -327,9 +380,7 @@ class EventResource extends Resource
             'travel_fee' => $event->travel_fee_cents === null ? null : rtrim(rtrim(number_format($event->travel_fee_cents / 100, 2, '.', ''), '0'), '.'),
             'price_version_ids' => $event->services()->pluck('price_version_id')->all(),
             'event_type' => $event->event_type,
-            'characters' => $event->services()->with('characters')->get()->flatMap(fn ($s) => $s->characters->map(fn ($c) => [
-                'price_version_id' => (string) $s->price_version_id, 'character_id' => (string) $c->character_id, 'quantity' => $c->quantity,
-                'outfit' => $c->outfit ?? null, 'note' => $c->note ?? null]))->values()->all(),
+            'character_count' => count($slots), 'characters' => $slots,
         ];
     }
 

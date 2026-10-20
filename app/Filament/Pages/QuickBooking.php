@@ -106,26 +106,7 @@ class QuickBooking extends Page
                     ->options(fn (Get $get) => array_diff_key(EventResource::priceOptions(), [(string) $get('package_id') => true]))->live()
                     ->afterStateUpdated(fn (Get $get, Set $set) => $this->syncServices($get, $set)),
                 Hidden::make('price_version_ids'),
-                Repeater::make('characters')->label('Personajes')->defaultItems(0)->columns(3)->columnSpanFull()->addActionLabel('Agregar personaje')
-                    ->live()->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set))
-                    ->visible(fn (Get $get) => EventResource::configurablePrices($get('price_version_ids') ?? []) !== [])
-                    ->helperText(fn (Get $get) => EventResource::charactersHint($get('price_version_ids') ?? []))
-                    ->schema([
-                        Select::make('price_version_id')->label('Para')->native(false)->required()->live()
-                            ->options(fn (Get $get) => EventResource::configurablePrices($get('../../price_version_ids') ?? [])),
-                        EventResource::audienceFilter(),
-                        Select::make('character_id')->label('Personaje')->native(false)->required()->searchable()
-                            ->options(fn (Get $get) => EventResource::characterOptions($get('price_version_id'), $get('audience_filter'), $get('character_id')))
-                            ->live()->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set, '../../')),
-                        TextInput::make('quantity')->label('Cuántos')->integer()->minValue(1)->maxValue(20)->default(1)->required()
-                            ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set, '../../')),
-                        Select::make('outfit')->label('Versión del traje (opcional)')->native(false)->placeholder('Cualquiera')
-                            ->options(fn (Get $get) => EventResource::outfitOptions($get('character_id')))
-                            ->visible(fn (Get $get) => EventResource::outfitOptions($get('character_id')) !== [])
-                            ->live()->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set, '../../'))
-                            ->helperText('Solo si la clienta pidió esa versión: se aparta exactamente ese traje.'),
-                        TextInput::make('note')->label('Nota del personaje (solo la ves tú)')->maxLength(200)->placeholder('Ej.: sin orejas grandes'),
-                    ]),
+                ...EventResource::characterFields(),
                 Select::make('event_type')->label('Tipo de evento')->native(false)->required()->options(EventResource::EVENT_TYPES),
                 EventResource::titleField(),
                 Hidden::make('title_suggested')->dehydrated(false),
@@ -133,10 +114,10 @@ class QuickBooking extends Page
             Section::make('2. Fecha y lugar')->columns(3)->schema([
                 DatePicker::make('date')->label('Fecha')->native(false)->displayFormat('D j M Y')->locale('es')->weekStartsOnSunday()->closeOnDateSelection()->required()->live()
                     ->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set)),
-                TimePicker::make('start_time')->label('Empieza (Houston)')->native()->seconds(false)->required()->live()
+                TimePicker::make('start_time')->label('Empieza (Houston)')->native(false)->seconds(false)->minutesStep(15)->required()->live()
                     ->afterStateUpdated(fn (Get $get, Set $set) => $this->fillEnd($get, $set))
                     ->helperText('La clienta la confirma en su enlace.'),
-                TimePicker::make('end_time')->label('Termina')->native()->seconds(false)->required()->live()
+                TimePicker::make('end_time')->label('Termina')->native(false)->seconds(false)->minutesStep(15)->required()->live()
                     ->helperText('Se llena con la duración del paquete.'),
                 $choice('start_time'), $choice('end_time'),
                 TextInput::make('setup_minutes')->label('Montaje (minutos antes)')->integer()->minValue(0)->maxValue(720)
@@ -228,6 +209,7 @@ class QuickBooking extends Page
         $ids = array_values(array_unique(array_filter(array_map('strval', [$get('package_id'), ...((array) ($get('extra_ids') ?? []))]))));
         $set('price_version_ids', $ids);
         $set('characters', collect($get('characters') ?? [])->filter(fn ($c) => blank($c['price_version_id'] ?? null) || in_array((string) $c['price_version_id'], $ids, true))->all());
+        EventResource::syncCharacterSlots($get, $set);
         $this->fillEnd($get, $set);
         EventResource::refreshTitle($get, $set);
         EventResource::refreshTiming($get, $set);
