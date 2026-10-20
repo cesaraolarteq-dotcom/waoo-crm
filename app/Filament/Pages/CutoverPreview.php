@@ -32,7 +32,7 @@ class CutoverPreview extends Page
             'counts' => ['events' => 18, 'ended' => 0, 'with_balance' => 11, 'contracts' => 18],
             'totals' => ['total' => 12840, 'paid' => 6420, 'balance' => 6420],
             'unknowns' => 1,
-            'missing' => ['1 fiesta sin el PDF del contrato firmado de HoneyBook', 'Falta la regla de cuánto tiempo vale la revisión de cuentas'],
+            'missing' => ['1 fiesta sin el PDF del contrato firmado de HoneyBook', '2 fiestas con tu revisión de cuentas de hace más de 4 horas (la regla que aprobaste)'],
             'reconciliation' => ['when' => 'lun. 2 nov., 9:10 a. m.', 'expires' => 'lun. 2 nov., 1:10 p. m.'],
             'reminders' => ['balance' => 11, 'week_before' => 14, 'thank_you' => 18],
         ];

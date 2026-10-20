@@ -102,6 +102,40 @@
             </x-filament::section>
         @endif
 
+        @if ($resync)
+            @php($v = $resync)
+            <x-filament::section id="resync-panel">
+                <x-slot name="heading">Revisar pagos de HoneyBook</x-slot>
+                <x-slot name="description">Solo se actualiza lo que la clienta pagó en HoneyBook. No se vuelve a reservar, no cambia el precio y HoneyBook sigue cobrando. Estos pagos no están verificados en tu banco.</x-slot>
+                <x-slot name="afterHeader"><button type="button" class="wcal-btn" wire:click="closeResync">Cerrar</button></x-slot>
+                @if ($v['kind'] === 'unchanged')
+                    <p>No cambió nada desde la última vez. No hay que hacer nada.</p>
+                @elseif ($v['kind'] === 'new')
+                    <p>Esta fiesta todavía no está importada: usa “Importar”.</p>
+                @else
+                    @if ($v['changes'])
+                        <div class="wimp-table-wrap"><table class="wimp-table">
+                            <thead><tr><th></th><th>Antes (en el CRM)</th><th>Ahora (en HoneyBook)</th></tr></thead>
+                            <tbody>@foreach ($v['changes'] as $ch)<tr><td><b>{{ \App\Filament\Pages\ImportHoneyBook::RESYNC_FIELDS[$ch['field']] ?? $ch['field'] }}</b></td>
+                                <td>{{ \App\Filament\Pages\ImportHoneyBook::resyncValue($ch['field'], $ch['from']) }}</td><td>{{ \App\Filament\Pages\ImportHoneyBook::resyncValue($ch['field'], $ch['to']) }}</td></tr>@endforeach</tbody>
+                        </table></div>
+                    @endif
+                    @if ($v['blocked'])
+                        <p class="wmoney-warn" role="alert"><b>No se puede actualizar desde aquí:</b></p>
+                        <ul class="wchg-effects">@foreach ($v['blocked'] as $b)<li>{{ \App\Filament\Pages\ImportHoneyBook::RESYNC_BLOCKS[$b['code']] ?? $b['code'] }}</li>@endforeach</ul>
+                    @elseif ($v['kind'] === 'money_only')
+                        @if ($v['source_difference']['can_retain'] ?? false)
+                            <label class="wimp-check"><input type="checkbox" wire:model="resyncRetain"> Mantener la diferencia de total que ya aceptaste (por ejemplo, el 3 % de tarjeta)</label>
+                        @endif
+                        <label class="wimp-check"><input type="checkbox" wire:model="resyncReviewed"> Revisé estos pagos en HoneyBook</label>
+                        <label class="p-field" style="display:grid;gap:4px;max-width:640px"><span>Nota (solo la ves tú)</span>
+                            <textarea wire:model="resyncNote" rows="2" maxlength="1000" placeholder="Ej.: pagó el saldo por Zelle el 20/10" style="width:100%;padding:8px;border:1px solid #DCE1EE;border-radius:10px"></textarea></label>
+                        <div class="wrep-actions"><button type="button" class="wcal-btn on" wire:click="applyResync">Actualizar pagos</button></div>
+                    @endif
+                @endif
+            </x-filament::section>
+        @endif
+
         <x-filament::section>
             <x-slot name="heading">Filas del archivo</x-slot>
             <div class="wimp-table-wrap">
@@ -117,11 +151,12 @@
                                 <span @class(['wimp-pill', 'is-'.($r['imported_current'] ? 'ready' : $r['status'])])>{{ $r['imported_current'] ? 'Importada' : (\App\Filament\Pages\ImportHoneyBook::STATUS[$r['status']] ?? $r['status']) }}</span>
                                 @if ($r['skip'])<br><small>{{ $r['skip'] === 'past' ? 'Ya pasó' : 'Cancelado' }}</small>@endif
                                 @unless ($r['imported_current'])@foreach ($r['reasons'] as $why)<br><small>{{ $why }}</small>@endforeach @endunless
-                                @if ($r['outdated'])<br><small>Cambió en el archivo: vuelve a importarla</small>@endif
+                                @if ($r['outdated'])<br><small>{{ $r['money_review'] ? 'Cambiaron los pagos en HoneyBook: revísalos' : 'Cambió en el archivo: vuelve a importarla' }}</small>@endif
                             </td>
                             <td>
                                 @if ($r['event_id'])<a class="wcal-btn" href="{{ \App\Filament\Resources\Events\EventResource::getUrl('view', ['record' => $r['event_id']]) }}">Ver evento</a>@endif
-                                @if ($r['importable'])<button type="button" class="wcal-btn on" wire:click="openRow({{ $r['id'] }})">{{ $r['outdated'] ? 'Actualizar' : 'Importar' }}</button>@endif
+                                @if ($r['money_review'])<button type="button" class="wcal-btn on" wire:click="openResync({{ $r['id'] }})">Revisar pagos</button>
+                                @elseif ($r['importable'])<button type="button" class="wcal-btn on" wire:click="openRow({{ $r['id'] }})">{{ $r['outdated'] ? 'Actualizar' : 'Importar' }}</button>@endif
                             </td>
                         </tr>
                     @endforeach
