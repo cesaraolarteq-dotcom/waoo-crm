@@ -332,11 +332,11 @@ class OpeningReceiptBridgeTest extends TestCase
     }
     public function test_accepted_original_total_difference_is_not_a_new_crm_fee_or_repriced_package(): void
     {
-        $link = $this->openingMember(change: ['total' => '123.60', 'balance_due' => '63.60'],
+        $link = $this->openingMember(change: ['total' => '123.60', 'amount_paid' => '70.00', 'balance' => '53.60', 'payments' => '2026-10-01|70.00|Zelle'],
             commit: ['source_difference_accepted' => true, 'source_difference_note' => 'PRIVATE_OWNER_NOTE accepted original source total.']);
         $this->seedFutureActivation($this->prepareOpeningSet()); $this->pay($link->event_id);
         $summary = $this->summary($link->event_id); $finance = $summary['financial_revision'];
-        $this->assertSame(360, $summary['source_commercial_difference_cents']); $this->assertSame(4360, $summary['balance_cents']);
+        $this->assertSame(360, $summary['source_commercial_difference_cents']); $this->assertSame(3360, $summary['balance_cents']);
         $this->assertSame(10001, $finance->subtotal_cents); $this->assertSame(2500, $finance->travel_fee_cents);
         $this->assertSame(501, $finance->discount_cents); $this->assertSame(12360, $finance->total_cents);
         $this->assertSame(0, $finance->tax_cents); $this->assertSame(0, $finance->customer_fee_cents);
