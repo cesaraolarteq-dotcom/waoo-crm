@@ -1018,6 +1018,18 @@
       "scope": "Portal de consulta del acuerdo original: enlace de lectura independiente, registro cifrado inmutable, sesión vinculada, proyección permitida EN/ES y descarga privada del PDF original exacto. Sin firma, cobro ni nuevo depósito.",
       "verification": "Frozen f93207d:168 tests/1396 assertions PASS,7:17.752,127MB,PHP8.3.35/MariaDB11.8. Carreras reales, aislamiento, tamper, replay/rollback, importes desconocidos y regresión de portales/documentos/dinero/evidencia/migraciones. Lint/Composer/diff pass. Sin suite completa/CI remoto/browser/SQLite/Hostinger.",
       "note": "Página mínima compartida para que Claude refine la UI; revisión/integración pendientes. Faltan cobros del portal/MAIL/Stripe-refunds/reportes y escritor atómico de traspaso. Root backend sigue null; sin crédito de corte completo ni operación real."
+     },
+     "cohort_members_read": {
+      "api": "docs/CUTOVER-MEMBERS-API.md",
+      "branch": "codex/cutover-members-read",
+      "backend": "3e1b97d",
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "scope": "Una lectura completa y consistente del grupo y cobertura de origen, con filas paginadas de dueño; no repite una inspección del grupo por cada fiesta. Rechaza hash mostrado viejo, mantiene pendientes fuera de página e importes desconocidos.",
+      "verification": "Frozen3e1b97d:56 tests/436 assertions PASS,2:21.997,107MB,PHP8.3.35/MariaDB11.8; carrera real con otro escritor, privacidad/no escritura, hash/expiración/alcance, pantallas #91 y evidencia/preparación/migraciones. Lint/Composer/diff pass; sin suite completa/CI remoto/browser/Hostinger/benchmark.",
+      "note": "Claude debe conectar la pantalla en una sola lectura por render y agregar controles de página. UI/revisión/fusión pendientes; sin cambio de consentimiento, cobros, sistema responsable ni crédito de corte completo."
      }
     }
    ]
