@@ -68,6 +68,8 @@ Owner tested the deployed build. Everything below is pending; Codex owns UI and 
 9. **Client portal "Sobre la fiesta":** the native dark selects look bad. Use large tap-friendly choice buttons/chips (Español · Inglés · Bilingüe; Interior · Exterior) styled like the rest of the portal, with clear selected state; keep the same submitted values.
 10. **Reserva rápida con Stripe** is not visible yet because it is not built (evening queue item 4; spec docs/QUICK-STRIPE-BOOKING.md). Owner is waiting for it.
 
+**Update (Claude, same night, branch claude/codex-handoff-1020 / PR #103): DONE with tests** — 2a ("Para" hidden unless two selected services take characters; rows without it go to the only one via `EventResource::rowPrice()`/`servicesInput`), 2b ("Mostrar" removed from both forms), 2d (costume version no longer in the title), 5 (deposit prefilled at 50 % via `QuickBooking::refreshDeposit`, follows package/extras/travel incl. after "Calcular", owner's typed amount kept), 7 (deposit time field removed; blank-time rule applies), 9 (portal language/setup area as choice chips). Item 1 has a probable fix (unverified in a browser). **Still pending for Codex:** 1 verify, 2c (one picker per character when Cuántos > 1, Cuántos first), 3, 4, 6, 8, 10.
+
 Already queued in the evening entry and still pending: approved texts, sign in the same visit as details, costume hold, nameless new client, financial stack.
 
 ## 2026-10-20 (evening) — Claude → Codex — #100 merged and deployed to crm-test; full queue handed to Codex (Claude low on credits)

@@ -45,6 +45,7 @@ class WalkthroughFixesTest extends TestCase
         $this->get('/dev/portal/details')->assertOk()->assertSee('Dirección de la fiesta')->assertSee('Horario de la fiesta')->assertSee('3:00 p. m. – 4:00 p. m.')
             ->assertSee('¿En qué idioma prefieres la fiesta?')->assertSee('¿Dónde será la actividad?')->assertSee('¿Cuántos niños aproximadamente?')
             ->assertSee('a $70 la hora (mínimo 2 horas)')->assertSee('Nombre del festejado/a')
+            ->assertSee('class="p-chip"', false)->assertDontSee('<select name="event_language"', false)
             ->assertDontSee('Tu dirección')->assertDontSee('La fiesta es en mi dirección')->assertDontSee('Necesito otra hora')->assertDontSee('cambio de horario');
         $this->get('/dev/portal/details?lang=en')->assertSee('Will the setup area be indoor or outdoor?')->assertSee('What is your preferred language for the event?')
             ->assertDontSee('I need a different time');

@@ -300,6 +300,18 @@ class EventResource extends Resource
             ->groupBy($label)->map(fn ($g) => $g->pluck('name', 'id')->all())->all();
     }
 
+    /** Compatibility with Claude10706f9: hidden service rows resolve to the only eligible service. */
+    public static function rowPrice(Get $get, string $up = '../../'): ?string
+    {
+        if (filled($get('price_version_id'))) return (string) $get('price_version_id');
+        $only = array_keys(self::configurablePrices($get($up.'price_version_ids') ?? []));
+        return count($only) === 1 ? (string) $only[0] : null;
+    }
+    public static function needsServiceChoice(Get $get, string $up = '../../'): bool
+    {
+        return count(self::configurablePrices($get($up.'price_version_ids') ?? [])) > 1;
+    }
+
     /** "Mostrar" filter next to each character picker; not saved. */
     public static function audienceFilter(): Select
     {

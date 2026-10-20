@@ -173,6 +173,7 @@ class QuickBooking extends Page
             Section::make('4. Depósito recibido')->columns(3)->schema([
                 Grid::make(3)->statePath('deposit')->columnSpanFull()->schema([
                     TextInput::make('amount')->label('Monto que llegó (USD)')->prefix('$')->required()->live(onBlur: true)
+                        ->helperText('Se llena con el 50 % del total (servicios + transporte). Cámbialo si llegó otro monto.')
                         ->rule('regex:/^\d{1,7}(\.\d{1,2})?$/')->validationMessages(['regex' => 'Escribe solo el número, por ejemplo 250.'])
                         ->afterStateUpdated(fn (Get $get, Set $set) => $set('amount_custom', filled($get('amount')))),
                     Hidden::make('amount_custom')->default(false)->dehydrated(false),

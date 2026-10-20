@@ -123,4 +123,28 @@ class QuickBookingWalkthroughTest extends TestCase
             array_intersect_key(\App\Filament\Resources\Variants\ServiceVariantResource::toServiceInput(['name' => 'x', 'duration_minutes' => 60, 'setup_minutes' => '0', 'breakdown_minutes' => '']),
                 ['setup_minutes' => 1, 'breakdown_minutes' => 1]));
     }
+
+    // Owner's second walkthrough (2026-10-20 night): deposit starts at 50 % of services + travel; owner's own amount stays.
+    public function test_deposit_prefills_half_of_the_total_and_keeps_a_typed_amount(): void
+    {
+        $p = $this->prices; // every price is $300
+        Livewire::test(QuickBooking::class)
+            ->fillForm(['package_id' => (string) $p['Waoo']])->assertSchemaStateSet(['deposit.amount' => null])
+            ->fillForm(['travel_fee' => '25'])->assertSchemaStateSet(['deposit.amount' => '162.50'])
+            ->fillForm(['extra_ids' => [(string) $p['2 chisperos']]])->assertSchemaStateSet(['deposit.amount' => '312.50'])
+            ->fillForm(['deposit' => ['amount' => '200']])->fillForm(['travel_fee' => '40'])->assertSchemaStateSet(['deposit.amount' => '200'])
+            ->assertDontSee('Hora (opcional)');
+    }
+
+    // "Para" only when two selected services take characters; no "Mostrar" filter; a row without "Para" goes to the only one.
+    public function test_character_rows_skip_the_service_choice_when_only_one_service_takes_characters(): void
+    {
+        $c = \App\Models\Character::create(['name' => 'Rumi', 'active' => true, 'audience' => 'girls']);
+        foreach (['Waoo', 'Mágico (Magic)'] as $n) ServiceVariant::where('name', $n)->update(['character_quantity' => 1, 'character_options' => [['character_id' => $c->id, 'requirements' => []]]]);
+        $p = $this->prices;
+        Livewire::test(QuickBooking::class)->fillForm(['package_id' => (string) $p['Waoo'], 'characters' => [['character_id' => (string) $c->id, 'quantity' => 1]]])
+            ->assertDontSee('Mostrar')->assertDontSee('Para niñas');
+        $this->assertSame([['price_version_id' => $p['Waoo'], 'characters' => [['character_id' => $c->id, 'quantity' => 1, 'outfit' => null, 'note' => null]]]],
+            EventResource::servicesInput(['price_version_ids' => [(string) $p['Waoo']], 'characters' => [['character_id' => (string) $c->id, 'quantity' => 1]]]));
+    }
 }
