@@ -40,6 +40,23 @@
                 <p class="wmoney-p">Sin servicios todavía.</p>
             @endforelse
         </x-filament::section>
+        @if ($hold = $this->costumeHold())
+            <x-filament::section>
+                <x-slot name="heading">Traje de la reserva</x-slot>
+                <x-slot name="description">Se aparta con el depósito. El staff y los traslados se confirman después.</x-slot>
+                <div class="wmoney-row"><div><x-filament::badge :color="$hold['color']">{{ $hold['label'] }}</x-filament::badge></div></div>
+                @foreach ($hold['units'] as $unit)<div class="wmoney-row"><div><b>{{ $unit }}</b></div></div>@endforeach
+                @foreach ($hold['issue_texts'] as $issue)<p class="wmoney-p">{{ $issue }}</p>@endforeach
+                <div class="wrep-actions" style="margin-top:8px">
+                    @if (in_array($hold['state'], ['not_attempted', 'blocked', 'released'], true) || ($hold['state'] === 'review_required' && $hold['rows'] === []))
+                        {{ $this->holdCostumeAction }}
+                    @endif
+                    @if (in_array($hold['state'], ['held', 'review_required'], true) && $hold['rows'] !== [])
+                        {{ $this->releaseCostumeAction }}
+                    @endif
+                </div>
+            </x-filament::section>
+        @endif
         <x-filament::section>
             <x-slot name="heading">Staff, trajes y equipo</x-slot>
             @forelse ($f['units'] as $u)

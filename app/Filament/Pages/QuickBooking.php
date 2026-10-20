@@ -477,6 +477,11 @@ class QuickBooking extends Page
             'msg_en' => "Hi {$first}! Thank you for your deposit of {$paid}. We recorded your booking request for {$whenEn}. To finish your booking, please complete your details and sign your contract here: {$link} (link expires {$exp}). Your remaining balance is {$balance}. We're excited to be part of your celebration!",
             'locale' => $r->customer->locale ?? 'es',
             'phone' => $r->customer->phone ?? null,
+            // Costume hold attempted right after the deposit (Codex V1); shown so the owner knows whether the costume is held.
+            'hold' => ($h = (array) ($r->costume_hold ?? [])) && ($h['state'] ?? 'not_required') !== 'not_required' ? [
+                'label' => \App\Filament\Resources\Events\Pages\ViewEvent::HOLD_STATE[$h['state']] ?? $h['state'],
+                'ok' => $h['state'] === 'held' && ($h['issues'] ?? []) === [],
+                'issues' => array_values(array_unique(array_map(fn ($i) => \App\Filament\Resources\Events\Pages\ViewEvent::HOLD_ISSUES[$i] ?? 'Requiere revisión.', $h['issues'] ?? [])))] : null,
         ];
     }
 
