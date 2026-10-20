@@ -1065,6 +1065,21 @@
       "scope": "Campos y formatos V1 fijos con hashes actuales conservados, migración TIP490000 compatible sin renovar enlaces/re-sellar pruebas. Vencimientos desconocidos explícitos; no null como hoy/0, no recordatorio sin fecha ni contrato nativo incompleto. Referencia nula sin deprecación.",
       "verification": "Frozen7b721d0:293 tests/2374 assertions PASS,12:16.223,141MB,PHP8.3.35/MariaDB11.8. Columnas reales nuevas sin invalidar pruebas, legado TIP/migración/envelope intacto, mutación relevante denegada, concurrencia y regresión de dinero/portal/documentos/MAIL/UI. Lint/Composer/diff pass. No suite completa/CI remoto/browser/Hostinger.",
       "note": "Solo base parcial antes de activación. C3 B Stripe/refunds/MAIL/reportes, traspaso atómico/reversión siguen pendientes. Ningún cambio en flags/staging/HoneyBook; root backend sigue null."
+     },
+     "opening_stripe_s1": {
+      "api": [
+       "docs/OPENING-STRIPE-API.md"
+      ],
+      "next_design_contract": "docs/OPENING-REFUNDS-API.md",
+      "branch": "codex/opening-stripe-evidence",
+      "backend": "4ffb91e",
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "scope": "Evidencia Stripe importada cifrada/inmutable tras verificación; asignación explícita con pins, principal separado de comisión; Zelle V1 intacto. Sin activar cobros, transporte, traspaso ni fee3%.",
+      "verification": "278 tests/2205 assertions PASS, 11:56.534, 137.00 MB, PHP8.3.35/MariaDB11.8; firma real con proveedor ficticio, concurrencia MariaDB, reintentos, no duplicación, integridad/migraciones/fallo atómico y regresión de dinero/documentos/MAIL/staff/UI. Lint/Composer/diff pass; no suite completa/CI remoto/browser/Hostinger.",
+      "note": "Parcial C3 B. S2 es solo contrato: devoluciones siguen pendientes/desconocidas. Faltan MAIL/reportes, traspaso completo y reversión; root backend sigue null, sin crédito de activación/fase completa."
      }
     }
    ]
