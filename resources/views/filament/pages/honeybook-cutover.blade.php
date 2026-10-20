@@ -46,6 +46,44 @@
             @endif
         </x-filament::section>
 
+        @if (\App\Filament\Pages\HoneyBookCutover::bridgeEnabled())
+            @php($o = $this->openings())
+            <x-filament::section>
+                <x-slot name="heading">Acuerdos de apertura (preparación)</x-slot>
+                <x-slot name="description">Copia lo acordado en HoneyBook (total, lo pagado, saldo y vencimiento) para cuando el CRM empiece a cobrar. Es solo preparación: no autoriza cobros, no cuenta como venta nueva ni como dinero que entró al CRM.</x-slot>
+                @if ($this->openingPin)
+                    <div class="wrep-actions"><button type="button" class="wcal-btn on" wire:click="prepareOpenings" wire:loading.attr="disabled">Preparar acuerdos de {{ $r['counts']['events'] }} fiestas</button></div>
+                @else
+                    <p class="wqb-hint">Primero prepara la evidencia del grupo completo (arriba). Los acuerdos se preparan con esa evidencia mientras esté vigente.</p>
+                @endif
+                @if ($o && isset($o['error']))
+                    <p class="wmoney-warn" role="alert">{{ $o['error'] }}</p>
+                @elseif ($o)
+                    <p style="margin-top:10px">Últimos acuerdos: {{ $o['event_count'] }} fiestas · revisión más antigua {{ \App\Filament\Pages\HoneyBookCutover::when($o['source_observed_at']) }} · vence {{ \App\Filament\Pages\HoneyBookCutover::when($o['expires_at']) }}
+                        <x-filament::badge :color="$o['current'] ? 'success' : 'gray'" size="sm">{{ $o['current'] ? 'Vigentes (solo preparación)' : 'Foto de ese momento' }}</x-filament::badge></p>
+                    @if (! $o['current'] && $o['missing'])
+                        <ul class="wchg-effects">@foreach ($o['missing'] as $c)<li>{{ \App\Filament\Pages\HoneyBookCutover::OPENING_MISSING[$c] ?? $c }}</li>@endforeach</ul>
+                    @endif
+                    <div class="wimp-table-wrap"><table class="wimp-table">
+                        <thead><tr><th>Fiesta</th><th>Total acordado</th><th>Pagado en HoneyBook</th><th>Saldo</th><th>Vence</th><th>Depósito objetivo</th></tr></thead>
+                        <tbody>
+                            @foreach ($o['items'] as $i)
+                                <tr>
+                                    <td>{{ $i['title'] }}</td>
+                                    <td>{{ \App\Filament\Support\Labels::money($i['original_total_cents']) }}</td>
+                                    <td>{{ \App\Filament\Support\Labels::money($i['source_net_received_cents']) }}@if ($i['source_refund_cents']) <small>(devoluciones {{ \App\Filament\Support\Labels::money($i['source_refund_cents']) }})</small>@endif</td>
+                                    <td>{{ \App\Filament\Support\Labels::money($i['balance_cents']) }}@if ($i['credit_cents']) <small>· a favor {{ \App\Filament\Support\Labels::money($i['credit_cents']) }}</small>@endif</td>
+                                    <td>@if ($i['crm_balance_due_at']){{ \App\Filament\Pages\HoneyBookCutover::when($i['crm_balance_due_at']) }}@elseif ($i['source_balance_due_date']){{ $i['source_balance_due_date'] }} <small>(solo día)</small>@else Pagada @endif</td>
+                                    <td>{{ \App\Filament\Support\Labels::money($i['deposit_target_cents']) }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table></div>
+                    <p class="wqb-hint">Lo pagado en HoneyBook no está verificado en tu banco. Ventas nuevas por estos acuerdos: $0 · dinero nuevo en el CRM: $0.</p>
+                @endif
+            </x-filament::section>
+        @endif
+
         <x-filament::section>
             <x-slot name="heading">Pasar al CRM</x-slot>
             <x-slot name="description">{{ \App\Filament\Support\CutoverUi::label('financial_bridge_not_implemented') }} {{ \App\Filament\Support\CutoverUi::label('transfer_not_implemented') }}</x-slot>
