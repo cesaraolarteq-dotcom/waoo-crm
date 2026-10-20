@@ -38,7 +38,7 @@ final class TipGuard {
         self::active($g);RecordWriteRejected::unless($g->event_id===$e->id&&$g->customer_id===$e->customer_id&&$g->financial_revision_id===$f->id&&$g->total_cents===$f->total_cents&&hash_equals($g->snapshot_sha256,$sha),409,'La fiesta o sus importes cambiaron. Pide un enlace nuevo.');
         return [$g,$e,$f];
     }
-    public static function active(TipGrant $g):void {RecordWriteRejected::unless(!$g->revoked_at&&$g->expires_at->isFuture(),409,'Este enlace venció o fue anulado.');}
+    public static function active(TipGrant $g):void {RecordWriteRejected::unless($g->snapshot_schema_version===\App\Services\Integrity\EvidenceV1::VERSION,409,'La versión de este enlace requiere revisión.');RecordWriteRejected::unless(!$g->revoked_at&&$g->expires_at->isFuture(),409,'Este enlace venció o fue anulado.');}
     // Current read: a pre-lock grant hint may already have established a REPEATABLE READ snapshot.
     public static function receipt(string $scope,string $key,string $hash):?object {
         RecordInput::validate(['key'=>$key],['key'=>'required|uuid']);

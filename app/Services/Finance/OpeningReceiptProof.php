@@ -34,7 +34,7 @@ final class OpeningReceiptProof
             } catch (\Throwable) { $issues[] = 'receipt_audit_mismatch'; }
         }
         return ['eligible' => $issues === [], 'issue_codes' => array_values(array_unique($issues)),
-            'ledger_sha256' => MutationKey::hash($entry->toArray()),
-            'receipt_sha256' => MutationKey::hash(['ledger' => $entry->toArray(), 'audit' => $audit ? (array)$audit : null])];
+            'ledger_sha256' => MutationKey::hash(\App\Services\Integrity\EvidenceV1::model($entry, 'ledger')),
+            'receipt_sha256' => MutationKey::hash(['ledger' => \App\Services\Integrity\EvidenceV1::model($entry, 'ledger'), 'audit' => $audit ? \App\Services\Integrity\EvidenceV1::audit($audit) : null])];
     }
 }

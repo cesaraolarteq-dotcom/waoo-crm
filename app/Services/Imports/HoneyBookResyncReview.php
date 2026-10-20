@@ -51,7 +51,7 @@ final class HoneyBookResyncReview
                 'event_id' => $event->id, 'event_version' => $event->version, 'customer_id' => $customer->id, 'customer_version' => $customer->version,
                 'source_sha256' => $revision->source_sha256, 'operations_sha256' => MutationKey::hash(['services' => $operations,
                     'reservations' => $reservationSnapshot, 'booking' => $bookingSnapshot,
-                    'selections' => $serviceSnapshot->map(fn ($s) => ['id' => $s->id, 'characters' => $s->characters->toArray()])->all()]), 'responsible_system' => $event->responsible_system];
+                    'selections' => $serviceSnapshot->map(fn ($s) => ['id' => $s->id, 'characters' => \App\Services\Integrity\EvidenceV1::many($s->characters, 'character_selection')])->all()]), 'responsible_system' => $event->responsible_system];
             if ($event->responsible_system !== 'honeybook') $block('responsible_system', 'responsibility_changed');
             if ($link->event_id !== $event->id) $block('event', 'source_integrity_invalid');
             if ($event->customer_id !== $link->customer_id) $block('customer', 'customer_link_changed');

@@ -35,7 +35,7 @@ final class CutoverCollections
                 || ($s->status === 'materialized' && !$messages->contains($s->outbound_message_id)))) $missing[] = 'message_outcome_unknown';
         $hash = MutationKey::hash(['payments' => $payments->all(), 'ledger' => $ledger->all(), 'exceptions' => $exceptions->all(),
             'tips' => $tips->all(), 'tip_grants' => $tipGrants->all(), 'tip_receipts' => $tipReceipts->all(), 'tip_reconciliations' => $tipReconciliations->all(),
-            'portal' => $portal->toArray(), 'messages' => $messages->all(), 'states' => $states->all(), 'occurrences' => $occurrences->all(), 'occurrence_states' => $occurrenceStates->all()]);
+            'portal' => \App\Services\Integrity\EvidenceV1::many($portal, 'portal'), 'messages' => $messages->all(), 'states' => $states->all(), 'occurrences' => $occurrences->all(), 'occurrence_states' => $occurrenceStates->all()]);
         return compact('hash', 'missing');
     }
 }

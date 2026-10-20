@@ -50,7 +50,7 @@ trait EffectiveOpeningScenario
                     'total_cents' => $o['original_total_cents'], 'deposit_target_cents' => $o['deposit_target_cents'],
                     'balance_due_at' => $o['crm_balance_due_at'], 'created_by' => $this->owner->id])->fresh();
                 $facts[(string)$o['event_id']] = ['event_id' => $o['event_id'], 'opening_id' => $opening->id,
-                    'opening_sha256' => MutationKey::hash($o), 'financial_revision_id' => $finance->id, 'financial_sha256' => MutationKey::hash($finance->toArray())];
+                    'opening_sha256' => MutationKey::hash($o), 'financial_revision_id' => $finance->id, 'financial_sha256' => MutationKey::hash(\App\Services\Integrity\EvidenceV1::model($finance, 'financial'))];
             }
             ksort($facts);
             $effective = now()->toIso8601String();

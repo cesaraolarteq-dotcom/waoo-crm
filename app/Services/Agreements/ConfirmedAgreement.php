@@ -32,6 +32,6 @@ final class ConfirmedAgreement
     {
         // Exact legacy TIP representation: existing native grants remain current.
         return MutationKey::hash(['event_id' => $e->id, 'event_version' => $e->version, 'customer_id' => $e->customer_id,
-            'start' => $e->starts_at->toIso8601String(), 'end' => $e->ends_at->toIso8601String(), 'finance' => $f->getAttributes()]);
+            'start' => $e->starts_at->toIso8601String(), 'end' => $e->ends_at->toIso8601String(), 'finance' => \App\Services\Integrity\EvidenceV1::financialRaw($f)]);
     }
 }
