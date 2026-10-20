@@ -55,6 +55,9 @@ class OutfitScreensTest extends TestCase
         $this->assertSame(['Disneyland', 'sin orejas grandes'], [$row->outfit, $row->note]);
         $this->get('/admin/eventos/'.Event::sole()->id)->assertSee('1 × Mickey (Disneyland) — nota: sin orejas grandes');
         $this->assertSame([], \App\Filament\Resources\Events\EventResource::outfitOptions($minnie->id), 'Single-version characters show no selector.');
-        $this->assertStringContainsString('Mickey Disneyland', \App\Filament\Resources\Events\EventResource::suggestTitle([$price->id], [['character_id' => $mickey->id, 'quantity' => 1, 'outfit' => 'Disneyland']], '2026-12-19', 'Claudia'));
+        // Owner 2026-10-20: the costume version is in the event details above, never in the title.
+        $title = \App\Filament\Resources\Events\EventResource::suggestTitle([$price->id], [['character_id' => $mickey->id, 'quantity' => 1, 'outfit' => 'Disneyland']], '2026-12-19', 'Claudia');
+        $this->assertStringContainsString('Mickey 12/19', $title);
+        $this->assertStringNotContainsString('Disneyland', $title);
     }
 }

@@ -112,10 +112,10 @@ class QuickBooking extends Page
                     ->helperText(fn (Get $get) => EventResource::charactersHint($get('price_version_ids') ?? []))
                     ->schema([
                         Select::make('price_version_id')->label('Para')->native(false)->required()->live()
+                            ->visible(fn (Get $get) => EventResource::needsServiceChoice($get))
                             ->options(fn (Get $get) => EventResource::configurablePrices($get('../../price_version_ids') ?? [])),
-                        EventResource::audienceFilter(),
                         Select::make('character_id')->label('Personaje')->native(false)->required()->searchable()
-                            ->options(fn (Get $get) => EventResource::characterOptions($get('price_version_id'), $get('audience_filter'), $get('character_id')))
+                            ->options(fn (Get $get) => EventResource::characterOptions(EventResource::rowPrice($get), null, $get('character_id')))
                             ->live()->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set, '../../')),
                         TextInput::make('quantity')->label('Cuántos')->integer()->minValue(1)->maxValue(20)->default(1)->required()
                             ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set, '../../')),
@@ -149,7 +149,8 @@ class QuickBooking extends Page
                     ->placeholder('Calle, ciudad, TX ZIP')->helperText(fn () => filled(config('waoo.google_maps_browser_key')) ? 'Empieza a escribir y elige la dirección que sugiere Google: se llena el ZIP y se calcula el transporte. Puedes cambiar todo.' : 'Con la dirección exacta puedes calcular el transporte. La clienta la confirma en su enlace.'),
                 TextInput::make('postal_code')->label('ZIP')->required()->maxLength(10)->placeholder('77494')->extraInputAttributes(['data-places' => 'zip'])
                     ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => \App\Filament\Support\TravelFeeFields::invalidate($get, $set)),
-                \App\Filament\Support\TravelFeeFields::feeField(true, 'Obligatorio aquí: con el depósito se fija el total.'),
+                \App\Filament\Support\TravelFeeFields::feeField(true, 'Obligatorio aquí: con el depósito se fija el total.')
+                    ->afterStateUpdated(fn (Get $get, Set $set) => $this->refreshDeposit($get, $set)),
                 ...\App\Filament\Support\TravelFeeFields::extraFields(),
             ]),
             Section::make('3. Clienta')->columns(2)->schema([
@@ -197,16 +198,14 @@ class QuickBooking extends Page
             Section::make('4. Depósito recibido')->columns(3)->schema([
                 Grid::make(3)->statePath('deposit')->columnSpanFull()->schema([
                     TextInput::make('amount')->label('Monto que llegó (USD)')->prefix('$')->required()->live(onBlur: true)
+                        ->helperText('Se llena con el 50 % del total (servicios + transporte). Cámbialo si llegó otro monto.')
                         ->rule('regex:/^\d{1,7}(\.\d{1,2})?$/')->validationMessages(['regex' => 'Escribe solo el número, por ejemplo 250.']),
                     TextInput::make('reference')->label('Referencia de Zelle')->required()->minLength(3)->maxLength(255),
                     DatePicker::make('date')->label('Fecha en que llegó')->native(false)->displayFormat('D j M Y')->locale('es')->weekStartsOnSunday()->closeOnDateSelection()
                         ->required()->live()->maxDate(now(ChicagoTime::TZ))->helperText('Hoy, salvo que llegara otro día.'),
-                    TimePicker::make('time')->label('Hora (opcional)')->native()->seconds(false)->live()
-                        ->helperText('Vacía: la hora actual si llegó hoy, o mediodía si fue otro día.'),
-                    Radio::make('choice')->label('Esa hora se repite ese día: ¿cuál?')->options(ChicagoTime::CHOICES)->required()->columnSpanFull()
-                        ->visible(fn (Get $get) => ChicagoTime::isAmbiguous($get('date'), $get('time'))),
                     Checkbox::make('verified')->label('Lo vi reflejado en el banco')->accepted()->columnSpanFull(),
                 ]),
+                Hidden::make('deposit_amount_auto')->dehydrated(false),
                 Callout::make('Resumen')->info()->columnSpanFull()->description(fn (Get $get) => $this->moneyLine($get)),
                 TextInput::make('expires_days')->label('El enlace vence en (días)')->integer()->minValue(1)->maxValue(60)->required(),
             ]),
@@ -231,6 +230,26 @@ class QuickBooking extends Page
         $this->fillEnd($get, $set);
         EventResource::refreshTitle($get, $set);
         EventResource::refreshTiming($get, $set);
+        $this->refreshDeposit($get, $set);
+    }
+
+    /**
+     * Owner 2026-10-20: the deposit starts at 50 % of services + travel (rounded up to the cent, like the deposit target).
+     * A different amount typed by the owner stays; our value follows the total.
+     */
+    public function refreshDeposit(Get $get, Set $set): void
+    {
+        $services = (int) PriceVersion::whereIn('id', array_map('intval', $get('price_version_ids') ?? []))->sum('amount_cents');
+        $fee = (string) $get('travel_fee');
+        $target = null;
+        if ($services > 0 && preg_match('/^\d{1,7}(\.\d{1,2})?$/', $fee)) {
+            $total = $services + EditServiceVariant::toCents($fee);
+            $cents = intdiv($total, 2) + $total % 2;
+            $target = $cents % 100 === 0 ? (string) intdiv($cents, 100) : number_format($cents / 100, 2, '.', '');
+        }
+        $current = trim((string) $get('deposit.amount'));
+        if ($current === '' || $current === (string) $get('deposit_amount_auto')) $set('deposit.amount', $target);
+        $set('deposit_amount_auto', $target);
     }
 
     public function fillEnd(Get $get, Set $set): void
