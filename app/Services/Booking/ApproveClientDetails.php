@@ -61,7 +61,7 @@ final class ApproveClientDetails
                 RecordWriteRejected::unless($recipe($beforeServices) === $recipe($updated->services->sortBy('price_version_id')), 409, 'La receta del catálogo cambió. Revisa los servicios antes de aplicar la dirección.');
                 $finance = app(CreateFinancialRevision::class)->execute($actor, $event->id, ['expected_version' => $updated->version], (string) Str::uuid());
                 RecordWriteRejected::unless($previousFinance->only(['subtotal_cents','travel_fee_cents','tax_cents','customer_fee_cents','total_cents','deposit_target_cents']) === $finance->only(['subtotal_cents','travel_fee_cents','tax_cents','customer_fee_cents','total_cents','deposit_target_cents'])
-                    && $previousFinance->balance_due_at->equalTo($finance->balance_due_at), 409, 'Los montos o la fecha cambiaron. Revisa la cotización antes de aprobar estos datos.');
+                    && $previousFinance->balance_due_at?->toIso8601String() === $finance->balance_due_at?->toIso8601String(), 409, 'Los montos o la fecha cambiaron. Revisa la cotización antes de aprobar estos datos.');
             }
             $review = ClientDetailsReview::create(['submission_id' => $submission->id, 'event_id' => $eventId, 'event_version' => $updated->version,
                 'financial_revision_id' => $finance->id, 'reviewed_by' => $actor->id, 'review_note' => $data['review_note'], 'travel_fee_confirmed' => true,

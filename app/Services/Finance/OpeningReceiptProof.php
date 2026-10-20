@@ -17,7 +17,7 @@ final class OpeningReceiptProof
         if (!$entry->received_at || $entry->received_at->lessThan($context['transfer']->effective_at) || $entry->received_at->isFuture()) $issues[] = 'receipt_time_outside_transfer';
         if ($entry->method === 'stripe') $issues[] = 'stripe_allocation_pending';
         if ($entry->method !== 'zelle' || $entry->source_type !== 'owner_verified' || !$entry->verified_by) $issues[] = 'owner_verification_required';
-        if ($entry->external_identity_key !== 'zelle:test:'.hash('sha256', mb_strtolower($entry->external_reference))) $issues[] = 'receipt_identity_invalid';
+        if ($entry->external_identity_key !== 'zelle:test:'.hash('sha256', mb_strtolower($entry->external_reference ?? ''))) $issues[] = 'receipt_identity_invalid';
         $audits = DB::table('audit_entries')->forceIndex('opening_receipt_audit_index')->where('subject_type', 'ledger_entries')->where('subject_id', (string)$entry->id)
             ->where('action', 'payment.zelle_received')->orderBy('id')->limit(2)->sharedLock()->get();
         if ($audits->count() !== 1) $issues[] = 'receipt_audit_required';
@@ -34,7 +34,7 @@ final class OpeningReceiptProof
             } catch (\Throwable) { $issues[] = 'receipt_audit_mismatch'; }
         }
         return ['eligible' => $issues === [], 'issue_codes' => array_values(array_unique($issues)),
-            'ledger_sha256' => MutationKey::hash($entry->toArray()),
-            'receipt_sha256' => MutationKey::hash(['ledger' => $entry->toArray(), 'audit' => $audit ? (array)$audit : null])];
+            'ledger_sha256' => MutationKey::hash(\App\Services\Integrity\EvidenceV1::model($entry, 'ledger')),
+            'receipt_sha256' => MutationKey::hash(['ledger' => \App\Services\Integrity\EvidenceV1::model($entry, 'ledger'), 'audit' => $audit ? \App\Services\Integrity\EvidenceV1::audit($audit) : null])];
     }
 }

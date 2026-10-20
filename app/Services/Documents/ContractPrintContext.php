@@ -58,9 +58,11 @@ final class ContractPrintContext
     public function paymentSnapshot(Event $event): array
     {
         $summary = app(FinanceSummary::class)->forEvent($event);
+        \App\Exceptions\RecordWriteRejected::unless($summary['financial_revision'] !== null && is_int($summary['balance_cents']) && is_int($summary['credit_cents']),
+            409, 'Los pagos requieren conciliación antes de preparar el documento.');
         return ['received' => LedgerEntry::where('event_id', $event->id)->where('environment', 'test')->where('kind', 'receipt')->orderBy('received_at')->get()->map(fn ($entry) => [
             'date' => $entry->received_at->setTimezone('America/Chicago')->format('M j, Y g:i a T'), 'amount' => self::money($entry->amount_cents), 'method' => strtoupper($entry->method)])->all(),
             'has_credit' => $summary['credit_cents'] > 0, 'credit_amount' => self::money($summary['credit_cents']), 'balance_label' => $summary['balance_label'], 'balance_amount' => self::money($summary['balance_cents']),
-            'balance_due_date' => $summary['financial_revision']->balance_due_at->setTimezone('America/Chicago')->format('M j, Y g:i a T')];
+            'balance_due_date' => $summary['financial_revision']->balance_due_at?->setTimezone('America/Chicago')->format('M j, Y g:i a T')];
     }
 }

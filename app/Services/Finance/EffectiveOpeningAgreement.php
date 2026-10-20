@@ -41,7 +41,7 @@ final class EffectiveOpeningAgreement
                     && $member->financial_revision_id === $f['financial_revision_id'] && $slotRow?->cutover_financial_binding_id === $member->id
                     && $f['opening_id'] === $saved['rows']->firstWhere('event_id', $member->event_id)?->id
                     && $f['opening_sha256'] === MutationKey::hash($o) && ($t['members'][(string)$member->event_id] ?? null) === MutationKey::hash($f)
-                    && hash_equals($member->payload_sha256, MutationKey::hash($p)) && $f['financial_sha256'] === MutationKey::hash($finance->toArray())
+                    && hash_equals($member->payload_sha256, MutationKey::hash($p)) && $f['financial_sha256'] === MutationKey::hash(\App\Services\Integrity\EvidenceV1::model($finance, 'financial'))
                     && $transfer->effective_at->greaterThanOrEqualTo($finance->created_at)
                     && $finance->event_id === $member->event_id && $finance->event_version === $o['event_version'] && $finance->currency === 'USD'
                     && $finance->total_cents === $o['original_total_cents'] && $finance->deposit_target_cents === $o['deposit_target_cents']
