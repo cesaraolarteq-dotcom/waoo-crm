@@ -143,8 +143,9 @@ class QuickBooking extends Page
                     ->helperText('Si aún no lo sabes, complétalo al revisar los datos de la clienta.'),
                 TextInput::make('breakdown_minutes')->label('Desmontaje (minutos después)')->integer()->minValue(0)->maxValue(720),
                 TextInput::make('address')->label('Dirección de la fiesta (opcional)')->maxLength(255)->columnSpan(2)
-                    ->placeholder('Calle, ciudad, TX ZIP')->helperText('Con la dirección exacta puedes calcular el transporte. La clienta la confirma en su enlace.'),
-                TextInput::make('postal_code')->label('ZIP')->required()->maxLength(10)->placeholder('77494'),
+                    ->extraInputAttributes(['data-places' => 'address', 'autocomplete' => 'off'])
+                    ->placeholder('Calle, ciudad, TX ZIP')->helperText(fn () => filled(config('waoo.google_maps_browser_key')) ? 'Empieza a escribir y elige la dirección que sugiere Google: se llena el ZIP y se calcula el transporte. Puedes cambiar todo.' : 'Con la dirección exacta puedes calcular el transporte. La clienta la confirma en su enlace.'),
+                TextInput::make('postal_code')->label('ZIP')->required()->maxLength(10)->placeholder('77494')->extraInputAttributes(['data-places' => 'zip']),
                 \App\Filament\Support\TravelFeeFields::feeField(true, 'Obligatorio aquí: con el depósito se fija el total.'),
                 ...\App\Filament\Support\TravelFeeFields::extraFields(),
             ]),

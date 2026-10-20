@@ -95,4 +95,12 @@ class QuickBookingWalkthroughTest extends TestCase
         $other = $page->toServiceInput([...$base, 'deposit' => ['amount' => '100', 'reference' => 'Z-1', 'date' => '2026-10-18', 'time' => '', 'verified' => true]]);
         $this->assertSame('2026-10-18T12:00:00-05:00', $other['deposit']['received_at']);
     }
+
+    public function test_google_address_suggestions_load_only_with_the_browser_key(): void
+    {
+        Livewire::test(QuickBooking::class)->assertDontSee('waoo-places.js', false)->assertSee('Con la dirección exacta puedes calcular el transporte');
+        config(['waoo.google_maps_browser_key' => 'AIzaFixtureBrowserKey']);
+        Livewire::test(QuickBooking::class)->assertSee('js/waoo-places.js?v=', false)->assertSee('data-key="AIzaFixtureBrowserKey"', false)
+            ->assertSee('data-places="address"', false)->assertSee('data-places="zip"', false)->assertSee('elige la dirección que sugiere Google');
+    }
 }

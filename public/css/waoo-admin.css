@@ -210,3 +210,9 @@ a.wdash-item:hover{border-color:#122F94;background:#F5F7FF}
 .wdash-item b{font-weight:700;grid-column:1}.wdash-item small{grid-column:1;color:#5B6385;font-size:.85rem}
 .wdash-item span{grid-column:2;grid-row:1/span 2;color:#122F94;font-size:1.3rem;line-height:1}
 .dark .wdash-item{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.1)}.dark .wdash-item small{color:#A6AED0}.dark a.wdash-item:hover{background:rgba(255,255,255,.06)}
+/* Google address suggestions (Reserva rápida) */
+.wplaces{position:absolute;left:0;right:0;top:100%;z-index:40;margin:4px 0 0;padding:4px;list-style:none;background:#fff;border:1px solid #d6dbe8;border-radius:10px;box-shadow:0 8px 24px rgba(20,30,70,.12);max-height:280px;overflow:auto}
+.wplaces li{display:flex;flex-direction:column;gap:2px;padding:8px 10px;border-radius:8px;cursor:pointer}
+.wplaces li b{font-weight:600;color:#1b2147}
+.wplaces li small{color:#5c6485}
+.wplaces li:hover,.wplaces li.on{background:#eef2ff}

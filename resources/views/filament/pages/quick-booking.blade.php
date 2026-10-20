@@ -3,6 +3,10 @@
         <div class="wmoney-warn" role="status">Convirtiendo el prospecto de <b>{{ $leadSummary['name'] }}</b>. En la web eligió: {{ $leadSummary['package'] ?: 'sin paquete' }}{{ $leadSummary['type'] ? ' · '.$leadSummary['type'] : '' }}@if ($leadSummary['travel']) · vio transporte {{ $leadSummary['travel'] }}@endif. Revisa paquete, hora, transporte y depósito: nada se toma de la web sin tu confirmación.</div>
     @endif
     {{ $this->content }}
+    @if (! $result && filled(config('waoo.google_maps_browser_key')))
+        {{-- Address suggestions from Google (Places New); picking one fills address + ZIP and runs "Calcular". The owner can still edit everything. --}}
+        <script src="{{ \App\Support\AssetVersion::url('js/waoo-places.js') }}" data-key="{{ config('waoo.google_maps_browser_key') }}" defer></script>
+    @endif
     @if ($result)
         <div class="wqb-done">
             <h2>¡Reserva guardada! <span>{{ $result['summary'] }}</span></h2>

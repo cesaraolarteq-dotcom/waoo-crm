@@ -40,6 +40,7 @@ class TravelFeeScreensTest extends TestCase
         Livewire::test(CreateEvent::class)
             ->fillForm(['customer_id' => $client->id, 'title' => 'Fiesta', 'date' => '2026-12-19', 'start_time' => '15:00', 'end_time' => '16:00',
                 'price_version_ids' => [$this->price->id], 'address' => '123 Fixture St, Hockley, TX 77433', 'postal_code' => '77433'])
+            ->assertSee('data-places="quote"', false) // the Google address picker presses this button after filling the address
             ->callAction($this->quote())
             ->assertSchemaStateSet(['travel_fee' => '40', 'travel_quote_status' => 'ok'])
             ->assertSee('Calculado: $40 (precio fijo de ese ZIP).')
