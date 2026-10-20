@@ -35,12 +35,13 @@ final class SaveCharacter
                     RecordWriteRejected::unless(in_array($outfit, $data['outfits'] ?? [], true), 409, "La versión {$outfit} sigue vinculada a un traje activo.");
                 }
             }
+            if ($id) \App\Services\Booking\QuickCostumeHolds::protectCharacter($model, $data);
             $before = $model->getAttributes();
             $model->fill($data);
             if ($id) $model->version++;
             $model->save();
             Audit::recordFor($actor, 'characters.' . ($id ? 'updated' : 'created'), $model, $before, $model->getAttributes());
             return $model->fresh();
-        });
+        }, 3);
     }
 }

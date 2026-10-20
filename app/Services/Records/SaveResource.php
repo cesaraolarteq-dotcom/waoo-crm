@@ -27,7 +27,7 @@ final class SaveResource
             }
             if ($id) {
                 RecordWriteRejected::unless($model->kind === $data['kind'], 422, 'No cambies el tipo de una unidad; crea una ficha nueva.');
-                RecordWriteRejected::when(ResourceReservation::where('resource_id', $id)->where('ends_at', '>', now())->exists(), 409, 'Reasigna primero los compromisos de este recurso.');
+                RecordWriteRejected::when(ResourceReservation::where('resource_id', $id)->where('ends_at', '>', now())->sharedLock()->first() !== null, 409, 'Reasigna primero los compromisos de este recurso.');
             }
             $outfit = array_key_exists('outfit', $data) ? $data['outfit'] : $model->outfit;
             if ($outfit !== null && ($data['kind'] !== 'costume' || !$character || !in_array($outfit, $character->outfits ?? [], true))) {

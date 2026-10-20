@@ -22,6 +22,8 @@ final class ConfirmBooking
             return DB::transaction(function () use ($eventId, $data, $actor) {
                 $event = Event::query()->lockForUpdate()->findOrFail($eventId);
                 $ids = collect($data['resource_ids'])->map(fn($id) => (int) $id)->unique()->sort()->values();
+                $hold = \App\Services\Booking\QuickCostumeHolds::confirmation($event, $ids->all(), $data['costume_outfits']);
+                $data['costume_outfits'] = $hold['choices'];
                 if ($event->status === 'capacity_reserved') {
                     $existing = BookingEvidence::where('event_id', $event->id)->firstOrFail();
                     $same = $event->reservations()->orderBy('resource_id')->pluck('resource_id')->all() === $ids->all();
@@ -144,7 +146,7 @@ final class ConfirmBooking
                         $this->fail("El recurso {$resource->code} tiene un bloqueo horario.");
                     }
                     // Current reads after the resource lock: a repeatable-read snapshot may predate a competing commit.
-                    $bookings = ResourceReservation::where('resource_id', $resource->id)->with(['event' => fn ($query) => $query->sharedLock()])->orderBy('starts_at')->lockForUpdate()->get();
+                    $bookings = ResourceReservation::where('resource_id', $resource->id)->whereNotIn('id', $hold['reservation_ids'])->with(['event' => fn ($query) => $query->sharedLock()])->orderBy('starts_at')->lockForUpdate()->get();
                     $before = null;
                     $after = null;
                     foreach ($bookings as $booking) {
@@ -187,6 +189,7 @@ final class ConfirmBooking
                     })->values()->all()];
                 BookingEvidence::create([...$data['payment'], 'event_id' => $event->id, 'verified_by' => $actor->id,'staff_assignment_snapshot'=>$staffSnapshot]);
                 foreach ($resources as $resource) {
+                    if (ResourceReservation::where('event_id', $event->id)->where('resource_id', $resource->id)->whereIn('id', $hold['reservation_ids'])->exists()) continue;
                     ResourceReservation::create(['event_id' => $event->id, 'resource_id' => $resource->id, 'starts_at' => $event->starts_at, 'ends_at' => $event->ends_at]);
                 }
                 OperationalReview::create(['event_id' => $event->id, 'reviewed_by' => $actor->id, 'evidence' => $data['review']]);
@@ -194,6 +197,7 @@ final class ConfirmBooking
                 // Contract/payment lifecycle remains separate for Phase 4.
                 $event->version++;
                 $event->save();
+                \App\Services\Booking\QuickCostumeHolds::consume($actor, $event);
                 Audit::recordFor($actor, 'booking.capacity_reserved', $event, ['status' => 'draft'], ['resource_ids' => $ids->all(), 'version' => $event->version, 'booking_evidence_id' => BookingEvidence::where('event_id', $event->id)->value('id')]);
                 return $event;
             }, 3);

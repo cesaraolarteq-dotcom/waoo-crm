@@ -84,6 +84,17 @@ final class QuickBook
             return [$record, true];
         }, 3);
 
+        $hold = ['event_id' => $record->event_id, 'event_version' => Event::findOrFail($record->event_id)->version,
+            'version' => 0, 'state' => 'review_required', 'issues' => ['hold_unavailable'], 'rows' => [], 'characters' => [], 'staff_confirmed' => false];
+        try {
+            $read = app(ReadQuickBookingCostumeHold::class)->execute($actor, $record->event_id);
+            $hold = $created ? app(HoldQuickBookingCostumes::class)->execute($actor, $record->event_id, [
+                'expected_event_version' => $read['event_version'], 'expected_hold_version' => $read['version'], 'characters' => $read['characters'],
+            ], (string) Str::uuid()) : $read;
+        } catch (\Throwable) {
+            // Already recorded actual money survives any inventory/storage failure; never claim a successful hold.
+        }
+
         $url = null;
         if ($created) {
             try {
@@ -104,7 +115,7 @@ final class QuickBook
         $event = Event::findOrFail($record->event_id);
         return new QuickBooking($record->id, $event, Customer::findOrFail($record->customer_id), FinancialRevision::findOrFail($record->initial_financial_revision_id),
             LedgerEntry::findOrFail($record->receipt_id), app(FinanceSummary::class)->forEvent($event), $url, $record->portal_expires_at->toIso8601String(),
-            !$created && $grantRow !== null, !$grantRow || $grantRow->revoked_at !== null || !$grantRow->expires_at->isFuture());
+            !$created && $grantRow !== null, !$grantRow || $grantRow->revoked_at !== null || !$grantRow->expires_at->isFuture(), $hold);
     }
 
     private function customer(User $actor, array $data): Customer
