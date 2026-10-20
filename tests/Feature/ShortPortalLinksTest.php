@@ -123,4 +123,22 @@ class ShortPortalLinksTest extends TestCase
         $this->assertDatabaseCount('portal_grants',1);$this->assertDatabaseCount('ledger_entries',1);
     }
 
+    public function test_quote_short_link_uses_its_own_portal_and_rejects_a_replaced_revision():void
+    {
+        config(['waoo.sandbox_finance'=>true,'waoo.sandbox_quotes'=>true]);
+        $this->event->update(['travel_fee_cents'=>0]);
+        $variant=\App\Models\ServiceVariant::create(['name'=>'Celebración musical','status'=>'active','duration_minutes'=>60,'requirements'=>[['kind'=>'staff','quantity'=>1,'skill'=>'host']]]);
+        $price=\App\Models\PriceVersion::create(['service_variant_id'=>$variant->id,'amount_cents'=>30000,'currency'=>'USD','created_by'=>$this->owner->id]);
+        \App\Models\EventService::create(['event_id'=>$this->event->id,'service_variant_id'=>$variant->id,'price_version_id'=>$price->id,
+            'requirements_snapshot'=>$variant->requirements,'duration_minutes'=>60,'operational_ready'=>true]);
+        $revision=app(\App\Services\Quotes\CreateQuote::class)->execute($this->owner,['event_id'=>$this->event->id,'expected_event_version'=>1],(string)\Illuminate\Support\Str::uuid());
+        $sent=app(\App\Services\Quotes\SendQuote::class)->execute($this->owner,$revision->quote_id,['expected_version'=>1,'expected_revision'=>1],(string)\Illuminate\Support\Str::uuid());
+        $copy=app(RevealPortalGrantLink::class)->execute($this->owner,$this->event->id,$sent['portal_grant_id']);
+        $path=parse_url($copy->short_url,PHP_URL_PATH);
+        $destination=str_replace('/portal#','/portal/quote#',$copy->url);
+        auth()->logout();$this->get($path)->assertRedirect($destination);
+        \App\Models\Quote::findOrFail($revision->quote_id)->forceFill(['current_revision'=>2])->save();
+        $this->get($path)->assertNotFound()->assertDontSee('María');
+    }
+
 }

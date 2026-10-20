@@ -13,6 +13,10 @@
         <span>Tipo: <b>{{ $f['type'] }}</b></span>
         @if ($f['responsible'])<span title="Solo un sistema cobra y manda avisos por fiesta">Cobro y avisos: <b>{{ $f['responsible'] }}</b></span>@endif
     </div>
+    @if (\App\Filament\Support\FinanceGate::enabled() && \App\Filament\Support\DocumentsGate::enabled()
+        && $e->responsible_system === 'crm' && \App\Models\QuickBookingRecord::where('event_id', $e->id)->exists())
+        <livewire:quick-costume-hold-panel :event-id="$e->id" :key="'event-hold-'.$e->id" />
+    @endif
     <div class="wfile">
         <x-filament::section>
             <x-slot name="heading">Lugar y logística</x-slot>

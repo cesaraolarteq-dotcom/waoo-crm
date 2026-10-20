@@ -18,6 +18,7 @@
                 @include('filament.pages.partials.link-panel', ['panel' => ['url' => $result['link'], 'expires' => $result['expires'], 'msg_es' => $result['msg_es'], 'msg_en' => $result['msg_en'],
                     'phone' => $result['phone'] ?? null, 'locale' => $result['locale'], 'heading' => 'Enlace de la clienta']])
             @endif
+            <livewire:quick-costume-hold-panel :event-id="$result['event_id']" :key="'quick-hold-'.$result['event_id']" />
             <div class="wqb-next">
                 <a class="wcal-btn" href="{{ \App\Filament\Resources\Events\EventResource::getUrl('money', ['record' => $result['event_id']]) }}">Ver el dinero de este evento</a>
                 <button type="button" class="wcal-btn" wire:click="startOver">Nueva reserva</button>

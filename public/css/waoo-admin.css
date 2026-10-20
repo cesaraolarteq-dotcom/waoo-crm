@@ -216,3 +216,12 @@ a.wdash-item:hover{border-color:#122F94;background:#F5F7FF}
 .wplaces li b{font-weight:600;color:#1b2147}
 .wplaces li small{color:#5c6485}
 .wplaces li:hover,.wplaces li.on{background:#eef2ff}
+
+/* Paid quick-book costume commitment; independent from staff confirmation. */
+.wqb-hold{display:grid;gap:12px;border:1px solid rgba(20,26,51,.12);border-radius:14px;padding:18px;background:#fff}
+.dark .wqb-hold{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.15)}
+.wqb-hold h3{font-size:1.05rem;font-weight:800;margin:0}.wqb-hold p{margin:0;font-size:.9rem}
+.wqb-hold ul{margin:0;padding-left:20px;list-style:disc}.wqb-hold li{padding:4px 0}.wqb-hold small{opacity:.7}
+.wqb-hold summary{cursor:pointer;font-weight:700;min-height:44px;display:flex;align-items:center}
+.wqb-hold details[open]{display:grid;gap:10px}.wqb-hold label{display:grid;gap:6px;font-weight:600}
+.wqb-hold textarea{width:100%;font:inherit;color:inherit;background:transparent;border:1px solid rgba(100,116,139,.5);border-radius:10px;padding:10px}
