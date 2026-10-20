@@ -60,6 +60,27 @@ class OriginalAgreementLinkScreenTest extends TestCase
         Mail::assertNothingSent();
     }
 
+    public function test_a_lost_response_retry_later_returns_the_same_grant_and_expiry(): void
+    {
+        $link = $this->openingMember(); $this->seedFutureActivation($this->prepareOpeningSet());
+        $page = Livewire::test(ViewEvent::class, ['record' => $link->event_id])->mountAction('originalAgreementLink')->setActionData(['days' => 7]);
+        $pin = $page->get('origPin'); $key = $page->get('origKey');
+        // First attempt reached the server but its response was lost: the browser still holds the same pin and key.
+        $first = app(\App\Services\Portal\IssueOpeningPortalGrant::class)->execute($this->owner, $link->event_id, ['customer_id' => $pin['customer_id'],
+            'expected_event_version' => $pin['event_version'], 'financial_revision_id' => $pin['financial_revision_id'],
+            'expected_snapshot_sha256' => $pin['snapshot'], 'expires_at' => $pin['expiries'][7]], $key);
+        $this->travel(12)->minutes();
+        $page->callMountedAction()->assertNotified('Enlace listo (solo consulta)');
+        $this->assertSame(1, PortalGrant::count());
+        $this->assertSame($first['expires_at'], PortalGrant::sole()->expires_at->toIso8601String());
+    }
+
+    public function test_mail_refusals_about_missing_dates_read_in_plain_spanish(): void
+    {
+        $this->assertStringContainsString('vence el saldo', \App\Filament\Support\MailUi::refusal(new \App\Exceptions\RecordWriteRejected(422, 'balance_due_date_required')));
+        $this->assertStringContainsString('Falta una fecha', \App\Filament\Support\MailUi::refusal(new \App\Exceptions\RecordWriteRejected(422, 'date_required')));
+    }
+
     public function test_a_change_after_opening_the_modal_is_refused_instead_of_using_fresh_values(): void
     {
         $link = $this->openingMember(); $this->seedFutureActivation($this->prepareOpeningSet());

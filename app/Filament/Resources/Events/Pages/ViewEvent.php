@@ -330,8 +330,11 @@ class ViewEvent extends Page
                 $this->origPin = null; $this->origNote = '';
                 try {
                     $a = app(\App\Services\Agreements\ReadConfirmedAgreement::class)->execute(\Filament\Facades\Filament::auth()->user(), $e->id);
+                    // Absolute expiry per option, fixed when the modal opens: a retry with the same UUID sends the same body even later.
+                    $base = now()->startOfMinute();
                     $this->origPin = ['customer_id' => (int) $e->customer_id, 'event_version' => (int) $a['event_version'],
-                        'financial_revision_id' => (int) $a['financial_revision_id'], 'snapshot' => (string) $a['snapshot_sha256'], 'total' => $a['total_cents']];
+                        'financial_revision_id' => (int) $a['financial_revision_id'], 'snapshot' => (string) $a['snapshot_sha256'], 'total' => $a['total_cents'],
+                        'expiries' => collect([7, 14, 30])->mapWithKeys(fn ($d) => [$d => $base->copy()->addDays($d)->toIso8601String()])->all()];
                     $this->origKey = (string) \Illuminate\Support\Str::uuid();
                 } catch (\Throwable $ex) {
                     $this->origNote = $ex->getMessage();
@@ -355,7 +358,7 @@ class ViewEvent extends Page
                 try {
                     $r = app(\App\Services\Portal\IssueOpeningPortalGrant::class)->execute(\Filament\Facades\Filament::auth()->user(), $e->id, [
                         'customer_id' => $p['customer_id'], 'expected_event_version' => $p['event_version'], 'financial_revision_id' => $p['financial_revision_id'],
-                        'expected_snapshot_sha256' => $p['snapshot'], 'expires_at' => now()->addDays(in_array((int) $data['days'], [7, 14, 30], true) ? (int) $data['days'] : 14)->toIso8601String(),
+                        'expected_snapshot_sha256' => $p['snapshot'], 'expires_at' => $p['expiries'][(int) $data['days']] ?? $p['expiries'][14],
                     ], $this->origKey);
                 } catch (\Illuminate\Validation\ValidationException $ex) {
                     $this->origKey = (string) \Illuminate\Support\Str::uuid();
