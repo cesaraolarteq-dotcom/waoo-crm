@@ -89,6 +89,7 @@ final class StripeReceiptProcessor
             }
             $wasSuperseded = $locked->status === 'superseded' || (int) FinancialRevision::where('event_id', $intent->event_id)->max('revision') !== FinancialRevision::findOrFail($intent->financial_revision_id)->revision;
             $locked->fill(['status' => 'paid', 'collection_slot' => null, 'stripe_checkout_session_id' => $session['id'], 'stripe_payment_intent_id' => $payment['id'], 'last_error' => null])->save();
+            if (!$existing) OpeningStripeProof::capture($entry, $locked, $receipt, $session, $payment);
             SupersedeCollections::forEvent($intent->event_id, 'stripe_payment_received', null, $intent->id);
             $receipt->fill(['state' => 'processed', 'processed_at' => now(), 'last_error' => null])->save();
             DB::table('payment_exceptions')->where('event_id', $intent->event_id)->where('kind', 'stripe_reconciliation')->where('context->webhook_id', $receipt->id)->update(['state' => 'resolved', 'updated_at' => now()]);
