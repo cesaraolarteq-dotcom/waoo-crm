@@ -15,7 +15,14 @@ final class OpeningReceiptProof
         if ($entry->kind !== 'receipt') $issues[] = 'refund_allocation_pending';
         if ($entry->amount_cents <= 0 || $entry->amount_cents > 100000000) $issues[] = 'receipt_amount_outside_scope';
         if (!$entry->received_at || $entry->received_at->lessThan($context['transfer']->effective_at) || $entry->received_at->isFuture()) $issues[] = 'receipt_time_outside_transfer';
-        if ($entry->method === 'stripe') $issues[] = 'stripe_allocation_pending';
+        if ($entry->method === 'stripe') {
+            $stripe = OpeningStripeProof::inspect($entry);
+            return [...$stripe, 'eligible' => $issues === [] && $stripe['eligible'],
+                'issue_codes' => array_values(array_unique([...$issues, ...$stripe['issue_codes']])),
+                'ledger_sha256' => MutationKey::hash(\App\Services\Integrity\EvidenceV1::model($entry, 'ledger')),
+                'receipt_sha256' => MutationKey::hash(['schema_version' => 2, 'ledger' => \App\Services\Integrity\EvidenceV1::model($entry, 'ledger'),
+                    'stripe_evidence_sha256' => $stripe['stripe_evidence_sha256']])];
+        }
         if ($entry->method !== 'zelle' || $entry->source_type !== 'owner_verified' || !$entry->verified_by) $issues[] = 'owner_verification_required';
         if ($entry->external_identity_key !== 'zelle:test:'.hash('sha256', mb_strtolower($entry->external_reference ?? ''))) $issues[] = 'receipt_identity_invalid';
         $audits = DB::table('audit_entries')->forceIndex('opening_receipt_audit_index')->where('subject_type', 'ledger_entries')->where('subject_id', (string)$entry->id)
@@ -33,7 +40,7 @@ final class OpeningReceiptProof
                 if (!$valid) $issues[] = 'receipt_audit_mismatch';
             } catch (\Throwable) { $issues[] = 'receipt_audit_mismatch'; }
         }
-        return ['eligible' => $issues === [], 'issue_codes' => array_values(array_unique($issues)),
+        return ['principal_cents' => $entry->amount_cents, 'customer_fee_cents' => 0, 'eligible' => $issues === [], 'issue_codes' => array_values(array_unique($issues)),
             'ledger_sha256' => MutationKey::hash(\App\Services\Integrity\EvidenceV1::model($entry, 'ledger')),
             'receipt_sha256' => MutationKey::hash(['ledger' => \App\Services\Integrity\EvidenceV1::model($entry, 'ledger'), 'audit' => $audit ? \App\Services\Integrity\EvidenceV1::audit($audit) : null])];
     }

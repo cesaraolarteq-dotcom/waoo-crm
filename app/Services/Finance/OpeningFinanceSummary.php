@@ -27,7 +27,7 @@ final class OpeningFinanceSummary
             if (!$hasSlot) return [...$base, 'opening_missing' => ['effective_opening_required']];
             $c = EffectiveOpeningAgreement::find($event);
             if (!$c) return [...$base, 'opening_missing' => ['effective_opening_required']];
-            $o = $c['opening']; $movements = []; $missing = $c['missing'];
+            $o = $c['opening']; $movements = []; $customerFees = 0; $missing = $c['missing'];
             $ledger = LedgerEntry::query()->forceIndex('opening_receipts_event_index')->where('event_id', $event->id)->orderBy('id')->limit(10001)->sharedLock()->get();
             if ($ledger->count() > 10000) return [...$base, 'opening_missing' => ['receipt_volume_exceeded']];
             $allocations = OpeningReceiptAllocation::query()->forceIndex('opening_receipts_binding_index')->where('cutover_financial_binding_id', $c['binding']->id)->orderBy('id')->limit(10001)->sharedLock()->get()->keyBy('ledger_entry_id');
@@ -35,7 +35,9 @@ final class OpeningFinanceSummary
             foreach ($ledger as $entry) {
                 $a = $allocations->get($entry->id);
                 if (!$a) { $missing[] = 'unallocated_receipt_or_refund'; continue; }
-                try { OpeningReceiptLink::verify($a, $entry, $c); $movements[] = ['kind' => 'receipt', 'amount_cents' => $entry->amount_cents]; }
+                try { $p = OpeningReceiptLink::verify($a, $entry, $c);
+                    $movements[] = ['kind' => 'receipt', 'amount_cents' => $p['principal_cents'] ?? $entry->amount_cents];
+                    $customerFees += $p['customer_fee_cents'] ?? 0; }
                 catch (RecordWriteRejected) { $missing[] = 'allocation_integrity_invalid'; }
             }
             if ($allocations->count() !== count($movements)) $missing[] = 'allocation_integrity_invalid';
@@ -49,7 +51,7 @@ final class OpeningFinanceSummary
             return [...$base, 'financial_revision' => $c['finance'], 'opening_id' => $c['binding']->cutover_opening_agreement_id,
                 'transfer_id' => $c['transfer']->id, 'opening_collection_sha256' => $c['collection_sha256'], 'opening_collection_current' => $c['collection_current'],
                 'source_gross_received_cents' => $o['source_gross_received_cents'], 'source_refund_cents' => $o['source_refund_cents'],
-                'source_net_received_cents' => $o['source_net_received_cents'], 'crm_received_cents' => $money['crm_received_cents'], 'crm_refunded_cents' => 0,
+                'source_net_received_cents' => $o['source_net_received_cents'], 'crm_received_cents' => $money['crm_received_cents'], 'crm_refunded_cents' => 0, 'crm_customer_fee_cents' => $customerFees,
                 'source_commercial_difference_cents' => $sourceDifference,
                 'known_net_received_cents' => $money['net_received_cents'], 'received_cents' => $complete ? $o['source_gross_received_cents'] + $money['crm_received_cents'] : null,
                 'refunded_cents' => $complete ? $o['source_refund_cents'] : null, 'net_received_cents' => $complete ? $money['net_received_cents'] : null,

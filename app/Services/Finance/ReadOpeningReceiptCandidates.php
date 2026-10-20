@@ -24,7 +24,8 @@ final class ReadOpeningReceiptCandidates
                 $a = OpeningReceiptAllocation::where('ledger_entry_id', $entry->id)->first();
                 if ($a) { try { OpeningReceiptLink::verify($a, $entry, $c, $proof); } catch (RecordWriteRejected) { $proof['eligible'] = false; $proof['issue_codes'][] = 'allocation_integrity_invalid'; } }
                 $rows[] = ['ledger_entry_id' => $entry->id, 'amount_cents' => $entry->amount_cents, 'currency' => $entry->currency,
-                    'kind' => $entry->kind, 'method' => $entry->method, 'received_at' => $entry->received_at?->toIso8601String(), 'allocated' => $a !== null,
+                    'principal_cents' => $proof['eligible'] ? $proof['principal_cents'] : null,
+                    'customer_fee_cents' => $proof['eligible'] ? $proof['customer_fee_cents'] : null, 'kind' => $entry->kind, 'method' => $entry->method, 'received_at' => $entry->received_at?->toIso8601String(), 'allocated' => $a !== null,
                     'eligible' => $proof['eligible'] && $c['collection_current'], 'issue_codes' => $proof['issue_codes'], 'receipt_sha256' => $proof['receipt_sha256']];
             }
             return ['opening_id' => $c['binding']->cutover_opening_agreement_id, 'transfer_id' => $c['transfer']->id,

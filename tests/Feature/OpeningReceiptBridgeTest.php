@@ -26,7 +26,7 @@ class OpeningReceiptBridgeTest extends TestCase
             foreach (['opening_receipt_allocations', 'cutover_active_openings', 'cutover_financial_bindings', 'cutover_transfers',
                 'cutover_opening_agreements', 'cutover_opening_sets', 'cutover_reconciliations', 'honeybook_cutover_reviews', 'cutover_original_documents'] as $t) if (Schema::hasTable($t)) DB::table($t)->delete();
             // Disposable synthetic source finance rows can have genuinely unknown deadlines.
-            foreach (['payment_exceptions', 'ledger_entries', 'payment_intents', 'financial_revisions'] as $t) if (Schema::hasTable($t)) DB::table($t)->delete();
+            foreach (['opening_stripe_evidence', 'payment_exceptions', 'ledger_entries', 'payment_intents', 'financial_revisions'] as $t) if (Schema::hasTable($t)) DB::table($t)->delete();
             if (Schema::hasTable('booking_evidence')) DB::table('booking_evidence')->where('method', 'honeybook_import')->delete();
         }
         parent::tearDown();
