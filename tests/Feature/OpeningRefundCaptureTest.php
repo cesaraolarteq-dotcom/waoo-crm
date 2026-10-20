@@ -291,4 +291,150 @@ class OpeningRefundCaptureTest extends TestCase
         catch (\LogicException $e) { $this->assertStringContainsString('immutable', $e->getMessage()); }
         $this->assertDatabaseCount('opening_refund_evidence', 1);
     }
+    private function refundRead(array $filters = []): array
+    {
+        return app(\App\Services\Finance\ReadOpeningRefundCandidates::class)->execute($this->owner, $this->eventId, $filters);
+    }
+    public function test_refund_read_is_private_read_only_and_does_not_pretend_allocation_is_available(): void
+    {
+        $this->deliver(); $calls = $this->refunds->calls;
+        $tables = ['ledger_entries', 'opening_refund_evidence', 'opening_refund_observations', 'opening_receipt_allocations',
+            'payment_exceptions', 'audit_entries', 'outbound_messages', 'mail_occurrences'];
+        $before = []; foreach ($tables as $table) $before[$table] = DB::table($table)->get()->toJson();
+        $v = $this->refundRead(); $r = $v['rows'][0];
+        $this->assertSame(['number' => 1, 'last' => 1, 'total' => 1], $v['page']);
+        $this->assertTrue($v['collection_current']); $this->assertSame(500, $r['gross_refund_cents']);
+        $this->assertSame($this->parent->id, $r['parent_ledger_entry_id']);
+        $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/D', $r['refund_sha256']);
+        $this->assertSame(['refund_allocation_not_available'], $r['issue_codes']);
+        $this->assertFalse($r['allocated']); $this->assertFalse($r['eligible']);
+        foreach (['parent_remaining_principal_cents', 'parent_remaining_customer_fee_cents', 'parent_budget_sha256'] as $key) $this->assertNull($r[$key]);
+        $response = $this->getJson('/admin/api/events/'.$this->eventId.'/opening-refunds')->assertOk()->assertExactJson($v);
+        $this->assertStringContainsString('no-store', $response->headers->get('Cache-Control'));
+        foreach (['acct_fixture', 're_daniela', 'pi_daniela', 'ch_daniela', 'daniela.perez', 'PRIVATE_', 'encrypted_payload'] as $private)
+            $this->assertStringNotContainsString($private, $response->getContent());
+        foreach ($before as $table => $bytes) $this->assertSame($bytes, DB::table($table)->get()->toJson(), $table);
+        $this->assertSame($calls, $this->refunds->calls); $this->assertNull($this->summary()['balance_cents']);
+        Http::assertNothingSent(); Mail::assertNothingSent();
+    }
+    public function test_refund_read_keeps_pin_for_duplicate_economic_callbacks_and_prior_pending_history(): void
+    {
+        $this->refunds->responses['re_daniela_1']['refund']['status'] = 'pending'; $this->deliver();
+        $this->refunds->responses['re_daniela_1']['refund']['status'] = 'succeeded'; $this->deliver('evt_read_success');
+        $a = $this->refundRead(); $this->deliver('evt_read_duplicate');
+        $this->assertSame($a, $this->refundRead());
+    }
+    public static function refundReadTampering(): array
+    {
+        return [['evidence-schema'], ['evidence-ciphertext'], ['evidence-hash'], ['refund-ledger'], ['success-observation'], ['success-callback']];
+    }
+    #[DataProvider('refundReadTampering')]
+    public function test_refund_read_refuses_corrupt_successful_proof_without_leaking_forged_money(string $change): void
+    {
+        $this->deliver();
+        if ($change === 'evidence-schema') {
+            $p = OpeningRefundEvidence::sole()->payload; $p['schema_version'] = 2;
+            DB::table('opening_refund_evidence')->update(['payload' => Crypt::encryptString(json_encode($p)), 'payload_sha256' => \App\Services\Finance\MutationKey::hash($p)]);
+        }
+        if ($change === 'evidence-ciphertext') DB::table('opening_refund_evidence')->update(['payload' => 'private damaged ciphertext']);
+        if ($change === 'evidence-hash') DB::table('opening_refund_evidence')->update(['payload_sha256' => str_repeat('0', 64)]);
+        if ($change === 'refund-ledger') DB::table('ledger_entries')->where('kind', 'refund')->update(['amount_cents' => 777]);
+        if ($change === 'success-observation') DB::table('opening_refund_observations')->update(['payload_sha256' => str_repeat('0', 64)]);
+        if ($change === 'success-callback') DB::table('webhook_receipts')->where('id', 'evt_refund_daniela')->update(['raw_sha256' => str_repeat('0', 64)]);
+        $r = $this->refundRead()['rows'][0];
+        foreach (['gross_refund_cents', 'received_at', 'refund_sha256', 'parent_ledger_entry_id'] as $key) $this->assertNull($r[$key]);
+        $this->assertContains('refund_evidence_invalid', $r['issue_codes']); $this->assertFalse($r['eligible']);
+    }
+    public function test_refund_read_checks_later_reversal_even_if_mutable_warning_is_closed(): void
+    {
+        $this->deliver(); $pin = $this->refundRead()['rows'][0]['refund_sha256'];
+        $this->refunds->responses['re_daniela_1']['refund']['status'] = 'failed'; $this->deliver('evt_read_reversal');
+        DB::table('payment_exceptions')->update(['state' => 'resolved']);
+        $r = $this->refundRead()['rows'][0]; $this->assertSame($pin, $r['refund_sha256']);
+        $this->assertContains('refund_current_observation_conflict', $r['issue_codes']); $this->assertFalse($r['eligible']);
+        // Corrupting a later observation is also detected, not silently skipped.
+        DB::table('opening_refund_observations')->where('webhook_receipt_id', 'evt_read_reversal')->update(['payload_sha256' => str_repeat('0', 64)]);
+        $this->assertContains('refund_observation_integrity_invalid', $this->refundRead()['rows'][0]['issue_codes']);
+    }
+    public function test_refund_read_keeps_charge_controls_even_after_warning_closed(): void
+    {
+        $this->deliver(); $p = $this->provider(); unset($p['refund']); $this->refunds->charges['ch_daniela_1'] = $p;
+        $this->signedEvent('evt_read_charge', ['id' => 'ch_daniela_1', 'object' => 'charge', 'payment_intent' => $this->parent->external_reference], 'charge.refunded')->assertOk();
+        $this->process('evt_read_charge'); DB::table('payment_exceptions')->update(['state' => 'resolved']);
+        $this->assertContains('refund_parent_provider_review_required', $this->refundRead()['rows'][0]['issue_codes']);
+    }
+    public function test_refund_read_retains_actual_refund_but_refuses_missing_parent_allocation_and_corrupt_parent_proof(): void
+    {
+        $this->deliver(); DB::table('opening_receipt_allocations')->delete();
+        $r = $this->refundRead()['rows'][0]; $this->assertSame(500, $r['gross_refund_cents']);
+        $this->assertContains('refund_parent_allocation_required', $r['issue_codes']);
+        DB::table('opening_stripe_evidence')->update(['payload_sha256' => str_repeat('0', 64)]);
+        $this->assertContains('refund_parent_evidence_invalid', $this->refundRead()['rows'][0]['issue_codes']);
+    }
+    public function test_refund_read_clamps_pages_and_keeps_unproven_refunds_explicit_and_rejects_extra_filters(): void
+    {
+        $this->deliver(); $original = LedgerEntry::where('kind', 'refund')->sole();
+        LedgerEntry::create([...$original->only(['event_id', 'financial_revision_id', 'environment', 'kind', 'method', 'amount_cents', 'currency', 'received_at']),
+            'source_type' => 'owner_verified', 'external_reference' => 'PRIVATE_UNPROVEN_REFUND', 'external_identity_key' => 'unproven:refund']);
+        $v = $this->refundRead(['page' => 999, 'per_page' => 1]); $this->assertSame(['number' => 2, 'last' => 2, 'total' => 2], $v['page']);
+        $this->assertNull($v['rows'][0]['gross_refund_cents']); $this->assertContains('refund_evidence_required', $v['rows'][0]['issue_codes']);
+        $this->getJson('/admin/api/events/'.$this->eventId.'/opening-refunds?per_page=51')->assertUnprocessable();
+        $this->getJson('/admin/api/events/'.$this->eventId.'/opening-refunds?provider=secret')->assertUnprocessable();
+    }
+    public function test_refund_read_rechecks_owner_two_factor_and_every_sandbox_gate(): void
+    {
+        $url = '/admin/api/events/'.$this->eventId.'/opening-refunds';
+        foreach (['sandbox_finance', 'sandbox_imports', 'sandbox_cutover', 'sandbox_cutover_bridge'] as $flag) {
+            config(['waoo.'.$flag => false]); $this->getJson($url)->assertForbidden(); config(['waoo.'.$flag => true]);
+        }
+        $this->owner->forceFill(['two_factor_confirmed_at' => null])->save(); $this->getJson($url)->assertForbidden();
+        $this->owner->forceFill(['two_factor_confirmed_at' => now(), 'role' => 'staff'])->save(); $this->getJson($url)->assertForbidden();
+        $this->owner->forceFill(['role' => 'owner_admin', 'active' => false])->save(); $this->getJson($url)->assertForbidden();
+    }
+
+    public function test_refund_read_ignores_unrelated_schema_columns_without_resealing_evidence(): void
+    {
+        $this->deliver(); $before = $this->refundRead();
+        foreach (['ledger_entries', 'opening_refund_evidence', 'opening_refund_observations', 'webhook_receipts'] as $table) {
+            Schema::table($table, fn ($blueprint) => $blueprint->string('future_read_hint')->nullable());
+            DB::table($table)->update(['future_read_hint' => 'PRIVATE_FUTURE_HINT']);
+        }
+        $this->assertSame($before, $this->refundRead());
+    }
+    public function test_refund_read_observation_limit_refuses_partial_verification(): void
+    {
+        $this->deliver(); $rawWebhook = WebhookReceipt::findOrFail('evt_refund_daniela')->getRawOriginal();
+        $rawObservation = OpeningRefundObservation::sole()->getRawOriginal(); unset($rawObservation['id']);
+        $webhooks = []; $observations = [];
+        for ($i = 0; $i < 1000; $i++) {
+            $id = 'evt_daniela_volume_'.$i; $webhooks[] = [...$rawWebhook, 'id' => $id];
+            $observations[] = [...$rawObservation, 'webhook_receipt_id' => $id];
+        }
+        foreach (array_chunk($webhooks, 100) as $chunk) DB::table('webhook_receipts')->insert($chunk);
+        foreach (array_chunk($observations, 100) as $chunk) DB::table('opening_refund_observations')->insert($chunk);
+        $r = $this->refundRead()['rows'][0]; $this->assertSame(500, $r['gross_refund_cents']);
+        $this->assertContains('refund_observation_volume_exceeded', $r['issue_codes']);
+        $this->assertFalse($r['eligible']); $this->assertNull($r['parent_budget_sha256']);
+    }
+    public function test_refund_read_current_authority_and_secure_transport_are_not_bypassed(): void
+    {
+        $this->deliver(); Event::findOrFail($this->eventId)->forceFill(['responsible_system' => 'honeybook'])->save();
+        $v = $this->refundRead(); $this->assertFalse($v['collection_current']);
+        $this->assertContains('refund_collection_not_current', $v['rows'][0]['issue_codes']);
+        $this->app->detectEnvironment(fn () => 'staging'); config(['session.secure' => false]);
+        $this->getJson('/admin/api/events/'.$this->eventId.'/opening-refunds')->assertForbidden();
+        $this->app->detectEnvironment(fn () => 'testing');
+        DB::table('cutover_transfers')->update(['payload' => 'damaged private transfer']);
+        $this->getJson('/admin/api/events/'.$this->eventId.'/opening-refunds')->assertStatus(409);
+    }
+    public function test_refund_read_detects_actual_cumulative_gross_above_verified_parent(): void
+    {
+        $this->refunds->responses['re_daniela_1']['refund']['amount'] = 1500; $this->deliver();
+        $p = $this->provider(); $p['refund']['id'] = 're_daniela_2'; $p['refund']['amount'] = 1000;
+        $this->refunds->responses['re_daniela_2'] = $p; $this->deliver('evt_daniela_2', 're_daniela_2');
+        $rows = $this->refundRead()['rows']; $this->assertCount(2, $rows);
+        $this->assertSame([1500, 1000], array_column($rows, 'gross_refund_cents'));
+        foreach ($rows as $r) { $this->assertContains('refund_parent_gross_exceeded', $r['issue_codes']); $this->assertFalse($r['eligible']); }
+    }
+
 }
