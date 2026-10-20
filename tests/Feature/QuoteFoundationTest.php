@@ -188,7 +188,7 @@ class QuoteFoundationTest extends TestCase
         $this->getJson('/admin/api/quotes?per_page=1&page=2')->assertOk()->assertJsonCount(0, 'data');
         $this->getJson('/admin/api/quotes?per_page=51')->assertUnprocessable();
         $this->getJson('/admin/api/quotes/'.$r->quote_id)->assertOk()->assertJsonPath('quote.owner_note','Private fixture note')->assertJsonCount(1,'revisions');
-        config(['waoo.sandbox_documents'=>true]);
+        config(['waoo.sandbox_documents'=>true, 'waoo.quote_acceptance_consent'=>[]]); // still refused while no consent wording is configured
         $this->withHeader('Idempotency-Key',(string)Str::uuid())->postJson('/admin/api/quotes/'.$r->quote_id.'/send', ['expected_version'=>1,'expected_revision'=>1])->assertUnprocessable()->assertJsonValidationErrors('consent');
         $this->getJson('/portal/api/quote')->assertForbidden();
         $this->assertDatabaseCount('portal_grants', 0);
