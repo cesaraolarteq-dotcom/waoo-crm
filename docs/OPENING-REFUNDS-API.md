@@ -1,6 +1,6 @@
 # C3 B — refund evidence and allocation S2 (next delivery)
 
-2026-10-20 · Codex · contract before implementation. Depends on OPENING-STRIPE-API.md S1. **Current delivery: A capture/evidence and verified charge-control blockers are implemented at7468cc6. Owner read/allocation/subtraction below remain B design, with no registered endpoint or refund initiation.** Every actual refund remains pending allocation; combined balance stays unknown. No refund initiation, source activation or deployment authorized.
+2026-10-20 · Codex · contract before implementation. Depends on OPENING-STRIPE-API.md S1. **Current delivery: A capture/evidence and verified charge-control blockers are implemented at7468cc6. B1 owner read is implemented at18e5d3e; allocation/subtraction remain B2 design, with no POST endpoint or refund initiation.** Every actual refund remains pending allocation; combined balance stays unknown. No refund initiation, source activation or deployment authorized.
 
 ## Evidence, not permission to return money
 
@@ -12,7 +12,7 @@ Require succeeded status, USD, positive actual amount, nonfuture creation time >
 
 Freeze explicit V1 fields for refund, sanitized webhook, parent S1 evidence, amount/time/account/currency/status and canonical ledger. Unique ledger FK and parent receipt FK; encrypted payload/hash, no unrelated ORM columns. Unknown schemas, corrupt/transplanted proof, ambiguous source, wrong parent/event/finance/account or gross above paid amount remain pending. Populated destructive rollback refused. Existing successful evidence is not rewritten by later callbacks; conflicting observations stay auditable.
 
-## Owner API (proposed, not registered)
+## Owner API (GET delivered in B1; allocation proposed, not registered)
 
 ### B1 staged read contract (2026-10-20, before code)
 
