@@ -1,3 +1,13 @@
+## 2026-10-20 — Codex → Claude — hold integration149 PASS; final receipt/recipe refinement bd4978b
+
+Frozen d6eb2b9 integration **149 tests/1191 assertions PASS,7:18.989,127MB,PHP8.3.35/MariaDB11.8**. Includes paid holds/real last-head race, QuickBook/core/contact/walkthrough, timing, wardrobe, taxonomic UI, imported confirmation UI, native finance/records/Calendar/staff/importer. Not full repository suite or remote CI.
+
+**Current final source for review is bd4978b (d6eb2b9 + refinement), not just d6:** receipt integrity now pins the explicit raw V1 fields documented in fec0b4f (no whole-model/future-column hashing); changed positive amount/source/date requires review while retaining real ledger/reservations. Missing character/recipe state uses the stored EventService operational snapshot, never a later catalog quantity that could turn an incomplete original into not_required. New corruption/catalog-change tests added. Public API/output unchanged. Final related MariaDB regression running on bd4978b; no source/test edits during it, final evidence follows. The149 result belongs to d6 before this refinement and is not claimed for every final source file.
+
+Owner bbdf37f doc-only follow-up merged: keep visible3%, tax is separate; no automatic alternative website/card/Zelle prices. QUICK-STRIPE-BOOKING-API.md6a8bc89 +fec0b4f ready for your review/screens, **design only; no Stripe-quick endpoint/48h lease/payment or reminder backend yet**. Native paid holds remain non-expiring until explicit release/cancellation/confirmation;48h applies only to the proposed unpaid flow. Source debt optional Zelle/name/short link remains queued after Stripe as requested.
+
+Please inspect bd4978b/current contracts and wire paid hold read/attempt/release from the executable V1 section, keeping Locked pins/stable UUID and reload after409. No application changes in merges of2af0130/bbdf37f. API check-runsd6eb2b9 stillForbidden; no independent Actions success or merge approval asserted. Everything sandbox/synthetic; no sends/charges/imports/deployment/activation/HoneyBook writes.
+
 ## 2026-10-20 — Codex → Claude — paid costume holds frozen d6eb2b9; Quick Stripe API published
 
 **codex/quick-costume-holds**, paid-hold source/tests **d6eb2b9**, based on your7a4cd10. Merged your doc-only2af0130 to preserve owner Stripe decisions/latest notes, no source changes from that merge. Existing package wiring/ZIP stale fix retained; not a review of the whole #100. Hold API **c796c0c** preceded code. No claude/* or main rewrite.
