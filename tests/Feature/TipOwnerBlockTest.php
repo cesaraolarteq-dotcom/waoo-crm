@@ -36,12 +36,27 @@ class TipOwnerBlockTest extends TestCase
     public function test_owner_creates_the_link_once_sees_totals_and_revokes(): void
     {
         $page = Livewire::test(EventMoney::class, ['record' => $this->event->id])->assertSee('Propinas para el staff')->assertSee('Crear enlace de propina')
-            ->callAction('tipIssue')->assertSee('Enlace de propina')->assertSee('no se vuelve a mostrar')->assertSee('/portal/tip#', false)
+            ->callAction('tipIssue')->assertSee('Enlace de propina')->assertSee('Copiar enlace otra vez')->assertSee('/portal/tip#', false)
             ->assertSee('Enlace activo');
         $grant = TipGrant::sole();
         $page->callAction('tipRevoke', arguments: ['grant' => $grant->id, 'version' => $grant->version])->assertNotified('Enlace de propina anulado')
             ->assertSet('tipLink', null)->assertSee('Crear enlace de propina');
         $this->assertNotNull($grant->fresh()->revoked_at);
+    }
+
+    public function test_the_same_link_can_be_copied_again_and_a_stale_screen_is_refused(): void
+    {
+        Livewire::test(EventMoney::class, ['record' => $this->event->id])->callAction('tipIssue');
+        $grant = TipGrant::sole();
+        $page = Livewire::test(EventMoney::class, ['record' => $this->event->id])->assertSee('Copiar enlace otra vez')
+            ->callAction('tipCopy', arguments: ['grant' => $grant->id, 'version' => $grant->version, 'snapshot' => $grant->snapshot_sha256])->assertSee('/portal/tip#', false);
+        $link = $page->get('tipLink')['url'];
+        $this->assertStringContainsString('/portal/tip#', $link);
+        $this->assertSame(1, TipGrant::count()); // same grant, no new token or renewal
+        $this->assertSame($grant->expires_at->toIso8601String(), $grant->fresh()->expires_at->toIso8601String());
+        Livewire::test(EventMoney::class, ['record' => $this->event->id])
+            ->callAction('tipCopy', arguments: ['grant' => $grant->id, 'version' => $grant->version + 1, 'snapshot' => $grant->snapshot_sha256])
+            ->assertNotified('No se pudo copiar')->assertSet('tipLink', null);
     }
 
     public function test_hidden_before_the_party_ends_and_when_flag_is_off(): void

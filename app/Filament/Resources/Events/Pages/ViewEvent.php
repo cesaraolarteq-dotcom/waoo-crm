@@ -54,6 +54,14 @@ class ViewEvent extends Page
     #[\Livewire\Attributes\Locked]
     public string $cutKey = '';
 
+    /** C3 B3b original-agreement link: values ReadConfirmedAgreement returned when the modal opened, one UUID per intent. */
+    #[\Livewire\Attributes\Locked]
+    public ?array $origPin = null;
+    #[\Livewire\Attributes\Locked]
+    public string $origKey = '';
+    #[\Livewire\Attributes\Locked]
+    public string $origNote = '';
+
     /** STAFF-01 instructions: versions the modal showed (ReadStaffJobInstructions) and one UUID per save intent. */
     #[\Livewire\Attributes\Locked]
     public ?int $instrEventVersion = null;
@@ -184,6 +192,7 @@ class ViewEvent extends Page
                 }),
             $this->staffInstructionsAction(),
             $this->cutoverEvidenceAction(),
+            $this->originalAgreementLinkAction(),
             Action::make('costs')->label('Costos y margen')->icon('heroicon-o-chart-bar')->color('gray')->visible(fn () => FinanceGate::enabled() && class_exists(\App\Services\Costs\RecordCostSnapshot::class))->url(fn () => EventResource::getUrl('costs', ['record' => $e])),
             Action::make('mailPlan')->label('Programar recordatorios')->icon('heroicon-o-envelope')->color('gray')
                 ->visible(fn () => \App\Filament\Support\MailUi::enabled() && $e->status === 'capacity_reserved' && ! \App\Models\ImportedProjectLink::where('event_id', $e->id)->exists())
@@ -299,6 +308,68 @@ class ViewEvent extends Page
                 }
                 $this->cutKey = '';
                 \Filament\Notifications\Notification::make()->success()->title('Evidencia guardada')->body('Queda lista para el día del cambio. HoneyBook sigue cobrando esta fiesta.')->send();
+            });
+    }
+
+    /**
+     * Read-only client link for an agreement that started in HoneyBook (docs/OPENING-CLIENT-PORTAL-API.md). Only works once
+     * the party's original agreement is effective in the CRM; before the switch-over the modal explains why it cannot.
+     * The client can only view the agreement, recorded payments and the original PDF: no signing, paying or details form.
+     */
+    public function originalAgreementLinkAction(): Action
+    {
+        $e = $this->record;
+        $gates = fn () => config('waoo.sandbox_cutover_bridge') === true && \App\Filament\Support\CutoverUi::enabled() && \App\Filament\Support\DocumentsGate::enabled()
+            && class_exists(\App\Services\Portal\IssueOpeningPortalGrant::class);
+
+        return Action::make('originalAgreementLink')->label('Enlace del acuerdo original')->icon('heroicon-o-link')->color('gray')
+            ->visible(fn () => $gates() && \App\Models\ImportedProjectLink::where('event_id', $e->id)->exists())
+            ->modalHeading('Enlace del acuerdo original')
+            ->fillForm(function () use ($e) {
+                // Pin exactly what the owner sees; the issue call sends these values, never a fresh read.
+                $this->origPin = null; $this->origNote = '';
+                try {
+                    $a = app(\App\Services\Agreements\ReadConfirmedAgreement::class)->execute(\Filament\Facades\Filament::auth()->user(), $e->id);
+                    $this->origPin = ['customer_id' => (int) $e->customer_id, 'event_version' => (int) $a['event_version'],
+                        'financial_revision_id' => (int) $a['financial_revision_id'], 'snapshot' => (string) $a['snapshot_sha256'], 'total' => $a['total_cents']];
+                    $this->origKey = (string) \Illuminate\Support\Str::uuid();
+                } catch (\Throwable $ex) {
+                    $this->origNote = $ex->getMessage();
+                }
+
+                return ['days' => 14];
+            })
+            ->modalDescription(fn () => $this->origPin === null
+                ? 'Todavía no se puede crear: esta fiesta sigue a cargo de HoneyBook o su acuerdo necesita revisión.'.($this->origNote !== '' ? ' ('.$this->origNote.')' : '')
+                : 'La clienta podrá ver su fiesta, lo acordado en HoneyBook (total '.Labels::money($this->origPin['total']).'), sus pagos registrados y descargar el PDF original. '
+                    .'Solo consulta: no puede firmar, pagar ni cambiar nada. No se le envía nada: tú copias el enlace y se lo mandas.')
+            ->schema([
+                \Filament\Forms\Components\Select::make('days')->label('El enlace vence en')->options([7 => '7 días', 14 => '14 días', 30 => '30 días'])->required()
+                    ->visible(fn () => $this->origPin !== null),
+            ])
+            ->modalSubmitActionLabel('Crear enlace')
+            ->modalSubmitAction(fn (Action $a) => $a->disabled($this->origPin === null))
+            ->action(function (array $data, Action $action) use ($e) {
+                if ($this->origPin === null) { $action->halt(); }
+                $p = $this->origPin;
+                try {
+                    $r = app(\App\Services\Portal\IssueOpeningPortalGrant::class)->execute(\Filament\Facades\Filament::auth()->user(), $e->id, [
+                        'customer_id' => $p['customer_id'], 'expected_event_version' => $p['event_version'], 'financial_revision_id' => $p['financial_revision_id'],
+                        'expected_snapshot_sha256' => $p['snapshot'], 'expires_at' => now()->addDays(in_array((int) $data['days'], [7, 14, 30], true) ? (int) $data['days'] : 14)->toIso8601String(),
+                    ], $this->origKey);
+                } catch (\Illuminate\Validation\ValidationException $ex) {
+                    $this->origKey = (string) \Illuminate\Support\Str::uuid();
+                    \Filament\Notifications\Notification::make()->danger()->title('No se creó el enlace')->body(collect($ex->errors())->flatten()->first())->persistent()->send();
+                    $action->halt();
+                } catch (\App\Exceptions\RecordWriteRejected|\Illuminate\Auth\Access\AuthorizationException|\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $ex) {
+                    $this->origKey = (string) \Illuminate\Support\Str::uuid();
+                    \Filament\Notifications\Notification::make()->danger()->title('No se creó el enlace')->body($ex->getMessage().' Vuelve a abrir para ver lo actual.')->persistent()->send();
+                    $action->halt();
+                }
+                $this->origKey = ''; $this->origPin = null;
+                $until = \Carbon\CarbonImmutable::parse($r['expires_at'])->setTimezone('America/Chicago')->locale('es')->translatedFormat('j M Y');
+                \Filament\Notifications\Notification::make()->success()->title('Enlace listo (solo consulta)')
+                    ->body('Cópialo y mándaselo a la clienta. Vence el '.$until.'. '.$r['link'])->persistent()->send();
             });
     }
 

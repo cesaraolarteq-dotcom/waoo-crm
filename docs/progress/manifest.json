@@ -108,7 +108,7 @@
      "reviewed": true,
      "merged": true,
      "accepted": false,
-     "blocker": "Hoja de catálogo de César",
+     "blocker": null,
      "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996",
      "record_version_followup": {
       "backend": "1d7d76f",
@@ -131,7 +131,8 @@
       "verification": "7000631:127/25007 related MariaDB PASS5:20.786; final64824dc:110/858 parser/core/booking PASS4:51.504. Runs overlap; no distinct sum or full-suite current/remote CI/owner acceptance claim. PHP lint515 files PASS.",
       "backend_reviewed": true,
       "review_evidence": "Claude aprueba backend ad318f7 en HANDOFF de claude/taxonomy-ui cfb6b1a. Sus pantallas aún requieren revisión de Codex; sin aceptación/despliegue."
-     }
+     },
+     "owner_input_note": "Catálogo de César completo e importado en crm-test (32 paquetes/servicios, 70 personajes, 78 trajes) 2026-10-19/20."
     },
     {
      "name": "Staff, trajes, equipo, vehículos, bloqueos",
@@ -142,7 +143,7 @@
      "reviewed": true,
      "merged": true,
      "accepted": false,
-     "blocker": "Inventario de César",
+     "blocker": null,
      "review_evidence": "Codex review of d3fab7b; money correction 3279591 must be integrated; no owner acceptance claimed; Claude integrated 3279591 in a9f2996",
      "outfit_backend_followup": {
       "backend": "d1b00a3",
@@ -177,7 +178,8 @@
       "remaining": "Claude: selectores; revisión/CI/main/aceptación pendientes. Corrección posterior a confirmación no implementada.",
       "backend_reviewed": true,
       "review_evidence": "Claude aprueba backend ad318f7 en HANDOFF de claude/taxonomy-ui cfb6b1a. Sus pantallas aún requieren revisión de Codex; sin aceptación/despliegue."
-     }
+     },
+     "owner_input_note": "Inventario de César cargado en crm-test: 25 staff (spa marcado 2026-10-20), 78 trajes, 28 equipos."
     },
     {
      "name": "Clientas y borradores de eventos",
@@ -336,7 +338,7 @@
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "blocker": "Base manual por evento con pantalla (Claude 0f8ae91, revisión de 08c284a: aprobado). Pendiente: tarifas reales del staff/horas/transporte de César y margen automático por paquete",
+     "blocker": "Base manual por evento con pantalla (Claude 0f8ae91, revisión de 08c284a: aprobado). Tarifas y reglas de César recibidas 2026-10-20 (docs/plans/PHASE-6.md); falta el cálculo automático (Codex) y el margen por paquete.",
      "backend_foundation": "08c284a: owner-entered immutable estimated/actual event costs, unknown/coverage states, versioned history and owner-only contribution margin API",
      "foundation_verification": "Focused 12 MariaDB tests / 101 assertions; full integration 241 / 2119 with CLI-only512M helper after a128M PDF-suite exhaustion; Vite, lint, strict Composer and 9 real HTTP smoke checks pass",
      "foundation_reviewed": true,
@@ -452,7 +454,7 @@
      "reviewed": false,
      "merged": true,
      "accepted": false,
-     "blocker": "Revisión de abogado antes de clientas reales",
+     "blocker": "Revisión de abogado antes de clientas reales (César decidió revisarlo él por ahora, 2026-10-20).",
      "backend_verification": "Integration e9b2ac5 with Claude 2074213 and main8105bef: 216 MariaDB tests / 1885 assertions; Vite build, PHP lint and strict Composer pass. Separate three-increment stack over main: 23 document/portal/screen tests / 264 assertions. No provider operation or owner acceptance.",
      "followup_reviewed": false,
      "backend_followups": "8a115d9 / ea5fc13: closed terms fields and frozen description with English PDF labels; small review heads codex/terms-allowlist -> codex/pdf-package-details",
@@ -570,7 +572,7 @@
       "merge_requirement": "One ->pages union retaining Leads, Quotes, QuoteDetail, EmailTemplates alongside Dashboard/Calendar/QuickBooking/ContractTemplates. Only add each class with its source. No whole newer #59/#65 review claimed.",
       "remaining": "Read-only synthetic settings only; no root backend/UI completion credit. Real outbox API, event timeline, bounce card, allow-list and approved mail activation still pending. Subject ES72>60 remains nonblocking for draft preview."
      },
-     "blocker": "MAIL A (captura + rebotes) aprobado y en #85. Falta MAIL B (envío automático), proveedor elegido por César, textos aprobados, DNS y activación.",
+     "blocker": "MAIL A (captura + rebotes) aprobado y en #85. César eligió 2026-10-20: envío desde sales@waooparty.com (Hostinger), mensajes y canales definidos. Falta MAIL B (envío automático, Codex), DNS y activación aprobada.",
      "automatic_capture_and_bounces": {
       "api": "641cef0 / docs/MAIL-AUTOMATIC-API.md",
       "backend": "a786e98",
@@ -772,7 +774,7 @@
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "blocker": "Reglas de pago de César (tarifa personaje con peluca, preparación, mínimos, transporte, propinas, periodo). Vista previa 8b6fdce sin tarifas reales."
+     "blocker": "Reglas de pago de César recibidas 2026-10-20 (docs/plans/PHASE-6.md): falta el contrato y backend STAFFPAY-01 (Codex). Vista previa 8b6fdce."
     },
     {
      "name": "REPORT-A: panel, lecturas y reportes congelados",

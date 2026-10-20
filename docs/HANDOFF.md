@@ -1,3 +1,27 @@
+## 2026-10-20 — Claude — N1/N3/N4 integrated on claude/history-intake-ui; Actions green
+
+Codex 7b721d0/2cf01ff failed Actions only on the known time-of-day flake (CostumeVersionsTest, 998 passed), fixed in 2470531. Merged `codex/integrity-schemas` into this branch (PR #98; HANDOFF union, prototype re-rendered from the merged manifest, which keeps `owner_todo`). **Actions on 11920aa: success** (full suite + lint + Vite, MariaDB). Local focused: IntegritySchemas + TIP owner block + original link + cutover screens + CostumeVersions 42/275 pass. Next stacked work should branch from 11920aa.
+
+## 2026-10-20 — Claude — Actions failure on 4374af8 was a time-of-day flake in CostumeVersionsTest (fixed)
+
+Only failure (991 passed): `CostumeVersionsTest::test_manual_wardrobe_is_versioned_replay_safe_and_used_by_the_real_staff_portal` — `jobs.0.outfit_version` null. Cause: the fixture party started at `now()->addDays(20)->startOfHour()`; at 06:08 UTC on Oct 20 that is **Monday 00:00 CST**, and the test travels to start−5 min (Sunday 23:55), so the staff week page (Mon–Sun Houston) shows the previous week with no job. Fixed in the test only: start at **noon Houston** 20 days ahead (`now('America/Chicago')->addDays(20)->setTime(12,0)->utc()`). No application change. Codex: same pattern may exist in other staff-week tests that build parties from `now()->addDays(n)->startOfHour()`; worth a sweep.
+
+## 2026-10-20 — Claude — Dinero: "Copiar enlace otra vez" for the active tip link (B3a reveal)
+
+EventMoney tip block now offers "Copiar enlace otra vez" next to an active grant: calls RevealTipGrantLink with the grant id/version/snapshot shown on screen and a stable UUID; shows the same link panel (WhatsApp/SMS messages EN/ES), never a new grant or renewal. Refusal (changed version/snapshot/agreement) rotates the key and tells the owner to revoke and create a new one. Hint text no longer says the link can't be shown again. Tests: TipOwnerBlockTest + new copy-again/stale case, EventMoneyPageTest: 11/130 pass locally.
+
+## 2026-10-20 — Claude — review of N1/N3/N4 `7b721d0` (codex/integrity-schemas)
+
+**Approved by inspection; Actions on 7b721d0 still running at the time of writing (I will record the result).** EvidenceV1 lists every column literally per profile and reads `getRawOriginal()`, so new columns, casts, accessors, appends or eager-loaded relations cannot enter a proof; missing required fields/relations refuse 409 (no fallback); `service` takes only the explicitly loaded `characters`. `financialRaw` keeps the legacy native TIP bytes, and migration 490000 only adds `snapshot_schema_version=1` (no token/hash/expiry rewrite; TipGuard refuses unknown versions). N3: Dashboard splits positive balances with unknown deadline into their own warn card (empty cards are already filtered by `attention()`), ContractPrintContext refuses unknown money instead of printing 0 and formats a nullable date, MAIL never treats null as now. N4: null `external_reference` normalized only for identity case-folding, still ineligible. Minor note only: the `portal` profile still includes `updated_at`, so any future write that touches a portal grant row (e.g. a "last opened" stamp) would change the collection hash — keep such stamps in another table, as today.
+
+Also done since my last entry: B3b owner link action + client page (4374af8). Next on my side: César's crm-test walkthrough findings; imported-party TIP re-copy UI using RevealTipGrantLink once N1 is integrated.
+
+## 2026-10-20 — Claude — B3b owner link action + client page polish
+
+- **Client page** `portal/original-agreement.blade.php` restyled to the shared portal cards (party / what we agreed / payments), keeping the allowlist: no IDs, no forms; unknown money "Por confirmar"/"Being reviewed" (never $0); paid-in-full and due date (reviewed CRM instant, else source day only) messages; your test strings preserved. OpeningClientPortalTest 19/210 pass.
+- **Owner action** "Enlace del acuerdo original" on the event file (ViewEvent), visible only for imported parties with cutover + bridge + documents gates. `fillForm` pins customer/event version/finance/snapshot from ReadConfirmedAgreement and a UUID; submit sends exactly those (never a fresh read); before the switch-over it explains why it cannot and the submit is disabled; refusals rotate the key and notify. Expiry 7/14/30 days. Success shows the link to copy (no send). Tests `OriginalAgreementLinkScreenTest` (4): hidden without bridge; before activation nothing created; effective fixture issues exactly one `agreement.read` grant with 7-day expiry and no contract/signature/mail/payment/ledger rows; a contact change after opening the modal is refused, 0 grants.
+- Local SQLite: 36 + event file suites pass. TIP re-copy UI for imported parties still to do (B3a reveal), after N1.
+
 ## 2026-10-20 — Codex — C3 S1 imported Stripe evidence and explicit principal allocation verified
 
 **Branch codex/opening-stripe-evidence**, parent N1 2cf01ff, frozen application/tests **4ffb91e**. Contract **8cb2c41 docs/OPENING-STRIPE-API.md published/pushed before code**. No main/claude/* rewrite. Partial C3 B delivery, not activation or completed migration.
