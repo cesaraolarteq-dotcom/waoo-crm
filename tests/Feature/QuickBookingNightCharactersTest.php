@@ -106,6 +106,9 @@ class QuickBookingNightCharactersTest extends TestCase
         $this->assertSame('Nombre acordado',$saved->title);
         $this->assertSame('15:07',$saved->starts_at->setTimezone('America/Chicago')->format('H:i'));
         $this->assertSame(2,$saved->services->first()->characters->sole()->quantity);
+        Livewire::test(\App\Filament\Resources\Events\Pages\EditEvent::class,['record'=>$saved->id])
+            ->assertSchemaStateSet(['start_time'=>'15:07','end_time'=>'16:07'])->call('save')->assertHasNoFormErrors();
+        $this->assertSame('15:07',$saved->fresh()->starts_at->setTimezone('America/Chicago')->format('H:i'));
     }
 
     public function test_blank_pick_slots_do_not_invent_a_character_or_inventory_reservation(): void

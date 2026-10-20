@@ -114,10 +114,10 @@ class QuickBooking extends Page
             Section::make('2. Fecha y lugar')->columns(3)->schema([
                 DatePicker::make('date')->label('Fecha')->native(false)->displayFormat('D j M Y')->locale('es')->weekStartsOnSunday()->closeOnDateSelection()->required()->live()
                     ->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set)),
-                TimePicker::make('start_time')->label('Empieza (Houston)')->native(false)->seconds(false)->minutesStep(15)->required()->live()
+                TimePicker::make('start_time')->label('Empieza (Houston)')->native(false)->seconds(false)->format('H:i')->minutesStep(15)->required()->live()
                     ->afterStateUpdated(fn (Get $get, Set $set) => $this->fillEnd($get, $set))
                     ->helperText('La clienta la confirma en su enlace.'),
-                TimePicker::make('end_time')->label('Termina')->native(false)->seconds(false)->minutesStep(15)->required()->live()
+                TimePicker::make('end_time')->label('Termina')->native(false)->seconds(false)->format('H:i')->minutesStep(15)->required()->live()
                     ->helperText('Se llena con la duración del paquete.'),
                 $choice('start_time'), $choice('end_time'),
                 TextInput::make('setup_minutes')->label('Montaje (minutos antes)')->integer()->minValue(0)->maxValue(720)

@@ -66,8 +66,8 @@ class EventResource extends Resource
                     ->helperText('Elígelo tú (no se adivina). Solo los cumpleaños reciben el correo «Un año después».'),
                 DatePicker::make('date')->label('Fecha')->native()->required()->live()
                     ->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set)),
-                TimePicker::make('start_time')->label('Empieza (hora de Houston)')->native(false)->seconds(false)->minutesStep(15)->required()->live(),
-                TimePicker::make('end_time')->label('Termina')->native(false)->seconds(false)->minutesStep(15)->required()->live(),
+                TimePicker::make('start_time')->label('Empieza (hora de Houston)')->native(false)->seconds(false)->format('H:i')->minutesStep(15)->required()->live(),
+                TimePicker::make('end_time')->label('Termina')->native(false)->seconds(false)->format('H:i')->minutesStep(15)->required()->live(),
                 $choice('date', 'start_time'),
                 $choice('date', 'end_time'),
             ]),
