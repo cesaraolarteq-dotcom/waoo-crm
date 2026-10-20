@@ -1037,5 +1037,16 @@
     }
    ]
   }
- ]
+ ],
+ "owner_todo": [
+  "Recorrer el CRM de prueba (12 puntos en tu catálogo, sección “Prueba del CRM”).",
+  "Llaves de prueba de Stripe en el archivo stripe-test.txt del Escritorio (no por chat).",
+  "Teléfonos del staff en la pestaña “Staff y tarifas” del catálogo.",
+  "Abrir la cuenta de Twilio (sin comprar número).",
+  "ID de Google Ads (AW-…) o de Google Analytics (G-…).",
+  "Fotos: personajes, y algunas sin personaje conocido para anuncios.",
+  "Navidad: qué ofreces, precios y fotos (cuando lo decidas).",
+  "Antes de mediados de enero: “Upgrade” en Google Cloud."
+ ],
+ "owner_todo_note": "Lista explícita mantenida por Claude con lo que solo César puede hacer; la vista ya no la deduce de los textos de bloqueo."
 }

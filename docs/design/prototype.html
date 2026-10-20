@@ -654,7 +654,8 @@ dialog::backdrop{background:rgba(10,14,40,.55)}
     document.getElementById("phases").addEventListener("click",function(e){var el=e.target.closest("[data-phase]");if(el)detail(+el.dataset.phase);});
     document.getElementById("phases").addEventListener("keydown",function(e){var el=e.target.closest("[data-phase]");if(el&&(e.key==="Enter"||e.key===" ")){e.preventDefault();detail(+el.dataset.phase);}});
     detail(current?PROGRESS.phases.indexOf(current):0);
-    var blockers=[];PROGRESS.phases.forEach(function(f){f.deliverables.forEach(function(d){if(d.blocker&&/César|abogado|Permiso/i.test(d.blocker)&&blockers.indexOf(d.blocker)<0)blockers.push(d.blocker);});});
+    var blockers=Array.isArray(PROGRESS.owner_todo)?PROGRESS.owner_todo.slice():[];
+    if(!blockers.length)PROGRESS.phases.forEach(function(f){f.deliverables.forEach(function(d){if(d.blocker&&/César|abogado|Permiso/i.test(d.blocker)&&blockers.indexOf(d.blocker)<0)blockers.push(d.blocker);});});
     document.getElementById("av-blockers").innerHTML=blockers.map(function(b){return '<li><span class="st wip">…</span><span>'+esc(b)+'</span></li>';}).join("");
   }
   function reserva(){
