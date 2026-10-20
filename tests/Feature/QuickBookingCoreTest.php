@@ -512,4 +512,20 @@ class QuickBookingCoreTest extends TestCase
         $this->assertDatabaseHas('payment_exceptions',['kind' => 'portal_link_pending','state' => 'resolved']);
     }
 
+    public function test_walkthrough_preferences_are_bounded_submission_data_and_do_not_rebook_or_add_money(): void
+    {
+        $event = $this->client(); $before = $event->getAttributes(); $money = FinancialRevision::sole()->total_cents;
+        $this->submit(['event_language' => 'bilingual', 'setup_area' => 'outdoor', 'children_count' => 35])->assertCreated();
+        $submission = ClientDetailsSubmission::sole();
+        $this->assertSame('bilingual', $submission->data['event_language']); $this->assertSame('outdoor', $submission->data['setup_area']);
+        $this->assertSame(35, $submission->data['children_count']); $this->assertSame($before, $event->fresh()->getAttributes());
+        foreach ([['event_language', 'fr'], ['setup_area', 'both'], ['children_count', 0], ['children_count', 501], ['children_count', 1.5]] as [$field, $value]) {
+            $this->submit([$field => $value])->assertUnprocessable()->assertJsonValidationErrors($field);
+        }
+        $this->assertDatabaseCount('client_details_submissions', 1); $this->assertSame($money, FinancialRevision::sole()->total_cents);
+        $this->assertDatabaseCount('resource_reservations', 0); $this->assertDatabaseCount('ledger_entries', 1);
+        $this->approve()->assertOk(); $this->assertSame($submission->id, ClientDetailsReview::sole()->submission_id);
+        $this->assertSame(35, $submission->fresh()->data['children_count']); $this->assertSame($money, FinancialRevision::latest('revision')->firstOrFail()->total_cents);
+    }
+
 }

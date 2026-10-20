@@ -217,6 +217,14 @@ class ImportOwnerCatalog extends Command
             'long_description' => $english ? $description : null,
             // Active only when everything declared is represented (staff + equipment); otherwise the owner finishes it in the CRM.
             'status' => ! empty($p['ready']) && ($requirements !== [] || $options !== []) && $unknownGear === [] && $unknownCrew === [] && ($included === 0 || $options !== []) ? 'active' : 'draft'];
+        $timing = [];
+        foreach (['setup_min' => 'setup_minutes', 'breakdown_min' => 'breakdown_minutes'] as $source => $field) {
+            if (array_key_exists($source, $p)) $timing[$field] = $p[$source];
+        }
+        // Dry runs and real imports share validation; never truncate a fractional minute.
+        $timing = \App\Services\Records\RecordInput::validate($timing, \App\Services\Records\PackageTimingDefaults::rules());
+        foreach ($timing as $field => $value) $timing[$field] = $value === null ? null : (int) $value;
+        $input += $timing;
         $variant = ServiceVariant::where('name', $name)->first();
         $notes = array_filter([
             $included > 0 && $options === [] ? 'sin personajes cargados' : null,
@@ -250,7 +258,8 @@ class ImportOwnerCatalog extends Command
     private static function sameVariant(ServiceVariant $v, array $input): bool
     {
         $norm = fn ($x) => json_encode($x === null ? null : (is_array($x) ? self::sortDeep($x) : $x));
-        foreach (['name', 'duration_minutes', 'requirements', 'character_quantity', 'character_options', 'long_description', 'status'] as $k) {
+        foreach (['name', 'duration_minutes', 'requirements', 'character_quantity', 'character_options', 'long_description', 'status', 'setup_minutes', 'breakdown_minutes'] as $k) {
+            if (!array_key_exists($k, $input)) continue;
             if ($norm($v->{$k} ?? null) !== $norm($input[$k] ?? null)) return false;
         }
 
