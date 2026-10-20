@@ -23,6 +23,7 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-api'])->pre
     Route::post('/cutover/openings', [\App\Http\Controllers\Admin\CutoverOpeningController::class, 'prepare']);
     Route::get('/cutover/openings/{set}', [\App\Http\Controllers\Admin\CutoverOpeningController::class, 'show'])->whereNumber('set');
     Route::get('/cutover/honeybook', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'index']);
+    Route::get('/cutover/honeybook/members', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'members']);
     Route::get('/cutover/honeybook/events/{event}', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'show'])->whereNumber('event');
     Route::post('/cutover/honeybook/events/{event}', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'review'])->whereNumber('event');
     Route::post('/cutover/reconciliations', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'prepare']);
