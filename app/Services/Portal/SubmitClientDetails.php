@@ -25,6 +25,8 @@ final class SubmitClientDetails
             'start_time_confirmed' => 'required|boolean', 'requested_start_at' => ['nullable','date', new ExplicitOffset],
             'requested_local_time' => 'nullable|date_format:H:i', 'requested_time_choice' => ['nullable', Rule::in(['cdt', 'cst'])],
             'child_name' => 'nullable|string|max:120', 'child_age' => 'nullable|integer|min:0|max:120', 'theme' => 'nullable|string|max:120', 'notes' => 'nullable|string|max:2000',
+            // Owner's HoneyBook questions (2026-10-20); optional here so older links and API clients keep working.
+            'event_language' => ['nullable', Rule::in(['es','en','bilingual'])], 'setup_area' => ['nullable', Rule::in(['indoor','outdoor'])], 'children_count' => 'nullable|integer|min:1|max:500',
             'sms_consent' => 'sometimes|boolean', 'sms_consent_version' => 'nullable|required_if:sms_consent,true|string|max:60',
         ]);
         $data['expected_revision'] = (int) $data['expected_revision'];

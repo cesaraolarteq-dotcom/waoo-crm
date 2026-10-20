@@ -38,4 +38,15 @@ class WalkthroughFixesTest extends TestCase
         $this->actingAs($owner)->get('/admin/staff-y-trajes')->assertOk()
             ->assertSee('TRAJE-RUMI-GOLDEN-1')->assertSee('TRAJE-RUMI-HOW-1')->assertDontSee('TRAJE-RUMI-1');
     }
+
+    // Owner 2026-10-20: one address (the party's), the agreed time shown fixed, and his HoneyBook questions.
+    public function test_client_details_ask_once_with_the_owner_questions_and_no_time_change(): void
+    {
+        $this->get('/dev/portal/details')->assertOk()->assertSee('Dirección de la fiesta')->assertSee('Horario de la fiesta')->assertSee('3:00 p. m. – 4:00 p. m.')
+            ->assertSee('¿En qué idioma prefieres la fiesta?')->assertSee('¿Dónde será la actividad?')->assertSee('¿Cuántos niños aproximadamente?')
+            ->assertSee('a $70 la hora (mínimo 2 horas)')->assertSee('Nombre del festejado/a')
+            ->assertDontSee('Tu dirección')->assertDontSee('La fiesta es en mi dirección')->assertDontSee('Necesito otra hora')->assertDontSee('cambio de horario');
+        $this->get('/dev/portal/details?lang=en')->assertSee('Will the setup area be indoor or outdoor?')->assertSee('What is your preferred language for the event?')
+            ->assertDontSee('I need a different time');
+    }
 }
