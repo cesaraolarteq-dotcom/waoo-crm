@@ -132,7 +132,9 @@ class QuickBooking extends Page
                     ->placeholder('Calle, ciudad, TX ZIP')->helperText(fn () => filled(config('waoo.google_maps_browser_key')) ? 'Empieza a escribir y elige la dirección que sugiere Google: se llena el ZIP y se calcula el transporte. Puedes cambiar todo.' : 'Con la dirección exacta puedes calcular el transporte. La clienta la confirma en su enlace.'),
                 TextInput::make('postal_code')->label('ZIP')->required()->maxLength(10)->placeholder('77494')->extraInputAttributes(['data-places' => 'zip'])
                     ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => \App\Filament\Support\TravelFeeFields::invalidate($get, $set)),
-                \App\Filament\Support\TravelFeeFields::feeField(true, 'Obligatorio aquí: con el depósito se fija el total.'),
+                \App\Filament\Support\TravelFeeFields::feeField(true, 'Obligatorio aquí: con el depósito se fija el total.',
+                    fn (Get $get, Set $set) => self::refreshDeposit($get, $set))
+                    ->afterStateUpdated(fn (Get $get, Set $set) => self::refreshDeposit($get, $set)),
                 ...\App\Filament\Support\TravelFeeFields::extraFields(),
             ]),
             Section::make('3. Clienta')->columns(2)->schema([
@@ -171,7 +173,9 @@ class QuickBooking extends Page
             Section::make('4. Depósito recibido')->columns(3)->schema([
                 Grid::make(3)->statePath('deposit')->columnSpanFull()->schema([
                     TextInput::make('amount')->label('Monto que llegó (USD)')->prefix('$')->required()->live(onBlur: true)
-                        ->rule('regex:/^\d{1,7}(\.\d{1,2})?$/')->validationMessages(['regex' => 'Escribe solo el número, por ejemplo 250.']),
+                        ->rule('regex:/^\d{1,7}(\.\d{1,2})?$/')->validationMessages(['regex' => 'Escribe solo el número, por ejemplo 250.'])
+                        ->afterStateUpdated(fn (Get $get, Set $set) => $set('amount_custom', filled($get('amount')))),
+                    Hidden::make('amount_custom')->default(false)->dehydrated(false),
                     TextInput::make('reference')->label('Referencia de Zelle')->required()->minLength(3)->maxLength(255),
                     DatePicker::make('date')->label('Fecha en que llegó')->native(false)->displayFormat('D j M Y')->locale('es')->weekStartsOnSunday()->closeOnDateSelection()
                         ->required()->live()->maxDate(now(ChicagoTime::TZ))->helperText('Hoy, salvo que llegara otro día.'),
@@ -203,6 +207,7 @@ class QuickBooking extends Page
         $set('price_version_ids', $ids);
         $set('characters', collect($get('characters') ?? [])->filter(fn ($c) => blank($c['price_version_id'] ?? null) || in_array((string) $c['price_version_id'], $ids, true))->all());
         EventResource::syncCharacterSlots($get, $set);
+        self::refreshDeposit($get, $set);
         $this->fillEnd($get, $set);
         EventResource::refreshTitle($get, $set);
         EventResource::refreshTiming($get, $set);
@@ -216,6 +221,23 @@ class QuickBooking extends Page
         if ($start && $minutes && preg_match('/^\d{2}:\d{2}/', $start)) {
             $set('end_time', CarbonImmutable::createFromFormat('H:i', substr($start, 0, 5))->addMinutes((int) $minutes)->format('H:i'));
         }
+    }
+
+    public static function depositDefault(array $priceIds, mixed $fee): ?string
+    {
+        $ids = array_values(array_unique(array_map('intval', $priceIds)));
+        if ($ids === [] || is_bool($fee) || !is_scalar($fee) || !preg_match('/^\d{1,7}(\.\d{1,2})?$/D', (string) $fee)) return null;
+        $prices = PriceVersion::whereIn('id', $ids)->get(['amount_cents', 'currency']);
+        if ($prices->count() !== count($ids) || $prices->contains(fn ($price) => $price->currency !== 'USD')) return null;
+        $total = (int) $prices->sum('amount_cents') + EditServiceVariant::toCents((string) $fee);
+        $target = intdiv($total, 2) + $total % 2;
+        return intdiv($target,100).'.'.str_pad((string)($target%100),2,'0',STR_PAD_LEFT);
+    }
+
+    public static function refreshDeposit(Get $get, Set $set): void
+    {
+        if ($get('deposit.amount_custom')) return;
+        $set('deposit.amount', self::depositDefault($get('price_version_ids') ?? [], $get('travel_fee')));
     }
 
     /** Live money line: total, 50 %, received, balance and due date, before saving. Unknown pieces say so; never $0. */
