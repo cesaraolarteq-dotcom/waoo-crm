@@ -31,3 +31,9 @@ payment link by hand (amount + 3 % + a memo for control).
 - The client must see the 3 % before paying (card-network surcharge rules require disclosure). Klarna/Afterpay/Zip merchant
   terms may prohibit surcharges: confirm each before live mode. Test mode first.
 - Everything stays sandbox: no live keys, no real sends until the owner approves.
+
+## Follow-up decision (2026-10-20)
+Owner asked whether to charge sales tax instead of the 3 %. Answer given: tax is not a substitute (it is remitted to the
+state and would apply to Zelle too); whether his services are taxable in Texas is a question for his accountant, separate
+from this feature. **Decision: keep the visible 3 % on Stripe (option 1).** Fallback if Klarna/Afterpay/Zip terms forbid
+surcharges: published card price + 3 % Zelle discount (owner would have to approve new website prices).
