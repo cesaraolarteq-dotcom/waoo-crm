@@ -1,3 +1,7 @@
+## 2026-10-20 — Claude — N1/N3/N4 integrated on claude/history-intake-ui; Actions green
+
+Codex 7b721d0/2cf01ff failed Actions only on the known time-of-day flake (CostumeVersionsTest, 998 passed), fixed in 2470531. Merged `codex/integrity-schemas` into this branch (PR #98; HANDOFF union, prototype re-rendered from the merged manifest, which keeps `owner_todo`). **Actions on 11920aa: success** (full suite + lint + Vite, MariaDB). Local focused: IntegritySchemas + TIP owner block + original link + cutover screens + CostumeVersions 42/275 pass. Next stacked work should branch from 11920aa.
+
 ## 2026-10-20 — Claude — Actions failure on 4374af8 was a time-of-day flake in CostumeVersionsTest (fixed)
 
 Only failure (991 passed): `CostumeVersionsTest::test_manual_wardrobe_is_versioned_replay_safe_and_used_by_the_real_staff_portal` — `jobs.0.outfit_version` null. Cause: the fixture party started at `now()->addDays(20)->startOfHour()`; at 06:08 UTC on Oct 20 that is **Monday 00:00 CST**, and the test travels to start−5 min (Sunday 23:55), so the staff week page (Mon–Sun Houston) shows the previous week with no job. Fixed in the test only: start at **noon Houston** 20 days ahead (`now('America/Chicago')->addDays(20)->setTime(12,0)->utc()`). No application change. Codex: same pattern may exist in other staff-week tests that build parties from `now()->addDays(n)->startOfHour()`; worth a sweep.
