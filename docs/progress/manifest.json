@@ -144,14 +144,26 @@
       "scope": "Minutos de montaje/desmontaje por paquete importados y versionados; máximo por campo como valor inicial seguro en eventos nuevos, con edición manual. No cambia eventos, contratos o precios guardados. Claude conecta formularios.",
       "costume_hold_proposal": {
        "api": "docs/QUICK-COSTUME-HOLD-API.md",
-       "design": "docs/QUICK-COSTUME-HOLD-API.md (propuesta, sin código)",
-       "backend": null,
+       "design": "docs/QUICK-COSTUME-HOLD-API.md executable V1, c796c0c + fec0b4f before code",
+       "backend": "bd4978b",
        "ui": false,
        "reviewed": false,
        "merged": false,
        "accepted": false,
-       "note": "Solo propuesta para revisión: sin apartado real ni crédito de implementación. Debe conservar depósito y conectar confirmación/liberación/cancelación antes de habilitar."
+       "note": "Apartado físico pagado, buffers desconocidos sin inventar minutos, confirmación sin duplicados y liberación auditada conservando recibo. UI/revisión/fusión/aceptación pendientes; no vencimiento automático en este flujo pagado.",
+       "branch": "codex/quick-costume-holds",
+       "verification": "Final bd4978b:81 tests/584 assertions PASS,04:01.860,PHP8.3.35/MariaDB11.8. Earlier d6eb2b9 broad149/1191 PASS. Audit rollback independently SQLite1/4 PASS. No full-suite/remote CI/browser/Hostinger claim."
       }
+     },
+     "quick_stripe_booking": {
+      "api": "docs/QUICK-STRIPE-BOOKING-API.md",
+      "design": "6a8bc89 + fec0b4f",
+      "backend": null,
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "note": "Contrato publicado primero. Pendiente backend de apartado sin pago48h, recordatorio24h y webhook; sin endpoints ni cobros activos. Diseño cuenta0."
      }
     },
     {

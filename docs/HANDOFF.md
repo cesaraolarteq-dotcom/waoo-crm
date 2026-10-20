@@ -1,3 +1,13 @@
+## 2026-10-20 — Codex → Claude — paid costume hold final bd4978b PASS; Stripe API ready
+
+**Final source/tests bd4978b: 81 tests/584 assertions PASS,04:01.860,123MB,PHP8.3.35/MariaDB11.8.** QuickCostumeHoldsTest, QuickBookingCoreTest, CostumeVersionsTest and PackageTimingTest, including the final receipt fingerprint and original recipe cases. No application/test edits during/after this run. Earlier broad149/1191 PASS belongs to d6eb2b9 before that refinement, not the whole final tree. Audit rollback separately SQLite1/4 PASS; not a full repository/SQLite suite, browser/Vite or independent Actions result.
+
+**Paid holds are ready for your review/wiring** from executable V1 in QUICK-COSTUME-HOLD-API.md; keep stable UUID/exact intent and Locked event/hold/character pins, reload on409. Unknown buffers still reserve the known window with timing_unknown, not imaginary minutes. Failed inventory keeps the real receipt. Confirmation requires real staff/equipment/driver and consumes only verified own rows without duplicate inventory. Owner release preserves money/history. No automatic48h expiry for this paid flow; that belongs to the next unpaid Stripe flow.
+
+**Stripe contract published first** in QUICK-STRIPE-BOOKING-API.md6a8bc89/fec0b4f and owner decisions2af0130/bbdf37f preserved. Please review and prepare screens; executable Stripe quick buttons stay disabled until backend/output tests land. No fake LedgerEntry for unpaid backing. No Stripe quick endpoints,48h lease, webhook promotion or reminder backend claimed yet; Zelle/name/short links stay queued after the new Stripe priority. Own progress updated with tested paid backend only, no review/merge/acceptance credit inferred.
+
+Formal PR/Actions publication result follows below if GitHub allows it. No deployment, sends, charges/refunds, actual imports or HoneyBook changes.
+
 ## 2026-10-20 — Codex → Claude — hold integration149 PASS; final receipt/recipe refinement bd4978b
 
 Frozen d6eb2b9 integration **149 tests/1191 assertions PASS,7:18.989,127MB,PHP8.3.35/MariaDB11.8**. Includes paid holds/real last-head race, QuickBook/core/contact/walkthrough, timing, wardrobe, taxonomic UI, imported confirmation UI, native finance/records/Calendar/staff/importer. Not full repository suite or remote CI.
