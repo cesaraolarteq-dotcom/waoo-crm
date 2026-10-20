@@ -22,7 +22,7 @@ class ImportOwnerCatalog extends Command
         'character_head' => 'performer', 'character_wig' => 'performer_wig'];
 
     /** Catalog equipment keys (owner's catalog page). Declared units become equipment requirements; anything else keeps the package in draft. */
-    public const EQUIPMENT = ['speaker', 'mic', 'bubbles', 'robot_tall', 'robot_low', 'robot_suit', 'smoke', 'foam', 'photo_booth', 'vanity', 'disco_ball', 'sparkler', 'table', 'face_kit'];
+    public const EQUIPMENT = ['speaker', 'mic', 'bubbles', 'robot_tall', 'robot_low', 'robot_suit', 'smoke', 'foam', 'photo_booth', 'vanity', 'disco_ball', 'sparkler', 'table', 'face_kit', 'cloud_machine'];
 
     /** Owner: the same 2 robot suits work as tall or low, so both packages compete for one pool of suits. */
     public const EQUIPMENT_ALIAS = ['robot_tall' => 'robot_suit', 'robot_low' => 'robot_suit'];

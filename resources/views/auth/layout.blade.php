@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@1,6..96,500&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap">
-<link rel="stylesheet" href="{{ asset('css/waoo-tokens.css') }}">
-<link rel="stylesheet" href="{{ asset('css/waoo-auth.css') }}">
+<link rel="stylesheet" href="{{ \App\Support\AssetVersion::url('css/waoo-tokens.css') }}">
+<link rel="stylesheet" href="{{ \App\Support\AssetVersion::url('css/waoo-auth.css') }}">
 </head>
 <body class="auth">
 <main class="auth-main">

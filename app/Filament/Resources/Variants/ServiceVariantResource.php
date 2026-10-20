@@ -136,7 +136,11 @@ class ServiceVariantResource extends Resource
                     ->formatStateUsing(fn ($state) => Labels::money($state))->placeholder('Sin precio')
                     ->description('+ costo de transporte')->alignEnd(),
                 TextColumn::make('requirements')->label('Necesita')
-                    ->state(fn ($record) => self::needs($record->requirements ?? []))->placeholder('Sin definir')->wrap(),
+                    ->state(fn ($record) => self::needs($record->requirements ?? []))->placeholder('Sin definir')->wrap()
+                    // The character's performer (and costume) is added per booking from the chosen character, so say it here.
+                    ->description(fn ($record) => ($record->character_quantity ?? 0) > 0
+                        ? '+ '.($record->character_quantity === 1 ? 'el personaje que elijas, con su traje' : $record->character_quantity.' personajes que elijas, con sus trajes')
+                        : null),
                 TextColumn::make('status')->label('Estado')->badge()
                     ->formatStateUsing(fn ($state) => Labels::label(Labels::VARIANT_STATUS, $state))
                     ->color(fn ($state) => Labels::VARIANT_STATUS_COLOR[$state] ?? 'gray'),

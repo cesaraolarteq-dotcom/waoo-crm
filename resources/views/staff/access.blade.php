@@ -8,9 +8,9 @@
 <title>Waoo Party · Staff</title>
 <link rel="icon" href="{{ asset('img/favicon.png') }}">
 {{-- Same look as the staff week page; no third-party assets. The token lives only in the fragment and is exchanged once. --}}
-<link rel="stylesheet" href="{{ asset('css/waoo-tokens.css') }}">
-<link rel="stylesheet" href="{{ asset('css/waoo-portal.css') }}">
-<link rel="stylesheet" href="{{ asset('css/waoo-staff.css') }}">
+<link rel="stylesheet" href="{{ \App\Support\AssetVersion::url('css/waoo-tokens.css') }}">
+<link rel="stylesheet" href="{{ \App\Support\AssetVersion::url('css/waoo-portal.css') }}">
+<link rel="stylesheet" href="{{ \App\Support\AssetVersion::url('css/waoo-staff.css') }}">
 </head>
 <body class="portal staff">
 <header class="p-top"><img src="{{ asset('img/waoo-logo.png') }}" alt="Waoo Party" width="96" height="65"></header>

@@ -9,9 +9,9 @@
 <title>Waoo Party · Staff</title>
 <link rel="icon" href="{{ asset('img/favicon.png') }}">
 {{-- Same rules as the client portal: no third-party assets, personal links are secrets. --}}
-<link rel="stylesheet" href="{{ asset('css/waoo-tokens.css') }}">
-<link rel="stylesheet" href="{{ asset('css/waoo-portal.css') }}">
-<link rel="stylesheet" href="{{ asset('css/waoo-staff.css') }}">
+<link rel="stylesheet" href="{{ \App\Support\AssetVersion::url('css/waoo-tokens.css') }}">
+<link rel="stylesheet" href="{{ \App\Support\AssetVersion::url('css/waoo-portal.css') }}">
+<link rel="stylesheet" href="{{ \App\Support\AssetVersion::url('css/waoo-staff.css') }}">
 </head>
 <body class="portal staff">
 @if (! ($vm['preview'] ?? false))

@@ -1,2 +1,2 @@
-<link rel="stylesheet" href="{{ asset('css/waoo-admin.css') }}">
+<link rel="stylesheet" href="{{ \App\Support\AssetVersion::url('css/waoo-admin.css') }}">
 <meta name="robots" content="noindex, nofollow">
