@@ -96,6 +96,7 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::get('/contracts/{contract}/pdf', [\App\Http\Controllers\Admin\DocumentController::class, 'pdf']);
     Route::post('/contracts/{contract}/final-pdf/retry', [\App\Http\Controllers\Admin\DocumentController::class, 'retryFinal']);
     Route::get('/contracts/{contract}/evidence', [\App\Http\Controllers\Admin\DocumentController::class, 'evidence']);
+    Route::post('/events/{event}/opening-portal-grants', [\App\Http\Controllers\Admin\OpeningPortalGrantController::class, 'store'])->whereNumber('event');
     Route::post('/events/{event}/portal-grants', [\App\Http\Controllers\Admin\DocumentController::class, 'grant']);
     Route::post('/events/{event}/portal-grants/{grant}/reveal-link', [\App\Http\Controllers\Admin\DocumentController::class, 'revealLink'])->whereNumber(['event', 'grant']);
     Route::post('/portal-grants/{grant}/revoke', [\App\Http\Controllers\Admin\DocumentController::class, 'revoke']);
@@ -132,6 +133,8 @@ Route::middleware([\App\Http\Middleware\AuthenticatePortal::class, 'throttle:60,
     Route::post('/details', [\App\Http\Controllers\Portal\ClientDetailsController::class, 'store']);
     Route::post('/checkout-intents', [\App\Http\Controllers\Portal\CheckoutController::class, 'create']);
     Route::get('/payment-intents/{intent}', [\App\Http\Controllers\Portal\CheckoutController::class, 'show']);
+    Route::get('/original-agreement', [\App\Http\Controllers\Portal\OriginalAgreementController::class, 'show']);
+    Route::get('/original-agreement/pdf', [\App\Http\Controllers\Portal\OriginalAgreementController::class, 'pdf']);
     Route::get('/event', [\App\Http\Controllers\Portal\PortalController::class, 'event']);
     Route::get('/contracts/{contract}', [\App\Http\Controllers\Portal\PortalController::class, 'show']);
     Route::get('/contracts/{contract}/pdf', [\App\Http\Controllers\Portal\PortalController::class, 'pdf']);
