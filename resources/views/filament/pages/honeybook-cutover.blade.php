@@ -27,6 +27,14 @@
                     <div class="wrep-actions" style="margin-top:6px"><a class="wcal-btn" href="{{ \App\Filament\Resources\Events\EventResource::getUrl('view', ['record' => $m['event_id']]) }}">Abrir la fiesta</a></div>
                 </div>
             @endforeach
+            @if (($r['page']['last'] ?? 1) > 1)
+                <div class="wimp-pager">
+                    <button type="button" class="wcal-btn" wire:click="goMemberPage({{ $r['page']['number'] - 1 }})" @disabled($r['page']['number'] <= 1)>← Anteriores</button>
+                    <span>Página {{ $r['page']['number'] }} de {{ $r['page']['last'] }} · {{ $r['page']['total'] }} fiestas</span>
+                    <button type="button" class="wcal-btn" wire:click="goMemberPage({{ $r['page']['number'] + 1 }})" @disabled($r['page']['number'] >= $r['page']['last'])>Siguientes →</button>
+                </div>
+                <p class="wqb-hint">Las páginas solo sirven para ver las fiestas: la preparación siempre incluye el grupo completo.</p>
+            @endif
         </x-filament::section>
 
         <x-filament::section>

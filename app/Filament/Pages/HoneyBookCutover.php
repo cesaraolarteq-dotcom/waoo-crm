@@ -4,7 +4,6 @@ namespace App\Filament\Pages;
 
 use App\Exceptions\RecordWriteRejected;
 use App\Filament\Support\{CutoverUi, Labels};
-use App\Models\ImportedProjectLink;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -74,10 +73,36 @@ class HoneyBookCutover extends Page
         return config('waoo.sandbox_cutover_bridge') === true && class_exists(\App\Services\Imports\PrepareCutoverOpeningAgreements::class);
     }
 
+    /** Members page on screen (25 per page). Paging only shows parties; preparation always covers the whole group. */
+    #[Locked]
+    public int $memberPage = 1;
+
+    private ?array $snapshot = null;
+
+    /**
+     * ONE bounded read per render (docs/CUTOVER-MEMBERS-API.md): readiness, totals and this page's rows come from the same
+     * consistent snapshot. After the first read the displayed group hash is sent; if the group changed the server refuses (409),
+     * the scope tick and retry key are cleared and page 1 is reloaded without the old hash.
+     */
     public function readiness(): ?array
     {
+        if ($this->snapshot !== null) {
+            return $this->snapshot;
+        }
+        $read = fn (array $f) => app(\App\Services\Imports\ReadHoneyBookCutoverMembers::class)->execute(Filament::auth()->user(), $f);
+        $filters = ['page' => max(1, $this->memberPage), 'per_page' => 25];
         try {
-            $r = app(\App\Services\Imports\ReadHoneyBookCutoverReadiness::class)->execute(Filament::auth()->user());
+            $r = $read($this->displayedCohort !== null ? [...$filters, 'expected_cohort_sha256' => $this->displayedCohort] : $filters);
+        } catch (\App\Exceptions\CutoverCohortChanged) {
+            $this->forgetScopeReview();
+            $this->displayedCohort = null;
+            $this->memberPage = 1;
+            Notification::make()->warning()->title('El grupo de fiestas cambió')->body('Volvimos a la primera página. Revisa el grupo otra vez antes de preparar.')->send();
+            try {
+                $r = $read(['page' => 1, 'per_page' => 25]);
+            } catch (\Throwable) {
+                return null;
+            }
         } catch (\Throwable) {
             return null;
         }
@@ -85,13 +110,20 @@ class HoneyBookCutover extends Page
             $this->forgetScopeReview(); // the group changed under the owner: a new explicit review is required
         }
         $this->displayedCohort = $r['cohort_sha256'];
+        $this->memberPage = $r['page']['number'];
         $pin = ($r['reconciliation']['current'] ?? false) ? ['reconciliation_id' => $r['reconciliation']['id'], 'cohort' => $r['reconciliation']['cohort_sha256']] : [];
         if ($pin !== $this->openingPin) {
             $this->openingPin = $pin;
             $this->openingKey = (string) Str::uuid(); // another reconciliation on screen: never reuse the old retry key
         }
 
-        return $r;
+        return $this->snapshot = $r;
+    }
+
+    public function goMemberPage(int $page): void
+    {
+        $this->memberPage = max(1, $page);
+        $this->snapshot = null;
     }
 
     public function updatedScopeReviewed(bool $value): void
@@ -106,20 +138,14 @@ class HoneyBookCutover extends Page
         $this->prepareKey = (string) Str::uuid();
     }
 
-    /** Per-party missing items (read one by one; no client names beyond the event title the owner already sees). */
+    /** This page's parties from the same snapshot as readiness (no per-row reads, no contact data). */
     public function members(): array
     {
-        return ImportedProjectLink::query()->orderBy('id')->get()->map(function ($l) {
-            $e = \App\Models\Event::find($l->event_id);
-            try {
-                $v = app(\App\Services\Imports\ReadHoneyBookCutoverReview::class)->execute(Filament::auth()->user(), $l->event_id);
-            } catch (\Throwable) {
-                $v = null;
-            }
+        $r = $this->readiness();
 
-            return ['event_id' => $l->event_id, 'title' => $e?->title, 'when' => $e ? Labels::when($e->starts_at) : '',
-                'missing' => $v['missing'] ?? ['owner_review_required'], 'review' => $v['review'] ?? null];
-        })->all();
+        return collect($r['rows'] ?? [])->map(fn ($row) => ['event_id' => $row['event_id'], 'title' => $row['title'],
+            'when' => $row['starts_at'] ? Labels::when(\Carbon\CarbonImmutable::parse($row['starts_at'])) : '',
+            'missing' => $row['missing'], 'review' => $row['review']])->all();
     }
 
     public static function when(?string $iso): string
