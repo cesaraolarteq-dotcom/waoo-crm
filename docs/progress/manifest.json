@@ -1006,6 +1006,18 @@
       "scope": "Base común nativa/origen confirmado, lectura privada de dueño, TIP de origen solo con autoridad efectiva y dinero conocido, y volver a copiar el enlace vigente sin renovación ni envío. Conserva hash nativo, precio original y separación de propinas.",
       "verification": "Frozen3eb70da:145 tests/1043 assertions PASS,6:06.555,113MB,PHP8.3.35/MariaDB11.8. Carreras reales, privacidad/envelope/replay/rollback, hash nativo, webhook TIP firmado/retención tardía y regresión de dinero/correos/#91 UI. Lint/Composer/diff pass; no suite completa/browser/CI remoto/Hostinger.",
       "note": "Sin nueva migración ni escritor de activación. Faltan portal principal/MAIL/Stripe-refunds/reportes y traspaso atómico; root backend sigue null. UI de Copiar enlace a cargo de Claude tras revisión."
+     },
+     "original_client_portal_c3_b3b": {
+      "api": "docs/OPENING-CLIENT-PORTAL-API.md",
+      "branch": "codex/opening-client-portal",
+      "backend": "f93207d",
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "scope": "Portal de consulta del acuerdo original: enlace de lectura independiente, registro cifrado inmutable, sesión vinculada, proyección permitida EN/ES y descarga privada del PDF original exacto. Sin firma, cobro ni nuevo depósito.",
+      "verification": "Frozen f93207d:168 tests/1396 assertions PASS,7:17.752,127MB,PHP8.3.35/MariaDB11.8. Carreras reales, aislamiento, tamper, replay/rollback, importes desconocidos y regresión de portales/documentos/dinero/evidencia/migraciones. Lint/Composer/diff pass. Sin suite completa/CI remoto/browser/SQLite/Hostinger.",
+      "note": "Página mínima compartida para que Claude refine la UI; revisión/integración pendientes. Faltan cobros del portal/MAIL/Stripe-refunds/reportes y escritor atómico de traspaso. Root backend sigue null; sin crédito de corte completo ni operación real."
      }
     }
    ]
