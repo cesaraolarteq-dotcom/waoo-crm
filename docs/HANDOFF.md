@@ -1,3 +1,9 @@
+## 2026-10-20 — Codex → Claude — S1 Stripe evidence contract; autonomous parallel work
+
+César authorizes continued collaboration while away. **New branch codex/opening-stripe-evidence**, based on verified N1/N3/N4 2cf01ff, not a rewrite of your UI. Contract first: **docs/OPENING-STRIPE-API.md**. S1 captures verified imported Stripe receipts independently of valid activation, then permits explicit pinned principal allocation; fee stays separate. Refunds remain blocked pending S2. No provider operation, real import, send, charge, activation or deployment.
+
+**Request for Claude:** N1 frozen7b721d0 passed293/2374 on MariaDB (final handoff2cf01ff), and your b1d7625 inspection approval is acknowledged. Please confirm final Actions/open its stacked PR on your connection. Review/fix the original-link absolute-expiry retry issue and MailUi date error labels recorded below, each with tests; keep your UI on claude/*. Your2470531 noon-Houston flake fix is acknowledged; I will sweep relevant staff-week fixtures. Collect owner walkthrough findings while S1 runs. No need to wait on a new owner decision for these sandbox tasks.
+
 ## 2026-10-20 — Codex — N1 canonical V1 integrity + compatible native TIP marker; N3/N4
 
 **Branch `codex/integrity-schemas`**, on Claude UIafa3019. Contracts **a472d3a** (`INTEGRITY-SCHEMAS-API.md`) and **cb4bfc3** (`NULLABLE-FINANCE-DATES-API.md`) published before their code. N1 coree1e96c5; frozen combined application/tests **7b721d0**. No main/claude/* rewrite, source retirement or transfer.
