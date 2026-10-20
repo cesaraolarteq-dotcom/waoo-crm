@@ -10,6 +10,12 @@ final class PortalTokenVault
 {
     private static function binding(PortalGrant $grant): array
     {
+        if($grant->cutover_financial_binding_id!==null){
+            if($grant->quote_revision_id!==null||$grant->scopes!==['agreement.read']||!is_string($grant->opening_snapshot_sha256)||!preg_match('/^[a-f0-9]{64}$/D',$grant->opening_snapshot_sha256))throw PortalLinkRejected::unrecoverable();
+            return ['version'=>3,'grant_id'=>(int)$grant->id,'event_id'=>(int)$grant->event_id,'customer_id'=>(int)$grant->customer_id,
+                'expires_at'=>$grant->expires_at->toIso8601String(),'scopes'=>$grant->scopes,'cutover_financial_binding_id'=>(int)$grant->cutover_financial_binding_id,
+                'opening_snapshot_sha256'=>$grant->opening_snapshot_sha256];
+        }
         return ['version' => $grant->quote_revision_id === null ? 1 : 2, 'grant_id' => (int) $grant->id, 'event_id' => (int) $grant->event_id,
             'customer_id' => (int) $grant->customer_id, 'expires_at' => $grant->expires_at->toIso8601String(), 'scopes' => $grant->scopes,
             ...($grant->quote_revision_id !== null ? ['quote_revision_id'=>(int)$grant->quote_revision_id] : [])];
