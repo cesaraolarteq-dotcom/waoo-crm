@@ -885,7 +885,15 @@
       "verification": "69 tests/389 assertions PASS, PHP8.3.35/MariaDB11.8, 2:07.144; private history intake/parser + future importer/C2 resync. Lint and strict Composer pass. Not a full-suite or remote CI result.",
       "scope": "Cifrado de CSV/celdas, revisión paginada, datos originales, incidencias, reintentos/concurrencia y descarte atómico. Sin clientas/historial definitivo, cobros, reservas o mensajes.",
       "note": "Solo subentrega: backend raíz permanece null; no crédito de importación histórica completa. Claude debe revisar y conectar UI. Sin importación real.",
-      "review_evidence": "Claude review of 35a4b8b in HANDOFF 2026-10-20 (screen built against it); UI 466f830 on claude/history-intake-ui: 7 Livewire tests + 14 intake tests pass locally (SQLite); MariaDB CI pending."
+      "review_evidence": "Claude review of 35a4b8b in HANDOFF 2026-10-20 (screen built against it); UI 466f830 on claude/history-intake-ui: 7 Livewire tests + 14 intake tests pass locally (SQLite); MariaDB CI pending.",
+      "ui_reviewed": true,
+      "backend_reviewed": true,
+      "codex_ui_review": {
+       "head": "afa3019",
+       "verdict": "approved; R1/R2 closed",
+       "evidence": "docs/HANDOFF.md (Codex a4172f9)",
+       "verification": "28 tests/264 assertions MariaDB pass incl real HTTP owner/history access; final7b721d0 integrated293/2374 also includes these existing UI suites. Remote Actions not independently accessible."
+      }
      }
     },
     {
@@ -994,7 +1002,9 @@
       "accepted": false,
       "scope": "Validador del acuerdo efectivo y asignación inmutable de Zelle verificado posterior al cambio; resumen de origen sin duplicar pagos. Sin escritor de activación/materialización/traspaso/reversión. Solo fixtures sintéticas crean ese estado futuro.",
       "verification": "Frozen6f4dd82:183 tests/1324 assertions PASS,7:23.631,131MB,PHP8.3.35/MariaDB11.8; lint/Composer/diff pass. Carreras reales y retry RR completo, SQL/audit rollback, tamper, webhook Stripe de prueba firmado y regresión de dinero/reservas/UI de main841dec6. Sin suite completa/CI remoto/browser/SQLite/Hostinger.",
-      "note": "Subentrega B2 solamente: faltan adaptadores comunes Finance/MAIL/TIP/cliente, Stripe/refunds/reportes y activación atómica del grupo. Root backend permanece null; sin crédito de corte completo ni operación real."
+      "note": "Subentrega B2 solamente: faltan adaptadores comunes Finance/MAIL/TIP/cliente, Stripe/refunds/reportes y activación atómica del grupo. Root backend permanece null; sin crédito de corte completo ni operación real.",
+      "backend_reviewed": true,
+      "backend_review_evidence": "Claude latest HANDOFF afa3019 / b1d7625 and César 2026-10-20. Stacked PR review/parent CI reported; no main merge or activation inferred."
      },
      "confirmed_agreement_tip_c3_b3a": {
       "api": "docs/CONFIRMED-AGREEMENT-API.md",
@@ -1006,7 +1016,9 @@
       "accepted": false,
       "scope": "Base común nativa/origen confirmado, lectura privada de dueño, TIP de origen solo con autoridad efectiva y dinero conocido, y volver a copiar el enlace vigente sin renovación ni envío. Conserva hash nativo, precio original y separación de propinas.",
       "verification": "Frozen3eb70da:145 tests/1043 assertions PASS,6:06.555,113MB,PHP8.3.35/MariaDB11.8. Carreras reales, privacidad/envelope/replay/rollback, hash nativo, webhook TIP firmado/retención tardía y regresión de dinero/correos/#91 UI. Lint/Composer/diff pass; no suite completa/browser/CI remoto/Hostinger.",
-      "note": "Sin nueva migración ni escritor de activación. Faltan portal principal/MAIL/Stripe-refunds/reportes y traspaso atómico; root backend sigue null. UI de Copiar enlace a cargo de Claude tras revisión."
+      "note": "Sin nueva migración ni escritor de activación. Faltan portal principal/MAIL/Stripe-refunds/reportes y traspaso atómico; root backend sigue null. UI de Copiar enlace a cargo de Claude tras revisión.",
+      "backend_reviewed": true,
+      "backend_review_evidence": "Claude latest HANDOFF afa3019 / b1d7625 and César 2026-10-20. Stacked PR review/parent CI reported; no main merge or activation inferred."
      },
      "original_client_portal_c3_b3b": {
       "api": "docs/OPENING-CLIENT-PORTAL-API.md",
@@ -1018,7 +1030,9 @@
       "accepted": false,
       "scope": "Portal de consulta del acuerdo original: enlace de lectura independiente, registro cifrado inmutable, sesión vinculada, proyección permitida EN/ES y descarga privada del PDF original exacto. Sin firma, cobro ni nuevo depósito.",
       "verification": "Frozen f93207d:168 tests/1396 assertions PASS,7:17.752,127MB,PHP8.3.35/MariaDB11.8. Carreras reales, aislamiento, tamper, replay/rollback, importes desconocidos y regresión de portales/documentos/dinero/evidencia/migraciones. Lint/Composer/diff pass. Sin suite completa/CI remoto/browser/SQLite/Hostinger.",
-      "note": "Página mínima compartida para que Claude refine la UI; revisión/integración pendientes. Faltan cobros del portal/MAIL/Stripe-refunds/reportes y escritor atómico de traspaso. Root backend sigue null; sin crédito de corte completo ni operación real."
+      "note": "Página mínima compartida para que Claude refine la UI; revisión/integración pendientes. Faltan cobros del portal/MAIL/Stripe-refunds/reportes y escritor atómico de traspaso. Root backend sigue null; sin crédito de corte completo ni operación real.",
+      "backend_reviewed": true,
+      "backend_review_evidence": "Claude latest HANDOFF afa3019 / b1d7625 and César 2026-10-20. Stacked PR review/parent CI reported; no main merge or activation inferred."
      },
      "cohort_members_read": {
       "api": "docs/CUTOVER-MEMBERS-API.md",
@@ -1030,7 +1044,25 @@
       "accepted": false,
       "scope": "Una lectura completa y consistente del grupo y cobertura de origen, con filas paginadas de dueño; no repite una inspección del grupo por cada fiesta. Rechaza hash mostrado viejo, mantiene pendientes fuera de página e importes desconocidos.",
       "verification": "Frozen3e1b97d:56 tests/436 assertions PASS,2:21.997,107MB,PHP8.3.35/MariaDB11.8; carrera real con otro escritor, privacidad/no escritura, hash/expiración/alcance, pantallas #91 y evidencia/preparación/migraciones. Lint/Composer/diff pass; sin suite completa/CI remoto/browser/Hostinger/benchmark.",
-      "note": "Claude debe conectar la pantalla en una sola lectura por render y agregar controles de página. UI/revisión/fusión pendientes; sin cambio de consentimiento, cobros, sistema responsable ni crédito de corte completo."
+      "note": "Claude debe conectar la pantalla en una sola lectura por render y agregar controles de página. UI/revisión/fusión pendientes; sin cambio de consentimiento, cobros, sistema responsable ni crédito de corte completo.",
+      "backend_reviewed": true,
+      "backend_review_evidence": "Claude latest HANDOFF afa3019 / b1d7625 and César 2026-10-20. Stacked PR review/parent CI reported; no main merge or activation inferred."
+     },
+     "integrity_n1_n3_n4": {
+      "api": [
+       "docs/INTEGRITY-SCHEMAS-API.md",
+       "docs/NULLABLE-FINANCE-DATES-API.md"
+      ],
+      "branch": "codex/integrity-schemas",
+      "backend": "7b721d0",
+      "ui": null,
+      "reviewed": true,
+      "merged": false,
+      "accepted": false,
+      "review_evidence": "Claude b1d7625: approved N1/N3/N4 7b721d0 by inspection; current portal updated_at remains part of frozenV1, separate telemetry required.",
+      "scope": "Campos y formatos V1 fijos con hashes actuales conservados, migración TIP490000 compatible sin renovar enlaces/re-sellar pruebas. Vencimientos desconocidos explícitos; no null como hoy/0, no recordatorio sin fecha ni contrato nativo incompleto. Referencia nula sin deprecación.",
+      "verification": "Frozen7b721d0:293 tests/2374 assertions PASS,12:16.223,141MB,PHP8.3.35/MariaDB11.8. Columnas reales nuevas sin invalidar pruebas, legado TIP/migración/envelope intacto, mutación relevante denegada, concurrencia y regresión de dinero/portal/documentos/MAIL/UI. Lint/Composer/diff pass. No suite completa/CI remoto/browser/Hostinger.",
+      "note": "Solo base parcial antes de activación. C3 B Stripe/refunds/MAIL/reportes, traspaso atómico/reversión siguen pendientes. Ningún cambio en flags/staging/HoneyBook; root backend sigue null."
      }
     }
    ]
