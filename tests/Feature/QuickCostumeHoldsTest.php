@@ -195,4 +195,20 @@ class QuickCostumeHoldsTest extends TestCase
         $this->assertSame('active', $this->unit->fresh()->status); $this->assertDatabaseCount('resource_blocks', 0); $this->assertDatabaseCount('resource_reservations', 1);
     }
 
+    public function test_incomplete_original_recipe_does_not_become_complete_when_the_catalog_later_removes_characters(): void
+    {
+        $b = $this->book(['services' => [['price_version_id' => $this->price->id]]]);
+        $this->assertSame('needs_character', $b->costume_hold['state']);
+        DB::table('service_variants')->where('id', $this->price->service_variant_id)->update(['character_quantity' => 0]);
+        $v = $this->read($b->event->id); $result = app(HoldQuickBookingCostumes::class)->execute($this->owner, $b->event->id, $this->pins($v), (string)Str::uuid());
+        $this->assertSame('needs_character', $result['state']); $this->assertDatabaseCount('resource_reservations', 0);
+        $this->assertDatabaseCount('ledger_entries', 1);
+    }
+    public function test_changed_positive_receipt_is_detected_without_erasing_money_or_reservations(): void
+    {
+        $b = $this->book(); DB::table('ledger_entries')->where('id', $b->receipt->id)->update(['amount_cents' => 14000]);
+        $v = $this->read($b->event->id); $this->assertSame('review_required', $v['state']); $this->assertContains('integrity_invalid', $v['issues']);
+        $this->assertSame([], $v['rows']); $this->assertDatabaseCount('resource_reservations', 1); $this->assertDatabaseCount('ledger_entries', 1);
+    }
+
 }

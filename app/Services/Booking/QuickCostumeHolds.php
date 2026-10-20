@@ -30,6 +30,15 @@ final class QuickCostumeHolds
             409, 'La reserva o su depósito requieren revisión.');
         return $q;
     }
+    private static function receiptFingerprint(Event $e): string
+    {
+        $q = self::record($e); $receipt = LedgerEntry::whereKey($q->receipt_id)->sharedLock()->firstOrFail();
+        $fields = ['id','event_id','financial_revision_id','environment','kind','method','amount_cents','currency','received_at',
+            'external_reference','external_identity_key','verified_by','source_type','source_id','note','created_at','updated_at'];
+        $raw = $receipt->getRawOriginal();
+        RecordWriteRejected::unless(array_diff($fields, array_keys($raw)) === [], 409, 'La evidencia del depósito requiere revisión.');
+        return MutationKey::hash(['schema_version' => 1, 'receipt' => array_intersect_key($raw, array_flip($fields))]);
+    }
     public static function window(Event $e): array
     {
         return ['party_start' => $e->starts_at->toIso8601String(), 'party_end' => $e->ends_at->toIso8601String(),
@@ -48,7 +57,7 @@ final class QuickCostumeHolds
     {
         $slots = []; $missing = false;
         foreach ($e->services()->get() as $service) {
-            if (!$service->operational_ready && (\App\Models\ServiceVariant::whereKey($service->service_variant_id)->value('character_quantity') ?? 0) > 0) $missing = true;
+            if (!$service->operational_ready) $missing = true;
             foreach ($service->requirements_snapshot ?? [] as $req) {
                 if (($req['kind'] ?? null) !== 'costume') continue;
                 RecordWriteRejected::unless((is_int($req['quantity'] ?? null) || (is_string($req['quantity'] ?? null) && ctype_digit($req['quantity']))) && $req['quantity'] > 0 && $req['quantity'] <= 20 && isset($req['character_id']), 409, 'Revisa la receta del personaje.');
@@ -70,6 +79,7 @@ final class QuickCostumeHolds
             $history = QuickCostumeHoldEvent::where('quick_costume_hold_id', $h->id)->where('version', $h->version)->sharedLock()->first();
             $valid = is_array($p) && ($p['schema_version'] ?? null) === 1 && $h->event_id === $e->id && $h->quick_booking_id === $q->id
                 && $h->receipt_id === $q->receipt_id && $p['event_id'] === $e->id && $p['quick_booking_id'] === $q->id && $p['receipt_id'] === $q->receipt_id
+                && ($p['receipt_sha256'] ?? null) === self::receiptFingerprint($e)
                 && $p['head_id'] === $h->id && $p['version'] === $h->version && $p['state'] === $h->state
                 && hash_equals($h->payload_sha256, MutationKey::hash($p)) && $history && $history->payload_sha256 === $h->payload_sha256
                 && $history->payload === $p;
@@ -110,7 +120,7 @@ final class QuickCostumeHolds
     {
         $p = ['schema_version' => 1, 'head_id' => $h->id, 'event_id' => $e->id, 'quick_booking_id' => $h->quick_booking_id, 'receipt_id' => $h->receipt_id,
             'version' => $h->version + 1, 'state' => $state, 'rows' => $rows, 'issues' => $issues, 'window' => self::window($e),
-            'recipe_sha256' => MutationKey::hash(self::recipe($e)), 'actor_id' => $actor->id, 'reason' => $reason];
+            'recipe_sha256' => MutationKey::hash(self::recipe($e)), 'receipt_sha256' => self::receiptFingerprint($e), 'actor_id' => $actor->id, 'reason' => $reason];
         $hash = MutationKey::hash($p); $h->fill(['version' => $p['version'], 'state' => $state, 'payload' => $p, 'payload_sha256' => $hash])->save();
         $history = QuickCostumeHoldEvent::create(['quick_costume_hold_id' => $h->id, 'version' => $h->version, 'payload' => $p, 'payload_sha256' => $hash]);
         Audit::recordFor($actor, 'quick_costume_hold.'.$state, $h, [], ['event_id' => $e->id, 'version' => $h->version, 'sha256' => $hash]);
