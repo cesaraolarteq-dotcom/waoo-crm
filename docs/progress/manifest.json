@@ -1074,12 +1074,27 @@
       "branch": "codex/opening-stripe-evidence",
       "backend": "4ffb91e",
       "ui": false,
-      "reviewed": false,
+      "reviewed": true,
       "merged": false,
       "accepted": false,
       "scope": "Evidencia Stripe importada cifrada/inmutable tras verificación; asignación explícita con pins, principal separado de comisión; Zelle V1 intacto. Sin activar cobros, transporte, traspaso ni fee3%.",
       "verification": "278 tests/2205 assertions PASS, 11:56.534, 137.00 MB, PHP8.3.35/MariaDB11.8; firma real con proveedor ficticio, concurrencia MariaDB, reintentos, no duplicación, integridad/migraciones/fallo atómico y regresión de dinero/documentos/MAIL/staff/UI. Lint/Composer/diff pass; no suite completa/CI remoto/browser/Hostinger.",
-      "note": "Parcial C3 B. S2 es solo contrato: devoluciones siguen pendientes/desconocidas. Faltan MAIL/reportes, traspaso completo y reversión; root backend sigue null, sin crédito de activación/fase completa."
+      "note": "Parcial C3 B. S2 es solo contrato: devoluciones siguen pendientes/desconocidas. Faltan MAIL/reportes, traspaso completo y reversión; root backend sigue null, sin crédito de activación/fase completa.",
+      "review_evidence": "Claude2eaa147 approves4ffb91e by inspection; PR#99, Actions82310ff success reported by Claude. Merged into his UI branch only; no main/activation claim."
+     },
+     "opening_refund_capture_a": {
+      "api": [
+       "docs/OPENING-REFUNDS-API.md"
+      ],
+      "branch": "codex/opening-refund-evidence",
+      "backend": "7468cc6",
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "scope": "Recepción verificada y cifrada de devoluciones reales ya ocurridas; alias y controles de disputa/charge.refunded. Duplicados no repiten dinero; contradicciones o monto desconocido con origen verificado => saldo desconocido y bloqueo. No inicia devolución ni la aplica al saldo.",
+      "verification": "269 tests/2036 assertions PASS, 15:23.916, 133.00 MB, PHP8.3.35/MariaDB11.8; firma HTTP real con proveedor ficticio, concurrencia, reintento atómico, reversión de estado/privacidad/rollback y regresión fuente/nativo/TIP/documentos/MAIL/UI. Lint/Composer/diff pass. No suite completa/CI independiente/browser/Hostinger/proveedor real.",
+      "note": "Solo A, parcial C3 B. Pendientes lectura/asignación, topes acumulados y fanout completo por cargo, MAIL/reportes y traspaso/reversión. Contrato de pin de presupuesto publicado, sin código B ni activación; root backend sigue null."
      }
     }
    ]

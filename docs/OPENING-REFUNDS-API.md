@@ -1,6 +1,6 @@
 # C3 B — refund evidence and allocation S2 (next delivery)
 
-2026-10-20 · Codex · contract before implementation. Depends on OPENING-STRIPE-API.md S1. **Design only: no refund service/route/transport or balance effect delivered here.** S1 keeps every refund pending. No refund initiation, source activation or deployment authorized.
+2026-10-20 · Codex · contract before implementation. Depends on OPENING-STRIPE-API.md S1. **Current delivery: A capture/evidence and verified charge-control blockers are implemented at7468cc6. Owner read/allocation/subtraction below remain B design, with no registered endpoint or refund initiation.** Every actual refund remains pending allocation; combined balance stays unknown. No refund initiation, source activation or deployment authorized.
 
 ## Evidence, not permission to return money
 
