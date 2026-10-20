@@ -82,10 +82,10 @@ class EventResource extends Resource
                     ->helperText(fn (Get $get) => self::charactersHint($get('price_version_ids') ?? []))
                     ->schema([
                         Select::make('price_version_id')->label('Para el servicio')->native(false)->required()->live()
+                            ->visible(fn (Get $get) => self::needsServiceChoice($get))
                             ->options(fn (Get $get) => self::configurablePrices($get('../../price_version_ids') ?? [])),
-                        self::audienceFilter(),
                         Select::make('character_id')->label('Personaje')->native(false)->required()->searchable()
-                            ->options(fn (Get $get) => self::characterOptions($get('price_version_id'), $get('audience_filter'), $get('character_id')))
+                            ->options(fn (Get $get) => self::characterOptions(self::rowPrice($get), null, $get('character_id')))
                             ->live()->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set, '../../')),
                         TextInput::make('quantity')->label('Cuántos')->integer()->minValue(1)->maxValue(20)->default(1)->required()
                             ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set, '../../')),
@@ -181,8 +181,7 @@ class EventResource extends Resource
                 $name = \App\Models\Character::whereKey((int) $c['character_id'])->value('name');
                 $n = max(1, (int) ($c['quantity'] ?? 1));
 
-                $name = $name !== null && ($c['outfit'] ?? null) !== null && $c['outfit'] !== '' ? "{$name} {$c['outfit']}" : $name;
-
+                // Owner 2026-10-20: the costume version stays in the event details, never in the title.
                 return $name ? ($n > 1 ? "{$n} {$name}" : $name) : null;
             })->filter()->values();
         $chars = $names->count() > 1 ? $names->slice(0, -1)->implode(', ').' y '.$names->last() : (string) $names->first();
@@ -255,6 +254,21 @@ class EventResource extends Resource
             ->groupBy($label)->map(fn ($g) => $g->pluck('name', 'id')->all())->all();
     }
 
+    /** The service a character row belongs to: its own choice, or the only selected service that takes characters. */
+    public static function rowPrice(Get $get, string $up = '../../'): ?string
+    {
+        if (filled($get('price_version_id'))) return (string) $get('price_version_id');
+        $only = array_keys(self::configurablePrices($get($up.'price_version_ids') ?? []));
+
+        return count($only) === 1 ? (string) $only[0] : null;
+    }
+
+    /** "Para" is only asked when more than one selected service takes characters. */
+    public static function needsServiceChoice(Get $get, string $up = '../../'): bool
+    {
+        return count(self::configurablePrices($get($up.'price_version_ids') ?? [])) > 1;
+    }
+
     /** "Mostrar" filter next to each character picker; not saved. */
     public static function audienceFilter(): Select
     {
@@ -298,6 +312,11 @@ class EventResource extends Resource
     /** price_version_ids + characters form state -> services[] for SaveEventDraft / QuickBook. */
     public static function servicesInput(array $data): array
     {
+        $only = array_keys(self::configurablePrices($data['price_version_ids'] ?? []));
+        if (count($only) === 1) {
+            $data['characters'] = collect($data['characters'] ?? [])->map(fn ($c) => blank($c['price_version_id'] ?? null) ? [...$c, 'price_version_id' => (string) $only[0]] : $c)->all();
+        }
+
         return collect($data['price_version_ids'] ?? [])->map(function ($id) use ($data) {
             $service = ['price_version_id' => (int) $id];
             if (array_key_exists($id, self::configurablePrices([$id]))) {

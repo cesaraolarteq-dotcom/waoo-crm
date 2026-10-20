@@ -30,7 +30,10 @@ final class TravelFeeFields
             ->helperText(fn (Get $get) => self::message($get) ?? $help);
         if (self::enabled()) {
             $field->suffixAction(Action::make('quoteTravel')->label('Calcular')->tooltip('Calcular el costo de transporte con la dirección')->icon('heroicon-o-map')->extraAttributes(['data-places' => 'quote'])
-                ->action(fn (Get $get, Set $set) => self::quote($get, $set)));
+                ->action(function (Get $get, Set $set, $livewire) {
+                    self::quote($get, $set);
+                    if (method_exists($livewire, 'refreshDeposit')) $livewire->refreshDeposit($get, $set); // Reserva rápida: deposit follows the new total
+                }));
         }
 
         return $field;
