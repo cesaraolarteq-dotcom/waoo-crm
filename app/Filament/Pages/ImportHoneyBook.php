@@ -311,7 +311,7 @@ class ImportHoneyBook extends Page
                             // One package with characters: chosen for her, one click less.
                             ->default(fn (Get $get) => count($o = EventResource::configurablePrices($get('../../price_version_ids') ?? [])) === 1 ? (string) array_key_first($o) : null),
                         Select::make('character_id')->label('Personaje')->native(false)->required()->searchable()->live()
-                            ->options(fn (Get $get) => EventResource::characterOptions($get('price_version_id'))),
+                            ->options(fn (Get $get) => EventResource::characterOptions($get('price_version_id'), null, $get('character_id'))),
                         TextInput::make('quantity')->label('Cuántos')->integer()->minValue(1)->maxValue(20)->default(1)->required(),
                         Select::make('outfit')->label('Versión del traje (opcional)')->native(false)->placeholder('Cualquiera')
                             ->options(fn (Get $get) => self::outfitOptions($get('character_id'), $get('outfit')))
