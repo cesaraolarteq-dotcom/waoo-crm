@@ -107,8 +107,9 @@ class QuickBooking extends Page
                     ->schema([
                         Select::make('price_version_id')->label('Para')->native(false)->required()->live()
                             ->options(fn (Get $get) => EventResource::configurablePrices($get('../../price_version_ids') ?? [])),
+                        EventResource::audienceFilter(),
                         Select::make('character_id')->label('Personaje')->native(false)->required()->searchable()
-                            ->options(fn (Get $get) => EventResource::characterOptions($get('price_version_id')))
+                            ->options(fn (Get $get) => EventResource::characterOptions($get('price_version_id'), $get('audience_filter'), $get('character_id')))
                             ->live()->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set, '../../')),
                         TextInput::make('quantity')->label('Cuántos')->integer()->minValue(1)->maxValue(20)->default(1)->required()
                             ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set, '../../')),
