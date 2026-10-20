@@ -10,7 +10,7 @@ final class IssueTipGrant {
         $actor=TipGuard::owner($actor);$d=TipGuard::input($input,['expected_event_version'=>'required|integer|min:1','financial_revision_id'=>'required|integer|min:1','locale'=>'required|in:es,en']);
         foreach(['expected_event_version','financial_revision_id'] as $v)$d[$v]=(int)$d[$v];
         return DB::transaction(function()use($actor,$eventId,$d,$key){
-            TipGuard::owner($actor);[$e,$f,$sha]=TipGuard::source($eventId);$scope='owner:'.$actor->id.':event:'.$eventId.':tip-grant';$hash=MutationKey::hash($d);
+            User::whereKey($actor->id)->lockForUpdate()->firstOrFail();TipGuard::owner($actor,true);[$e,$f,$sha]=TipGuard::source($eventId);$scope='owner:'.$actor->id.':event:'.$eventId.':tip-grant';$hash=MutationKey::hash($d);
             if($r=TipGuard::receipt($scope,$key,$hash)){[$g]=TipGuard::grant((int)$r->result_id);return $this->envelope($g);}
             RecordWriteRejected::unless($e->version===$d['expected_event_version']&&$f->id===$d['financial_revision_id'],409,'La fiesta o sus importes cambiaron.');
             $token=TipGuard::token();$g=TipGrant::create(['event_id'=>$eventId,'customer_id'=>$e->customer_id,'financial_revision_id'=>$f->id,'snapshot_sha256'=>$sha,'total_cents'=>$f->total_cents,
