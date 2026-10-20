@@ -929,7 +929,7 @@
       "backend": "be24d10",
       "ui": false,
       "reviewed": false,
-      "merged": false,
+      "merged": true,
       "accepted": false,
       "scope": "Revisión y actualización explícita de pagos de fiestas HoneyBook confirmadas/pasadas conocidas; historial inmutable y capacidad original intactos. Sin cambio de sistema ni recibos bancarios ficticios.",
       "verification": "Final PHP source be24d10:59 tests/458 assertions PASS,2:32.406,107MB,PHP8.3.35/MariaDB11.8. Two-owner race, old RR retry, audit rollback and real concurrent source-head read; PHP lint/Composer/diff pass. Earlier wide140 had one new CSRF fixture failure, corrected and verified in final59. No full-suite/remote-CI/browser/live claim.",
@@ -939,11 +939,12 @@
       "ui_source_review": {
        "head": "366055f (#91)",
        "verdict": "R1 correction approved by source inspection; environment/DST follow-ups addressed",
-       "evidence": "docs/reviews/CUTOVER-SCREENS-91.md",
-       "independent_ui_execution": false,
+       "evidence": "docs/reviews/CUTOVER-SCREENS-91.md; #91 UI tests included in frozen3eb70da final145/1043 MariaDB integration, no browser/remote-CI claim.",
+       "independent_ui_execution": true,
        "remote_ci_verified": false,
        "note": "Bounded members projection pending; transfer remains unavailable."
-      }
+      },
+      "merge_evidence": "Backend ancestry be24d10/a1e2911 verified in main4306975 (#91). C3 B and actual activation remain incomplete."
      },
      "cutover_evidence_c3_a": {
       "api": "docs/CUTOVER-EVIDENCE-API.md",
@@ -951,7 +952,7 @@
       "backend": "a1e2911",
       "ui": false,
       "reviewed": false,
-      "merged": false,
+      "merged": true,
       "accepted": false,
       "scope": "Original PDF cifrado, revisión privada versionada, cobertura completa del origen y snapshot inmutable del grupo; vencimiento por revisión real más antigua+240min. Sin puente financiero, traspaso, cobros ni envíos.",
       "verification": "Frozen PHP a1e2911:96 tests/720 assertions PASS,3:56.453,109MB,PHP8.3.35/MariaDB11.8. Carreras reales de revisión/preparación/nuevo miembro, C2/TIP/UI existentes, privacidad/integridad/rollback y rutas reales. PHP lint/Composer/diff pass. Sin batería completa/CI remoto/browser/Hostinger/SQLite.",
@@ -961,11 +962,12 @@
       "ui_source_review": {
        "head": "366055f (#91)",
        "verdict": "R1 correction approved by source inspection; environment/DST follow-ups addressed",
-       "evidence": "docs/reviews/CUTOVER-SCREENS-91.md",
-       "independent_ui_execution": false,
+       "evidence": "docs/reviews/CUTOVER-SCREENS-91.md; #91 UI tests included in frozen3eb70da final145/1043 MariaDB integration, no browser/remote-CI claim.",
+       "independent_ui_execution": true,
        "remote_ci_verified": false,
        "note": "Bounded members projection pending; transfer remains unavailable."
-      }
+      },
+      "merge_evidence": "Backend ancestry be24d10/a1e2911 verified in main4306975 (#91). C3 B and actual activation remain incomplete."
      },
      "opening_preparation_c3_b1": {
       "api": "docs/CUTOVER-OPENING-API.md",
@@ -992,6 +994,18 @@
       "scope": "Validador del acuerdo efectivo y asignación inmutable de Zelle verificado posterior al cambio; resumen de origen sin duplicar pagos. Sin escritor de activación/materialización/traspaso/reversión. Solo fixtures sintéticas crean ese estado futuro.",
       "verification": "Frozen6f4dd82:183 tests/1324 assertions PASS,7:23.631,131MB,PHP8.3.35/MariaDB11.8; lint/Composer/diff pass. Carreras reales y retry RR completo, SQL/audit rollback, tamper, webhook Stripe de prueba firmado y regresión de dinero/reservas/UI de main841dec6. Sin suite completa/CI remoto/browser/SQLite/Hostinger.",
       "note": "Subentrega B2 solamente: faltan adaptadores comunes Finance/MAIL/TIP/cliente, Stripe/refunds/reportes y activación atómica del grupo. Root backend permanece null; sin crédito de corte completo ni operación real."
+     },
+     "confirmed_agreement_tip_c3_b3a": {
+      "api": "docs/CONFIRMED-AGREEMENT-API.md",
+      "branch": "codex/confirmed-agreement-tips",
+      "backend": "3eb70da",
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "scope": "Base común nativa/origen confirmado, lectura privada de dueño, TIP de origen solo con autoridad efectiva y dinero conocido, y volver a copiar el enlace vigente sin renovación ni envío. Conserva hash nativo, precio original y separación de propinas.",
+      "verification": "Frozen3eb70da:145 tests/1043 assertions PASS,6:06.555,113MB,PHP8.3.35/MariaDB11.8. Carreras reales, privacidad/envelope/replay/rollback, hash nativo, webhook TIP firmado/retención tardía y regresión de dinero/correos/#91 UI. Lint/Composer/diff pass; no suite completa/browser/CI remoto/Hostinger.",
+      "note": "Sin nueva migración ni escritor de activación. Faltan portal principal/MAIL/Stripe-refunds/reportes y traspaso atómico; root backend sigue null. UI de Copiar enlace a cargo de Claude tras revisión."
      }
     }
    ]
