@@ -590,7 +590,7 @@
      "merged": false,
      "accepted": false,
      "api": "docs/QUICK-BOOKING-NIGHT-API.md; docs/SHORT-PORTAL-LINK-API.md",
-     "verification": "49 tests/569 assertions MariaDB PASS01:45.143, includes fixed legacy timeout fixture, Zelle no-reference two-owner race, original link compatibility, short-link revocation/TLS/rate/copy and portal/contract previews. Previous broader150/1432:149 passed, one legacy name-only contact fixture corrected then passed in49. Browser real Blade/script ES+EN mobile2/2 PASS2.740s. New combined regression running; no whole-suite/Actions/staging/owner acceptance claim.",
+     "verification": "Final combined263 tests/2362 assertions PASS09:01.582,135MB,PHP8.3.35/MariaDB11.8, application source528c524. Includes all QuickBooking/character/contact/deposit/Zelle, paid costume holds, quote portals, original/short link security/privacy/transport, contracts/client pages, previews and QuickStripeTerms. Prior single legacy timeout contact fixture fixed and included green. Real Blade/submit JS ES+EN mobile2/2 PASS2.740s; prior synthetic Google5/5. Not full repository/remote Actions/actual Google staging or owner acceptance.",
      "note": "Items2–9 local: explicit character slots/internal wardrobe, non-native time, one contact search and provisional identity, editable50%, optional Zelle with dedupe/stable day, encrypted12-char short link defaultOFF, large client preference cards. Google actualcrm-test remains blocked/unverified. Full Stripe48h/payment and immediate-signature flow remain pending, not counted here."
     }
    ]

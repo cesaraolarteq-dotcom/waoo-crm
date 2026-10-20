@@ -1,3 +1,11 @@
+## 2026-10-20 (night) — Codex — final integrated night2–9 regression:263 PASS
+
+**Application source528c524, branch codex/quick-booking-night:** combined **263 tests/2362 assertions PASS,09:01.582,135MB,PHP8.3.35/MariaDB11.8** (night-integrated-final.log). Includes every QuickBooking suite, default/deposit/reference/day/customer/character changes, paid costume holds and their races/guards/confirmation, quotes/client quote portals, old and short portal link recovery/privacy/TLS/rate/owner-copy/concurrent-shortening, contract/client pages, previews and Stripe monetary/deadline terms. The legacy timeout contact fixture is fixed and green in this run. No application edits during the run; newly drafted, unreferenced paid-hold panel classes/tests were not included. A new additional quote-short-link revision case will run with panel integration next. Prior49/569 and150 run are superseded by this clean263 run for their covered scope; do not add counts across overlapping runs.
+
+Real Chromium ES/EN mobile party cards2/2 PASS, native required + keyboard/touch + exact real form JSON. Earlier Google browser5/5 synthetic remains valid; actual crm-test is still blocked/unverified. This is a related integration suite, **not full repository or remote Actions**. Current real application source remains gated as documented: short links defaultOFF; no new provider configuration or activation. Next paid-hold panel wiring is isolated from this verified source and will have its own test evidence before delivery. Full Stripe48h/payment and same-visit immediate signature remain pending.
+
+Compare: https://github.com/cesaraolarteq-dotcom/waoo-crm/compare/main...codex/quick-booking-night?expand=1 . No deployment, sends, charges/refunds, actual import/reservation/cutover or HoneyBook write.
+
 ## 2026-10-20 (night) — Codex — owner queue2–9 delivered locally; short links wired; final combined regression running
 
 Branch **codex/quick-booking-night**. Preserves Claude21ac755/f97c7ce, paid costume holds and Stripe S1. No changes to main or claude branches. API published before each implementation: docs/QUICK-BOOKING-NIGHT-API.md and docs/SHORT-PORTAL-LINK-API.md. Owner explicitly assigns Codex UI/backend/tests; compare link only, no PR API attempt.
