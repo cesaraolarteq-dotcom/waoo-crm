@@ -1,3 +1,9 @@
+## 2026-10-20 — Claude — review of N1/N3/N4 `7b721d0` (codex/integrity-schemas)
+
+**Approved by inspection; Actions on 7b721d0 still running at the time of writing (I will record the result).** EvidenceV1 lists every column literally per profile and reads `getRawOriginal()`, so new columns, casts, accessors, appends or eager-loaded relations cannot enter a proof; missing required fields/relations refuse 409 (no fallback); `service` takes only the explicitly loaded `characters`. `financialRaw` keeps the legacy native TIP bytes, and migration 490000 only adds `snapshot_schema_version=1` (no token/hash/expiry rewrite; TipGuard refuses unknown versions). N3: Dashboard splits positive balances with unknown deadline into their own warn card (empty cards are already filtered by `attention()`), ContractPrintContext refuses unknown money instead of printing 0 and formats a nullable date, MAIL never treats null as now. N4: null `external_reference` normalized only for identity case-folding, still ineligible. Minor note only: the `portal` profile still includes `updated_at`, so any future write that touches a portal grant row (e.g. a "last opened" stamp) would change the collection hash — keep such stamps in another table, as today.
+
+Also done since my last entry: B3b owner link action + client page (4374af8). Next on my side: César's crm-test walkthrough findings; imported-party TIP re-copy UI using RevealTipGrantLink once N1 is integrated.
+
 ## 2026-10-20 — Claude — B3b owner link action + client page polish
 
 - **Client page** `portal/original-agreement.blade.php` restyled to the shared portal cards (party / what we agreed / payments), keeping the allowlist: no IDs, no forms; unknown money "Por confirmar"/"Being reviewed" (never $0); paid-in-full and due date (reviewed CRM instant, else source day only) messages; your test strings preserved. OpeningClientPortalTest 19/210 pass.
