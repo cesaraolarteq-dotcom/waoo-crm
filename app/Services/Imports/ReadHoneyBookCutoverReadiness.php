@@ -13,13 +13,21 @@ final class ReadHoneyBookCutoverReadiness
     }
 
     /** Called inside the same cohort protocol by preparation; never accept members from a browser. */
-    public function snapshot($links, $events, $grants): array
+    public function snapshot($links, $events, $grants, bool $includeRows = false): array
     {
-        $members = []; $missing = []; $unknowns = 0; $reviewed = 0; $documents = 0; $oldest = null;
+        $members = []; $rows = []; $missing = []; $unknowns = 0; $reviewed = 0; $documents = 0; $oldest = null;
         $totals = array_fill_keys(['total_cents', 'gross_received_cents', 'refund_cents', 'net_paid_cents', 'balance_cents', 'credit_cents'], 0);
         foreach ($links as $link) {
             $m = app(CutoverMember::class)->inspect($link, $events->get($link->event_id), $grants);
             $v = $m['view']; $missing = [...$missing, ...$v['missing']];
+            if ($includeRows) {
+                $event = $m['event'];
+                $rows[] = ['event_id' => $event->id, ...$event->only(['title', 'starts_at', 'ends_at', 'timezone', 'status', 'responsible_system']),
+                    'source' => array_intersect_key($v['source'], array_flip(['total_cents', 'net_paid_cents', 'balance_cents', 'funds_verified'])),
+                    'missing' => $v['missing'],
+                    'review' => $v['review'] === null ? null : array_intersect_key($v['review'], array_flip([
+                        'version', 'source_observed_at', 'expires_at', 'current', 'honeybook_automations_disabled', 'external_collections_retired']))];
+            }
             $reviewed += (int)($v['review']['current'] ?? false);
             $documents += (int)($m['document'] !== null && !in_array('document_integrity_invalid', $v['missing'], true));
             if ($v['source']['total_cents'] === null) $unknowns++;
@@ -52,6 +60,6 @@ final class ReadHoneyBookCutoverReadiness
                 'missing' => [...$missing, ...($last && !$integrity ? ['reconciliation_integrity_invalid'] : []), 'financial_bridge_not_implemented', 'transfer_not_implemented', ...(!$current ? ['reconciliation_required'] : [])]],
             'reconciliation' => $last ? ['id' => $last->id, 'cohort_sha256' => $last->cohort_sha256, 'source_observed_at' => $last->source_observed_at->toIso8601String(), 'expires_at' => $last->expires_at->toIso8601String(), 'current' => $current] : null,
             'sending_enabled' => false, 'transfer_available' => false];
-        return compact('view', 'payload', 'oldest', 'missing', 'members');
+        return compact('view', 'payload', 'oldest', 'missing', 'members', 'rows');
     }
 }

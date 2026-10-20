@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 final class TipController {
     public function issue(Request $r,int $event,IssueTipGrant $s){return response()->json($s->execute($r->user(),$event,$r->all(),(string)$r->header('Idempotency-Key')),201);}
     public function revoke(Request $r,int $grant,RevokeTipGrant $s){return response()->json($s->execute($r->user(),$grant,$r->all(),(string)$r->header('Idempotency-Key')));}
+    public function reveal(Request $r,int $grant,\App\Services\Tips\RevealTipGrantLink $s){return response()->json($s->execute($r->user(),$grant,$r->all(),(string)$r->header('Idempotency-Key')))->header('Cache-Control','no-store, private');}
     public function owner(Request $r,int $event,ReadEventTips $s){return response()->json($s->execute($r->user(),$event));}
     public function page(Request $r,ReadTipViewModel $s){
         TipGuard::transport($r);abort_if($r->user()!==null,403,'Abre el enlace como clienta en una sesión separada.');
