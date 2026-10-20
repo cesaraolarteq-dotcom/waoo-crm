@@ -86,8 +86,8 @@
   <a class="p-btn p-btn-quiet" href="{{ $vm['contract']['pdf_url'] }}" target="_blank" rel="noopener noreferrer">{{ $t('open_pdf') }}</a>
   <input type="hidden" name="presented_pdf_sha256" value="{{ $vm['contract']['sha256'] }}">
   <label class="p-field"><span>{{ $t('sign_name') }}</span><input name="signer_name" autocomplete="name" required class="p-sign"></label>
-  <label class="p-check"><input type="checkbox" name="consent" value="1" required> <span>{{ $vm['consent']['text'] ?? $t('consent') }}@if ($vm['lang'] === 'es' && isset($vm['consent'])) <small class="p-small">({{ $t('consent') }})</small>@endif</span></label>
-  <label class="p-check"><input type="checkbox" name="intent_to_sign" value="1" required> {{ $t('intent') }}</label>
+  <label class="p-check"><input type="checkbox" name="consent" value="1" required> <span>{{ $vm['consent']['text'] ?? $t('consent') }}</span></label>
+  <label class="p-check"><input type="checkbox" name="intent_to_sign" value="1" required> {{ $vm['consent']['intent'] ?? $t('intent') }}</label>
   <p class="p-test" id="sign-error" role="alert" hidden></p>
   <button class="p-btn p-btn-pink" type="submit">{{ $t('sign') }}</button>
 </form>

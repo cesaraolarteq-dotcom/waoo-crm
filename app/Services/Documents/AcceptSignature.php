@@ -19,7 +19,7 @@ final class AcceptSignature
         Sandbox::require('sandbox_documents');
         if ($request->adminAuthenticated) throw new AuthorizationException('Usa el acceso de la clienta; una sesión administrativa no puede firmar por ella.');
         $data = RecordInput::validate($input, ['expected_version' => 'required|integer|min:1', 'presented_pdf_sha256' => ['required','string','regex:/^[a-f0-9]{64}$/'],
-            'signer_name' => 'required|string|min:2|max:255', 'consent' => 'required|accepted', 'intent_to_sign' => 'required|accepted', 'consent_version' => ['required', Rule::in([InHouseSignatureProvider::CONSENT_VERSION])]]);
+            'signer_name' => 'required|string|min:2|max:255', 'consent' => 'required|accepted', 'intent_to_sign' => 'required|accepted', 'consent_version' => ['required', Rule::in(['esign-consent-v1', InHouseSignatureProvider::CONSENT_VERSION, 'esign-consent-v2-2026-10-20-es'])]]);
         $data['expected_version'] = (int) $data['expected_version']; $data['consent'] = true; $data['intent_to_sign'] = true;
         $scope = "customer:{$client->customerId}:contract:{$contractId}:sign"; $hash = MutationKey::hash($data);
         return DB::transaction(function () use ($client, $contractId, $data, $request, $key, $scope, $hash) {
@@ -27,6 +27,7 @@ final class AcceptSignature
             $event = Event::whereKey($client->eventId)->lockForUpdate()->firstOrFail();
             $contract = Contract::whereKey($contractId)->where('event_id', $client->eventId)->where('signer_customer_id', $client->customerId)->lockForUpdate()->firstOrFail();
             if ($saved = MutationKey::find($scope, $key, $hash)) return SignatureEvidence::findOrFail($saved->result_id);
+            InHouseSignatureProvider::consentForVersion($data['consent_version']);
             CreateContract::assertCurrent($event, \App\Models\FinancialRevision::findOrFail($contract->financial_revision_id));
             \App\Services\Booking\ClientDetailsState::assertApproved($contract->event_id, $contract->financial_revision_id);
             RecordWriteRejected::unless($contract->state === 'issued' && $contract->version === $data['expected_version'] && hash_equals($contract->presented_pdf_sha256, $data['presented_pdf_sha256']), 409, 'El documento cambió o ya no admite esta firma. Revisa la versión vigente.');

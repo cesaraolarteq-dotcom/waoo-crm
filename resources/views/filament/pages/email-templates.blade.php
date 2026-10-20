@@ -1,7 +1,7 @@
 <x-filament-panels::page>
     <x-filament::section>
         <x-slot name="heading">Cómo funcionan</x-slot>
-        <p class="wmoney-p">Cada correo lleva un solo botón y va en el idioma de la clienta. Como muchos correos terminan en spam, lo importante también se manda por mensaje de texto. Para cambiar un texto, díselo a Claude; los cambios se aprueban antes de activarse.</p>
+        <p class="wmoney-p">Cada correo lleva un solo botón y va en el idioma de la clienta. Como muchos correos terminan en spam, los mensajes de texto requieren su propia activación. Para cambiar un texto, díselo a Claude; los cambios se aprueban antes de activarse.</p>
     </x-filament::section>
 
     @if ($ready = $this->readiness())
@@ -28,7 +28,7 @@
         <x-filament::section collapsible collapsed>
             <x-slot name="heading">{{ $t->subject_es }}</x-slot>
             <x-slot name="description">{{ $t->when }}</x-slot>
-            <x-slot name="afterHeader"><x-filament::badge color="warning">Borrador · no se envía</x-filament::badge></x-slot>
+            <x-slot name="afterHeader"><x-filament::badge color="success">Texto aprobado</x-filament::badge></x-slot>
             <div x-data="{ lang: 'es' }">
                 <p class="wmoney-p">Asunto en inglés: {{ $t->subject_en }}</p>
                 <div style="display:flex;gap:8px;margin:10px 0">

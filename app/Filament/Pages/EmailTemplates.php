@@ -20,7 +20,7 @@ class EmailTemplates extends Page
 
     public function getSubheading(): ?string
     {
-        return 'Borradores para revisar. Todavía no se envía ningún correo. Los datos de la vista previa son de ejemplo.';
+        return 'Textos aprobados por César. Los envíos requieren activación; los datos de la vista previa son de ejemplo.';
     }
 
     public function templates(): array

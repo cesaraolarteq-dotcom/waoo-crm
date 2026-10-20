@@ -70,10 +70,9 @@ class MailOccurrencesTest extends TestCase
         $input = ['financial_revision_id' => $entry->financial_revision_id, 'amount_cents' => 100, 'reference' => 'claim-only'];
         $notice = app(SubmitZelleNotice::class)->execute($context, $input, $key);
         app(SubmitZelleNotice::class)->execute($context, $input, $key);
-        $this->assertDatabaseCount('ledger_entries', 1); $this->assertDatabaseCount('mail_occurrences', 2);
-        $claim = MailOccurrence::where('key', 'zelle_notice_pending')->sole();
-        $this->assertSame($notice->id, $claim->locator['notice_id']);
-        $this->assertSame($grant->id, $claim->locator['portal_grant_id']);
+        $this->assertDatabaseCount('ledger_entries', 1); $this->assertDatabaseCount('mail_occurrences', 1);
+        $this->assertDatabaseCount('zelle_notices', 1);
+        $this->assertFalse(MailOccurrence::where('key', 'zelle_notice_pending')->exists());
     }
     public function test_quick_booking_details_hook_pins_grant_and_does_not_duplicate_on_new_link(): void
     {
@@ -106,8 +105,8 @@ class MailOccurrencesTest extends TestCase
         if ($linkBefore) $issueLink();
         app(IssueContract::class)->execute($this->owner, $contract->id, ['expected_version' => 1], (string) Str::uuid());
         if (!$linkBefore) { $this->assertDatabaseCount('mail_occurrences', 0); $issueLink(); }
-        $this->assertSame('contract_ready', MailOccurrence::sole()->key);
-        $this->assertSame($contract->id, MailOccurrence::sole()->locator['contract_id']);
+        $this->assertDatabaseCount('mail_occurrences', 0);
+        $this->assertSame('issued', $contract->fresh()->state);
         $this->assertDatabaseCount('signature_evidence', 0);
     }
     public function test_disabled_capture_has_no_side_effects_or_later_backfill(): void
