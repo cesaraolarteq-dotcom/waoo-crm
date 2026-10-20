@@ -80,11 +80,14 @@ class Dashboard extends BaseDashboard
             'text' => 'Falta el servicio, el personaje o el servicio no está activo en el catálogo.', 'items' => $incomplete->map($link)->all()];
 
         if (FinanceGate::enabled()) {
-            $dueSoon = (clone $upcoming)->whereIn('id', FinancialRevision::query()->select('event_id'))->get()
-                ->map(fn ($e) => [$e, app(FinanceSummary::class)->forEvent($e)])
-                ->filter(fn ($x) => $x[1]['balance_cents'] > 0 && $x[1]['financial_revision']->balance_due_at->lessThan($now->copy()->addDays(7)));
+            $balances = (clone $upcoming)->whereIn('id', FinancialRevision::query()->select('event_id'))->get()
+                ->map(fn ($e) => [$e, app(FinanceSummary::class)->forEvent($e)]);
+            $dueSoon = $balances->filter(fn ($x) => $x[1]['balance_cents'] > 0 && $x[1]['financial_revision']?->balance_due_at?->lessThan($now->copy()->addDays(7)));
             $cards[] = ['tone' => 'info', 'title' => 'Saldos que vencen esta semana', 'text' => 'Recuérdale a la clienta; el portal le muestra cómo pagar.',
                 'items' => $dueSoon->map(fn ($x) => ['label' => $x[0]->title.' · saldo '.Labels::money($x[1]['balance_cents']).' · vence '.Labels::when($x[1]['financial_revision']->balance_due_at), 'url' => EventResource::getUrl('money', ['record' => $x[0]])])->values()->all()];
+            $unknownDue = $balances->filter(fn ($x) => $x[1]['balance_cents'] > 0 && $x[1]['financial_revision']?->balance_due_at === null);
+            $cards[] = ['tone' => 'warn', 'title' => 'Saldo con vencimiento por confirmar', 'text' => 'Revisa la fecha antes de programar un recordatorio.',
+                'items' => $unknownDue->map(fn ($x) => ['label' => $x[0]->title.' · saldo '.Labels::money($x[1]['balance_cents']), 'url' => EventResource::getUrl('money', ['record' => $x[0]])])->values()->all()];
             $exceptions = DB::table('payment_exceptions')->where('state', 'open')->get();
             $cards[] = ['tone' => 'bad', 'title' => 'Pagos que necesitan revisión', 'text' => 'Llegó dinero pero algo no cuadró (por ejemplo, no se pudo apartar el staff).',
                 'items' => $exceptions->map(fn ($x) => ['label' => (Event::whereKey($x->event_id)->value('title') ?? 'Evento').' · '.(json_decode($x->context, true)['message'] ?? $x->kind), 'url' => EventResource::getUrl('money', ['record' => $x->event_id])])->all()];

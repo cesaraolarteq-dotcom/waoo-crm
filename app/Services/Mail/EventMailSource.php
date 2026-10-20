@@ -27,6 +27,7 @@ final class EventMailSource
     // Thank-you: owner 2026-10-18, next Houston day at 10:00 am.
     public static function due(string $key,Event $e,FinancialRevision $f):CarbonImmutable
     {
+        if($key==='balance_reminder'&&$f->balance_due_at===null)ApprovedMail::fail('balance_due_date_required');
         return match($key){'balance_reminder'=>$f->balance_due_at->subHours(24),
             'week_before'=>$e->starts_at->setTimezone('America/Chicago')->subDays(7)->utc(),
             'thank_you_review'=>$e->ends_at->setTimezone('America/Chicago')->addDay()->setTime(10,0)->utc(),default=>throw new \InvalidArgumentException('Unsupported reminder.')};
@@ -35,13 +36,14 @@ final class EventMailSource
     {
         [$e,$c,$f,$g,$net]=$source;$locale=$c->locale;if(!in_array($locale,['es','en'],true))ApprovedMail::fail('missing_recipient_locale');
         if($key==='balance_reminder'&&!in_array('checkout.create',$g->scopes,true))ApprovedMail::fail('payment_link_scope_required');
-        $balance=max(0,$f->total_cents-$net);$money=fn(int $v)=>'$'.number_format(intdiv($v,100),0,'.',',').'.'.str_pad((string)($v%100),2,'0',STR_PAD_LEFT);
+        $balance=max(0,$f->total_cents-$net);if($balance>0&&$f->balance_due_at===null)ApprovedMail::fail('balance_due_date_required');
+        $money=fn(int $v)=>'$'.number_format(intdiv($v,100),0,'.',',').'.'.str_pad((string)($v%100),2,'0',STR_PAD_LEFT);
         $date=fn($d)=>MailDates::full($d,$locale);
         $link=Sandbox::origin().'/portal#token='.PortalTokenVault::open($g);
         $vars=['first_name'=>explode(' ',$c->name)[0],'event_date'=>$date($e->starts_at),'subject_date'=>MailDates::subject($e->starts_at,$locale),'address'=>$e->address,'package'=>implode(' + ',array_column($f->lines_snapshot,'name')),
             'package_price'=>$money($f->subtotal_cents),'travel_fee'=>$money($f->travel_fee_cents),'subtotal'=>$money($f->subtotal_cents+$f->travel_fee_cents),'discount_total'=>$money($f->discount_cents),
             'total'=>$money($f->total_cents),'deposit'=>$money($f->deposit_target_cents),'paid'=>$money(max(0,$net)),'balance'=>$money($balance),'has_balance'=>$balance>0,
-            'due'=>MailDates::due($f->balance_due_at,$locale),
+            'due'=>$f->balance_due_at===null?'':MailDates::due($f->balance_due_at,$locale),
             'balance_due'=>$balance>0?($locale==='es'?' · vence ':' · due ').$date($f->balance_due_at):'',
             'link'=>$link,'review_link'=>config('waoo.mail_review_url')];
         $totals=[['label'=>$locale==='es'?'Paquete':'Package','amount'=>$vars['package_price']],['label'=>$locale==='es'?'Costo de transporte':'Travel fee','amount'=>$vars['travel_fee']]];

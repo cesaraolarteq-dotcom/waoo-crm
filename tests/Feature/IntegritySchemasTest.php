@@ -176,4 +176,59 @@ class IntegritySchemasTest extends TestCase
             catch (RecordWriteRejected $ex) { $this->assertSame(409, $ex->status); }
         }
     }
+    public function test_missing_native_due_is_visible_to_owner_and_refuses_new_contract_or_balance_reminder(): void
+    {
+        [$e, $f] = $this->native(); DB::table('financial_revisions')->where('id', $f->id)->update(['balance_due_at' => null]); $f = $f->fresh();
+        $payments = app(\App\Services\Documents\ContractPrintContext::class)->paymentSnapshot($e);
+        $this->assertNull($payments['balance_due_date']); $this->assertSame('$499.99', $payments['balance_amount']);
+        try { \App\Services\Documents\CreateContract::assertCurrent($e, $f); $this->fail('Native document accepted an undefined deadline.'); }
+        catch (RecordWriteRejected $ex) { $this->assertSame(409, $ex->status); }
+        try { \App\Services\Mail\EventMailSource::due('balance_reminder', $e, $f); $this->fail('Reminder invented a date.'); }
+        catch (\Illuminate\Validation\ValidationException $ex) { $this->assertContains('balance_due_date_required', $ex->errors()['mail']); }
+        foreach (['due', 'full', 'subject'] as $method) {
+            try { \App\Services\Mail\MailDates::$method(null, 'es'); $this->fail('Null was interpreted as now.'); }
+            catch (\Illuminate\Validation\ValidationException $ex) { $this->assertContains('date_required', $ex->errors()['mail']); }
+        }
+        $this->travelTo($e->starts_at->subDay());
+        \Livewire\Livewire::test(\App\Filament\Pages\Dashboard::class)->assertSee('Saldo con vencimiento por confirmar')->assertSee('Cumpleaños de Mateo');
+        $this->assertDatabaseCount('contracts', 0); $this->assertDatabaseCount('outbound_messages', 0);
+    }
+    public function test_paid_full_without_due_skips_mail_before_any_date_calculation(): void
+    {
+        [$e, $f] = $this->native();
+        app(RecordZellePayment::class)->execute($this->owner, $e->id, ['financial_revision_id' => $f->id, 'amount_cents' => $f->total_cents - $f->deposit_target_cents,
+            'currency' => 'USD', 'reference' => 'liquidacion-mateo', 'received_at' => now()->toIso8601String(), 'verified_received' => true], (string)Str::uuid());
+        DB::table('financial_revisions')->where('id', $f->id)->update(['balance_due_at' => null]);
+        config(['waoo.sandbox_mail' => false]);
+        $g = app(\App\Services\Portal\IssuePortalGrant::class)->execute($this->owner, $e->id, ['customer_id' => $e->customer_id,
+            'expires_at' => now()->addDays(2)->toIso8601String(), 'scopes' => ['payments.read', 'checkout.create']]);
+        config(['waoo.sandbox_mail' => true]);
+        $r = app(\App\Services\Mail\PlanEventMail::class)->execute($this->owner, $e->id, ['expected_event_version' => $e->version,
+            'expected_customer_version' => $e->customer->version, 'portal_grant_id' => $g->id, 'templates' => ['balance_reminder']], (string)Str::uuid());
+        $this->assertSame([], $r['message_ids']); $this->assertSame([['template' => 'balance_reminder', 'reason' => 'no_balance']], $r['skipped']);
+        $payments = app(\App\Services\Documents\ContractPrintContext::class)->paymentSnapshot($e);
+        $this->assertNull($payments['balance_due_date']); $this->assertSame('$0.00', $payments['balance_amount']);
+        $this->assertDatabaseCount('outbound_messages', 0); Mail::assertNothingSent(); Http::assertNothingSent();
+    }
+    public function test_unknown_principal_money_cannot_be_formatted_as_zero_in_document_context(): void
+    {
+        $id = $this->member(); $this->seedFutureActivation($this->prepareOpeningSet());
+        LedgerEntry::create(['event_id' => $id, 'financial_revision_id' => FinancialRevision::sole()->id, 'environment' => 'test', 'kind' => 'receipt', 'method' => 'stripe',
+            'amount_cents' => 2000, 'currency' => 'USD', 'received_at' => now(), 'external_reference' => 'pi_maria', 'external_identity_key' => 'stripe:test:acct_waoo:pi_maria', 'source_type' => 'verified_stripe_webhook']);
+        try { app(\App\Services\Documents\ContractPrintContext::class)->paymentSnapshot(Event::findOrFail($id)); $this->fail('Unknown money rendered as a zero balance.'); }
+        catch (RecordWriteRejected $ex) { $this->assertSame(409, $ex->status); }
+        $this->assertDatabaseCount('ledger_entries', 1); $this->assertDatabaseCount('contracts', 0);
+    }
+    public function test_null_reference_is_ineligible_without_deprecation_or_loss_of_the_verified_receipt(): void
+    {
+        $id = $this->member(); $this->seedFutureActivation($this->prepareOpeningSet());
+        app(RecordZellePayment::class)->execute($this->owner, $id, $this->sourcePaymentInput($id), (string)Str::uuid()); $entry = LedgerEntry::sole();
+        $entry->setRawAttributes([...$entry->getRawOriginal(), 'external_reference' => null], true);
+        set_error_handler(function ($severity, $message, $file, $line) { throw new \ErrorException($message, 0, $severity, $file, $line); }, E_DEPRECATED);
+        try {
+            $proof = DB::transaction(fn () => OpeningReceiptProof::inspect($entry, OpeningReceiptContext::current(Event::whereKey($id)->lockForUpdate()->firstOrFail())));
+            $this->assertFalse($proof['eligible']); $this->assertContains('receipt_identity_invalid', $proof['issue_codes']);
+        } finally { restore_error_handler(); }
+        $this->assertDatabaseCount('ledger_entries', 1); $this->assertDatabaseCount('opening_receipt_allocations', 1);
+    }
 }
