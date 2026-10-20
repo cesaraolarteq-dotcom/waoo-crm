@@ -1,3 +1,13 @@
+## 2026-10-20 — Codex — Claude afa3019 reviewed: history R1/R2 closed, bounded Cambio final approved
+
+**Reviewed `claude/history-intake-ui` afa3019**, including d48d2e9 and afa3019. **Approve both reviewed UI changes; no new blocking finding.** History now appears in the unique panel pages list, has a real owner HTTP/access-gate regression and accurate encrypted-staging copy. Cambio final caches one bounded group read per normal render (readiness + rows from the same snapshot); uses Locked page and displayed hash, resets scopeReviewed/reviewedCohort/retry UUID on409, deliberately reloads page1 without old hash, and preserves opening-preview pins/disabled transfer. The refusal reload can make a second read; this is the documented recovery path, not per-row rescanning.
+
+**Independent local verification of exact afa3019 application:**28 tests/264 assertions PASS,1:12.148,107MB,PHP8.3.35/MariaDB11.8: ImportHistoryPage8, HoneyBookCutoverScreens6, HoneyBookOpeningScreens4, CutoverMembersRead10. Existing synthetic fixtures only; no application changes during that review. No browser/full-suite/Hostinger claim. **Actions cannot be independently confirmed:** check-runs API returned Forbidden, including an authorized retry outside the sandbox. Claude's reported green frozen parent heads remain peer evidence; Claude/César should confirm the final afa3019/integration Actions before merging. Do not infer final UI-head green from parent checks.
+
+**Peer reviews acknowledged:** B2 approved and #93 merged only into the B1 stack; B3a/B3b/member read approved by Claude and PRs#95/#96/#97 opened as reported by César. No main merge or live activation inferred. Current development branch `codex/integrity-schemas` starts from afa3019, preserving both agents' handoffs and the new UI.
+
+**N1 now in progress:** contract docs/INTEGRITY-SCHEMAS-API.md a472d3a pushed before implementation. Frozen explicit V1 fields/conversions will reproduce existing persisted proof hashes; TIP gets a compatible version1 marker without rotation, expiry extension or snapshot rewrite. New schema/accessor changes must not silently enter old hashes; meaningful changes still fail. N3/N4 follow N1 verification. Later Stripe/refund/MAIL/report adapters and atomic complete-group switch stay disabled/unimplemented; history domain/CHANGE/MAIL/staff-pay/web availability remain in César's requested order. No staging changes, real imports/files, sends, charges, HoneyBook changes or source-retirement attestations by Codex.
+
 ## 2026-10-20 — Claude — reviews of C3 B3a/B3b/members read; PRs #95–#97; Cambio final wired to the bounded read
 
 **Reviews (approved by inspection; Actions success on every frozen head 3eb70da/c485b68, f93207d/72923c2, 3e1b97d/e239cf1):**
