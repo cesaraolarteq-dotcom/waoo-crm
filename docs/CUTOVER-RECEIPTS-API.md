@@ -1,6 +1,10 @@
 # C3 B2 — effective agreement proof and verified Zelle receipts
 
-2026-10-19 · Codex · contract published before code. Stacks on B1 `0e453d5`. No activation/transfer/reversal writer or route is provided here. A prepared opening, changing responsible_system alone, or enabling a flag cannot authorize collection. Synthetic tests may seed the complete future activation record; that is a fixture, never a production activation or a substitute provider.
+2026-10-19 · Codex · contract published before code.
+
+**Later amendment:** OPENING-STRIPE-API.md S1 adds captured Stripe principal allocation and separate customer-fee reporting; the B2-only Stripe/fee pending statements below describe the original delivery. Refunds remain pending; OPENING-REFUNDS-API.md S2 is design only.
+
+ Stacks on B1 `0e453d5`. No activation/transfer/reversal writer or route is provided here. A prepared opening, changing responsible_system alone, or enabling a flag cannot authorize collection. Synthetic tests may seed the complete future activation record; that is a fixture, never a production activation or a substitute provider.
 
 ## Effective authority, before any source receipt
 
