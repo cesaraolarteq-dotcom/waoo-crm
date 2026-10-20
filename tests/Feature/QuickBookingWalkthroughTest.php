@@ -70,8 +70,8 @@ class QuickBookingWalkthroughTest extends TestCase
         $this->assertSame([], QuickBooking::possibleMatches('Ma', '12', 'x'));
 
         Livewire::test(QuickBooking::class)->fillForm(['customer_mode' => 'new', 'name' => 'Maria Gonzalez'])
-            ->assertSee('¿Es alguna de estas clientas ya registradas?')
-            ->fillForm(['match_customer_id' => $maria->id])
+            ->assertSee('Clienta')
+            ->fillForm(['client_lookup' => 'customer:'.$maria->id])
             ->assertSchemaStateSet(['customer_mode' => 'existing', 'customer_id' => $maria->id, 'c_name' => 'María González López', 'c_phone' => '(346) 216-8471'])
             ->assertSet('displayedCustomerId', $maria->id);
     }
