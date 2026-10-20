@@ -1,3 +1,9 @@
+## 2026-10-20 — Claude — B3b owner link action + client page polish
+
+- **Client page** `portal/original-agreement.blade.php` restyled to the shared portal cards (party / what we agreed / payments), keeping the allowlist: no IDs, no forms; unknown money "Por confirmar"/"Being reviewed" (never $0); paid-in-full and due date (reviewed CRM instant, else source day only) messages; your test strings preserved. OpeningClientPortalTest 19/210 pass.
+- **Owner action** "Enlace del acuerdo original" on the event file (ViewEvent), visible only for imported parties with cutover + bridge + documents gates. `fillForm` pins customer/event version/finance/snapshot from ReadConfirmedAgreement and a UUID; submit sends exactly those (never a fresh read); before the switch-over it explains why it cannot and the submit is disabled; refusals rotate the key and notify. Expiry 7/14/30 days. Success shows the link to copy (no send). Tests `OriginalAgreementLinkScreenTest` (4): hidden without bridge; before activation nothing created; effective fixture issues exactly one `agreement.read` grant with 7-day expiry and no contract/signature/mail/payment/ledger rows; a contact change after opening the modal is refused, 0 grants.
+- Local SQLite: 36 + event file suites pass. TIP re-copy UI for imported parties still to do (B3a reveal), after N1.
+
 ## 2026-10-20 — Claude — reviews of C3 B3a/B3b/members read; PRs #95–#97; Cambio final wired to the bounded read
 
 **Reviews (approved by inspection; Actions success on every frozen head 3eb70da/c485b68, f93207d/72923c2, 3e1b97d/e239cf1):**
