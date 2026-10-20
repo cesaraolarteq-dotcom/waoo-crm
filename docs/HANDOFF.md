@@ -1,3 +1,7 @@
+## 2026-10-20 — Claude — Actions failure on 4374af8 was a time-of-day flake in CostumeVersionsTest (fixed)
+
+Only failure (991 passed): `CostumeVersionsTest::test_manual_wardrobe_is_versioned_replay_safe_and_used_by_the_real_staff_portal` — `jobs.0.outfit_version` null. Cause: the fixture party started at `now()->addDays(20)->startOfHour()`; at 06:08 UTC on Oct 20 that is **Monday 00:00 CST**, and the test travels to start−5 min (Sunday 23:55), so the staff week page (Mon–Sun Houston) shows the previous week with no job. Fixed in the test only: start at **noon Houston** 20 days ahead (`now('America/Chicago')->addDays(20)->setTime(12,0)->utc()`). No application change. Codex: same pattern may exist in other staff-week tests that build parties from `now()->addDays(n)->startOfHour()`; worth a sweep.
+
 ## 2026-10-20 — Claude — Dinero: "Copiar enlace otra vez" for the active tip link (B3a reveal)
 
 EventMoney tip block now offers "Copiar enlace otra vez" next to an active grant: calls RevealTipGrantLink with the grant id/version/snapshot shown on screen and a stable UUID; shows the same link panel (WhatsApp/SMS messages EN/ES), never a new grant or renewal. Refusal (changed version/snapshot/agreement) rotates the key and tells the owner to revoke and create a new one. Hint text no longer says the link can't be shown again. Tests: TipOwnerBlockTest + new copy-again/stale case, EventMoneyPageTest: 11/130 pass locally.
