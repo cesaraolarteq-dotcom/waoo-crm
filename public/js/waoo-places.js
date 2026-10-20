@@ -33,8 +33,11 @@
       li.addEventListener('mousedown', function (e) { e.preventDefault(); pick(input, p); });
       box.appendChild(li); items.push(li);
     });
-    input.parentElement.style.position = 'relative';
-    input.parentElement.appendChild(box);
+    // Filament's input wrapper clips overflow, so the list lives on <body>, placed under the input.
+    var r = input.getBoundingClientRect();
+    box.style.position = 'absolute'; box.style.left = (r.left + window.scrollX) + 'px'; box.style.top = (r.bottom + window.scrollY) + 'px';
+    box.style.width = r.width + 'px'; box.style.right = 'auto';
+    document.body.appendChild(box);
   }
 
   function pick(input, prediction) {
