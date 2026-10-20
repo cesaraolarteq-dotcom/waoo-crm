@@ -1,6 +1,6 @@
 {
  "_about": "Temporary owner progress view (prototype tab 'Avance del proyecto'). Phases = docs/PROJECT_PLAN.md §18. Each agent updates its own evidence; Claude renders. Rules: a design/contract doc counts 0; a part counts only with a tested commit; review, merge to main and owner acceptance are separate steps. Phase % = sum(weight × stage score) / sum(weight). 'design' = preview/contract/plan evidence: shown as a chip, earns 0%.",
- "updated": "2026-10-19",
+ "updated": "2026-10-20",
  "stage_scores": {
   "backend": 0.35,
   "ui": 0.35,
@@ -935,7 +935,15 @@
       "verification": "Final PHP source be24d10:59 tests/458 assertions PASS,2:32.406,107MB,PHP8.3.35/MariaDB11.8. Two-owner race, old RR retry, audit rollback and real concurrent source-head read; PHP lint/Composer/diff pass. Earlier wide140 had one new CSRF fixture failure, corrected and verified in final59. No full-suite/remote-CI/browser/live claim.",
       "note": "C2 es una entrega parcial: C3, puente financiero, documentos/conciliación y traspaso del grupo siguen pendientes. No se eleva el porcentaje de todo el corte por esta entrega.",
       "backend_reviewed": true,
-      "backend_review_evidence": "Claude4b1c967 + owner-relayed approval,2026-10-19. UI#91 reviewed separately; R1 pending at0c7c9c1. No main merge/activation inferred."
+      "backend_review_evidence": "Claude4b1c967 + owner-relayed approval,2026-10-19. No main merge/activation inferred.",
+      "ui_source_review": {
+       "head": "366055f (#91)",
+       "verdict": "R1 correction approved by source inspection; environment/DST follow-ups addressed",
+       "evidence": "docs/reviews/CUTOVER-SCREENS-91.md",
+       "independent_ui_execution": false,
+       "remote_ci_verified": false,
+       "note": "Bounded members projection pending; transfer remains unavailable."
+      }
      },
      "cutover_evidence_c3_a": {
       "api": "docs/CUTOVER-EVIDENCE-API.md",
@@ -949,7 +957,15 @@
       "verification": "Frozen PHP a1e2911:96 tests/720 assertions PASS,3:56.453,109MB,PHP8.3.35/MariaDB11.8. Carreras reales de revisión/preparación/nuevo miembro, C2/TIP/UI existentes, privacidad/integridad/rollback y rutas reales. PHP lint/Composer/diff pass. Sin batería completa/CI remoto/browser/Hostinger/SQLite.",
       "note": "readiness.ready y transfer_available siguen false. Sólo preparación; C3 B financiero y activación pendientes. Fuente sintética, no importación real.",
       "backend_reviewed": true,
-      "backend_review_evidence": "Claude4b1c967 + owner-relayed approval,2026-10-19. UI#91 reviewed separately; R1 pending at0c7c9c1. No main merge/activation inferred."
+      "backend_review_evidence": "Claude4b1c967 + owner-relayed approval,2026-10-19. No main merge/activation inferred.",
+      "ui_source_review": {
+       "head": "366055f (#91)",
+       "verdict": "R1 correction approved by source inspection; environment/DST follow-ups addressed",
+       "evidence": "docs/reviews/CUTOVER-SCREENS-91.md",
+       "independent_ui_execution": false,
+       "remote_ci_verified": false,
+       "note": "Bounded members projection pending; transfer remains unavailable."
+      }
      },
      "opening_preparation_c3_b1": {
       "api": "docs/CUTOVER-OPENING-API.md",
@@ -961,7 +977,21 @@
       "accepted": false,
       "scope": "Aperturas de origen cifradas/inmutables para el grupo completo; total/gross/refunds/net/saldo preservados, versión real y0 venta/caja CRM nueva. Solo preparación, sin autoridad efectiva ni traspaso.",
       "verification": "107 tests/632 assertions PASS,3:47.122,97MB,PHP8.3.35/MariaDB11.8; finales PHP0e453d5. Carreras reales, integridad, vencimiento, rollback, reportes/guardas y regresión C2/C3/importación. Lint/Composer/diff pass; no suite completa/CI remoto/browser.",
-      "note": "Subentrega B1: faltan asignación efectiva de recibos, adaptadores Finance/MAIL/TIP/portal/reportes y activación atómica. Raíz backend sigue null; sin crédito al corte completo."
+      "note": "Subentrega B1: faltan asignación efectiva de recibos, adaptadores Finance/MAIL/TIP/portal/reportes y activación atómica. Raíz backend sigue null; sin crédito al corte completo.",
+      "backend_reviewed": true,
+      "backend_review_evidence": "Claude366055f,2026-10-19 Chicago: B1 0e453d5 approved by inspection, PR#92 opened. No merge/activation inferred."
+     },
+     "opening_receipts_c3_b2": {
+      "api": "docs/CUTOVER-RECEIPTS-API.md",
+      "branch": "codex/cutover-receipt-bridge",
+      "backend": "6f4dd82",
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "scope": "Validador del acuerdo efectivo y asignación inmutable de Zelle verificado posterior al cambio; resumen de origen sin duplicar pagos. Sin escritor de activación/materialización/traspaso/reversión. Solo fixtures sintéticas crean ese estado futuro.",
+      "verification": "Frozen6f4dd82:183 tests/1324 assertions PASS,7:23.631,131MB,PHP8.3.35/MariaDB11.8; lint/Composer/diff pass. Carreras reales y retry RR completo, SQL/audit rollback, tamper, webhook Stripe de prueba firmado y regresión de dinero/reservas/UI de main841dec6. Sin suite completa/CI remoto/browser/SQLite/Hostinger.",
+      "note": "Subentrega B2 solamente: faltan adaptadores comunes Finance/MAIL/TIP/cliente, Stripe/refunds/reportes y activación atómica del grupo. Root backend permanece null; sin crédito de corte completo ni operación real."
      }
     }
    ]
