@@ -1,3 +1,20 @@
+## 2026-10-20 (night) — Claude → Codex — owner's second walkthrough of Reserva rápida on crm-test (5f00968): PENDING, all for Codex (UI + backend)
+
+Owner tested the deployed build. Everything below is pending; Codex owns UI and backend until Claude returns. Highest priority first.
+
+1. **Google address suggestions did not appear.** Key and API verified OK: `POST places.googleapis.com/v1/places:autocomplete` with the browser key and a crm-test Referer returns suggestions. Likely cause: the list was appended inside Filament's input wrapper, which clips overflow. **Probable fix pushed on this branch** (`public/js/waoo-places.js` now appends the list to `<body>` positioned under the input; `.wplaces` CSS updated) — unverified in a browser. Please verify on crm-test (browser console on /admin/reserva-rapida) and finish if something else blocks it (e.g. the `input` listener, `importLibrary('places')`, `AutocompleteSuggestion`).
+2. **Personajes block (Reserva rápida and event form):** (a) hide "Para" and set it automatically when only one selected service takes characters; (b) remove "Mostrar" (audience filter): the owner already knows the character, searching by name is enough; (c) put **"Cuántos" first**; when it is more than 1, show that many character pickers (one per character, each with its own optional costume version) instead of one character × quantity; (d) the **costume version must not appear in the event title** (keep it in the event's internal details/staff info). Update `EventResource::suggestTitle` and its tests accordingly.
+3. **Time selection still looks like the browser's native picker:** replace with a nicer control (e.g. a select of 15-minute slots 8:00 a. m.–10:00 p. m., or Filament's non-native TimePicker) for start/end time.
+4. **Clienta section not improved enough:** owner wants ONE field, no "registrada / nueva" radio: start typing name, phone or email → list of matching clients with full name, phone, email and number of events → pick one, or "Crear clienta nueva con estos datos" (then only phone or email is required; see item 7). Reuse `QuickBooking::possibleMatches`.
+5. **Deposit amount:** prefill with 50 % of the total (services + travel fee, ceiling to the cent like the deposit target) as soon as both are known; editable; recompute while the owner hasn't typed his own amount.
+6. **Zelle reference optional** (was item 5 of the evening queue): backend guard + remove the asterisk.
+7. **Remove the deposit time field** entirely (owner: unnecessary). Use now (today) or noon (other day) server-side as today's blank-time rule does.
+8. **Short client link** (`/r/<code>`): owner saw the long `/portal#token=…` again; make this a priority.
+9. **Client portal "Sobre la fiesta":** the native dark selects look bad. Use large tap-friendly choice buttons/chips (Español · Inglés · Bilingüe; Interior · Exterior) styled like the rest of the portal, with clear selected state; keep the same submitted values.
+10. **Reserva rápida con Stripe** is not visible yet because it is not built (evening queue item 4; spec docs/QUICK-STRIPE-BOOKING.md). Owner is waiting for it.
+
+Already queued in the evening entry and still pending: approved texts, sign in the same visit as details, costume hold, nameless new client, financial stack.
+
 ## 2026-10-20 (evening) — Claude → Codex — #100 merged and deployed to crm-test; full queue handed to Codex (Claude low on credits)
 
 **State:** owner merged #100 → main **5f00968**. Deployed to crm-test (DB dump `~/backups-crm-test/db-before-5f00968-*.sql.gz`, migration 520000 ran, `WAOO_GOOGLE_MAPS_BROWSER_KEY` set from the owner's file, never printed). Note for future deploys: `public_html/crm-test/{css,js}` must also receive `php artisan filament:assets` output (Filament assets are not in git; I republished them after copying). Catalog re-imported from the owner catalog: 4 bubble machines, 1 cloud machine, face kit on Estación de pintacaritas, robot bajo/smoke+robot bajo crew host instead of operator, vanity on Spa Premium, setup/breakdown on every package that has them (Baile en las nubes still has none: owner to fill).
