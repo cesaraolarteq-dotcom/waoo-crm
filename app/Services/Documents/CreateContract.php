@@ -14,6 +14,7 @@ final class CreateContract
 {
     public static function assertCurrent(Event $event, FinancialRevision $finance): void
     {
+        \App\Services\Booking\QuickStripeLeases::assertNoActive($event->id);
         $linked = DB::table('capacity_payment_links')->where('event_id', $event->id)->where('financial_revision_id', $finance->id)->exists();
         RecordWriteRejected::unless(in_array($event->status, ['draft','capacity_reserved'], true) && ($event->version === $finance->event_version || ($event->status === 'capacity_reserved' && $linked))
             && (int) FinancialRevision::where('event_id', $event->id)->max('revision') === $finance->revision, 409, 'Revisa el evento y la revisión financiera vigente antes de emitir el contrato.');

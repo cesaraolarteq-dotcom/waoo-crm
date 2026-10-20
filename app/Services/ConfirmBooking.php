@@ -21,6 +21,7 @@ final class ConfirmBooking
         try {
             return DB::transaction(function () use ($eventId, $data, $actor) {
                 $event = Event::query()->lockForUpdate()->findOrFail($eventId);
+                \App\Services\Booking\QuickStripeLeases::assertNoActive($eventId);
                 $ids = collect($data['resource_ids'])->map(fn($id) => (int) $id)->unique()->sort()->values();
                 $hold = \App\Services\Booking\QuickCostumeHolds::confirmation($event, $ids->all(), $data['costume_outfits']);
                 $data['costume_outfits'] = $hold['choices'];

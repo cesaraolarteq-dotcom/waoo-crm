@@ -10,6 +10,7 @@ final class QuoteSnapshot
 {
     public static function capture(Event $event, User $actor, array $data): array
     {
+        \App\Services\Booking\QuickStripeLeases::assertNoActive($event->id);
         RecordWriteRejected::unless($event->status === 'draft' && $event->version === $data['expected_event_version'], 409, 'El borrador cambió. Recarga antes de cotizar.');
         $validUntil = isset($data['valid_until']) ? CarbonImmutable::parse($data['valid_until'])->utc() : CarbonImmutable::now()->addDays(7);
         if (!$validUntil->isFuture() || $validUntil->greaterThan($event->starts_at)) throw ValidationException::withMessages(['valid_until' => 'La vigencia debe ser futura y no posterior al comienzo del evento.']);
