@@ -26,10 +26,11 @@ final class ReviewZelleNotice
         }
         $scope = "owner:{$actor->id}:event:{$eventId}:zelle-notice:{$noticeId}"; $hash = MutationKey::hash($data);
         return DB::transaction(function () use ($actor, $eventId, $noticeId, $data, $scope, $hash, $key) {
+            User::whereKey($actor->id)->lockForUpdate()->firstOrFail(); RecordActor::authorize($actor, true);
             $event = Event::whereKey($eventId)->lockForUpdate()->firstOrFail();
             $notice = ZelleNotice::whereKey($noticeId)->where('event_id', $eventId)->where('customer_id', $event->customer_id)->lockForUpdate()->firstOrFail();
-            if ($saved = MutationKey::find($scope, $key, $hash)) return ZelleNoticeReview::findOrFail($saved->result_id);
-            RecordWriteRejected::when($notice->review()->exists(), 409, 'Este aviso ya fue revisado. Actualiza el historial.');
+            if ($saved = MutationKey::find($scope, $key, $hash, true)) return ZelleNoticeReview::findOrFail($saved->result_id);
+            RecordWriteRejected::when($notice->review()->lockForUpdate()->first() !== null, 409, 'Este aviso ya fue revisado. Actualiza el historial.');
             $entry = $data['decision'] === 'verified' ? app(RecordZellePayment::class)->execute($actor, $eventId, $data['payment'], $key) : null;
             $review = ZelleNoticeReview::create(['notice_id' => $notice->id, 'event_id' => $eventId, 'ledger_entry_id' => $entry?->id,
                 'decision' => $data['decision'], 'review_note' => $data['review_note'], 'reviewed_by' => $actor->id, 'reviewed_at' => now()]);

@@ -220,7 +220,10 @@ class CutoverOpeningTest extends TestCase
         try { $migration->down(); $this->fail('Populated rollback erased evidence.'); }
         catch (\RuntimeException $e) { $this->assertStringContainsString('forward migration', $e->getMessage()); }
         DB::table('cutover_opening_agreements')->delete(); DB::table('cutover_opening_sets')->delete();
+        $receipts = require database_path('migrations/2026_10_19_470000_create_opening_receipt_bridge.php');
+        $receipts->down();
         $migration->down(); $migration->up(); $this->assertTrue(Schema::hasTable('cutover_opening_agreements'));
+        $receipts->up();
     }
     public function test_source_amount_outside_declared_technical_bound_is_safe_and_not_repriced(): void
     {
