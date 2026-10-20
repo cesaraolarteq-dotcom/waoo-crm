@@ -52,6 +52,23 @@ class EventMoney extends Page
 
     public ?array $tipLink = null;
 
+    /** Page of the read-only opening refund list (Codex B1). */
+    public int $refundPage = 1;
+
+    /** Codex B1 issue codes → owner Spanish (labels agreed in docs/OPENING-REFUNDS-API.md). Allocation is never offered here. */
+    public const REFUND_ISSUES = [
+        'refund_evidence_required' => 'La evidencia necesita revisión', 'refund_evidence_invalid' => 'La evidencia necesita revisión',
+        'refund_agreement_mismatch' => 'No corresponde al acuerdo vigente de esta fiesta',
+        'refund_parent_evidence_invalid' => 'El pago original necesita revisión', 'refund_parent_allocation_required' => 'El pago original aún no está conciliado',
+        'refund_parent_allocation_invalid' => 'La conciliación del pago original necesita revisión',
+        'refund_current_observation_conflict' => 'Stripe envió después un aviso distinto: revisar',
+        'refund_parent_provider_review_required' => 'Aviso de Stripe: revisar el pago',
+        'refund_observation_integrity_invalid' => 'Un aviso de Stripe no se pudo verificar',
+        'refund_observation_volume_exceeded' => 'Demasiados avisos: requiere revisión',
+        'refund_parent_gross_exceeded' => 'Las devoluciones suman más que el pago original',
+        'refund_collection_not_current' => 'Los cobros de esta fiesta cambiaron: revisar',
+    ];
+
     public function mount(int|string $record): void
     {
         abort_unless(FinanceGate::enabled(), 403);
@@ -155,6 +172,38 @@ class EventMoney extends Page
                 $this->tipLink = null;
                 Notification::make()->success()->title('Enlace de propina anulado')->send();
             });
+    }
+
+    /**
+     * Read-only list of Stripe refunds on an imported party's opening (ReadOpeningRefundCandidates). Shown only for imported
+     * events with every bridge flag on; no allocation, no budget computed here. A refusal shows its reason instead of the list.
+     */
+    public function openingRefunds(): ?array
+    {
+        $flags = collect(['sandbox_finance', 'sandbox_imports', 'sandbox_cutover', 'sandbox_cutover_bridge'])->every(fn ($f) => config('waoo.'.$f) === true);
+        if (! $flags || ! class_exists(\App\Services\Finance\ReadOpeningRefundCandidates::class)
+            || ! \App\Models\ImportedProjectLink::where('event_id', $this->record->id)->exists()) return null;
+        try {
+            $read = app(\App\Services\Finance\ReadOpeningRefundCandidates::class)->execute(Filament::auth()->user(), $this->record->id, ['page' => $this->refundPage, 'per_page' => 25]);
+        } catch (RecordWriteRejected|AuthorizationException $e) {
+            return ['error' => $e->getMessage(), 'rows' => [], 'page' => ['number' => 1, 'last' => 1, 'total' => 0]];
+        } catch (\Throwable) {
+            return ['error' => 'No se pudo leer las devoluciones ahora. Inténtalo de nuevo.', 'rows' => [], 'page' => ['number' => 1, 'last' => 1, 'total' => 0]];
+        }
+        $read['rows'] = array_map(fn ($r) => [
+            'title' => $r['gross_refund_cents'] !== null ? 'Devolución registrada en Stripe' : 'La evidencia necesita revisión',
+            'amount' => $r['gross_refund_cents'] !== null ? Labels::money($r['gross_refund_cents']) : null,
+            'when' => $r['received_at'] ? Labels::when(\Carbon\CarbonImmutable::parse($r['received_at'])) : null,
+            'issues' => collect($r['issue_codes'])->reject(fn ($c) => $c === 'refund_allocation_not_available')
+                ->map(fn ($c) => self::REFUND_ISSUES[$c] ?? 'Requiere revisión')->unique()->values()->all(),
+        ], $read['rows']);
+
+        return $read;
+    }
+
+    public function refundPageTo(int $page): void
+    {
+        $this->refundPage = max(1, $page);
     }
 
     public function getSubheading(): ?string
