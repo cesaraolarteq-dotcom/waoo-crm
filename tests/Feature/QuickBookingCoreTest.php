@@ -155,7 +155,7 @@ class QuickBookingCoreTest extends TestCase
         try {
         $price = PriceVersion::sole();
         Livewire::test(QuickBookingPage::class)->fillForm(['price_version_ids' => [$price->id], 'event_type' => 'birthday', 'title' => 'Fixture UI Party',
-            'date' => '2026-12-19', 'start_time' => '15:00', 'postal_code' => '00001', 'travel_fee' => '25', 'customer_mode' => 'new', 'name' => 'Fixture Contact', 'locale' => 'es',
+            'date' => '2026-12-19', 'start_time' => '15:00', 'postal_code' => '00001', 'travel_fee' => '25', 'customer_mode' => 'new', 'name' => 'Fixture Contact', 'phone' => '346-555-0100', 'locale' => 'es',
             'deposit' => ['amount' => '62', 'reference' => 'QB-REAL-UI-FIXTURE', 'date' => now('America/Chicago')->format('Y-m-d'), 'time' => '00:05', 'verified' => true], 'expires_days' => 30])
             ->call('save')->assertHasNoFormErrors()->assertSee('Puedes volver a copiarlo')->assertDontSee('is held')->assertDontSee('quedó apartada');
         $this->assertDatabaseCount('ledger_entries', 1); $this->assertDatabaseCount('portal_grants', 1);

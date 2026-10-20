@@ -116,6 +116,7 @@ class EventResource extends Resource
     {
         $label = fn ($variant, $price) => $variant->name.' · '.Labels::duration($variant->duration_minutes).' · '.Labels::money($price->amount_cents);
         $options = ServiceVariant::query()->where('status', '!=', 'retired')->orderBy('name')->get()
+            ->sortBy(fn ($variant) => [self::popularRank($variant->name), $variant->name])
             ->mapWithKeys(function ($variant) use ($label) {
                 $price = PriceVersion::where('service_variant_id', $variant->id)->orderByDesc('id')->first();
 
@@ -134,6 +135,17 @@ class EventResource extends Resource
         }
 
         return $options;
+    }
+
+    /** Owner 2026-10-20: the best sellers first, in this order; everything else alphabetical after them. */
+    public const POPULAR = ['estrella', 'mágico', 'música y juegos', 'música y juegos 2.0', 'waoo'];
+
+    public static function popularRank(string $name): int
+    {
+        $base = mb_strtolower(trim((string) preg_replace('/\s*\([^)]*\)\s*$/u', '', $name)));
+        $rank = array_search($base, self::POPULAR, true);
+
+        return $rank === false ? 99 : $rank;
     }
 
     /** Costume versions of a character (OUTFIT-01); empty for single-version characters, so the selector stays hidden. */
@@ -187,7 +199,8 @@ class EventResource extends Resource
             : (filled($get($p.'customer_id')) ? Customer::whereKey((int) $get($p.'customer_id'))->value('name') : null);
         $suggestion = self::suggestTitle((array) ($get($p.'price_version_ids') ?? []), (array) ($get($p.'characters') ?? []), $get($p.'date'), $client);
         $current = trim((string) $get($p.'title'));
-        if ($suggestion !== '' && ($current === '' || $current === (string) $get($p.'title_suggested'))) {
+        // Follows the suggestion while the owner hasn't typed her own, including back to empty when the package is removed.
+        if ($current === '' || $current === trim((string) $get($p.'title_suggested'))) {
             $set($p.'title', $suggestion);
         }
         $set($p.'title_suggested', $suggestion);
