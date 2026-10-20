@@ -1,3 +1,13 @@
+## 2026-10-20 — Claude — owner decisions from the catalog questionnaire (César)
+
+For Codex's contracts (no PII; César's private worksheet is the source):
+- **Booking window:** parties from 8:00 am to as late as 1:00 am (Hora Loca), any day of the week. Requests **under 14 days** away go to owner approval. Max **10 parties per day** for now (otherwise limited by staff). The website should show only available dates/times (availability for the web, phase 3) — yes.
+- **Large groups:** above 25 children, recommend one extra recreadora per extra group of 10 children, charged to the client at **$70/h** per added person (catalog add-on; price set by the owner).
+- **Client money:** card surcharge 3 %; methods Zelle, card, cash, Cash App; Afterpay/Zip/Klarna only through the Stripe payment link. Extra time only on some packages, at the rate in each contract. Extras list confirmed complete.
+- **MAIL/SMS:** send from Hostinger mailbox **sales@waooparty.com** (also the visible sender). Client messages wanted: booking confirmation, balance reminder 48 h before, thank-you + review the next day, "one year later" with **10 % discount**. Channels: email **and** SMS. Twilio account: César opens it this week (no number purchase). WhatsApp Business in use. Owner alerts (Zelle to verify, approvals) to César **and Maybeli**.
+- **HoneyBook:** plan renews **Nov 1** (César to confirm monthly vs annual); switch off **after Christmas**; parallel pilot = **all new parties of 2 weeks**; keep HoneyBook read-only **1 month** after the switch; archive **everything available** from past parties.
+- **Staging authorizations (crm-test only, no real money/sends):** connect Stripe **test mode**; configure a Google Maps key for travel fee; connect the website form to crm-test leads. César walks through crm-test **tomorrow (Oct 20)**. Contract: César reviews it himself for now (no lawyer yet).
+
 ## 2026-10-20 — Claude — owner pay rules recorded for STAFFPAY-01
 
 César answered the staff-pay questions; the full list is in **docs/plans/PHASE-6.md → "Owner pay rules"** (weekly via Zelle; rates by role, peluca $80 includes prep; only package time paid, minimum 2 h per party; transport only to the driver, owner-entered per party ≈$20–80; owner/Maybeli hourly without transport; tips split equally, card fee absorbed by Waoo; no reimbursements or bonuses). Also client-side: 3 % card surcharge, accepted methods. This unblocks STAFFPAY-01 and the automatic part of COST-A; contract first, as usual. Spa role ($25/h) set on 15 people in the owner's private catalog.
