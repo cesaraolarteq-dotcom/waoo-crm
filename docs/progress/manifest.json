@@ -879,13 +879,22 @@
      "intake_a": {
       "backend": "35a4b8b",
       "ui": "466f830",
-      "reviewed": true,
+      "reviewed": false,
       "merged": false,
       "accepted": false,
       "verification": "69 tests/389 assertions PASS, PHP8.3.35/MariaDB11.8, 2:07.144; private history intake/parser + future importer/C2 resync. Lint and strict Composer pass. Not a full-suite or remote CI result.",
       "scope": "Cifrado de CSV/celdas, revisión paginada, datos originales, incidencias, reintentos/concurrencia y descarte atómico. Sin clientas/historial definitivo, cobros, reservas o mensajes.",
       "note": "Solo subentrega: backend raíz permanece null; no crédito de importación histórica completa. Claude debe revisar y conectar UI. Sin importación real.",
-      "review_evidence": "Claude review of 35a4b8b in HANDOFF 2026-10-20 (screen built against it); UI 466f830 on claude/history-intake-ui: 7 Livewire tests + 14 intake tests pass locally (SQLite); MariaDB CI pending."
+      "review_evidence": "Claude review of 35a4b8b in HANDOFF 2026-10-20 (screen built against it); UI 466f830 on claude/history-intake-ui: 7 Livewire tests + 14 intake tests pass locally (SQLite); MariaDB CI pending.",
+      "backend_reviewed": true,
+      "ui_reviewed": false,
+      "codex_ui_review": {
+       "head": "f19573b",
+       "ui": "466f830",
+       "verdict": "changes_requested",
+       "evidence": "docs/reviews/HISTORY-INTAKE-UI-2026-10-20.md",
+       "reason": "R1: falta registro de la página/ruta; R2: texto contradice almacenamiento cifrado. Backend35a4b8b conserva aprobación de Claude. 45 tests/320 assertions MariaDB pasan; prueba separada route:list devuelve[] y detecta el bloqueo que Livewire directo no cubre."
+      }
      }
     },
     {
@@ -972,15 +981,22 @@
       "api": "docs/CUTOVER-OPENING-API.md",
       "branch": "codex/cutover-financial-bridge",
       "backend": "0e453d5",
-      "ui": false,
-      "reviewed": false,
+      "ui": "59b0e3d",
+      "reviewed": true,
       "merged": false,
       "accepted": false,
       "scope": "Aperturas de origen cifradas/inmutables para el grupo completo; total/gross/refunds/net/saldo preservados, versión real y0 venta/caja CRM nueva. Solo preparación, sin autoridad efectiva ni traspaso.",
       "verification": "107 tests/632 assertions PASS,3:47.122,97MB,PHP8.3.35/MariaDB11.8; finales PHP0e453d5. Carreras reales, integridad, vencimiento, rollback, reportes/guardas y regresión C2/C3/importación. Lint/Composer/diff pass; no suite completa/CI remoto/browser.",
       "note": "Subentrega B1: faltan asignación efectiva de recibos, adaptadores Finance/MAIL/TIP/portal/reportes y activación atómica. Raíz backend sigue null; sin crédito al corte completo.",
       "backend_reviewed": true,
-      "backend_review_evidence": "Claude366055f,2026-10-19 Chicago: B1 0e453d5 approved by inspection, PR#92 opened. No merge/activation inferred."
+      "backend_review_evidence": "Claude366055f,2026-10-19 Chicago: B1 0e453d5 approved by inspection, PR#92 opened. No merge/activation inferred.",
+      "ui_reviewed": true,
+      "codex_ui_review": {
+       "head": "f19573b",
+       "verdict": "approved for reviewed source",
+       "evidence": "docs/reviews/HISTORY-INTAKE-UI-2026-10-20.md",
+       "verification": "45 tests/320 assertions PASS,1:55.709,107MB,PHP8.3.35/MariaDB11.8; UI preparación y regresión. Sin browser/CI remoto/activación."
+      }
      },
      "opening_receipts_c3_b2": {
       "api": "docs/CUTOVER-RECEIPTS-API.md",
