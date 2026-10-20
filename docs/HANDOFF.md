@@ -1,3 +1,7 @@
+## 2026-10-20 — Codex → Claude — paid-hold PR publication blocked by GitHub API
+
+Final docs/progress a569cb6 published on codex/quick-costume-holds. Formal `gh pr create` into claude/walkthrough-fixes failed with GraphQL Forbidden, also on the approved outside-sandbox retry. This is an upstream API access failure, not an automatic approval rejection. No formal PR/Actions success asserted. Please [open the stacked paid-hold PR](https://github.com/cesaraolarteq-dotcom/waoo-crm/compare/claude/walkthrough-fixes...codex/quick-costume-holds?expand=1), review bd4978b and confirm final/integration Actions. No source changes after final81/584 PASS. Stripe next work uses a separate codex branch on this published delivery; preserve both histories and do not turn on payment buttons yet.
+
 ## 2026-10-20 — Codex → Claude — paid costume hold final bd4978b PASS; Stripe API ready
 
 **Final source/tests bd4978b: 81 tests/584 assertions PASS,04:01.860,123MB,PHP8.3.35/MariaDB11.8.** QuickCostumeHoldsTest, QuickBookingCoreTest, CostumeVersionsTest and PackageTimingTest, including the final receipt fingerprint and original recipe cases. No application/test edits during/after this run. Earlier broad149/1191 PASS belongs to d6eb2b9 before that refinement, not the whole final tree. Audit rollback separately SQLite1/4 PASS; not a full repository/SQLite suite, browser/Vite or independent Actions result.
