@@ -66,8 +66,8 @@ class EventResource extends Resource
                     ->helperText('Elígelo tú (no se adivina). Solo los cumpleaños reciben el correo «Un año después».'),
                 DatePicker::make('date')->label('Fecha')->native()->required()->live()
                     ->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set)),
-                TimePicker::make('start_time')->label('Empieza (hora de Houston)')->native(false)->seconds(false)->minutesStep(15)->required()->live(),
-                TimePicker::make('end_time')->label('Termina')->native(false)->seconds(false)->minutesStep(15)->required()->live(),
+                TimePicker::make('start_time')->label('Empieza (hora de Houston)')->native(false)->seconds(false)->format('H:i')->displayFormat('g:i A')->minutesStep(15)->required()->live(),
+                TimePicker::make('end_time')->label('Termina')->native(false)->seconds(false)->format('H:i')->displayFormat('g:i A')->minutesStep(15)->required()->live(),
                 $choice('date', 'start_time'),
                 $choice('date', 'end_time'),
             ]),
@@ -161,7 +161,7 @@ class EventResource extends Resource
                         ->visible(fn (Get $get) => count(self::configurablePrices($get('../../price_version_ids') ?? [])) > 1)
                         ->options(fn (Get $get) => self::configurablePrices($get('../../price_version_ids') ?? [])),
                     Select::make('character_id')->label('Personaje')->native(false)->searchable()->nullable()
-                        ->options(fn (Get $get) => self::characterOptions($get('price_version_id'), null, $get('character_id')))
+                        ->options(fn (Get $get) => self::characterOptions(self::rowPrice($get), null, $get('character_id')))
                         ->live()->afterStateUpdated(function (Get $get, Set $set) {
                             $set('outfit', null); self::refreshTitle($get, $set, '../../');
                         }),
@@ -300,6 +300,21 @@ class EventResource extends Resource
             ->groupBy($label)->map(fn ($g) => $g->pluck('name', 'id')->all())->all();
     }
 
+    /** The service a character row belongs to: its own choice, or the only selected service that takes characters. */
+    public static function rowPrice(Get $get, string $up = '../../'): ?string
+    {
+        if (filled($get('price_version_id'))) return (string) $get('price_version_id');
+        $only = array_keys(self::configurablePrices($get($up.'price_version_ids') ?? []));
+
+        return count($only) === 1 ? (string) $only[0] : null;
+    }
+
+    /** "Para" is only asked when more than one selected service takes characters. */
+    public static function needsServiceChoice(Get $get, string $up = '../../'): bool
+    {
+        return count(self::configurablePrices($get($up.'price_version_ids') ?? [])) > 1;
+    }
+
     /** "Mostrar" filter next to each character picker; not saved. */
     public static function audienceFilter(): Select
     {
@@ -349,7 +364,7 @@ class EventResource extends Resource
             $service = ['price_version_id' => (int) $id];
             if (array_key_exists($id, $configurable)) {
                 // Explicit list for configurable services (even empty), so the backend never keeps stale choices silently.
-                $service['characters'] = collect($data['characters'] ?? [])->filter(fn ($c) => filled($c['character_id'] ?? null) && (int) ($c['price_version_id'] ?? $solePrice) === (int) $id)
+                $service['characters'] = collect($data['characters'] ?? [])->filter(fn ($c) => filled($c['character_id'] ?? null) && (int) (filled($c['price_version_id'] ?? null) ? $c['price_version_id'] : $solePrice) === (int) $id)
                     ->map(fn ($c) => ['character_id' => (int) $c['character_id'], 'quantity' => (int) $c['quantity'],
                         // OUTFIT-01: optional exact costume version and private owner note, kept on every explicit row.
                         'outfit' => filled($c['outfit'] ?? null) ? (string) $c['outfit'] : null,

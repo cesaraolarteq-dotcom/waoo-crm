@@ -114,10 +114,10 @@ class QuickBooking extends Page
             Section::make('2. Fecha y lugar')->columns(3)->schema([
                 DatePicker::make('date')->label('Fecha')->native(false)->displayFormat('D j M Y')->locale('es')->weekStartsOnSunday()->closeOnDateSelection()->required()->live()
                     ->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set)),
-                TimePicker::make('start_time')->label('Empieza (Houston)')->native(false)->seconds(false)->minutesStep(15)->required()->live()
+                TimePicker::make('start_time')->label('Empieza (Houston)')->native(false)->seconds(false)->format('H:i')->displayFormat('g:i A')->minutesStep(15)->required()->live()
                     ->afterStateUpdated(fn (Get $get, Set $set) => $this->fillEnd($get, $set))
                     ->helperText('La clienta la confirma en su enlace.'),
-                TimePicker::make('end_time')->label('Termina')->native(false)->seconds(false)->minutesStep(15)->required()->live()
+                TimePicker::make('end_time')->label('Termina')->native(false)->seconds(false)->format('H:i')->displayFormat('g:i A')->minutesStep(15)->required()->live()
                     ->helperText('Se llena con la duración del paquete.'),
                 $choice('start_time'), $choice('end_time'),
                 TextInput::make('setup_minutes')->label('Montaje (minutos antes)')->integer()->minValue(0)->maxValue(720)
@@ -130,7 +130,8 @@ class QuickBooking extends Page
                     ->placeholder('Calle, ciudad, TX ZIP')->helperText(fn () => filled(config('waoo.google_maps_browser_key')) ? 'Empieza a escribir y elige la dirección que sugiere Google: se llena el ZIP y se calcula el transporte. Puedes cambiar todo.' : 'Con la dirección exacta puedes calcular el transporte. La clienta la confirma en su enlace.'),
                 TextInput::make('postal_code')->label('ZIP')->required()->maxLength(10)->placeholder('77494')->extraInputAttributes(['data-places' => 'zip'])
                     ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => \App\Filament\Support\TravelFeeFields::invalidate($get, $set)),
-                \App\Filament\Support\TravelFeeFields::feeField(true, 'Obligatorio aquí: con el depósito se fija el total.'),
+                \App\Filament\Support\TravelFeeFields::feeField(true, 'Obligatorio aquí: con el depósito se fija el total.')
+                    ->afterStateUpdated(fn (Get $get, Set $set) => $this->refreshDeposit($get, $set)),
                 ...\App\Filament\Support\TravelFeeFields::extraFields(),
             ]),
             Section::make('3. Clienta')->columns(2)->schema([
@@ -178,16 +179,14 @@ class QuickBooking extends Page
             Section::make('4. Depósito recibido')->columns(3)->schema([
                 Grid::make(3)->statePath('deposit')->columnSpanFull()->schema([
                     TextInput::make('amount')->label('Monto que llegó (USD)')->prefix('$')->required()->live(onBlur: true)
+                        ->helperText('Se llena con el 50 % del total (servicios + transporte). Cámbialo si llegó otro monto.')
                         ->rule('regex:/^\d{1,7}(\.\d{1,2})?$/')->validationMessages(['regex' => 'Escribe solo el número, por ejemplo 250.']),
                     TextInput::make('reference')->label('Referencia de Zelle')->required()->minLength(3)->maxLength(255),
                     DatePicker::make('date')->label('Fecha en que llegó')->native(false)->displayFormat('D j M Y')->locale('es')->weekStartsOnSunday()->closeOnDateSelection()
                         ->required()->live()->maxDate(now(ChicagoTime::TZ))->helperText('Hoy, salvo que llegara otro día.'),
-                    TimePicker::make('time')->label('Hora (opcional)')->native()->seconds(false)->live()
-                        ->helperText('Vacía: la hora actual si llegó hoy, o mediodía si fue otro día.'),
-                    Radio::make('choice')->label('Esa hora se repite ese día: ¿cuál?')->options(ChicagoTime::CHOICES)->required()->columnSpanFull()
-                        ->visible(fn (Get $get) => ChicagoTime::isAmbiguous($get('date'), $get('time'))),
                     Checkbox::make('verified')->label('Lo vi reflejado en el banco')->accepted()->columnSpanFull(),
                 ]),
+                Hidden::make('deposit_amount_auto')->dehydrated(false),
                 Callout::make('Resumen')->info()->columnSpanFull()->description(fn (Get $get) => $this->moneyLine($get)),
                 TextInput::make('expires_days')->label('El enlace vence en (días)')->integer()->minValue(1)->maxValue(60)->required(),
             ]),
@@ -213,11 +212,37 @@ class QuickBooking extends Page
         $this->fillEnd($get, $set);
         EventResource::refreshTitle($get, $set);
         EventResource::refreshTiming($get, $set);
+        $this->refreshDeposit($get, $set);
+    }
+
+    /**
+     * Owner 2026-10-20: the deposit starts at 50 % of services + travel (rounded up to the cent, like the deposit target).
+     * A different amount typed by the owner stays; our value follows the total.
+     */
+    public function refreshDeposit(Get $get, Set $set): void
+    {
+        $services = (int) PriceVersion::whereIn('id', array_map('intval', $get('price_version_ids') ?? []))->sum('amount_cents');
+        $fee = (string) $get('travel_fee');
+        $target = null;
+        if ($services > 0 && preg_match('/^\d{1,7}(\.\d{1,2})?$/', $fee)) {
+            $total = $services + EditServiceVariant::toCents($fee);
+            $cents = intdiv($total, 2) + $total % 2;
+            $target = $cents % 100 === 0 ? (string) intdiv($cents, 100) : number_format($cents / 100, 2, '.', '');
+        }
+        $current = trim((string) $get('deposit.amount'));
+        if ($current === '' || $current === (string) $get('deposit_amount_auto')) $set('deposit.amount', $target);
+        $set('deposit_amount_auto', $target);
+    }
+
+    /** Non-native time pickers keep "Y-m-d H:i:s" in raw state; the rest of the page works with Houston "H:i". */
+    public static function hm(?string $time): ?string
+    {
+        return $time !== null && preg_match('/(\d{2}:\d{2})(?::\d{2})?$/', trim($time), $m) ? $m[1] : null;
     }
 
     public function fillEnd(Get $get, Set $set): void
     {
-        $start = $get('start_time');
+        $start = self::hm($get('start_time'));
         $minutes = PriceVersion::query()->whereIn('price_versions.id', array_map('intval', $get('price_version_ids') ?? []))
             ->join('service_variants', 'service_variants.id', '=', 'price_versions.service_variant_id')->max('service_variants.duration_minutes');
         if ($start && $minutes && preg_match('/^\d{2}:\d{2}/', $start)) {
@@ -244,7 +269,7 @@ class QuickBooking extends Page
         if ($paid && $paid < $target) {
             $line .= ' · faltan '.Labels::money($target - $paid).' para el 50 %';
         }
-        if ($get('date') && $get('start_time') && ($start = array_values(ChicagoTime::candidates($get('date'), $get('start_time')))[0] ?? null)) {
+        if ($get('date') && self::hm($get('start_time')) && ($start = array_values(ChicagoTime::candidates($get('date'), self::hm($get('start_time'))))[0] ?? null)) {
             $line .= ' · el saldo vence '.Labels::when(CarbonImmutable::parse($start)->subHours(24));
         }
 
@@ -375,8 +400,8 @@ class QuickBooking extends Page
 
     public function toServiceInput(array $s): array
     {
-        $start = ChicagoTime::toIso($s['date'], $s['start_time'], $s['start_time_choice'] ?? null, 'data.start_time');
-        $end = ChicagoTime::toIso($s['date'], $s['end_time'], $s['end_time_choice'] ?? null, 'data.end_time');
+        $start = ChicagoTime::toIso($s['date'], (string) self::hm($s['start_time']), $s['start_time_choice'] ?? null, 'data.start_time');
+        $end = ChicagoTime::toIso($s['date'], (string) self::hm($s['end_time']), $s['end_time_choice'] ?? null, 'data.end_time');
         if (strtotime($end) <= strtotime($start)) {
             throw ValidationException::withMessages(['data.end_time' => 'La hora de fin debe ser después de la de inicio (mismo día).']);
         }

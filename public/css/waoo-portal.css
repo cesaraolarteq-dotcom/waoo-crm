@@ -75,3 +75,10 @@ dt{color:var(--muted);font-size:14px}dd{margin:0;font-weight:700;overflow-wrap:a
 .t-center{text-align:center}
 .p-fixed{display:block;font-size:1.05rem;padding:10px 0 2px}
 .p-sub-title{margin:10px 0 0;font-size:1.05rem}
+.p-chips{border:0;padding:0;margin:0}
+.p-chips>div{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.p-chip{position:relative;cursor:pointer}
+.p-chip input{position:absolute;opacity:0;width:1px;height:1px}
+.p-chip span{display:inline-block;padding:12px 20px;border-radius:999px;border:1.5px solid rgba(255,255,255,.28);font-weight:600;min-width:96px;text-align:center;transition:background .15s,border-color .15s}
+.p-chip input:checked+span{background:#f8c630;border-color:#f8c630;color:#0b0d24}
+.p-chip input:focus-visible+span{outline:2px solid #2fd3c3;outline-offset:2px}

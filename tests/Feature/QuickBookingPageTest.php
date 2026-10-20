@@ -75,9 +75,9 @@ class QuickBookingPageTest extends TestCase
     public function test_one_form_creates_everything_and_shows_the_link_once_with_messages(): void
     {
         $this->bind();
-        $page = Livewire::test(QuickBooking::class)->fillForm($this->form())
-            ->assertSet('data.end_time', '16:00') // filled from the package duration
-            ->assertSee('Total $125 · depósito 50 % $62.50 · recibido $62.50 · saldo $62.50')
+        $page = Livewire::test(QuickBooking::class)->fillForm($this->form());
+        $this->assertSame('16:00', QuickBooking::hm($page->get('data.end_time'))); // filled from the package duration
+        $page->assertSee('Total $125 · depósito 50 % $62.50 · recibido $62.50 · saldo $62.50')
             ->call('save')->assertHasNoFormErrors()
             ->assertSee('https://crm.example.test/p/fixture-secret')->assertSee('Puedes volver a copiarlo desde el evento')
             ->assertSee('¡Hola Ana! Gracias por tu depósito de $62.50')->assertSee('Hi Ana! Thank you for your deposit of $62.50')
