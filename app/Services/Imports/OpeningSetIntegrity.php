@@ -32,7 +32,7 @@ final class OpeningSetIntegrity
                 $facts[(string)$row->event_id] = $f;
             }
             ksort($facts); return ['manifest' => $p, 'rows' => $rows, 'facts' => $facts];
-        } catch (RecordWriteRejected $e) { throw $e; }
+        } catch (RecordWriteRejected|\Illuminate\Database\QueryException $e) { throw $e; }
         catch (\Throwable) { throw new RecordWriteRejected(409, 'La evidencia de apertura requiere revisión.'); }
     }
     private static function check(bool $valid): void { RecordWriteRejected::unless($valid, 409, 'La evidencia de apertura requiere revisión.'); }
