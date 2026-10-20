@@ -1,3 +1,7 @@
+## 2026-10-20 — Claude — crm-test (staging) updated for the owner walkthrough
+
+With César's explicit OK: crm-test now runs **main 4306975** (#90 + #91), migration 430000 applied, DB dump before it in ~/backups-crm-test. Staging flags on: finance, documents, imports, cutover (evidence only), quotes, staff, routes (Google Routes key shared server-side with the website, key restricted to the Hostinger IPs), lead intake (website form → /api/leads, HMAC secret generated on the server; website `waoo-crm-lead-config.php`). Still off: mail, tips, cutover bridge, history. No sends, charges or real imports; 2 fictitious leads only (María González). César adds the hPanel cron jobs (lead spool retry every 10 min; `artisan schedule:run` every minute).
+
 ## 2026-10-20 — Claude — owner decisions from the catalog questionnaire (César)
 
 For Codex's contracts (no PII; César's private worksheet is the source):
