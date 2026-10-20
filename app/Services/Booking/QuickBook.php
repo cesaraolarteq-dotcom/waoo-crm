@@ -107,7 +107,7 @@ final class QuickBook
                     'customer_id' => $record->customer_id, 'expires_at' => $record->portal_expires_at->toIso8601String(),
                     'scopes' => ['details.submit','contract.read','contract.sign','payments.read','checkout.create'],
                 ]);
-                $url = $grant->url;
+                $url = $grant->short_url ?? $grant->url;
             } catch (\Throwable $e) {
                 // The receipt and the idempotent core result already committed. Do not claim the booking was rolled back.
                 DB::table('payment_exceptions')->insertOrIgnore(['event_id' => $record->event_id, 'financial_revision_id' => $record->initial_financial_revision_id,

@@ -447,7 +447,7 @@ class QuickBookingCoreTest extends TestCase
         try {
             $page = Livewire::test(QuickBookingPage::class);
             $state = ['price_version_ids' => [PriceVersion::sole()->id], 'event_type' => 'birthday', 'title' => 'Fixture timeout party', 'date' => '2026-12-19', 'start_time' => '15:00', 'end_time' => '16:00',
-                'postal_code' => '00001', 'travel_fee' => '25', 'customer_mode' => 'new', 'name' => 'Fixture Contact', 'locale' => 'es',
+                'postal_code' => '00001', 'travel_fee' => '25', 'customer_mode' => 'new', 'name' => 'María González', 'phone' => '346-555-0100', 'locale' => 'es',
                 'deposit' => ['amount' => '62', 'reference' => 'QB-TIMEOUT-FIXTURE', 'date' => '2026-10-15', 'time' => '00:05', 'verified' => true], 'expires_days' => 30];
             $input = $page->instance()->toServiceInput($state); $key = $page->instance()->key;
             app(QuickBook::class)->execute($this->owner, $input, $key); // Simulate a lost save response; the browser retains its original snapshot/key.
