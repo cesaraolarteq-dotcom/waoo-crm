@@ -261,7 +261,14 @@ class CutoverEvidenceTest extends TestCase
     public function test_empty_migration_roundtrip_preserves_existing_operational_and_source_records(): void
     {
         $link = $this->confirmed(); $migration = require database_path('migrations/2026_10_19_430000_create_cutover_preparation_evidence.php');
+        // Empty dependent tables must be rolled back first, just as the migrator does.
+        $opening = require database_path('migrations/2026_10_19_460000_create_cutover_opening_agreements.php');
+        $receipts = require database_path('migrations/2026_10_19_470000_create_opening_receipt_bridge.php');
+        $receipts->down();
+        $opening->down();
         $migration->down(); $migration->up();
+        $opening->up();
+        $receipts->up();
         $this->assertSame('honeybook', Event::find($link->event_id)->responsible_system);
         $this->assertDatabaseCount('resource_reservations', 2); $this->assertDatabaseCount('imported_project_revisions', 1);
         $this->assertDatabaseCount('cutover_original_documents', 0);

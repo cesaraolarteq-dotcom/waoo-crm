@@ -68,6 +68,32 @@
             @endforelse
         </x-filament::section>
 
+        @if ($t = $this->tips())
+            <x-filament::section>
+                <x-slot name="heading">Propinas para el staff</x-slot>
+                <x-slot name="description">Con tarjeta, aparte del pago de la fiesta: no cambian el saldo ni los ingresos. Sin comisiones a la vista: las absorbe Waoo.</x-slot>
+                @if ($tipLink)
+                    @include('filament.pages.partials.link-panel', ['panel' => $tipLink])
+                @endif
+                <dl class="wfile-dl">
+                    <div><dt>Propinas recibidas</dt><dd>{{ \App\Filament\Support\Labels::money($t['gross_cents']) }} · {{ count($t['receipts']) }} {{ count($t['receipts']) === 1 ? 'pago' : 'pagos' }}</dd></div>
+                    @if ($t['refunded_cents'])<div><dt>Devueltas</dt><dd>{{ \App\Filament\Support\Labels::money($t['refunded_cents']) }}</dd></div>@endif
+                    <div><dt>Para repartir al staff</dt><dd>@if ($t['net_staff_cents'] === null)<b>Pendiente</b> <small>· hay un cobro en curso o por revisar</small>@else<b>{{ \App\Filament\Support\Labels::money($t['net_staff_cents']) }}</b>@endif</dd></div>
+                </dl>
+                <div class="wrep-actions" style="margin-top:8px">
+                    @if ($t['grant'])
+                        <span>Enlace activo · vence el {{ $t['grant']['expires'] }}</span>
+                        {{ ($this->tipRevokeAction)(['grant' => $t['grant']['id'], 'version' => $t['grant']['version']]) }}
+                    @elseif ($t['can_issue'])
+                        {{ $this->tipIssueAction }}
+                    @else
+                        <small>Se puede crear el enlace cuando la fiesta haya terminado y la cobre el CRM.</small>
+                    @endif
+                </div>
+                <p class="wqb-hint">El reparto entre el staff se decide aparte (pagos al staff).</p>
+            </x-filament::section>
+        @endif
+
         @if ($rev && $paid > 0 && $f['capacity_status'] === 'draft' && \App\Filament\Resources\Events\Pages\ConfirmCapacity::canAccessFor($this->record))
             <a class="wmoney-next" href="{{ \App\Filament\Resources\Events\EventResource::getUrl('confirm', ['record' => $this->record]) }}">Siguiente paso: apartar staff y trajes con este pago →</a>
         @endif

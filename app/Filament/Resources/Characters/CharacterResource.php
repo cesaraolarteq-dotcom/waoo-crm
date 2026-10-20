@@ -8,11 +8,11 @@ use App\Filament\Resources\Characters\Pages\{CreateCharacter, EditCharacter};
 use App\Filament\Support\RecordServicePageGate;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Forms\Components\{TagsInput, TextInput, Toggle};
+use Filament\Forms\Components\{Select, TagsInput, TextInput, Toggle};
 
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Filters\{SelectFilter, TernaryFilter};
 use Filament\Tables\Table;
 
 class CharacterResource extends Resource
@@ -44,12 +44,22 @@ class CharacterResource extends Resource
         return false;
     }
 
+    /** César's categories (catalog page, 2026-10-19); free text so he can add one, suggested in this order. */
+    public const CATEGORIES = ['Disney', 'Superhéroes', 'Programas infantiles', 'Videojuegos', 'Tendencias', 'Celebridades', 'Navidad', 'Otros'];
+
+    public const AUDIENCES = ['all' => 'Todos', 'girls' => 'Niñas', 'boys' => 'Niños'];
+
     public static function form(Schema $schema): Schema
     {
         return $schema->columns(2)->components([
             TextInput::make('name')->label('Nombre del personaje')->required()->maxLength(255),
             Toggle::make('active')->label('En catálogo')->default(true)->inline(false)
                 ->helperText('Apágalo para dejar de ofrecerlo sin borrar su historial.'),
+            TextInput::make('category')->label('Categoría')->maxLength(120)->datalist(self::CATEGORIES)->placeholder('Ej.: Disney'),
+            TextInput::make('group')->label('Show o grupo')->maxLength(120)
+                ->datalist(fn () => Character::query()->whereNotNull('group')->distinct()->orderBy('group')->pluck('group')->all())->placeholder('Ej.: Mickey y sus amigos'),
+            Select::make('audience')->label('Para')->options(self::AUDIENCES)->default('all')->native(false)->selectablePlaceholder(false)
+                ->helperText('Sirve para filtrar al elegir personajes. “Todos” aparece en niñas y en niños.'),
             TagsInput::make('outfits')->label('Versiones del traje (opcional)')->columnSpanFull()->placeholder('Ej.: Disneyland, Carreras')
                 ->helperText('Solo si este personaje tiene trajes distintos que las clientas piden por nombre. Escribe una y presiona Enter.'),
         ]);
@@ -60,7 +70,10 @@ class CharacterResource extends Resource
     {
         $outfits = collect($data['outfits'] ?? [])->map(fn ($o) => trim((string) $o))->filter(fn ($o) => $o !== '')->unique(fn ($o) => mb_strtolower($o))->values()->all();
 
-        return ['name' => trim((string) ($data['name'] ?? '')) ?: null, 'active' => (bool) ($data['active'] ?? false), 'outfits' => $outfits === [] ? null : $outfits];
+        $text = fn ($k) => ($v = trim((string) ($data[$k] ?? ''))) === '' ? null : $v;
+
+        return ['name' => trim((string) ($data['name'] ?? '')) ?: null, 'active' => (bool) ($data['active'] ?? false), 'outfits' => $outfits === [] ? null : $outfits,
+            'category' => $text('category'), 'group' => $text('group'), 'audience' => array_key_exists($data['audience'] ?? '', self::AUDIENCES) ? $data['audience'] : 'all'];
     }
 
     public static function table(Table $table): Table
@@ -70,7 +83,10 @@ class CharacterResource extends Resource
                 ->selectSub(fn ($s) => $s->from('resources')->selectRaw('count(*)')->whereColumn('resources.character_id', 'characters.id')->where('kind', 'costume')->where('status', 'active'), 'costumes_ready')
                 ->selectSub(fn ($s) => $s->from('resources')->selectRaw('count(*)')->whereColumn('resources.character_id', 'characters.id')->where('kind', 'costume'), 'costumes_total'))
             ->columns([
-                TextColumn::make('name')->label('Personaje')->searchable()->sortable()->weight('bold'),
+                TextColumn::make('name')->label('Personaje')->searchable()->sortable()->weight('bold')
+                    ->description(fn ($record) => collect([$record->category, $record->group])->filter()->implode(' · ') ?: null),
+                TextColumn::make('audience')->label('Para')->badge()->formatStateUsing(fn ($state) => self::AUDIENCES[$state ?? 'all'] ?? 'Todos')
+                    ->color(fn ($state) => match ($state) { 'girls' => 'danger', 'boys' => 'info', default => 'gray' }),
                 TextColumn::make('costumes')->label('Trajes disponibles')
                     ->state(fn ($record) => "{$record->costumes_ready} de {$record->costumes_total}")
                     ->color(fn ($record) => (int) $record->costumes_ready === 0 ? 'danger' : null),
@@ -78,7 +94,11 @@ class CharacterResource extends Resource
                     ->formatStateUsing(fn ($state) => $state ? 'Sí' : 'No')
                     ->color(fn ($state) => $state ? 'success' : 'gray'),
             ])
-            ->filters([TernaryFilter::make('active')->label('En catálogo')->trueLabel('Sí')->falseLabel('No')])
+            ->filters([
+                SelectFilter::make('category')->label('Categoría')->options(fn () => Character::query()->whereNotNull('category')->distinct()->orderBy('category')->pluck('category', 'category')->all()),
+                SelectFilter::make('audience')->label('Para')->options(self::AUDIENCES),
+                TernaryFilter::make('active')->label('En catálogo')->trueLabel('Sí')->falseLabel('No'),
+            ])
             ->defaultSort('name')
             ->emptyStateHeading('Todavía no hay personajes')
             ->emptyStateDescription('Se cargan con la lista de personajes y cuántos trajes hay de cada uno.');
