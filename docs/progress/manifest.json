@@ -144,7 +144,7 @@
       "scope": "Minutos de montaje/desmontaje por paquete importados y versionados; máximo por campo como valor inicial seguro en eventos nuevos, con edición manual. No cambia eventos, contratos o precios guardados. Claude conecta formularios.",
       "costume_hold_proposal": {
        "api": "docs/QUICK-COSTUME-HOLD-API.md",
-       "design": true,
+       "design": "docs/QUICK-COSTUME-HOLD-API.md (propuesta, sin código)",
        "backend": null,
        "ui": false,
        "reviewed": false,
