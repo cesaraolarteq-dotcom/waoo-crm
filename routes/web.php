@@ -22,6 +22,7 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::get('/history/imports/{batch}/rows/{row}', [\App\Http\Controllers\Admin\HistoricalImportController::class, 'row'])->whereNumber(['batch', 'row']);
     Route::post('/history/imports/{batch}/discard', [\App\Http\Controllers\Admin\HistoricalImportController::class, 'discard'])->whereNumber('batch');
     Route::get('/cutover/honeybook', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'index']);
+    Route::get('/cutover/honeybook/members', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'members']);
     Route::get('/cutover/honeybook/events/{event}', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'show'])->whereNumber('event');
     Route::post('/cutover/honeybook/events/{event}', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'review'])->whereNumber('event');
     Route::post('/cutover/reconciliations', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'prepare']);
