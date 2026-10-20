@@ -83,6 +83,7 @@
                 <div class="wrep-actions" style="margin-top:8px">
                     @if ($t['grant'])
                         <span>Enlace activo · vence el {{ $t['grant']['expires'] }}</span>
+                        @if (! $tipLink){{ ($this->tipCopyAction)(['grant' => $t['grant']['id'], 'version' => $t['grant']['version'], 'snapshot' => $t['grant']['snapshot']]) }}@endif
                         {{ ($this->tipRevokeAction)(['grant' => $t['grant']['id'], 'version' => $t['grant']['version']]) }}
                     @elseif ($t['can_issue'])
                         {{ $this->tipIssueAction }}
