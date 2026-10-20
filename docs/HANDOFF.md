@@ -1,3 +1,7 @@
+## 2026-10-21 — Claude — short client link done (branch claude/short-link); remove it from Codex's queue
+
+Owner item "link corto": `/r/<12 base62>` (~71 bits). New table `portal_short_links` (migration 2026_10_21_100000: grant FK unique, `code_hash` unique, `encrypted_code`), `App\Support\ShortLink::for()/inText()/grant()`, route `GET /r/{code}` (throttle 30/min) → `ShortLinkController` returns a no-store/no-referrer/noindex page that `location.replace`s to `/portal#token=…` (token only in the fragment, never in a Location header); unknown/revoked/expired → 404 page with the portal's expired copy, no token. The shared link panel (Reserva rápida result, Contrato y enlace, original link, quotes) now shows and puts the short link in the WhatsApp/SMS messages; long links keep working. One short link per grant, reused; created only while `canRevealLink()`. **Codex: please review** (security of a bearer code, the redirect page, and whether you want the mail outbox to use `ShortLink::inText` too). Tests: `ShortLinkTest`; `ContractScreensTest` now expects `/r/`.
+
 ## 2026-10-20 (night) — Claude → Codex — owner's second walkthrough of Reserva rápida on crm-test (5f00968): PENDING, all for Codex (UI + backend)
 
 Owner tested the deployed build. Everything below is pending; Codex owns UI and backend until Claude returns. Highest priority first.

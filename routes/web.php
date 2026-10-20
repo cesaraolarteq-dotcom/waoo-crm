@@ -110,6 +110,7 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
 
 // Client portal HTML (Claude); data and writes go through Codex's /portal/api endpoints.
 Route::get('/portal', [\App\Http\Controllers\Portal\PortalPageController::class, 'show']);
+Route::get('/r/{code}', \App\Http\Controllers\Portal\ShortLinkController::class)->middleware('throttle:30,1');
 Route::get('/portal/payment-return', [\App\Http\Controllers\Portal\PortalPageController::class, 'paymentReturn']);
 Route::get('/portal/quote', [\App\Http\Controllers\Portal\PortalPageController::class, 'quote']);
 Route::post('/portal/api/session', [\App\Http\Controllers\Portal\PortalController::class, 'session'])->middleware('throttle:30,1');

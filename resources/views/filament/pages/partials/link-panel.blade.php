@@ -2,6 +2,10 @@
      Copy is acknowledged only when the clipboard really worked; otherwise the link stays selectable for manual copy.
      Opening WhatsApp/SMS is not sending: nothing here records "sent". --}}
 @php
+    // Owner 2026-10-20: show and send the short /r/ link (same grant, same expiry); the long one keeps working.
+    $panel['url'] = \App\Support\ShortLink::for($panel['url']);
+    $panel['msg_es'] = \App\Support\ShortLink::inText($panel['msg_es']);
+    $panel['msg_en'] = \App\Support\ShortLink::inText($panel['msg_en']);
     $waEs = \App\Filament\Support\ContactLinks::whatsapp($panel['phone'] ?? null, $panel['msg_es']);
     $waEn = \App\Filament\Support\ContactLinks::whatsapp($panel['phone'] ?? null, $panel['msg_en']);
     $smsEs = \App\Filament\Support\ContactLinks::sms($panel['phone'] ?? null, $panel['msg_es']);

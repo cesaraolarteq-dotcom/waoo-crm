@@ -69,9 +69,9 @@ class ContractScreensTest extends TestCase
         $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $contract->presented_pdf_sha256);
 
         $page = Livewire::test(EventContract::class, ['record' => $this->event->id])->callAction('link', ['days' => 7])
-            ->assertSee('/portal#token=', false)->assertSee('Puedes volver a copiarlo')->assertSee('¡Hola Ana!');
+            ->assertSee(url('/r/'), false)->assertDontSee('/portal#token=', false)->assertSee('Puedes volver a copiarlo')->assertSee('¡Hola Ana!');
         $this->assertSame(1, PortalGrant::count());
-        $page->call('hideLink')->assertDontSee('/portal#token=', false);
+        $page->call('hideLink')->assertDontSee('/portal#token=', false)->assertDontSee(url('/r/'), false);
         $this->get("/admin/eventos/{$this->event->id}/contrato")->assertOk()->assertDontSee('#token=', false)->assertSee('Todavía no abre el contrato');
     }
 }
