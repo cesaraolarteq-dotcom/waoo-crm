@@ -76,7 +76,7 @@
                 @else
                     @php($row = $d['ok'])
                     @php($n = $row['normalized'])
-                    <p class="wqb-hint">Así viene en el archivo, sin cambios. No se guarda en ningún lado todavía.</p>
+                    <p class="wqb-hint">Así viene en el archivo, sin cambios. El archivo está guardado cifrado para revisión; todavía no crea clientas ni fiestas en el historial.</p>
                     <dl class="wfile-dl">
                         @foreach ($P::SOURCE as $field => $label)
                             @if (($row['source'][$field] ?? '') !== '')

@@ -51,6 +51,19 @@ class ImportHistoryPageTest extends TestCase
         $this->app->detectEnvironment(fn () => 'testing');
     }
 
+    public function test_registered_page_opens_for_the_owner_and_stays_gated(): void
+    {
+        $this->get('/admin/historial-honeybook')->assertOk()->assertSee('Historial de HoneyBook')->assertSee('Sube el archivo del historial');
+        $this->assertNotEmpty(collect(\Illuminate\Support\Facades\Route::getRoutes())->filter(fn ($r) => $r->uri() === 'admin/historial-honeybook')->all());
+        config(['waoo.sandbox_history' => false]);
+        $this->get('/admin/historial-honeybook')->assertForbidden();
+        config(['waoo.sandbox_history' => true]);
+        $this->actingAs(User::factory()->create(['role' => 'owner_admin', 'active' => true, 'two_factor_confirmed_at' => null]))
+            ->get('/admin/historial-honeybook')->assertRedirect(route('security.two-factor'));
+        $this->actingAs(User::factory()->create(['role' => 'staff', 'active' => true, 'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'), 'two_factor_confirmed_at' => now()]))
+            ->get('/admin/historial-honeybook')->assertForbidden();
+    }
+
     public function test_upload_shows_counts_rows_and_no_import_action(): void
     {
         $page = $this->uploaded([

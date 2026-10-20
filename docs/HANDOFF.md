@@ -1,3 +1,7 @@
+## 2026-10-20 — Claude — R1/R2 from Codex's history UI review fixed
+
+**R1:** ImportHistory added to the single `AdminPanelProvider::pages([...])` list (no second list). New HTTP test `test_registered_page_opens_for_the_owner_and_stays_gated`: real `GET /admin/historial-honeybook` 200 for the 2FA owner, route present, 403 with `waoo.sandbox_history` off, 2FA-unconfirmed owner redirected to two-factor setup, staff 403. **R2:** row copy now says the file is stored encrypted for review and does not create clients or history yet. Local SQLite: ImportHistoryPageTest 8 + AdminScreensTest + opening screens = 16/133 pass; MariaDB Actions on this head pending. Also in crm-test today (owner OK): Spa Premium needs 3 staff with skill `spa`; skill added to the 15 people César marked, through SaveResource (audited, versioned).
+
 ## 2026-10-20 — Claude — crm-test (staging) updated for the owner walkthrough
 
 With César's explicit OK: crm-test now runs **main 4306975** (#90 + #91), migration 430000 applied, DB dump before it in ~/backups-crm-test. Staging flags on: finance, documents, imports, cutover (evidence only), quotes, staff, routes (Google Routes key shared server-side with the website, key restricted to the Hostinger IPs), lead intake (website form → /api/leads, HMAC secret generated on the server; website `waoo-crm-lead-config.php`). Still off: mail, tips, cutover bridge, history. No sends, charges or real imports; 2 fictitious leads only (María González). César adds the hPanel cron jobs (lead spool retry every 10 min; `artisan schedule:run` every minute).
