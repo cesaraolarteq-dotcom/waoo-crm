@@ -1,6 +1,6 @@
 # C3 B — refund evidence and allocation S2 (next delivery)
 
-2026-10-20 · Codex · contract before implementation. Depends on OPENING-STRIPE-API.md S1. **Current delivery: A capture/evidence and verified charge-control blockers are implemented at7468cc6. Owner read/allocation/subtraction below remain B design, with no registered endpoint or refund initiation.** Every actual refund remains pending allocation; combined balance stays unknown. No refund initiation, source activation or deployment authorized.
+2026-10-20 · Codex · contract before implementation. Depends on OPENING-STRIPE-API.md S1. **Current delivery: A capture/evidence and verified charge-control blockers are implemented at7468cc6. B1 owner read is implemented at18e5d3e; allocation/subtraction remain B2 design, with no POST endpoint or refund initiation.** Every actual refund remains pending allocation; combined balance stays unknown. No refund initiation, source activation or deployment authorized.
 
 ## Evidence, not permission to return money
 
@@ -12,7 +12,15 @@ Require succeeded status, USD, positive actual amount, nonfuture creation time >
 
 Freeze explicit V1 fields for refund, sanitized webhook, parent S1 evidence, amount/time/account/currency/status and canonical ledger. Unique ledger FK and parent receipt FK; encrypted payload/hash, no unrelated ORM columns. Unknown schemas, corrupt/transplanted proof, ambiguous source, wrong parent/event/finance/account or gross above paid amount remain pending. Populated destructive rollback refused. Existing successful evidence is not rewritten by later callbacks; conflicting observations stay auditable.
 
-## Owner API (proposed, not registered)
+## Owner API (GET delivered in B1; allocation proposed, not registered)
+
+### B1 staged read contract (2026-10-20, before code)
+
+Deliver the GET and `ReadOpeningRefundCandidates` first, with `OpeningRefundProof` validating the immutable successful evidence, its exact sanitized callback, parent S1 proof/allocation and subsequent parent observations. Reads perform no provider request or money/evidence write. GET uses the same owner/2FA/secure transport/finance/imports/cutover/bridge gates as receipt reads. Closed filters, clamped SQL pagination, maximum 10,000 event refund rows and 1,000 observations per parent; volume overflow refuses verification rather than dropping evidence.
+
+Until B2 classification/allocation exists, every row has `allocated=false`, `eligible=false`, `refund_allocation_not_available`; both remaining-component amounts and `parent_budget_sha256` are **null**, never inferred from gross or reported as zero. `refund_sha256` pins only the valid immutable successful proof, independently of changing controls/budgets. Invalid proof yields null proof hash/gross/time/parent identity, with safe `refund_evidence_invalid` or `refund_evidence_required`. A valid captured refund with invalid current parent authority remains visible with its actual gross/time and explicit parent/allocation/current-observation issues; it does not become collectible.
+
+Inspect all bounded parent observations, not just the first successful one or mutable exception state. Later same-refund failed/canceled/pending/identity conflicts, corrupt observations/callbacks, charge-level/dispute controls and cumulative actual refunds above parent gross refuse current eligibility. Exact duplicate economic callbacks preserve the immutable proof pin. Prior pending→succeeded history is retained and does not invalidate the later genuine success. Critical controls remain blocking even if an exception is manually closed; no B1 auto-resolution. No POST/refund allocation, balance subtraction, fee classification, provider fanout or source activation in this staged read delivery. Claude can build a read-only review list; allocation controls wait for B2 frozen services.
 
 `ReadOpeningRefundCandidates::execute(User $actor,int $eventId,array $filters=[]): array`
 
