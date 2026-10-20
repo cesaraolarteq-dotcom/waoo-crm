@@ -46,7 +46,7 @@ class EventMoney extends Page
     #[Locked]
     public string $noticeKey = '';
 
-    /** TIP-01 owner block: one UUID per intent; the raw link is shown once (no reveal API). */
+    /** TIP-01 owner block: one UUID per intent; the link is shown on creation and can be copied again (RevealTipGrantLink). */
     #[Locked]
     public string $tipKey = '';
 
@@ -79,7 +79,7 @@ class EventMoney extends Page
         }
         $grant = \App\Models\TipGrant::where('event_id', $this->record->id)->whereNull('revoked_at')->where('expires_at', '>', now())->latest('id')->first();
 
-        return [...$read, 'grant' => $grant ? ['id' => $grant->id, 'version' => $grant->version, 'expires' => rtrim(Labels::when($grant->expires_at), '.')] : null,
+        return [...$read, 'grant' => $grant ? ['id' => $grant->id, 'version' => $grant->version, 'snapshot' => $grant->snapshot_sha256, 'expires' => rtrim(Labels::when($grant->expires_at), '.')] : null,
             'can_issue' => $this->record->status === 'capacity_reserved' && ! $this->record->ends_at->isFuture() && ($this->record->responsible_system ?? 'crm') === 'crm'];
     }
 
@@ -105,12 +105,36 @@ class EventMoney extends Page
                     return;
                 }
                 $this->tipKey = (string) Str::uuid();
-                $first = trim(explode(' ', (string) $this->record->customer?->name)[0] ?? '');
-                $until = rtrim(Labels::when(\Carbon\CarbonImmutable::parse($r['expires_at'])), '.');
-                $this->tipLink = ['url' => $r['link'], 'expires' => $until, 'phone' => $this->record->customer?->phone, 'locale' => $this->record->customer?->locale ?? 'es',
-                    'heading' => 'Enlace de propina', 'hint' => 'Cópialo ahora: por seguridad no se vuelve a mostrar. Si lo pierdes, anúlalo y crea otro.',
-                    'msg_es' => "¡Hola {$first}! Gracias por celebrar con Waoo Party. Si quieres agradecerle al equipo de tu fiesta, aquí puedes dejar una propina (el 100 % es para el staff): {$r['link']}",
-                    'msg_en' => "Hi {$first}! Thank you for celebrating with Waoo Party. If you'd like to thank your party's team, you can leave a tip here (100% goes to the staff): {$r['link']}"];
+                $this->showTipLink($r['link'], $r['expires_at']);
+            });
+    }
+
+    /** Panel with the link and ready messages (EN/ES) for WhatsApp/SMS; nothing is sent from the CRM. */
+    private function showTipLink(string $link, string $expiresIso): void
+    {
+        $first = trim(explode(' ', (string) $this->record->customer?->name)[0] ?? '');
+        $this->tipLink = ['url' => $link, 'expires' => rtrim(Labels::when(\Carbon\CarbonImmutable::parse($expiresIso)), '.'), 'phone' => $this->record->customer?->phone, 'locale' => $this->record->customer?->locale ?? 'es',
+            'heading' => 'Enlace de propina', 'hint' => 'Es el mismo enlace de siempre: si lo pierdes, usa “Copiar enlace otra vez”.',
+            'msg_es' => "¡Hola {$first}! Gracias por celebrar con Waoo Party. Si quieres agradecerle al equipo de tu fiesta, aquí puedes dejar una propina (el 100 % es para el staff): {$link}",
+            'msg_en' => "Hi {$first}! Thank you for celebrating with Waoo Party. If you'd like to thank your party's team, you can leave a tip here (100% goes to the staff): {$link}"];
+    }
+
+    /** Copies the SAME active link again (no new grant, no renewal); pinned to the version/snapshot shown on screen. */
+    public function tipCopyAction(): Action
+    {
+        return Action::make('tipCopy')->label('Copiar enlace otra vez')->color('gray')->size('sm')->link()
+            ->action(function (array $arguments) {
+                if (! class_exists(\App\Services\Tips\RevealTipGrantLink::class)) return;
+                try {
+                    $r = app(\App\Services\Tips\RevealTipGrantLink::class)->execute(Filament::auth()->user(), (int) ($arguments['grant'] ?? 0),
+                        ['expected_version' => (int) ($arguments['version'] ?? 0), 'expected_snapshot_sha256' => (string) ($arguments['snapshot'] ?? '')], $this->tipKey);
+                } catch (ValidationException|RecordWriteRejected|AuthorizationException|\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+                    $this->tipKey = (string) Str::uuid();
+                    Notification::make()->danger()->title('No se pudo copiar')->body(($e instanceof ValidationException ? collect($e->errors())->flatten()->first() : $e->getMessage()).' Si la fiesta o sus importes cambiaron, anula el enlace y crea otro.')->persistent()->send();
+                    return;
+                }
+                $this->tipKey = (string) Str::uuid();
+                $this->showTipLink($r['link'], $r['expires_at']);
             });
     }
 
