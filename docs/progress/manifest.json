@@ -878,13 +878,14 @@
      },
      "intake_a": {
       "backend": "35a4b8b",
-      "ui": false,
-      "reviewed": false,
+      "ui": "466f830",
+      "reviewed": true,
       "merged": false,
       "accepted": false,
       "verification": "69 tests/389 assertions PASS, PHP8.3.35/MariaDB11.8, 2:07.144; private history intake/parser + future importer/C2 resync. Lint and strict Composer pass. Not a full-suite or remote CI result.",
       "scope": "Cifrado de CSV/celdas, revisión paginada, datos originales, incidencias, reintentos/concurrencia y descarte atómico. Sin clientas/historial definitivo, cobros, reservas o mensajes.",
-      "note": "Solo subentrega: backend raíz permanece null; no crédito de importación histórica completa. Claude debe revisar y conectar UI. Sin importación real."
+      "note": "Solo subentrega: backend raíz permanece null; no crédito de importación histórica completa. Claude debe revisar y conectar UI. Sin importación real.",
+      "review_evidence": "Claude review of 35a4b8b in HANDOFF 2026-10-20 (screen built against it); UI 466f830 on claude/history-intake-ui: 7 Livewire tests + 14 intake tests pass locally (SQLite); MariaDB CI pending."
      }
     },
     {
