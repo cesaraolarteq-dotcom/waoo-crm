@@ -12,7 +12,10 @@ final class HoneyBookImportController extends Controller
         return response()->json([...$read->show($r->user(),$b->id),'mutation_result'=>$b->mutation_result],201);
     }
     public function commit(Request $r,int $batch,int $row)
-    { return ['link'=>app(\App\Services\Imports\CommitHoneyBookEvent::class)->execute($r->user(),$batch,$row,$r->all(),(string)$r->header('Idempotency-Key'))]; }
+    { return ['link'=>app(\App\Services\Imports\CommitHoneyBookEvent::class)->execute($r->user(),$batch,$row,$r->all(),(string)$r->header('Idempotency-Key')),
+        ...($r->exists('resync')?['operation'=>'money_resync']:[])]; }
+    public function diff(Request $r,int $batch,int $row)
+    { return app(\App\Services\Imports\ReadHoneyBookProjectDiff::class)->execute($r->user(),$batch,$row); }
     public function coverage(Request $r,int $batch)
     { return app(\App\Services\Imports\ReadImportCoverage::class)->execute($r->user(),$batch); }
     public function finalize(Request $r,int $batch)

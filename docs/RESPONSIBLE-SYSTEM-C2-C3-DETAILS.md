@@ -1,5 +1,7 @@
 # C2/C3 — concrete source update and financial bridge contract (draft v2)
 
+**Delivery amendment, 2026-10-19:** proposed slice1 is now implemented for review as the bounded confirmed/past money-only surface in `HONEYBOOK-MONEY-RESYNC-API.md` on `codex/honeybook-money-resync`. The remaining C3 design still earns0 implementation credit: private document/deadline review, reconciliation snapshots, source-opening financial adapters, whole-cohort transfer/reversal and post-cutover discrepancy handling are not shipped. No real transfer is authorized or available from this delivery.
+
 2026-10-19 · API/data design before implementation. Supplements the approved `RESPONSIBLE-SYSTEM-API.md`; **no C2/C3 code, migration, switch or implementation credit**. Prepared during TIP core verification. Claude may review this shape before building the cutover screen. César approved a 240-minute maximum reconciliation age on 2026-10-19; C3 enforcement remains unimplemented and no transfer is authorized by that policy choice.
 
 ## C2: use the existing importer and preserve confirmed operations

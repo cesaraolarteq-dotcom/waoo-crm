@@ -21,7 +21,7 @@ final class ReadImportCoverage
                 elseif(!$link)$reason='unmapped';
                 else{$r=ImportedProjectRevision::findOrFail($link->current_revision_id);$event=Event::findOrFail($link->event_id);if(hash_equals($r->source_sha256,$n['source_sha256']))$matchingRevision=$r;
                     if(!hash_equals($r->source_sha256,$n['source_sha256'])||($event->status==='draft'&&$event->version!==$r->event_version))$reason='outdated';
-                    elseif($event->status==='capacity_reserved'&&$event->version===$r->event_version+1&&$event->reservations()->exists()&&BookingEvidence::where('event_id',$event->id)->where('imported_revision_id',$r->id)->exists())$counts['capacity_confirmed']++;
+                    elseif(ImportedAgreement::capacityMatches($event,$r))$counts['capacity_confirmed']++;
                     else $reason='draft';}
                 foreach($totals as $field=>&$total){if(($n[$field]??null)===null)$total['unknown_source_count']++;else$total['source_sum_cents']+=$n[$field];if($matchingRevision){$total['imported_sum_cents']+=$matchingRevision->normalized[$field];$total['matched_source_count']++;}}unset($total);
                 if($reason){$counts[$reason]++;$gaps[]=['row_id'=>$row->id,'reason'=>$reason];}

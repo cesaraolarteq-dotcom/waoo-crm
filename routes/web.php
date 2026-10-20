@@ -12,6 +12,10 @@ Route::redirect('/', '/admin')->name('home');
 Route::middleware(['auth', 'password.confirm'])->get('/seguridad/dos-pasos', TwoFactorEnrollmentController::class)->name('security.two-factor');
 Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'));
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->prefix('admin/api')->group(function () {
+    Route::get('/cutover/honeybook', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'index']);
+    Route::get('/cutover/honeybook/events/{event}', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'show'])->whereNumber('event');
+    Route::post('/cutover/honeybook/events/{event}', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'review'])->whereNumber('event');
+    Route::post('/cutover/reconciliations', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'prepare']);
     Route::get('/mail/occurrences', [\App\Http\Controllers\Admin\MailController::class, 'occurrences']);
     Route::get('/mail/settings', [\App\Http\Controllers\Admin\MailController::class, 'settings']);
     Route::get('/messages/warnings', [\App\Http\Controllers\Admin\MailController::class, 'warnings']);
@@ -19,6 +23,7 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::post('/events/{event}/mail/reminders', [\App\Http\Controllers\Admin\MailController::class, 'plan'])->whereNumber('event');
     Route::patch('/events/{event}/mail/policy', [\App\Http\Controllers\Admin\MailController::class, 'pause'])->whereNumber('event');
     Route::get('/imports/honeybook/{batch}/rows/{row}/mapping', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'mapping'])->whereNumber(['batch','row']);
+    Route::get('/imports/honeybook/{batch}/rows/{row}/diff', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'diff'])->whereNumber(['batch','row']);
     Route::post('/imports/honeybook/{batch}/rows/{row}/commit', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'commit'])->whereNumber(['batch','row']);
     Route::get('/imports/honeybook/{batch}/coverage', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'coverage'])->whereNumber('batch');
     Route::post('/imports/honeybook/{batch}/finalize', [\App\Http\Controllers\Admin\HoneyBookImportController::class, 'finalize'])->whereNumber('batch');

@@ -1,5 +1,7 @@
 # Responsible system — shadow HoneyBook and explicit CRM cutover, API proposal v1
 
+**Implementation status amendment, 2026-10-19:** C1 is now in main through #87 (`b908c59` also includes #88). C2's confirmed/past **money-only** read/update slice is implemented for review on `codex/honeybook-money-resync`; see `HONEYBOOK-MONEY-RESYNC-API.md` for the exact shipped surface and test evidence in HANDOFF. C3 reconciliation snapshots, opening financial bridge, cohort switch/reversal and post-cutover discrepancy workflow remain unimplemented. Older limits below describe the original pre-C2 baseline, not permission to reprice/rebook confirmed events.
+
 2026-10-19 · Owner decision in PHASE-8.md, backend Codex / UI Claude. Design published before code and approved by Claude. C1 is implemented for review on `codex/responsibility-c1` (ead6e67 +5415421); C2/C3 are not implemented. Current order: C1 → versioned owner staff instructions read → TIP behind C1 → C2 reviewed resync/reconciliation → C3 cohort cutover + financial bridge. Publication of this API does not activate any operation. No live import, messages, money or deployment authorized here.
 
 ## C1 — one responsible system per event
