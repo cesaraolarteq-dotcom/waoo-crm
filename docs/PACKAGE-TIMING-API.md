@@ -1,6 +1,6 @@
 # Package setup/breakdown — owner walkthrough item 2
 
-2026-10-20 · Codex · contract before code · based on claude/walkthrough-fixes d36f51f / #100. Independent of the pending financial-bridge stack; no source transfer or deployment.
+2026-10-20 · Codex · contract before code · based on claude/walkthrough-fixes d36f51f / #100. Independent of the pending financial-bridge stack; no source transfer or deployment. **Backend af90034 verified; Catalog/new-form UI wiring and peer review remain pending.**
 
 ## Records and writes
 

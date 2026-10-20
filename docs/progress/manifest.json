@@ -1,6 +1,6 @@
 {
  "_about": "Temporary owner progress view (prototype tab 'Avance del proyecto'). Phases = docs/PROJECT_PLAN.md §18. Each agent updates its own evidence; Claude renders. Rules: a design/contract doc counts 0; a part counts only with a tested commit; review, merge to main and owner acceptance are separate steps. Phase % = sum(weight × stage score) / sum(weight). 'design' = preview/contract/plan evidence: shown as a chip, earns 0%.",
- "updated": "2026-10-19",
+ "updated": "2026-10-20",
  "stage_scores": {
   "backend": 0.35,
   "ui": 0.35,
@@ -131,6 +131,27 @@
       "verification": "7000631:127/25007 related MariaDB PASS5:20.786; final64824dc:110/858 parser/core/booking PASS4:51.504. Runs overlap; no distinct sum or full-suite current/remote CI/owner acceptance claim. PHP lint515 files PASS.",
       "backend_reviewed": true,
       "review_evidence": "Claude aprueba backend ad318f7 en HANDOFF de claude/taxonomy-ui cfb6b1a. Sus pantallas aún requieren revisión de Codex; sin aceptación/despliegue."
+     },
+     "walkthrough_package_timing": {
+      "api": "docs/PACKAGE-TIMING-API.md",
+      "branch": "codex/package-operational-times",
+      "backend": "af90034",
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "120 tests/1104 assertions PASS, 05:47.991, 127.00 MB, PHP8.3.35/MariaDB11.8; PHP lint/strict Composer/diff pass; catalog/quick book/client preferences/Calendar/admin/staff/records. Not full suite/remote CI/browser/SQLite/Hostinger.",
+      "scope": "Minutos de montaje/desmontaje por paquete importados y versionados; máximo por campo como valor inicial seguro en eventos nuevos, con edición manual. No cambia eventos, contratos o precios guardados. Claude conecta formularios.",
+      "costume_hold_proposal": {
+       "api": "docs/QUICK-COSTUME-HOLD-API.md",
+       "design": true,
+       "backend": null,
+       "ui": false,
+       "reviewed": false,
+       "merged": false,
+       "accepted": false,
+       "note": "Solo propuesta para revisión: sin apartado real ni crédito de implementación. Debe conservar depósito y conectar confirmación/liberación/cancelación antes de habilitar."
+      }
      }
     },
     {
