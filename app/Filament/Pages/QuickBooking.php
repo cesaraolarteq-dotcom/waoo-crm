@@ -55,6 +55,8 @@ class QuickBooking extends Page
     #[Locked]
     public ?array $displayedContact = null;
 
+    #[Locked] public string $clientSearch = '';
+
     /** LEAD-01: the website lead being converted, as it was when this page opened (id + version, server-set only). */
     #[Locked]
     public ?int $leadId = null;
@@ -114,10 +116,10 @@ class QuickBooking extends Page
             Section::make('2. Fecha y lugar')->columns(3)->schema([
                 DatePicker::make('date')->label('Fecha')->native(false)->displayFormat('D j M Y')->locale('es')->weekStartsOnSunday()->closeOnDateSelection()->required()->live()
                     ->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set)),
-                TimePicker::make('start_time')->label('Empieza (Houston)')->native(false)->seconds(false)->format('H:i')->displayFormat('g:i A')->minutesStep(15)->required()->live()
+                TimePicker::make('start_time')->label('Empieza (Houston)')->native(false)->seconds(false)->format('H:i')->minutesStep(15)->required()->live()
                     ->afterStateUpdated(fn (Get $get, Set $set) => $this->fillEnd($get, $set))
                     ->helperText('La clienta la confirma en su enlace.'),
-                TimePicker::make('end_time')->label('Termina')->native(false)->seconds(false)->format('H:i')->displayFormat('g:i A')->minutesStep(15)->required()->live()
+                TimePicker::make('end_time')->label('Termina')->native(false)->seconds(false)->format('H:i')->minutesStep(15)->required()->live()
                     ->helperText('Se llena con la duración del paquete.'),
                 $choice('start_time'), $choice('end_time'),
                 TextInput::make('setup_minutes')->label('Montaje (minutos antes)')->integer()->minValue(0)->maxValue(720)
@@ -130,23 +132,24 @@ class QuickBooking extends Page
                     ->placeholder('Calle, ciudad, TX ZIP')->helperText(fn () => filled(config('waoo.google_maps_browser_key')) ? 'Empieza a escribir y elige la dirección que sugiere Google: se llena el ZIP y se calcula el transporte. Puedes cambiar todo.' : 'Con la dirección exacta puedes calcular el transporte. La clienta la confirma en su enlace.'),
                 TextInput::make('postal_code')->label('ZIP')->required()->maxLength(10)->placeholder('77494')->extraInputAttributes(['data-places' => 'zip'])
                     ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => \App\Filament\Support\TravelFeeFields::invalidate($get, $set)),
-                \App\Filament\Support\TravelFeeFields::feeField(true, 'Obligatorio aquí: con el depósito se fija el total.')
-                    ->afterStateUpdated(fn (Get $get, Set $set) => $this->refreshDeposit($get, $set)),
+                \App\Filament\Support\TravelFeeFields::feeField(true, 'Obligatorio aquí: con el depósito se fija el total.',
+                    fn (Get $get, Set $set) => self::refreshDeposit($get, $set))
+                    ->afterStateUpdated(fn (Get $get, Set $set) => self::refreshDeposit($get, $set)), // a typed fee also moves the suggested deposit
                 ...\App\Filament\Support\TravelFeeFields::extraFields(),
             ]),
             Section::make('3. Clienta')->columns(2)->schema([
-                Radio::make('customer_mode')->hiddenLabel()->inline()->options(['existing' => 'Buscar clienta registrada', 'new' => 'Clienta nueva'])->live()->columnSpanFull()
-                    ->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set)),
-                Select::make('customer_id')->label('Buscar clienta')->native(false)->searchable()->required()->columnSpanFull()
+                Hidden::make('customer_mode'),
+                Hidden::make('customer_id')->live()->afterStateUpdated(function (Get $get, Set $set) { $this->fillCustomer($get, $set); EventResource::refreshTitle($get, $set); }),
+                Select::make('client_lookup')->label('Clienta')->native(false)->searchable()->dehydrated(false)->columnSpanFull()
                     ->placeholder('Escribe nombre, teléfono o correo')
-                    ->getSearchResultsUsing(fn (string $search) => self::searchCustomers($search))
-                    ->getOptionLabelUsing(fn ($value) => self::customerLabel(Customer::find($value)))
-                    ->noSearchResultsMessage('No aparece. Elige “Clienta nueva”.')
-                    ->live()->afterStateUpdated(function (Get $get, Set $set) { $this->fillCustomer($get, $set); EventResource::refreshTitle($get, $set); })
-                    ->visible(fn (Get $get) => $get('customer_mode') === 'existing'),
-                Callout::make('Verifica sus datos')->description('Si algo cambió, corrígelo aquí: se actualiza su ficha al guardar la reserva.')->info()->columnSpanFull()
-                    ->visible(fn (Get $get) => $get('customer_mode') === 'existing' && filled($get('customer_id'))),
-                TextInput::make('c_name')->label('Nombre')->required()->maxLength(255)
+                    ->required(fn (Get $get) => $get('customer_mode') !== 'new' && blank($get('customer_id')))
+                    ->options(['new' => 'Crear clienta nueva'])
+                    ->getSearchResultsUsing(fn (string $search) => $this->clientLookupOptions($search))
+                    ->getOptionLabelUsing(fn ($value) => self::clientLookupLabel($value))
+                    ->live()->afterStateUpdated(function (Get $get, Set $set) { $this->selectClientLookup($get, $set); }),
+                Section::make('Verifica sus datos')->description('Abre aquí si necesitas corregir su nombre, teléfono o correo.')->collapsible()->collapsed()->columns(2)->columnSpanFull()
+                    ->visible(fn (Get $get) => $get('customer_mode') === 'existing' && filled($get('customer_id')))->schema([
+                TextInput::make('c_name')->label('Nombre')->required(fn () => ($this->displayedContact['name'] ?? null) !== null)->nullable()->maxLength(255)
                     ->visible(fn (Get $get) => $get('customer_mode') === 'existing' && filled($get('customer_id'))),
                 TextInput::make('c_phone')->label('Teléfono / WhatsApp')->tel()->maxLength(40)
                     ->visible(fn (Get $get) => $get('customer_mode') === 'existing' && filled($get('customer_id'))),
@@ -154,22 +157,13 @@ class QuickBooking extends Page
                     ->visible(fn (Get $get) => $get('customer_mode') === 'existing' && filled($get('customer_id'))),
                 Select::make('c_locale')->label('Idioma de sus mensajes')->native(false)->options(['es' => 'Español', 'en' => 'Inglés'])->required()
                     ->visible(fn (Get $get) => $get('customer_mode') === 'existing' && filled($get('customer_id'))),
-                TextInput::make('name')->label('Nombre (como lo tienes)')->required()->maxLength(255)
+                    ]),
+                TextInput::make('name')->label('Nombre (opcional)')->nullable()->maxLength(255)
                     ->live(debounce: 500)->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set))
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new')->helperText(fn (Get $get) => self::duplicateHint($get('name'), $get('phone')) ?? 'Ella confirma su nombre completo en el enlace.'),
                 TextInput::make('phone')->label('Teléfono / WhatsApp')->tel()->maxLength(40)->live(debounce: 500)
                     ->requiredWithout('email')->validationMessages(['required_without' => 'Escribe su teléfono o su correo: lo necesitas para mandarle el enlace.'])
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new'),
-                // Owner 2026-10-20: while typing a new client, show registered ones that could be her (name, phone, email) to avoid duplicates.
-                Radio::make('match_customer_id')->label('¿Es alguna de estas clientas ya registradas?')->columnSpanFull()->dehydrated(false)->live()
-                    ->options(fn (Get $get) => self::possibleMatches($get('name'), $get('phone'), $get('email')))
-                    ->helperText('Tócala si es ella: se usa su ficha y no se crea otra. Si es otra persona con el mismo nombre, sigue llenando.')
-                    ->visible(fn (Get $get) => $get('customer_mode') === 'new' && self::possibleMatches($get('name'), $get('phone'), $get('email')) !== [])
-                    ->afterStateUpdated(function (Get $get, Set $set) {
-                        if (! filled($get('match_customer_id'))) return;
-                        $set('customer_mode', 'existing'); $set('customer_id', (int) $get('match_customer_id')); $set('match_customer_id', null);
-                        $this->fillCustomer($get, $set); EventResource::refreshTitle($get, $set);
-                    }),
                 TextInput::make('email')->label('Correo')->email()->maxLength(255)->live(onBlur: true)
                     ->helperText('Teléfono o correo: con uno basta.')
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new'),
@@ -179,14 +173,14 @@ class QuickBooking extends Page
             Section::make('4. Depósito recibido')->columns(3)->schema([
                 Grid::make(3)->statePath('deposit')->columnSpanFull()->schema([
                     TextInput::make('amount')->label('Monto que llegó (USD)')->prefix('$')->required()->live(onBlur: true)
-                        ->helperText('Se llena con el 50 % del total (servicios + transporte). Cámbialo si llegó otro monto.')
-                        ->rule('regex:/^\d{1,7}(\.\d{1,2})?$/')->validationMessages(['regex' => 'Escribe solo el número, por ejemplo 250.']),
-                    TextInput::make('reference')->label('Referencia de Zelle')->required()->minLength(3)->maxLength(255),
+                        ->rule('regex:/^\d{1,7}(\.\d{1,2})?$/')->validationMessages(['regex' => 'Escribe solo el número, por ejemplo 250.'])
+                        ->afterStateUpdated(fn (Get $get, Set $set) => $set('amount_custom', filled($get('amount')))),
+                    Hidden::make('amount_custom')->default(false)->dehydrated(false),
+                    TextInput::make('reference')->label('Referencia de Zelle (opcional)')->minLength(3)->maxLength(255),
                     DatePicker::make('date')->label('Fecha en que llegó')->native(false)->displayFormat('D j M Y')->locale('es')->weekStartsOnSunday()->closeOnDateSelection()
                         ->required()->live()->maxDate(now(ChicagoTime::TZ))->helperText('Hoy, salvo que llegara otro día.'),
                     Checkbox::make('verified')->label('Lo vi reflejado en el banco')->accepted()->columnSpanFull(),
                 ]),
-                Hidden::make('deposit_amount_auto')->dehydrated(false),
                 Callout::make('Resumen')->info()->columnSpanFull()->description(fn (Get $get) => $this->moneyLine($get)),
                 TextInput::make('expires_days')->label('El enlace vence en (días)')->integer()->minValue(1)->maxValue(60)->required(),
             ]),
@@ -209,29 +203,10 @@ class QuickBooking extends Page
         $set('price_version_ids', $ids);
         $set('characters', collect($get('characters') ?? [])->filter(fn ($c) => blank($c['price_version_id'] ?? null) || in_array((string) $c['price_version_id'], $ids, true))->all());
         EventResource::syncCharacterSlots($get, $set);
+        self::refreshDeposit($get, $set);
         $this->fillEnd($get, $set);
         EventResource::refreshTitle($get, $set);
         EventResource::refreshTiming($get, $set);
-        $this->refreshDeposit($get, $set);
-    }
-
-    /**
-     * Owner 2026-10-20: the deposit starts at 50 % of services + travel (rounded up to the cent, like the deposit target).
-     * A different amount typed by the owner stays; our value follows the total.
-     */
-    public function refreshDeposit(Get $get, Set $set): void
-    {
-        $services = (int) PriceVersion::whereIn('id', array_map('intval', $get('price_version_ids') ?? []))->sum('amount_cents');
-        $fee = (string) $get('travel_fee');
-        $target = null;
-        if ($services > 0 && preg_match('/^\d{1,7}(\.\d{1,2})?$/', $fee)) {
-            $total = $services + EditServiceVariant::toCents($fee);
-            $cents = intdiv($total, 2) + $total % 2;
-            $target = $cents % 100 === 0 ? (string) intdiv($cents, 100) : number_format($cents / 100, 2, '.', '');
-        }
-        $current = trim((string) $get('deposit.amount'));
-        if ($current === '' || $current === (string) $get('deposit_amount_auto')) $set('deposit.amount', $target);
-        $set('deposit_amount_auto', $target);
     }
 
     /** Non-native time pickers keep "Y-m-d H:i:s" in raw state; the rest of the page works with Houston "H:i". */
@@ -248,6 +223,23 @@ class QuickBooking extends Page
         if ($start && $minutes && preg_match('/^\d{2}:\d{2}/', $start)) {
             $set('end_time', CarbonImmutable::createFromFormat('H:i', substr($start, 0, 5))->addMinutes((int) $minutes)->format('H:i'));
         }
+    }
+
+    public static function depositDefault(array $priceIds, mixed $fee): ?string
+    {
+        $ids = array_values(array_unique(array_map('intval', $priceIds)));
+        if ($ids === [] || is_bool($fee) || !is_scalar($fee) || !preg_match('/^\d{1,7}(\.\d{1,2})?$/D', (string) $fee)) return null;
+        $prices = PriceVersion::whereIn('id', $ids)->get(['amount_cents', 'currency']);
+        if ($prices->count() !== count($ids) || $prices->contains(fn ($price) => $price->currency !== 'USD')) return null;
+        $total = (int) $prices->sum('amount_cents') + EditServiceVariant::toCents((string) $fee);
+        $target = intdiv($total, 2) + $total % 2;
+        return intdiv($target,100).'.'.str_pad((string)($target%100),2,'0',STR_PAD_LEFT);
+    }
+
+    public static function refreshDeposit(Get $get, Set $set): void
+    {
+        if ($get('deposit.amount_custom')) return;
+        $set('deposit.amount', self::depositDefault($get('price_version_ids') ?? [], $get('travel_fee')));
     }
 
     /** Live money line: total, 50 %, received, balance and due date, before saving. Unknown pieces say so; never $0. */
@@ -312,7 +304,48 @@ class QuickBooking extends Page
 
     public static function customerLabel(?Customer $c): ?string
     {
-        return $c ? $c->name.($c->phone ? ' · '.$c->phone : '').($c->email ? ' · '.$c->email : '') : null;
+        return $c ? ($c->name ?? 'Nombre pendiente').($c->phone ? ' · '.$c->phone : '').($c->email ? ' · '.$c->email : '') : null;
+    }
+
+    protected function clientLookupOptions(string $search): array
+    {
+        $this->clientSearch = mb_substr(trim($search), 0, 255);
+        $options = [];
+        foreach (self::possibleMatches($this->clientSearch, $this->clientSearch, $this->clientSearch) as $id => $label) {
+            $options['customer:'.$id] = $label;
+        }
+        return [...$options, 'new' => 'Crear clienta nueva con estos datos'];
+    }
+
+    public static function clientLookupLabel(mixed $value): ?string
+    {
+        if ($value === 'new') return 'Clienta nueva';
+        if (!is_string($value) || !preg_match('/^customer:([0-9]+)$/D', $value, $match)) return null;
+        $customer = Customer::find((int) $match[1]);
+        if (!$customer) return null;
+        $count = \App\Models\Event::where('customer_id', $customer->id)->count();
+        return self::customerLabel($customer).' · '.$count.($count === 1 ? ' evento' : ' eventos');
+    }
+
+    protected function selectClientLookup(Get $get, Set $set): void
+    {
+        $value = $get('client_lookup');
+        if ($value === 'new') {
+            $set('customer_mode', 'new'); $set('customer_id', null);
+            $this->fillCustomer($get, $set);
+            $search = $this->clientSearch;
+            $email = str_contains($search, '@');
+            $phone = !$email && preg_match('/^[+0-9() .-]+$/D', $search) && preg_match('/[0-9]/', $search);
+            $set('name', $search !== '' && !$email && !$phone ? $search : null);
+            $set('phone', $phone ? $search : null); $set('email', $email ? $search : null);
+        } elseif (is_string($value) && preg_match('/^customer:([0-9]+)$/D', $value, $match)) {
+            $set('customer_mode', 'existing'); $set('customer_id', (int) $match[1]);
+            $this->fillCustomer($get, $set);
+        } else {
+            $set('customer_mode', 'existing'); $set('customer_id', null);
+            $this->fillCustomer($get, $set);
+        }
+        EventResource::refreshTitle($get, $set);
     }
 
     public function fillCustomer(Get $get, Set $set): void
@@ -333,7 +366,7 @@ class QuickBooking extends Page
             if (strlen($digits) >= 7) $q->orWhereRaw("replace(replace(replace(replace(replace(coalesce(phone,''),'-',''),' ',''),'(',''),')',''),'+','') like ?", ['%'.substr($digits, -10)]);
         })->first();
 
-        return $match && (filled($name) || strlen($digits) >= 7) ? '⚠ Ya tienes registrada a '.self::customerLabel($match).'. Si es ella, tócala abajo.' : null;
+        return $match && (filled($name) || strlen($digits) >= 7) ? '⚠ Ya tienes registrada a '.self::customerLabel($match).'. Si es ella, selecciónala en la búsqueda de arriba.' : null;
     }
 
     /**
@@ -346,22 +379,19 @@ class QuickBooking extends Page
         $words = array_values(array_filter(preg_split('/\s+/', $fold($name)) ?: [], fn ($w) => strlen($w) >= 3));
         $digits = substr((string) preg_replace('/\D/', '', (string) $phone), -10);
         $mail = $fold($email);
-        if ($words === [] && strlen($digits) < 7 && ! str_contains($mail, '@')) return [];
+        if ($words === [] && strlen($digits) < 4 && ! str_contains($mail, '@')) return [];
         // Compared in PHP with accents folded ("Maria Gonzalez" finds "María González") on any database.
-        static $memo = [];
-        $memoKey = implode('|', [implode(' ', $words), $digits, $mail, Customer::max('updated_at'), Customer::count()]);
-        if (isset($memo[$memoKey])) return $memo[$memoKey];
         $ids = [];
         foreach (Customer::query()->select(['id', 'name', 'phone', 'email'])->orderBy('name')->cursor() as $c) {
             $hay = $fold($c->name);
             $byName = $words !== [] && collect($words)->every(fn ($w) => str_contains($hay, $w));
-            $byPhone = strlen($digits) >= 7 && str_ends_with((string) preg_replace('/\D/', '', (string) $c->phone), $digits);
-            $byMail = str_contains($mail, '@') && $fold($c->email) === $mail;
+            $byPhone = strlen($digits) >= 4 && str_contains((string) preg_replace('/\D/', '', (string) $c->phone), $digits);
+            $byMail = str_contains($mail, '@') && str_contains($fold($c->email), $mail);
             if ($byName || $byPhone || $byMail) $ids[] = $c->id;
             if (count($ids) >= 6) break;
         }
 
-        return $memo[$memoKey] = Customer::query()->whereIn('id', $ids)
+        return Customer::query()->whereIn('id', $ids)
             ->addSelect(['events_count' => \App\Models\Event::selectRaw('count(*)')->whereColumn('events.customer_id', 'customers.id')])->orderBy('name')->get()
             ->mapWithKeys(fn ($c) => [$c->id => self::customerLabel($c).' · '.((int) $c->events_count === 1 ? '1 evento' : (int) $c->events_count.' eventos')])->all();
     }
@@ -375,7 +405,7 @@ class QuickBooking extends Page
         if ($this->displayedCustomerId === null || (int) ($s['customer_id'] ?? 0) !== $this->displayedCustomerId || $this->displayedContact === null) {
             return [];
         }
-        $new = ['name' => trim((string) ($s['c_name'] ?? '')), 'email' => filled($s['c_email'] ?? null) ? trim($s['c_email']) : null,
+        $new = ['name' => blank($s['c_name'] ?? null) && $this->displayedContact['name'] === null ? null : trim((string) ($s['c_name'] ?? '')), 'email' => filled($s['c_email'] ?? null) ? trim($s['c_email']) : null,
             'phone' => filled($s['c_phone'] ?? null) ? trim($s['c_phone']) : null, 'locale' => $s['c_locale'] ?? $this->displayedContact['locale']];
 
         return $new === $this->displayedContact ? [] : ['customer_update' => ['expected_version' => (int) $this->displayedCustomerVersion, ...$new]];
@@ -388,7 +418,7 @@ class QuickBooking extends Page
             str_starts_with($key, 'new_customer.') => substr($key, strlen('new_customer.')),
             str_starts_with($key, 'customer_update.') => 'c_'.substr($key, strlen('customer_update.')),
             str_starts_with($key, 'deposit.amount_cents') => 'deposit.amount',
-            str_starts_with($key, 'deposit.received_at') => 'deposit.date',
+            str_starts_with($key, 'deposit.received_at'), str_starts_with($key, 'deposit.received_on') => 'deposit.date',
             str_starts_with($key, 'deposit.verified_received') => 'deposit.verified',
             $key === 'travel_fee_cents', $key === 'travel_fee_quote_id' => 'travel_fee',
             $key === 'starts_at' => 'start_time',
@@ -406,15 +436,11 @@ class QuickBooking extends Page
             throw ValidationException::withMessages(['data.end_time' => 'La hora de fin debe ser después de la de inicio (mismo día).']);
         }
         $d = $s['deposit'];
-        if (blank($d['time'] ?? null)) {
-            // Optional time: now (a minute back, so it is never "in the future") if it arrived today, otherwise noon.
-            $d['time'] = ($d['date'] ?? null) === now(ChicagoTime::TZ)->format('Y-m-d') ? now(ChicagoTime::TZ)->subMinute()->format('H:i') : '12:00';
-        }
 
         return [
             ...($s['customer_mode'] === 'existing'
                 ? ['customer_id' => (int) $s['customer_id'], ...$this->customerUpdate($s)]
-                : ['new_customer' => ['name' => trim($s['name']), 'phone' => filled($s['phone'] ?? null) ? trim($s['phone']) : null, 'email' => filled($s['email'] ?? null) ? trim($s['email']) : null, 'locale' => $s['locale']]]),
+                : ['new_customer' => ['name' => trim((string) ($s['name'] ?? '')), 'phone' => filled($s['phone'] ?? null) ? trim($s['phone']) : null, 'email' => filled($s['email'] ?? null) ? trim($s['email']) : null, 'locale' => $s['locale']]]),
             'title' => trim((string) $s['title']), 'event_type' => $s['event_type'], 'starts_at' => $start, 'ends_at' => $end, 'timezone' => ChicagoTime::TZ,
             'postal_code' => trim((string) $s['postal_code']), 'travel_fee_cents' => EditServiceVariant::toCents((string) $s['travel_fee']),
             ...(filled($s['address'] ?? null) ? ['address' => trim((string) $s['address'])] : []),
@@ -423,8 +449,8 @@ class QuickBooking extends Page
             ...(filled($s['setup_minutes'] ?? null) ? ['setup_minutes' => (int) $s['setup_minutes']] : []),
             ...(filled($s['breakdown_minutes'] ?? null) ? ['breakdown_minutes' => (int) $s['breakdown_minutes']] : []),
             'services' => EventResource::servicesInput($s),
-            'deposit' => ['method' => 'zelle', 'amount_cents' => EditServiceVariant::toCents((string) $d['amount']), 'reference' => trim($d['reference']),
-                'received_at' => ChicagoTime::toIso($d['date'], $d['time'], $d['choice'] ?? null, 'data.deposit.date'), 'verified_received' => (bool) ($d['verified'] ?? false)],
+            'deposit' => ['method' => 'zelle', 'amount_cents' => EditServiceVariant::toCents((string) $d['amount']), 'reference' => filled($d['reference'] ?? null) ? trim($d['reference']) : null,
+                'received_on' => $d['date'], 'verified_received' => (bool) ($d['verified'] ?? false)],
             // The pre-request snapshot retains this anchor even when the save response is lost.
             'portal' => ['expires_at' => min(CarbonImmutable::parse($this->linkExpiryAnchorUtc)->setTimezone(ChicagoTime::TZ)->addDays((int) $s['expires_days'])->endOfDay(), CarbonImmutable::parse($this->linkExpiryAnchorUtc)->addDays(30))->format('Y-m-d\TH:i:sP')],
         ];
@@ -475,9 +501,9 @@ class QuickBooking extends Page
             'event_type' => \App\Filament\Pages\Leads::EVENT_TYPES[$p['event_type'] ?? ''][0] ?? null];
         $hints = $lead['duplicate_hints'] ?? [];
         if (count($hints) === 1) {
-            $state += ['customer_mode' => 'existing', 'customer_id' => $hints[0]['customer_id']];
+            $state += ['customer_mode' => 'existing', 'customer_id' => $hints[0]['customer_id'], 'client_lookup' => 'customer:'.$hints[0]['customer_id']];
         } else {
-            $state += ['customer_mode' => 'new', 'name' => $p['name'], 'phone' => $p['phone'] ?? null, 'email' => $p['email'] ?? null, 'locale' => $p['locale'] ?? 'es'];
+            $state += ['customer_mode' => 'new', 'client_lookup' => 'new', 'name' => $p['name'], 'phone' => $p['phone'] ?? null, 'email' => $p['email'] ?? null, 'locale' => $p['locale'] ?? 'es'];
         }
         $this->form->fill([...$this->form->getRawState(), ...$state]);
         if (($state['customer_mode'] ?? null) === 'existing') {

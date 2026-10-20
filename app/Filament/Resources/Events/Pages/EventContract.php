@@ -170,7 +170,7 @@ class EventContract extends Page
                     Notification::make()->danger()->title('No se creó')->body($e->getMessage())->persistent()->send();
                     $action->halt();
                 }
-                $this->newLink = $this->linkPanel($g->url, $g->expiresAt, (bool) $this->state()['quick'], false);
+                $this->newLink = $this->linkPanel($g->short_url ?? $g->url, $g->expiresAt, (bool) $this->state()['quick'], false);
             });
     }
 
@@ -212,7 +212,7 @@ class EventContract extends Page
 
                     return;
                 }
-                $this->newLink = $this->linkPanel($r->url, $r->expires_at, in_array('details.submit', $grant?->scopes ?? [], true), true);
+                $this->newLink = $this->linkPanel($r->short_url ?? $r->url, $r->expires_at, in_array('details.submit', $grant?->scopes ?? [], true), true);
             });
     }
 

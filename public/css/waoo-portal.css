@@ -75,10 +75,14 @@ dt{color:var(--muted);font-size:14px}dd{margin:0;font-weight:700;overflow-wrap:a
 .t-center{text-align:center}
 .p-fixed{display:block;font-size:1.05rem;padding:10px 0 2px}
 .p-sub-title{margin:10px 0 0;font-size:1.05rem}
-.p-chips{border:0;padding:0;margin:0}
-.p-chips>div{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
-.p-chip{position:relative;cursor:pointer}
-.p-chip input{position:absolute;opacity:0;width:1px;height:1px}
-.p-chip span{display:inline-block;padding:12px 20px;border-radius:999px;border:1.5px solid rgba(255,255,255,.28);font-weight:600;min-width:96px;text-align:center;transition:background .15s,border-color .15s}
-.p-chip input:checked+span{background:#f8c630;border-color:#f8c630;color:#0b0d24}
-.p-chip input:focus-visible+span{outline:2px solid #2fd3c3;outline-offset:2px}
+
+/* Party choices: real radios preserve native required validation and keyboard navigation. */
+.p-choice-field legend{padding:0;margin-bottom:8px}
+.p-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.p-choices-two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.p-choice{position:relative;cursor:pointer;min-width:0}
+.p-choice input{position:absolute;width:1px;height:1px;min-height:0;padding:0;border:0;opacity:0}
+.p-choice>span{display:flex;align-items:center;justify-content:center;min-height:60px;padding:14px 8px;border:2px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font-weight:700;text-align:center;overflow-wrap:anywhere}
+.p-choice input:checked+span{border-color:var(--teal);background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--teal)}
+.p-choice input:focus-visible+span{box-shadow:var(--focus);outline:2px solid var(--teal);outline-offset:2px}
+@media(forced-colors:active){.p-choice input:checked+span{border:3px solid Highlight}}

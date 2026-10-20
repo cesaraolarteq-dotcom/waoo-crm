@@ -33,7 +33,7 @@ final class IssuePortalGrant
                     DB::table('payment_exceptions')->where('event_id', $eventId)->where('kind', 'portal_link_pending')->update(['state' => 'resolved', 'updated_at' => now()]);
                 }
                 \App\Services\Mail\CaptureEventLinkMail::forGrant($event, $grant, $actor);
-                return new IssuedPortalGrant($grant->id, Sandbox::origin().'/portal#token='.$token, $token, $grant->expires_at->toIso8601String());
+                return new IssuedPortalGrant($grant->id, Sandbox::origin().'/portal#token='.$token, $token, $grant->expires_at->toIso8601String(), app(ShortPortalLinks::class)->forLockedGrant($grant));
             }, 3);
         } catch (\Illuminate\Auth\Access\AuthorizationException|\Illuminate\Database\Eloquent\ModelNotFoundException|\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             throw $e;
