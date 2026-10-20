@@ -48,11 +48,11 @@ final class CutoverMember
             'refund_cents' => $valid ? -(int)$lines->where('amount_cents', '<', 0)->sum('amount_cents') : null,
             'net_paid_cents' => $valid ? $n['paid_cents'] : null, 'balance_cents' => $valid ? $n['balance_cents'] : null,
             'balance_due_date' => $n['balance_due_date'] ?? null, 'contract_signed' => $n['contract_signed'] ?? null, 'funds_verified' => false];
-        $binding = ['event' => $event->only(['id', 'version', 'status', 'responsible_system', 'customer_id', 'starts_at', 'ends_at', 'setup_minutes', 'breakdown_minutes', 'address', 'postal_code']),
+        $binding = ['event' => \App\Services\Integrity\EvidenceV1::model($event, 'event'),
             'link' => $link->only(['id', 'version', 'current_revision_id']), 'source_sha256' => $r->source_sha256,
             'commercial_sha256' => HoneyBookResyncReview::commercialHash($r->source_snapshot),
-            'customer_sha256' => MutationKey::hash($customer->only(['id', 'version', 'name', 'phone', 'email', 'locale'])), 'source' => $source,
-            'operations_sha256' => MutationKey::hash(['services' => $services->toArray(), 'reservations' => $reservations->toArray(), 'booking' => $booking->toArray(), 'resources' => $resources->toArray()]),
+            'customer_sha256' => MutationKey::hash(\App\Services\Integrity\EvidenceV1::model($customer, 'customer')), 'source' => $source,
+            'operations_sha256' => MutationKey::hash(\App\Services\Integrity\EvidenceV1::operations($services, $reservations, $booking, $resources)),
             'collections_sha256' => $collections['hash']];
         // Keep personal fields only as a hash in the encrypted snapshot too; never emit the address.
         $binding['event'] = ['id' => $event->id, 'version' => $event->version, 'sha256' => MutationKey::hash($binding['event'])];
