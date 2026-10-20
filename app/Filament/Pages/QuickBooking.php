@@ -176,13 +176,9 @@ class QuickBooking extends Page
                         ->rule('regex:/^\d{1,7}(\.\d{1,2})?$/')->validationMessages(['regex' => 'Escribe solo el número, por ejemplo 250.'])
                         ->afterStateUpdated(fn (Get $get, Set $set) => $set('amount_custom', filled($get('amount')))),
                     Hidden::make('amount_custom')->default(false)->dehydrated(false),
-                    TextInput::make('reference')->label('Referencia de Zelle')->required()->minLength(3)->maxLength(255),
+                    TextInput::make('reference')->label('Referencia de Zelle (opcional)')->minLength(3)->maxLength(255),
                     DatePicker::make('date')->label('Fecha en que llegó')->native(false)->displayFormat('D j M Y')->locale('es')->weekStartsOnSunday()->closeOnDateSelection()
                         ->required()->live()->maxDate(now(ChicagoTime::TZ))->helperText('Hoy, salvo que llegara otro día.'),
-                    TimePicker::make('time')->label('Hora (opcional)')->native()->seconds(false)->live()
-                        ->helperText('Vacía: la hora actual si llegó hoy, o mediodía si fue otro día.'),
-                    Radio::make('choice')->label('Esa hora se repite ese día: ¿cuál?')->options(ChicagoTime::CHOICES)->required()->columnSpanFull()
-                        ->visible(fn (Get $get) => ChicagoTime::isAmbiguous($get('date'), $get('time'))),
                     Checkbox::make('verified')->label('Lo vi reflejado en el banco')->accepted()->columnSpanFull(),
                 ]),
                 Callout::make('Resumen')->info()->columnSpanFull()->description(fn (Get $get) => $this->moneyLine($get)),
@@ -416,7 +412,7 @@ class QuickBooking extends Page
             str_starts_with($key, 'new_customer.') => substr($key, strlen('new_customer.')),
             str_starts_with($key, 'customer_update.') => 'c_'.substr($key, strlen('customer_update.')),
             str_starts_with($key, 'deposit.amount_cents') => 'deposit.amount',
-            str_starts_with($key, 'deposit.received_at') => 'deposit.date',
+            str_starts_with($key, 'deposit.received_at'), str_starts_with($key, 'deposit.received_on') => 'deposit.date',
             str_starts_with($key, 'deposit.verified_received') => 'deposit.verified',
             $key === 'travel_fee_cents', $key === 'travel_fee_quote_id' => 'travel_fee',
             $key === 'starts_at' => 'start_time',
@@ -434,10 +430,6 @@ class QuickBooking extends Page
             throw ValidationException::withMessages(['data.end_time' => 'La hora de fin debe ser después de la de inicio (mismo día).']);
         }
         $d = $s['deposit'];
-        if (blank($d['time'] ?? null)) {
-            // Optional time: now (a minute back, so it is never "in the future") if it arrived today, otherwise noon.
-            $d['time'] = ($d['date'] ?? null) === now(ChicagoTime::TZ)->format('Y-m-d') ? now(ChicagoTime::TZ)->subMinute()->format('H:i') : '12:00';
-        }
 
         return [
             ...($s['customer_mode'] === 'existing'
@@ -451,8 +443,8 @@ class QuickBooking extends Page
             ...(filled($s['setup_minutes'] ?? null) ? ['setup_minutes' => (int) $s['setup_minutes']] : []),
             ...(filled($s['breakdown_minutes'] ?? null) ? ['breakdown_minutes' => (int) $s['breakdown_minutes']] : []),
             'services' => EventResource::servicesInput($s),
-            'deposit' => ['method' => 'zelle', 'amount_cents' => EditServiceVariant::toCents((string) $d['amount']), 'reference' => trim($d['reference']),
-                'received_at' => ChicagoTime::toIso($d['date'], $d['time'], $d['choice'] ?? null, 'data.deposit.date'), 'verified_received' => (bool) ($d['verified'] ?? false)],
+            'deposit' => ['method' => 'zelle', 'amount_cents' => EditServiceVariant::toCents((string) $d['amount']), 'reference' => filled($d['reference'] ?? null) ? trim($d['reference']) : null,
+                'received_on' => $d['date'], 'verified_received' => (bool) ($d['verified'] ?? false)],
             // The pre-request snapshot retains this anchor even when the save response is lost.
             'portal' => ['expires_at' => min(CarbonImmutable::parse($this->linkExpiryAnchorUtc)->setTimezone(ChicagoTime::TZ)->addDays((int) $s['expires_days'])->endOfDay(), CarbonImmutable::parse($this->linkExpiryAnchorUtc)->addDays(30))->format('Y-m-d\TH:i:sP')],
         ];

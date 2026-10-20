@@ -83,7 +83,7 @@ class QuickBookingWalkthroughTest extends TestCase
         $page->fillForm(['email' => 'maria@example.test'])->call('save')->assertHasNoFormErrors(['phone']);
     }
 
-    public function test_blank_deposit_time_uses_now_today_or_noon_another_day(): void
+    public function test_deposit_builder_pins_only_the_received_day_for_server_clock_resolution(): void
     {
         $this->travelTo(\Carbon\CarbonImmutable::parse('2026-10-20T15:30:00-05:00'));
         $page = new QuickBooking; $page->linkExpiryAnchorUtc = now('UTC')->toIso8601String();
@@ -91,9 +91,10 @@ class QuickBookingWalkthroughTest extends TestCase
             'date' => '2026-12-19', 'start_time' => '15:00', 'end_time' => '16:00', 'postal_code' => '77494', 'travel_fee' => '25', 'price_version_ids' => [$this->prices['Waoo']],
             'characters' => [], 'expires_days' => 14];
         $today = $page->toServiceInput([...$base, 'deposit' => ['amount' => '100', 'reference' => 'Z-1', 'date' => '2026-10-20', 'time' => null, 'verified' => true]]);
-        $this->assertSame('2026-10-20T15:29:00-05:00', $today['deposit']['received_at']);
+        $this->assertSame('2026-10-20', $today['deposit']['received_on']);
+        $this->assertArrayNotHasKey('received_at', $today['deposit']);
         $other = $page->toServiceInput([...$base, 'deposit' => ['amount' => '100', 'reference' => 'Z-1', 'date' => '2026-10-18', 'time' => '', 'verified' => true]]);
-        $this->assertSame('2026-10-18T12:00:00-05:00', $other['deposit']['received_at']);
+        $this->assertSame('2026-10-18', $other['deposit']['received_on']);
     }
 
     public function test_google_address_suggestions_load_only_with_the_browser_key(): void
