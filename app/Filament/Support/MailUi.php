@@ -33,10 +33,15 @@ final class MailUi
         'transport_outcome_unknown' => 'No sabemos si salió: revísalo antes de pensar en reenviar.',
         'unsupported_environment_or_channel' => 'Canal o entorno no permitido.',
         'responsible_system_honeybook' => 'HoneyBook cobra y avisa esta fiesta: el CRM no le manda correos hasta el cambio final.',
+        'balance_due_date_required' => 'Falta la fecha en que vence el saldo.',
+        'date_required' => 'Falta una fecha que este correo necesita.',
     ];
 
     /** Server refusals of planning, in plain Spanish (codes from PlanEventMail / EventMailSource / ApprovedMail). */
     public const PLAN_ERRORS = [
+        // Longer code first: 'date_required' is also contained in 'balance_due_date_required'.
+        'balance_due_date_required' => 'Falta la fecha en que vence el saldo: ponla en los montos antes de programar el recordatorio.',
+        'date_required' => 'Falta una fecha que este correo necesita. Revisa la fiesta y sus montos.',
         'responsible_system_honeybook' => 'HoneyBook cobra y avisa esta fiesta: el CRM no le programa correos hasta el cambio final.',
         'mail_source_changed' => 'El evento o la ficha de la clienta cambió. Recarga la página.',
         'mail_link_expires_before_reminder' => 'El enlace vence antes de algún recordatorio. Crea un enlace que dure más.',
