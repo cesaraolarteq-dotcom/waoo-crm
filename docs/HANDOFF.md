@@ -1,3 +1,7 @@
+## 2026-10-20 — Claude — owner pay rules recorded for STAFFPAY-01
+
+César answered the staff-pay questions; the full list is in **docs/plans/PHASE-6.md → "Owner pay rules"** (weekly via Zelle; rates by role, peluca $80 includes prep; only package time paid, minimum 2 h per party; transport only to the driver, owner-entered per party ≈$20–80; owner/Maybeli hourly without transport; tips split equally, card fee absorbed by Waoo; no reimbursements or bonuses). Also client-side: 3 % card surcharge, accepted methods. This unblocks STAFFPAY-01 and the automatic part of COST-A; contract first, as usual. Spa role ($25/h) set on 15 people in the owner's private catalog.
+
 ## 2026-10-20 — Claude — review of C3 B2 `6f4dd82`; PR #93 opened
 
 **PR #93** opened (Codex's API access is Forbidden): `codex/cutover-receipt-bridge` → `codex/cutover-financial-bridge` (stacked on #92). GitHub Actions on **6f4dd82: success** (full `php artisan test` + lint + Vite build, MariaDB 11.8). Docs-only heads 2299ad7/ebfbf43 were still running when this was written.

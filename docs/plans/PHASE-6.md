@@ -42,6 +42,20 @@ Known (BACKLOG 2026-10-15): recreador $25/h, animador $35/h, personaje $60/h, pe
 3. **Cutover (Phase 8):** before cancelling anything in HoneyBook, César asks HoneyBook support to transfer the number to his Twilio account; expect re-verification of the toll-free number under his own account (assume it, do not promise it carries over). Then activate SMS-01 in the CRM with that number.
 4. WhatsApp templates later, only as a complement (~50 % of clients use it).
 
+## Owner pay rules (César, 2026-10-20, catalog questionnaire s01–s20, q13/q18/q31/q34)
+
+Source: César's answers in his catalog worksheet (private). Calculation/approval aid only, not payroll or tax advice (plan §10).
+
+- **Period:** weekly; paid Tuesday–Wednesday for the previous week; by Zelle.
+- **Hourly rate by role:** recreador/host $25 · animador $35 · personaje de cabeza / disfraz completo $60 · personaje de peluca $80 (the higher rate already covers makeup/wig prep: **no separate prep pay**) · pintacaritas $25 · operador (foam, photo booth, sparklers) $25 · facilitadora de spa $25 (women only; 15 people marked) · robot LED bajo (own staff) $60. Robot alto: subcontracted stilt walker **$200/h** (external cost, not staff pay).
+- **Paid time:** package duration only (the 15 min before/after for setup are **not** paid), with a **minimum of 2 paid hours per party**.
+- **Transport:** paid **only to the driver**, set per party by distance and number of people picked up (no formula): one pickup nearby (e.g. Katy) ≈ $20; group pickup of 3 people ≥ $40; far ≈ $60–80; maximum seen $80 (~100 miles round trip, 3 pickups). Store as an owner-entered amount per assignment, with these as guidance. External driver who only carries equipment (≈5% of parties): $50–60 per trip.
+- **César and Maybeli:** paid hourly by the role they work at the party, **no transport pay**.
+- **Tips:** split **equally** among the people who worked that party; card processing fee is **absorbed by Waoo** (not deducted from tips); paid together with the weekly pay.
+- **No expense reimbursement** (gas, materials, tolls, parking) and **no bonuses**.
+
+Client-side money rules from the same answers (for Stripe/quotes): card payments carry a **3 % surcharge**; accepted methods Zelle, card, cash, Cash App, and Afterpay/Zip/Klarna through the Stripe payment link; extra time exists only for some packages, at the rate in each contract.
+
 ## What Claude needs from César
 
 1. **Staff list:** name, phone (to send their link), roles/skills (incl. who drives), approved characters, active yes/no. (Can be a spreadsheet; it stays out of git.)
