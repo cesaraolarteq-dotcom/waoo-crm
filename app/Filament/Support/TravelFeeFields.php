@@ -77,6 +77,17 @@ final class TravelFeeFields
         }
     }
 
+    /**
+     * The address or ZIP changed after a quote: that quote no longer describes this address. Mark it stale (never "ok"), so the
+     * fee can only be kept with a written reason or replaced by pressing Calcular again; nothing is silently reused.
+     */
+    public static function invalidate(Get $get, Set $set): void
+    {
+        if (! self::enabled() || ! filled($get('travel_fee_quote_id')) || $get('travel_quote_status') === 'stale') return;
+        $set('travel_quote_status', 'stale');
+        $set('travel_quote_summary', 'La dirección cambió: vuelve a calcular el transporte (o explica por qué mantienes este costo).');
+    }
+
     public static function summary(array $q): string
     {
         $b = $q['breakdown'] ?? [];

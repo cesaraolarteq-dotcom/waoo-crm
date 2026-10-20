@@ -44,10 +44,13 @@
       var zip = (place.addressComponents || []).filter(function (c) { return c.types.indexOf('postal_code') >= 0; })[0];
       var address = (place.formattedAddress || '').replace(/, (USA|EE\. UU\.|Estados Unidos)$/, '');
       token = null;
-      var wire = component(input), zipEl = field('zip');
-      input.value = address; if (zipEl && zip) zipEl.value = zip.longText;
+      // Address and ZIP always change together: a place without a ZIP clears the old one (never reuse another ZIP's fee).
+      var wire = component(input), zipEl = field('zip'), zipText = zip ? zip.longText : '';
+      input.value = address; if (zipEl) zipEl.value = zipText;
       if (!wire) return;
-      Promise.all([wire.$set('data.address', address), zip ? wire.$set('data.postal_code', zip.longText) : null]).then(function () {
+      // Setting them on the server also forgets any earlier quote (TravelFeeFields::invalidate).
+      wire.$set('data.address', address).then(function () { return wire.$set('data.postal_code', zipText); }).then(function () {
+        if (!zipText) { if (zipEl) zipEl.focus(); return; } // no ZIP from Google: the owner types it, then presses Calcular
         var quote = document.querySelector('[data-places="quote"]');
         if (quote) quote.click();
       });

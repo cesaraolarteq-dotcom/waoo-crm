@@ -75,7 +75,7 @@ class EventResource extends Resource
                 Select::make('price_version_ids')->label('Paquetes y servicios')->multiple()->native(false)->searchable()
                     ->options(fn (?Event $record) => self::priceOptions($record))
                     ->helperText('Precio vigente de cada servicio. Un borrador conserva el precio que ya tenía; para usar el precio nuevo, quita el anterior y elige el actual.')
-                    ->live()->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set)),
+                    ->live()->afterStateUpdated(function (Get $get, Set $set) { self::refreshTitle($get, $set); self::refreshTiming($get, $set); }),
                 Repeater::make('characters')->label('Personajes')->defaultItems(0)->columns(3)->addActionLabel('Agregar personaje')
                     ->live()->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set))
                     ->visible(fn (Get $get) => self::configurablePrices($get('price_version_ids') ?? []) !== [])
@@ -98,12 +98,16 @@ class EventResource extends Resource
                     ]),
             ]),
             Section::make('Lugar y logística')->columns(2)->columnSpanFull()->schema([
-                TextInput::make('address')->label('Dirección')->maxLength(255)->columnSpanFull(),
-                TextInput::make('postal_code')->label('ZIP')->maxLength(10)->placeholder('77494'),
+                TextInput::make('address')->label('Dirección')->maxLength(255)->columnSpanFull()
+                    ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => \App\Filament\Support\TravelFeeFields::invalidate($get, $set)),
+                TextInput::make('postal_code')->label('ZIP')->maxLength(10)->placeholder('77494')
+                    ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => \App\Filament\Support\TravelFeeFields::invalidate($get, $set)),
                 \App\Filament\Support\TravelFeeFields::feeField(false, 'Déjalo vacío si aún no está calculado: se muestra "Pendiente", nunca $0.'),
                 ...\App\Filament\Support\TravelFeeFields::extraFields(),
-                TextInput::make('setup_minutes')->label('Montaje (minutos antes)')->integer()->minValue(0)->maxValue(720),
+                TextInput::make('setup_minutes')->label('Montaje (minutos antes)')->integer()->minValue(0)->maxValue(720)
+                    ->helperText('Se propone con el catálogo del paquete; puedes cambiarlo.'),
                 TextInput::make('breakdown_minutes')->label('Desmontaje (minutos después)')->integer()->minValue(0)->maxValue(720),
+                Hidden::make('setup_minutes_auto')->dehydrated(false), Hidden::make('breakdown_minutes_auto')->dehydrated(false),
             ]),
         ]);
     }
@@ -189,6 +193,23 @@ class EventResource extends Resource
         }
 
         return trim(preg_replace('/\s+/', ' ', implode(' ', array_filter([$packages, $chars, $short, trim((string) $client)]))));
+    }
+
+    /**
+     * PACKAGE-TIMING prefill: catalog setup/breakdown (max of the chosen services, null when any is unknown). A value the owner
+     * typed is kept; a value we filled follows the selection (and clears when the selection empties). Never touches duration.
+     */
+    public static function refreshTiming(Get $get, Set $set, string $p = ''): void
+    {
+        $defaults = \App\Services\Records\PackageTimingDefaults::forPriceIds(array_values(array_filter((array) ($get($p.'price_version_ids') ?? []))));
+        foreach (['setup_minutes', 'breakdown_minutes'] as $field) {
+            $current = $get($p.$field);
+            $auto = $get($p.$field.'_auto');
+            if ($current === null || trim((string) $current) === '' || (string) $current === (string) $auto) {
+                $set($p.$field, $defaults[$field] === null ? null : (string) $defaults[$field]);
+            }
+            $set($p.$field.'_auto', $defaults[$field] === null ? null : (string) $defaults[$field]);
+        }
     }
 
     /** Fill the title from the suggestion unless the owner already typed her own. $p = path prefix from inside a repeater. */

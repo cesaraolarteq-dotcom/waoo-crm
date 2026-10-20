@@ -140,12 +140,15 @@ class QuickBooking extends Page
                     ->helperText('Se llena con la duración del paquete.'),
                 $choice('start_time'), $choice('end_time'),
                 TextInput::make('setup_minutes')->label('Montaje (minutos antes)')->integer()->minValue(0)->maxValue(720)
-                    ->helperText('Si aún no lo sabes, complétalo al revisar los datos de la clienta.'),
+                    ->helperText('Se llena con el catálogo del paquete; puedes cambiarlo. Vacío si algún servicio aún no lo tiene.'),
                 TextInput::make('breakdown_minutes')->label('Desmontaje (minutos después)')->integer()->minValue(0)->maxValue(720),
+                Hidden::make('setup_minutes_auto')->dehydrated(false), Hidden::make('breakdown_minutes_auto')->dehydrated(false),
                 TextInput::make('address')->label('Dirección de la fiesta (opcional)')->maxLength(255)->columnSpan(2)
                     ->extraInputAttributes(['data-places' => 'address', 'autocomplete' => 'off'])
+                    ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => \App\Filament\Support\TravelFeeFields::invalidate($get, $set))
                     ->placeholder('Calle, ciudad, TX ZIP')->helperText(fn () => filled(config('waoo.google_maps_browser_key')) ? 'Empieza a escribir y elige la dirección que sugiere Google: se llena el ZIP y se calcula el transporte. Puedes cambiar todo.' : 'Con la dirección exacta puedes calcular el transporte. La clienta la confirma en su enlace.'),
-                TextInput::make('postal_code')->label('ZIP')->required()->maxLength(10)->placeholder('77494')->extraInputAttributes(['data-places' => 'zip']),
+                TextInput::make('postal_code')->label('ZIP')->required()->maxLength(10)->placeholder('77494')->extraInputAttributes(['data-places' => 'zip'])
+                    ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => \App\Filament\Support\TravelFeeFields::invalidate($get, $set)),
                 \App\Filament\Support\TravelFeeFields::feeField(true, 'Obligatorio aquí: con el depósito se fija el total.'),
                 ...\App\Filament\Support\TravelFeeFields::extraFields(),
             ]),
@@ -227,6 +230,7 @@ class QuickBooking extends Page
         $set('characters', collect($get('characters') ?? [])->filter(fn ($c) => blank($c['price_version_id'] ?? null) || in_array((string) $c['price_version_id'], $ids, true))->all());
         $this->fillEnd($get, $set);
         EventResource::refreshTitle($get, $set);
+        EventResource::refreshTiming($get, $set);
     }
 
     public function fillEnd(Get $get, Set $set): void

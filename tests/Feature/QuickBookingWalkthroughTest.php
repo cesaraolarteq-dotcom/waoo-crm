@@ -103,4 +103,23 @@ class QuickBookingWalkthroughTest extends TestCase
         Livewire::test(QuickBooking::class)->assertSee('js/waoo-places.js?v=', false)->assertSee('data-key="AIzaFixtureBrowserKey"', false)
             ->assertSee('data-places="address"', false)->assertSee('data-places="zip"', false)->assertSee('elige la dirección que sugiere Google');
     }
+
+    // PACKAGE-TIMING (Codex af90034): setup/breakdown come from the catalog (max of the chosen services, blank if any is unknown);
+    // a value typed by the owner stays; ours follows the selection and clears when it empties.
+    public function test_setup_and_breakdown_prefill_from_the_catalog_and_respect_manual_values(): void
+    {
+        $p = $this->prices;
+        ServiceVariant::where('name', 'Waoo')->update(['setup_minutes' => 30, 'breakdown_minutes' => 20]);
+        ServiceVariant::where('name', '2 chisperos')->update(['setup_minutes' => 20, 'breakdown_minutes' => null]);
+        ServiceVariant::where('name', 'Mágico (Magic)')->update(['setup_minutes' => 15, 'breakdown_minutes' => 10]);
+        Livewire::test(QuickBooking::class)
+            ->fillForm(['package_id' => (string) $p['Waoo']])->assertSchemaStateSet(['setup_minutes' => '30', 'breakdown_minutes' => '20'])
+            ->fillForm(['extra_ids' => [(string) $p['2 chisperos']]])->assertSchemaStateSet(['setup_minutes' => '30', 'breakdown_minutes' => null])
+            ->fillForm(['setup_minutes' => '45'])->fillForm(['package_id' => (string) $p['Mágico (Magic)'], 'extra_ids' => []])
+            ->assertSchemaStateSet(['setup_minutes' => '45', 'breakdown_minutes' => '10'])
+            ->fillForm(['package_id' => null])->assertSchemaStateSet(['setup_minutes' => '45', 'breakdown_minutes' => null]);
+        $this->assertSame(['setup_minutes' => 0, 'breakdown_minutes' => null],
+            array_intersect_key(\App\Filament\Resources\Variants\ServiceVariantResource::toServiceInput(['name' => 'x', 'duration_minutes' => 60, 'setup_minutes' => '0', 'breakdown_minutes' => '']),
+                ['setup_minutes' => 1, 'breakdown_minutes' => 1]));
+    }
 }
