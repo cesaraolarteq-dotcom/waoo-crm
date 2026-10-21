@@ -38,6 +38,15 @@ class QuickPaymentsTest extends TestCase
         DB::table('customers')->whereNull('name')->update(['name'=>'María González']);
         parent::tearDown();
     }
+    public function test_unpaid_quick_booking_preserves_company_without_creating_payment(): void
+    {
+        config(['waoo.sandbox_company'=>true]);$this->input['billing_company']=['name'=>'Celebraciones del Sol'];
+        $booking=$this->create();
+        $this->assertSame('Celebraciones del Sol',Event::findOrFail($booking->event->id)->billing_company['name']);
+        $this->assertDatabaseCount('ledger_entries',0);
+        DB::table('events')->update(['billing_company'=>null,'billing_company_version'=>0]);
+    }
+
     private function create(?string $key=null):UnpaidQuickBooking{return app(QuickBook::class)->execute($this->owner,$this->input,$key??(string)Str::uuid());}
     private function client(UnpaidQuickBooking $r):void
     {

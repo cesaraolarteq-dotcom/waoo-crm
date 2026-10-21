@@ -45,7 +45,7 @@ final class QuoteSnapshot
         return ['event_version' => $event->version, 'currency' => 'USD',
             'customer_snapshot' => $customer->only(['id','name','email','phone','locale']),
             'event_snapshot' => ['starts_at' => $event->starts_at->toIso8601String(), 'ends_at' => $event->ends_at->toIso8601String(),
-                'timezone' => $event->timezone, 'address' => $event->address, 'postal_code' => $event->postal_code],
+                'timezone' => $event->timezone, 'address' => $event->address, 'postal_code' => $event->postal_code, ...($event->billing_company!==null || $event->billing_company_version>0 ? ['billing_company'=>$event->billing_company,'billing_company_version'=>$event->billing_company_version] : [])],
             'lines_snapshot' => $lines, 'travel_fee_evidence' => $event->travel_fee_evidence, 'discounts_snapshot' => $discounts,
             'subtotal_cents' => $subtotal, 'travel_fee_cents' => $event->travel_fee_cents, 'discount_cents' => $discountTotal,
             'total_cents' => $total, 'deposit_target_cents' => intdiv($total, 2) + ($total % 2), 'valid_until' => $validUntil, 'created_by' => $actor->id];

@@ -130,6 +130,8 @@ final class PortalPageController extends Controller
             if (filled($event->postal_code)) $prefill['event_postal_code'] = $event->postal_code;
         }
 
+        if(config('waoo.sandbox_company',false)&&!array_key_exists('billing_company',$prefill))$prefill['billing_company']=$event->billing_company;
+
         return [
             'lang' => $lang, 'step' => $step, 'quick_payment'=>$quickPayment, 'steps' => $quickPayment ? ['details','pay','contract'] : ($canDetails ? ['details', 'contract', 'pay'] : ['contract', 'pay']), 'test_mode' => true,
             'details' => $details ? ['expected_event_version' => $details['expected_event_version'], 'expected_revision' => $details['expected_revision'],

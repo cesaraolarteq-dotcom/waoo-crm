@@ -174,6 +174,10 @@ class QuickBooking extends Page
                 Select::make('locale')->label('Idioma de sus mensajes')->native(false)->options(['es' => 'Español', 'en' => 'Inglés'])->required()
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new'),
             ]),
+            Section::make('Facturar a empresa')->visible(fn()=>config('waoo.sandbox_company',false))->schema([
+                Checkbox::make('company_enabled')->label('Es para una empresa')->live()->default(false),
+                TextInput::make('company_name')->label('Nombre de la empresa')->required(fn(Get $get)=>(bool)$get('company_enabled'))->visible(fn(Get $get)=>(bool)$get('company_enabled'))->maxLength(255),
+            ]),
             Section::make('4. Depósito')->columns(3)->schema([
                 Select::make('deposit_received')->label('¿Ya recibiste el depósito?')->options([1 => 'Sí', 0 => 'Todavía no'])->default(1)->required()->live()->columnSpanFull()
                     ->visible(fn () => \App\Services\Booking\QuickPaymentProtocol::enabled()),
@@ -487,6 +491,7 @@ class QuickBooking extends Page
             ...(($s['customer_mode'] ?? null) === 'existing' && filled($s['customer_id'] ?? null)
                 ? ['customer_id' => (int) $s['customer_id'], ...$this->customerUpdate($s)]
                 : ['new_customer' => ['name' => trim((string) ($s['name'] ?? '')), 'phone' => filled($s['phone'] ?? null) ? trim($s['phone']) : null, 'email' => filled($s['email'] ?? null) ? trim($s['email']) : null, 'locale' => $s['locale'] ?? 'es']]),
+            ...(config('waoo.sandbox_company',false)&&!empty($s['company_enabled'])?['billing_company'=>['name'=>trim($s['company_name'])]]:[]),
             'title' => trim((string) $s['title']), 'event_type' => $s['event_type'], 'starts_at' => $start, 'ends_at' => $end, 'timezone' => ChicagoTime::TZ,
             'postal_code' => trim((string) $s['postal_code']), 'travel_fee_cents' => EditServiceVariant::toCents((string) $s['travel_fee']),
             ...(filled($s['address'] ?? null) ? ['address' => trim((string) $s['address'])] : []),

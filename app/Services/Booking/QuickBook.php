@@ -24,7 +24,8 @@ final class QuickBook
         Sandbox::require(); Sandbox::require('sandbox_documents');
         \App\Exceptions\RecordWriteRejected::unless(DB::transactionLevel() === 0, 409, 'No se pudo iniciar la reserva. Recarga e inténtalo de nuevo.');
         $actor = RecordActor::authorize($actor);
-        $data = RecordInput::validate($input, [
+        $input = \App\Services\Billing\BillingCompany::input($input);
+        $data = RecordInput::validate($input, [...\App\Services\Billing\BillingCompany::rules(),
             'lead_id' => 'required_with:lead_expected_version|integer|exists:leads,id',
             'lead_expected_version' => 'required_with:lead_id|integer|min:1',
             'customer_id' => 'required_without:new_customer|required_with:customer_update|prohibits:new_customer|integer|exists:customers,id',

@@ -22,7 +22,7 @@ final class ClientContractCurrent
         $snapshot = $contract->commercial_snapshot;
         $p = $snapshot['client_details'] ?? null;
         RecordWriteRejected::unless(is_array($p) && count($p) === 4
-            && ($p['schema_version'] ?? null) === 1 && is_int($p['submission_id'] ?? null)
+            && in_array(($p['schema_version'] ?? null),[1,2],true) && is_int($p['submission_id'] ?? null)
             && is_int($p['submission_revision'] ?? null) && is_string($p['submission_sha256'] ?? null), 409, 'Revisa el contrato vigente.');
         [$event, $customer, $finance, $submission, $values, $provenance] = ClientContractSource::read($client,
             ['expected_event_version' => $contract->event_version, 'expected_revision' => $p['submission_revision']]);

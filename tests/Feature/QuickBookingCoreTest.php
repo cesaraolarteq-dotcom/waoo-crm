@@ -39,6 +39,16 @@ class QuickBookingCoreTest extends TestCase
             'portal' => ['expires_at' => now()->addDays(10)->toIso8601String()]];
     }
 
+    public function test_quick_booking_accepts_company_but_keeps_the_customer_a_person(): void
+    {
+        config(['waoo.sandbox_company'=>true]);
+        $input=$this->input;$input['new_customer']['name']='María González';$input['billing_company']=['name'=>'Celebraciones del Sol'];
+        $this->create($input)->assertCreated();
+        $this->assertSame('María González',\App\Models\Customer::sole()->name);
+        $this->assertSame('Celebraciones del Sol',Event::sole()->billing_company['name']);
+        \Illuminate\Support\Facades\DB::table('events')->update(['billing_company'=>null,'billing_company_version'=>0]);
+    }
+
     private function create(?array $input = null, ?string $key = null)
     {
         return $this->withHeader('Idempotency-Key', $key ?? (string) Str::uuid())->postJson('/admin/api/quick-bookings', $input ?? $this->input);

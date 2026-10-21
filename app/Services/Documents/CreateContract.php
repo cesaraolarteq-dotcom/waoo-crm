@@ -37,7 +37,7 @@ final class CreateContract
             if (! $event->address || ! $event->customer?->email || strcasecmp($event->customer->email, $data['client']['email']) !== 0 || $event->services()->where('operational_ready', false)->exists()) {
                 throw ValidationException::withMessages(['contract' => 'Completa dirección, identidad/correo del cliente y selecciones operativas antes de generar el contrato.']);
             }
-            $snapshot = ['client' => $data['client'], 'event' => ['date_long' => $event->starts_at->setTimezone('America/Chicago')->locale('en')->translatedFormat('D, M j, Y'),
+            $snapshot = [...\App\Services\Billing\BillingCompany::snapshot($event->billing_company), 'client' => $data['client'], 'event' => ['date_long' => $event->starts_at->setTimezone('America/Chicago')->locale('en')->translatedFormat('D, M j, Y'),
                 'start_time' => $event->starts_at->setTimezone('America/Chicago')->format('g:i a'), 'end_time' => $event->ends_at->setTimezone('America/Chicago')->format('g:i a'), 'address' => $event->address],
                 'services' => $finance->lines_snapshot, 'travel_fee_cents' => $finance->travel_fee_cents, 'total_cents' => $finance->total_cents,
                 'discounts'=>array_map(fn($d)=>['label'=>$d['label'],'amount_cents'=>$d['amount_cents']],$finance->discounts_snapshot??[]),

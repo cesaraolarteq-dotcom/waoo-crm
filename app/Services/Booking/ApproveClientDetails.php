@@ -48,6 +48,7 @@ final class ApproveClientDetails
                 'requirements' => $s->requirements_snapshot, 'ready' => $s->operational_ready,
                 'characters' => $s->characters->map(fn ($c) => $c->only(['character_id','quantity','character_name_snapshot','outfit','note']))->all()])->values()->all();
             app(SaveCustomer::class)->execute($actor, ['expected_version' => $customer->version, 'name' => $values['first_name'].' '.$values['last_name'], 'email' => $values['email'], 'phone' => $values['phone'], 'locale' => $values['locale'] ?? $customer->locale], $customer->id);
+            if(array_key_exists('billing_company',$values))\App\Services\Billing\BillingCompany::apply($event,$values['billing_company'],$actor);
             $updated = $event; $finance = $previousFinance;
             if (!$reserved) {
                 $updated = app(SaveEventDraft::class)->execute($actor, [...$event->only(['customer_id','title','event_type','timezone','setup_minutes','breakdown_minutes','travel_fee_cents']),

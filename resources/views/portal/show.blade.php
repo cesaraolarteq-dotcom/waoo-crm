@@ -91,6 +91,14 @@
   </div></fieldset>
   <label class="p-field"><span>{{ $t('children_count') }}</span><input name="children_count" inputmode="numeric" pattern="[0-9]*" maxlength="3" required value="{{ $vm['prefill']['children_count'] ?? '' }}"><small>{{ $t('children_hint') }}</small></label>
   <label class="p-field"><span>{{ $t('notes') }} <em>({{ $t('optional') }})</em></span><textarea name="notes" rows="3">{{ $vm['prefill']['notes'] ?? '' }}</textarea></label>
+  @if(config('waoo.sandbox_company',false))
+  <label class="p-check"><input type="checkbox" name="company_enabled" @checked(!empty($vm['prefill']['billing_company']))> {{ $vm['lang']==='es'?'Es para una empresa':'This is for a company' }}</label>
+  <label class="p-field"><span>{{ $vm['lang']==='es'?'Nombre de la empresa (si aplica)':'Company name (if applicable)' }}</span><input name="company_name" maxlength="255" value="{{ $vm['prefill']['billing_company']['name']??'' }}"></label>
+  <details><summary>{{ $vm['lang']==='es'?'Datos de facturación opcionales':'Optional billing details' }}</summary>
+    <label class="p-field"><span>{{ $vm['lang']==='es'?'Correo de facturación':'Billing email' }}</span><input name="company_email" type="email" maxlength="255" value="{{ $vm['prefill']['billing_company']['email']??'' }}"></label>
+    <label class="p-field"><span>{{ $vm['lang']==='es'?'Dirección de facturación':'Billing address' }}</span><input name="company_address" maxlength="1000" value="{{ $vm['prefill']['billing_company']['address']??'' }}"></label>
+  </details>
+  @endif
   @if (! empty($vm['details']['sms_consent']))
   <label class="p-check p-small"><input type="checkbox" name="sms_consent" value="1" data-version="{{ $vm['details']['sms_consent']['version'] }}"> {{ $vm['details']['sms_consent']['text'] }}</label>
   @endif
@@ -190,6 +198,7 @@
       billing_address: f.event_address.value.trim(), event_address: f.event_address.value.trim(), event_postal_code: f.event_postal_code.value.trim(),
       locale: f.dataset.lang, start_time_confirmed: true, child_name: f.child_name.value.trim(), child_age: Number(f.child_age.value),
       event_language: f.event_language.value, setup_area: f.setup_area.value, children_count: Number(f.children_count.value)};
+    if(f.company_enabled) body.billing_company = f.company_enabled.checked ? {name:f.company_name.value.trim(),email:f.company_email.value.trim()||null,address:f.company_address.value.trim()||null} : null;
     if (f.notes.value.trim()) body.notes = f.notes.value.trim();
     if (f.sms_consent && f.sms_consent.checked) { body.sms_consent = true; body.sms_consent_version = f.sms_consent.dataset.version; }
     post(f.action, body, key('waoo-details-' + f.dataset.revision))

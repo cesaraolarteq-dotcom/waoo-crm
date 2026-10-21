@@ -28,6 +28,7 @@ final class IssueContract
             $template = ContractTemplateVersion::whereKey($contract->template_version_id)->lockForUpdate()->firstOrFail();
             RecordWriteRejected::unless($template->state === 'active' && $template->approved_at, 409, 'La plantilla debe estar activa y aprobada por un administrador.');
             $snapshot = $contract->commercial_snapshot;
+            RecordWriteRejected::unless(($snapshot['billing_company']??null)===$event->billing_company,409,'La empresa cambió. Genera una revisión del contrato.');
             $snapshot['payments'] = app(ContractPrintContext::class)->paymentSnapshot($event);
             $contract->commercial_snapshot = $snapshot;
             $renderer = app(PrintRenderer::class);
