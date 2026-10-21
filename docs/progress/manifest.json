@@ -1,6 +1,6 @@
 {
  "_about": "Temporary owner progress view (prototype tab 'Avance del proyecto'). Phases = docs/PROJECT_PLAN.md §18. Each agent updates its own evidence; Claude renders. Rules: a design/contract doc counts 0; a part counts only with a tested commit; review, merge to main and owner acceptance are separate steps. Phase % = sum(weight × stage score) / sum(weight). 'design' = preview/contract/plan evidence: shown as a chip, earns 0%.",
- "updated": "2026-10-20",
+ "updated": "2026-10-21",
  "stage_scores": {
   "backend": 0.35,
   "ui": 0.35,
@@ -1105,5 +1105,18 @@
   "ui": false,
   "reviewed": false,
   "note": "Identity-only actual owner confirmation after signature; current customer/version and genuine evidence, no rewrite of signed agreement, price, receipt or inventory. Proposal, zero completion credit."
+ },
+ "pr_107_review": {
+  "head": "8d70322",
+  "base_main": "80e6bba",
+  "branch": "codex/pr-107-review",
+  "api": "docs/PORTAL-LINK-SWITCH-API.md; contract001989a before code",
+  "fix": "9bbc23a",
+  "verdict": "Original head needs R1; corrected source locally verified, incorporate before merge.",
+  "scope": "Same-document portal token switch; serialized latest-only exchanges and CSRF reuse; no old-party form submission, no provider or business-policy change.",
+  "verification": "Final portal49/615 PASS01:36.154 PHP8.3.35/MariaDB11.8; Chromium27/27 PASS13.268s, all requests intercepted. Related94/848 and financial165/987 pass; overlapping, not summed. Syntax/strict Composer/Vite/diff pass. No whole-suite, Actions, host/provider or owner acceptance claim.",
+  "merged": false,
+  "accepted": false,
+  "note": "Review/correction metadata only: no duplicate phase credit or completion of the full Stripe feature."
  }
 }
