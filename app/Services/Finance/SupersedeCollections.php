@@ -12,7 +12,7 @@ final class SupersedeCollections
     public static function forEvent(int $eventId, string $reason, ?User $actor = null, ?string $except = null): void
     {
         if (! Schema::hasTable('payment_intents')) return;
-        $query = PaymentIntent::where('event_id', $eventId)->whereIn('status', ['creating','open','processing']);
+        $query = PaymentIntent::where('event_id', $eventId)->whereIn('status', ['creating','prepared','open','processing']);
         if ($except) $query->where('id', '!=', $except);
         foreach ($query->orderBy('id')->lockForUpdate()->get() as $intent) {
             $intent->fill(['status' => 'superseded', 'collection_slot' => null, 'last_error' => $reason])->save();

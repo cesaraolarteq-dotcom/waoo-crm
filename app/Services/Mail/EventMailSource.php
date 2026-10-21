@@ -21,7 +21,7 @@ final class EventMailSource
         RecordWriteRejected::unless($event->status==='capacity_reserved'&&$event->version===$finance->event_version+1&&$binding&&(int)$binding->financial_revision_id===$finance->id,409,'mail_event_requires_current_confirmed_finance');
         RecordWriteRejected::unless($grant->event_id===$eventId&&$grant->customer_id===$customer->id&&$grant->quote_revision_id===null&&!$grant->revoked_at&&$grant->expires_at->isFuture()&&in_array('payments.read',$grant->scopes,true),409,'mail_link_inactive');
         $ledger=LedgerEntry::where('event_id',$eventId)->where('environment','test')->orderBy('id')->lockForUpdate()->get();
-        $net=(int)$ledger->sum(fn($line)=>$line->kind==='receipt'?$line->amount_cents:-$line->amount_cents);
+        $net=(int)$ledger->sum(fn($line)=>$line->kind==='receipt'?$line->amount_cents:($line->kind==='refund'?-$line->amount_cents:0));
         return [$event,$customer,$finance,$grant,$net];
     }
     // Thank-you: owner 2026-10-18, next Houston day at 10:00 am.

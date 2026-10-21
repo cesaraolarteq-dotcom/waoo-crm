@@ -18,12 +18,14 @@ final class CloseQuickStripeLease
             }
             RecordWriteRejected::unless($lease->state==='active'&&$lease->version===$data['expected_lease_version']
                 &&($expiry||$event->version===$data['expected_event_version']),409,'El apartado cambió. Revisa la versión mostrada.');
+            if($booking=QuickPaymentProtocol::booking($eventId)) \App\Exceptions\RecordWriteRejected::unless(!QuickPaymentProtocol::pendingNotice($booking),409,'Hay un aviso de Zelle pendiente. Revísalo antes de liberar la fecha.');
             $p=QuickStripeLeases::verify($lease,$event,false);
             QuickStripeLeases::lockInventory($p);
             $p=QuickStripeLeases::verify($lease,$event);
             RecordWriteRejected::unless(!$expiry||now()->timestamp >= $p['terms']['expires_at'],409,'El plazo original de 48 horas todavía no vence.');
             ResourceReservation::whereIn('id',array_column($p['rows'],'reservation_id'))->where('event_id',$eventId)->delete();
             QuickStripeLeases::append($actor,$lease,[...$p,'state'=>$expiry?'expired':'cancelled','rows'=>[],'reason'=>$expiry?'original_48h_deadline':$data['reason']]);
+            if($booking) QuickPaymentProtocol::transition($booking,$expiry?'expired':'cancelled',$expiry?'original_48h_deadline':'owner_released_unpaid',$actor);
             MutationKey::store($scope,$key,$hash,'quick_stripe_lease',$lease->id);
             return QuickStripeLeases::view($lease,$event);
         },3);

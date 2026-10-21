@@ -26,9 +26,13 @@ return [
     'google_maps_browser_key' => env('WAOO_GOOGLE_MAPS_BROWSER_KEY'),
     'sandbox_tips' => env('WAOO_SANDBOX_TIPS', false),
     'sandbox_quick_stripe' => env('WAOO_SANDBOX_QUICK_STRIPE', false), // Internal leases/request preparation only; no provider or cron activation.
+    'sandbox_quick_payments' => env('WAOO_SANDBOX_QUICK_PAYMENTS', false),
+    'sandbox_quick_payment_notifications' => env('WAOO_SANDBOX_QUICK_PAYMENT_NOTIFICATIONS', false),
+    'quick_payment_methods' => ['card', 'klarna'],
     'quick_stripe_requested_methods' => ['card'], // Requested policy only, never verified account capability or financing activation.
     'sandbox_finance' => env('WAOO_SANDBOX_FINANCE', false),
     'sandbox_history' => env('WAOO_SANDBOX_HISTORY', false),
+    'sandbox_honeybook_supplement' => env('WAOO_SANDBOX_HONEYBOOK_SUPPLEMENT', false),
     'sandbox_imports' => env('WAOO_SANDBOX_IMPORTS', false),
     'sandbox_cutover' => env('WAOO_SANDBOX_CUTOVER', false), // Evidence preparation only; no transfer endpoint.
     'cutover_reconciliation_max_age_minutes' => 240, // César approved 2026-10-19; not automatic polling.

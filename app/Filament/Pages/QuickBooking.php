@@ -82,7 +82,7 @@ class QuickBooking extends Page
         abort_unless(static::canAccess(), 403);
         $this->key = (string) Str::uuid();
         $this->linkExpiryAnchorUtc = now('UTC')->startOfSecond()->toIso8601String();
-        $this->form->fill(['customer_mode' => 'existing', 'locale' => 'es', 'price_version_ids' => [], 'deposit' => ['method' => 'zelle', 'date' => now(ChicagoTime::TZ)->format('Y-m-d')],
+        $this->form->fill(['deposit_received' => true, 'customer_mode' => 'existing', 'locale' => 'es', 'price_version_ids' => [], 'deposit' => ['method' => 'zelle', 'date' => now(ChicagoTime::TZ)->format('Y-m-d')],
             'expires_days' => 14, 'characters' => []]);
         $this->fillFromLead(request()->integer('lead') ?: null);
     }
@@ -174,8 +174,10 @@ class QuickBooking extends Page
                 Select::make('locale')->label('Idioma de sus mensajes')->native(false)->options(['es' => 'Español', 'en' => 'Inglés'])->required()
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new'),
             ]),
-            Section::make('4. Depósito recibido')->columns(3)->schema([
-                Grid::make(3)->statePath('deposit')->columnSpanFull()->schema([
+            Section::make('4. Depósito')->columns(3)->schema([
+                Select::make('deposit_received')->label('¿Ya recibiste el depósito?')->options([1 => 'Sí', 0 => 'Todavía no'])->default(1)->required()->live()->columnSpanFull()
+                    ->visible(fn () => \App\Services\Booking\QuickPaymentProtocol::enabled()),
+                Grid::make(3)->statePath('deposit')->columnSpanFull()->visible(fn (Get $get) => !\App\Services\Booking\QuickPaymentProtocol::enabled() || (bool) $get('deposit_received'))->schema([
                     TextInput::make('amount')->label('Monto que llegó (USD)')->prefix('$')->required()->live(onBlur: true)
                         ->helperText('Se llena con el 50 % del total (servicios + transporte). Cámbialo si llegó otro monto.')
                         ->rule('regex:/^\d{1,7}(\.\d{1,2})?$/')->validationMessages(['regex' => 'Escribe solo el número, por ejemplo 250.'])
@@ -298,7 +300,7 @@ class QuickBooking extends Page
         }
         $total = $services + EditServiceVariant::toCents((string) $fee);
         $target = intdiv($total, 2) + $total % 2;
-        $amount = $get('deposit.amount');
+        $amount = \App\Services\Booking\QuickPaymentProtocol::enabled() && !$get('deposit_received') ? null : $get('deposit.amount');
         $paid = $amount && preg_match('/^\d{1,7}(\.\d{1,2})?$/', (string) $amount) ? EditServiceVariant::toCents((string) $amount) : 0;
         $line = 'Total '.Labels::money($total).($extra ? ' (incluye personajes adicionales '.Labels::money($extra).')' : '').' · depósito 50 % '.Labels::money($target).' · recibido '.Labels::money($paid).' · saldo '.Labels::money(max($total - $paid, 0));
         if ($paid && $paid < $target) {
@@ -478,7 +480,8 @@ class QuickBooking extends Page
         if (strtotime($end) <= strtotime($start)) {
             throw ValidationException::withMessages(['data.end_time' => 'La hora de fin debe ser después de la de inicio (mismo día).']);
         }
-        $d = $s['deposit'];
+        $received = !\App\Services\Booking\QuickPaymentProtocol::enabled() || (bool) ($s['deposit_received'] ?? true);
+        $d = $s['deposit'] ?? [];
 
         return [
             ...(($s['customer_mode'] ?? null) === 'existing' && filled($s['customer_id'] ?? null)
@@ -492,8 +495,8 @@ class QuickBooking extends Page
             ...(filled($s['setup_minutes'] ?? null) ? ['setup_minutes' => (int) $s['setup_minutes']] : []),
             ...(filled($s['breakdown_minutes'] ?? null) ? ['breakdown_minutes' => (int) $s['breakdown_minutes']] : []),
             'services' => EventResource::servicesInput($s),
-            'deposit' => ['method' => 'zelle', 'amount_cents' => EditServiceVariant::toCents((string) $d['amount']), 'reference' => filled($d['reference'] ?? null) ? trim($d['reference']) : null,
-                'received_on' => $d['date'], 'verified_received' => (bool) ($d['verified'] ?? false)],
+            ...($received ? ['deposit' => ['method' => 'zelle', 'amount_cents' => EditServiceVariant::toCents((string) $d['amount']), 'reference' => filled($d['reference'] ?? null) ? trim($d['reference']) : null,
+                'received_on' => $d['date'], 'verified_received' => (bool) ($d['verified'] ?? false)]] : ['deposit_received' => false]),
             // The pre-request snapshot retains this anchor even when the save response is lost.
             'portal' => ['expires_at' => min(CarbonImmutable::parse($this->linkExpiryAnchorUtc)->setTimezone(ChicagoTime::TZ)->addDays((int) $s['expires_days'])->endOfDay(), CarbonImmutable::parse($this->linkExpiryAnchorUtc)->addDays(30))->format('Y-m-d\TH:i:sP')],
         ];
@@ -502,6 +505,7 @@ class QuickBooking extends Page
     /** Builds the one-time result panel, including the ready-to-copy messages (no sending). */
     public static function presentResult(object $r, array $s): array
     {
+        if ($r instanceof \App\Services\Booking\UnpaidQuickBooking) return self::presentUnpaidResult($r);
         $first = trim(explode(' ', (string) ($r->customer->name ?? ''))[0] ?? '');
         $helloEs = $first === '' ? '¡Hola!' : "¡Hola {$first}!";
         $helloEn = $first === '' ? 'Hi!' : "Hi {$first}!";
@@ -528,6 +532,25 @@ class QuickBooking extends Page
                 'ok' => $h['state'] === 'held' && ($h['issues'] ?? []) === [],
                 'issues' => array_values(array_unique(array_map(fn ($i) => \App\Filament\Resources\Events\Pages\ViewEvent::HOLD_ISSUES[$i] ?? 'Requiere revisión.', $h['issues'] ?? [])))] : null,
         ];
+    }
+
+    private static function presentUnpaidResult(\App\Services\Booking\UnpaidQuickBooking $r): array
+    {
+        $f = $r->financial_revision;
+        $expiry = Labels::when(CarbonImmutable::parse($r->portal_expires_at));
+        $until = Labels::when(\Carbon\CarbonImmutable::createFromTimestampUTC($r->costume_hold['terms']['expires_at']));
+        $received=in_array($r->payment_state,['paid','paid_needs_review'],true);
+        $messages=[];
+        foreach(['es','en'] as $lang) {
+            $messages[$lang]=$r->portal_url ? strtr(\App\Support\ApprovedClientTexts::text('stripe_link_msg',$lang),[
+                '{first_name}'=>explode(' ',trim((string)$r->customer->name))[0],'{package}'=>collect($f->lines_snapshot)->pluck('name')->implode(' + '),
+                '{event_date}'=>$r->event->starts_at->setTimezone(ChicagoTime::TZ)->locale($lang)->translatedFormat('D j M Y, g:i a'),
+                '{amount}'=>Labels::money($r->costume_hold['terms']['payable_cents']),'{link}'=>$r->portal_url]) : '';
+        }
+        return ['event_id'=>$r->event->id,'link'=>$r->portal_url,'expires'=>$expiry,'shown_before'=>$r->portal_url===null,'link_pending'=>false,
+            'summary'=>($received?'Pago recibido':'SIN PAGAR').' · Total '.Labels::money($f->total_cents).' · depósito '.Labels::money($f->deposit_target_cents).' · apartado hasta '.$until,
+            'msg_es'=>$messages['es'],'msg_en'=>$messages['en'],'locale'=>$r->customer->locale??'es','phone'=>$r->customer->phone,
+            'hold'=>['label'=>'Apartado sin pago por 48 horas','ok'=>false,'issues'=>array_map(fn($i)=>\App\Filament\Resources\Events\Pages\ViewEvent::HOLD_ISSUES[$i]??'Requiere revisión.',$r->costume_hold['issues'])]];
     }
 
     /**

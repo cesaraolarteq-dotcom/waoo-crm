@@ -69,7 +69,7 @@ final class OperationalReport
             }
             return ['environment' => 'test', 'timezone' => 'America/Chicago', 'generated_at' => now()->toIso8601String(),
                 'period' => $period,
-                'cash' => ['basis' => 'ledger.received_at', 'received_cents' => $received, 'refunded_cents' => $refunded, 'net_received_cents' => $received - $refunded], 'scheduled' => $scheduled];
+                'cash' => ['basis' => 'ledger.received_at', 'customer_fee_received_cents'=>(int)($cashRows->get('customer_fee')?->amount??0),'gross_received_cents'=>$received+(int)($cashRows->get('customer_fee')?->amount??0),'received_cents' => $received, 'refunded_cents' => $refunded, 'net_received_cents' => $received - $refunded], 'scheduled' => $scheduled];
         }, 3);
     }
 }

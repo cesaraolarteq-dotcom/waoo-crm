@@ -20,7 +20,9 @@ final class ClientDetailsController extends Controller
         $event = \App\Models\Event::findOrFail($submission->event_id);
         $result = ['submission' => $submission->only(['id','revision','data','submitted_at']),
             'reviewed' => \App\Services\Booking\ClientDetailsState::portal($event)['reviewed']];
-        if (config('waoo.sandbox_immediate_contracts')) {
+        $quick=\App\Services\Booking\QuickPaymentProtocol::booking($event->id,false);
+        if ($quick) $result['payment_required']=true;
+        if (!$quick && config('waoo.sandbox_immediate_contracts')) {
             // execute() above committed the submission. Artifact failure must not undo it.
             try {
                 $contract = app(PrepareClientContract::class)->execute($request->attributes->get('portal_context'),
@@ -38,7 +40,7 @@ final class ClientDetailsController extends Controller
 
     public function prepare(Request $request, PrepareClientContract $service)
     {
-        abort_unless(config('waoo.sandbox_immediate_contracts'), 404);
+        abort_unless(config('waoo.sandbox_immediate_contracts') || \App\Services\Booking\QuickPaymentProtocol::enabled(), 404);
         Sandbox::require(); Sandbox::require('sandbox_documents');
         try {
             return response()->json(['contract_preparation' => self::ready($service->execute($request->attributes->get('portal_context'),

@@ -13,7 +13,7 @@ final class ClientContractCurrent
 {
     public static function check(PortalContext $client, Contract $contract): void
     {
-        Sandbox::require(); Sandbox::require('sandbox_documents'); Sandbox::require('sandbox_immediate_contracts');
+        Sandbox::require(); Sandbox::require('sandbox_documents'); Sandbox::require(isset($contract->commercial_snapshot['quick_payment_source']) ? 'sandbox_quick_payments' : 'sandbox_immediate_contracts');
         if ($client->adminAuthenticated) throw new AuthorizationException('Una sesión administrativa no puede firmar por el cliente.');
         if (DB::transactionLevel() === 0) {
             DB::transaction(fn () => self::check($client, $contract), 3);

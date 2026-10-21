@@ -30,7 +30,7 @@ final class QuickStripeLeases
         // Do not trust a mutable terminal label when its historical envelope is corrupt.
         $lease=QuickStripeLease::where('event_id',$eventId)->lockForUpdate()->first();
         if(!$lease)return;
-        RecordWriteRejected::unless(in_array($lease->state,['cancelled','expired'],true),409,
+        RecordWriteRejected::unless(in_array($lease->state,['cancelled','expired','promoted'],true),409,
             'Esta fiesta tiene un apartado pendiente de Stripe. Libéralo y revisa su acuerdo antes de cambiarlo, cobrar o confirmar por otro camino.');
         self::verify($lease,Event::findOrFail($eventId),false);
     }
@@ -49,12 +49,20 @@ final class QuickStripeLeases
     {
         \App\Services\Responsibility\RequireCrmResponsibility::check($event);
         \App\Services\Imports\ImportedAgreement::blockCrmLifecycle($event->id);
+        $booking=QuickPaymentProtocol::booking($event->id);
+        if($booking) QuickPaymentProtocol::verify($booking,$event);
+        $intents=PaymentIntent::where('event_id',$event->id);
+        if($booking) $intents->whereNotIn('id',\App\Models\QuickPaymentAttempt::where('quick_payment_booking_id',$booking->id)->select('payment_intent_id'));
+        $contracts=\App\Models\Contract::where('event_id',$event->id);
+        if($booking) $contracts->where(function($q)use($booking){$q->whereNull('commercial_snapshot->quick_payment_source')->orWhere('commercial_snapshot->quick_payment_source->agreement_sha256','!=',$booking->agreement_sha256);});
+        $grants=\App\Models\PortalGrant::where('event_id',$event->id);
+        if($booking) $grants->where('id','!=',$booking->portal_grant_id);
         RecordWriteRejected::unless($event->status==='draft' && !LedgerEntry::where('event_id',$event->id)->exists()
-            && !PaymentIntent::where('event_id',$event->id)->exists() && !\App\Models\Contract::where('event_id',$event->id)->exists()
-            && !\App\Models\QuickBookingRecord::where('event_id',$event->id)->exists() && !\App\Models\Quote::where('event_id',$event->id)->exists() && !\App\Models\PortalGrant::where('event_id',$event->id)->exists(),
+            && !$intents->exists() && !$contracts->exists()
+            && !\App\Models\QuickBookingRecord::where('event_id',$event->id)->exists() && !\App\Models\Quote::where('event_id',$event->id)->exists() && !$grants->exists(),
             409,'El acuerdo ya tiene pagos, cobros, contrato o cotización. Revisa la fiesta antes de preparar un apartado sin pago.');
     }
-    public static function verify(QuickStripeLease $lease,Event $event,bool $inventory=true):array
+    public static function verify(QuickStripeLease $lease,Event $event,bool $inventory=true,bool $recordedPayment=false):array
     {
         try {
             $p=$lease->payload;$history=QuickStripeLeaseEvent::where('quick_stripe_lease_id',$lease->id)->where('version',$lease->version)->sharedLock()->first();
@@ -63,7 +71,7 @@ final class QuickStripeLeases
             RecordWriteRejected::unless(is_array($p)&&count($p)===count($keys)&&array_diff($keys,array_keys($p))===[]&&$p['schema_version']===1
                 &&$p['lease_id']===$lease->id&&$p['event_id']===$event->id&&$lease->event_id===$event->id
                 &&$p['customer_id']===$lease->customer_id&&$p['financial_revision_id']===$lease->financial_revision_id
-                &&$p['state']===$lease->state&&in_array($lease->state,['active','cancelled','expired'],true)
+                &&$p['state']===$lease->state&&in_array($lease->state,['active','cancelled','expired','promoted'],true)
                 &&$p['version']===$lease->version&&hash_equals($lease->payload_sha256,MutationKey::hash($p))
                 &&$history&&$history->payload===$p&&$history->payload_sha256===$lease->payload_sha256,409,'La evidencia del apartado requiere revisión.');
             RecordWriteRejected::unless(is_array($p['rows'])&&array_is_list($p['rows'])&&count($p['rows'])<=100,409,'La lista de unidades requiere revisión.');
@@ -81,7 +89,11 @@ final class QuickStripeLeases
             RecordWriteRejected::unless($revision->event_id===$event->id&&self::financialHash($revision)===$p['financial_sha256']
                 &&$revision->total_cents===$terms['total_cents'],409,'El acuerdo financiero del apartado requiere revisión.');
             if($lease->state==='active'){
-                self::unpaid($event);
+                if(!$recordedPayment) self::unpaid($event);
+                else {
+                    $booking=QuickPaymentProtocol::booking($event->id);
+                    RecordWriteRejected::unless($booking && LedgerEntry::where('event_id',$event->id)->where('financial_revision_id',$booking->financial_revision_id)->where('kind','receipt')->whereIn('source_type',['owner_verified','verified_quick_stripe'])->exists(),409,'Falta el pago verificado de la reserva.');
+                }
                 RecordWriteRejected::unless($event->customer_id===$lease->customer_id&&$event->version===$p['event_version']
                     &&self::eventHash($event)===$p['event_sha256']&&QuickCostumeHolds::window($event)===$p['window']
                     &&MutationKey::hash(QuickCostumeHolds::recipe($event))===$p['recipe_sha256']
@@ -109,6 +121,11 @@ final class QuickStripeLeases
 
                 }
             }else RecordWriteRejected::unless($p['rows']===[],409,'Un apartado cerrado conserva unidades inesperadas.');
+            if($lease->state==='promoted'){
+                $b=QuickPaymentProtocol::booking($event->id);
+                RecordWriteRejected::unless($b && $b->state==='paid' && $b->quick_booking_id!==null && $b->receipt_id!==null,409,'El pago del apartado requiere revisión.');
+                QuickPaymentProtocol::verify($b,$event,false);QuickCostumeHolds::record($event);
+            }
             return $p;
         }catch(RecordWriteRejected $e){throw $e;}
         catch(\Illuminate\Database\QueryException $e){throw $e;}
@@ -119,12 +136,13 @@ final class QuickStripeLeases
         Character::whereIn('id',array_column($p['rows'],'character_id'))->orderBy('id')->lockForUpdate()->get();
         Resource::whereIn('id',array_column($p['rows'],'resource_id'))->orderBy('id')->lockForUpdate()->get();
     }
-    public static function append(User $actor,QuickStripeLease $lease,array $payload):void
+    public static function append(?User $actor,QuickStripeLease $lease,array $payload):void
     {
-        $p=[...$payload,'version'=>$lease->version+1,'actor_id'=>$actor->id,'previous_sha256'=>$lease->version===0?null:$lease->payload_sha256];
+        $p=[...$payload,'version'=>$lease->version+1,'actor_id'=>$actor?->id,'previous_sha256'=>$lease->version===0?null:$lease->payload_sha256];
         $hash=MutationKey::hash($p);$lease->fill(['version'=>$p['version'],'state'=>$p['state'],'payload'=>$p,'payload_sha256'=>$hash])->save();
         QuickStripeLeaseEvent::create(['quick_stripe_lease_id'=>$lease->id,'version'=>$lease->version,'payload'=>$p,'payload_sha256'=>$hash]);
-        Audit::recordFor($actor,'quick_stripe_lease.'.$p['state'],$lease,[],['event_id'=>$lease->event_id,'version'=>$lease->version,'sha256'=>$hash]);
+        $meta=['event_id'=>$lease->event_id,'version'=>$lease->version,'sha256'=>$hash];
+        $actor ? Audit::recordFor($actor,'quick_stripe_lease.'.$p['state'],$lease,[],$meta) : Audit::recordSystem('quick_stripe_lease.'.$p['state'],$lease,[],$meta);
     }
     public static function view(QuickStripeLease $lease,Event $event):array
     {
@@ -138,7 +156,7 @@ final class QuickStripeLeases
         // Caller holds character first; use only immutable envelope reads here, not event/lease row locks in reverse order.
         $events=ResourceReservation::query()->join('resources','resources.id','=','resource_reservations.resource_id')->where('resources.character_id',$character->id)->pluck('event_id');
         foreach(QuickStripeLease::whereIn('event_id',$events)->get() as $lease){
-            try{$p=$lease->payload;RecordWriteRejected::unless(hash_equals($lease->payload_sha256,MutationKey::hash($p))&&$p['state']===$lease->state&&in_array($lease->state,['active','cancelled','expired'],true),409,'El apartado requiere revisión.');}
+            try{$p=$lease->payload;RecordWriteRejected::unless(hash_equals($lease->payload_sha256,MutationKey::hash($p))&&$p['state']===$lease->state&&in_array($lease->state,['active','cancelled','expired','promoted'],true),409,'El apartado requiere revisión.');}
             catch(\Throwable){throw new RecordWriteRejected(409,'El apartado requiere revisión.');}
             if($lease->state!=='active'){RecordWriteRejected::unless($p['rows']===[],409,'El apartado requiere revisión.');continue;}
             // Any catalog version change would invalidate a frozen pending agreement: release/review first.
