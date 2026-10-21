@@ -25,6 +25,10 @@ final class ImportSupplement
                 'document.records.*.value' => 'required|string|max:16000',
             ]);
             if ($v->fails()) throw new \RuntimeException();
+            foreach ($data['records'] as $row) {
+                $field = mb_strtolower(preg_replace('/\s+/u', '_', trim($row['field'])));
+                if (in_array($field, ['contact_address', 'private_notes', 'sales_tax'], true)) throw new \RuntimeException();
+            }
         } catch (\Throwable) {
             throw ValidationException::withMessages(['file' => 'Formato inválido; revisa el perfil y los límites del archivo.']);
         }
