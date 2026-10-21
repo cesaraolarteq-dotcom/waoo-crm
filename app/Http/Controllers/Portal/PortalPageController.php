@@ -99,7 +99,8 @@ final class PortalPageController extends Controller
         $reviewDetails = $canReviewDetails && $request->boolean('review_details');
         $quickBooking=\App\Services\Booking\QuickPaymentProtocol::booking($event->id,false);
         // A later owner-issued ordinary balance link keeps its original scopes; it is not the unpaid payment grant.
-        $quickPayment=$quickBooking && $quickBooking->portal_grant_id===$grant->id && in_array('quick_booking.pay',$grant->scopes,true)
+        // The owner's own session sees a read-only view; paying/signing only works in the client's session (owner 2026-10-21).
+        $quickPayment=!$client->adminAuthenticated && $quickBooking && $quickBooking->portal_grant_id===$grant->id && in_array('quick_booking.pay',$grant->scopes,true)
             ? app(\App\Services\Booking\ReadQuickPayment::class)->execute($client) : null;
         $step = match (true) {
             $reviewDetails => 'details',
@@ -131,7 +132,7 @@ final class PortalPageController extends Controller
         }
 
         return [
-            'lang' => $lang, 'step' => $step, 'quick_payment'=>$quickPayment, 'steps' => $quickPayment ? ['details','pay','contract'] : ($canDetails ? ['details', 'contract', 'pay'] : ['contract', 'pay']), 'test_mode' => true,
+            'lang' => $lang, 'step' => $step, 'admin_view' => $client->adminAuthenticated, 'quick_payment'=>$quickPayment, 'steps' => $quickPayment ? ['details','pay','contract'] : ($canDetails ? ['details', 'contract', 'pay'] : ['contract', 'pay']), 'test_mode' => true,
             'details' => $details ? ['expected_event_version' => $details['expected_event_version'], 'expected_revision' => $details['expected_revision'],
                 'action' => url('/portal/api/details'),
                 'prepare_action' => (config('waoo.sandbox_immediate_contracts') || ($quickPayment['can_sign'] ?? false)) && $details['submission'] && !$signed && !$details['reviewed'] ? url('/portal/api/details/contract') : null,

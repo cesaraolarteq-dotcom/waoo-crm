@@ -68,7 +68,8 @@ class WalkthroughThreeTest extends TestCase
         $this->assertSame(['2026-12-19'=>1],QuickBooking::busyDays());
         $this->assertSame('Ese día ya tienes 1 fiesta: 2:00 PM Mágico Rumi María',QuickBooking::dayLine('2026-12-19'));
         $this->assertSame('Ese día está libre.',QuickBooking::dayLine('2026-12-20'));
-        Livewire::test(QuickBooking::class)->assertSeeHtml('.waoo-date [data-date="2026-12-19"]');
+        // Walkthrough 5: the always-visible party calendar receives the busy days and today's date as the first selectable day.
+        Livewire::test(QuickBooking::class)->assertSeeHtml('class="waoo-cal"')->assertSeeHtml('2026-12-19')->assertSeeHtml('2026-12-01');
     }
 
     public function test_extra_character_adds_the_flat_amount_instead_of_an_error(): void

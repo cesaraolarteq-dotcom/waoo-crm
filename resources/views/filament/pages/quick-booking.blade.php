@@ -3,15 +3,6 @@
         <div class="wmoney-warn" role="status">Convirtiendo el prospecto de <b>{{ $leadSummary['name'] }}</b>. En la web eligió: {{ $leadSummary['package'] ?: 'sin paquete' }}{{ $leadSummary['type'] ? ' · '.$leadSummary['type'] : '' }}@if ($leadSummary['travel']) · vio transporte {{ $leadSummary['travel'] }}@endif. Revisa paquete, hora, transporte y depósito: nada se toma de la web sin tu confirmación.</div>
     @endif
     {{ $this->content }}
-    @unless ($result)
-        {{-- Busy days in the date picker: a dot = one party, a short bar = two or more (owner 2026-10-21). --}}
-        @php($busy = collect(\App\Filament\Pages\QuickBooking::busyDays()))
-        @php($sel = fn ($days) => $days->keys()->map(fn ($d) => '.waoo-date [data-date="'.$d.'"]')->implode(','))
-        <style>
-            @if ($busy->isNotEmpty()) {!! $sel($busy) !!}{position:relative} {!! str_replace('"]', '"]::after', $sel($busy)) !!}{content:"";position:absolute;bottom:4px;left:50%;width:6px;height:6px;margin-left:-3px;border-radius:99px;background:#15D1C4} @endif
-            @if ($busy->filter(fn ($n) => $n > 1)->isNotEmpty()) {!! str_replace('"]', '"]::after', $sel($busy->filter(fn ($n) => $n > 1))) !!}{width:16px;margin-left:-8px;background:#FF017C} @endif
-        </style>
-    @endunless
     @if (! $result && filled(config('waoo.google_maps_browser_key')))
         {{-- Address suggestions from Google (Places New); picking one fills address + ZIP and runs "Calcular". The owner can still edit everything. --}}
         <script src="{{ \App\Support\AssetVersion::url('js/waoo-places.js') }}" data-key="{{ config('waoo.google_maps_browser_key') }}" defer></script>

@@ -5,6 +5,7 @@
 @endphp
 @section('content')
 <h1 class="p-h1">{{ filled($vm['first_name'] ?? null) ? $t('hello', ['name' => $vm['first_name']]) : $t('hello_generic') }}</h1>
+@if ($vm['admin_view'] ?? false)<p class="p-test" role="status">{{ $vm['lang'] === 'es' ? 'Estás viendo este enlace con tu sesión de dueño. Para ver y probar lo que ve el cliente (pagar, firmar), ábrelo en una ventana de incógnito o en tu celular.' : 'You are viewing this link with your owner session. To see and test what the client sees (pay, sign), open it in a private window or on your phone.' }}</p>@endif
 @if ($vm['step'] !== 'done')<p class="p-sub">{{ $t('intro', ['n' => count($vm['steps'] ?? ['details', 'contract', 'pay'])]) }}</p>@endif
 
 <ol class="p-steps" aria-label="Pasos">

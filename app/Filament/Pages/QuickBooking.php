@@ -115,8 +115,9 @@ class QuickBooking extends Page
             ]),
             Section::make('2. Fecha y lugar')->columns(3)->schema([
                 // Owner 2026-10-21: past days greyed out, days with parties marked in the calendar (see the page view), and what is booked that day.
-                DatePicker::make('date')->label('Fecha')->native(false)->displayFormat('D j M Y')->locale('es')->weekStartsOnSunday()->closeOnDateSelection()->required()->live()
-                    ->minDate(now(ChicagoTime::TZ)->startOfDay())->extraAttributes(['class' => 'waoo-date'])
+                \App\Filament\Support\PartyCalendar::make('date')->label('Fecha')->required()->live()
+                    ->minDate(now(ChicagoTime::TZ)->format('Y-m-d'))->busy(fn () => self::busyDays())
+                    ->rule('date_format:Y-m-d')->rule('after_or_equal:'.now(ChicagoTime::TZ)->format('Y-m-d'))
                     ->helperText(fn (Get $get) => self::dayLine($get('date')))
                     ->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set)),
                 \App\Filament\Support\TimeSelect::make('start_time')->label('Empieza (Houston)')->required()->live()
@@ -541,11 +542,15 @@ class QuickBooking extends Page
         $until = Labels::when(\Carbon\CarbonImmutable::createFromTimestampUTC($r->costume_hold['terms']['expires_at']));
         $received=in_array($r->payment_state,['paid','paid_needs_review'],true);
         $messages=[];
+        $first=explode(' ',trim((string)$r->customer->name))[0];
         foreach(['es','en'] as $lang) {
-            $messages[$lang]=$r->portal_url ? strtr(\App\Support\ApprovedClientTexts::text('stripe_link_msg',$lang),[
-                '{first_name}'=>explode(' ',trim((string)$r->customer->name))[0],'{package}'=>collect($f->lines_snapshot)->pluck('name')->implode(' + '),
+            // A provisional client (no name yet) gets the plain greeting "¡Hola!" / "Hi!".
+            $text=\App\Support\ApprovedClientTexts::text('quick_unpaid_link_msg',$lang);
+            if($first==='')$text=str_replace(' {first_name}','',$text);
+            $messages[$lang]=$r->portal_url ? strtr($text,[
+                '{first_name}'=>$first,'{package}'=>collect($f->lines_snapshot)->pluck('name')->implode(' + '),
                 '{event_date}'=>$r->event->starts_at->setTimezone(ChicagoTime::TZ)->locale($lang)->translatedFormat('D j M Y, g:i a'),
-                '{amount}'=>Labels::money($r->costume_hold['terms']['payable_cents']),'{link}'=>$r->portal_url]) : '';
+                '{link}'=>$r->portal_url]) : '';
         }
         return ['event_id'=>$r->event->id,'link'=>$r->portal_url,'expires'=>$expiry,'shown_before'=>$r->portal_url===null,'link_pending'=>false,
             'summary'=>($received?'Pago recibido':'SIN PAGAR').' · Total '.Labels::money($f->total_cents).' · depósito '.Labels::money($f->deposit_target_cents).' · apartado hasta '.$until,
