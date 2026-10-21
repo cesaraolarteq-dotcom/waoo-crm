@@ -97,6 +97,22 @@ class Reports extends Page
         return ReportsSource::read(Filament::auth()->user(), $this->kind, $this->asOf);
     }
 
+    public function analytics(): ?array
+    {
+        if (!config('waoo.sandbox_analytics', false)) return null;
+        return app(\App\Services\Reports\ReadBookingAnalytics::class)->execute(
+            Filament::auth()->user(), ['year' => (int)substr($this->asOf, 0, 4)]);
+    }
+
+    public function exportAnalytics(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $report = app(\App\Services\Reports\ReadBookingAnalytics::class)->execute(
+            Filament::auth()->user(), ['year' => (int)substr($this->asOf, 0, 4)]);
+        return response()->streamDownload(function () use ($report) {
+            echo app(\App\Services\Reports\BookingAnalytics::class)->csv($report);
+        }, 'reservas-'.$report['year'].'.csv', ['Content-Type' => 'text/csv; charset=UTF-8', 'Cache-Control' => 'no-store']);
+    }
+
     public function money(?int $cents): string
     {
         return Labels::money($cents, 'Pendiente');

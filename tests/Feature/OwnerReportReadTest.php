@@ -4,13 +4,13 @@ namespace Tests\Feature;
 use App\Models\{OwnerReportSnapshot, User};
 use App\Services\Reports\{PrepareOwnerReport, ReadOwnerReport, RenderOwnerReportEmail};
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\{DB, Mail, Queue};
 use Tests\TestCase;
 
 class OwnerReportReadTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
     private User $owner;
     protected function setUp(): void
     {

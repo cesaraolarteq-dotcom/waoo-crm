@@ -5,7 +5,7 @@ use App\Filament\Pages\{Dashboard, Reports};
 use App\Filament\Support\ReportsSource;
 use App\Models\{OwnerReportSnapshot, Resource};
 use App\Services\Finance\{ConfirmPaidCapacity, CreateFinancialRevision, RecordZellePayment};
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
@@ -16,7 +16,7 @@ use Tests\TestCase;
 // unknown costs as "Pendiente", frozen preparation with email preview and nothing sent.
 class ReportsPageTest extends TestCase
 {
-    use DatabaseMigrations, QuoteScenario;
+    use RefreshDatabase, QuoteScenario;
 
     protected function setUp(): void
     {
@@ -65,6 +65,29 @@ class ReportsPageTest extends TestCase
     public function test_inicio_shows_the_week_summary_and_links_to_reports(): void
     {
         Livewire::test(Dashboard::class)->assertSee('Semana del lun. 2 nov. al dom. 8 nov. 2026')->assertSee('entraron')->assertSee('Ver reportes');
+    }
+
+    public function test_analytics_is_owner_only_aggregate_and_csv_download_rechecks_flag(): void
+    {
+        config(['waoo.sandbox_analytics'=>true, 'waoo.sandbox_history'=>true]);
+        $r = app(\App\Services\Reports\ReadBookingAnalytics::class)->execute($this->owner, ['year'=>2026]);
+        $this->assertSame(1, $r['booking_count']);
+        $this->assertSame(['crm'=>1], $r['source_counts']);
+        $this->assertSame(12501, $r['ticket']['total_cents']);
+        $this->assertStringNotContainsString('client@example.test', json_encode($r));
+        Livewire::test(Reports::class)->assertSee('Reservas · CRM e historial HoneyBook')
+            ->call('exportAnalytics')->assertFileDownloaded('reservas-2026.csv');
+        config(['waoo.sandbox_analytics'=>false]);
+        try {
+            app(\App\Services\Reports\ReadBookingAnalytics::class)->execute($this->owner, ['year'=>2026]);
+            $this->fail('Disabled analytics must reject direct calls');
+        } catch (\Illuminate\Auth\Access\AuthorizationException) {
+            $this->assertTrue(true);
+        }
+        config(['waoo.sandbox_analytics'=>true]);
+        $this->owner->forceFill(['role'=>'staff'])->save();
+        $this->expectException(\Illuminate\Auth\Access\AuthorizationException::class);
+        app(\App\Services\Reports\ReadBookingAnalytics::class)->execute($this->owner, ['year'=>2026]);
     }
 
     public function test_hidden_without_the_finance_sandbox(): void
