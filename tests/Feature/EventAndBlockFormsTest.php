@@ -6,7 +6,7 @@ use App\Filament\Resources\Resources\Pages\EditResource;
 use App\Filament\Resources\Resources\Widgets\ResourceBlocks;
 use App\Models\{Customer, Event, PriceVersion, Resource, ResourceBlock, ServiceVariant, User, Character};
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -14,7 +14,7 @@ use Tests\TestCase;
 // Event drafts, blocks and costume compatibility through Codex's real services. Fictitious data only.
 class EventAndBlockFormsTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     private User $owner;
     private Customer $customer;

@@ -3,13 +3,13 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Services\Routing\TravelFeeQuote;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class TravelFeeReferenceCalibrationTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     public function test_all_22_recorded_reference_cases_match_with_the_recorded_route_selection(): void
     {

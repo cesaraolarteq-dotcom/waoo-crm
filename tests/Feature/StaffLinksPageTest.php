@@ -4,7 +4,7 @@ namespace Tests\Feature;
 use App\Filament\Pages\StaffLinks;
 use App\Filament\Support\StaffLinksSource;
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -12,7 +12,7 @@ use Tests\TestCase;
 // without writing. Wiring to the real services keeps the same keys (docs/STAFF-01-API.md).
 class StaffLinksPageTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     protected function setUp(): void
     {

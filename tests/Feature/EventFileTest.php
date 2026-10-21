@@ -3,12 +3,12 @@ namespace Tests\Feature;
 
 use App\Models\{Customer, Event, PriceVersion, Resource, ResourceReservation, ServiceVariant, User};
 use App\Services\Records\SaveEventDraft;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class EventFileTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     private User $owner;
     private Event $event;

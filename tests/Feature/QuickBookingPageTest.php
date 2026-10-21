@@ -6,7 +6,7 @@ use App\Models\{Customer, Event, FinancialRevision, LedgerEntry, PriceVersion, S
 use App\Services\Finance\{CreateFinancialRevision, FinanceSummary, RecordZellePayment};
 use App\Services\Records\{SaveCustomer, SaveEventDraft};
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -15,7 +15,7 @@ use Tests\TestCase;
 // (customer, draft, financial revision, verified Zelle) and returns a fictitious one-time link.
 class QuickBookingPageTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     private User $owner;
     private PriceVersion $price;

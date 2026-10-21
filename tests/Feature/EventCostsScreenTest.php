@@ -7,7 +7,7 @@ use App\Services\Costs\RecordCostSnapshot;
 use App\Services\Finance\CreateFinancialRevision;
 use App\Services\Records\SaveEventDraft;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
@@ -17,7 +17,7 @@ use Tests\TestCase;
 // shows the margin as pending (never $0), estimate and actual stay separate, and a stale editor gets a refusal, not an overwrite.
 class EventCostsScreenTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     private User $owner;
     private Event $event;

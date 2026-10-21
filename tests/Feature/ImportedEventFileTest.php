@@ -4,7 +4,7 @@ namespace Tests\Feature;
 use App\Filament\Resources\Events\EventResource;
 use App\Models\ImportRow;
 use App\Services\Imports\CommitHoneyBookEvent;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\Support\HoneyBookFutureScenario;
 use Tests\TestCase;
@@ -12,7 +12,7 @@ use Tests\TestCase;
 // Regression: the event file of an imported HoneyBook party (travel evidence without accepted_at/mode) must open.
 class ImportedEventFileTest extends TestCase
 {
-    use DatabaseMigrations, HoneyBookFutureScenario;
+    use RefreshDatabase, HoneyBookFutureScenario;
 
     protected function setUp(): void { parent::setUp(); $this->futureScenario(); }
 

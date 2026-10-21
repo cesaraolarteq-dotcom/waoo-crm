@@ -3,7 +3,7 @@ namespace Tests\Feature;
 
 use App\Models\{Quote, QuotePresentation};
 use App\Services\Quotes\ReviseQuote;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\Support\QuoteScenario;
 use Tests\TestCase;
@@ -12,7 +12,7 @@ use Tests\TestCase;
 // The page pins every decision value from one server read; the test submits exactly what the page carries.
 class QuotePortalPageTest extends TestCase
 {
-    use DatabaseMigrations, QuoteScenario;
+    use RefreshDatabase, QuoteScenario;
 
     protected function setUp(): void
     {

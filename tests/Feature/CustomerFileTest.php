@@ -3,12 +3,12 @@ namespace Tests\Feature;
 
 use App\Models\{Customer, Event, User};
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class CustomerFileTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     public function test_client_file_lists_upcoming_and_past_parties(): void
     {

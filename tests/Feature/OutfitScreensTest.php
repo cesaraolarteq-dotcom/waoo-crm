@@ -6,7 +6,7 @@ use App\Filament\Resources\Events\Pages\CreateEvent;
 use App\Filament\Resources\Resources\Pages\CreateResource;
 use App\Models\{Character, Customer, Event, PriceVersion, Resource, ServiceVariant, User};
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -14,7 +14,7 @@ use Tests\TestCase;
 // optional exact version + private note per character row of an event; single-version characters unchanged.
 class OutfitScreensTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     protected function setUp(): void
     {

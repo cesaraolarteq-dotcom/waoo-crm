@@ -3,7 +3,7 @@ namespace Tests\Feature;
 use App\Exceptions\RecordWriteRejected;
 use App\Models\{ImportBatch,ImportRow,ImportedProjectRevision,ImportedLedgerLine,ImportedProjectLink,ImportServiceMapping};
 use App\Services\Imports\{CommitHoneyBookEvent,FinalizeHoneyBookImport,HoneyBookMappingKey,HoneyBookPaymentLabels,ReadImportCoverage,ReadImportedEvent};
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -11,7 +11,7 @@ use Tests\Support\HoneyBookFutureScenario;
 use Tests\TestCase;
 class HoneyBookOwnerResolutionTest extends TestCase
 {
-    use DatabaseMigrations,HoneyBookFutureScenario;
+    use RefreshDatabase,HoneyBookFutureScenario;
     protected function setUp():void{parent::setUp();$this->futureScenario();}
     public function test_difference_requires_explicit_note_and_can_close_without_recalculating_source_money():void
     {

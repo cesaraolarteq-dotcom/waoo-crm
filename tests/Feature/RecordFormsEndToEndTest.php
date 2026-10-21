@@ -6,7 +6,7 @@ use App\Filament\Resources\Resources\Pages\EditResource;
 use App\Filament\Resources\Variants\Pages\{CreateServiceVariant, EditServiceVariant};
 use App\Models\{Customer, PriceVersion, Resource, ServiceVariant, User};
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -14,7 +14,7 @@ use Tests\TestCase;
 // Forms wired to Codex's real audited services (no fakes): rows and audit entries come from the services.
 class RecordFormsEndToEndTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     private User $owner;
 
