@@ -2021,3 +2021,9 @@ Antes de construir pantallas o migraciones, acordar campos, estados, errores, pe
 - Portal details: every field required (ZIP now required server-side), required fields marked with * and a note.
 - Date picker: past days disabled, days with events marked (dot = 1, pink bar = 2+), weekends tinted, helper says what is booked that day (`QuickBooking::busyDays()` / `dayLine()`).
 - **Codex, top of queue:** `docs/plans/OWNER-2026-10-21-UNPAID-QUICK-BOOKING.md` — deposit optional in quick booking; unpaid link shows total + 50 % and lets the client pay by Zelle notice (owner verifies) or Stripe (+3 %). Same unpaid path as your S2/S3 lease work.
+
+## 2026-10-21 Google Calendar two-way (Claude, branch claude/google-calendar, on top of claude/walkthrough-4)
+- Owner decision: two-way like HoneyBook, parties in a separate "Waoo Party fiestas" calendar. OAuth client from the owner's Google Cloud project (`GOOGLE_CALENDAR_CLIENT_ID/SECRET`, never in Git). Scopes: calendar.app.created + calendar.freebusy + email.
+- `App\Services\Google\GoogleCalendar`: connect/refresh/disconnect, ensures the app calendar, pushes each event (create/patch, skip unchanged by hash; no client phone/email in Google), reads primary calendar free/busy only (cached 5 min).
+- `EventGoogleSync` observer (after commit) mirrors saved/deleted events; a Google failure never blocks a save and is shown on the calendar bar for "Sincronizar ahora". Command `waoo:google-calendar-sync`.
+- Calendar page: connect bar + busy blocks; Quick booking date helper mentions Google busy times. Tests: GoogleCalendarSyncTest (synthetic Google responses).

@@ -127,6 +127,38 @@ class Calendar extends Page
         })->groupBy('day');
     }
 
+    /** Google Calendar status for the bar above the calendar (null when the OAuth client is not configured). */
+    public function google(): ?array
+    {
+        if (! \App\Services\Google\GoogleCalendar::configured()) return null;
+        $c = \App\Services\Google\GoogleCalendar::connection();
+
+        return ['connected' => (bool) $c, 'email' => $c?->google_email, 'error' => $c?->last_error,
+            'pending' => $c ? \App\Models\EventGoogleLink::whereNotNull('last_error')->count() : 0, 'name' => config('waoo.google_calendar.calendar_name')];
+    }
+
+    /** Owner's Google busy times in the visible range (free/busy only). */
+    public function googleBusy(): array
+    {
+        [$from, $to] = $this->range();
+
+        return app(\App\Services\Google\GoogleCalendar::class)->busy($from, $to->addDay());
+    }
+
+    public function syncGoogle(): void
+    {
+        [$ok, $failed] = app(\App\Services\Google\GoogleCalendar::class)->syncUpcoming();
+        \Filament\Notifications\Notification::make()->{$failed ? 'warning' : 'success'}()
+            ->title($failed ? "{$ok} al día, {$failed} con error" : 'Google Calendar al día')->body($failed ? 'Vuelve a intentarlo en unos minutos.' : null)->send();
+    }
+
+    public function disconnectGoogle(): void
+    {
+        app(\App\Services\Google\GoogleCalendar::class)->disconnect();
+        \App\Services\Audit::recordFor(\Filament\Facades\Filament::auth()->user(), 'google_calendar.disconnected', \Filament\Facades\Filament::auth()->user(), [], []);
+        \Filament\Notifications\Notification::make()->success()->title('Google Calendar desconectado')->body('Las fiestas que ya estaban en Google se quedan allí.')->send();
+    }
+
     /** Parties sharing a unit with less than 45 min between one's breakdown and the next one's setup (before driving). */
     public function gapWarnings(Collection $events): array
     {

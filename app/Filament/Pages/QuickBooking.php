@@ -228,9 +228,12 @@ class QuickBooking extends Page
         if (! is_string($date) || ! preg_match('/^\d{4}-\d{2}-\d{2}/', $date)) return 'Los días con un punto ya tienen fiestas.';
         $day = \Carbon\CarbonImmutable::parse(substr($date, 0, 10), ChicagoTime::TZ);
         $events = \App\Models\Event::query()->where('starts_at', '>=', $day->utc())->where('starts_at', '<', $day->addDay()->utc())->orderBy('starts_at')->get(['starts_at', 'title']);
-        if ($events->isEmpty()) return 'Ese día está libre.';
+        $busy = collect(app(\App\Services\Google\GoogleCalendar::class)->busy($day, $day->addDay())[$day->format('Y-m-d')] ?? [])
+            ->map(fn ($b) => $b['from'].'–'.$b['to'])->implode(', ');
+        $google = $busy !== '' ? ' En tu Google estás ocupado: '.$busy.'.' : '';
+        if ($events->isEmpty()) return ($busy !== '' ? 'No hay fiestas ese día.' : 'Ese día está libre.').$google;
         $list = $events->map(fn ($e) => $e->starts_at->setTimezone(ChicagoTime::TZ)->format('g:i A').' '.$e->title)->implode(' · ');
-        return 'Ese día ya '.($events->count() === 1 ? 'tienes 1 fiesta: ' : 'tienes '.$events->count().' fiestas: ').$list;
+        return 'Ese día ya '.($events->count() === 1 ? 'tienes 1 fiesta: ' : 'tienes '.$events->count().' fiestas: ').$list.$google;
     }
 
     /** Non-native time pickers keep "Y-m-d H:i:s" in raw state; the rest of the page works with Houston "H:i". */

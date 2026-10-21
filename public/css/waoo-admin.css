@@ -241,3 +241,15 @@ a.wdash-item:hover{border-color:#122F94;background:#F5F7FF}
 .dark .fi-fo-date-time-picker-calendar .fi-fo-date-time-picker-calendar-day.fi-selected{background:#7A93FF;color:#0B1026}
 .dark .waoo-date .fi-fo-date-time-picker-calendar-week>.fi-fo-date-time-picker-calendar-day:is(:first-child,:last-child):not(.fi-selected):not(.fi-disabled){background:rgba(255,1,124,.10)}
 @media (prefers-reduced-motion:reduce){.fi-fo-date-time-picker-calendar .fi-fo-date-time-picker-calendar-day{transition:none}}
+/* Google Calendar (owner 2026-10-21): connection bar + busy blocks read from the owner's Google (free/busy only). */
+.wcal-google{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:10px 14px;border:1px solid #DFE3EF;border-radius:12px;background:#F5F6FB;font-size:.875rem}
+.wcal-google.warn{border-color:#F9C930;background:#FFF8E1}
+.wcal-google-actions{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+.wcal-google-err{color:#8F5B00;font-weight:600}
+.wcal-google-flash{flex-basis:100%;margin:0;font-weight:600;color:#122F94}
+.wcal-gdot{background:repeating-linear-gradient(45deg,#8A91B0 0 3px,transparent 3px 6px)!important}
+.wcal-gbusy{display:block;font-size:.75rem;color:#5B6385;padding:3px 7px;border-radius:6px;background:repeating-linear-gradient(45deg,rgba(138,145,176,.16) 0 6px,rgba(138,145,176,.06) 6px 12px);margin:3px 0 0}
+.dark .wcal-google{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.1)}
+.dark .wcal-google.warn{background:rgba(249,201,48,.08);border-color:rgba(249,201,48,.4)}
+.dark .wcal-google-flash{color:#93A7FF}
+.dark .wcal-gbusy{color:#A6AED0}

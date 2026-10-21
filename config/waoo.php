@@ -38,6 +38,8 @@ return [
         'en' => ['accepted' => $clientTexts['texts']['quote_accept']['en'], 'rejected' => $clientTexts['texts']['quote_reject']['en']],
     ],
     'extra_character_cents' => 15000, // César 2026-10-21: each character beyond the package's included ones adds $150, any package.
+    // Owner 2026-10-21: two-way Google Calendar (OAuth client from the owner's Google Cloud project; never in Git).
+    'google_calendar' => ['client_id' => env('GOOGLE_CALENDAR_CLIENT_ID'), 'client_secret' => env('GOOGLE_CALENDAR_CLIENT_SECRET'), 'calendar_name' => 'Waoo Party fiestas'],
     'short_portal_links' => env('WAOO_SHORT_PORTAL_LINKS', false), // Requires log redaction before activation on a host.
     'sandbox_documents' => env('WAOO_SANDBOX_DOCUMENTS', false),
     'sandbox_immediate_contracts' => env('WAOO_SANDBOX_IMMEDIATE_CONTRACTS', false),
