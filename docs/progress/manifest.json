@@ -164,7 +164,7 @@
       "reviewed": false,
       "merged": false,
       "accepted": false,
-      "note": "S1 monetary terms and S2 unpaid inventory backing implemented/tested; full aggregator/Checkout/portal/webhook/real principal-fee accounting/reminder and expiry scheduling remain pending. No provider, route or transport activation; full backend completion remains null.",
+      "note": "S1 terms/S2 unpaid inventory backing and S3a durable exact request preparation implemented/tested. Full aggregator/provider dispatch/portal/webhook/real principal-fee accounting/reminder and expiry scheduling remain pending. No provider, route or transport activation; full backend completion remains null.",
       "branch": "codex/quick-stripe-foundation",
       "foundation": {
        "backend": "8542c98",
@@ -185,6 +185,17 @@
        "merged": false,
        "accepted": false,
        "verification": "92/433 backing PASS02:31.440 +200/1537 related PASS07:00.067 before main merge;154/1518 merged booking/portal/lease/main walkthrough PASS05:55.864 on09ccaeb. Overlap, not summed. Native last-unit lease vs paid-booking race, immutable48h/nonrenewal/DST, exact replays, release/expiry/source/auth/audit/corruption guards; no dummy receipt, portal or provider call. Not full repository or remote Actions."
+      },
+      "request_preparation": {
+       "api": "QUICK-STRIPE-BOOKING-API.md S3a; contract0e6ef6e before code",
+       "branch": "codex/quick-stripe-requests",
+       "backend": "a8c5539",
+       "ui": null,
+       "reviewed": false,
+       "merged": false,
+       "accepted": false,
+       "scope": "Internal encrypted append-only exact provider request; one per unpaid lease, immutable account/origin/method policy/amounts/key/expiry, owner authorization/source pins and normal two-owner conflict. No provider call, Checkout URL, payment evidence, portal or activation.",
+       "verification": "Frozen a8c5539: integrated181 tests/1227 assertions PASS06:11.288,127MB,PHP8.3.35/MariaDB11.8, including all48 new cases and isolated SQLite migration. Actual two-owner conflict, audit rollback/retry, source and rehashed-body integrity, historical read after real cancellation/edit, account/origin/method/authority drift, no provider/receipt/grant/inventory mutation. PHP lint8/strict Composer/Vite/diff pass. Not whole repository, Actions, actual provider/host, UI or owner acceptance."
       }
      },
      "night_google_followup": {
@@ -641,7 +652,7 @@
      "merged": false,
      "accepted": false,
      "design": "docs/QUICK-STRIPE-BOOKING-API.md",
-     "blocker": "Pending full create/read UI +dedicated grant/portal, frozen provider request, verified webhook/real Stripe backing, principal vs3% across reports/confirmation, late money handling and24h/48h scheduled lifecycle. No fake option or activation."
+     "blocker": "Solicitud exacta preparada y probada (a8c5539,181 pruebas relacionadas). Falta conectar la reserva y el portal, verificar métodos/cuenta, procesar el webhook y separar principal/3%, resolver pagos tardíos y programar24/48h. Sin botón de pago ni activación."
     },
     {
      "name": "Datos y firma en la misma visita (sandbox)",
