@@ -71,6 +71,15 @@ class Dashboard extends BaseDashboard
                 })->all()];
         }
 
+        if (\App\Services\Booking\QuickPaymentProtocol::enabled()) {
+            $paid=\App\Models\QuickPaymentBooking::whereIn('state',['paid','paid_needs_review'])->orderByDesc('id')->limit(20)->get();
+            $cards[]=['tone'=>'warn','title'=>'Pagos de Reserva rápida','text'=>'Dinero verificado. Revisa el personal y los recursos pendientes.', 'items'=>$paid->map(fn($b)=>$link(Event::findOrFail($b->event_id)))->all()];
+            $noticeBookings=\App\Models\QuickPaymentNotification::whereIn('status',['pending','blocked','delivery_unknown'])->orderBy('id')->limit(20)->pluck('quick_payment_booking_id');
+            $noticeEvents=Event::whereIn('id',\App\Models\QuickPaymentBooking::whereIn('id',$noticeBookings)->select('event_id'))->orderBy('starts_at')->get();
+            $cards[]=['tone'=>'warn','title'=>'Avisos automáticos de Reserva rápida','text'=>'Pendientes, bloqueados o con entrega incierta. Abrir un enlace no significa que se envió un mensaje.', 'items'=>$noticeEvents->map($link)->all()];
+            $review=\App\Models\QuickPaymentBooking::where('state','review_required')->orderBy('id')->limit(20)->get();
+            $cards[]=['tone'=>'bad','title'=>'Apartados vencidos con Zelle pendiente','text'=>'La fecha y el traje siguen apartados. Revisa el aviso antes de liberar.', 'items'=>$review->map(fn($b)=>$link(Event::findOrFail($b->event_id)))->all()];
+        }
         $soon = (clone $upcoming)->where('status', 'draft')->where('starts_at', '<', $now->copy()->addDays(7))->get();
         $cards[] = ['tone' => 'bad', 'title' => 'Fiestas en menos de 7 días sin staff apartado',
             'text' => 'Asigna staff y trajes; por la fecha necesitan tu aprobación.', 'items' => $soon->map($link)->all()];

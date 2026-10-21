@@ -4,7 +4,7 @@ namespace App\Services\Finance;
 use Illuminate\Auth\Access\AuthorizationException;
 use Stripe\StripeClient;
 
-final class StripeTestGateway implements StripeGateway
+final class StripeTestGateway implements QuickStripeGateway
 {
     private StripeClient $client;
     private ?string $verifiedAccount = null;
@@ -24,6 +24,13 @@ final class StripeTestGateway implements StripeGateway
         $actual = $this->client->accounts->retrieve();
         if ($actual->id !== $expected) throw new AuthorizationException('La clave Stripe no pertenece a la cuenta configurada.');
         return $this->verifiedAccount = $actual->id;
+    }
+    public function verifyMethods(array $methods):array
+    {
+        $id=$this->account();$account=$this->client->accounts->retrieve();
+        if (!$methods || array_diff($methods,['card','klarna'])) throw new \RuntimeException('unsupported_quick_payment_method');
+        foreach($methods as $method) if(($account->capabilities->{$method==='card'?'card_payments':'klarna_payments'}??null)!=='active') throw new \RuntimeException('quick_payment_method_not_active');
+        return ['account'=>$id,'methods'=>$methods];
     }
     public function createCheckout(array $parameters, string $key): array
     {

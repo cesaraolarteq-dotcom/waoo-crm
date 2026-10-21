@@ -4,6 +4,7 @@
     $money = fn ($c) => \App\Filament\Support\Labels::money($c);
 @endphp
 <x-filament-panels::page>
+    @include('filament.pages.partials.quick-payment-state',['event'=>$e])
     <div class="wmoney-states">
         <span>Recursos: <b>{{ $f['status'] }}</b></span>
         @if ($f['finance'])

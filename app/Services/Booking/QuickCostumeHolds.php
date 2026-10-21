@@ -26,9 +26,19 @@ final class QuickCostumeHolds
         RecordWriteRejected::unless($e->customer_id === $q->customer_id && $e->responsible_system === 'crm'
             && $receipt->event_id === $e->id && $receipt->financial_revision_id === $q->initial_financial_revision_id
             && $receipt->kind === 'receipt' && $receipt->environment === 'test' && $receipt->currency === 'USD'
-            && $receipt->amount_cents > 0 && $receipt->verified_by !== null && $receipt->source_type === 'owner_verified',
+            && $receipt->amount_cents > 0 && (($receipt->verified_by !== null && $receipt->source_type === 'owner_verified') || self::verifiedStripeReceipt($receipt)),
             409, 'La reserva o su depósito requieren revisión.');
         return $q;
+    }
+    public static function verifiedStripeReceipt(LedgerEntry $receipt): bool
+    {
+        if ($receipt->verified_by !== null || $receipt->source_type !== 'verified_quick_stripe') return false;
+        $v=\App\Models\QuickPaymentReceipt::where('ledger_entry_id',$receipt->id)->sharedLock()->first();
+        if(!$v)return false;
+        $p=$v->verification;
+        return is_array($p) && $v->verification_sha256===MutationKey::hash($p) && $p['ledger_entry_id']===$receipt->id
+            && $p['principal_cents']===$receipt->amount_cents && $v->principal_cents===$receipt->amount_cents && $v->external_identity_key===$receipt->external_identity_key
+            && $p['external_identity_key']===$receipt->external_identity_key && $p['event_id']===$receipt->event_id && $p['financial_revision_id']===$receipt->financial_revision_id;
     }
     private static function receiptFingerprint(Event $e): string
     {
@@ -116,14 +126,15 @@ final class QuickCostumeHolds
                 'issues' => array_values(array_unique($issues)), 'rows' => $p['rows']];
         } catch (RecordWriteRejected) { return [...$base, 'state' => 'review_required', 'issues' => ['integrity_invalid']]; }
     }
-    public static function transition(User $actor, Event $e, QuickCostumeHold $h, string $state, array $rows, array $issues, ?string $reason = null): QuickCostumeHoldEvent
+    public static function transition(?User $actor, Event $e, QuickCostumeHold $h, string $state, array $rows, array $issues, ?string $reason = null): QuickCostumeHoldEvent
     {
         $p = ['schema_version' => 1, 'head_id' => $h->id, 'event_id' => $e->id, 'quick_booking_id' => $h->quick_booking_id, 'receipt_id' => $h->receipt_id,
             'version' => $h->version + 1, 'state' => $state, 'rows' => $rows, 'issues' => $issues, 'window' => self::window($e),
-            'recipe_sha256' => MutationKey::hash(self::recipe($e)), 'receipt_sha256' => self::receiptFingerprint($e), 'actor_id' => $actor->id, 'reason' => $reason];
+            'recipe_sha256' => MutationKey::hash(self::recipe($e)), 'receipt_sha256' => self::receiptFingerprint($e), 'actor_id' => $actor?->id, 'reason' => $reason];
         $hash = MutationKey::hash($p); $h->fill(['version' => $p['version'], 'state' => $state, 'payload' => $p, 'payload_sha256' => $hash])->save();
         $history = QuickCostumeHoldEvent::create(['quick_costume_hold_id' => $h->id, 'version' => $h->version, 'payload' => $p, 'payload_sha256' => $hash]);
-        Audit::recordFor($actor, 'quick_costume_hold.'.$state, $h, [], ['event_id' => $e->id, 'version' => $h->version, 'sha256' => $hash]);
+        $meta=['event_id'=>$e->id,'version'=>$h->version,'sha256'=>$hash];
+        $actor ? Audit::recordFor($actor,'quick_costume_hold.'.$state,$h,[],$meta) : Audit::recordSystem('quick_costume_hold.'.$state,$h,[],$meta);
         return $history;
     }
     public static function available(Event $e, Resource $unit, array $exclude = []): bool

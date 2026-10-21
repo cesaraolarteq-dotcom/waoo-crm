@@ -646,13 +646,15 @@
      "name": "Reserva rápida con Stripe: pago y portal",
      "weight": 2,
      "agent": "Codex",
-     "backend": null,
-     "ui": false,
+     "backend": "4a6e7b7 +5050a37 +b04e151",
+     "ui": "4a6e7b7 +5050a37",
      "reviewed": false,
      "merged": false,
      "accepted": false,
      "design": "docs/QUICK-STRIPE-BOOKING-API.md",
-     "blocker": "Solicitud exacta preparada y probada (a8c5539,181 pruebas relacionadas). Falta conectar la reserva y el portal, verificar métodos/cuenta, procesar el webhook y separar principal/3%, resolver pagos tardíos y programar24/48h. Sin botón de pago ni activación."
+     "api": "docs/QUICK-STRIPE-BOOKING-API.md QP1",
+     "verification": "4a6e7b7:196/1460 MariaDB PASS;b04e151:32/284 final focused PASS;Chromium15/15;Composer/Vite/PHP/diff PASS. Related overlapping runs, not full repository/remote Actions or host acceptance.",
+     "note": "Sandbox delivery: unpaid owner toggle/blank client, exact48h costume lease, details→Zelle pending→private PDF/signature, verified bank review, authenticated Stripe card/Klarna50/100+separate3%, immutable retry/recovery/closure, purpose-bound callback/real principal+fee ledger, paid backing/late review, cron24/48h, frozen gated owner/client notifications. DefaultsOFF; no deployment/send/charge/import. Claude reviews/integrates/opens PR."
     },
     {
      "name": "Datos y firma en la misma visita (sandbox)",

@@ -127,6 +127,10 @@ Route::middleware([\App\Http\Middleware\AuthenticatePortal::class, 'throttle:60,
     Route::get('/quote/pdf', [\App\Http\Controllers\Portal\QuoteController::class, 'pdf']);
     Route::post('/quote/accept', [\App\Http\Controllers\Portal\QuoteController::class, 'accept']);
     Route::post('/quote/reject', [\App\Http\Controllers\Portal\QuoteController::class, 'reject']);
+    Route::get('/quick-payment', [\App\Http\Controllers\Portal\QuickPaymentController::class, 'show']);
+    Route::post('/quick-payment/checkout/close', [\App\Http\Controllers\Portal\QuickPaymentController::class, 'close']);
+    Route::post('/quick-payment/checkout', [\App\Http\Controllers\Portal\QuickPaymentController::class, 'checkout']);
+    Route::post('/quick-payment/zelle', [\App\Http\Controllers\Portal\QuickPaymentController::class, 'zelle']);
     Route::get('/zelle-notices', [\App\Http\Controllers\Portal\ZelleNoticeController::class, 'index']);
     Route::post('/zelle-notices', [\App\Http\Controllers\Portal\ZelleNoticeController::class, 'store']);
     Route::post('/details', [\App\Http\Controllers\Portal\ClientDetailsController::class, 'store']);

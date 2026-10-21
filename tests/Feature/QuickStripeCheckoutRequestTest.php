@@ -413,9 +413,11 @@ class QuickStripeCheckoutRequestTest extends TestCase
 
     public function test_mariadb_migration_roundtrip_is_empty_only_and_models_preserve_history(): void
     {
+        $payments = require database_path('migrations/2026_10_21_300000_create_quick_payments.php');
+        $payments->down(); // Roll back child FKs before their request table.
         $migration = require database_path('migrations/2026_10_20_580000_create_quick_stripe_checkout_requests.php');
         $migration->down(); $this->assertFalse(Schema::hasTable('quick_stripe_checkout_requests'));
-        $migration->up(); $this->prepare();
+        $migration->up(); $payments->up(); $this->prepare();
         try { $migration->down(); $this->fail('Dropped durable request evidence.'); }
         catch (\LogicException) { $this->assertDatabaseCount('quick_stripe_checkout_requests', 1); }
         $r = QuickStripeCheckoutRequest::sole();

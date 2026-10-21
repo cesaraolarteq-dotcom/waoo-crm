@@ -97,9 +97,14 @@ final class PortalPageController extends Controller
         $details = $canDetails ? \App\Services\Booking\ClientDetailsState::portal($event) : null;
         $canReviewDetails = config('waoo.sandbox_immediate_contracts') && $canDetails && !$signed && !$details['reviewed'];
         $reviewDetails = $canReviewDetails && $request->boolean('review_details');
+        $quickBooking=\App\Services\Booking\QuickPaymentProtocol::booking($event->id,false);
+        // A later owner-issued ordinary balance link keeps its original scopes; it is not the unpaid payment grant.
+        $quickPayment=$quickBooking && $quickBooking->portal_grant_id===$grant->id && in_array('quick_booking.pay',$grant->scopes,true)
+            ? app(\App\Services\Booking\ReadQuickPayment::class)->execute($client) : null;
         $step = match (true) {
             $reviewDetails => 'details',
             $canDetails && ! $signed && ! $details['submission'] => 'details',
+            $quickPayment && !$quickPayment['can_sign'] && !$signed => 'quick_pay',
             $canDetails && ! $signed && ! $details['reviewed'] && !$prepared => 'details_sent',
             ! $contract => 'waiting',
             ! $signed => 'contract',
@@ -120,18 +125,18 @@ final class PortalPageController extends Controller
         $prefill = ($details && $details['submission'] ? $details['submission']['data']
                 : ['first_name' => \Illuminate\Support\Str::before($name = trim((string) $event->customer?->name), ' '), 'last_name' => str_contains($name, ' ') ? trim(\Illuminate\Support\Str::after($name, ' ')) : '',
                     'phone' => $event->customer?->phone, 'email' => $event->customer?->email, 'event_address' => $event->address, 'event_postal_code' => $event->postal_code]);
-        if (config('waoo.sandbox_immediate_contracts')) {
+        if ($quickPayment || config('waoo.sandbox_immediate_contracts')) {
             if (filled($event->address)) $prefill['event_address'] = $event->address;
             if (filled($event->postal_code)) $prefill['event_postal_code'] = $event->postal_code;
         }
 
         return [
-            'lang' => $lang, 'step' => $step, 'steps' => $canDetails ? ['details', 'contract', 'pay'] : ['contract', 'pay'], 'test_mode' => true,
+            'lang' => $lang, 'step' => $step, 'quick_payment'=>$quickPayment, 'steps' => $quickPayment ? ['details','pay','contract'] : ($canDetails ? ['details', 'contract', 'pay'] : ['contract', 'pay']), 'test_mode' => true,
             'details' => $details ? ['expected_event_version' => $details['expected_event_version'], 'expected_revision' => $details['expected_revision'],
                 'action' => url('/portal/api/details'),
-                'prepare_action' => config('waoo.sandbox_immediate_contracts') && $details['submission'] && !$signed && !$details['reviewed'] ? url('/portal/api/details/contract') : null,
-                'fixed_address' => config('waoo.sandbox_immediate_contracts') && filled($event->address),
-                'fixed_postal_code' => config('waoo.sandbox_immediate_contracts') && filled($event->postal_code),
+                'prepare_action' => (config('waoo.sandbox_immediate_contracts') || ($quickPayment['can_sign'] ?? false)) && $details['submission'] && !$signed && !$details['reviewed'] ? url('/portal/api/details/contract') : null,
+                'fixed_address' => ($quickPayment!==null || config('waoo.sandbox_immediate_contracts')) && filled($event->address),
+                'fixed_postal_code' => ($quickPayment!==null || config('waoo.sandbox_immediate_contracts')) && filled($event->postal_code),
                 'review_url' => $canReviewDetails ? url('/portal?lang='.$lang.'&review_details=1') : null,
                 'sms_consent' => $smsVersion !== null ? ['version' => $smsVersion, 'text' => $approvedSms[$smsVersion]] : null] : null,
             'prefill' => $prefill,
