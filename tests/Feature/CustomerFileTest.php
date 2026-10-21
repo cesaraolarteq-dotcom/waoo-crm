@@ -22,4 +22,12 @@ class CustomerFileTest extends TestCase
         $this->get("/admin/clientas/{$c->id}")->assertOk()->assertSee('Ana Ficticia')->assertSee('555-0100')->assertSee('Inglés')
             ->assertSee('Próximas fiestas')->assertSee('Fiesta 2026')->assertSee('Fiestas anteriores')->assertSee('Fiesta 2025')->assertSee('Cumpleaños');
     }
+    public function test_provisional_customer_without_name_has_a_working_owner_file(): void
+    {
+        $this->actingAs(User::factory()->create(['role'=>'owner_admin','active'=>true,'two_factor_secret'=>encrypt('JBSWY3DPEHPK3PXP'),'two_factor_confirmed_at'=>now()]));
+        $customer=Customer::create(['name'=>null,'phone'=>null,'email'=>null,'locale'=>'es']);
+        $this->get('/admin/clientas/'.$customer->id)->assertOk()->assertSee('Cliente por completar');
+        $this->assertNull($customer->fresh()->name);
+    }
+
 }

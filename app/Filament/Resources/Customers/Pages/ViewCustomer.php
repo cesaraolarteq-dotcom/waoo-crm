@@ -26,7 +26,7 @@ class ViewCustomer extends Page
 
     public function getTitle(): string
     {
-        return $this->record->name;
+        return $this->record->name ?: 'Cliente por completar';
     }
 
     protected function getHeaderActions(): array
