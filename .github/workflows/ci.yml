@@ -1,10 +1,47 @@
 name: CRM backend
-on: [push, pull_request]
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
 permissions:
   contents: read
+# A newer commit on the same branch/PR cancels the older run; main always finishes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, pdo_sqlite, intl, bcmath, mbstring, pcntl, zip
+          coverage: none
+          tools: composer:v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ hashFiles('composer.lock') }}
+      - run: composer install --no-interaction --prefer-dist
+      - run: composer validate --strict
+      - run: composer audit --locked
+      - name: PHP syntax
+        run: find app bootstrap config database routes tests tools -name '*.php' -print0 | xargs -0 -n1 php -l
+      - run: npm ci --ignore-scripts && npm run build
+
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5]
+    name: test (${{ matrix.shard }}/5)
     services:
       mariadb:
         image: mariadb:11.8
@@ -33,15 +70,12 @@ jobs:
           extensions: pdo_mysql, pdo_sqlite, intl, bcmath, mbstring, pcntl, zip
           coverage: none
           tools: composer:v2
-      - uses: actions/setup-node@v4
+      - uses: actions/cache@v4
         with:
-          node-version: '24'
-          cache: npm
+          path: ~/.composer/cache/files
+          key: composer-${{ hashFiles('composer.lock') }}
       - run: composer install --no-interaction --prefer-dist
-      - run: composer validate --strict
-      - run: composer audit --locked
       - run: cp .env.example .env && php artisan key:generate
-      - name: PHP syntax
-        run: find app bootstrap config database routes tests -name '*.php' -print0 | xargs -0 -n1 php -l
-      - run: php artisan test
-      - run: npm ci --ignore-scripts && npm run build
+      # Each shard has its own MariaDB; every test file runs in exactly one shard (tools/ci-shard.php checks it).
+      - run: php tools/ci-shard.php 5 ${{ matrix.shard }} > phpunit-shard.xml
+      - run: vendor/bin/phpunit --configuration=phpunit-shard.xml
