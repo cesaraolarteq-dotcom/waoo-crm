@@ -211,4 +211,11 @@ class HistoricalIntakeTest extends TestCase
         $domain->down(); $migration->down(); $migration->up(); $domain->up();
         $this->assertTrue(Schema::hasTable('history_import_rows'));
     }
+    public function test_counts_reflect_cancelled_alias_and_current_ambiguous_customer_plan():void {
+        foreach(['Laura Martínez','Elena Pérez'] as $name)\App\Models\Customer::create(['name'=>$name,'email'=>'history@example.test','locale'=>'es']);
+        $id=$this->stage([$this->historyRow(['project_status'=>'CANCELED'])])['batch_id'];$read=$this->read($id);
+        $this->assertSame(1,$read['counts']['cancelled']);$this->assertSame(1,$read['counts']['ambiguous']);$this->assertSame(1,$read['bulk']['review_required']);
+        $this->assertDatabaseCount('historical_events',0);
+    }
+
 }

@@ -46,7 +46,7 @@ final class StageHistoricalImport
                     $counts['rows']++;
                     if ($s['normalized']['not_safely_past']) $counts['future']++;
                     if (in_array('email_missing', $s['issue_codes'], true)) $counts['missing_email']++;
-                    if ($s['source']['project_status'] === 'cancelled') $counts['cancelled']++;
+                    if ($s['normalized']['status'] === 'cancelled') $counts['cancelled']++;
                     if (array_filter($s['issue_codes'], fn ($c) => str_ends_with($c, '_invalid') || str_ends_with($c, '_required')
                         || in_array($c, ['duplicate_project_id', 'end_not_after_start', 'start_time_nonexistent', 'end_time_nonexistent'], true))) $counts['invalid']++;
                 }

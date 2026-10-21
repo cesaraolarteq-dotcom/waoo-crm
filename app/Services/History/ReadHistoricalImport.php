@@ -22,8 +22,12 @@ final class ReadHistoricalImport
             $page = min((int)($d['page'] ?? 1), $last);
             $rows = HistoryImportRow::where('history_import_batch_id', $batchId)->orderBy('id')->offset(($page - 1) * $size)->limit($size)->get();
             $plan = HistoricalPlan::build($batch, $m);
+            $counts = $m['counts'];
+            $counts['changed'] = count(array_filter($plan['rows'], fn ($i) => in_array('source_changed', $i['reason_codes'], true)));
+            $counts['operating_linked'] = count(array_filter($plan['rows'], fn ($i) => in_array('operating_project_exists', $i['reason_codes'], true)));
+            $counts['ambiguous'] = count(array_filter($plan['rows'], fn ($i) => array_intersect(['customer_ambiguous','customer_conflicting','source_contact_conflict'], $i['reason_codes'])));
             return ['batch' => ['id' => $batch->id, 'version' => $batch->version, 'state' => $batch->state,
-                'profile' => $batch->profile, 'cutoff' => $m['cutoff']], 'counts' => $m['counts'],
+                'profile' => $batch->profile, 'cutoff' => $m['cutoff']], 'counts' => $counts,
                 'coverage_sha256' => $batch->coverage_sha256, 'page' => ['number' => $page, 'last' => $last, 'total' => $total],
                 'rows' => $rows->map(fn ($row) => self::summary($row, HistoryEnvelope::row($row, $m)))->all(),
                 'bulk' => $plan['summary'], 'review_rows' => array_values(array_filter($plan['rows'], fn ($i) => $i['state'] === 'needs_review')),
