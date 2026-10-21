@@ -24,12 +24,12 @@ final class QuoteForm
             Grid::make(3)->schema([
                 DatePicker::make('valid_date')->label('Válida hasta (opcional)')->native()->helperText('Vacío = 7 días. Debe ser antes de la fiesta.'),
                 TimePicker::make('valid_time')->label('Hora (Houston)')->native()->seconds(false),
-                Select::make('locale')->label('Idioma de la clienta')->options(['es' => 'Español', 'en' => 'Inglés'])->native(false),
+                Select::make('locale')->label('Idioma del cliente')->options(['es' => 'Español', 'en' => 'Inglés'])->native(false),
             ]),
-            Repeater::make('discounts')->label('Descuentos (opcional, siempre visibles para la clienta)')->defaultItems(0)->maxItems(5)->columns(2)
+            Repeater::make('discounts')->label('Descuentos (opcional, siempre visibles para el cliente)')->defaultItems(0)->maxItems(5)->columns(2)
                 ->addActionLabel('Agregar descuento')
                 ->schema([
-                    TextInput::make('label')->label('Cómo lo verá la clienta')->required()->minLength(3)->maxLength(255)->placeholder('Ej.: Descuento por reservar hoy'),
+                    TextInput::make('label')->label('Cómo lo verá el cliente')->required()->minLength(3)->maxLength(255)->placeholder('Ej.: Descuento por reservar hoy'),
                     TextInput::make('amount')->label('Monto (USD)')->prefix('$')->required()
                         ->rule('regex:/^\d{1,7}(\.\d{1,2})?$/')->validationMessages(['regex' => 'Solo el número, por ejemplo 50.']),
                     Textarea::make('reason')->label('Por qué (solo lo ves tú)')->required()->minLength(10)->maxLength(1000)->rows(2)->columnSpanFull(),

@@ -133,7 +133,7 @@ final class QuickBook
 
         $customer = Customer::whereKey($data['customer_id'])->lockForUpdate()->firstOrFail();
         $update = $data['customer_update'];
-        \App\Exceptions\RecordWriteRejected::unless($customer->version === (int) $update['expected_version'], 409, 'La ficha de la clienta cambió. Recarga antes de guardar la reserva.');
+        \App\Exceptions\RecordWriteRejected::unless($customer->version === (int) $update['expected_version'], 409, 'La ficha del cliente cambió. Recarga antes de guardar la reserva.');
         $contact = array_diff_key($update, ['expected_version' => true]);
         if (collect($contact)->every(fn ($value, $field) => $customer->{$field} === $value)) return $customer;
 

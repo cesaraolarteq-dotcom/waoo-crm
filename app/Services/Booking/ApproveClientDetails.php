@@ -25,13 +25,13 @@ final class ApproveClientDetails
             if ($saved = MutationKey::find($scope, $key, $hash)) return ClientDetailsReview::findOrFail($saved->result_id);
             $submission = ClientDetailsSubmission::where('event_id', $eventId)->where('customer_id', $event->customer_id)->whereKey($submissionId)->firstOrFail();
             RecordWriteRejected::unless(in_array($event->status, ['draft','capacity_reserved'], true) && $event->version === $submission->event_version && $event->version === $data['expected_event_version'] && $submission->revision === $data['expected_revision']
-                && (int) ClientDetailsSubmission::where('event_id', $eventId)->max('revision') === $submission->revision, 409, 'El evento o los datos de la clienta cambiaron. Recarga antes de aprobar.');
+                && (int) ClientDetailsSubmission::where('event_id', $eventId)->max('revision') === $submission->revision, 409, 'El evento o los datos del cliente cambiaron. Recarga antes de aprobar.');
             RecordWriteRejected::when(ClientDetailsReview::where('submission_id', $submission->id)->exists() || Contract::where('event_id', $eventId)->where('state', 'signed')->exists(), 409, 'Estos datos ya se aprobaron o existe un contrato firmado. Usa el flujo de cambios.');
             $values = $submission->data;
-            if (!$values['start_time_confirmed'] && ($data['requested_start_resolution'] ?? null) !== 'keep_original') throw ValidationException::withMessages(['requested_start_resolution' => 'Confirma con la clienta la hora original o gestiona el cambio por separado.']);
+            if (!$values['start_time_confirmed'] && ($data['requested_start_resolution'] ?? null) !== 'keep_original') throw ValidationException::withMessages(['requested_start_resolution' => 'Confirma con el cliente la hora original o gestiona el cambio por separado.']);
             $customer = Customer::whereKey($event->customer_id)->lockForUpdate()->firstOrFail();
             $previousFinance = \App\Models\FinancialRevision::where('event_id', $eventId)->orderByDesc('revision')->firstOrFail();
-            RecordWriteRejected::unless(MutationKey::hash($customer->only(['name','email','phone','locale'])) === MutationKey::hash($submission->base_customer_snapshot), 409, 'La ficha de la clienta cambió después del envío. Solicita datos actualizados antes de aplicarlos.');
+            RecordWriteRejected::unless(MutationKey::hash($customer->only(['name','email','phone','locale'])) === MutationKey::hash($submission->base_customer_snapshot), 409, 'La ficha del cliente cambió después del envío. Solicita datos actualizados antes de aplicarlos.');
             $reserved = $event->status === 'capacity_reserved';
             foreach (['setup_minutes','breakdown_minutes'] as $field) {
                 if ($event->{$field} === null && !isset($data[$field]) && \App\Models\QuickBookingRecord::where('event_id', $eventId)->exists()) {

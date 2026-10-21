@@ -62,7 +62,7 @@ class EventContract extends Page
 
     public function getSubheading(): ?string
     {
-        return $this->record->title.' · '.Labels::when($this->record->starts_at).' · Modo prueba: no se envía nada a la clienta.';
+        return $this->record->title.' · '.Labels::when($this->record->starts_at).' · Modo prueba: no se envía nada al cliente.';
     }
 
     public function state(): array
@@ -85,12 +85,12 @@ class EventContract extends Page
             ? ClientDetailsSubmission::where('event_id', $e->id)->find($this->displayedSubmission['id']) : null;
         $review = $submission ? ClientDetailsReview::where('submission_id', $submission->id)->first() : null;
         $blockers = [];
-        if ($detailsState === 'waiting_details') $blockers[] = 'Esperando que la clienta llene sus datos con su enlace.';
-        if ($detailsState === 'review_details') $blockers[] = 'Revisa y aprueba los datos de la clienta (abajo).';
+        if ($detailsState === 'waiting_details') $blockers[] = 'Esperando que el cliente llene sus datos con su enlace.';
+        if ($detailsState === 'review_details') $blockers[] = 'Revisa y aprueba los datos del cliente (abajo).';
         if (! $revision) $blockers[] = 'Fija los montos acordados en “Dinero”.';
         if (! $template) $blockers[] = 'Activa una versión de la plantilla en “Contrato”.';
         if (! $e->address) $blockers[] = 'Falta la dirección de la fiesta en el evento.';
-        if (! $e->customer?->email) $blockers[] = 'Falta el correo de la clienta en su ficha.';
+        if (! $e->customer?->email) $blockers[] = 'Falta el correo del cliente en su ficha.';
         if ($e->services()->where('operational_ready', false)->exists()) $blockers[] = 'Hay un servicio incompleto (personaje o catálogo).';
 
         return compact('e', 'revision', 'template', 'contract', 'signature', 'grants', 'blockers', 'quick', 'detailsState', 'submission', 'review');
@@ -116,7 +116,7 @@ class EventContract extends Page
             ->schema([Grid::make(2)->schema([
                 TextInput::make('first_name')->label('Nombre')->required()->maxLength(120),
                 TextInput::make('last_name')->label('Apellido')->required()->maxLength(120),
-                TextInput::make('address')->label('Dirección de la clienta')->required()->maxLength(255)->columnSpanFull(),
+                TextInput::make('address')->label('Dirección del cliente')->required()->maxLength(255)->columnSpanFull(),
                 TextInput::make('email')->label('Correo (el de su ficha)')->email()->required()->maxLength(255),
                 TextInput::make('phone')->label('Teléfono')->required()->maxLength(40),
             ])])
@@ -148,10 +148,10 @@ class EventContract extends Page
 
     public function linkAction(): Action
     {
-        return Action::make('link')->label('Crear enlace para la clienta')->icon('heroicon-o-link')->color('primary')
+        return Action::make('link')->label('Crear enlace para el cliente')->icon('heroicon-o-link')->color('primary')
             ->visible(fn () => in_array($this->state()['contract']?->state, ['issued'], true) || in_array($this->state()['detailsState'], ['waiting_details', 'review_details'], true))
-            ->modalHeading('Enlace para la clienta')
-            ->modalDescription('Con él la clienta lee el contrato, lo firma y ve cómo pagar. Mientras esté activo puedes volver a copiarlo desde aquí.')
+            ->modalHeading('Enlace para el cliente')
+            ->modalDescription('Con él el cliente lee el contrato, lo firma y ve cómo pagar. Mientras esté activo puedes volver a copiarlo desde aquí.')
             ->fillForm(['days' => 7])
             ->schema([TextInput::make('days')->label('Vence en (días)')->integer()->minValue(1)->maxValue(30)->required()])
             ->modalSubmitActionLabel('Crear enlace')
@@ -202,7 +202,7 @@ class EventContract extends Page
                 } catch (\App\Exceptions\PortalLinkRejected|\App\Exceptions\ResponsibilityRejected $e) {
                     $n = Notification::make()->danger()->title('No se pudo copiar')->body($e->getMessage())->persistent();
                     if (in_array($e->status, [409, 410], true) && $this->linkAction()->isVisible()) {
-                        $n->body($e->getMessage().' Usa «Crear enlace para la clienta» (arriba) para hacer uno nuevo.');
+                        $n->body($e->getMessage().' Usa «Crear enlace para el cliente» (arriba) para hacer uno nuevo.');
                     } elseif ($e->status === 503) {
                         $n->title('No se pudo recuperar ahora')->body('Inténtalo de nuevo en un momento.');
                     } elseif ($e->status === 404) {
@@ -218,9 +218,9 @@ class EventContract extends Page
 
     public function approveAction(): Action
     {
-        return Action::make('approve')->label('Aprobar datos de la clienta')->icon('heroicon-o-check-badge')->color('primary')
+        return Action::make('approve')->label('Aprobar datos del cliente')->icon('heroicon-o-check-badge')->color('primary')
             ->visible(fn () => $this->state()['detailsState'] === 'review_details' && $this->state()['submission'] && ! $this->state()['review'])
-            ->modalHeading('Aprobar los datos de la clienta')
+            ->modalHeading('Aprobar los datos del cliente')
             ->modalDescription('Se copian a su ficha y al evento (nombre, contacto y dirección). No cambia la fecha, la hora, los paquetes ni el dinero. Luego preparas el contrato.')
             ->schema(fn () => array_values(array_filter([
                 Checkbox::make('travel_fee_confirmed')->label('Revisé la dirección y el ZIP: el costo de transporte cotizado sigue igual')->accepted(),
@@ -252,7 +252,7 @@ class EventContract extends Page
         return Action::make('revoke')->label('Anular enlace')->color('danger')->size('sm')->link()
             ->requiresConfirmation()
             ->modalHeading('Anular este enlace')
-            ->modalDescription('La clienta ya no podrá entrar con él. Si ya firmó, su firma se conserva. Puedes crear un enlace nuevo después.')
+            ->modalDescription('El cliente ya no podrá entrar con él. Si ya firmó, su firma se conserva. Puedes crear un enlace nuevo después.')
             ->modalSubmitActionLabel('Anular')
             ->action(fn (array $arguments, Action $action) => $this->run($action, fn () => app(RevokePortalGrant::class)->execute(Filament::auth()->user(), (int) $arguments['id']), 'Enlace anulado'));
     }

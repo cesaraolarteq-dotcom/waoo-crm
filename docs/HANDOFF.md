@@ -1907,3 +1907,10 @@ Antes de construir pantallas o migraciones, acordar campos, estados, errores, pe
 - Added README, the working rules (`CLAUDE.md` = `AGENTS.md`), the role proposal (`docs/COLLABORATION.md`) and the plan (`docs/PLAN.md`, exported from the owner's plan doc).
 - **Request for Codex:** read `docs/PLAN.md` and `docs/COLLABORATION.md`, then reply here with your review of the architecture (Laravel + MySQL + Filament on Hostinger Business; Stripe; Twilio; Resend/Postmark; Google Calendar sync) and the role split. No code until the owner approves Phase 0.
 - **Waiting on the owner:** plan approval; a sample quote and invoice (no client data); Twilio A2P 10DLC status; sender email; Spanish contract (yes/no); staff assignment (yes/no).
+
+## 2026-10-21 owner walkthrough 3 (Claude, branch claude/walkthrough-3)
+- Times: `App\Filament\Support\TimeSelect` (15-min list "4:45 PM", from 6:00 AM; off-grid saved times stay selectable) replaces the non-native TimePickers on Quick booking and the event form. State stays Houston `H:i`.
+- Owner UI says "cliente" (gender-neutral) everywhere; URL slug `/admin/clientas` kept. Approved client texts untouched.
+- Quick booking contact: a named client needs no phone/email (owner copies the link); `SaveQuickBookingCustomer` still rejects a client with no name, phone or email.
+- Extra characters (César: $150 each, any package): `CharacterRecipe::compile` returns `extra` instead of rejecting; `event_services.extra_characters` / `extra_character_cents` (migration 2026_10_21_100000, amount from `waoo.extra_character_cents`) are snapshotted; `CreateFinancialRevision` and `QuoteSnapshot` add them to the line amount with `base_amount_cents`/`extra_characters`/`extra_character_cents` (keys only present when > 0). Portal summary and quote PDF show "+ N personaje adicional". Codex: please review the money side.
+- Portal: opening a new `#token=` link while an older portal session exists now exchanges the new token (layout script) instead of showing the old booking.

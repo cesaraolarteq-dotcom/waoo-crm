@@ -53,7 +53,7 @@ class CostumeHoldScreenTest extends TestCase
         $id = $this->book();
         $page = Livewire::test(ViewEvent::class, ['record' => $id])->assertSee('Traje de la reserva')->assertSee('Traje apartado')
             ->assertSee('Cabeza de Mickey 1 · Mickey (Golden)')->assertSee('Liberar traje')->assertDontSee('Apartar traje');
-        $page->callAction('releaseCostume', ['reason' => 'La clienta cambió de personaje'])->assertNotified('Traje liberado');
+        $page->callAction('releaseCostume', ['reason' => 'El cliente cambió de personaje'])->assertNotified('Traje liberado');
         Livewire::test(ViewEvent::class, ['record' => $id])->assertSee('Liberado')->assertSee('Apartar traje')
             ->callAction('holdCostume')->assertNotified('Traje apartado');
         Livewire::test(ViewEvent::class, ['record' => $id])->assertSee('Traje apartado')->assertSee('Cabeza de Mickey 1');

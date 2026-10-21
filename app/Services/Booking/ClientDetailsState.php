@@ -13,7 +13,7 @@ final class ClientDetailsState
         $latest = ClientDetailsSubmission::where('event_id', $eventId)->orderByDesc('revision')->first();
         if (!$latest && !QuickBookingRecord::where('event_id', $eventId)->exists()) return;
         $review = $latest ? ClientDetailsReview::where('submission_id', $latest->id)->first() : null;
-        RecordWriteRejected::unless($review && $review->financial_revision_id === $financialRevisionId, 409, 'Primero revisa y aprueba los datos vigentes de la clienta.');
+        RecordWriteRejected::unless($review && $review->financial_revision_id === $financialRevisionId, 409, 'Primero revisa y aprueba los datos vigentes del cliente.');
     }
 
     public static function portal(Event $event): array

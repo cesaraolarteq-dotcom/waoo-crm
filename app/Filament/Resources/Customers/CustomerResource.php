@@ -20,12 +20,12 @@ class CustomerResource extends Resource
 {
     protected static ?string $model = Customer::class;
     protected static ?string $slug = 'clientas';
-    protected static ?string $modelLabel = 'clienta';
-    protected static ?string $pluralModelLabel = 'clientas';
-    protected static ?string $navigationLabel = 'Clientas';
+    protected static ?string $modelLabel = 'cliente';
+    protected static ?string $pluralModelLabel = 'clientes';
+    protected static ?string $navigationLabel = 'Clientes';
     protected static string|\UnitEnum|null $navigationGroup = 'Vender';
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
-    protected static ?string $breadcrumb = 'Clientas';
+    protected static ?string $breadcrumb = 'Clientes';
     protected static bool $hasTitleCaseModelLabel = false;
     protected static ?int $navigationSort = 10;
 
@@ -49,7 +49,7 @@ class CustomerResource extends Resource
     {
         return $schema->columns(2)->components([
             TextInput::make('name')->label('Nombre completo')->required()->maxLength(255)->columnSpanFull(),
-            TextInput::make('phone')->label('Teléfono')->tel()->maxLength(40)->helperText('Con código de área, como lo escribe la clienta.'),
+            TextInput::make('phone')->label('Teléfono')->tel()->maxLength(40)->helperText('Con código de área, como lo escribe el cliente.'),
             TextInput::make('email')->label('Correo')->email()->maxLength(255),
             Select::make('locale')->label('Idioma para sus mensajes')->options(['es' => 'Español', 'en' => 'Inglés'])->default('es')->required()->native(false)
                 ->helperText('Los correos y textos le llegan en este idioma.'),
@@ -84,7 +84,7 @@ class CustomerResource extends Resource
             ])
             ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->defaultSort('name')
-            ->emptyStateHeading('Todavía no hay clientas')
+            ->emptyStateHeading('Todavía no hay clientes')
             ->emptyStateDescription('Aparecen aquí cuando creas una reserva. Para agregarlas desde esta pantalla falta el siguiente paso (formularios).');
     }
 

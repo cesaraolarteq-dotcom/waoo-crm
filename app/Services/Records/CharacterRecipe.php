@@ -49,7 +49,7 @@ final class CharacterRecipe
         }
     }
 
-    /** @return array{requirements: array, characters: array, ready: bool} */
+    /** @return array{requirements: array, characters: array, ready: bool, extra: int} */
     public static function compile(ServiceVariant $variant, array $characters, string $path): array
     {
         self::validateCatalog($variant);
@@ -78,11 +78,8 @@ final class CharacterRecipe
             }
             $rows[] = ['character_id' => $id, 'quantity' => $quantity, 'character_name_snapshot' => $character->name, ...($outfit !== null ? ['outfit' => $outfit] : []), ...(isset($selection['note']) ? ['note' => $selection['note']] : [])];
         }
-        if ($total > $included) {
-            throw ValidationException::withMessages([$path => 'La cantidad supera los personajes incluidos. Revisa el servicio y su precio.']);
-        }
-
+        // Owner 2026-10-21: more characters than included is an add-on (priced per extra character), never an error.
         return ['requirements' => $requirements, 'characters' => $rows,
-            'ready' => $variant->status === 'active' && $total === $included];
+            'ready' => $variant->status === 'active' && $total >= $included, 'extra' => max(0, $total - $included)];
     }
 }

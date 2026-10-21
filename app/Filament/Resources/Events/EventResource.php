@@ -57,7 +57,7 @@ class EventResource extends Resource
 
         return $schema->columns(2)->components([
             Section::make('La fiesta')->columns(2)->columnSpanFull()->schema([
-                Select::make('customer_id')->label('Clienta')->required()->native(false)->searchable()
+                Select::make('customer_id')->label('Cliente')->required()->native(false)->searchable()
                     ->options(fn () => Customer::query()->orderBy('name')->pluck('name', 'id'))
                     ->live()->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set)),
                 self::titleField(),
@@ -66,8 +66,8 @@ class EventResource extends Resource
                     ->helperText('Elígelo tú (no se adivina). Solo los cumpleaños reciben el correo «Un año después».'),
                 DatePicker::make('date')->label('Fecha')->native()->required()->live()
                     ->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set)),
-                TimePicker::make('start_time')->label('Empieza (hora de Houston)')->native(false)->seconds(false)->format('H:i')->minutesStep(15)->required()->live(),
-                TimePicker::make('end_time')->label('Termina')->native(false)->seconds(false)->format('H:i')->minutesStep(15)->required()->live(),
+                \App\Filament\Support\TimeSelect::make('start_time')->label('Empieza (hora de Houston)')->required()->live(),
+                \App\Filament\Support\TimeSelect::make('end_time')->label('Termina')->required()->live(),
                 $choice('date', 'start_time'),
                 $choice('date', 'end_time'),
             ]),
@@ -208,7 +208,7 @@ class EventResource extends Resource
     {
         return TextInput::make('title')->label('Nombre del evento')->required()->maxLength(255)
             ->placeholder('Ej.: Mágico Rumi 04/10 Claudia Martínez')
-            ->helperText('Se llena solo: paquete + personajes + fecha + clienta. Si lo cambias a mano, ya no se toca.');
+            ->helperText('Se llena solo: paquete + personajes + fecha + cliente. Si lo cambias a mano, ya no se toca.');
     }
 
     /**
@@ -328,7 +328,7 @@ class EventResource extends Resource
             $v = ServiceVariant::find(PriceVersion::whereKey($id)->value('service_variant_id'));
 
             return $v->name.': incluye '.$v->character_quantity.' '.($v->character_quantity === 1 ? 'personaje' : 'personajes');
-        })->implode(' · ').'. Si faltan, el evento queda incompleto y no se puede confirmar.';
+        })->implode(' · ').'. Cada personaje adicional suma '.Labels::money((int) config('waoo.extra_character_cents')).'. Si faltan, el evento queda incompleto y no se puede confirmar.';
     }
 
     /** Form state -> SaveEventDraft input (explicit offsets, cents, null travel fee when unknown). */
@@ -375,6 +375,18 @@ class EventResource extends Resource
 
             return $service;
         })->values()->all();
+    }
+
+    /** Extra characters (beyond each package's included ones) chosen in the form, as the backend will count them. */
+    public static function extraCharacters(array $data): int
+    {
+        $extra = 0;
+        foreach (self::servicesInput($data) as $service) {
+            if (! isset($service['characters'])) continue;
+            $included = (int) ServiceVariant::whereKey(PriceVersion::whereKey($service['price_version_id'])->value('service_variant_id'))->value('character_quantity');
+            $extra += max(0, (int) collect($service['characters'])->sum('quantity') - $included);
+        }
+        return $extra;
     }
 
     /** Stored event -> form state. */

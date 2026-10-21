@@ -35,6 +35,7 @@ return [
         'es' => ['accepted' => $clientTexts['texts']['quote_accept']['es'], 'rejected' => $clientTexts['texts']['quote_reject']['es']],
         'en' => ['accepted' => $clientTexts['texts']['quote_accept']['en'], 'rejected' => $clientTexts['texts']['quote_reject']['en']],
     ],
+    'extra_character_cents' => 15000, // César 2026-10-21: each character beyond the package's included ones adds $150, any package.
     'short_portal_links' => env('WAOO_SHORT_PORTAL_LINKS', false), // Requires log redaction before activation on a host.
     'sandbox_documents' => env('WAOO_SANDBOX_DOCUMENTS', false),
     'sandbox_staff' => env('WAOO_SANDBOX_STAFF', false), // STAFF-01 v2 owner link actions; read by Codex's services too.

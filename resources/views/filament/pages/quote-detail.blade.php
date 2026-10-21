@@ -38,7 +38,7 @@
             @include('filament.pages.partials.link-panel', ['panel' => $newLink])
         @endif
         <x-filament::section>
-            <x-slot name="heading">La clienta</x-slot>
+            <x-slot name="heading">El cliente</x-slot>
             <x-slot name="description">Aceptar una cotización no cobra, no aparta staff y no es el contrato.</x-slot>
             <dl class="wfile-dl">
                 <div><dt>Enlace</dt><dd>

@@ -13,7 +13,7 @@ class CreateCustomer extends CreateRecord
 
     protected static string $resource = CustomerResource::class;
 
-    protected static ?string $title = 'Nueva clienta';
+    protected static ?string $title = 'Nuevo cliente';
 
     protected static bool $canCreateAnother = false;
 

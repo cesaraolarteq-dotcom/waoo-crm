@@ -49,7 +49,7 @@ class LeadScreensTest extends TestCase
         Customer::create(['name' => 'Ana F.', 'phone' => '346-555-0100', 'locale' => 'es']);
         $this->get('/admin/prospectos')->assertOk()->assertSee('Ana Ficticia')->assertSee('Fecha muy pedida')->assertSee('77494')
             ->assertDontSee('<script>alert(1)</script>', false)->assertSee('&lt;script&gt;', false)
-            ->assertSee('Cumpleaños')->assertSee('Magic Package')->assertSeeText('Puede ser una clienta registrada')->assertSeeText('Ana F. (mismo teléfono)')->assertSee('Convertir en reserva rápida');
+            ->assertSee('Cumpleaños')->assertSee('Magic Package')->assertSeeText('Puede ser un cliente registrado')->assertSeeText('Ana F. (mismo teléfono)')->assertSee('Convertir en reserva rápida');
         $this->get('/admin')->assertSee('Prospectos sin contestar');
     }
 

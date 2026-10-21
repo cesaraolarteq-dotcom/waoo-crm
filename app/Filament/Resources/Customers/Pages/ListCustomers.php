@@ -10,15 +10,15 @@ class ListCustomers extends ListRecords
 {
     protected static string $resource = CustomerResource::class;
 
-    protected static ?string $title = 'Clientas';
+    protected static ?string $title = 'Clientes';
 
     protected static ?string $breadcrumb = 'Lista';
 
-    protected ?string $subheading = 'Todas las clientas, con su idioma y cuántos eventos tienen.';
+    protected ?string $subheading = 'Todos los clientes, con su idioma y cuántos eventos tienen.';
 
     // Shown only when the audited service exists (Resource::canCreate()).
     protected function getHeaderActions(): array
     {
-        return [CreateAction::make()->visible(fn () => static::getResource()::canCreate())->label('Nueva clienta')];
+        return [CreateAction::make()->visible(fn () => static::getResource()::canCreate())->label('Nuevo cliente')];
     }
 }

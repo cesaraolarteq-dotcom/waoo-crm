@@ -24,7 +24,7 @@ class ViewEvent extends Page
     public const ACTIONS = [
         'event.created' => 'Creó el borrador', 'event.draft_updated' => 'Editó el borrador', 'booking.capacity_reserved' => 'Apartó staff y trajes',
         'finance.revision_created' => 'Fijó los montos', 'payment.zelle_received' => 'Registró un Zelle', 'payment.capacity_linked' => 'Vinculó el pago con los recursos',
-        'portal.zelle_notice_submitted' => 'La clienta avisó que envió un Zelle', 'payment.zelle_notice_reviewed' => 'Revisó un aviso de Zelle de la clienta',
+        'portal.zelle_notice_submitted' => 'El cliente avisó que envió un Zelle', 'payment.zelle_notice_reviewed' => 'Revisó un aviso de Zelle del cliente',
         'cost.snapshot_recorded' => 'Registró costos',
         'mail.planned' => 'Programó un correo', 'mail.policy_updated' => 'Cambió la pausa de correos',
     ];
@@ -204,7 +204,7 @@ class ViewEvent extends Page
             Action::make('mailPlan')->label('Programar recordatorios')->icon('heroicon-o-envelope')->color('gray')
                 ->visible(fn () => \App\Filament\Support\MailUi::enabled() && $e->status === 'capacity_reserved' && ! \App\Models\ImportedProjectLink::where('event_id', $e->id)->exists())
                 ->modalHeading('Programar recordatorios por correo')
-                ->modalDescription('Se programan con los datos que ves ahora (evento y ficha de la clienta). No se envía nada hasta que César active los correos y apruebe los textos; mientras tanto solo pueden ir a la lista de prueba.')
+                ->modalDescription('Se programan con los datos que ves ahora (evento y ficha del cliente). No se envía nada hasta que César active los correos y apruebe los textos; mientras tanto solo pueden ir a la lista de prueba.')
                 ->schema([
                     \Filament\Forms\Components\Select::make('portal_grant_id')->label('Enlace que lleva el correo')->native(false)->required()
                         ->options(fn () => $this->mailGrantOptions())->helperText('Debe durar más que el último recordatorio. Para el de saldo, debe permitir pagar.'),
@@ -269,7 +269,7 @@ class ViewEvent extends Page
                 \Filament\Forms\Components\FileUpload::make('file')->label('Contrato firmado original (PDF de HoneyBook)')->acceptedFileTypes(['application/pdf'])->maxSize(5120)
                     ->storeFiles(false)->required(fn ($get) => ! $get('reuse_document'))->visible(fn ($get) => ! $get('reuse_document'))
                     ->helperText('Bájalo de HoneyBook (Imprimir → Guardar como PDF). Se guarda cifrado; no se puede descargar desde el CRM.'),
-                \Filament\Forms\Components\Checkbox::make('owner_attests_signed_original')->label('Este PDF es el contrato original firmado por la clienta')->accepted(),
+                \Filament\Forms\Components\Checkbox::make('owner_attests_signed_original')->label('Este PDF es el contrato original firmado por el cliente')->accepted(),
                 \Filament\Schemas\Components\Grid::make(2)->schema([
                     \Filament\Forms\Components\DatePicker::make('observed_date')->label('Día en que revisaste las cuentas en HoneyBook')->native(false)->required()->maxDate(now(\App\Filament\Support\ChicagoTime::TZ))->live(),
                     \Filament\Forms\Components\TimePicker::make('observed_time')->label('Hora (Houston)')->seconds(false)->required()->live(),
@@ -376,7 +376,7 @@ class ViewEvent extends Page
             ->modalDescription('El traje queda libre para otras fiestas. El depósito, la reserva y su historial no cambian, y no se cancela la fiesta.')
             ->mountUsing(fn () => $this->pinHold())
             ->schema([\Filament\Forms\Components\Textarea::make('reason')->label('¿Por qué lo liberas?')->required()->minLength(10)->maxLength(1000)->rows(2)
-                ->placeholder('Ej.: la clienta cambió de personaje')])
+                ->placeholder('Ej.: el cliente cambió de personaje')])
             ->modalSubmitActionLabel('Liberar')
             ->action(function (array $data) {
                 try {
@@ -475,7 +475,7 @@ class ViewEvent extends Page
                 }
             }
         })->orderByDesc('id')->limit(50)->get()->map(fn ($a) => (object) [
-            'what' => self::historyLabel($a), 'who' => User::whereKey($a->actor_id)->value('name') ?? (str_starts_with($a->action, 'portal.') ? 'La clienta' : 'Sistema'),
+            'what' => self::historyLabel($a), 'who' => User::whereKey($a->actor_id)->value('name') ?? (str_starts_with($a->action, 'portal.') ? 'El cliente' : 'Sistema'),
             'when' => Labels::when(\Carbon\CarbonImmutable::parse($a->created_at)),
         ]);
 

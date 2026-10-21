@@ -19,7 +19,7 @@
                 <p class="wqb-warn">Este enlace ya se creó antes: cópialo de nuevo desde el evento → Contrato y enlace.</p>
             @else
                 @include('filament.pages.partials.link-panel', ['panel' => ['url' => $result['link'], 'expires' => $result['expires'], 'msg_es' => $result['msg_es'], 'msg_en' => $result['msg_en'],
-                    'phone' => $result['phone'] ?? null, 'locale' => $result['locale'], 'heading' => 'Enlace de la clienta']])
+                    'phone' => $result['phone'] ?? null, 'locale' => $result['locale'], 'heading' => 'Enlace del cliente']])
             @endif
             <div class="wqb-next">
                 <a class="wcal-btn" href="{{ \App\Filament\Resources\Events\EventResource::getUrl('money', ['record' => $result['event_id']]) }}">Ver el dinero de este evento</a>

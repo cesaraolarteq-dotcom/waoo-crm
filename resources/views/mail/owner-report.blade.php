@@ -25,7 +25,7 @@
       @foreach ($r['notes'] as $n)<p style="margin:0 0 10px 0;color:#8F5B00">• {{ $n }}</p>@endforeach
     </td></tr>
     <tr><td style="padding:4px 28px 24px 28px"><a href="{{ $url }}" style="display:inline-block;background:#FF017C;color:#FFFFFF;text-decoration:none;font-weight:700;padding:13px 22px;border-radius:12px">Ver en el CRM</a></td></tr>
-    <tr><td style="background:#F3F4FA;padding:16px 28px;font-size:12px;line-height:1.5;color:#59618A">Reporte interno de Waoo Party para sales@waooparty.com. El dinero cuenta por la fecha en que llegó; saldos y staff por la fecha de cada fiesta. No lo reenvíes a clientas.</td></tr>
+    <tr><td style="background:#F3F4FA;padding:16px 28px;font-size:12px;line-height:1.5;color:#59618A">Reporte interno de Waoo Party para sales@waooparty.com. El dinero cuenta por la fecha en que llegó; saldos y staff por la fecha de cada fiesta. No lo reenvíes a clientes.</td></tr>
   </table>
 </td></tr></table>
 </body></html>

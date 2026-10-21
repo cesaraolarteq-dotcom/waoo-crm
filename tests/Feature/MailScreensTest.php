@@ -52,7 +52,7 @@ class MailScreensTest extends TestCase
 
     public function test_owner_plans_reminders_from_the_event_and_sees_honest_states(): void
     {
-        $this->file()->assertSee('Correos a la clienta')->assertSee('Ningún correo programado')
+        $this->file()->assertSee('Correos al cliente')->assertSee('Ningún correo programado')
             ->callAction('mailPlan', data: ['portal_grant_id' => $this->grantId, 'templates' => EventMailSource::REMINDERS])
             ->assertNotified()->assertSee('Recordatorio de saldo')->assertSee('Falta una semana')->assertSee('Gracias + reseña')->assertSee('Programado')
             ->assertDontSee('Entregado')->assertDontSee($this->owner->email);
@@ -104,7 +104,7 @@ class MailScreensTest extends TestCase
     public function test_everything_mail_is_hidden_while_mail_is_off(): void
     {
         config(['waoo.sandbox_mail' => false]);
-        $this->file()->assertDontSee('Correos a la clienta')->assertActionHidden('mailPlan');
+        $this->file()->assertDontSee('Correos al cliente')->assertActionHidden('mailPlan');
         Livewire::test(Dashboard::class)->assertDontSee('Correos que rebotaron');
         Livewire::test(EmailTemplates::class)->assertSee('Apagados');
     }

@@ -107,7 +107,7 @@ class ImportHoneyBook extends Page
 
     public const RESYNC_BLOCKS = ['source_row_invalid' => 'La fila del archivo no es válida', 'source_field_changed' => 'Cambió algo que no es dinero (fecha, paquete, contacto…)',
         'operations_changed' => 'Cambió el staff, los trajes o los servicios de la fiesta en el CRM', 'responsibility_changed' => 'Esta fiesta ya la cobra el CRM',
-        'event_not_confirmed' => 'La fiesta todavía no tiene staff apartado: usa “Actualizar”', 'customer_link_changed' => 'La ficha de la clienta cambió',
+        'event_not_confirmed' => 'La fiesta todavía no tiene staff apartado: usa “Actualizar”', 'customer_link_changed' => 'La ficha del cliente cambió',
         'source_integrity_invalid' => 'Los pagos guardados no cuadran; revisión manual'];
 
     public static function canAccess(): bool
@@ -377,10 +377,10 @@ class ImportHoneyBook extends Page
     public function form(Schema $schema): Schema
     {
         return $schema->statePath('data')->components([
-            Section::make('Clienta')->columns(2)->schema([
+            Section::make('Cliente')->columns(2)->schema([
                 Radio::make('customer_mode')->hiddenLabel()->inline()->live()->columnSpanFull()
-                    ->options(['existing' => 'Ya es clienta', 'new' => 'Crear clienta nueva con los datos del archivo']),
-                Select::make('customer_id')->label('Clienta')->native(false)->required()->columnSpanFull()
+                    ->options(['existing' => 'Ya es cliente', 'new' => 'Crear cliente nuevo con los datos del archivo']),
+                Select::make('customer_id')->label('Cliente')->native(false)->required()->columnSpanFull()
                     ->options(fn () => Customer::query()->whereIn('id', array_keys($this->pinned['customers'] ?? []))->pluck('name', 'id'))
                     ->helperText('Solo se muestran fichas con el mismo correo o teléfono. Su ficha no se modifica.')
                     ->visible(fn (Get $get) => $get('customer_mode') === 'existing'),

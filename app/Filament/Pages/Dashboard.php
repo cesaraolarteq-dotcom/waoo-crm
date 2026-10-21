@@ -89,7 +89,7 @@ class Dashboard extends BaseDashboard
             $dueSoon = (clone $upcoming)->whereIn('id', FinancialRevision::query()->select('event_id'))->get()
                 ->map(fn ($e) => [$e, app(FinanceSummary::class)->forEvent($e)])
                 ->filter(fn ($x) => $x[1]['balance_cents'] > 0 && $x[1]['financial_revision']->balance_due_at->lessThan($now->copy()->addDays(7)));
-            $cards[] = ['tone' => 'info', 'title' => 'Saldos que vencen esta semana', 'text' => 'Recuérdale a la clienta; el portal le muestra cómo pagar.',
+            $cards[] = ['tone' => 'info', 'title' => 'Saldos que vencen esta semana', 'text' => 'Recuérdale al cliente; el portal le muestra cómo pagar.',
                 'items' => $dueSoon->map(fn ($x) => ['label' => $x[0]->title.' · saldo '.Labels::money($x[1]['balance_cents']).' · vence '.Labels::when($x[1]['financial_revision']->balance_due_at), 'url' => EventResource::getUrl('money', ['record' => $x[0]])])->values()->all()];
             $exceptions = DB::table('payment_exceptions')->where('state', 'open')->get();
             $cards[] = ['tone' => 'bad', 'title' => 'Pagos que necesitan revisión', 'text' => 'Llegó dinero pero algo no cuadró (por ejemplo, no se pudo apartar el staff).',
@@ -99,7 +99,7 @@ class Dashboard extends BaseDashboard
         if (FinanceGate::enabled() && \App\Filament\Support\DocumentsGate::enabled()) {
             // Client Zelle notices are claims, never money: the owner checks the bank, then verifies or rejects on Dinero.
             $notices = \App\Models\ZelleNotice::query()->whereDoesntHave('review')->orderBy('id')->limit(50)->get();
-            $cards[] = ['tone' => 'bad', 'title' => 'Avisos de Zelle por verificar', 'text' => 'La clienta dice que ya envió el Zelle. Revisa tu banco antes de contarlo como pago.',
+            $cards[] = ['tone' => 'bad', 'title' => 'Avisos de Zelle por verificar', 'text' => 'El cliente dice que ya envió el Zelle. Revisa tu banco antes de contarlo como pago.',
                 'items' => $notices->map(fn ($n) => ['label' => (Event::whereKey($n->event_id)->value('title') ?? 'Evento').' · dice '.Labels::money($n->amount_cents).' · '.Labels::when($n->submitted_at), 'url' => EventResource::getUrl('money', ['record' => $n->event_id])])->all()];
         }
 
@@ -109,7 +109,7 @@ class Dashboard extends BaseDashboard
             $owner = \Filament\Facades\Filament::auth()->user();
             $item = fn ($m) => ['label' => (Event::whereKey($m['event_id'])->value('title') ?? 'Evento').' · '.(\App\Filament\Support\MailUi::TEMPLATES[$m['template_key']] ?? $m['template_key'])
                 .' · '.(\App\Filament\Support\MailUi::STATUS[$m['status']] ?? $m['status']), 'url' => EventResource::getUrl('view', ['record' => $m['event_id']])];
-            $cards[] = ['tone' => 'bad', 'title' => 'Correos que rebotaron', 'text' => 'No llegaron. Confirma el correo de la clienta por WhatsApp; no se reenvía solo.',
+            $cards[] = ['tone' => 'bad', 'title' => 'Correos que rebotaron', 'text' => 'No llegaron. Confirma el correo del cliente por WhatsApp; no se reenvía solo.',
                 'items' => collect($read->warnings($owner, ['status' => 'bounced', 'per_page' => 50])['data'])->map($item)->all()];
             $review = collect(['complained', 'delivery_unknown', 'dispatching', 'blocked'])->flatMap(fn ($st) => $read->warnings($owner, ['status' => $st, 'per_page' => 50])['data']);
             $cards[] = ['tone' => 'warn', 'title' => 'Correos por revisar', 'text' => 'Bloqueados, marcados como spam, o sin saber si salieron. Nada se reenvía automáticamente.',
@@ -120,11 +120,11 @@ class Dashboard extends BaseDashboard
             $quick = Event::query()->whereIn('id', \App\Models\QuickBookingRecord::query()->select('event_id'))->where('ends_at', '>=', $now)->orderBy('starts_at')->get()
                 ->groupBy(fn ($e) => \App\Services\Booking\ClientDetailsState::forEvent($e));
             $contractLink = fn (Event $e) => ['label' => $e->title.' · '.Labels::when($e->starts_at), 'url' => EventResource::getUrl('contract', ['record' => $e])];
-            $cards[] = ['tone' => 'bad', 'title' => 'Datos de clienta por revisar', 'text' => 'Ya llenó sus datos. Revísalos y apruébalos para preparar el contrato.',
+            $cards[] = ['tone' => 'bad', 'title' => 'Datos de cliente por revisar', 'text' => 'Ya llenó sus datos. Revísalos y apruébalos para preparar el contrato.',
                 'items' => ($quick['review_details'] ?? collect())->map($contractLink)->values()->all()];
             $cards[] = ['tone' => 'info', 'title' => 'Contratos listos para emitir', 'text' => 'Datos aprobados: prepara y emite el contrato.',
                 'items' => ($quick['ready_to_issue'] ?? collect())->map($contractLink)->values()->all()];
-            $cards[] = ['tone' => 'warn', 'title' => 'Esperando datos de la clienta', 'text' => 'Tiene su enlace pero todavía no llena sus datos. Recuérdale por WhatsApp.',
+            $cards[] = ['tone' => 'warn', 'title' => 'Esperando datos del cliente', 'text' => 'Tiene su enlace pero todavía no llena sus datos. Recuérdale por WhatsApp.',
                 'items' => ($quick['waiting_details'] ?? collect())->map($contractLink)->values()->all()];
         }
 

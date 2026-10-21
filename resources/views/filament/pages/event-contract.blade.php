@@ -39,7 +39,7 @@
             @endif
         </x-filament::section>
         <x-filament::section>
-            <x-slot name="heading">Firma de la clienta</x-slot>
+            <x-slot name="heading">Firma del cliente</x-slot>
             @if ($s['signature'])
                 <dl class="wfile-dl">
                     <div><dt>Firmó</dt><dd class="ok">{{ $s['signature']->signer_name }}</dd></div>
@@ -48,14 +48,14 @@
                 </dl>
                 @unless ($c->final_pdf_path)<p class="wmoney-p" style="margin-top:8px">El PDF firmado se está generando; la firma ya quedó guardada.</p>@endunless
             @else
-                <p class="wmoney-p">Solo la clienta puede firmar, desde su enlace. Tú no puedes firmar por ella.</p>
+                <p class="wmoney-p">Solo el cliente puede firmar, desde su enlace. Tú no puedes firmar por el cliente.</p>
             @endif
         </x-filament::section>
     </div>
 
     @if ($s['submission'] || $s['detailsState'])
         <x-filament::section>
-            <x-slot name="heading">Datos de la clienta</x-slot>
+            <x-slot name="heading">Datos del cliente</x-slot>
             <x-slot name="afterHeader">
                 <x-filament::badge :color="match ($s['detailsState']) { 'review_details' => 'warning', 'waiting_details' => 'gray', default => 'success' }">
                     {{ ['waiting_details' => 'Esperando sus datos', 'review_details' => 'Por revisar', 'ready_to_issue' => 'Aprobados', 'waiting_signature' => 'Aprobados', 'signed' => 'Aprobados · firmado'][$s['detailsState']] ?? '' }}
@@ -82,7 +82,7 @@
                     @if (! empty($d['notes']))<div><dt>Notas</dt><dd>{{ $d['notes'] }}</dd></div>@endif
                     <div><dt>Envío</dt><dd>versión {{ $s['submission']->revision }} · {{ \App\Filament\Support\Labels::when(\Carbon\CarbonImmutable::parse($s['submission']->submitted_at)) }}</dd></div>
                 </dl>
-                @if ($s['detailsState'] === 'review_details')<p class="wmoney-p" style="margin-top:8px">Revisa la dirección y el ZIP contra el costo de transporte que cotizaste y toca “Aprobar datos de la clienta”.</p>@endif
+                @if ($s['detailsState'] === 'review_details')<p class="wmoney-p" style="margin-top:8px">Revisa la dirección y el ZIP contra el costo de transporte que cotizaste y toca “Aprobar datos del cliente”.</p>@endif
             @else
                 <p class="wmoney-p">Todavía no los envía. Con su enlace llena nombre, contacto, dirección y confirma la hora.</p>
             @endif
@@ -92,7 +92,7 @@
     <x-filament::section>
         <x-slot name="heading">Enlaces creados</x-slot>
         @forelse ($s['grants'] as $g)
-            <div class="wmoney-row"><div><b>{{ $g->state }}</b> · vence {{ $g->expires }}@if ($g->details) · incluye sus datos @endif @if ($g->active)@if ($g->can_reveal) · {{ ($this->copyLinkAction)(['id' => $g->id]) }}@else · <small>enlace anterior: no se puede volver a copiar</small>@endif · {{ ($this->revokeAction)(['id' => $g->id]) }}@endif</div><small>{{ $g->opened ? 'La clienta ya abrió el contrato' : 'Todavía no abre el contrato' }}</small></div>
+            <div class="wmoney-row"><div><b>{{ $g->state }}</b> · vence {{ $g->expires }}@if ($g->details) · incluye sus datos @endif @if ($g->active)@if ($g->can_reveal) · {{ ($this->copyLinkAction)(['id' => $g->id]) }}@else · <small>enlace anterior: no se puede volver a copiar</small>@endif · {{ ($this->revokeAction)(['id' => $g->id]) }}@endif</div><small>{{ $g->opened ? 'El cliente ya abrió el contrato' : 'Todavía no abre el contrato' }}</small></div>
         @empty
             <p class="wmoney-p">Ninguno todavía. En una reserva rápida se crea al guardarla; si no, después de emitir el contrato.</p>
         @endforelse

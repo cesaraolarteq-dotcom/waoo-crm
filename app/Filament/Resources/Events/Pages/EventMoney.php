@@ -86,8 +86,8 @@ class EventMoney extends Page
     public function tipIssueAction(): Action
     {
         return Action::make('tipIssue')->label('Crear enlace de propina')->icon('heroicon-o-heart')->color('primary')
-            ->modalHeading('Enlace de propina para la clienta')
-            ->modalDescription('Para la fiesta ya terminada: la clienta elige 5, 10 o 15 % o el monto que quiera, con tarjeta. El 100 % es para el staff. Vence 14 días después de la fiesta. Nada se envía: tú lo mandas.')
+            ->modalHeading('Enlace de propina para el cliente')
+            ->modalDescription('Para la fiesta ya terminada: el cliente elige 5, 10 o 15 % o el monto que quiera, con tarjeta. El 100 % es para el staff. Vence 14 días después de la fiesta. Nada se envía: tú lo mandas.')
             ->modalSubmitActionLabel('Crear enlace')
             ->action(function () {
                 $rev = \App\Models\FinancialRevision::where('event_id', $this->record->id)->latest('revision')->value('id');
@@ -118,7 +118,7 @@ class EventMoney extends Page
     {
         return Action::make('tipRevoke')->label('Anular enlace')->color('danger')->size('sm')->link()->requiresConfirmation()
             ->modalHeading('Anular el enlace de propina')
-            ->modalDescription('La clienta ya no podrá dejar propina con ese enlace. Las propinas ya pagadas se conservan.')
+            ->modalDescription('El cliente ya no podrá dejar propina con ese enlace. Las propinas ya pagadas se conservan.')
             ->action(function (array $arguments) {
                 try {
                     app(\App\Services\Tips\RevokeTipGrant::class)->execute(Filament::auth()->user(), (int) ($arguments['grant'] ?? 0), ['expected_version' => (int) ($arguments['version'] ?? 0)], $this->tipKey);
@@ -181,7 +181,7 @@ class EventMoney extends Page
             return '';
         }
 
-        return 'La clienta dice que envió '.Labels::money($n->amount_cents).($n->reference ? ' (ref. '.$n->reference.')' : '').($n->payer_name ? ' a nombre de '.$n->payer_name : '').'. ';
+        return 'El cliente dice que envió '.Labels::money($n->amount_cents).($n->reference ? ' (ref. '.$n->reference.')' : '').($n->payer_name ? ' a nombre de '.$n->payer_name : '').'. ';
     }
 
     public function verifyNoticeAction(): Action
@@ -224,7 +224,7 @@ class EventMoney extends Page
         return Action::make('rejectNotice')->label('Rechazar')->icon('heroicon-o-x-circle')->color('danger')->size('sm')
             ->visible(fn (array $arguments) => \App\Filament\Support\DocumentsGate::enabled() && $this->notice($arguments) !== null)
             ->modalHeading('Rechazar el aviso de Zelle')
-            ->modalDescription(fn (array $arguments) => self::claim($this->notice($arguments)).'Rechazar no registra ni quita ningún pago. La clienta solo ve que no se pudo verificar.')
+            ->modalDescription(fn (array $arguments) => self::claim($this->notice($arguments)).'Rechazar no registra ni quita ningún pago. El cliente solo ve que no se pudo verificar.')
             ->schema([
                 Textarea::make('review_note')->label('Motivo (solo lo ves tú)')->required()->minLength(10)->maxLength(2000)->rows(2)
                     ->helperText('Por ejemplo: “No aparece en el banco después de 2 días”.'),
@@ -269,7 +269,7 @@ class EventMoney extends Page
         return Action::make('zelle')->label('Registrar Zelle verificado')->icon('heroicon-o-banknotes')
             ->visible(fn () => $this->summary()['financial_revision'] !== null)
             ->modalHeading('Registrar Zelle verificado')
-            ->modalDescription('Escribe lo que de verdad llegó a tu banco, aunque sea distinto a lo esperado. Un aviso o una captura de la clienta no es un pago.')
+            ->modalDescription('Escribe lo que de verdad llegó a tu banco, aunque sea distinto a lo esperado. Un aviso o una captura del cliente no es un pago.')
             ->schema([
                 Grid::make(2)->schema([
                     TextInput::make('amount')->label('Monto que llegó (USD)')->prefix('$')->required()

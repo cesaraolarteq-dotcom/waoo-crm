@@ -43,7 +43,7 @@ class ContractTemplates extends Page
 
     public function getSubheading(): ?string
     {
-        return 'Modo prueba. El contrato va en inglés. Antes de usarlo con clientas reales, que lo revise un abogado.';
+        return 'Modo prueba. El contrato va en inglés. Antes de usarlo con clientes reales, que lo revise un abogado.';
     }
 
     public function versions()
@@ -82,7 +82,7 @@ class ContractTemplates extends Page
             ->modalHeading(fn (array $arguments) => 'Activar la versión '.($arguments['version'] ?? ''))
             ->modalDescription('Los contratos nuevos usarán este texto. Los ya emitidos o firmados conservan el suyo.')
             ->schema([Textarea::make('approval_note')->label('Nota de aprobación')->required()->minLength(10)->maxLength(2000)->rows(2)
-                ->placeholder('Ej.: revisado por mí; pendiente revisión del abogado antes de clientas reales.')])
+                ->placeholder('Ej.: revisado por mí; pendiente revisión del abogado antes de clientes reales.')])
             ->modalSubmitActionLabel('Activar')
             ->action(function (array $data, array $arguments, Action $action) {
                 $this->run($action, fn () => app(ActivateTemplateVersion::class)->execute(Filament::auth()->user(), (int) $arguments['id'],

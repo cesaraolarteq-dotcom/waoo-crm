@@ -7,7 +7,7 @@
                 <div><dt>Teléfono</dt><dd>{{ $f['c']->phone ?: '—' }}</dd></div>
                 <div><dt>Correo</dt><dd>{{ $f['c']->email ?: '—' }}</dd></div>
                 <div><dt>Idioma</dt><dd>{{ $f['c']->locale === 'en' ? 'Inglés' : 'Español' }}</dd></div>
-                <div><dt>Clienta desde</dt><dd>{{ $f['since'] ?? '—' }}</dd></div>
+                <div><dt>Cliente desde</dt><dd>{{ $f['since'] ?? '—' }}</dd></div>
                 @if ($f['paid'] !== null)<div><dt>Pagado (verificado)</dt><dd class="ok">{{ \App\Filament\Support\Labels::money($f['paid']) }}</dd></div>@endif
             </dl>
         </x-filament::section>

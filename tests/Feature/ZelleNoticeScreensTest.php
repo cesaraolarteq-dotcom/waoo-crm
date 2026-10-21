@@ -81,8 +81,8 @@ class ZelleNoticeScreensTest extends TestCase
         // Owner: Inicio card, Dinero list with the claim, history.
         $this->asOwner();
         $this->get('/admin')->assertSee('Avisos de Zelle por verificar')->assertSee('Fiesta Zelle · dice $62.50');
-        $this->get("/admin/eventos/{$this->event->id}/dinero")->assertOk()->assertSee('Avisos de Zelle de la clienta')->assertSee('Dice $62.50')->assertSee('Por verificar')->assertSee('su ref. CLIENT-CLAIM-1');
-        $this->get("/admin/eventos/{$this->event->id}")->assertSee('La clienta avisó que envió un Zelle');
+        $this->get("/admin/eventos/{$this->event->id}/dinero")->assertOk()->assertSee('Avisos de Zelle del cliente')->assertSee('Dice $62.50')->assertSee('Por verificar')->assertSee('su ref. CLIENT-CLAIM-1');
+        $this->get("/admin/eventos/{$this->event->id}")->assertSee('El cliente avisó que envió un Zelle');
 
         // Verify with what really arrived (different from the claim) and a review note.
         Livewire::test(EventMoney::class, ['record' => $this->event->id])
@@ -93,7 +93,7 @@ class ZelleNoticeScreensTest extends TestCase
         $this->assertSame(250, app(FinanceSummary::class)->forEvent($this->event->fresh())['balance_cents']);
         $this->get('/admin')->assertDontSee('Avisos de Zelle por verificar');
         $this->get("/admin/eventos/{$this->event->id}/dinero")->assertSee('Verificado')->assertSee('llegó $60')->assertSee('Llegaron 60 en el banco');
-        $this->get("/admin/eventos/{$this->event->id}")->assertSee('Revisó un aviso de Zelle de la clienta: verificado');
+        $this->get("/admin/eventos/{$this->event->id}")->assertSee('Revisó un aviso de Zelle del cliente: verificado');
 
         // The client sees the verified amount, never the owner's note or bank reference.
         auth()->logout();
@@ -111,7 +111,7 @@ class ZelleNoticeScreensTest extends TestCase
         $this->assertSame('rejected', ZelleNoticeReview::sole()->decision);
         $this->assertSame(1, LedgerEntry::count());
         $this->assertSame(6250, app(FinanceSummary::class)->forEvent($this->event->fresh())['balance_cents']);
-        $this->get("/admin/eventos/{$this->event->id}")->assertSee('Revisó un aviso de Zelle de la clienta: rechazado');
+        $this->get("/admin/eventos/{$this->event->id}")->assertSee('Revisó un aviso de Zelle del cliente: rechazado');
 
         auth()->logout();
         $this->get('/portal')->assertSee('No pudimos verificar tu aviso de $62.50')->assertDontSee('No aparece en el banco')->assertSee('Ya envié el Zelle');
@@ -122,7 +122,7 @@ class ZelleNoticeScreensTest extends TestCase
         $id = $this->clientNotice(6250);
         $other = Event::create(['customer_id' => $this->event->customer_id, 'title' => 'Otra fiesta', 'starts_at' => now()->addDays(30), 'ends_at' => now()->addDays(30)->addHour(), 'timezone' => 'America/Chicago', 'travel_fee_cents' => 0]);
         $this->asOwner();
-        Livewire::test(EventMoney::class, ['record' => $other->id])->assertDontSee('Avisos de Zelle de la clienta')
+        Livewire::test(EventMoney::class, ['record' => $other->id])->assertDontSee('Avisos de Zelle del cliente')
             ->assertActionHidden('rejectNotice', ['id' => $id])->assertActionHidden('verifyNotice', ['id' => $id]);
         Livewire::test(EventMoney::class, ['record' => $this->event->id])->assertActionVisible('rejectNotice', ['id' => $id]);
         $this->assertSame(0, ZelleNoticeReview::count());

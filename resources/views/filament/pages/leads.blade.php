@@ -30,7 +30,7 @@
                         @if ($r->travel)<div><dt>Transporte que vio</dt><dd>{{ $r->travel }} <small>(solo informativo)</small></dd></div>@endif
                     </dl>
                     @if ($r->message)<p class="wlead-msg">“{{ $r->message }}”</p>@endif
-                    @if ($r->hints)<p class="wmoney-warn">Puede ser una clienta registrada: @foreach ($r->hints as $h){{ $h['name'] }} (mismo {{ implode(' y ', array_map(fn ($m) => $m === 'email' ? 'correo' : 'teléfono', $h['matched_by'])) }})@if (! $loop->last), @endif @endforeach. Revísalo al convertir.</p>@endif
+                    @if ($r->hints)<p class="wmoney-warn">Puede ser un cliente registrado: @foreach ($r->hints as $h){{ $h['name'] }} (mismo {{ implode(' y ', array_map(fn ($m) => $m === 'email' ? 'correo' : 'teléfono', $h['matched_by'])) }})@if (! $loop->last), @endif @endforeach. Revísalo al convertir.</p>@endif
                     @if ($r->note)<p class="wmoney-p"><b>Nota:</b> {{ $r->note }}</p>@endif
                     <div class="wlead-actions">
                         @if ($r->status === 'booked' && $r->event_id)

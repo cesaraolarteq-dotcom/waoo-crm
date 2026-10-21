@@ -61,7 +61,7 @@ class CharacterResource extends Resource
             Select::make('audience')->label('Para')->options(self::AUDIENCES)->default('all')->native(false)->selectablePlaceholder(false)
                 ->helperText('Sirve para filtrar al elegir personajes. “Todos” aparece en niñas y en niños.'),
             TagsInput::make('outfits')->label('Versiones del traje (opcional)')->columnSpanFull()->placeholder('Ej.: Disneyland, Carreras')
-                ->helperText('Solo si este personaje tiene trajes distintos que las clientas piden por nombre. Escribe una y presiona Enter.'),
+                ->helperText('Solo si este personaje tiene trajes distintos que los clientes piden por nombre. Escribe una y presiona Enter.'),
         ]);
     }
 

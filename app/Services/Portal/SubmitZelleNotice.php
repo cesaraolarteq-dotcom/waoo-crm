@@ -16,7 +16,7 @@ final class SubmitZelleNotice
     public function execute(PortalContext $client, array $input, string $key): ZelleNotice
     {
         Sandbox::require(); Sandbox::require('sandbox_documents');
-        if ($client->adminAuthenticated) throw new AuthorizationException('Solo la clienta puede declarar su envío.');
+        if ($client->adminAuthenticated) throw new AuthorizationException('Solo el cliente puede declarar su envío.');
         $data = RecordInput::validate($input, ['financial_revision_id' => 'required|integer|min:1', 'amount_cents' => 'required|integer|min:1|max:100000000',
             'reference' => 'nullable|string|min:3|max:255', 'payer_name' => 'nullable|string|max:120',
             'sent_at' => ['nullable','date','before_or_equal:now',new ExplicitOffset], 'note' => 'nullable|string|max:1000']);

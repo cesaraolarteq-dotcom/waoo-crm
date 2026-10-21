@@ -12,6 +12,7 @@
 @foreach($p['lines'] as $line)
 <tr><td><b>{{ $line['name'] }}</b> · {{ $line['duration_minutes'] }} min<br>{{ $line['long_description'] }}
 @foreach($line['characters'] as $c)<br>{{ $c['quantity'] }} × {{ $c['name'] }}@endforeach
+@if(($line['extra_characters'] ?? 0) > 0)<br>{{ $es ? 'Incluye '.$line['extra_characters'].' '.($line['extra_characters'] === 1 ? 'personaje adicional' : 'personajes adicionales') : 'Includes '.$line['extra_characters'].' extra '.($line['extra_characters'] === 1 ? 'character' : 'characters') }} ({{ $money($line['extra_character_cents']) }} {{ $es ? 'c/u' : 'each' }})@endif
 </td><td class="money">{{ $money($line['amount_cents']) }}</td></tr>
 @endforeach
 <tr><td>{{ $es?'Costo de transporte':'Travel fee' }}</td><td class="money">{{ $money($p['travel_fee_cents']) }}</td></tr>

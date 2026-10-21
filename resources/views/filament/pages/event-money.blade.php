@@ -32,14 +32,14 @@
                     <small>Vence {{ \App\Filament\Support\Labels::when($rev->balance_due_at) }} · en el contrato: “{{ $f['balance_label'] }}”</small></div>
             </div>
             @if ($f['credit_cents'] > 0)
-                <div class="wmoney-warn" role="alert">Pagó {{ $money($f['credit_cents']) }} de más. Decide con la clienta si se aplica a otro servicio o se le devuelve; el sistema no devuelve nada solo.</div>
+                <div class="wmoney-warn" role="alert">Pagó {{ $money($f['credit_cents']) }} de más. Decide con el cliente si se aplica a otro servicio o se le devuelve; el sistema no devuelve nada solo.</div>
             @endif
         @endif
 
         @php($notices = $this->notices())
         @if ($notices->isNotEmpty())
             <x-filament::section>
-                <x-slot name="heading">Avisos de Zelle de la clienta</x-slot>
+                <x-slot name="heading">Avisos de Zelle del cliente</x-slot>
                 <x-slot name="description">Un aviso no es un pago. Revisa tu banco y verifica lo que de verdad llegó, o recházalo.</x-slot>
                 @foreach ($notices as $n)
                     <div class="wmoney-row">

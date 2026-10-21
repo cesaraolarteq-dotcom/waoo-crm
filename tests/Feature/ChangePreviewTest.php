@@ -21,7 +21,7 @@ class ChangePreviewTest extends TestCase
 
     public function test_reschedule_shows_checks_and_fee_that_can_be_waived(): void
     {
-        $html = $this->get('/admin/vista-previa-cambios')->assertOk()->assertSee('Hoy → Propuesta')->assertSee('no se libera hasta que la clienta acepta')
+        $html = $this->get('/admin/vista-previa-cambios')->assertOk()->assertSee('Hoy → Propuesta')->assertSee('no se libera hasta que el cliente acepta')
             ->assertSee('Cargo por cambio de fecha')->assertSee('$715')->getContent();
         $this->assertSame(substr_count($html, '<button type="button" class="wcal-btn on" disabled'), substr_count($html, 'Preparar adenda'));
         Livewire::test(ChangePreview::class)->set('waive', true)->assertSee('$615')->assertSee('Motivo (obligatorio)');

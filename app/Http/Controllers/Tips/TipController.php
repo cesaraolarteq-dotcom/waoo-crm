@@ -10,7 +10,7 @@ final class TipController {
     public function revoke(Request $r,int $grant,RevokeTipGrant $s){return response()->json($s->execute($r->user(),$grant,$r->all(),(string)$r->header('Idempotency-Key')));}
     public function owner(Request $r,int $event,ReadEventTips $s){return response()->json($s->execute($r->user(),$event));}
     public function page(Request $r,ReadTipViewModel $s){
-        TipGuard::transport($r);abort_if($r->user()!==null,403,'Abre el enlace como clienta en una sesión separada.');
+        TipGuard::transport($r);abort_if($r->user()!==null,403,'Abre el enlace como cliente en una sesión separada.');
         $lang=in_array($r->query('lang'),['es','en'],true)?$r->query('lang'):'es';
         $base=['lang'=>$lang,'lang_url'=>['es'=>'/portal/tip?lang=es','en'=>'/portal/tip?lang=en'],'test_mode'=>true,'preview'=>false,'first_name'=>'','review_url'=>null,'tip'=>['state'=>'closed'],'actions'=>[]];
         if($r->boolean('exchange')||!$r->cookie(TipContext::COOKIE))return response()->view('portal.tip-access',['vm'=>$base]);
@@ -20,7 +20,7 @@ final class TipController {
         return response()->view('portal.tip',['vm'=>$vm]);
     }
     public function session(Request $r){
-        TipGuard::transport($r);abort_if($r->user()!==null,403,'Abre el enlace como clienta en una sesión separada.');
+        TipGuard::transport($r);abort_if($r->user()!==null,403,'Abre el enlace como cliente en una sesión separada.');
         $d=$r->validate(['token'=>'required|string|regex:/^[A-Za-z0-9_-]{43}$/D']);$hint=TipGrant::where('token_hash',hash('sha256',$d['token']))->first();abort_unless($hint,401,'Acceso no válido.');$token=TipGuard::token();
         $expires=DB::transaction(function()use($hint,$token){[$g]=TipGuard::grant($hint->id);$expires=CarbonImmutable::now('UTC')->addDay()->min($g->expires_at);
             DB::table('tip_portal_sessions')->insert(['tip_grant_id'=>$g->id,'token_hash'=>hash('sha256',$token),'expires_at'=>$expires,'created_at'=>now(),'updated_at'=>now()]);return $expires;},3);

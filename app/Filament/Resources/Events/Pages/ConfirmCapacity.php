@@ -125,7 +125,7 @@ class ConfirmCapacity extends Page
                 // OUTFIT-01 generic units (owner 2026-10-19: Mickey = 2 heads, 5 outfits): optional wardrobe per selected head; no preselection.
                 Repeater::make('wardrobe')->label('Vestuario de cada traje')->columnSpanFull()->addable(false)->deletable(false)->reorderable(false)->defaultItems(0)->columns(2)
                     ->visible(fn (Get $get) => ($get('wardrobe') ?? []) !== [])
-                    ->helperText('Opcional. Si la clienta pidió un vestuario, elígelo para que el staff lo vea en su página. Si ya estaba pedido en la fiesta, se respeta ese.')
+                    ->helperText('Opcional. Si el cliente pidió un vestuario, elígelo para que el staff lo vea en su página. Si ya estaba pedido en la fiesta, se respeta ese.')
                     ->schema([
                         Hidden::make('resource_id'), Hidden::make('expected_character_version'),
                         TextInput::make('unit')->label('Traje')->disabled()->dehydrated(false),

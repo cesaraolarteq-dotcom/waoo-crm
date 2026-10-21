@@ -111,9 +111,9 @@ class QuickBookingPageTest extends TestCase
     public function test_existing_client_and_service_errors_map_to_fields(): void
     {
         $this->bind();
-        $existing = Customer::create(['name' => 'Clienta Ficticia', 'locale' => 'en']);
+        $existing = Customer::create(['name' => 'Cliente Ficticia', 'locale' => 'en']);
         Livewire::test(QuickBooking::class)->fillForm($this->form(['customer_mode' => 'existing', 'customer_id' => $existing->id]))->call('save')->assertHasNoFormErrors()
-            ->assertSee('Hi Clienta!');
+            ->assertSee('Hi Cliente!');
         $this->assertSame($existing->id, Event::sole()->customer_id);
         // Same Zelle reference again → the service refuses; nothing new is recorded.
         Livewire::test(QuickBooking::class)->fillForm($this->form(['title' => 'Otra fiesta', 'deposit' => ['amount' => '10']]))->call('save')->assertNotified('No se guardó');

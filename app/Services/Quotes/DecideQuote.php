@@ -15,7 +15,7 @@ final class DecideQuote
     public function execute(PortalContext $client,array $input,string $key): QuoteDecision
     {
         QuoteProtocol::portalGate();
-        if ($client->adminAuthenticated) throw new AuthorizationException('Una sesión administrativa no puede decidir por la clienta.');
+        if ($client->adminAuthenticated) throw new AuthorizationException('Una sesión administrativa no puede decidir por el cliente.');
         $hex=['required','string','regex:/^[a-f0-9]{64}$/D'];
         $data=QuoteProtocol::input($input,['expected_revision'=>'required|integer|min:1','snapshot_sha256'=>$hex,'pdf_sha256'=>$hex,'consent_sha256'=>$hex,
             'consent_version'=>'required|string|max:100','name'=>'required|string|min:2|max:255','email'=>'required|email|max:255',
