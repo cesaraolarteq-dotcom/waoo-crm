@@ -62,6 +62,7 @@ class MailOccurrencesTest extends TestCase
     }
     public function test_verified_payment_is_separate_from_pending_client_claim_and_deduplicates(): void
     {
+        $this->freezeSecond(); // both payments must carry the same received_at to be the same receipt (CI flake across a second boundary)
         $entry = $this->payment(); $this->payment();
         $this->assertSame((string) $entry->id, MailOccurrence::sole()->source_id);
         $this->assertSame('payment_received', MailOccurrence::sole()->key);
