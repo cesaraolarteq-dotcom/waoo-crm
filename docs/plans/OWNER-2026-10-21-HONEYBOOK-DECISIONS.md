@@ -19,7 +19,7 @@ Decisions (the owner chose these in the "Mudanza de HoneyBook" page):
 | Private contact notes | 7 | Do not bring |
 | Sales tax collected | 33 projects, $620.93 | Do not bring (accountant question stays open) |
 | Payments marked "cash" in HoneyBook | 381 manual vs 92 card | Show as "Zelle/efectivo (HoneyBook)" |
-| Past parties with a balance | 6, $1,657.14 | Review list; the owner thinks some were paid but never marked |
+| Past parties with a balance | 6, $1,657.14 | Resolved by the owner per project (private file `owner-balance-resolutions.json`): 3 paid outside HoneyBook (never marked), 1 duplicate smart file (the real package was one file, paid in full in two payments; the extra payment rows are duplicates), 1 cancelled (no second payment), 1 cancelled **pending reschedule: must be imported into the CRM** so it can be rebooked |
 | Future parties without client signature | 11 of 18 | They sign in HoneyBook |
 | Leads that never booked | 11 | History only |
 | Next-year birthday reminder | 68 with date + age | Prepare the campaign; nothing goes live before the owner approves the email |
