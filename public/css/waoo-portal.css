@@ -86,3 +86,6 @@ dt{color:var(--muted);font-size:14px}dd{margin:0;font-weight:700;overflow-wrap:a
 /* Preserve generous targets and visible selection in high-contrast mode. */
 .p-chip span{display:inline-flex;align-items:center;justify-content:center;min-height:52px;border-color:var(--line)}
 @media(forced-colors:active){.p-chip input:checked+span{border:3px solid Highlight}}
+/* Owner 2026-10-21: every required client field is visibly marked. */
+.p-field:has(> input[required]:not([readonly]))>span::after,.p-field:has(> select[required])>span::after{content:" *";color:var(--pink);font-weight:700}
+.p-required-note{font-size:13px;color:var(--muted);margin:0}

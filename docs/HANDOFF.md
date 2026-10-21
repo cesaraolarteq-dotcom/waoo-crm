@@ -2015,3 +2015,9 @@ Antes de construir pantallas o migraciones, acordar campos, estados, errores, pe
 - Quick booking contact: a named client needs no phone/email (owner copies the link); `SaveQuickBookingCustomer` still rejects a client with no name, phone or email.
 - Extra characters (César: $150 each, any package): `CharacterRecipe::compile` returns `extra` instead of rejecting; `event_services.extra_characters` / `extra_character_cents` (migration 2026_10_21_100000, amount from `waoo.extra_character_cents`) are snapshotted; `CreateFinancialRevision` and `QuoteSnapshot` add them to the line amount with `base_amount_cents`/`extra_characters`/`extra_character_cents` (keys only present when > 0). Portal summary and quote PDF show "+ N personaje adicional". Codex: please review the money side.
 - Portal: opening a new `#token=` link while an older portal session exists now exchanges the new token (layout script) instead of showing the old booking.
+
+## 2026-10-21 owner walkthrough 4 (Claude, branch claude/walkthrough-4, on top of claude/integrate-codex-1021 = PR #107)
+- Quick booking client fully optional: no name/phone/email needed (`SaveQuickBookingCustomer` keeps it provisional); the client fills everything in the portal.
+- Portal details: every field required (ZIP now required server-side), required fields marked with * and a note.
+- Date picker: past days disabled, days with events marked (dot = 1, pink bar = 2+), weekends tinted, helper says what is booked that day (`QuickBooking::busyDays()` / `dayLine()`).
+- **Codex, top of queue:** `docs/plans/OWNER-2026-10-21-UNPAID-QUICK-BOOKING.md` — deposit optional in quick booking; unpaid link shows total + 50 % and lets the client pay by Zelle notice (owner verifies) or Stripe (+3 %). Same unpaid path as your S2/S3 lease work.
