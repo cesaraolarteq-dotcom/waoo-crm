@@ -24,6 +24,7 @@ final class SaveEventDraft
         return DB::transaction(function () use ($actor, $data, $id) {
             $event = $id ? Event::whereKey($id)->lockForUpdate()->firstOrFail() : new Event();
             if ($id) {
+                \App\Services\Booking\QuickStripeLeases::assertNoActive($event->id);
                 RecordWriteRejected::when(\Illuminate\Support\Facades\Schema::hasTable('contracts') && \App\Models\Contract::where('event_id', $id)->where('state', 'signed')->exists(), 409, 'Un contrato firmado requiere una adenda o el flujo de cambios.');
                 RecordWriteRejected::unless($event->status === 'draft' && $event->version === $data['expected_version'], 409, 'Solo se editan borradores vigentes. Una reserva requiere el flujo de cambios.');
             }

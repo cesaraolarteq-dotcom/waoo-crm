@@ -25,6 +25,8 @@ return [
     // Browser key (Maps JavaScript + Places New), HTTP-referrer restricted to the CRM hosts; it is visible in the page by design.
     'google_maps_browser_key' => env('WAOO_GOOGLE_MAPS_BROWSER_KEY'),
     'sandbox_tips' => env('WAOO_SANDBOX_TIPS', false),
+    'sandbox_quick_stripe' => env('WAOO_SANDBOX_QUICK_STRIPE', false), // Internal leases/request preparation only; no provider or cron activation.
+    'quick_stripe_requested_methods' => ['card'], // Requested policy only, never verified account capability or financing activation.
     'sandbox_finance' => env('WAOO_SANDBOX_FINANCE', false),
     'sandbox_imports' => env('WAOO_SANDBOX_IMPORTS', false),
     'sandbox_cutover' => env('WAOO_SANDBOX_CUTOVER', false), // Evidence preparation only; no transfer endpoint.
@@ -38,6 +40,7 @@ return [
     'extra_character_cents' => 15000, // César 2026-10-21: each character beyond the package's included ones adds $150, any package.
     'short_portal_links' => env('WAOO_SHORT_PORTAL_LINKS', false), // Requires log redaction before activation on a host.
     'sandbox_documents' => env('WAOO_SANDBOX_DOCUMENTS', false),
+    'sandbox_immediate_contracts' => env('WAOO_SANDBOX_IMMEDIATE_CONTRACTS', false),
     'sandbox_staff' => env('WAOO_SANDBOX_STAFF', false), // STAFF-01 v2 owner link actions; read by Codex's services too.
     'stripe_test_secret' => env('STRIPE_TEST_SECRET'),
     'stripe_test_webhook_secret' => env('STRIPE_TEST_WEBHOOK_SECRET'),

@@ -87,12 +87,20 @@ final class PortalPageController extends Controller
             : null;
         $signed = $contract?->state === 'signed';
         $balance = $f['balance_cents'];
-        // Quick bookings: the client first sends her details; the owner approves them before a contract is issued.
+        // A read validates an already prepared document; it never issues one.
+        $prepared = false;
+        if (!$signed && $contract && array_key_exists('client_details', $contract->commercial_snapshot)) {
+            try { \App\Services\Documents\ClientContractCurrent::check($client, $contract); $prepared = true; }
+            catch (\Throwable) { $prepared = false; }
+        }
         $canDetails = in_array('details.submit', $grant->scopes, true);
         $details = $canDetails ? \App\Services\Booking\ClientDetailsState::portal($event) : null;
+        $canReviewDetails = config('waoo.sandbox_immediate_contracts') && $canDetails && !$signed && !$details['reviewed'];
+        $reviewDetails = $canReviewDetails && $request->boolean('review_details');
         $step = match (true) {
+            $reviewDetails => 'details',
             $canDetails && ! $signed && ! $details['submission'] => 'details',
-            $canDetails && ! $signed && ! $details['reviewed'] => 'details_sent',
+            $canDetails && ! $signed && ! $details['reviewed'] && !$prepared => 'details_sent',
             ! $contract => 'waiting',
             ! $signed => 'contract',
             ($balance ?? 0) > 0 => 'pay',
@@ -103,24 +111,34 @@ final class PortalPageController extends Controller
         $fmt = fn ($c) => $c === null ? '—' : '$'.number_format($c / 100, $c % 100 ? 2 : 0);
         $services = collect($revision?->lines_snapshot ?? [])->map(fn ($l) => ($l['name'] ?? '').(isset($l['duration_minutes']) ? ' · '.($l['duration_minutes'] >= 60 ? rtrim(rtrim(number_format($l['duration_minutes'] / 60, 1), '0'), '.').' h' : $l['duration_minutes'].' min') : '')
             .(($n = (int) ($l['extra_characters'] ?? 0)) > 0 ? ($lang === 'en' ? " + {$n} extra ".($n === 1 ? 'character' : 'characters') : " + {$n} ".($n === 1 ? 'personaje adicional' : 'personajes adicionales')) : ''))->implode(' + ');
-        $due = $revision ? CarbonImmutable::instance($revision->balance_due_at)->setTimezone($tz)->locale($lang) : null;
+        $due = $revision?->balance_due_at ? CarbonImmutable::instance($revision->balance_due_at)->setTimezone($tz)->locale($lang) : null;
 
         $approvedSms = collect((array) config('waoo.sms_consent_versions', []))->filter(fn ($text) => is_string($text) && $text !== '');
         $smsVersion = $approvedSms->has('client-texts-2026-10-20-sms-'.$lang)
             ? 'client-texts-2026-10-20-sms-'.$lang : $approvedSms->keys()->first();
 
+        $prefill = ($details && $details['submission'] ? $details['submission']['data']
+                : ['first_name' => \Illuminate\Support\Str::before($name = trim((string) $event->customer?->name), ' '), 'last_name' => str_contains($name, ' ') ? trim(\Illuminate\Support\Str::after($name, ' ')) : '',
+                    'phone' => $event->customer?->phone, 'email' => $event->customer?->email, 'event_address' => $event->address, 'event_postal_code' => $event->postal_code]);
+        if (config('waoo.sandbox_immediate_contracts')) {
+            if (filled($event->address)) $prefill['event_address'] = $event->address;
+            if (filled($event->postal_code)) $prefill['event_postal_code'] = $event->postal_code;
+        }
+
         return [
             'lang' => $lang, 'step' => $step, 'steps' => $canDetails ? ['details', 'contract', 'pay'] : ['contract', 'pay'], 'test_mode' => true,
             'details' => $details ? ['expected_event_version' => $details['expected_event_version'], 'expected_revision' => $details['expected_revision'],
                 'action' => url('/portal/api/details'),
+                'prepare_action' => config('waoo.sandbox_immediate_contracts') && $details['submission'] && !$signed && !$details['reviewed'] ? url('/portal/api/details/contract') : null,
+                'fixed_address' => config('waoo.sandbox_immediate_contracts') && filled($event->address),
+                'fixed_postal_code' => config('waoo.sandbox_immediate_contracts') && filled($event->postal_code),
+                'review_url' => $canReviewDetails ? url('/portal?lang='.$lang.'&review_details=1') : null,
                 'sms_consent' => $smsVersion !== null ? ['version' => $smsVersion, 'text' => $approvedSms[$smsVersion]] : null] : null,
-            'prefill' => $details && $details['submission'] ? $details['submission']['data']
-                : ['first_name' => \Illuminate\Support\Str::before($name = trim((string) $event->customer?->name), ' '), 'last_name' => str_contains($name, ' ') ? trim(\Illuminate\Support\Str::after($name, ' ')) : '',
-                    'phone' => $event->customer?->phone, 'email' => $event->customer?->email, 'event_address' => $event->address, 'event_postal_code' => $event->postal_code],
+            'prefill' => $prefill,
             // The contracting party's own first name when a contract exists; otherwise the owner's record.
             'first_name' => trim((string) ($contract?->commercial_snapshot['client']['first_name'] ?? explode(' ', (string) $event->customer?->name)[0] ?? '')),
             'notice' => $request->session()->get('portal_notice'),
-            'lang_url' => ['es' => url('/portal?lang=es'), 'en' => url('/portal?lang=en')],
+            'lang_url' => ['es' => url('/portal?lang=es'.($reviewDetails ? '&review_details=1' : '')), 'en' => url('/portal?lang=en'.($reviewDetails ? '&review_details=1' : ''))],
             'event' => [
                 'package' => $services ?: $event->title,
                 'characters' => collect($revision?->lines_snapshot ?? [])->flatMap(fn ($l) => $l['characters'] ?? [])->map(fn ($c) => $c['quantity'].' × '.\App\Services\Records\CharacterLabel::fromSnapshot($c))->implode(', '),

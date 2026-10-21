@@ -73,4 +73,43 @@ class CostumeHoldScreenTest extends TestCase
         $this->assertSame('blocked', $hold['state']);
         $this->assertSame('Ese traje ya está apartado a esa hora', \App\Filament\Resources\Events\Pages\ViewEvent::HOLD_STATE['blocked']);
     }
+
+    public function test_modal_shows_pinned_unit_and_refuses_to_release_a_newer_hold(): void
+    {
+        $id = $this->book();
+        $page = Livewire::test(ViewEvent::class, ['record' => $id])->mountAction('releaseCostume')
+            ->assertSee('Cabeza de Mickey 1 · Mickey (Golden)')->assertActionMounted('releaseCostume');
+        $this->assertStringContainsString('horario de la fiesta:', (string) $page->instance()->releaseCostumeAction()->getModalDescription());
+        $key = $page->get('holdKey'); $pin = $page->get('holdPin');
+        $this->assertStringContainsString('Golden', $pin['summary']);
+        app(\App\Services\Booking\ReleaseQuickBookingCostumes::class)->execute($this->owner, $id,
+            ['expected_event_version' => $pin['event_version'], 'expected_hold_version' => $pin['version'], 'reason' => 'Maybeli revisó el apartado en otra pantalla.'], (string) Str::uuid());
+        $read = app(\App\Services\Booking\ReadQuickBookingCostumeHold::class)->execute($this->owner, $id);
+        app(\App\Services\Booking\HoldQuickBookingCostumes::class)->execute($this->owner, $id,
+            ['expected_event_version' => $read['event_version'], 'expected_hold_version' => $read['version'], 'characters' => $read['characters']], (string) Str::uuid());
+        $page->setActionData(['reason' => 'La dueña quería liberar el apartado que vio.'])->callMountedAction()->assertNotified('No se liberó');
+        $this->assertSame($key, $page->get('holdKey')); $this->assertSame($pin, $page->get('holdPin'));
+        $this->assertSame('held', \App\Models\QuickCostumeHold::sole()->state);
+        $this->assertSame(3, \App\Models\QuickCostumeHold::sole()->version);
+        $this->assertDatabaseCount('resource_reservations', 1); $this->assertDatabaseCount('ledger_entries', 1);
+    }
+
+    public function test_release_storage_failure_keeps_frozen_reason_and_uuid_for_safe_retry(): void
+    {
+        $id = $this->book(); $fail = true;
+        $page = Livewire::test(ViewEvent::class, ['record' => $id])->mountAction('releaseCostume'); $key = $page->get('holdKey');
+        DB::listen(function ($query) use (&$fail) {
+            if ($fail && str_starts_with(strtolower($query->sql), 'insert into ') && str_contains(strtolower($query->sql), 'audit_entries')
+                && in_array('quick_costume_hold.released', $query->bindings, true)) throw new \RuntimeException('Synthetic private storage detail');
+        });
+        $reason = 'El cliente pidió cambiar el personaje de la fiesta.';
+        $page->setActionData(['reason' => $reason])->callMountedAction()->assertNotified('No se pudo comprobar la liberación')->assertDontSee('Synthetic private storage detail');
+        $this->assertSame($reason, $page->get('holdInput')['reason']); $this->assertSame($key, $page->get('holdKey'));
+        $this->assertSame('held', \App\Models\QuickCostumeHold::sole()->state); $this->assertDatabaseCount('resource_reservations', 1);
+        $fail = false;
+        $page->setActionData(['reason' => 'Otro texto no debe cambiar la primera solicitud.'])->callMountedAction()->assertNotified('Traje liberado');
+        $this->assertSame('released', \App\Models\QuickCostumeHold::sole()->state);
+        $this->assertSame($reason, \App\Models\QuickCostumeHold::sole()->payload['reason']);
+        $this->assertDatabaseCount('resource_reservations', 0); $this->assertDatabaseCount('ledger_entries', 1);
+    }
 }

@@ -125,6 +125,7 @@ Route::middleware([\App\Http\Middleware\AuthenticatePortal::class, 'throttle:60,
     Route::get('/zelle-notices', [\App\Http\Controllers\Portal\ZelleNoticeController::class, 'index']);
     Route::post('/zelle-notices', [\App\Http\Controllers\Portal\ZelleNoticeController::class, 'store']);
     Route::post('/details', [\App\Http\Controllers\Portal\ClientDetailsController::class, 'store']);
+    Route::post('/details/contract', [\App\Http\Controllers\Portal\ClientDetailsController::class, 'prepare']);
     Route::post('/checkout-intents', [\App\Http\Controllers\Portal\CheckoutController::class, 'create']);
     Route::get('/payment-intents/{intent}', [\App\Http\Controllers\Portal\CheckoutController::class, 'show']);
     Route::get('/event', [\App\Http\Controllers\Portal\PortalController::class, 'event']);

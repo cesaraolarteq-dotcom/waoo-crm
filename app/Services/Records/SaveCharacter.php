@@ -35,6 +35,7 @@ final class SaveCharacter
                     RecordWriteRejected::unless(in_array($outfit, $data['outfits'] ?? [], true), 409, "La versión {$outfit} sigue vinculada a un traje activo.");
                 }
             }
+            if ($id) \App\Services\Booking\QuickStripeLeases::protectCharacter($model, $data);
             if ($id) \App\Services\Booking\QuickCostumeHolds::protectCharacter($model, $data);
             $before = $model->getAttributes();
             $model->fill($data);

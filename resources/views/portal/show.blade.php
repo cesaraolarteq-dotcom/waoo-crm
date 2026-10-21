@@ -4,7 +4,7 @@
     $e = $vm['event'];
 @endphp
 @section('content')
-<h1 class="p-h1">{{ $t('hello', ['name' => $vm['first_name']]) }}</h1>
+<h1 class="p-h1">{{ filled($vm['first_name'] ?? null) ? $t('hello', ['name' => $vm['first_name']]) : $t('hello_generic') }}</h1>
 @if ($vm['step'] !== 'done')<p class="p-sub">{{ $t('intro', ['n' => count($vm['steps'] ?? ['details', 'contract', 'pay'])]) }}</p>@endif
 
 <ol class="p-steps" aria-label="Pasos">
@@ -38,7 +38,18 @@
 @endif
 
 @if ($vm['step'] === 'details_sent')
-<section class="p-card"><h2>{{ $t('details_sent_title') }}</h2><p class="p-hint">{{ $t('details_sent') }}</p></section>
+<section class="p-card"><h2>{{ $t('details_sent_title') }}</h2><p class="p-hint">{{ $t(!empty($vm['details']['prepare_action']) ? 'prepare_saved' : 'details_sent') }}</p>
+@if (!empty($vm['details']['prepare_action']))
+<form id="prepare-contract-form" method="POST" action="{{ $vm['details']['prepare_action'] }}"
+ data-event-version="{{ $vm['details']['expected_event_version'] }}" data-revision="{{ $vm['details']['expected_revision'] }}">
+ @csrf
+ <p class="p-test" id="prepare-contract-error" role="alert" hidden></p>
+ <button class="p-btn" type="submit">{{ $t('prepare_contract') }}</button>
+ <a class="p-btn p-btn-quiet" id="prepare-contract-refresh" href="{{ $vm['lang_url'][$vm['lang']] }}" hidden>{{ $t('reload') }}</a>
+</form>
+@endif
+@if (!empty($vm['details']['review_url']))<a class="p-btn p-btn-quiet" href="{{ $vm['details']['review_url'] }}">{{ $t('review_details') }}</a>@endif
+</section>
 @elseif ($vm['step'] === 'waiting')
 <section class="p-card"><h2>{{ $t('waiting_title') }}</h2><p class="p-hint">{{ $t('waiting') }}</p></section>
 @elseif ($vm['step'] === 'details')
@@ -57,31 +68,23 @@
     <label class="p-field"><span>{{ $t('email') }}</span><input name="email" type="email" autocomplete="email" inputmode="email" required value="{{ old('email', $vm['prefill']['email'] ?? '') }}"></label>
   </div>
   <div class="p-row">
-    <label class="p-field"><span>{{ $t('event_address') }}</span><input name="event_address" autocomplete="street-address" required value="{{ old('event_address', $vm['prefill']['event_address'] ?? '') }}"></label>
-    <label class="p-field p-narrow"><span>ZIP</span><input name="event_postal_code" inputmode="numeric" maxlength="10" required value="{{ $vm['prefill']['event_postal_code'] ?? '' }}"></label>
+    <label class="p-field"><span>{{ $t('event_address') }}</span><input name="event_address" autocomplete="street-address" required @readonly($vm['details']['fixed_address'] ?? false) value="{{ ($vm['details']['fixed_address'] ?? false) ? $vm['prefill']['event_address'] : old('event_address', $vm['prefill']['event_address'] ?? '') }}"></label>
+    <label class="p-field p-narrow"><span>ZIP</span><input name="event_postal_code" inputmode="numeric" maxlength="10" required @readonly($vm['details']['fixed_postal_code'] ?? false) value="{{ $vm['prefill']['event_postal_code'] ?? '' }}"></label>
   </div>
+  @if (($vm['details']['fixed_address'] ?? false) && ($vm['details']['fixed_postal_code'] ?? false))<p class="p-hint">{{ $t('fixed_address_hint') }}</p>@endif
   <div class="p-field"><span>{{ $t('party_time') }}</span><strong class="p-fixed">{{ $e['time_range'] ?? $e['start_time'] }}</strong><small>{{ $t('party_time_hint') }}</small></div>
   <h3 class="p-sub-title">{{ $t('questions') }}</h3>
   <div class="p-row">
     <label class="p-field"><span>{{ $t('child_name') }}</span><input name="child_name" required value="{{ $vm['prefill']['child_name'] ?? '' }}"></label>
     <label class="p-field p-narrow"><span>{{ $t('child_age') }}</span><input name="child_age" inputmode="numeric" pattern="[0-9]*" maxlength="3" required value="{{ $vm['prefill']['child_age'] ?? '' }}"></label>
   </div>
-  <fieldset class="p-field p-choice-field">
-    <legend>{{ $t('event_language') }}</legend>
-    <div class="p-choices">
-      @foreach (['es' => 'lang_es', 'en' => 'lang_en', 'bilingual' => 'lang_both'] as $v => $k)
-      <label class="p-choice"><input type="radio" name="event_language" value="{{ $v }}" required @checked(($vm['prefill']['event_language'] ?? '') === $v)><span>{{ $t($k) }}</span></label>
-      @endforeach
-    </div>
-  </fieldset>
-  <fieldset class="p-field p-choice-field">
-    <legend>{{ $t('setup_area') }}</legend>
-    <div class="p-choices p-choices-two">
-      @foreach (['indoor' => 'indoor', 'outdoor' => 'outdoor'] as $v => $k)
-      <label class="p-choice"><input type="radio" name="setup_area" value="{{ $v }}" required @checked(($vm['prefill']['setup_area'] ?? '') === $v)><span>{{ $t($k) }}</span></label>
-      @endforeach
-    </div>
-  </fieldset>
+  {{-- Owner 2026-10-20: big tap-friendly choices instead of dark native selects. --}}
+  <fieldset class="p-field p-chips"><legend>{{ $t('event_language') }}</legend><div>
+    @foreach (['es' => 'lang_es', 'en' => 'lang_en', 'bilingual' => 'lang_both'] as $v => $k)<label class="p-chip"><input type="radio" name="event_language" value="{{ $v }}" required @checked(($vm['prefill']['event_language'] ?? '') === $v)><span>{{ $t($k) }}</span></label>@endforeach
+  </div></fieldset>
+  <fieldset class="p-field p-chips"><legend>{{ $t('setup_area') }}</legend><div>
+    @foreach (['indoor' => 'indoor', 'outdoor' => 'outdoor'] as $v => $k)<label class="p-chip"><input type="radio" name="setup_area" value="{{ $v }}" required @checked(($vm['prefill']['setup_area'] ?? '') === $v)><span>{{ $t($k) }}</span></label>@endforeach
+  </div></fieldset>
   <label class="p-field"><span>{{ $t('children_count') }}</span><input name="children_count" inputmode="numeric" pattern="[0-9]*" maxlength="3" required value="{{ $vm['prefill']['children_count'] ?? '' }}"><small>{{ $t('children_hint') }}</small></label>
   <label class="p-field"><span>{{ $t('notes') }} <em>({{ $t('optional') }})</em></span><textarea name="notes" rows="3">{{ $vm['prefill']['notes'] ?? '' }}</textarea></label>
   @if (! empty($vm['details']['sms_consent']))
@@ -95,6 +98,7 @@
   @csrf
   <h2>{{ $t('contract_title') }}</h2>
   <p class="p-hint">{{ $t('contract_hint') }}</p>
+  @if (!empty($vm['details']['review_url']))<a class="p-btn p-btn-quiet" href="{{ $vm['details']['review_url'] }}">{{ $t('review_details') }}</a>@endif
   <a class="p-btn p-btn-quiet" href="{{ $vm['contract']['pdf_url'] }}" target="_blank" rel="noopener noreferrer">{{ $t('open_pdf') }}</a>
   <input type="hidden" name="presented_pdf_sha256" value="{{ $vm['contract']['sha256'] }}">
   <label class="p-field"><span>{{ $t('sign_name') }}</span><input name="signer_name" autocomplete="name" required class="p-sign"></label>
@@ -157,8 +161,20 @@
   function key(name) { try { var k = sessionStorage.getItem(name); if (!k) { k = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()); sessionStorage.setItem(name, k); } return k; } catch (e) { return crypto.randomUUID ? crypto.randomUUID() : String(Date.now()); } }
   function post(url, body, idem) {
     return fetch(url, {method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf, 'Idempotency-Key': idem}, body: JSON.stringify(body)})
-      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) { var m = j.message || (j.errors && Object.values(j.errors)[0][0]) || 'Error'; throw new Error(m); } return j; }); });
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) { var m = j.message || (j.errors && Object.values(j.errors)[0][0]) || 'Error'; var e = new Error(m); e.status = r.status; throw e; } return j; }); });
   }
+  var prep = document.getElementById('prepare-contract-form');
+  if (prep) prep.addEventListener('submit', function (ev) {
+    ev.preventDefault(); var b = prep.querySelector('button[type=submit]'), err = document.getElementById('prepare-contract-error');
+    var attempt = 'waoo-details-contract-' + prep.dataset.eventVersion + '-' + prep.dataset.revision;
+    b.disabled = true; err.hidden = true;
+    post(prep.action, {expected_event_version: Number(prep.dataset.eventVersion), expected_revision: Number(prep.dataset.revision)}, key(attempt))
+      .then(function () { try { sessionStorage.removeItem(attempt); } catch (e) {} location.reload(); })
+      .catch(function (e) { err.textContent = e.message; err.hidden = false;
+        if (e.status === 409) { document.getElementById('prepare-contract-refresh').hidden = false; }
+        else b.disabled = false;
+      });
+  });
   var det = document.getElementById('details-form');
   if (det) det.addEventListener('submit', function (ev) {
     ev.preventDefault(); var err = document.getElementById('details-error'); err.hidden = true;
@@ -172,7 +188,7 @@
     if (f.notes.value.trim()) body.notes = f.notes.value.trim();
     if (f.sms_consent && f.sms_consent.checked) { body.sms_consent = true; body.sms_consent_version = f.sms_consent.dataset.version; }
     post(f.action, body, key('waoo-details-' + f.dataset.revision))
-      .then(function () { try { sessionStorage.removeItem('waoo-details-' + f.dataset.revision); } catch (e) {} location.reload(); })
+      .then(function () { try { sessionStorage.removeItem('waoo-details-' + f.dataset.revision); } catch (e) {} var next = new URL(location.href); next.searchParams.delete('review_details'); location.assign(next.href); })
       .catch(function (e) { err.textContent = e.message; err.hidden = false; b.disabled = false; });
   });
   var sign = document.getElementById('sign-form');

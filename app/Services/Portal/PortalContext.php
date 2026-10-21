@@ -27,6 +27,7 @@ final readonly class PortalContext
         }
         if (in_array($scope, ['payments.read', 'checkout.create'], true)) {
             \App\Services\Responsibility\RequireCrmResponsibility::forEvent($eventId, $lock);
+            \App\Services\Booking\QuickStripeLeases::assertNoActive($eventId);
         }
         return $row;
     }

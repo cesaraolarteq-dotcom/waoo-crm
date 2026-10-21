@@ -20,7 +20,7 @@ final class ClientDetailsState
     {
         $latest = ClientDetailsSubmission::where('event_id', $event->id)->orderByDesc('revision')->first();
         return ['submission' => $latest?->only(['id','revision','data','submitted_at']),
-            'reviewed' => $latest && in_array(self::forEvent($event), ['ready_to_issue','waiting_signature','signed'], true),
+            'reviewed' => $latest && self::currentReview($event, $latest) !== null,
             'expected_revision' => $latest?->revision ?? 0, 'expected_event_version' => $event->version];
     }
 
@@ -29,10 +29,17 @@ final class ClientDetailsState
         if (\App\Models\Contract::where('event_id', $event->id)->where('state', 'signed')->exists()) return 'signed';
         $latest = ClientDetailsSubmission::where('event_id', $event->id)->orderByDesc('revision')->first();
         if (!$latest) return 'waiting_details';
+        $review = self::currentReview($event, $latest);
+        if (!$review) return 'review_details';
+        return \App\Models\Contract::where('event_id', $event->id)->where('financial_revision_id', $review->financial_revision_id)->where('state', 'issued')->exists() ? 'waiting_signature' : 'ready_to_issue';
+    }
+
+    private static function currentReview(Event $event, ClientDetailsSubmission $latest): ?ClientDetailsReview
+    {
         $review = ClientDetailsReview::where('submission_id', $latest->id)->first();
         $currentFinance = \App\Models\FinancialRevision::where('event_id', $event->id)->orderByDesc('revision')->first();
         $capacityLinked = $event->status === 'capacity_reserved' && $review && DB::table('capacity_payment_links')->where('event_id', $event->id)->where('financial_revision_id', $review->financial_revision_id)->exists();
-        if (!$review || !$currentFinance || $review->financial_revision_id !== $currentFinance->id || ($review->event_version !== $event->version && !$capacityLinked)) return 'review_details';
-        return \App\Models\Contract::where('event_id', $event->id)->where('financial_revision_id', $review->financial_revision_id)->where('state', 'issued')->exists() ? 'waiting_signature' : 'ready_to_issue';
+        return $review && $currentFinance && $review->financial_revision_id === $currentFinance->id
+            && ($review->event_version === $event->version || $capacityLinked) ? $review : null;
     }
 }

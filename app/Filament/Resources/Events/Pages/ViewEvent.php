@@ -72,11 +72,14 @@ class ViewEvent extends Page
     #[\Livewire\Attributes\Locked]
     public string $holdKey = '';
 
+    #[\Livewire\Attributes\Locked]
+    public ?array $holdInput = null;
+
     public const HOLD_STATE = ['not_attempted' => 'Sin apartar', 'needs_character' => 'Falta elegir el personaje', 'timing_required' => 'Faltan los minutos de montaje',
         'blocked' => 'Ese traje ya está apartado a esa hora', 'held' => 'Traje apartado', 'consumed' => 'Asignado al confirmar', 'released' => 'Liberado',
         'review_required' => 'Revisar el apartado', 'not_required' => 'No lleva traje'];
     public const HOLD_COLOR = ['held' => 'success', 'consumed' => 'success', 'blocked' => 'danger', 'review_required' => 'warning', 'needs_character' => 'warning', 'timing_required' => 'warning'];
-    public const HOLD_ISSUES = ['needs_character' => 'Falta elegir el personaje en la reserva.', 'timing_unknown' => 'El paquete no tiene minutos de montaje: se apartó solo el horario de la fiesta.',
+    public const HOLD_ISSUES = ['needs_character' => 'Falta elegir el personaje en la reserva.', 'timing_unknown' => 'Se apartó con el horario conocido; faltan minutos de montaje o desmontaje.',
         'costume_unavailable' => 'No hay un traje libre de ese personaje (o de esa versión) a esa hora.', 'costume_catalog_changed' => 'El personaje cambió en el catálogo después de apartarlo.',
         'hold_review_required' => 'La fiesta cambió (hora, paquete o personajes) después de apartar el traje.', 'integrity_invalid' => 'El registro del apartado no se pudo verificar.',
         'hold_unavailable' => 'No se pudo apartar en ese momento; inténtalo de nuevo.'];
@@ -338,8 +341,37 @@ class ViewEvent extends Page
     private function pinHold(): void
     {
         $h = app(\App\Services\Booking\ReadQuickBookingCostumeHold::class)->execute(\Filament\Facades\Filament::auth()->user(), $this->record->id);
-        $this->holdPin = ['event_version' => (int) $h['event_version'], 'version' => (int) $h['version'], 'characters' => $h['characters']];
+        $event = \App\Models\Event::findOrFail($this->record->id);
+        \App\Exceptions\RecordWriteRejected::unless($event->version === $h['event_version'], 409, 'El evento cambió. Vuelve a revisar el apartado.');
+        $summary = [];
+        foreach ($h['rows'] as $row) {
+            $reservation = \App\Models\ResourceReservation::whereKey($row['reservation_id'])->where('event_id', $event->id)->first();
+            \App\Exceptions\RecordWriteRejected::unless($reservation !== null, 409, 'El apartado cambió. Vuelve a revisarlo.');
+            $unit = \App\Models\Resource::whereKey($row['resource_id'])->value('name') ?? 'Unidad #'.$row['resource_id'];
+            $summary[] = $unit.' · '.$row['character_name'].(filled($row['outfit']) ? ' ('.$row['outfit'].')' : '')
+                .' · horario de la fiesta: '.Labels::when($reservation->starts_at).' a '.Labels::when($reservation->ends_at);
+        }
+        if ($summary === []) {
+            foreach (\App\Services\Booking\QuickCostumeHolds::slots($event)['slots'] as $slot) {
+                $name = \App\Models\Character::whereKey($slot['character_id'])->value('name') ?? 'Personaje';
+                $summary[] = $name.(filled($slot['outfit'] ?? null) ? ' ('.$slot['outfit'].')' : '');
+            }
+            $summary[] = 'Horario de la fiesta: '.Labels::when($event->starts_at).' a '.Labels::when($event->ends_at);
+        }
+        if (in_array('timing_unknown', $h['issues'], true)) $summary[] = self::HOLD_ISSUES['timing_unknown'];
+        $this->holdPin = ['event_version' => (int) $h['event_version'], 'version' => (int) $h['version'], 'characters' => $h['characters'], 'summary' => implode(' · ', $summary)];
+        $this->holdInput = null;
         $this->holdKey = (string) \Illuminate\Support\Str::uuid();
+    }
+
+    private function reviewHold(Action $action): void
+    {
+        try { $this->pinHold(); }
+        catch (\Illuminate\Auth\Access\AuthorizationException $error) { throw $error; }
+        catch (\Throwable) {
+            \Filament\Notifications\Notification::make()->danger()->title('No se pudo comprobar el apartado')->body('Actualiza y revisa antes de continuar. El depósito sigue guardado.')->persistent()->send();
+            $action->halt();
+        }
     }
 
     private function holdResult(array $r, string $ok): void
@@ -348,23 +380,28 @@ class ViewEvent extends Page
         $body = implode(' ', array_map(fn ($i) => self::HOLD_ISSUES[$i] ?? '', $r['issues'] ?? []));
         \Filament\Notifications\Notification::make()->{in_array($r['state'], ['held', 'released', 'consumed'], true) && ($r['issues'] ?? []) === [] ? 'success' : 'warning'}()
             ->title($r['state'] === 'held' || $r['state'] === 'released' ? $ok : $label)->body($body ?: null)->send();
-        $this->holdPin = null; $this->holdKey = '';
+        $this->holdPin = null; $this->holdKey = ''; $this->holdInput = null;
     }
 
     public function holdCostumeAction(): Action
     {
         return Action::make('holdCostume')->label('Apartar traje')->icon('heroicon-o-lock-closed')->color('primary')
             ->requiresConfirmation()->modalHeading('Apartar el traje para esta fiesta')
-            ->modalDescription('Se aparta el traje del personaje elegido (y la versión, si la pediste) para el horario de la fiesta. El staff se asigna después. Si no hay uno libre, te avisa y no cambia nada.')
+            ->modalDescription(fn () => ($this->holdPin['summary'] ?? '').' Se intenta apartar este traje; el staff se confirma por separado.')
             ->modalSubmitActionLabel('Apartar')
-            ->mountUsing(fn () => $this->pinHold())
-            ->action(function () {
+            ->mountUsing(fn (Action $action) => $this->reviewHold($action))
+            ->action(function (Action $action) {
                 try {
                     $r = app(\App\Services\Booking\HoldQuickBookingCostumes::class)->execute(\Filament\Facades\Filament::auth()->user(), $this->record->id,
                         ['expected_event_version' => $this->holdPin['event_version'], 'expected_hold_version' => $this->holdPin['version'], 'characters' => $this->holdPin['characters']], $this->holdKey);
                     $this->holdResult($r, 'Traje apartado');
                 } catch (\App\Exceptions\RecordWriteRejected|\Illuminate\Validation\ValidationException $e) {
-                    \Filament\Notifications\Notification::make()->danger()->title('No se apartó')->body($e->getMessage())->send();
+                    \Filament\Notifications\Notification::make()->danger()->title('No se apartó')->body($e->getMessage().' Cierra y vuelve a abrir para revisar.')->send();
+                    $action->halt();
+                } catch (\Illuminate\Auth\Access\AuthorizationException $e) { throw $e;
+                } catch (\Throwable) {
+                    \Filament\Notifications\Notification::make()->danger()->title('No se pudo comprobar el apartado')->body('Reintenta la misma solicitud. El depósito sigue guardado.')->persistent()->send();
+                    $action->halt();
                 }
             });
     }
@@ -373,18 +410,24 @@ class ViewEvent extends Page
     {
         return Action::make('releaseCostume')->label('Liberar traje')->icon('heroicon-o-lock-open')->color('gray')
             ->modalHeading('Liberar el traje apartado')
-            ->modalDescription('El traje queda libre para otras fiestas. El depósito, la reserva y su historial no cambian, y no se cancela la fiesta.')
-            ->mountUsing(fn () => $this->pinHold())
+            ->modalDescription(fn () => ($this->holdPin['summary'] ?? '').' Se libera este apartado; el depósito sigue registrado y no se cancela la fiesta.')
+            ->mountUsing(fn (Action $action) => $this->reviewHold($action))
             ->schema([\Filament\Forms\Components\Textarea::make('reason')->label('¿Por qué lo liberas?')->required()->minLength(10)->maxLength(1000)->rows(2)
-                ->placeholder('Ej.: el cliente cambió de personaje')])
+                ->readOnly(fn () => $this->holdInput !== null)->placeholder('Ej.: el cliente cambió de personaje')])
             ->modalSubmitActionLabel('Liberar')
-            ->action(function (array $data) {
+            ->action(function (array $data, Action $action) {
                 try {
+                    $this->holdInput ??= ['expected_event_version' => $this->holdPin['event_version'], 'expected_hold_version' => $this->holdPin['version'], 'reason' => trim($data['reason'])];
                     $r = app(\App\Services\Booking\ReleaseQuickBookingCostumes::class)->execute(\Filament\Facades\Filament::auth()->user(), $this->record->id,
-                        ['expected_event_version' => $this->holdPin['event_version'], 'expected_hold_version' => $this->holdPin['version'], 'reason' => trim($data['reason'])], $this->holdKey);
+                        $this->holdInput, $this->holdKey);
                     $this->holdResult($r, 'Traje liberado');
                 } catch (\App\Exceptions\RecordWriteRejected|\Illuminate\Validation\ValidationException $e) {
-                    \Filament\Notifications\Notification::make()->danger()->title('No se liberó')->body($e->getMessage())->send();
+                    \Filament\Notifications\Notification::make()->danger()->title('No se liberó')->body($e->getMessage().' Cierra y vuelve a abrir para revisar.')->send();
+                    $action->halt();
+                } catch (\Illuminate\Auth\Access\AuthorizationException $e) { throw $e;
+                } catch (\Throwable) {
+                    \Filament\Notifications\Notification::make()->danger()->title('No se pudo comprobar la liberación')->body('Reintenta la misma solicitud. El depósito sigue guardado.')->persistent()->send();
+                    $action->halt();
                 }
             });
     }
