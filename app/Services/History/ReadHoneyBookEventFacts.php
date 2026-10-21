@@ -6,7 +6,7 @@ use App\Services\Finance\MutationKey;
 final class ReadHoneyBookEventFacts
 {
     public const STAFF_FIELDS=['child_name','child_age','children_count','setup_area','event_language','notes'];
-    public function execute(User $actor,int $eventId):array {HistoryAccess::actor($actor);$link=ImportedProjectLink::where('event_id',$eventId)->first();return [...self::forEvent(Event::findOrFail($eventId),false),'originals'=>$link?ReadHoneyBookOriginal::listing($link->project_key):[]];}
+    public function execute(User $actor,int $eventId):array {HistoryAccess::actor($actor);$link=ImportedProjectLink::where('event_id',$eventId)->first();$event=Event::findOrFail($eventId);return [...self::forEvent($event,false),'event_version'=>$event->version,'imported_revision_id'=>$link?->current_revision_id,'originals'=>$link?ReadHoneyBookOriginal::listing($link->project_key):[]];}
     public static function metadata(HoneyBookEventFacts $record):array {self::payload($record);return ['id'=>$record->id,'event_id'=>$record->event_id,'version'=>$record->version,'source'=>'honeybook'];}
     public static function payload(HoneyBookEventFacts $record):array {
         try {
@@ -16,9 +16,9 @@ final class ReadHoneyBookEventFacts
     }
     /** Internal narrow staff projection, called only after real assignment authorization. */
     public static function forEvent(Event $event,bool $staff=true):array {
-        if(!config('waoo.sandbox_history'))return ['source'=>'honeybook','fields'=>[],'stale'=>false];
+        if(!config('waoo.sandbox_history'))return ['source'=>'honeybook','version'=>0,'fields'=>[],'stale'=>false];
         $record=HoneyBookEventFacts::where('event_id',$event->id)->orderByDesc('version')->first();
-        if(!$record)return ['source'=>'honeybook','fields'=>[],'stale'=>false];
+        if(!$record)return ['source'=>'honeybook','version'=>0,'fields'=>[],'stale'=>false];
         $p=self::payload($record);$link=ImportedProjectLink::where('event_id',$event->id)->first();
         $stale=!$link||$link->current_revision_id!==$p['imported_revision_id']||$link->project_key!==$p['project_key']||$event->customer_id!==$p['customer_id'];
         $fields=$p['fields'];if($staff){$fields=array_intersect_key($fields,array_flip(self::STAFF_FIELDS));

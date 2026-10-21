@@ -20,6 +20,10 @@ final class VerifyHistoricalImport
                 if($decision['result']['state']==='excluded'){$excluded++;continue;}
                 $result=$decision['result'];$event=HistoricalEvent::findOrFail($result['history_id']);$revision=HistoricalEventRevision::findOrFail($result['revision_id']);
                 $copy=HistoricalIntegrity::revision($event,$revision,false);$imported++;
+                if(($source['contact_id']??'')!==''){
+                    $contact=\App\Models\ExternalCustomerLink::where('source_system','honeybook')->where('contact_key',hash('sha256',$source['contact_id']))->first();
+                    if(!$contact||HistoricalIntegrity::contact($contact)['customer_id']!==$event->customer_id)$differences[]=['row_id'=>$row->id,'code'=>'source_contact_link_differs'];
+                }
                 if(MutationKey::hash($source??[])!==MutationKey::hash($copy['source']))$differences[]=['row_id'=>$row->id,'code'=>'destination_source_differs'];
                 foreach(['booked_total','paid_total','balance'] as $field){
                     $raw=$source[$field]??'';$expected=null;

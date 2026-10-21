@@ -34,6 +34,9 @@ class ImportHistory extends Page
 
     /** Spanish meaning of each finding (codes from App\Services\History\HistoricalSource). */
     public const ISSUES = [
+        'customer_ambiguous'=>'Hay varias clientas que coinciden', 'customer_conflicting'=>'El correo y el teléfono apuntan a distintas clientas',
+        'source_contact_conflict'=>'El contacto tiene datos contradictorios en el archivo', 'operating_project_exists'=>'Este proyecto ya está en las fiestas operativas',
+        'source_changed'=>'El origen cambió: revisa la diferencia', 'customer_identity_required'=>'Falta un nombre de clienta válido',
         'project_id_required' => 'Falta el ID del proyecto',
         'event_date_required' => 'Falta la fecha',
         'duplicate_project_id' => 'El mismo proyecto aparece dos veces',
@@ -205,6 +208,7 @@ class ImportHistory extends Page
         $codes = collect($e->errors())->flatten()->implode(' ');
 
         return match (true) {
+            str_contains($codes, 'owner_excluded_field') => 'El archivo incluye direcciones de contacto, notas privadas o impuestos que decidiste no traer. Quítalos de esta copia antes de subirla.',
             str_contains($codes, 'header') => 'El archivo no tiene exactamente las 19 columnas del historial, en el mismo orden.',
             str_contains($codes, 'rows_required') => 'El archivo no tiene filas.',
             str_contains($codes, 'encoding') || str_contains($codes, 'utf') => 'El archivo debe estar en UTF-8.',

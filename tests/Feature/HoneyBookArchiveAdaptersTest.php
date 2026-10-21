@@ -16,6 +16,7 @@ class HoneyBookArchiveAdaptersTest extends TestCase
     protected function setUp():void {parent::setUp();$this->futureScenario();config(['waoo.sandbox_history'=>true]);}
     protected function tearDown():void {
         if($this->app&&Schema::hasTable('historical_events')){
+            DB::table('booking_evidence')->where('method','honeybook_import')->delete();
             DB::table('honeybook_originals')->delete();DB::table('honeybook_event_facts')->delete();DB::table('historical_events')->update(['current_revision_id'=>null]);
             foreach(['history_import_decisions','historical_event_revisions','historical_events','external_customer_links','history_import_rows','history_import_batches'] as $t)DB::table($t)->delete();
         }parent::tearDown();
@@ -53,7 +54,7 @@ class HoneyBookArchiveAdaptersTest extends TestCase
     }
     public function test_future_questionnaire_is_source_evidence_not_a_portal_submission():void {
         $link=$this->imported();$event=\App\Models\Event::findOrFail($link->event_id);
-        $input=['expected_event_version'=>$event->version,'imported_revision_id'=>$link->current_revision_id,'fields'=>['child_name'=>'Sofía','child_age'=>6,'children_count'=>15,'setup_area'=>'outdoor','event_language'=>'es','notes'=>'Actividades tranquilas','lead_source'=>'Instagram','sms_consent_honeybook'=>'yes']];
+        $input=['expected_event_version'=>$event->version,'expected_facts_version'=>0,'imported_revision_id'=>$link->current_revision_id,'fields'=>['child_name'=>'Sofía','child_age'=>6,'children_count'=>15,'setup_area'=>'outdoor','event_language'=>'es','notes'=>'Actividades tranquilas','lead_source'=>'Instagram','sms_consent_honeybook'=>'yes']];
         $r=app(SaveHoneyBookEventFacts::class)->execute($this->owner,$event->id,$input,(string)Str::uuid());
         $read=app(ReadHoneyBookEventFacts::class)->execute($this->owner,$event->id);$this->assertSame('Sofía',$read['fields']['child_name']);$this->assertFalse($read['stale']);
         $staff=ReadHoneyBookEventFacts::forEvent($event->fresh());$this->assertSame('Sofía',$staff['fields']['child_name']);$this->assertArrayNotHasKey('sms_consent_honeybook',$staff['fields']);$this->assertArrayNotHasKey('lead_source',$staff['fields']);
@@ -63,14 +64,14 @@ class HoneyBookArchiveAdaptersTest extends TestCase
     }
     public function test_stale_event_questionnaire_version_rejects_without_overwrite():void {
         $link=$this->imported();$event=\App\Models\Event::find($link->event_id);
-        $input=['expected_event_version'=>$event->version,'imported_revision_id'=>$link->current_revision_id,'fields'=>['child_name'=>'Sofía']];
+        $input=['expected_event_version'=>$event->version,'expected_facts_version'=>0,'imported_revision_id'=>$link->current_revision_id,'fields'=>['child_name'=>'Sofía']];
         app(SaveHoneyBookEventFacts::class)->execute($this->owner,$event->id,$input,(string)Str::uuid());
         try{app(SaveHoneyBookEventFacts::class)->execute($this->owner,$event->id,[...$input,'fields'=>['child_name'=>'Elena']],(string)Str::uuid());$this->fail('Expected stale');}catch(RecordWriteRejected $e){$this->assertSame(409,$e->status);}
         $this->assertDatabaseCount('honeybook_event_facts',1);
     }
     public function test_resync_invalidates_staff_source_fallback_instead_of_showing_old_data():void {
         $link=$this->imported();$event=\App\Models\Event::find($link->event_id);
-        app(SaveHoneyBookEventFacts::class)->execute($this->owner,$event->id,['expected_event_version'=>$event->version,'imported_revision_id'=>$link->current_revision_id,'fields'=>['child_name'=>'Sofía']],(string)Str::uuid());
+        app(SaveHoneyBookEventFacts::class)->execute($this->owner,$event->id,['expected_event_version'=>$event->version,'expected_facts_version'=>0,'imported_revision_id'=>$link->current_revision_id,'fields'=>['child_name'=>'Sofía']],(string)Str::uuid());
         $link->current_revision_id=null;$link->save();$staff=ReadHoneyBookEventFacts::forEvent($event->fresh());$this->assertTrue($staff['stale']);$this->assertSame([],$staff['fields']);
     }
     public function test_report_keeps_balance_source_and_does_not_assume_real_six_rows():void {
@@ -89,7 +90,7 @@ class HoneyBookArchiveAdaptersTest extends TestCase
     }
     public function test_future_lead_source_and_consent_are_visible_on_customer_and_report_without_overwriting():void {
         $link=$this->imported();$event=\App\Models\Event::find($link->event_id);$before=\App\Models\Customer::find($event->customer_id)->getAttributes();
-        app(SaveHoneyBookEventFacts::class)->execute($this->owner,$event->id,['expected_event_version'=>$event->version,'imported_revision_id'=>$link->current_revision_id,'fields'=>['lead_source'=>'WhatsApp','sms_consent_honeybook'=>'yes']],(string)Str::uuid());
+        app(SaveHoneyBookEventFacts::class)->execute($this->owner,$event->id,['expected_event_version'=>$event->version,'expected_facts_version'=>0,'imported_revision_id'=>$link->current_revision_id,'fields'=>['lead_source'=>'WhatsApp','sms_consent_honeybook'=>'yes']],(string)Str::uuid());
         $sources=app(\App\Services\History\ReadHoneyBookCustomerSources::class)->execute($this->owner,$event->customer_id);
         $this->assertSame(['WhatsApp'],$sources['lead_sources']);$this->assertSame('yes',$sources['sms_consent_evidence'][0]['raw_value']);
         $this->assertSame($before,\App\Models\Customer::find($event->customer_id)->getAttributes());
@@ -98,7 +99,7 @@ class HoneyBookArchiveAdaptersTest extends TestCase
     }
     public function test_native_portal_fields_take_priority_over_staff_source_fallback():void {
         $link=$this->imported();$event=\App\Models\Event::find($link->event_id);
-        app(SaveHoneyBookEventFacts::class)->execute($this->owner,$event->id,['expected_event_version'=>$event->version,'imported_revision_id'=>$link->current_revision_id,'fields'=>['child_name'=>'Sofía','child_age'=>0]],(string)Str::uuid());
+        app(SaveHoneyBookEventFacts::class)->execute($this->owner,$event->id,['expected_event_version'=>$event->version,'expected_facts_version'=>0,'imported_revision_id'=>$link->current_revision_id,'fields'=>['child_name'=>'Sofía','child_age'=>0]],(string)Str::uuid());
         $grant=\App\Models\PortalGrant::create(['event_id'=>$event->id,'customer_id'=>$event->customer_id,'token_hash'=>hash('sha256','synthetic-portal-token'),'scopes'=>['details.submit'],'expires_at'=>now()->addDay(),'issued_by'=>$this->owner->id]);
         \App\Models\ClientDetailsSubmission::create(['event_id'=>$event->id,'customer_id'=>$event->customer_id,'portal_grant_id'=>$grant->id,'revision'=>1,'event_version'=>$event->version,'data'=>['child_name'=>'Elena','child_age'=>0],'base_customer_snapshot'=>[],'submitted_at'=>now()]);
         $projection=ReadHoneyBookEventFacts::forEvent($event->fresh());$this->assertArrayNotHasKey('child_name',$projection['fields']);$this->assertArrayNotHasKey('child_age',$projection['fields']);
@@ -106,6 +107,25 @@ class HoneyBookArchiveAdaptersTest extends TestCase
     public function test_original_and_facts_reads_deny_access_when_history_disabled():void {
         $this->archive();$r=app(PreserveHoneyBookOriginal::class)->execute($this->owner,$this->pdf(),['project_id'=>'fictional-history-1','kind'=>'contract','source_reference'=>'synthetic'],(string)Str::uuid());
         config(['waoo.sandbox_history'=>false]);$this->get('/admin/api/history/originals/'.$r['id'])->assertForbidden();$this->get('/admin/honeybook-revision')->assertForbidden();
+    }
+
+    public function test_questionnaire_preserves_existing_capacity_proof_and_uses_own_version():void {
+        $link=$this->imported();$event=\App\Models\Event::find($link->event_id);
+        $staff=\App\Models\Resource::create(['code'=>'HB-HOST','name'=>'Carlos Hernández','kind'=>'staff','status'=>'active','skills'=>['host','driver']]);
+        $speaker=\App\Models\Resource::create(['code'=>'HB-SPEAKER','name'=>'Speaker principal','kind'=>'equipment','status'=>'active','equipment_kind'=>'speaker','skills'=>[]]);
+        app(\App\Services\Imports\ConfirmImportedCapacity::class)->execute($this->owner,$event->id,['expected_version'=>$event->version,'imported_revision_id'=>$link->current_revision_id,'resource_ids'=>[$staff->id,$speaker->id],
+            'review'=>['staff_confirmed'=>true,'cargo_checked'=>true,'origin_return_note'=>'Salen y regresan a la bodega.','transfers'=>[]]],(string)Str::uuid());
+        $event->refresh();$nativeVersion=$event->version;$revision=\App\Models\ImportedProjectRevision::find($link->current_revision_id);
+        $this->assertTrue(\App\Services\Imports\ImportedAgreement::capacityMatches($event,$revision));
+        app(SaveHoneyBookEventFacts::class)->execute($this->owner,$event->id,['expected_event_version'=>$event->version,'expected_facts_version'=>0,'imported_revision_id'=>$link->current_revision_id,'fields'=>['child_name'=>'Sofía']],(string)Str::uuid());
+        $this->assertSame($nativeVersion,$event->fresh()->version);$this->assertTrue(\App\Services\Imports\ImportedAgreement::capacityMatches($event->fresh(),$revision));
+        $this->assertSame(1,app(ReadHoneyBookEventFacts::class)->execute($this->owner,$event->id)['version']);
+        DB::table('booking_evidence')->where('event_id',$event->id)->delete();
+    }
+    public function test_history_identity_prevents_later_operating_import():void {
+        $this->archive(['project_id'=>'HB-FAKE-1']);$batch=$this->stageFuture();$row=ImportRow::sole();
+        try{app(CommitHoneyBookEvent::class)->execute($this->owner,$batch->id,$row->id,$this->commitInput($batch,$row),(string)Str::uuid());$this->fail('Expected shared identity guard');}catch(RecordWriteRejected $e){$this->assertSame(409,$e->status);}
+        $this->assertDatabaseCount('events',0);$this->assertDatabaseCount('historical_events',1);
     }
 
 }
