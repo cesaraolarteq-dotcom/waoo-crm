@@ -5,7 +5,7 @@ use App\Filament\Resources\Events\Pages\EventMoney;
 use App\Models\{Resource, TipGrant};
 use App\Services\Finance\{ConfirmPaidCapacity, CreateFinancialRevision, RecordZellePayment};
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\Support\QuoteScenario;
@@ -15,7 +15,7 @@ use Tests\TestCase;
 // (shown once, with the WhatsApp message), sees totals with unknown net as "Pendiente", and can revoke it.
 class TipOwnerBlockTest extends TestCase
 {
-    use DatabaseMigrations, QuoteScenario;
+    use RefreshDatabase, QuoteScenario;
 
     protected function setUp(): void
     {

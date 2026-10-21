@@ -6,14 +6,14 @@ use App\Services\Costs\RecordCostSnapshot;
 use App\Services\Finance\CreateFinancialRevision;
 use App\Services\Records\SaveEventDraft;
 use App\Services\Reports\BookingSalesReport;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\{DB, Queue};
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class BookingSalesReportTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
     private User $owner; private Event $event; private FinancialRevision $finance; private array $input;
     protected function setUp(): void
     {

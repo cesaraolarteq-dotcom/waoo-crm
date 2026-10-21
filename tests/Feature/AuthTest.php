@@ -2,13 +2,13 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
 
 class AuthTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     private function owner(array $attributes=[]): User
     {

@@ -5,14 +5,14 @@ use App\Exceptions\ResponsibilityRejected;
 use App\Models\{Event, PortalGrant};
 use App\Services\Portal\{IssuePortalGrant, RevealPortalGrantLink};
 use App\Services\Responsibility\RequireCrmResponsibility;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\QuoteScenario;
 use Tests\TestCase;
 
 class ResponsibilityAccessTest extends TestCase
 {
-    use DatabaseMigrations, QuoteScenario;
+    use RefreshDatabase, QuoteScenario;
     protected function setUp(): void { parent::setUp(); $this->scenario(); }
 
     public function test_old_grants_cannot_be_revealed_or_authorize_payment_after_responsibility_changes(): void

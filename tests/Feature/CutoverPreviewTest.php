@@ -2,13 +2,13 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 // Phase 8 switch-over design preview (local/testing only): aggregates only, three steps, all actions disabled.
 class CutoverPreviewTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     public function test_preview_shows_aggregates_steps_and_disabled_actions(): void
     {

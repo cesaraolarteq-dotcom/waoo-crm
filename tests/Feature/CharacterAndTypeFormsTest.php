@@ -6,7 +6,7 @@ use App\Filament\Resources\Resources\Pages\EditResource;
 use App\Filament\Resources\Variants\Pages\CreateServiceVariant;
 use App\Models\{Character, Customer, Event, PriceVersion, Resource, ServiceVariant, User};
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -14,7 +14,7 @@ use Tests\TestCase;
 // Forms for Codex's record extensions (event type, characters per service, catalog character recipes, unlink).
 class CharacterAndTypeFormsTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     private User $owner;
     private Character $hero;

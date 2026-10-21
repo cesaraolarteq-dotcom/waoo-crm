@@ -2,14 +2,14 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 // Owner-side STAFF-01/STAFFPAY-01 design preview: local/testing only, labelled sample, actions disabled.
 // Owner 2026-10-18: no invitations/answers; one fixed personal link per person.
 class StaffPlanPreviewTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     public function test_preview_shows_team_fixed_links_driver_rule_and_pay_statement_with_disabled_actions(): void
     {

@@ -3,7 +3,7 @@ namespace Tests\Feature;
 
 use App\Filament\Pages\ChangePreview;
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -11,7 +11,7 @@ use Tests\TestCase;
 // cancel outcome from contract rules; every action disabled.
 class ChangePreviewTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     protected function setUp(): void
     {

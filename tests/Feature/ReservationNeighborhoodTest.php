@@ -5,14 +5,14 @@ namespace Tests\Feature;
 use App\Models\{Customer, Event, EventService, PriceVersion, Resource, ResourceReservation, ServiceVariant, User};
 use App\Services\Scheduling\ReservationNeighborhood;
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class ReservationNeighborhoodTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     private User $owner;
     private Customer $customer;

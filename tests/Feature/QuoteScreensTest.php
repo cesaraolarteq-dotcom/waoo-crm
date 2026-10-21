@@ -7,7 +7,7 @@ use App\Models\{Customer, Event, PriceVersion, Quote, ServiceVariant, User};
 use App\Services\Quotes\CreateQuote;
 use App\Services\Records\SaveEventDraft;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -16,7 +16,7 @@ use Tests\TestCase;
 // server totals and visible discounts, revisions with Locked quote+event versions, paginated list; B/C stay disabled.
 class QuoteScreensTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     private User $owner;
     private PriceVersion $price;

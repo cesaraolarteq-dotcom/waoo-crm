@@ -6,7 +6,7 @@ use App\Filament\Resources\Resources\Pages\{CreateResource, EditResource};
 use App\Filament\Resources\Variants\Pages\{CreateServiceVariant, EditServiceVariant};
 use App\Models\{Character, Customer, Resource, ServiceVariant, User};
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -15,7 +15,7 @@ use Tests\TestCase;
 // App\Services\Records\*, pass the signed-in actor and the displayed version, and surface service errors.
 class RecordFormsTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     private User $owner;
 

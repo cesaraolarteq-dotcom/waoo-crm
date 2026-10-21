@@ -5,6 +5,8 @@ $clientTexts = require __DIR__.'/client-texts.php';
 return [
     'sandbox_company' => env('WAOO_SANDBOX_COMPANY', false),
     'sandbox_history_verification' => env('WAOO_SANDBOX_HISTORY_VERIFICATION', false),
+    'sandbox_anniversary' => env('WAOO_SANDBOX_ANNIVERSARY', false),
+    'sandbox_analytics' => env('WAOO_SANDBOX_ANALYTICS', false),
     // Exact owner-approved wording; no transport activation or provider enrollment.
     'sms_consent_versions' => [
         'client-texts-2026-10-20-sms-es' => $clientTexts['texts']['sms_consent']['es'],

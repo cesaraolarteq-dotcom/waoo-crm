@@ -4,13 +4,13 @@ namespace Tests\Feature;
 use App\Models\{User, Customer, Event, Resource};
 use Database\Seeders\{DatabaseSeeder, DemoSeeder};
 use Illuminate\Database\QueryException;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class DataTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     public function test_demo_is_opt_in_repeatable_and_does_not_invent_accounts_or_prices(): void
     {

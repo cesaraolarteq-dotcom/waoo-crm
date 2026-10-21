@@ -3,7 +3,7 @@ namespace Tests\Feature;
 
 use App\Filament\Pages\QuoteDetail;
 use App\Models\{FinancialRevision, PortalGrant, Quote, QuoteConversion};
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\Support\QuoteScenario;
 use Tests\TestCase;
@@ -11,7 +11,7 @@ use Tests\TestCase;
 // QUOTE-01 B/C owner side on the quote page over Codex's SendQuote / RevokePortalGrant / ConvertAcceptedQuote (fictitious data).
 class QuoteOwnerActionsTest extends TestCase
 {
-    use DatabaseMigrations, QuoteScenario;
+    use RefreshDatabase, QuoteScenario;
 
     protected function setUp(): void
     {

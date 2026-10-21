@@ -3,13 +3,13 @@ namespace Tests\Feature;
 
 use App\Filament\Resources\Variants\ServiceVariantResource;
 use App\Filament\Support\Labels;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 // Fixes from César's crm-test walkthrough (2026-10-20).
 class WalkthroughFixesTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     public function test_stylesheets_carry_a_version_so_an_old_cached_copy_is_not_used_after_a_deploy(): void
     {

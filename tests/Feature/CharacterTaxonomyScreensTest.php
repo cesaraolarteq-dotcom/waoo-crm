@@ -6,7 +6,7 @@ use App\Filament\Resources\Events\EventResource;
 use App\Filament\Resources\Events\Pages\ConfirmCapacity;
 use App\Models\{Character, PriceVersion, Resource, ServiceVariant, User};
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -15,7 +15,7 @@ use Tests\TestCase;
 // current selection, and the optional wardrobe for generic heads only.
 class CharacterTaxonomyScreensTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     protected function setUp(): void
     {

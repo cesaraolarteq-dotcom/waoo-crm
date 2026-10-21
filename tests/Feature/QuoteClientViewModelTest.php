@@ -2,13 +2,13 @@
 namespace Tests\Feature;
 use App\Models\Quote;
 use App\Services\Quotes\{ReadQuoteViewModel,ReviseQuote};
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\Support\QuoteScenario;
 use Tests\TestCase;
 class QuoteClientViewModelTest extends TestCase
 {
-    use DatabaseMigrations,QuoteScenario;
+    use RefreshDatabase,QuoteScenario;
     protected function setUp():void{parent::setUp();$this->scenario();}
     public function test_http_vm_exact_schema_locale_formatting_whitelist_and_frozen_consent():void
     {

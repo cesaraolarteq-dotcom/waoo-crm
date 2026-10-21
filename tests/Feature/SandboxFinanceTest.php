@@ -4,14 +4,14 @@ namespace Tests\Feature;
 use App\Models\{Customer, Event, FinancialRevision, LedgerEntry, PriceVersion, ServiceVariant, User};
 use App\Services\Finance\{CreateFinancialRevision, FinanceSummary, RecordZellePayment};
 use App\Services\Records\SaveEventDraft;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class SandboxFinanceTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
     private User $owner;
     private Event $event;
     private FinancialRevision $revision;
