@@ -76,12 +76,12 @@ class QuickBookingWalkthroughTest extends TestCase
             ->assertSet('displayedCustomerId', $maria->id);
     }
 
-    public function test_new_client_needs_a_name_phone_or_email_and_the_deposit_defaults_to_today(): void
+    public function test_new_client_data_is_optional_and_the_deposit_defaults_to_today(): void
     {
         // Owner 2026-10-21: phone and email are optional when there is a name (the owner sends the link herself).
-        $page = Livewire::test(QuickBooking::class)->assertSchemaStateSet(['deposit.date' => now('America/Chicago')->format('Y-m-d')])
-            ->fillForm(['customer_mode' => 'new', 'name' => '', 'phone' => '', 'email' => ''])->call('save')->assertHasFormErrors(['name']);
-        $page->fillForm(['name' => 'María González'])->call('save')->assertHasNoFormErrors(['name', 'phone']);
+        // Owner 2026-10-21 (later): no client data is required at all; the client completes it from the link.
+        Livewire::test(QuickBooking::class)->assertSchemaStateSet(['deposit.date' => now('America/Chicago')->format('Y-m-d')])
+            ->fillForm(['customer_mode' => 'new', 'name' => '', 'phone' => '', 'email' => ''])->call('save')->assertHasNoFormErrors(['name', 'phone', 'email', 'client_lookup']);
     }
 
     public function test_deposit_builder_pins_only_the_received_day_for_server_clock_resolution(): void

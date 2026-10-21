@@ -21,7 +21,7 @@ final class SubmitClientDetails
         $data = RecordInput::validate($input, [
             'expected_event_version' => 'required|integer|min:1', 'expected_revision' => 'required|integer|min:0', 'first_name' => 'required|string|max:120', 'last_name' => 'required|string|max:120',
             'phone' => 'required|string|max:40', 'email' => 'required|email|max:255', 'billing_address' => 'required|string|max:255', 'event_address' => 'required|string|max:255',
-            'event_postal_code' => ['sometimes','nullable','string','regex:/^[0-9]{5}(?:-[0-9]{4})?$/'], 'locale' => ['sometimes', Rule::in(['es','en'])],
+            'event_postal_code' => ['required','string','regex:/^[0-9]{5}(?:-[0-9]{4})?$/'], 'locale' => ['sometimes', Rule::in(['es','en'])],
             'start_time_confirmed' => 'required|boolean', 'requested_start_at' => ['nullable','date', new ExplicitOffset],
             'requested_local_time' => 'nullable|date_format:H:i', 'requested_time_choice' => ['nullable', Rule::in(['cdt', 'cst'])],
             'child_name' => 'nullable|string|max:120', 'child_age' => 'nullable|integer|min:0|max:120', 'theme' => 'nullable|string|max:120', 'notes' => 'nullable|string|max:2000',

@@ -59,6 +59,7 @@
   @csrf
   <h2>{{ $t('details_title') }}</h2>
   <p class="p-hint">{{ $t('details_hint') }}</p>
+  <p class="p-required-note">{{ $t('required_note') }}</p>
   <div class="p-row">
     <label class="p-field"><span>{{ $t('first_name') }}</span><input name="first_name" autocomplete="given-name" required value="{{ old('first_name', $vm['prefill']['first_name'] ?? '') }}"></label>
     <label class="p-field"><span>{{ $t('last_name') }}</span><input name="last_name" autocomplete="family-name" required value="{{ old('last_name', $vm['prefill']['last_name'] ?? '') }}"></label>

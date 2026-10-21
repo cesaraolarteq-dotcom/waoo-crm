@@ -55,11 +55,12 @@ class QuickBookingProvisionalCustomerTest extends TestCase
         $this->assertDatabaseCount('quick_bookings',1);
     }
 
-    public function test_neither_contact_rolls_back_the_entire_booking_and_global_save_still_requires_a_name(): void
+    public function test_client_with_no_data_books_as_provisional_and_global_save_still_requires_a_name(): void
     {
-        try { app(QuickBook::class)->execute($this->owner,$this->input(['name'=>null]),(string)Str::uuid());$this->fail('No contact accepted'); }
-        catch(ValidationException $e) { $this->assertArrayHasKey('new_customer.name',$e->errors()); }
-        $this->assertDatabaseCount('customers',0);$this->assertDatabaseCount('events',0);$this->assertDatabaseCount('ledger_entries',0);
+        // Owner 2026-10-21: the owner may book with no client data and send the link; the client completes it there.
+        $result=app(QuickBook::class)->execute($this->owner,$this->input(['name'=>null]),(string)Str::uuid());
+        $this->assertNull($result->customer->name);$this->assertNull($result->customer->phone);$this->assertNull($result->customer->email);
+        $this->assertDatabaseCount('customers',1);$this->assertDatabaseCount('events',1);
         $this->expectException(ValidationException::class);
         app(\App\Services\Records\SaveCustomer::class)->execute($this->owner,['name'=>null,'email'=>'maria@example.test','locale'=>'es']);
     }

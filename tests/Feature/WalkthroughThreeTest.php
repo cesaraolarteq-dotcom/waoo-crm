@@ -48,12 +48,27 @@ class WalkthroughThreeTest extends TestCase
         Livewire::test(QuickBooking::class)->assertSee('3. Cliente')->assertSee('Crear cliente nuevo')->assertDontSee('Clien'.'ta'); // split so the neutral-wording script never rewrites it
     }
 
-    public function test_a_named_client_needs_no_phone_or_email_but_nothing_at_all_is_rejected(): void
+    public function test_quick_booking_client_may_have_no_data_at_all_and_stays_provisional(): void
     {
         $customer=app(SaveQuickBookingCustomer::class)->execute(auth()->user(),['name'=>'María González','locale'=>'es']);
         $this->assertNull($customer->phone);$this->assertNull($customer->email);
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
-        app(SaveQuickBookingCustomer::class)->execute(auth()->user(),['name'=>null,'locale'=>'es']);
+        // Owner 2026-10-21: no name, phone or email either; the client fills everything in from the link.
+        $blank=app(SaveQuickBookingCustomer::class)->execute(auth()->user(),['name'=>null,'phone'=>null,'email'=>null,'locale'=>'es']);
+        $this->assertNull($blank->name);$this->assertNull($blank->phone);$this->assertNull($blank->email);
+        $blank->delete(); // the provisional-name migration refuses to roll back over nameless rows
+    }
+
+    public function test_date_picker_greys_the_past_and_tells_what_is_booked_that_day(): void
+    {
+        $customer=Customer::create(['name'=>'María González','locale'=>'es']);
+        app(SaveEventDraft::class)->execute(auth()->user(),['customer_id'=>$customer->id,'title'=>'Mágico Rumi María',
+            'starts_at'=>'2026-12-19T14:00:00-06:00','ends_at'=>'2026-12-19T16:00:00-06:00','timezone'=>'America/Chicago',
+            'travel_fee_cents'=>0,'services'=>[['price_version_id'=>$this->price->id,'characters'=>[['character_id'=>$this->rumi->id,'quantity'=>1]]]]]);
+        $this->travelTo(\Carbon\CarbonImmutable::parse('2026-12-01T10:00:00-06:00'));
+        $this->assertSame(['2026-12-19'=>1],QuickBooking::busyDays());
+        $this->assertSame('Ese día ya tienes 1 fiesta: 2:00 PM Mágico Rumi María',QuickBooking::dayLine('2026-12-19'));
+        $this->assertSame('Ese día está libre.',QuickBooking::dayLine('2026-12-20'));
+        Livewire::test(QuickBooking::class)->assertSeeHtml('.waoo-date [data-date="2026-12-19"]');
     }
 
     public function test_extra_character_adds_the_flat_amount_instead_of_an_error(): void

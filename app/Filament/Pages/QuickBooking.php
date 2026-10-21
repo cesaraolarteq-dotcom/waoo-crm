@@ -114,7 +114,10 @@ class QuickBooking extends Page
                 Hidden::make('title_suggested')->dehydrated(false),
             ]),
             Section::make('2. Fecha y lugar')->columns(3)->schema([
+                // Owner 2026-10-21: past days greyed out, days with parties marked in the calendar (see the page view), and what is booked that day.
                 DatePicker::make('date')->label('Fecha')->native(false)->displayFormat('D j M Y')->locale('es')->weekStartsOnSunday()->closeOnDateSelection()->required()->live()
+                    ->minDate(now(ChicagoTime::TZ)->startOfDay())->extraAttributes(['class' => 'waoo-date'])
+                    ->helperText(fn (Get $get) => self::dayLine($get('date')))
                     ->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set)),
                 \App\Filament\Support\TimeSelect::make('start_time')->label('Empieza (Houston)')->required()->live()
                     ->afterStateUpdated(fn (Get $get, Set $set) => $this->fillEnd($get, $set))
@@ -142,7 +145,8 @@ class QuickBooking extends Page
                 Hidden::make('customer_id')->live()->afterStateUpdated(function (Get $get, Set $set) { $this->fillCustomer($get, $set); EventResource::refreshTitle($get, $set); }),
                 Select::make('client_lookup')->label('Cliente')->native(false)->searchable()->dehydrated(false)->columnSpanFull()
                     ->placeholder('Escribe nombre, teléfono o correo')
-                    ->required(fn (Get $get) => $get('customer_mode') !== 'new' && blank($get('customer_id')))
+                    // Owner 2026-10-21: the client is optional; with no data the owner sends the link and the client fills everything in.
+                    ->helperText('Opcional. Si no tienes sus datos, déjalo vacío: el cliente los llena en su enlace.')
                     ->options(['new' => 'Crear cliente nuevo'])
                     ->getSearchResultsUsing(fn (string $search) => $this->clientLookupOptions($search))
                     ->getOptionLabelUsing(fn ($value) => self::clientLookupLabel($value))
@@ -160,13 +164,12 @@ class QuickBooking extends Page
                     ]),
                 // Owner 2026-10-21: phone and email are optional (sometimes the owner just sends the link herself); one of the three identifies the client.
                 TextInput::make('name')->label('Nombre')->nullable()->maxLength(255)
-                    ->requiredWithoutAll('phone,email')->validationMessages(['required_without_all' => 'Escribe al menos su nombre, teléfono o correo para encontrar la reserva después.'])
                     ->live(debounce: 500)->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set))
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new')->helperText(fn (Get $get) => self::duplicateHint($get('name'), $get('phone')) ?? 'Confirma su nombre completo en el enlace.'),
                 TextInput::make('phone')->label('Teléfono / WhatsApp')->tel()->maxLength(40)->live(debounce: 500)
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new'),
                 TextInput::make('email')->label('Correo')->email()->maxLength(255)->live(onBlur: true)
-                    ->helperText('Opcionales. Si no tienes ninguno, copias el enlace y se lo mandas tú.')
+                    ->helperText('Todo opcional. Si no tienes nada, copias el enlace y se lo mandas tú.')
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new'),
                 Select::make('locale')->label('Idioma de sus mensajes')->native(false)->options(['es' => 'Español', 'en' => 'Inglés'])->required()
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new'),
@@ -209,6 +212,28 @@ class QuickBooking extends Page
         $this->fillEnd($get, $set);
         EventResource::refreshTitle($get, $set);
         EventResource::refreshTiming($get, $set);
+    }
+
+    /** Houston day => number of events, for the next year (marks busy days in the date picker). */
+    public static function busyDays(): array
+    {
+        $from = now(ChicagoTime::TZ)->startOfDay()->toImmutable();
+        return \App\Models\Event::query()->where('starts_at', '>=', $from->utc())->where('starts_at', '<', $from->addYear()->utc())
+            ->pluck('starts_at')->countBy(fn ($at) => \Carbon\CarbonImmutable::parse($at)->setTimezone(ChicagoTime::TZ)->format('Y-m-d'))->all();
+    }
+
+    /** "Ese día ya tienes 2 fiestas: 2:00 PM Mágico Rumi · 5:00 PM Waoo" — or that the day is free. */
+    public static function dayLine(mixed $date): ?string
+    {
+        if (! is_string($date) || ! preg_match('/^\d{4}-\d{2}-\d{2}/', $date)) return 'Los días con un punto ya tienen fiestas.';
+        $day = \Carbon\CarbonImmutable::parse(substr($date, 0, 10), ChicagoTime::TZ);
+        $events = \App\Models\Event::query()->where('starts_at', '>=', $day->utc())->where('starts_at', '<', $day->addDay()->utc())->orderBy('starts_at')->get(['starts_at', 'title']);
+        $busy = collect(app(\App\Services\Google\GoogleCalendar::class)->busy($day, $day->addDay())[$day->format('Y-m-d')] ?? [])
+            ->map(fn ($b) => $b['from'].'–'.$b['to'])->implode(', ');
+        $google = $busy !== '' ? ' En tu Google estás ocupado: '.$busy.'.' : '';
+        if ($events->isEmpty()) return ($busy !== '' ? 'No hay fiestas ese día.' : 'Ese día está libre.').$google;
+        $list = $events->map(fn ($e) => $e->starts_at->setTimezone(ChicagoTime::TZ)->format('g:i A').' '.$e->title)->implode(' · ');
+        return 'Ese día ya '.($events->count() === 1 ? 'tienes 1 fiesta: ' : 'tienes '.$events->count().' fiestas: ').$list.$google;
     }
 
     /** Non-native time pickers keep "Y-m-d H:i:s" in raw state; the rest of the page works with Houston "H:i". */
@@ -456,9 +481,9 @@ class QuickBooking extends Page
         $d = $s['deposit'];
 
         return [
-            ...($s['customer_mode'] === 'existing'
+            ...(($s['customer_mode'] ?? null) === 'existing' && filled($s['customer_id'] ?? null)
                 ? ['customer_id' => (int) $s['customer_id'], ...$this->customerUpdate($s)]
-                : ['new_customer' => ['name' => trim((string) ($s['name'] ?? '')), 'phone' => filled($s['phone'] ?? null) ? trim($s['phone']) : null, 'email' => filled($s['email'] ?? null) ? trim($s['email']) : null, 'locale' => $s['locale']]]),
+                : ['new_customer' => ['name' => trim((string) ($s['name'] ?? '')), 'phone' => filled($s['phone'] ?? null) ? trim($s['phone']) : null, 'email' => filled($s['email'] ?? null) ? trim($s['email']) : null, 'locale' => $s['locale'] ?? 'es']]),
             'title' => trim((string) $s['title']), 'event_type' => $s['event_type'], 'starts_at' => $start, 'ends_at' => $end, 'timezone' => ChicagoTime::TZ,
             'postal_code' => trim((string) $s['postal_code']), 'travel_fee_cents' => EditServiceVariant::toCents((string) $s['travel_fee']),
             ...(filled($s['address'] ?? null) ? ['address' => trim((string) $s['address'])] : []),
