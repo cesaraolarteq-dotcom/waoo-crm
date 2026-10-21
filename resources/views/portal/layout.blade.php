@@ -29,20 +29,59 @@
 <script>
 // Owner 2026-10-21: a new link opened while an older portal session is still in this browser must switch to the new booking.
 (function () {
-  if (document.getElementById('landing')) return;
-  var m = /(?:^|[#&])token=([A-Za-z0-9_-]{43})/.exec(location.hash || '');
-  if (!m) return;
-  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
-  var main = document.querySelector('.p-main'); main.style.visibility = 'hidden';
-  fetch('/portal/api/session', {method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json', 'Accept': 'application/json',
-    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content}, body: JSON.stringify({token: m[1]})})
-    .then(function (r) { if (!r.ok) throw r; return r.json(); })
-    .then(function (j) { location.replace(((j.scopes || []).indexOf('quote.read') >= 0 ? '/portal/quote' : '/portal') + location.search); })
-    .catch(function () {
-      main.innerHTML = '<section class="p-card"><h1 class="p-h1"></h1><p class="p-hint"></p></section>';
-      main.querySelector('h1').textContent = @js($t('link_expired')); main.querySelector('p').textContent = @js($t('link_expired_hint'));
-      main.style.visibility = '';
-    });
+  var main = document.querySelector('.p-main'), csrf = document.querySelector('meta[name=csrf-token]');
+  var landing = document.getElementById('landing'), pending = null, exchanging = false, latest = 0;
+  function clearFragment() {
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  }
+  function unavailable() {
+    main.innerHTML = '<section class="p-card"><h1 class="p-h1"></h1><p class="p-hint"></p></section>';
+    main.querySelector('h1').textContent = @js($t('link_expired'));
+    main.querySelector('p').textContent = @js($t('link_expired_hint'));
+    main.inert = false; main.style.visibility = '';
+  }
+  async function exchange() {
+    exchanging = true;
+    try {
+      while (pending) {
+        var intent = pending; pending = null;
+        var response = await fetch('/portal/api/session', {method: 'POST', credentials: 'same-origin',
+          headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf.content},
+          body: JSON.stringify({token: intent.token})});
+        intent.token = '';
+        if (!response.ok) throw new Error('unavailable');
+        var data = await response.json();
+        if (!Array.isArray(data.scopes) || typeof data.csrf_token !== 'string' || !data.csrf_token) throw new Error('unavailable');
+        // Every successful exchange rotates CSRF. A queued link must use that new token, not the old page's token.
+        csrf.content = data.csrf_token;
+        if (pending) continue;
+        if (intent.generation !== latest) return;
+        location.replace((data.scopes.indexOf('quote.read') >= 0 ? '/portal/quote' : '/portal') + intent.search);
+        return;
+      }
+    } catch (e) {
+      pending = null; unavailable();
+    } finally { exchanging = false; }
+  }
+  function openedLink() {
+    var fragment = location.hash || '';
+    if (!/(?:^|[#&])token=/.test(fragment)) {
+      if (landing && latest === 0) {
+        clearFragment();
+        document.getElementById('landing-title').textContent = @js($t('link_missing'));
+        document.getElementById('landing-text').textContent = @js($t('link_missing_hint'));
+      }
+      return;
+    }
+    var match = /(?:^|[#&])token=([A-Za-z0-9_-]{43})(?=$|&)/.exec(fragment);
+    clearFragment(); latest++;
+    main.style.visibility = 'hidden'; main.inert = true;
+    if (!match) { pending = null; unavailable(); return; }
+    pending = {token: match[1], search: location.search, generation: latest};
+    if (!exchanging) exchange();
+  }
+  window.addEventListener('hashchange', openedLink);
+  openedLink();
 })();
 </script>
 </body>
