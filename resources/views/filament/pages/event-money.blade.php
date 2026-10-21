@@ -5,6 +5,7 @@
     $paid = $f['net_received_cents'];
 @endphp
 <x-filament-panels::page>
+    @include('filament.pages.partials.quick-payment-state',['event'=>$this->record])
     @include('filament.pages.partials.honeybook-responsible', ['event' => $this->record])
     <div class="wmoney">
         <div class="wmoney-states" aria-label="Estados por separado">
@@ -13,6 +14,7 @@
             <span>Contrato: <b>{{ $f['contract_status'] === 'not_issued' ? 'Sin emitir' : $f['contract_status'] }}</b></span>
         </div>
 
+        @if (($f['customer_fee_received_cents'] ?? 0)>0)<p>Procesamiento de Stripe recibido: {{ $money($f['customer_fee_received_cents']) }} · Total cobrado: {{ $money($f['gross_received_cents']) }}</p>@endif
         @if (! $rev)
             <x-filament::section>
                 <x-slot name="heading">Primero fija los montos acordados</x-slot>

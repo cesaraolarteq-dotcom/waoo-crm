@@ -48,6 +48,11 @@ final class SubmitClientDetails
             RecordWriteRejected::when(Contract::where('event_id', $event->id)->where('state', 'signed')->exists(), 409, 'Los cambios de un contrato firmado requieren revisión del administrador.');
             $revision = (int) ClientDetailsSubmission::where('event_id', $event->id)->max('revision');
             RecordWriteRejected::unless($revision === $data['expected_revision'], 409, 'Tus datos cambiaron. Recarga y revisa la versión actual antes de enviarlos.');
+            if ($booking=\App\Services\Booking\QuickPaymentProtocol::booking($event->id)) {
+                \App\Services\Booking\QuickPaymentProtocol::gate();
+                RecordWriteRejected::unless($booking->portal_grant_id===$client->grantId,403,'Este enlace no corresponde.');
+                RecordInput::validate($data,['child_name'=>'required|string','child_age'=>'required|integer','event_language'=>'required|in:es,en,bilingual','setup_area'=>'required|in:indoor,outdoor','children_count'=>'required|integer']);
+            }
             $customer = Customer::whereKey($event->customer_id)->lockForUpdate()->firstOrFail();
             $payload = $data; unset($payload['expected_revision'], $payload['expected_event_version'], $payload['requested_local_time'], $payload['requested_time_choice']);
             if (! $data['start_time_confirmed'] && filled($data['requested_local_time'] ?? null)) {
