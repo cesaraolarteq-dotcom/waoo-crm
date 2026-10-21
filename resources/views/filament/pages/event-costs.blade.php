@@ -16,9 +16,9 @@
                 <div class="wmoney-warn" role="alert">El evento cambió después de fijar los montos. Fija los montos de nuevo en “Dinero”; mientras tanto no se muestra ingreso ni margen.</div>
             @endif
             <div class="wmoney-grid wcost-top">
-                <div><span>Ingreso acordado</span><b>{{ $money($s['revenue_cents']) }}</b><small>Servicios + costo de transporte que paga la clienta</small></div>
+                <div><span>Ingreso acordado</span><b>{{ $money($s['revenue_cents']) }}</b><small>Servicios + costo de transporte que paga el cliente</small></div>
                 <div><span>Cobrado hasta hoy</span><b class="ok">{{ $money($s['cash_received_cents']) }}</b><small>Solo pagos verificados</small></div>
-                <div><span>Saldo de la clienta</span><b>{{ $money($s['customer_balance_cents']) }}</b><small>No afecta el margen</small></div>
+                <div><span>Saldo del cliente</span><b>{{ $money($s['customer_balance_cents']) }}</b><small>No afecta el margen</small></div>
             </div>
 
             <div class="wcost-cols">

@@ -28,7 +28,7 @@ class RecordFormsEndToEndTest extends TestCase
 
     public function test_create_and_edit_customer_are_saved_and_audited_with_the_signed_in_owner(): void
     {
-        $this->get('/admin/clientas')->assertSee('Nueva clienta');
+        $this->get('/admin/clientas')->assertSee('Nuevo cliente');
         Livewire::test(CreateCustomer::class)
             ->fillForm(['name' => '  Fictitious Client ', 'phone' => '', 'email' => 'client@example.test', 'locale' => 'en'])
             ->call('create')->assertHasNoFormErrors();

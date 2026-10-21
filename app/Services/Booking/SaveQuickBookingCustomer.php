@@ -28,10 +28,11 @@ final class SaveQuickBookingCustomer
             if ($customerId) RecordWriteRejected::unless($customer->version === (int) $data['expected_version'],409,'La ficha cambió. Recarga antes de guardar.');
             $values = [...($customerId ? $customer->only(['name','phone','email','locale']) : ['name'=>null,'phone'=>null,'email'=>null]),
                 ...array_diff_key($data,['expected_version'=>true])];
-            if ((!$customerId || ($values['name'] ?? null) === null) && blank($values['phone']) && blank($values['email'])) {
-                throw ValidationException::withMessages(['phone'=>'Escribe su teléfono o su correo.']);
+            // A named client may have no phone or email (the owner sends the link herself); a nameless one needs a contact.
+            if (($values['name'] ?? null) === null && blank($values['phone']) && blank($values['email'])) {
+                throw ValidationException::withMessages(['name'=>'Escribe al menos su nombre, teléfono o correo para encontrar la reserva después.']);
             }
-            if ((!$customerId || ($values['name'] ?? null) === null) && blank($values['email'])) {
+            if ((!$customerId || ($values['name'] ?? null) === null) && blank($values['email']) && filled($values['phone'])) {
                 $digits = preg_replace('/\D/', '', (string) $values['phone']);
                 if (strlen($digits) < 7 || strlen($digits) > 15 || !preg_match('/^[+0-9().\s-]+$/D', (string) $values['phone'])) {
                     throw ValidationException::withMessages(['phone'=>'Revisa el teléfono o escribe un correo válido.']);
@@ -39,7 +40,7 @@ final class SaveQuickBookingCustomer
             }
             if (($values['name'] ?? null) !== null) return app(SaveCustomer::class)->execute($actor,
                 [...$values,...($customerId?['expected_version'=>$data['expected_version']]:[])],$customerId);
-            if ($customerId && $customer->name !== null) throw ValidationException::withMessages(['name'=>'Una clienta con nombre no se convierte en una identidad provisional.']);
+            if ($customerId && $customer->name !== null) throw ValidationException::withMessages(['name'=>'Un cliente con nombre no se convierte en una identidad provisional.']);
             if (blank($values['phone']) && blank($values['email'])) throw ValidationException::withMessages(['phone'=>'Escribe su teléfono o su correo.']);
             $before = $customer->getAttributes();
             $customer->fill($values);

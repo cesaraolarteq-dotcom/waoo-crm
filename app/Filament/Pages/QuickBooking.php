@@ -89,7 +89,7 @@ class QuickBooking extends Page
 
     public function getSubheading(): ?string
     {
-        return 'Tu mitad en un minuto. La clienta completa sus datos y firma con el enlace. Nada se envía solo: tú copias el mensaje.';
+        return 'Tu mitad en un minuto. El cliente completa sus datos y firma con el enlace. Nada se envía solo: tú copias el mensaje.';
     }
 
     public function form(Schema $schema): Schema
@@ -116,10 +116,10 @@ class QuickBooking extends Page
             Section::make('2. Fecha y lugar')->columns(3)->schema([
                 DatePicker::make('date')->label('Fecha')->native(false)->displayFormat('D j M Y')->locale('es')->weekStartsOnSunday()->closeOnDateSelection()->required()->live()
                     ->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set)),
-                TimePicker::make('start_time')->label('Empieza (Houston)')->native(false)->seconds(false)->format('H:i')->minutesStep(15)->required()->live()
+                \App\Filament\Support\TimeSelect::make('start_time')->label('Empieza (Houston)')->required()->live()
                     ->afterStateUpdated(fn (Get $get, Set $set) => $this->fillEnd($get, $set))
-                    ->helperText('La clienta la confirma en su enlace.'),
-                TimePicker::make('end_time')->label('Termina')->native(false)->seconds(false)->format('H:i')->minutesStep(15)->required()->live()
+                    ->helperText('El cliente la confirma en su enlace.'),
+                \App\Filament\Support\TimeSelect::make('end_time')->label('Termina')->required()->live()
                     ->helperText('Se llena con la duración del paquete.'),
                 $choice('start_time'), $choice('end_time'),
                 TextInput::make('setup_minutes')->label('Montaje (minutos antes)')->integer()->minValue(0)->maxValue(720)
@@ -129,7 +129,7 @@ class QuickBooking extends Page
                 TextInput::make('address')->label('Dirección de la fiesta (opcional)')->maxLength(255)->columnSpan(2)
                     ->extraInputAttributes(['data-places' => 'address', 'autocomplete' => 'off'])
                     ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => \App\Filament\Support\TravelFeeFields::invalidate($get, $set))
-                    ->placeholder('Calle, ciudad, TX ZIP')->helperText(fn () => filled(config('waoo.google_maps_browser_key')) ? 'Empieza a escribir y elige la dirección que sugiere Google: se llena el ZIP y se calcula el transporte. Puedes cambiar todo.' : 'Con la dirección exacta puedes calcular el transporte. La clienta la confirma en su enlace.'),
+                    ->placeholder('Calle, ciudad, TX ZIP')->helperText(fn () => filled(config('waoo.google_maps_browser_key')) ? 'Empieza a escribir y elige la dirección que sugiere Google: se llena el ZIP y se calcula el transporte. Puedes cambiar todo.' : 'Con la dirección exacta puedes calcular el transporte. El cliente la confirma en su enlace.'),
                 TextInput::make('postal_code')->label('ZIP')->required()->maxLength(10)->placeholder('77494')->extraInputAttributes(['data-places' => 'zip'])
                     ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => \App\Filament\Support\TravelFeeFields::invalidate($get, $set)),
                 \App\Filament\Support\TravelFeeFields::feeField(true, 'Obligatorio aquí: con el depósito se fija el total.',
@@ -137,13 +137,13 @@ class QuickBooking extends Page
                     ->afterStateUpdated(fn (Get $get, Set $set) => self::refreshDeposit($get, $set)), // a typed fee also moves the suggested deposit
                 ...\App\Filament\Support\TravelFeeFields::extraFields(),
             ]),
-            Section::make('3. Clienta')->columns(2)->schema([
+            Section::make('3. Cliente')->columns(2)->schema([
                 Hidden::make('customer_mode'),
                 Hidden::make('customer_id')->live()->afterStateUpdated(function (Get $get, Set $set) { $this->fillCustomer($get, $set); EventResource::refreshTitle($get, $set); }),
-                Select::make('client_lookup')->label('Clienta')->native(false)->searchable()->dehydrated(false)->columnSpanFull()
+                Select::make('client_lookup')->label('Cliente')->native(false)->searchable()->dehydrated(false)->columnSpanFull()
                     ->placeholder('Escribe nombre, teléfono o correo')
                     ->required(fn (Get $get) => $get('customer_mode') !== 'new' && blank($get('customer_id')))
-                    ->options(['new' => 'Crear clienta nueva'])
+                    ->options(['new' => 'Crear cliente nuevo'])
                     ->getSearchResultsUsing(fn (string $search) => $this->clientLookupOptions($search))
                     ->getOptionLabelUsing(fn ($value) => self::clientLookupLabel($value))
                     ->live()->afterStateUpdated(function (Get $get, Set $set) { $this->selectClientLookup($get, $set); }),
@@ -158,14 +158,15 @@ class QuickBooking extends Page
                 Select::make('c_locale')->label('Idioma de sus mensajes')->native(false)->options(['es' => 'Español', 'en' => 'Inglés'])->required()
                     ->visible(fn (Get $get) => $get('customer_mode') === 'existing' && filled($get('customer_id'))),
                     ]),
-                TextInput::make('name')->label('Nombre (opcional)')->nullable()->maxLength(255)
+                // Owner 2026-10-21: phone and email are optional (sometimes the owner just sends the link herself); one of the three identifies the client.
+                TextInput::make('name')->label('Nombre')->nullable()->maxLength(255)
+                    ->requiredWithoutAll('phone,email')->validationMessages(['required_without_all' => 'Escribe al menos su nombre, teléfono o correo para encontrar la reserva después.'])
                     ->live(debounce: 500)->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set))
-                    ->visible(fn (Get $get) => $get('customer_mode') === 'new')->helperText(fn (Get $get) => self::duplicateHint($get('name'), $get('phone')) ?? 'Ella confirma su nombre completo en el enlace.'),
+                    ->visible(fn (Get $get) => $get('customer_mode') === 'new')->helperText(fn (Get $get) => self::duplicateHint($get('name'), $get('phone')) ?? 'Confirma su nombre completo en el enlace.'),
                 TextInput::make('phone')->label('Teléfono / WhatsApp')->tel()->maxLength(40)->live(debounce: 500)
-                    ->requiredWithout('email')->validationMessages(['required_without' => 'Escribe su teléfono o su correo: lo necesitas para mandarle el enlace.'])
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new'),
                 TextInput::make('email')->label('Correo')->email()->maxLength(255)->live(onBlur: true)
-                    ->helperText('Teléfono o correo: con uno basta.')
+                    ->helperText('Opcionales. Si no tienes ninguno, copias el enlace y se lo mandas tú.')
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new'),
                 Select::make('locale')->label('Idioma de sus mensajes')->native(false)->options(['es' => 'Español', 'en' => 'Inglés'])->required()
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new'),
@@ -225,13 +226,13 @@ class QuickBooking extends Page
         }
     }
 
-    public static function depositDefault(array $priceIds, mixed $fee): ?string
+    public static function depositDefault(array $priceIds, mixed $fee, int $extraCents = 0): ?string
     {
         $ids = array_values(array_unique(array_map('intval', $priceIds)));
         if ($ids === [] || is_bool($fee) || !is_scalar($fee) || !preg_match('/^\d{1,7}(\.\d{1,2})?$/D', (string) $fee)) return null;
         $prices = PriceVersion::whereIn('id', $ids)->get(['amount_cents', 'currency']);
         if ($prices->count() !== count($ids) || $prices->contains(fn ($price) => $price->currency !== 'USD')) return null;
-        $total = (int) $prices->sum('amount_cents') + EditServiceVariant::toCents((string) $fee);
+        $total = (int) $prices->sum('amount_cents') + $extraCents + EditServiceVariant::toCents((string) $fee);
         $target = intdiv($total, 2) + $total % 2;
         return intdiv($target,100).'.'.str_pad((string)($target%100),2,'0',STR_PAD_LEFT);
     }
@@ -239,25 +240,41 @@ class QuickBooking extends Page
     public static function refreshDeposit(Get $get, Set $set): void
     {
         if ($get('deposit.amount_custom')) return;
-        $set('deposit.amount', self::depositDefault($get('price_version_ids') ?? [], $get('travel_fee')));
+        $set('deposit.amount', self::depositDefault($get('price_version_ids') ?? [], $get('travel_fee'), self::extraCents($get)));
+    }
+
+    /** Choosing a character past the included ones moves the suggested deposit too (unless the owner typed one). */
+    public function updatedData(mixed $value, string $key): void
+    {
+        if (! str_starts_with($key, 'characters') && $key !== 'character_count') return;
+        if ($this->data['deposit']['amount_custom'] ?? false) return;
+        $extra = EventResource::extraCharacters(['price_version_ids' => $this->data['price_version_ids'] ?? [], 'characters' => $this->data['characters'] ?? []]);
+        $this->data['deposit']['amount'] = self::depositDefault($this->data['price_version_ids'] ?? [], $this->data['travel_fee'] ?? null, $extra * (int) config('waoo.extra_character_cents'));
+    }
+
+    /** Extra characters × the per-character amount, from the live form (the backend recounts and snapshots it on save). */
+    public static function extraCents(Get $get): int
+    {
+        return EventResource::extraCharacters(['price_version_ids' => $get('price_version_ids') ?? [], 'characters' => $get('characters') ?? []]) * (int) config('waoo.extra_character_cents');
     }
 
     /** Live money line: total, 50 %, received, balance and due date, before saving. Unknown pieces say so; never $0. */
     public function moneyLine(Get $get): string
     {
-        $services = (int) PriceVersion::whereIn('id', array_map('intval', $get('price_version_ids') ?? []))->sum('amount_cents');
+        $extra = self::extraCents($get);
+        $services = (int) PriceVersion::whereIn('id', array_map('intval', $get('price_version_ids') ?? []))->sum('amount_cents') + $extra;
         $fee = $get('travel_fee');
         if (! $services) {
             return 'Elige el paquete para ver el total.';
         }
         if ($fee === null || $fee === '' || ! preg_match('/^\d{1,7}(\.\d{1,2})?$/', (string) $fee)) {
-            return 'Servicios '.Labels::money($services).' + transporte pendiente: escribe el transporte para ver el total.';
+            return 'Servicios '.Labels::money($services).($extra ? ' (incluye personajes adicionales '.Labels::money($extra).')' : '').' + transporte pendiente: escribe el transporte para ver el total.';
         }
         $total = $services + EditServiceVariant::toCents((string) $fee);
         $target = intdiv($total, 2) + $total % 2;
         $amount = $get('deposit.amount');
         $paid = $amount && preg_match('/^\d{1,7}(\.\d{1,2})?$/', (string) $amount) ? EditServiceVariant::toCents((string) $amount) : 0;
-        $line = 'Total '.Labels::money($total).' · depósito 50 % '.Labels::money($target).' · recibido '.Labels::money($paid).' · saldo '.Labels::money(max($total - $paid, 0));
+        $line = 'Total '.Labels::money($total).($extra ? ' (incluye personajes adicionales '.Labels::money($extra).')' : '').' · depósito 50 % '.Labels::money($target).' · recibido '.Labels::money($paid).' · saldo '.Labels::money(max($total - $paid, 0));
         if ($paid && $paid < $target) {
             $line .= ' · faltan '.Labels::money($target - $paid).' para el 50 %';
         }
@@ -314,12 +331,12 @@ class QuickBooking extends Page
         foreach (self::possibleMatches($this->clientSearch, $this->clientSearch, $this->clientSearch) as $id => $label) {
             $options['customer:'.$id] = $label;
         }
-        return [...$options, 'new' => 'Crear clienta nueva con estos datos'];
+        return [...$options, 'new' => 'Crear cliente nuevo con estos datos'];
     }
 
     public static function clientLookupLabel(mixed $value): ?string
     {
-        if ($value === 'new') return 'Clienta nueva';
+        if ($value === 'new') return 'Cliente nuevo';
         if (!is_string($value) || !preg_match('/^customer:([0-9]+)$/D', $value, $match)) return null;
         $customer = Customer::find((int) $match[1]);
         if (!$customer) return null;
@@ -460,6 +477,7 @@ class QuickBooking extends Page
     public static function presentResult(object $r, array $s): array
     {
         $first = trim(explode(' ', (string) ($r->customer->name ?? ''))[0] ?? '');
+        $hi = $first === '' ? '' : ' '.$first;
         $f = $r->finance;
         $when = Labels::when($r->event->starts_at);
         $paid = Labels::money($f['net_received_cents']);
@@ -473,8 +491,8 @@ class QuickBooking extends Page
             'event_id' => $r->event->id, 'link' => $link, 'expires' => $exp, 'shown_before' => $link === null && !($r->link_issue_pending ?? false),
             'link_pending' => (bool) ($r->link_issue_pending ?? false),
             'summary' => 'Total '.Labels::money($f['financial_revision']->total_cents).' · recibido '.$paid.' · saldo '.$balance.' (vence '.$due.')',
-            'msg_es' => "¡Hola {$first}! Gracias por tu depósito de {$paid}. Registramos tu solicitud para el {$when}. Para terminar tu reserva, completa tus datos y firma tu contrato aquí: {$link} (el enlace vence el {$exp}). Tu saldo es de {$balance}. ¡Estamos emocionados de ser parte de tu celebración!",
-            'msg_en' => "Hi {$first}! Thank you for your deposit of {$paid}. We recorded your booking request for {$whenEn}. To finish your booking, please complete your details and sign your contract here: {$link} (link expires {$exp}). Your remaining balance is {$balance}. We're excited to be part of your celebration!",
+            'msg_es' => "¡Hola{$hi}! Gracias por tu depósito de {$paid}. Registramos tu solicitud para el {$when}. Para terminar tu reserva, completa tus datos y firma tu contrato aquí: {$link} (el enlace vence el {$exp}). Tu saldo es de {$balance}. ¡Estamos emocionados de ser parte de tu celebración!",
+            'msg_en' => "Hi{$hi}! Thank you for your deposit of {$paid}. We recorded your booking request for {$whenEn}. To finish your booking, please complete your details and sign your contract here: {$link} (link expires {$exp}). Your remaining balance is {$balance}. We're excited to be part of your celebration!",
             'locale' => $r->customer->locale ?? 'es',
             'phone' => $r->customer->phone ?? null,
             // Costume hold attempted right after the deposit (Codex V1); shown so the owner knows whether the costume is held.

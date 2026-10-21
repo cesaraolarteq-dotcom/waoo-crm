@@ -64,7 +64,7 @@ class QuickDetailsFlowTest extends TestCase
 
         // Owner sees the booking waiting for the client's details.
         $this->get("/admin/eventos/{$event->id}/contrato")->assertOk()->assertSee('Esperando sus datos');
-        $this->get('/admin')->assertSee('Esperando datos de la clienta');
+        $this->get('/admin')->assertSee('Esperando datos del cliente');
 
         // Client, in her own session (an owner session can never act for her).
         auth()->logout();
@@ -79,7 +79,7 @@ class QuickDetailsFlowTest extends TestCase
 
         // Owner reviews: requested time shown, approval needs explicit travel confirmation, keep-original and setup/breakdown.
         $this->get("/admin/eventos/{$event->id}/contrato")->assertSee('Por revisar')->assertSee('Pidió otra hora')->assertSee('Fixture party 2');
-        $this->get('/admin')->assertSee('Datos de clienta por revisar');
+        $this->get('/admin')->assertSee('Datos de cliente por revisar');
         Livewire::test(EventContract::class, ['record' => $event->id])->assertActionVisible('approve')->assertActionHidden('create')
             ->callAction('approve', ['travel_fee_confirmed' => true, 'requested_start_resolution' => 'keep_original', 'setup_minutes' => 15, 'breakdown_minutes' => 15,
                 'review_note' => 'Confirmé la dirección por WhatsApp; se queda la hora.'])->assertNotified('Datos aprobados');

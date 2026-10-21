@@ -15,7 +15,7 @@ class EmailTemplates extends Page
     protected static ?string $navigationLabel = 'Correos';
     protected static ?int $navigationSort = 40;
     protected static ?string $slug = 'correos';
-    protected static ?string $title = 'Correos a las clientas';
+    protected static ?string $title = 'Correos a los clientes';
     protected string $view = 'filament.pages.email-templates';
 
     public function getSubheading(): ?string

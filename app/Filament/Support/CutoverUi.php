@@ -32,7 +32,7 @@ final class CutoverUi
         'freshness_policy_required' => 'Falta configurar la regla de 4 horas.',
         'source_scope_incomplete' => 'Hay fiestas del archivo de HoneyBook sin importar.',
         'source_scope_unresolved' => 'Hay filas del archivo de HoneyBook sin resolver.',
-        'active_client_portal_link' => 'La clienta todavía tiene un enlace activo del portal.',
+        'active_client_portal_link' => 'El cliente todavía tiene un enlace activo del portal.',
         'reconciliation_required' => 'Falta preparar la evidencia del grupo completo.',
         'reconciliation_integrity_invalid' => 'La evidencia guardada no pasó la verificación.',
         'financial_bridge_not_implemented' => 'El paso del cobro al CRM todavía no está programado.',

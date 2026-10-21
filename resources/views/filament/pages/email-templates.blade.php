@@ -1,7 +1,7 @@
 <x-filament-panels::page>
     <x-filament::section>
         <x-slot name="heading">Cómo funcionan</x-slot>
-        <p class="wmoney-p">Cada correo lleva un solo botón y va en el idioma de la clienta. Como muchos correos terminan en spam, los mensajes de texto requieren su propia activación. Para cambiar un texto, díselo a Claude; los cambios se aprueban antes de activarse.</p>
+        <p class="wmoney-p">Cada correo lleva un solo botón y va en el idioma del cliente. Como muchos correos terminan en spam, los mensajes de texto requieren su propia activación. Para cambiar un texto, díselo a Claude; los cambios se aprueban antes de activarse.</p>
     </x-filament::section>
 
     @if ($ready = $this->readiness())

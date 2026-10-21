@@ -35,7 +35,7 @@ class AdminScreensTest extends TestCase
         $this->fixtures($owner);
         $this->actingAs($owner);
 
-        $this->get('/admin')->assertOk()->assertSee('Clientas')->assertSee('Catálogo')->assertSee('Staff y trajes')->assertSee('Personajes')->assertSee('Eventos');
+        $this->get('/admin')->assertOk()->assertSee('Clientes')->assertSee('Catálogo')->assertSee('Staff y trajes')->assertSee('Personajes')->assertSee('Eventos');
         $this->get('/admin/clientas')->assertOk()->assertSee('Fictitious Client')->assertSee('Inglés');
         $this->get('/admin/catalogo')->assertOk()->assertSee('Fictitious Package')->assertSee('$123')->assertDontSee('$111')
             ->assertSee('1 h 30 min')->assertSee('1 personaje · 1 bocina')->assertSee('+ costo de transporte');

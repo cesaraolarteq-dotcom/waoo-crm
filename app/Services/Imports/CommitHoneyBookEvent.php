@@ -52,7 +52,7 @@ final class CommitHoneyBookEvent
             $variants=ServiceVariant::whereIn('id',$prices->pluck('service_variant_id'))->orderBy('id')->lockForUpdate()->get()->keyBy('id');
             foreach($d['services'] as $selection){$v=$variants[$prices[$selection['price_version_id']]->service_variant_id];RecordWriteRejected::unless((int)$v->version===$selection['expected_variant_version']&&$v->status==='active',409,'El paquete cambió o no está listo para asignar.');}
             $customer=null;
-            if(isset($d['customer_id'])){$customer=Customer::whereKey($d['customer_id'])->lockForUpdate()->firstOrFail();RecordWriteRejected::unless($customer->version===$d['expected_customer_version'],409,'La ficha de la clienta cambió.');}
+            if(isset($d['customer_id'])){$customer=Customer::whereKey($d['customer_id'])->lockForUpdate()->firstOrFail();RecordWriteRejected::unless($customer->version===$d['expected_customer_version'],409,'La ficha del cliente cambió.');}
             elseif($existing)$customer=Customer::findOrFail($existing->customer_id);
             $link=Audit::metadataOnly(function()use($actor,$d,$b,$row,$n,$s,$existing,$event,$customer,$domainHash,$hasDifference){
                 if(!$customer)$customer=app(SaveCustomer::class)->execute($actor,['name'=>$n['customer_name'],'email'=>$n['customer_email'],'phone'=>$n['customer_phone'],'locale'=>$d['new_customer_locale']]);

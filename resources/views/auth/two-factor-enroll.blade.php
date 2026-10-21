@@ -9,7 +9,7 @@
 
 @if ($step === 'start')
   <h1 class="auth-title">Protege tu <em>cuenta</em></h1>
-  <p class="auth-sub">El CRM guarda datos de clientas y pagos. Para entrar vas a necesitar tu contraseña y un código de 6 dígitos que cambia cada 30 segundos en tu teléfono.</p>
+  <p class="auth-sub">El CRM guarda datos de clientes y pagos. Para entrar vas a necesitar tu contraseña y un código de 6 dígitos que cambia cada 30 segundos en tu teléfono.</p>
   <div class="note">Necesitas una app de autenticación en tu teléfono: Google Authenticator, Microsoft Authenticator o 1Password.</div>
   <form method="POST" action="{{ url('/user/two-factor-authentication') }}" class="auth-form">
     @csrf

@@ -104,11 +104,11 @@ class QuoteDetail extends Page
     public function sendAction(): Action
     {
         return Action::make('send')->icon('heroicon-o-link')->color('primary')
-            ->label(fn () => $this->displayedGrantId !== null ? 'Copiar enlace para la clienta' : 'Preparar enlace para la clienta')
+            ->label(fn () => $this->displayedGrantId !== null ? 'Copiar enlace para el cliente' : 'Preparar enlace para el cliente')
             ->visible(fn () => QuoteForm::enabled() && $this->clientSide()['can_send'])
             ->modalHeading(fn () => $this->displayedGrantId !== null ? 'Copiar el enlace activo' : 'Preparar el enlace de la cotización')
             ->modalDescription(fn () => $this->displayedGrantId !== null
-                ? 'Se muestra el mismo enlace que ya tiene la clienta. No se crea uno nuevo.'
+                ? 'Se muestra el mismo enlace que ya tiene el cliente. No se crea uno nuevo.'
                 : 'Se congela esta versión (PDF y texto de aceptación) y se crea un enlace privado. Nada se envía: tú lo mandas por WhatsApp o SMS.')
             ->modalSubmitActionLabel('Mostrar enlace')
             ->action(function (Action $action) {
@@ -174,7 +174,7 @@ class QuoteDetail extends Page
     {
         return Action::make('revokeLink')->label('Anular enlace')->color('danger')->size('sm')->link()
             ->requiresConfirmation()->modalHeading('Anular el enlace de la cotización')
-            ->modalDescription('La clienta ya no podrá abrirla con ese enlace. Si ya decidió, su respuesta se conserva. Puedes preparar uno nuevo después.')
+            ->modalDescription('El cliente ya no podrá abrirla con ese enlace. Si ya decidió, su respuesta se conserva. Puedes preparar uno nuevo después.')
             ->modalSubmitActionLabel('Anular')
             ->action(function () {
                 if ($this->displayedGrantId === null) return;

@@ -47,8 +47,9 @@ final class CreateFinancialRevision
                     }
                 }
                 $variant = \App\Models\ServiceVariant::findOrFail($service->service_variant_id);
-                $lines[] = ['event_service_id' => $service->id, 'service_variant_id' => $service->service_variant_id, 'price_version_id' => $price->id, 'amount_cents' => $price->amount_cents, 'name' => $variant->name, 'long_description' => $variant->long_description, 'duration_minutes' => $service->duration_minutes, 'requirements_snapshot' => $service->requirements_snapshot, 'characters' => $characterSnapshot];
-                $subtotal += $price->amount_cents;
+                $amount = $price->amount_cents + \App\Models\EventService::extraCents($service);
+                $lines[] = ['event_service_id' => $service->id, 'service_variant_id' => $service->service_variant_id, 'price_version_id' => $price->id, 'amount_cents' => $amount, 'name' => $variant->name, 'long_description' => $variant->long_description, 'duration_minutes' => $service->duration_minutes, 'requirements_snapshot' => $service->requirements_snapshot, 'characters' => $characterSnapshot, ...\App\Models\EventService::extraSnapshot($service, $price->amount_cents)];
+                $subtotal += $amount;
             }
             $total = $subtotal + $event->travel_fee_cents;
             $revision = FinancialRevision::create(['event_id' => $event->id, 'revision' => (int) FinancialRevision::where('event_id', $event->id)->max('revision') + 1,

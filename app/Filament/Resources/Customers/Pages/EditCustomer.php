@@ -14,7 +14,7 @@ class EditCustomer extends EditRecord
 
     protected static string $resource = CustomerResource::class;
 
-    protected static ?string $title = 'Editar clienta';
+    protected static ?string $title = 'Editar cliente';
 
     #[Locked]
     public ?int $displayedVersion = null;

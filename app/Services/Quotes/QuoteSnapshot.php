@@ -28,8 +28,9 @@ final class QuoteSnapshot
             }
             $lines[] = ['price_version_id' => $price->id, 'service_variant_id' => $variant->id, 'name' => $variant->name,
                 'long_description' => $variant->long_description, 'duration_minutes' => $service->duration_minutes,
-                'quantity' => 1, 'amount_cents' => $price->amount_cents, 'characters' => $characters, 'requirements_snapshot' => $service->requirements_snapshot];
-            $subtotal += $price->amount_cents;
+                'quantity' => 1, 'amount_cents' => $price->amount_cents + \App\Models\EventService::extraCents($service), 'characters' => $characters, 'requirements_snapshot' => $service->requirements_snapshot,
+                ...\App\Models\EventService::extraSnapshot($service, $price->amount_cents)];
+            $subtotal += $price->amount_cents + \App\Models\EventService::extraCents($service);
         }
         $discounts = []; $discountTotal = 0;
         foreach ($data['discounts'] as $index => $discount) {

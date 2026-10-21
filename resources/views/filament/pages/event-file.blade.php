@@ -17,7 +17,7 @@
         <x-filament::section>
             <x-slot name="heading">Lugar y logística</x-slot>
             <dl class="wfile-dl">
-                <div><dt>Dirección</dt><dd>{{ $e->address ?: 'Pendiente (la clienta la completa)' }}</dd></div>
+                <div><dt>Dirección</dt><dd>{{ $e->address ?: 'Pendiente (el cliente la completa)' }}</dd></div>
                 <div><dt>ZIP</dt><dd>{{ $e->postal_code ?: '—' }}</dd></div>
                 @php
                     $tfe = is_array($e->travel_fee_evidence ?? null) ? $e->travel_fee_evidence : null;
@@ -78,7 +78,7 @@
     </div>
     @if ($mail = $this->mail())
         <x-filament::section>
-            <x-slot name="heading">Correos a la clienta</x-slot>
+            <x-slot name="heading">Correos al cliente</x-slot>
             <x-slot name="description">Programado no es enviado, y enviado no confirma que llegó. Nada sale sin que César active los correos.</x-slot>
             <x-slot name="afterHeader">
                 <button type="button" class="wcal-btn {{ $mail['policy']['paused'] ? 'on' : '' }}" wire:click="toggleMailPause">{{ $mail['policy']['paused'] ? 'Reanudar correos' : 'Pausar correos' }}</button>

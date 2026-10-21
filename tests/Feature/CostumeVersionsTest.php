@@ -97,9 +97,10 @@ class CostumeVersionsTest extends TestCase
         $this->assertSame(['Racing','Classic'], $requirements->pluck('outfit')->all());
         $duplicate = $input; $duplicate['services'][0]['characters'][1]['outfit'] = 'Racing';
         $this->postJson('/admin/api/events', $duplicate)->assertUnprocessable();
+        // Owner 2026-10-21: beyond the included count is a priced extra character, not a rejection.
         $input['services'][0]['characters'][1]['quantity'] = 2;
-        $this->postJson('/admin/api/events', $input)->assertUnprocessable();
-        $this->assertDatabaseCount('events', 1);
+        $this->postJson('/admin/api/events', $input)->assertCreated();
+        $this->assertSame(1, \App\Models\EventService::latest('id')->first()->extra_characters);
     }
     public function test_old_draft_update_preserves_choices_and_notes_but_retired_version_rejects_new_save(): void
     {

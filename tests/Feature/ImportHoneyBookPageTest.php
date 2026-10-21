@@ -66,7 +66,7 @@ class ImportHoneyBookPageTest extends TestCase
     {
         $page = $this->uploaded([$this->futureRow(['honeybook_project_id' => 'HB-FAKE-1', 'status' => 'client']), $this->futureRow(['honeybook_project_id' => 'HB-FAKE-2', 'client_email' => 'second@example.test', 'client_phone' => '+13465550199'])]);
         [$first, $second] = ImportRow::orderBy('source_line')->get()->all();
-        $page->call('openRow', $first->id)->assertSee('En el archivo el estado dice "client"')->assertSee('se creará una clienta nueva');
+        $page->call('openRow', $first->id)->assertSee('En el archivo el estado dice "client"')->assertSee('se creará un cliente nuevo');
         // Missing confirmations are refused before anything is written.
         $this->fillRow($page, ['source_confirmed' => false])->call('importRow')->assertHasErrors('data.source_confirmed');
         $this->assertDatabaseCount('events', 0);

@@ -34,7 +34,7 @@ final class CreateContract
             \App\Services\Booking\ClientDetailsState::assertApproved($eventId, $finance->id);
             $template = ContractTemplateVersion::findOrFail($data['template_version_id']);
             if (! $event->address || ! $event->customer?->email || strcasecmp($event->customer->email, $data['client']['email']) !== 0 || $event->services()->where('operational_ready', false)->exists()) {
-                throw ValidationException::withMessages(['contract' => 'Completa dirección, identidad/correo de la clienta y selecciones operativas antes de generar el contrato.']);
+                throw ValidationException::withMessages(['contract' => 'Completa dirección, identidad/correo del cliente y selecciones operativas antes de generar el contrato.']);
             }
             $snapshot = ['client' => $data['client'], 'event' => ['date_long' => $event->starts_at->setTimezone('America/Chicago')->locale('en')->translatedFormat('D, M j, Y'),
                 'start_time' => $event->starts_at->setTimezone('America/Chicago')->format('g:i a'), 'end_time' => $event->ends_at->setTimezone('America/Chicago')->format('g:i a'), 'address' => $event->address],

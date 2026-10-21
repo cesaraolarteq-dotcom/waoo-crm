@@ -63,7 +63,7 @@ class ResourceUnitResource extends Resource
             Select::make('outfit')->label('Versión de este traje')->native(false)->placeholder('Sin versión específica')
                 ->options(fn (Get $get) => collect(\App\Models\Character::find($get('character_id'))?->outfits ?? [])->mapWithKeys(fn ($o) => [$o => $o])->all())
                 ->visible(fn (Get $get) => $get('kind') === 'costume' && filled(\App\Models\Character::find($get('character_id'))?->outfits))
-                ->helperText('Un traje sin versión no sirve cuando la clienta pide una versión exacta: para eso el traje debe tener esa versión.'),
+                ->helperText('Un traje sin versión no sirve cuando el cliente pide una versión exacta: para eso el traje debe tener esa versión.'),
             Select::make('equipment_kind')->label('Tipo de equipo')->options(Labels::EQUIPMENT)->native(false)
                 ->visible(fn (Get $get) => $get('kind') === 'equipment')->required(fn (Get $get) => $get('kind') === 'equipment'),
             TextInput::make('seats')->label('Asientos (contando al conductor)')->integer()->minValue(1)->maxValue(100)

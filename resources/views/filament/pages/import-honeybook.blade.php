@@ -71,7 +71,7 @@
             <x-slot name="heading">3. Importar la fila {{ $row['line'] }} · {{ $row['source']['project_name'] }}</x-slot>
                 <div class="wfile">
                     <dl class="wfile-dl">
-                        <div><dt>Clienta</dt><dd>{{ $row['source']['client_first_name'] }} {{ $row['source']['client_last_name'] }}</dd></div>
+                        <div><dt>Cliente</dt><dd>{{ $row['source']['client_first_name'] }} {{ $row['source']['client_last_name'] }}</dd></div>
                         <div><dt>Contacto</dt><dd>{{ $row['source']['client_email'] }} · {{ $row['source']['client_phone'] }}</dd></div>
                         <div><dt>Fecha</dt><dd>{{ $row['source']['event_date'] }} · {{ $row['source']['start_time'] }}–{{ $row['source']['end_time'] }} (Houston)</dd></div>
                         <div><dt>Lugar</dt><dd>{{ $row['source']['event_address'] }} · {{ $row['source']['event_zip'] }}</dd></div>
@@ -97,7 +97,7 @@
                     </div>
                 @endif
                 @if ($mappingSuggested)<p class="wqb-hint">Equivalencia sugerida por una fila anterior con el mismo paquete y personajes: revísala antes de importar.</p>@endif
-                @if (! $row['matches'])<p class="wqb-hint">No hay fichas con este correo o teléfono: se creará una clienta nueva.</p>@endif
+                @if (! $row['matches'])<p class="wqb-hint">No hay fichas con este correo o teléfono: se creará un cliente nuevo.</p>@endif
                 {{ $this->content }}
             </x-filament::section>
         @endif
@@ -106,7 +106,7 @@
             @php($v = $resync)
             <x-filament::section id="resync-panel">
                 <x-slot name="heading">Revisar pagos de HoneyBook</x-slot>
-                <x-slot name="description">Solo se actualiza lo que la clienta pagó en HoneyBook. No se vuelve a reservar, no cambia el precio y HoneyBook sigue cobrando. Estos pagos no están verificados en tu banco.</x-slot>
+                <x-slot name="description">Solo se actualiza lo que el cliente pagó en HoneyBook. No se vuelve a reservar, no cambia el precio y HoneyBook sigue cobrando. Estos pagos no están verificados en tu banco.</x-slot>
                 <x-slot name="afterHeader"><button type="button" class="wcal-btn" wire:click="closeResync">Cerrar</button></x-slot>
                 @if ($v['kind'] === 'unchanged')
                     <p>No cambió nada desde la última vez. No hay que hacer nada.</p>
@@ -140,7 +140,7 @@
             <x-slot name="heading">Filas del archivo</x-slot>
             <div class="wimp-table-wrap">
                 <table class="wimp-table">
-                    <thead><tr><th>Línea</th><th>Fecha (Houston)</th><th>Clienta</th><th>En HoneyBook</th><th>Total</th><th>Pagado</th><th>Saldo</th><th>Estado</th><th></th></tr></thead>
+                    <thead><tr><th>Línea</th><th>Fecha (Houston)</th><th>Cliente</th><th>En HoneyBook</th><th>Total</th><th>Pagado</th><th>Saldo</th><th>Estado</th><th></th></tr></thead>
                     <tbody>
                     @foreach ($this->rows() as $r)
                         <tr wire:key="row-{{ $r['id'] }}" @class(['is-open' => $rowId === $r['id']])>

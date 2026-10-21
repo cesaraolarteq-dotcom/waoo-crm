@@ -56,7 +56,7 @@ class QuickBookingNightCharactersTest extends TestCase
         foreach(['start_time','end_time'] as $name) {
             $control=$page->instance()->form->getFlatFields()[$name];
             $this->assertFalse($control->isNative());
-            $this->assertSame(15,$control->getMinutesStep());
+            $this->assertSame('4:45 PM',$control->getOptions()['16:45']); // owner 2026-10-21: AM/PM always visible
         }
     }
 

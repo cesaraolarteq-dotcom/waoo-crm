@@ -50,7 +50,7 @@ final class DocumentController extends Controller
         $data = \App\Services\Records\RecordInput::validate($request->all(), ['reason' => 'required|string|min:10|max:2000']);
         DB::transaction(function () use ($request, $contract, $data) {
             $locked = Contract::whereKey($contract->id)->lockForUpdate()->firstOrFail();
-            abort_unless($locked->state === 'signed', 409, 'Primero debe existir la aceptación de la clienta.');
+            abort_unless($locked->state === 'signed', 409, 'Primero debe existir la aceptación del cliente.');
             Audit::recordFor($request->user(), 'contract.final_pdf_retry_requested', $locked, [], ['reason' => $data['reason']]);
             \App\Jobs\FinalizeSignedContract::dispatch($locked->id)->afterCommit();
         });

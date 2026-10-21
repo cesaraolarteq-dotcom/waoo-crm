@@ -70,17 +70,18 @@ class QuickBookingWalkthroughTest extends TestCase
         $this->assertSame([], QuickBooking::possibleMatches('Ma', '12', 'x'));
 
         Livewire::test(QuickBooking::class)->fillForm(['customer_mode' => 'new', 'name' => 'Maria Gonzalez'])
-            ->assertSee('Clienta')
+            ->assertSee('Cliente')
             ->fillForm(['client_lookup' => 'customer:'.$maria->id])
             ->assertSchemaStateSet(['customer_mode' => 'existing', 'customer_id' => $maria->id, 'c_name' => 'María González López', 'c_phone' => '(346) 216-8471'])
             ->assertSet('displayedCustomerId', $maria->id);
     }
 
-    public function test_new_client_needs_a_phone_or_an_email_and_the_deposit_defaults_to_today(): void
+    public function test_new_client_needs_a_name_phone_or_email_and_the_deposit_defaults_to_today(): void
     {
+        // Owner 2026-10-21: phone and email are optional when there is a name (the owner sends the link herself).
         $page = Livewire::test(QuickBooking::class)->assertSchemaStateSet(['deposit.date' => now('America/Chicago')->format('Y-m-d')])
-            ->fillForm(['customer_mode' => 'new', 'name' => 'María González', 'phone' => '', 'email' => ''])->call('save')->assertHasFormErrors(['phone']);
-        $page->fillForm(['email' => 'maria@example.test'])->call('save')->assertHasNoFormErrors(['phone']);
+            ->fillForm(['customer_mode' => 'new', 'name' => '', 'phone' => '', 'email' => ''])->call('save')->assertHasFormErrors(['name']);
+        $page->fillForm(['name' => 'María González'])->call('save')->assertHasNoFormErrors(['name', 'phone']);
     }
 
     public function test_deposit_builder_pins_only_the_received_day_for_server_clock_resolution(): void

@@ -1,6 +1,6 @@
 @php($m = fn ($v) => ($v < 0 ? '−' : '').'$'.number_format(abs($v), abs($v) == floor(abs($v)) ? 0 : 2))
 <x-filament-panels::page>
-    <p class="wmoney-warn" role="note">Vista previa de diseño (CHANGE-A). Datos de ejemplo; nada se guarda ni se envía a la clienta.</p>
+    <p class="wmoney-warn" role="note">Vista previa de diseño (CHANGE-A). Datos de ejemplo; nada se guarda ni se envía al cliente.</p>
 
     <div class="wcal-modes">
         <button type="button" class="wcal-btn {{ $mode === 'reschedule' ? 'on' : '' }}" wire:click="setMode('reschedule')">Reprogramar</button>
@@ -11,7 +11,7 @@
         @php($r = $this->reschedule())
         <x-filament::section>
             <x-slot name="heading">Hoy → Propuesta</x-slot>
-            <x-slot name="description">La fecha actual no se libera hasta que la clienta acepta el cambio.</x-slot>
+            <x-slot name="description">La fecha actual no se libera hasta que el cliente acepta el cambio.</x-slot>
             <div class="wimp-table-wrap"><table class="wimp-table">
                 <thead><tr><th></th><th>Hoy</th><th>Propuesta</th></tr></thead>
                 <tbody>
@@ -45,7 +45,7 @@
             <label class="wimp-check"><input type="checkbox" wire:model.live="waive"> No cobrar el cargo por cambio (escribe el motivo)</label>
             @if ($waive)<input type="text" class="wchg-reason" placeholder="Motivo (obligatorio)" disabled>@endif
             <p class="wqb-hint">{{ $r['count'] }} Precios: se mantienen los originales hasta que César decida otra regla.</p>
-            <div class="wrep-actions"><button type="button" class="wcal-btn on" disabled>Preparar adenda para la clienta</button></div>
+            <div class="wrep-actions"><button type="button" class="wcal-btn on" disabled>Preparar adenda para el cliente</button></div>
         </x-filament::section>
     @else
         @php($c = $this->cancel())
@@ -61,7 +61,7 @@
             <ul class="wchg-effects">@foreach ($c['effects'] as $e)<li>{{ $e }}</li>@endforeach</ul>
             <input type="text" class="wchg-reason" placeholder="Motivo de la cancelación (obligatorio)" disabled>
             <div class="wrep-actions"><button type="button" class="wcal-btn" disabled>Hacer una excepción</button><button type="button" class="wcal-btn on" disabled>Cancelar la fiesta</button></div>
-            <p class="wqb-hint">Un reembolso, si lo decides, se hace aparte desde Dinero. El aviso a la clienta se envía cuando los correos estén activos.</p>
+            <p class="wqb-hint">Un reembolso, si lo decides, se hace aparte desde Dinero. El aviso al cliente se envía cuando los correos estén activos.</p>
         </x-filament::section>
     @endif
 </x-filament-panels::page>

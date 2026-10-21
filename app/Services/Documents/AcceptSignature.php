@@ -17,7 +17,7 @@ final class AcceptSignature
     public function execute(PortalContext $client, string $contractId, array $input, SignatureRequestContext $request, string $key): SignatureEvidence
     {
         Sandbox::require('sandbox_documents');
-        if ($request->adminAuthenticated) throw new AuthorizationException('Usa el acceso de la clienta; una sesión administrativa no puede firmar por ella.');
+        if ($request->adminAuthenticated) throw new AuthorizationException('Usa el acceso del cliente; una sesión administrativa no puede firmar por el cliente.');
         $data = RecordInput::validate($input, ['expected_version' => 'required|integer|min:1', 'presented_pdf_sha256' => ['required','string','regex:/^[a-f0-9]{64}$/'],
             'signer_name' => 'required|string|min:2|max:255', 'consent' => 'required|accepted', 'intent_to_sign' => 'required|accepted', 'consent_version' => ['required', Rule::in(['esign-consent-v1', InHouseSignatureProvider::CONSENT_VERSION, 'esign-consent-v2-2026-10-20-es'])]]);
         $data['expected_version'] = (int) $data['expected_version']; $data['consent'] = true; $data['intent_to_sign'] = true;

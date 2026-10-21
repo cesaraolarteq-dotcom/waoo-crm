@@ -51,7 +51,7 @@ class QuoteScreensTest extends TestCase
         $this->get(QuoteDetail::getUrl(['quote' => $q->id]))->assertOk()
             ->assertSee('Mágico (Magic)')->assertSee('$375')->assertSee('Costo de transporte')->assertSee('$40')
             ->assertSee('− $25')->assertSee('Descuento por reservar hoy')->assertSee('$390')->assertSee('$195')
-            ->assertSee('Preparar enlace para la clienta')->assertSee('Todavía no preparas el enlace');
+            ->assertSee('Preparar enlace para el cliente')->assertSee('Todavía no preparas el enlace');
         Livewire::test(QuoteDetail::class, ['quote' => $q->id])->assertActionVisible('send')->assertActionHidden('convert')->assertActionHidden('pdf');
         Livewire::test(ViewEvent::class, ['record' => $e->id])->assertActionHidden('quoteCreate')->assertActionVisible('quoteView');
     }

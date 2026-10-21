@@ -18,7 +18,7 @@ class EmailTemplatesPageTest extends TestCase
         Filament::setCurrentPanel(Filament::getPanel('admin'));
 
         $html = $this->get('/admin/correos')->assertOk()
-            ->assertSee('Correos a las clientas')->assertSee('Texto aprobado')
+            ->assertSee('Correos a los clientes')->assertSee('Texto aprobado')
             ->assertSee('Recibimos tu solicitud, Ana')->assertSee('One week to go, Ana')
             ->assertSee('El día después de la fiesta')->getContent();
         $this->assertSame(14, substr_count($html, '<iframe'));

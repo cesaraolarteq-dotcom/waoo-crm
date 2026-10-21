@@ -52,7 +52,7 @@ class ImportOwnerCatalog extends Command
             }
         }
         $this->table(['Tipo', 'Nombre', 'Resultado', 'Detalle'], $this->report);
-        $this->line($dry ? 'Prueba en seco: no se guardó nada.' : 'Listo. Revisa cada paquete en Catálogo antes de usarlo con clientas.');
+        $this->line($dry ? 'Prueba en seco: no se guardó nada.' : 'Listo. Revisa cada paquete en Catálogo antes de usarlo con clientes.');
 
         return self::SUCCESS;
     }

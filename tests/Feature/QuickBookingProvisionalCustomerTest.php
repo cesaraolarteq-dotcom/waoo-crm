@@ -58,7 +58,7 @@ class QuickBookingProvisionalCustomerTest extends TestCase
     public function test_neither_contact_rolls_back_the_entire_booking_and_global_save_still_requires_a_name(): void
     {
         try { app(QuickBook::class)->execute($this->owner,$this->input(['name'=>null]),(string)Str::uuid());$this->fail('No contact accepted'); }
-        catch(ValidationException $e) { $this->assertArrayHasKey('new_customer.phone',$e->errors()); }
+        catch(ValidationException $e) { $this->assertArrayHasKey('new_customer.name',$e->errors()); }
         $this->assertDatabaseCount('customers',0);$this->assertDatabaseCount('events',0);$this->assertDatabaseCount('ledger_entries',0);
         $this->expectException(ValidationException::class);
         app(\App\Services\Records\SaveCustomer::class)->execute($this->owner,['name'=>null,'email'=>'maria@example.test','locale'=>'es']);
@@ -81,7 +81,7 @@ class QuickBookingProvisionalCustomerTest extends TestCase
     public function test_actual_one_field_search_returns_full_contact_then_selects_with_locked_versions(): void
     {
         $customer=Customer::create(['name'=>'María González','phone'=>'346-555-0100','email'=>'maria@example.test','locale'=>'es']);
-        $page=Livewire::test(QuickBookingPage::class)->assertSee('Escribe nombre, teléfono o correo')->assertDontSee('Buscar clienta registrada');
+        $page=Livewire::test(QuickBookingPage::class)->assertSee('Escribe nombre, teléfono o correo')->assertDontSee('Buscar cliente registrado');
         $field=$page->instance()->form->getFlatFields()['client_lookup'];
         $page->call('callSchemaComponentMethod',$field->getKey(),'getSearchResultsForJs',['search'=>'maria@example.test'])
             ->assertSet('clientSearch','maria@example.test')->fillForm(['client_lookup'=>'customer:'.$customer->id])

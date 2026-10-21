@@ -53,7 +53,8 @@ final class SaveEventDraft
                 RecordWriteRejected::when($variant->status === 'retired', 422, 'La variante fue retirada.');
                 $characters = $selection['characters'] ?? ($previous->get($price->id)?->characters->map(fn ($row) => $row->only(['character_id', 'quantity', 'outfit', 'note']))->all() ?? []);
                 $compiled = CharacterRecipe::compile($variant, $characters, "services.{$index}.characters");
-                $service = EventService::create(['event_id' => $event->id, 'service_variant_id' => $variant->id, 'price_version_id' => $price->id, 'requirements_snapshot' => $compiled['requirements'], 'duration_minutes' => $variant->duration_minutes, 'operational_ready' => $compiled['ready']]);
+                $service = EventService::create(['event_id' => $event->id, 'service_variant_id' => $variant->id, 'price_version_id' => $price->id, 'requirements_snapshot' => $compiled['requirements'], 'duration_minutes' => $variant->duration_minutes, 'operational_ready' => $compiled['ready'],
+                    'extra_characters' => $compiled['extra'], 'extra_character_cents' => $compiled['extra'] > 0 ? (int) config('waoo.extra_character_cents') : null]);
                 $service->characters()->createMany($compiled['characters']);
                 $auditServices[] = ['price_version_id' => $price->id, 'characters' => $compiled['characters']];
             }
