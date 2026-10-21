@@ -23,3 +23,18 @@ Zelle que verificaremos luego o tiene la opción de pagar con Stripe si no se ma
   or extend the lease by itself — the owner verifying it does (then the paid hold replaces the lease).
 - Keep the paid quick booking path unchanged. Never fabricate an owner attestation for an unpaid booking.
 - Please deliver backend + screens (section 4 toggle, portal payment step) and tell Claude when ready; Claude reviews/integrates and opens the PR.
+
+## Owner clarification (same day)
+
+"En caso de no marcar el pago como recibido, en el portal del cliente debe decir cuánto debe pagar el cliente y si lo hace por Zelle marcar
+como pagado por Zelle y si es por Stripe, Stripe recibir el pago y mandar la notificación automáticamente, y si es Zelle debe estar pendiente
+por aprobación pero el cliente debería poder seguir con los siguientes pasos."
+
+- The portal states clearly **how much to pay now** (deposit) and the total.
+- **Zelle:** the client taps "Pagué por Zelle" (amount, optional reference). The booking shows **"Zelle pendiente de aprobación"** for the
+  owner (dashboard + event file) until the owner verifies it. **The client is NOT blocked:** she continues to the next steps (contract,
+  signature) right away. The notice is not a receipt; only the owner's verification records money and confirms.
+- **Stripe:** Stripe takes the payment; the verified webhook records it and the **notification goes out automatically** (owner alert +
+  client confirmation, using the approved texts). No owner action needed.
+- In both cases the 48 h hold / 24 h reminder apply until a payment is verified (Stripe webhook or owner-verified Zelle). A pending Zelle
+  notice keeps the booking from expiring silently: flag it for the owner instead of releasing the date without review.
