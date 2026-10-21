@@ -307,6 +307,17 @@
      "accepted": false,
      "blocker": null,
      "progress_note": "2026-10-16: main cd52aec desplegado en crm-test; cuenta de César con 2FA; catálogo importado (31/32). Pendiente: staff, equipo, cron de PDFs, Stripe de prueba (permiso), recorrido de César."
+    },
+    {
+     "name": "CI: reutilización del esquema en 52 clases aptas",
+     "weight": 1,
+     "agent": "Codex",
+     "backend": "codex/owner-analytics; docs/TEST-DATABASE-REUSE.md",
+     "ui": null,
+     "reviewed": false,
+     "merged": false,
+     "accepted": false,
+     "note": "Mismos tests/assertions; concurrencia real, migraciones y entradas QuickBook de transacción raíz sin cambios. MariaDB 279/2699 en 69.365 s; muestra idéntica 8/47: 18.950 → 3.933 s. No es evidencia de suite completa ni nueva duración de GitHub."
     }
    ]
   },
@@ -954,6 +965,28 @@
      "merged": false,
      "accepted": false,
      "note": "Separate from tested read/snapshot backend; scheduler, approved copy and MAIL transport/explicit activation remain pending. Nothing sent."
+    },
+    {
+     "name": "Reportes comerciales: agregados CRM + historial y CSV",
+     "weight": 1,
+     "agent": "Codex",
+     "backend": "codex/owner-analytics; ReadBookingAnalytics, BookingAnalytics",
+     "ui": "Reports: análisis anual y descarga CSV",
+     "reviewed": false,
+     "merged": false,
+     "accepted": false,
+     "note": "Flag analytics apagada; sin datos de clientas en la proyección comercial/CSV. Totales fuente no son recibos. Historial sin estado completado no se cuenta como reserva confirmada; paquetes sin catálogo y creación desconocida explícitos."
+    },
+    {
+     "name": "ANNIV-01: preparación en borrador",
+     "weight": 1,
+     "agent": "Codex",
+     "backend": "codex/owner-analytics; BirthdayDraft, ReadBirthdayCampaignDraft",
+     "ui": "Reports: fechas propuestas, bloqueos y textos ES/EN sin aprobar",
+     "reviewed": false,
+     "merged": false,
+     "accepted": false,
+     "note": "Flag anniversary apagada. Solo cumpleaños completados/fecha válida. Todo bloqueado por permiso promocional no verificado y texto sin aprobar. Sin códigos, outbox, cron ni envío. Revisión propuesta un mes antes; no cambia la política de envío existente."
     }
    ]
   },
