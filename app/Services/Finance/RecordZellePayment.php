@@ -34,11 +34,14 @@ final class RecordZellePayment
                 \App\Services\Imports\ImportedAgreement::blockCrmLifecycle($eventId);
                 if ($saved = MutationKey::find($scope, $key, $hash)) return LedgerEntry::findOrFail($saved->result_id);
                 $quick=\App\Services\Booking\QuickPaymentProtocol::booking($eventId);
-                if($quick && $quick->receipt_id===null) {
+                $pendingLease=$quick?\App\Models\QuickStripeLease::whereKey($quick->quick_stripe_lease_id)->lockForUpdate()->first():null;
+                if($quick && $quick->quick_booking_id===null && ($quick->receipt_id===null || $pendingLease?->state==='active')) {
                     \App\Services\Booking\QuickPaymentProtocol::gate();\App\Services\Booking\QuickPaymentProtocol::verify($quick,$event);
-                    RecordWriteRejected::unless((bool)\App\Services\Booking\QuickPaymentProtocol::pendingNotice($quick),409,'Revisa primero el aviso de Zelle de esta reserva.');
-                    $lease=\App\Models\QuickStripeLease::whereKey($quick->quick_stripe_lease_id)->lockForUpdate()->firstOrFail();
-                    $p=\App\Services\Booking\QuickStripeLeases::verify($lease,$event,false);\App\Services\Booking\QuickStripeLeases::lockInventory($p);\App\Services\Booking\QuickStripeLeases::verify($lease,$event);
+                    $prior=$quick->receipt_id?LedgerEntry::whereKey($quick->receipt_id)->sharedLock()->first():null;
+                    $priorValid=$prior && $prior->event_id===$eventId && $prior->financial_revision_id===$quick->financial_revision_id && $prior->kind==='receipt' && $prior->environment==='test'
+                        && $prior->amount_cents>0 && (($prior->source_type==='owner_verified' && $prior->verified_by!==null) || \App\Services\Booking\QuickCostumeHolds::verifiedStripeReceipt($prior));
+                    RecordWriteRejected::unless($priorValid || ($quick->receipt_id===null && \App\Services\Booking\QuickPaymentProtocol::pendingNotice($quick)),409,'Revisa primero el aviso de Zelle o el pago real de esta reserva.');
+                    $p=\App\Services\Booking\QuickStripeLeases::verify($pendingLease,$event,false,(bool)$priorValid);\App\Services\Booking\QuickStripeLeases::lockInventory($p);\App\Services\Booking\QuickStripeLeases::verify($pendingLease,$event,true,(bool)$priorValid);
                 } else \App\Services\Booking\QuickStripeLeases::assertNoActive($eventId);
                 $receivedAt = ZelleReceivedDate::timestamp($data);
                 if (!$hasReference) {
@@ -62,7 +65,7 @@ final class RecordZellePayment
                 $entry = LedgerEntry::create(['event_id' => $eventId, 'financial_revision_id' => $revision->id, 'environment' => 'test', 'kind' => 'receipt', 'method' => 'zelle',
                     'amount_cents' => $data['amount_cents'], 'currency' => 'USD', 'received_at' => $receivedAt, 'external_reference' => $data['reference'] ?? null,
                     'external_identity_key' => $identity, 'verified_by' => $actor->id, 'source_type' => 'owner_verified', 'note' => $data['note'] ?? null]);
-                if($quick && $quick->receipt_id===null) app(\App\Services\Booking\PromoteQuickPayment::class)->execute($quick,$event,$entry,$actor);
+                if($quick && $quick->quick_booking_id===null) app(\App\Services\Booking\PromoteQuickPayment::class)->execute($quick,$event,$entry,$actor);
                 SupersedeCollections::forEvent($eventId, 'external_payment_received', $actor);
                 $summary = app(FinanceSummary::class)->forEvent($event);
                 if ($summary['credit_cents'] > 0) DB::table('payment_exceptions')->insertOrIgnore(['event_id' => $eventId, 'financial_revision_id' => $revision->id, 'kind' => 'overpayment',

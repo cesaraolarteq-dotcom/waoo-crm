@@ -12,8 +12,8 @@ final class PromoteQuickPayment
         $lease=QuickStripeLease::whereKey($b->quick_stripe_lease_id)->lockForUpdate()->firstOrFail();
         $summary=app(\App\Services\Finance\FinanceSummary::class)->forEvent($e);
         $grant=PortalGrant::whereKey($b->portal_grant_id)->lockForUpdate()->first();
-        $ownerReviewedZelle=$actor!==null && $receipt->source_type==='owner_verified' && $receipt->method==='zelle' && $receipt->verified_by===$actor->id && QuickPaymentProtocol::pendingNotice($b)!==null;
-        $valid=$grant && !$grant->revoked_at && $grant->expires_at->isFuture() && $b->receipt_id===null&&($b->expires_at->isFuture()||$ownerReviewedZelle)&&$e->starts_at->isFuture()&&$e->responsible_system==='crm'&&$lease->state==='active'&&$summary['deposit_shortfall_cents']===0;
+        $ownerReviewedZelle=$actor!==null && $receipt->source_type==='owner_verified' && $receipt->method==='zelle' && $receipt->verified_by===$actor->id && (QuickPaymentProtocol::pendingNotice($b)!==null || $b->receipt_id!==null);
+        $valid=$grant && !$grant->revoked_at && $grant->expires_at->isFuture() && $b->quick_booking_id===null&&($b->expires_at->isFuture()||$ownerReviewedZelle)&&$e->starts_at->isFuture()&&$e->responsible_system==='crm'&&$lease->state==='active'&&$summary['deposit_shortfall_cents']===0;
         try{
             QuickPaymentProtocol::verify($b,$e);
             $p=QuickStripeLeases::verify($lease,$e,false,true);QuickStripeLeases::lockInventory($p);
@@ -24,12 +24,14 @@ final class PromoteQuickPayment
             DB::table('payment_exceptions')->insertOrIgnore(['event_id'=>$e->id,'financial_revision_id'=>$b->financial_revision_id,'kind'=>'quick_payment_review',
                 'exception_key'=>hash('sha256','quick-payment:'.$receipt->id),'state'=>'open','context'=>json_encode(['booking_id'=>$b->id,'receipt_id'=>$receipt->id]),'created_at'=>now(),'updated_at'=>now()]);return;
         }
+        $backing=$b->receipt_id?LedgerEntry::whereKey($b->receipt_id)->sharedLock()->firstOrFail():$receipt;
         $g=PortalGrant::findOrFail($b->portal_grant_id);
-        $q=QuickBookingRecord::create(['event_id'=>$e->id,'customer_id'=>$b->customer_id,'initial_financial_revision_id'=>$b->financial_revision_id,'receipt_id'=>$receipt->id,
+        $q=QuickBookingRecord::create(['event_id'=>$e->id,'customer_id'=>$b->customer_id,'initial_financial_revision_id'=>$b->financial_revision_id,'receipt_id'=>$backing->id,
             'created_by'=>$b->created_by,'portal_grant_id'=>$g->id,'portal_expires_at'=>$g->expires_at]);
-        $h=QuickCostumeHold::create(['event_id'=>$e->id,'quick_booking_id'=>$q->id,'receipt_id'=>$receipt->id,'version'=>0,'state'=>'held','payload'=>[],'payload_sha256'=>str_repeat('0',64)]);
+        $h=QuickCostumeHold::create(['event_id'=>$e->id,'quick_booking_id'=>$q->id,'receipt_id'=>$backing->id,'version'=>0,'state'=>'held','payload'=>[],'payload_sha256'=>str_repeat('0',64)]);
         QuickCostumeHolds::transition($actor,$e,$h,$p['issues']? 'review_required':'held',$p['rows'],$p['issues'],'verified_payment_replaces_unpaid_lease');
-        QuickPaymentProtocol::transition($b,'paid','verified_payment',$actor,['receipt_id'=>$receipt->id,'quick_booking_id'=>$q->id]);
+        QuickPaymentProtocol::transition($b,'paid','verified_payment',$actor,['receipt_id'=>$backing->id,'quick_booking_id'=>$q->id]);
+        DB::table('payment_exceptions')->where('event_id',$e->id)->where('kind','quick_payment_review')->where('context->booking_id',$b->id)->where('state','open')->update(['state'=>'resolved','updated_at'=>now()]);
         QuickStripeLeases::append($actor,$lease,[...$p,'state'=>'promoted','rows'=>[],'reason'=>'verified_payment_replaces_unpaid_lease']);
     }
 }

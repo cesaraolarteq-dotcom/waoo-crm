@@ -20,7 +20,10 @@ final class QuickPaymentCheckout
         $gateway=app(StripeGateway::class);RecordWriteRejected::unless($gateway instanceof QuickStripeGateway,409,'Los métodos de Stripe aún no están verificados.');
         $methods=config('waoo.quick_payment_methods');
         RecordWriteRejected::unless(is_array($methods)&&$methods!==[]&&array_is_list($methods)&&count($methods)===count(array_unique($methods))&&array_diff($methods,['card','klarna'])===[],409,'Revisa los métodos de pago.');
-        sort($methods);$evidence=$gateway->verifyMethods($methods);
+        sort($methods);
+        try{$evidence=$gateway->verifyMethods($methods);}
+        catch(\Illuminate\Auth\Access\AuthorizationException $error){throw $error;}
+        catch(\Throwable){throw new RecordWriteRejected(503,'No pudimos verificar los métodos de Stripe. Puedes elegir Zelle o reintentar. / We could not verify Stripe methods. Choose Zelle or retry.');}
         RecordWriteRejected::unless($evidence===['account'=>config('waoo.stripe_test_account'),'methods'=>$methods],409,'La cuenta o los métodos de Stripe no coinciden.');
         [$request,$intent]=DB::transaction(function()use($client,$d,$key,$scope,$hash,$evidence){
             [$b,$e,$grant]=QuickPaymentProtocol::portal($client);QuickPaymentProtocol::submission($b,$e);
@@ -54,7 +57,9 @@ final class QuickPaymentCheckout
         DB::transaction(function()use($client,$request){[$b]=QuickPaymentProtocol::portal($client);self::verify($request);RecordWriteRejected::unless($b->state==='awaiting_payment'&&$b->expires_at->isFuture()&&!QuickPaymentProtocol::pendingNotice($b)&&$request->envelope['parameters']['expires_at']>now()->timestamp+30,409,'El apartado cambió o venció.');},3);
         $p=self::verify($request);
         RecordWriteRejected::unless($p['capabilities']===$evidence && str_starts_with($p['parameters']['success_url'],\App\Services\Finance\Sandbox::origin().'/portal?'),409,'La configuración de Stripe cambió; revisa el intento original.');
-        $session=$gateway->createCheckout($p['parameters'],$p['provider_key']);
+        try{$session=$gateway->createCheckout($p['parameters'],$p['provider_key']);}
+        catch(\Illuminate\Auth\Access\AuthorizationException $error){throw $error;}
+        catch(\Throwable){throw new RecordWriteRejected(503,'Stripe no respondió. Reintenta el mismo intento; no se ha registrado un pago. / Stripe did not respond. Resume the same attempt; no payment has been recorded.');}
         self::session($session,$request);
         try { return DB::transaction(function()use($client,$request,$intent,$session){
             [$b]=QuickPaymentProtocol::portal($client);$locked=PaymentIntent::whereKey($intent->id)->lockForUpdate()->firstOrFail();

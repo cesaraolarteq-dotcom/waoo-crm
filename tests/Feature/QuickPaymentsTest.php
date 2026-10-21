@@ -181,8 +181,7 @@ class QuickPaymentsTest extends TestCase
         $r=$this->create();$this->client($r);$this->details();$g=$this->gateway();$key=(string)Str::uuid();
         $g->onCreate=function(){throw new \RuntimeException('Synthetic provider timeout');};
         $q=$this->claim();unset($q['amount_cents'],$q['reference']);$q['deposit_percent']=50;
-        $this->withoutExceptionHandling();
-        try{$this->withHeader('Idempotency-Key',$key)->postJson('/portal/api/quick-payment/checkout',$q);$this->fail('Timeout hidden');}catch(\RuntimeException $e){$this->assertSame('Synthetic provider timeout',$e->getMessage());}
+        $this->withHeader('Idempotency-Key',$key)->postJson('/portal/api/quick-payment/checkout',$q)->assertStatus(503)->assertDontSee('Synthetic provider timeout');
         $replay=$this->getJson('/portal/api/quick-payment')->assertOk()->json('active_checkout.replay');$this->assertSame($key,$replay['idempotency_key']);$this->assertSame($q,$replay['payload']);
         $g->onCreate=null;$this->checkout(50,$key);$this->assertDatabaseCount('quick_payment_attempts',1);$this->assertCount(1,$g->sessions);$this->assertDatabaseCount('ledger_entries',0);
     }
@@ -261,6 +260,21 @@ class QuickPaymentsTest extends TestCase
         auth()->logout();$this->postJson('/portal/api/session',['token'=>$grant->token])->assertOk();
         $this->get('/portal')->assertOk()->assertSee('Tu fiesta')->assertDontSee('id="quick-payment"',false);
         $this->getJson('/portal/api/quick-payment')->assertForbidden();$this->assertDatabaseCount('ledger_entries',2);
+    }
+    public function test_partial_verified_zelle_can_be_completed_with_another_real_bank_receipt_without_fake_notice_or_stock_reallocation():void
+    {
+        $r=$this->create();$this->client($r);$this->details();$this->withHeader('Idempotency-Key',(string)Str::uuid())->postJson('/portal/api/quick-payment/zelle',$this->claim())->assertCreated();
+        $this->actingAs($this->owner);$ids=DB::table('resource_reservations')->pluck('id')->all();
+        $review=app(\App\Services\Finance\ReviewZelleNotice::class)->execute($this->owner,$r->event->id,\App\Models\ZelleNotice::sole()->id,[
+            'decision'=>'verified','review_note'=>'El banco refleja un primer pago parcial.','financial_revision_id'=>$r->financial_revision->id,'amount_cents'=>10000,'currency'=>'USD',
+            'reference'=>null,'received_at'=>now()->subMinute()->toIso8601String(),'verified_received'=>true],(string)Str::uuid());
+        $this->assertSame('paid_needs_review',QuickPaymentBooking::sole()->state);$this->assertDatabaseCount('quick_bookings',0);
+        $this->travel(49)->hours(); // The owner reviews an actual second bank receipt; no unpaid deadline is renewed.
+        app(\App\Services\Finance\RecordZellePayment::class)->execute($this->owner,$r->event->id,['financial_revision_id'=>$r->financial_revision->id,'amount_cents'=>5001,'currency'=>'USD',
+            'reference'=>null,'received_on'=>now('America/Chicago')->format('Y-m-d'),'verified_received'=>true],(string)Str::uuid());
+        $b=QuickPaymentBooking::sole();$this->assertSame('paid',$b->state);$this->assertSame($review->ledger_entry_id,$b->receipt_id);
+        $this->assertSame($ids,DB::table('resource_reservations')->pluck('id')->all());$this->assertDatabaseCount('ledger_entries',2);$this->assertDatabaseCount('zelle_notices',1);
+        $this->assertDatabaseCount('quick_bookings',1);$this->assertDatabaseCount('client_details_reviews',0);$this->assertDatabaseMissing('payment_exceptions',['kind'=>'quick_payment_review','state'=>'open']);
     }
     public function test_blank_identity_unpaid_path_has_real_inventory_and_no_fabricated_payment():void
     {
