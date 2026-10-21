@@ -30,3 +30,8 @@ There is currently no native issued-invoice PDF module. This delivery adds an ow
 from a transaction-consistent billing context, labelled draft/not a receipt, without issuing an invoice
 number, creating money or claiming an issued immutable invoice. The shared billing block is ready for
 future actual invoice issuance. Existing HoneyBook originals remain byte-for-byte originals.
+
+On a same-visit client signature with fingerprint v2, copy only the exactly signed billing-company block
+(or its explicit removal) to event billing metadata in the signature transaction. Preserve Event.version,
+capacity and all other proposed personal details. The person remains signer. Audit failure rolls back the
+signature and billing metadata together. Replayed signatures never perform another billing update.
