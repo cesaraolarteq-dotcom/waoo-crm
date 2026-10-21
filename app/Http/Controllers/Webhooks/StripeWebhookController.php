@@ -44,6 +44,14 @@ final class StripeWebhookController extends Controller
                 'verified_at' => now(), 'state' => 'queued', 'attempts' => 0, 'created_at' => now(), 'updated_at' => now()]);
             if ($inserted) ProcessStripeWebhook::dispatch($event['id'])->afterCommit();
         });
+        // Owner 2026-10-21: a quick booking payment confirms right away instead of waiting for the 5-minute cron (there is no
+        // queue worker). Runs after the response is sent; any failure stays queued for the cron's retry, nothing is lost.
+        if (isset($payload['data']['object']['metadata']['quick_booking_request_id']) && \App\Services\Booking\QuickPaymentProtocol::enabled()) {
+            $id = $event['id'];
+            app()->terminating(function () use ($id) {
+                try { app(\App\Services\Booking\ProcessQuickPaymentReceipt::class)->execute($id); } catch (\Throwable) {}
+            });
+        }
         return response()->json(['received' => true]);
     }
 }
