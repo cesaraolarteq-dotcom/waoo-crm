@@ -31,6 +31,7 @@ return [
     'quick_payment_methods' => ['card', 'klarna'],
     'quick_stripe_requested_methods' => ['card'], // Requested policy only, never verified account capability or financing activation.
     'sandbox_finance' => env('WAOO_SANDBOX_FINANCE', false),
+    'sandbox_history' => env('WAOO_SANDBOX_HISTORY', false),
     'sandbox_honeybook_supplement' => env('WAOO_SANDBOX_HONEYBOOK_SUPPLEMENT', false),
     'sandbox_imports' => env('WAOO_SANDBOX_IMPORTS', false),
     'sandbox_cutover' => env('WAOO_SANDBOX_CUTOVER', false), // Evidence preparation only; no transfer endpoint.

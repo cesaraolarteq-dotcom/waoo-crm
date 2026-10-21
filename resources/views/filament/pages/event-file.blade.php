@@ -102,4 +102,11 @@
             <p class="wmoney-p">Sin cambios registrados.</p>
         @endforelse
     </x-filament::section>
+    @if($sourceFacts=$this->honeyBookFacts())
+        @foreach($sourceFacts['originals'] as $original)<p><a href="{{ url('/admin/api/history/originals/'.$original['id']) }}">Original HoneyBook: {{ $original['kind'] }} (PDF)</a></p>@endforeach
+        @if($sourceFacts['fields'])<x-filament::section><x-slot name="heading">Datos de la fiesta — fuente HoneyBook</x-slot>
+            @if($sourceFacts['stale'])<p>La evidencia original cambió; revisar antes de usar estos datos.</p>@endif
+            @foreach($sourceFacts['fields'] as $field=>$value)<p>{{ ['child_name'=>'Festejado/a','child_age'=>'Edad','children_count'=>'Niños','setup_area'=>'Interior/exterior','event_language'=>'Idioma','notes'=>'Peticiones especiales','lead_source'=>'Cómo nos conoció','sms_consent_honeybook'=>'Permiso SMS en HoneyBook (evidencia de origen)'][$field] ?? $field }}: {{ $value ?? 'Sin dato' }}</p>@endforeach
+        </x-filament::section>@endif
+    @endif
 </x-filament-panels::page>

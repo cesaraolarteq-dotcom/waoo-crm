@@ -51,7 +51,7 @@ class ImportedCapacityPageTest extends TestCase
     {
         $ids = $this->units(true);
         $page = $this->filled($ids)->assertSee('Pagado según HoneyBook')->assertSee('importado de HoneyBook, no verificado en banco')
-            ->assertSee('Zelle (importado de HoneyBook, no verificado en banco)')->assertSee('Al menos una de las personas que van debe manejar')
+            ->assertSee('Zelle/efectivo (HoneyBook)')->assertSee('Al menos una de las personas que van debe manejar')
             ->assertDontSee('Depósito recibido')->assertSet('importedRevisionId', ImportedProjectLink::sole()->current_revision_id);
         $page->call('confirm')->assertHasNoErrors()->assertRedirect();
         $this->event->refresh();

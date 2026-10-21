@@ -102,4 +102,14 @@ final class HoneyBookSupplementTest extends TestCase
         $this->expectException(\Illuminate\Validation\ValidationException::class);
         app(ImportSupplement::class)->execute($actor,json_encode($data));
     }
+    public function test_owner_excluded_fields_reject_the_entire_file_before_any_copy(): void {
+        $actor=$this->owner();
+        foreach(['contact_address','Private Notes',' SALES TAX '] as $field){
+            $data=json_decode($this->source(),true);$excluded=$data['records'][0];$excluded['field']=$field;$excluded['value']='Dato excluido sintético.';$data['records'][]=$excluded;
+            try{app(ImportSupplement::class)->execute($actor,json_encode($data));$this->fail('Expected owner exclusion');}
+            catch(\Illuminate\Validation\ValidationException $e){$this->assertStringNotContainsString('Dato excluido',json_encode($e->errors()));}
+            $this->assertDatabaseCount('honeybook_supplements',0);
+        }
+    }
+
 }

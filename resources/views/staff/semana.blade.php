@@ -34,6 +34,12 @@
     @if ($j['bring'] || $j['instructions'])
       <div class="s-block">
         @if ($j['bring'])<p class="s-line"><b>{{ $t('bring') }}:</b></p><ul class="s-list">@foreach ($j['bring'] as $b)<li>{{ $b }}</li>@endforeach</ul>@endif
+        @if(!empty($j['honeybook']['fields']))
+            <div class="s-line"><b>{{ $vm['lang'] === 'es' ? 'Fuente HoneyBook' : 'HoneyBook source' }}</b>
+            @foreach($j['honeybook']['fields'] as $field=>$value)
+                @if($value !== null && $value !== '')<p>{{ ['child_name'=>'Festejado/a / Celebrant','child_age'=>'Edad / Age','children_count'=>'Niños / Children','setup_area'=>'Área / Area','event_language'=>'Idioma / Language','notes'=>'Peticiones / Requests'][$field] }}: {{ $value }}</p>@endif
+            @endforeach</div>
+        @endif
         @if ($j['instructions'])<p class="s-line"><b>{{ $t('notes') }}:</b> {{ $j['instructions'] }}</p>@endif
       </div>
     @endif

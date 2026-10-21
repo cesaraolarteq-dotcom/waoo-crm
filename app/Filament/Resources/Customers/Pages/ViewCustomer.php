@@ -26,13 +26,30 @@ class ViewCustomer extends Page
 
     public function getTitle(): string
     {
-        return $this->record->name;
+        return $this->record->name ?: 'Cliente por completar';
     }
 
     protected function getHeaderActions(): array
     {
         return [Action::make('edit')->label('Editar datos')->color('gray')->visible(fn () => CustomerResource::canEdit($this->record))
             ->url(fn () => CustomerResource::getUrl('edit', ['record' => $this->record]))];
+    }
+
+    #[\Livewire\Attributes\Locked]
+    public int $historyPage = 1;
+
+    public function historyPage(int $page): void { $this->historyPage = max(1, $page); }
+
+    public function honeyBookSources(): ?array {
+        if(!config('waoo.sandbox_history'))return null;
+        return app(\App\Services\History\ReadHoneyBookCustomerSources::class)->execute(\Filament\Facades\Filament::auth()->user(),$this->record->id);
+    }
+
+    public function honeyBookHistory(): ?array
+    {
+        if (!config('waoo.sandbox_history')) return null;
+        return app(\App\Services\History\ReadCustomerHistory::class)->execute(
+            \Filament\Facades\Filament::auth()->user(), $this->record->id, ['page'=>$this->historyPage]);
     }
 
     public function file(): array

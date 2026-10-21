@@ -21,6 +21,11 @@ class ViewEvent extends Page
 
     protected string $view = 'filament.pages.event-file';
 
+    public function honeyBookFacts(): ?array {
+        if(!config('waoo.sandbox_history'))return null;
+        return app(\App\Services\History\ReadHoneyBookEventFacts::class)->execute(\Filament\Facades\Filament::auth()->user(),$this->record->id);
+    }
+
     public const ACTIONS = [
         'event.created' => 'Creó el borrador', 'event.draft_updated' => 'Editó el borrador', 'booking.capacity_reserved' => 'Apartó staff y trajes',
         'finance.revision_created' => 'Fijó los montos', 'payment.zelle_received' => 'Registró un Zelle', 'payment.capacity_linked' => 'Vinculó el pago con los recursos',
