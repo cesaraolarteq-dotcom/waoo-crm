@@ -22,6 +22,7 @@ final class ReadCustomerHistory
                 $p = HistoricalIntegrity::revision($event, $revision); $f = $p['facts'];
                 $items[] = ['history_id' => $event->id, 'version' => $event->version, 'revision_id' => $revision->id,
                     'originals' => ReadHoneyBookOriginal::listing($event->project_key),
+                    'source_sha256' => $revision->source_sha256, 'balance_resolution' => HistoricalBalanceEvidence::current($event),
                     'source' => 'honeybook', 'historical' => true, 'source_date' => $f['source_date'], 'time_precision' => $f['time_precision'],
                     'status' => $f['status'], 'event_type' => $f['event_type'], 'project_name' => $p['source']['project_name'],
                     'record_kind' => $f['record_kind'] ?? 'event', 'source_fields' => $p['source'],

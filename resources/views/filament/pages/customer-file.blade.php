@@ -44,6 +44,13 @@
                 <p>Total: {{ \App\Filament\Pages\ImportHistory::money($item['booked_total_cents'], $item['currency']) }} · Pagado en HoneyBook: {{ \App\Filament\Pages\ImportHistory::money($item['paid_total_cents'], $item['currency']) }}</p>
                 <p>Festejado/a: {{ $item['source_fields']['child_name'] ?: ($item['source_fields']['celebrant_name'] ?? 'Sin dato') }} · Edad: {{ $item['source_fields']['celebrant_age'] ?? 'Sin dato' }}</p>
                 @foreach($item['originals'] as $original)<p><a href="{{ url('/admin/api/history/originals/'.$original['id']) }}">Original HoneyBook: {{ $original['kind'] }} (PDF)</a></p>@endforeach
+                @if($resolution=$item['balance_resolution'])
+                    <p>Decisión del dueño: {{ \App\Filament\Pages\HoneyBookArchiveReview::RESOLUTIONS[$resolution['kind']] }}. No es verificación bancaria.</p>
+                    @if($resolution['stale'])
+                        <p>Revisar: el origen cambió.</p>
+                    @endif
+                    <p>{{ $resolution['owner_note'] }}</p>
+                @endif
                 <details><summary>Notas y datos originales</summary><dl>
                 @foreach($item['source_fields'] as $field => $value)
                     <dt>{{ \App\Filament\Pages\ImportHistory::SOURCE[$field] ?? $field }}</dt><dd class="whitespace-pre-wrap">{{ $value === '' ? 'Sin dato' : \App\Filament\Pages\ImportHistory::displaySource($field,$value) }}</dd>

@@ -208,7 +208,8 @@ class HistoricalIntakeTest extends TestCase
         $this->assertDatabaseCount('history_import_batches', 1);
         DB::table('history_import_rows')->delete(); DB::table('history_import_batches')->delete();
         $domain = require database_path('migrations/2026_10_19_450000_create_historical_events.php');
-        $domain->down(); $migration->down(); $migration->up(); $domain->up();
+        $balances=require database_path('migrations/2026_10_21_330000_create_historical_balance_resolutions.php');
+        $balances->down(); $domain->down(); $migration->down(); $migration->up(); $domain->up(); $balances->up();
         $this->assertTrue(Schema::hasTable('history_import_rows'));
     }
     public function test_counts_reflect_cancelled_alias_and_current_ambiguous_customer_plan():void {

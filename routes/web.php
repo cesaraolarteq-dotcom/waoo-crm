@@ -83,6 +83,7 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::post('/events/{event}/costume-hold/release', [\App\Http\Controllers\Admin\QuickCostumeHoldController::class, 'release'])->whereNumber('event');
     Route::get('/quick-bookings', [\App\Http\Controllers\Admin\QuickBookingController::class, 'index']);
     Route::post('/quick-bookings', [\App\Http\Controllers\Admin\QuickBookingController::class, 'create']);
+    Route::post('/history/events/{history}/balance-resolutions', [\App\Http\Controllers\Admin\HistoricalImportController::class, 'balance']);
     Route::get('/history/report', [\App\Http\Controllers\Admin\HistoricalImportController::class, 'report']);
     Route::get('/events/{event}/honeybook-facts', [\App\Http\Controllers\Admin\HistoricalImportController::class, 'readFacts']);
     Route::post('/events/{event}/honeybook-facts', [\App\Http\Controllers\Admin\HistoricalImportController::class, 'facts']);

@@ -56,6 +56,7 @@ final class HistoricalImportController extends Controller
         return response($result['bytes'])->header('Content-Type','application/pdf')->header('Content-Disposition','attachment; filename="honeybook-original.pdf"')->header('Content-Security-Policy',"default-src 'none'; sandbox");
     }
     public function verification(Request $r,int $batch,\App\Services\History\VerifyHistoricalImport $service) {return response()->json($service->execute($r->user(),$batch));}
+    public function balance(Request $r,int $history,\App\Services\History\ResolveHistoricalBalance $service) {return response()->json($service->execute($r->user(),$history,$r->all(),(string)$r->header('Idempotency-Key')));}
     public function report(Request $r,\App\Services\History\ReadHoneyBookArchiveReport $service) {return response()->json($service->execute($r->user()));}
     public function customer(Request $r, int $customer, ReadCustomerHistory $service)
     {
