@@ -5,7 +5,7 @@ final class ApprovedClientTexts
 {
     public static function text(string $key, string $locale): string
     {
-        $entry = config('client-texts.texts.'.$key);
+        $entry = config('client-texts.texts.'.$key) ?? config('client-texts-addendum.texts.'.$key);
         if (!in_array($locale, ['es', 'en'], true) || ($entry['status'] ?? null) !== 'approved'
             || !is_string($entry[$locale] ?? null)) throw new \LogicException('Approved client text unavailable.');
         return $entry[$locale];

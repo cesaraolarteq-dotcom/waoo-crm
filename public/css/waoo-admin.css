@@ -253,3 +253,36 @@ a.wdash-item:hover{border-color:#122F94;background:#F5F7FF}
 .dark .wcal-google.warn{background:rgba(249,201,48,.08);border-color:rgba(249,201,48,.4)}
 .dark .wcal-google-flash{color:#93A7FF}
 .dark .wcal-gbusy{color:#A6AED0}
+/* Party calendar (owner 2026-10-21: "el selector de fecha no es tan dinámico"): always-visible month grid in Quick booking. */
+.waoo-cal{max-width:23rem;padding:12px 14px 10px;border:1px solid #DFE3EF;border-radius:16px;background:#fff}
+.waoo-cal-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.waoo-cal-title{font-weight:800;font-size:1rem;text-transform:capitalize;color:#122F94}
+.waoo-cal-nav{width:2.25rem;height:2.25rem;border-radius:999px;font-size:1.35rem;line-height:1;color:#122F94;background:#EEF1F9;cursor:pointer}
+.waoo-cal-nav:hover{background:#DDE3F5}.waoo-cal-nav:disabled{opacity:.3;cursor:not-allowed}
+.waoo-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.waoo-cal-dow{text-align:center;font-size:.7rem;font-weight:700;letter-spacing:.06em;color:#8A91B0;padding:4px 0}
+.waoo-cal-cell{aspect-ratio:1}
+.waoo-cal-day{position:relative;width:100%;height:100%;border-radius:999px;font-weight:600;font-variant-numeric:tabular-nums;cursor:pointer;transition:background-color .12s}
+.waoo-cal-cell:nth-child(7n+1) .waoo-cal-day:not(.is-selected):not(:disabled),.waoo-cal-cell:nth-child(7n) .waoo-cal-day:not(.is-selected):not(:disabled){background:#FFF0F7}
+.waoo-cal-day:hover:not(:disabled){background:#EEF1F9}
+.waoo-cal-day:disabled{opacity:.28;cursor:not-allowed}
+.waoo-cal-day.is-today{box-shadow:inset 0 0 0 2px #122F94;color:#122F94;font-weight:800}
+.waoo-cal-day.is-selected{background:#122F94!important;color:#fff;font-weight:800;box-shadow:none}
+.waoo-cal-day:focus-visible{outline:2px solid #FF017C;outline-offset:1px}
+.waoo-cal-day.is-one::after,.waoo-cal-day.is-many::after{content:"";position:absolute;left:50%;bottom:5px;height:5px;border-radius:99px;transform:translateX(-50%)}
+.waoo-cal-day.is-one::after{width:5px;background:#122F94}
+.waoo-cal-day.is-many::after{width:14px;background:#FF017C}
+.waoo-cal-day.is-selected::after{background:#fff}
+.waoo-cal-picked{margin:8px 2px 0;font-weight:700;color:#1D2440;text-transform:none}
+.waoo-cal-picked::first-letter{text-transform:uppercase}
+.waoo-cal-legend{display:flex;align-items:center;gap:6px;margin:4px 2px 0;font-size:.75rem;color:#8A91B0}
+.waoo-cal-legend .dot{width:6px;height:6px;border-radius:99px;background:#122F94}.waoo-cal-legend .bar{width:14px;height:5px;border-radius:99px;background:#FF017C;margin-left:8px}
+.dark .waoo-cal{background:#11162B;border-color:rgba(255,255,255,.12)}
+.dark .waoo-cal-title,.dark .waoo-cal-nav{color:#93A7FF}.dark .waoo-cal-nav{background:rgba(255,255,255,.08)}
+.dark .waoo-cal-day:hover:not(:disabled){background:rgba(255,255,255,.08)}
+.dark .waoo-cal-cell:nth-child(7n+1) .waoo-cal-day:not(.is-selected):not(:disabled),.dark .waoo-cal-cell:nth-child(7n) .waoo-cal-day:not(.is-selected):not(:disabled){background:rgba(255,1,124,.10)}
+.dark .waoo-cal-day.is-today{box-shadow:inset 0 0 0 2px #7A93FF;color:#93A7FF}
+.dark .waoo-cal-day.is-selected{background:#7A93FF!important;color:#0B1026}
+.dark .waoo-cal-day.is-one::after{background:#93A7FF}
+.dark .waoo-cal-picked{color:#E8EBF7}
+@media (prefers-reduced-motion:reduce){.waoo-cal-day{transition:none}}

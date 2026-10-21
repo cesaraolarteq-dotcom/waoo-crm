@@ -194,7 +194,18 @@ class QuickPaymentsTest extends TestCase
             'customer_mode'=>'new','name'=>null,'phone'=>null,'email'=>null,'locale'=>'es','expires_days'=>14,
             'characters'=>[['price_version_id'=>PriceVersion::sole()->id,'character_id'=>Character::sole()->id,'quantity'=>1,'outfit'=>'0']]])
             ->call('save')->assertHasNoFormErrors()->assertSee('SIN PAGAR');
+        // Owner 2026-10-21: the message names no amount (Zelle has no fee; the link shows Stripe's 3% before paying) and greets a nameless client plainly.
+        $result=$page->get('result');$this->assertStringStartsWith('¡Hola! Para confirmar',$result['msg_es']);$this->assertStringStartsWith('Hi! To confirm',$result['msg_en']);
+        foreach(['msg_es','msg_en'] as $m){$this->assertStringNotContainsString('$',$result[$m]);$this->assertStringNotContainsString('3 %',$result[$m]);$this->assertStringContainsString('Zelle',$result[$m]);}
         $this->assertDatabaseCount('ledger_entries',0);$this->assertDatabaseCount('resource_reservations',1);
+    }
+    public function test_owner_session_opening_the_client_link_sees_a_read_only_notice_instead_of_an_error():void
+    {
+        // Owner 2026-10-21: copying the link into the same browser showed "403". Paying stays client-only; the page now explains it.
+        $r=$this->create();parse_str(parse_url($r->portal_url,PHP_URL_FRAGMENT),$fragment);
+        $this->postJson('/portal/api/session',['token'=>$fragment['token']])->assertOk();
+        $this->actingAs($this->owner)->get('/portal')->assertOk()->assertSee('Estás viendo este enlace con tu sesión de dueño')->assertDontSee('Pagué por Zelle');
+        $this->getJson('/portal/api/quick-payment')->assertForbidden();
     }
     public function test_signed_http_webhook_routes_the_quick_payment_without_a_worker():void
     {

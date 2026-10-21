@@ -28,6 +28,19 @@ class ApprovedClientTextsTest extends TestCase
         self::assertSame(ApprovedMail::KEYS, MailTemplatesDraft::KEYS);
     }
 
+    public function test_addendum_matches_its_owner_approved_source_and_the_unpaid_link_message_names_no_amount(): void
+    {
+        $source = json_decode(file_get_contents(base_path('docs/templates/APPROVED-CLIENT-TEXTS-2026-10-21.json')), true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame($source, config('client-texts-addendum'));
+        self::assertNull(config('client-texts.texts.quick_unpaid_link_msg'));
+        foreach (['es', 'en'] as $locale) {
+            $text = ApprovedClientTexts::text('quick_unpaid_link_msg', $locale);
+            self::assertStringNotContainsString('{amount}', $text);
+            self::assertStringNotContainsString('3', $text);
+            self::assertStringContainsString('{link}', $text);
+        }
+    }
+
     public function test_seven_approved_definitions_render_the_actual_bilingual_words_with_all_buttons_and_safe_inline_links(): void
     {
         config(['app.url' => 'https://localhost']);
