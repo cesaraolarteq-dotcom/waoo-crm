@@ -98,7 +98,9 @@ final class PortalPageController extends Controller
         $canReviewDetails = config('waoo.sandbox_immediate_contracts') && $canDetails && !$signed && !$details['reviewed'];
         $reviewDetails = $canReviewDetails && $request->boolean('review_details');
         $quickBooking=\App\Services\Booking\QuickPaymentProtocol::booking($event->id,false);
-        $quickPayment=$quickBooking ? app(\App\Services\Booking\ReadQuickPayment::class)->execute($client) : null;
+        // A later owner-issued ordinary balance link keeps its original scopes; it is not the unpaid payment grant.
+        $quickPayment=$quickBooking && $quickBooking->portal_grant_id===$grant->id && in_array('quick_booking.pay',$grant->scopes,true)
+            ? app(\App\Services\Booking\ReadQuickPayment::class)->execute($client) : null;
         $step = match (true) {
             $reviewDetails => 'details',
             $canDetails && ! $signed && ! $details['submission'] => 'details',

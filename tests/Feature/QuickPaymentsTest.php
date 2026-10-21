@@ -253,6 +253,15 @@ class QuickPaymentsTest extends TestCase
         $intent=\App\Models\PaymentIntent::sole();$this->assertSame('superseded',$intent->status);$this->assertNotNull($intent->stripe_checkout_session_id);
         $this->assertSame('expired',$g->sessions[$intent->stripe_checkout_session_id]['status']);$this->assertDatabaseCount('ledger_entries',0);
     }
+    public function test_later_owner_issued_balance_link_preserves_ordinary_read_scope_without_gaining_quick_payment_scope():void
+    {
+        $r=$this->create();$this->client($r);$this->details();$g=$this->gateway();$this->checkout();$sid=\App\Models\PaymentIntent::sole()->stripe_checkout_session_id;$g->pay($sid);$this->webhook($g,$sid);
+        $this->actingAs($this->owner);$grant=app(\App\Services\Portal\IssuePortalGrant::class)->execute($this->owner,$r->event->id,[
+            'customer_id'=>$r->customer->id,'expires_at'=>now()->addDay()->toIso8601String(),'scopes'=>['payments.read']]);
+        auth()->logout();$this->postJson('/portal/api/session',['token'=>$grant->token])->assertOk();
+        $this->get('/portal')->assertOk()->assertSee('Tu fiesta')->assertDontSee('id="quick-payment"',false);
+        $this->getJson('/portal/api/quick-payment')->assertForbidden();$this->assertDatabaseCount('ledger_entries',2);
+    }
     public function test_blank_identity_unpaid_path_has_real_inventory_and_no_fabricated_payment():void
     {
         $r=$this->create();$this->assertSame('awaiting_payment',$r->payment_state);$this->assertNull(Customer::sole()->name);
