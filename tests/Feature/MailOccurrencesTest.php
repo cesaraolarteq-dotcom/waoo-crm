@@ -41,6 +41,7 @@ class MailOccurrencesTest extends TestCase
     }
     public function test_real_lead_hook_never_creates_fake_event_customer_finance_or_outbound(): void
     {
+        $this->freezeSecond(); // the retry must sign the identical body (submitted_at/timestamp), or CI flakes across a second boundary
         $before = [DB::table('events')->count(), DB::table('customers')->count(), DB::table('financial_revisions')->count()];
         $key = (string) Str::uuid(); $lead = $this->lead($key); $this->lead($key);
         $occurrence = MailOccurrence::sole(); $this->assertSame('inquiry_received', $occurrence->key);
