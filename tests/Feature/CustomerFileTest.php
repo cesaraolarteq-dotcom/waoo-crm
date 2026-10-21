@@ -26,8 +26,13 @@ class CustomerFileTest extends TestCase
     {
         $this->actingAs(User::factory()->create(['role'=>'owner_admin','active'=>true,'two_factor_secret'=>encrypt('JBSWY3DPEHPK3PXP'),'two_factor_confirmed_at'=>now()]));
         $customer=Customer::create(['name'=>null,'phone'=>null,'email'=>null,'locale'=>'es']);
-        $this->get('/admin/clientas/'.$customer->id)->assertOk()->assertSee('Cliente por completar');
-        $this->assertNull($customer->fresh()->name);
+        try {
+            $this->get('/admin/clientas/'.$customer->id)->assertOk()->assertSee('Cliente por completar');
+            $this->assertNull($customer->fresh()->name);
+        } finally {
+            // Remove only this unlinked synthetic fixture before the guarded schema rollback.
+            $customer->delete();
+        }
     }
 
 }
