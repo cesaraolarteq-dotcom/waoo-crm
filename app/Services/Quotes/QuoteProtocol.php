@@ -27,7 +27,7 @@ final class QuoteProtocol
     public static function assertSource(Event $e,Quote $q,QuoteRevision $r): void
     {
         RecordWriteRejected::unless($e->status==='draft' && $e->customer_id===$q->customer_id && $e->version===$r->event_version
-            && $q->current_revision===$r->revision,409,'El borrador o la cotización cambió. Revisa una nueva versión.');
+            && $q->current_revision===$r->revision && (int)($r->event_snapshot['billing_company_version']??0)===(int)$e->billing_company_version,409,'El borrador o la cotización cambió. Revisa una nueva versión.');
     }
     public static function consents(string $locale): array
     {

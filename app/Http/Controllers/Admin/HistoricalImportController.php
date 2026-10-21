@@ -8,6 +8,10 @@ use Illuminate\Http\Request;
 
 final class HistoricalImportController extends Controller
 {
+    public function reassign(Request $r, int $history, \App\Services\History\ReassignHistoricalCustomer $service)
+    {
+        return response()->json($service->execute($r->user(), $history, $r->all(), (string)$r->header('Idempotency-Key')))->header('Cache-Control','no-store, private');
+    }
     public function stage(Request $r, StageHistoricalImport $service)
     {
         $d = ImportInput::input($r->all(), ['file' => 'required|file']);

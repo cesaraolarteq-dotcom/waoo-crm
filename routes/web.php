@@ -98,6 +98,9 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::post('/history/imports/{batch}/commit-safe', [\App\Http\Controllers\Admin\HistoricalImportController::class, 'bulk']);
     Route::post('/history/imports/{batch}/close', [\App\Http\Controllers\Admin\HistoricalImportController::class, 'close']);
     Route::post('/history/imports/{batch}/discard', [\App\Http\Controllers\Admin\HistoricalImportController::class, 'discard']);
+    Route::post('/events/{event}/billing-company', [\App\Http\Controllers\Admin\EventBillingController::class, 'save'])->whereNumber('event');
+    Route::get('/events/{event}/billing-preview.pdf', [\App\Http\Controllers\Admin\EventBillingController::class, 'preview'])->whereNumber('event');
+    Route::post('/history/events/{history}/reassign-customer', [\App\Http\Controllers\Admin\HistoricalImportController::class, 'reassign'])->whereNumber('history');
     Route::get('/customers/{customer}/history', [\App\Http\Controllers\Admin\HistoricalImportController::class, 'customer']);
     Route::get('/events/{event}/client-details', [\App\Http\Controllers\Admin\ClientDetailsController::class, 'index']);
     Route::post('/events/{event}/client-details/{submission}/approve', [\App\Http\Controllers\Admin\ClientDetailsController::class, 'approve']);

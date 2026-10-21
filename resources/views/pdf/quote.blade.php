@@ -8,6 +8,12 @@
 <h1>Waoo Party — {{ $es?'Cotización':'Quote' }} {{ $p['number'] }}</h1>
 <p>{{ $es?'Revisión':'Revision' }} {{ $p['revision'] }} · {{ $es?'Válida hasta':'Valid until' }} {{ $when($p['valid_until']) }}</p>
 <p>{{ $p['customer_name'] }}<br>{{ $when($p['event']['starts_at']) }} – {{ $when($p['event']['ends_at']) }}<br>{{ $p['event']['address'] ?? '' }} {{ $p['event']['postal_code'] ?? '' }}</p>
+@if($company=$p['event']['billing_company']??null)
+<p>{{ $es?'Facturar a:':'Bill to:' }} <b>{{ $company['name'] }}</b> · {{ $es?'Atención:':'Attention:' }} {{ $p['customer_name'] }}
+@if(!empty($company['email']))<br>{{ $company['email'] }}@endif
+@if(!empty($company['address']))<br>{{ $company['address'] }}@endif
+</p>
+@endif
 <table><thead><tr><th>{{ $es?'Servicio':'Service' }}</th><th class="money">USD</th></tr></thead><tbody>
 @foreach($p['lines'] as $line)
 <tr><td><b>{{ $line['name'] }}</b> · {{ $line['duration_minutes'] }} min<br>{{ $line['long_description'] }}

@@ -4,6 +4,12 @@
     $money = fn ($c) => \App\Filament\Support\Labels::money($c);
 @endphp
 <x-filament-panels::page>
+    @if($e->billing_company)
+        <x-filament::section heading="Facturar a empresa">
+            <p>{{ $e->billing_company['name'] }} · Atención: {{ \App\Services\Billing\BillingCompany::person($e) }}</p>
+            <p>{{ $e->billing_company['email']??'' }} {{ $e->billing_company['address']??'' }}</p>
+        </x-filament::section>
+    @endif
     @include('filament.pages.partials.quick-payment-state',['event'=>$e])
     <div class="wmoney-states">
         <span>Recursos: <b>{{ $f['status'] }}</b></span>

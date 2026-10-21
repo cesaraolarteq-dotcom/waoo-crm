@@ -41,6 +41,7 @@ final class AcceptSignature
             }
             $signature = app(SignatureProvider::class)->capture($contract, $client, $data, $request);
             $contract->fill(['state' => 'signed', 'signed_at' => $signature->accepted_at, 'version' => $contract->version + 1])->save();
+            if(($contract->commercial_snapshot['client_details']['schema_version']??1)===2)\App\Services\Billing\BillingCompany::apply($event,$contract->commercial_snapshot['billing_company']??null,null);
             // Client evidence is not a users-table owner; retain grant/customer provenance in the client audit payload.
             Audit::recordSystem('contract.client_signed', $contract, ['state' => 'issued'], ['state' => 'signed', 'signature_evidence_id' => $signature->id, 'customer_id' => $client->customerId, 'portal_grant_id' => $client->grantId, 'presented_pdf_sha256' => $contract->presented_pdf_sha256]);
             MutationKey::store($scope, $key, $hash, 'signature_evidence', $signature->id);

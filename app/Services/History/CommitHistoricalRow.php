@@ -80,7 +80,7 @@ final class CommitHistoricalRow
                     'payload_sha256' => MutationKey::hash($payload), 'created_by' => $actor->id]);
                 $history->current_revision_id = $revision->id; $history->save();
             }
-            $this->contact($actor, $p['source']['contact_id'], $customer->id);
+            $this->contact($actor, $p['source']['contact_id'], $customer->id, $p['source']['project_id']);
             $batch->version++; $row->version++;
             $result = ['state' => $state, 'history_id' => $history->id, 'history_version' => $history->version,
                 'revision_id' => $revision->id, 'customer_id' => $customer->id, 'batch_version' => $batch->version, 'row_version' => $row->version];
@@ -133,9 +133,12 @@ final class CommitHistoricalRow
         return Audit::metadataOnly(fn () => app(SaveCustomer::class)->execute($actor, $input));
     }
 
-    private function contact(User $actor, string $sourceId, int $customerId): void
+    private function contact(User $actor, string $sourceId, int $customerId, string $projectId): void
     {
         if ($sourceId === '') return;
+        if (($corrected = HistoricalCustomerBinding::project($projectId)) !== null) {
+            RecordWriteRejected::unless($corrected === $customerId, 409, 'La corrección de clienta requiere revisión.'); return;
+        }
         $key = hash('sha256', $sourceId);
         $existing = ExternalCustomerLink::where('source_system', 'honeybook')->where('contact_key', $key)->lockForUpdate()->first();
         if ($existing) {
@@ -155,8 +158,9 @@ final class CommitHistoricalRow
         RecordWriteRejected::unless(in_array($r['state'], ['imported','unchanged'], true), 409, 'La fila fue excluida.');
         $history = HistoricalEvent::whereKey($r['history_id'])->lockForUpdate()->firstOrFail();
         $revision = HistoricalEventRevision::whereKey($r['revision_id'])->lockForUpdate()->firstOrFail();
+        HistoricalIntegrity::revision($history, HistoricalEventRevision::findOrFail($history->current_revision_id));
         HistoricalIntegrity::revision($history, $revision, false);
-        RecordWriteRejected::unless($history->customer_id === $r['customer_id'] && $revision->version === $r['history_version'], 409, 'La evidencia histórica requiere revisión.');
+        RecordWriteRejected::unless($revision->customer_id === $r['customer_id'] && $revision->version === $r['history_version'], 409, 'La evidencia histórica requiere revisión.');
         return $r;
     }
 }

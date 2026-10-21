@@ -14,14 +14,16 @@ final class ClientSubmissionFingerprint
     public static function capture(ClientDetailsSubmission $submission): array
     {
         $data = array_intersect_key($submission->data, array_flip(self::DATA));
+        $schema=1;
+        if(array_key_exists('billing_company',$submission->data)){$schema=2;$data['billing_company']=$submission->data['billing_company'];}
         $consent = $submission->data['sms_consent_record'] ?? null;
         $data['sms_consent_record'] = is_array($consent)
             ? array_intersect_key($consent, array_flip(['version','text','sha256','accepted_at'])) : null;
-        $hash = MutationKey::hash(['schema_version' => 1, 'id' => $submission->id, 'event_id' => $submission->event_id,
+        $hash = MutationKey::hash(['schema_version' => $schema, 'id' => $submission->id, 'event_id' => $submission->event_id,
             'customer_id' => $submission->customer_id, 'portal_grant_id' => $submission->portal_grant_id,
             'revision' => $submission->revision, 'event_version' => $submission->event_version, 'data' => $data,
             'base_customer_snapshot' => array_intersect_key($submission->base_customer_snapshot, array_flip(['name','email','phone','locale'])),
             'submitted_at' => $submission->submitted_at->utc()->toIso8601String()]);
-        return ['schema_version' => 1, 'submission_id' => $submission->id, 'submission_revision' => $submission->revision, 'submission_sha256' => $hash];
+        return ['schema_version' => $schema, 'submission_id' => $submission->id, 'submission_revision' => $submission->revision, 'submission_sha256' => $hash];
     }
 }

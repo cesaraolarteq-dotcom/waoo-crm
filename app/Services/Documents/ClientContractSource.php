@@ -66,7 +66,7 @@ final class ClientContractSource
     public static function snapshot(Event $event, FinancialRevision $finance, array $values, array $provenance): array
     {
         $booking = \App\Services\Booking\QuickPaymentProtocol::booking($event->id);
-        return [...($booking ? ['quick_payment_source'=>['schema_version'=>1,'booking_id'=>$booking->id,'agreement_sha256'=>$booking->agreement_sha256]] : []), 'client' => ['first_name' => $values['first_name'], 'last_name' => $values['last_name'], 'address' => $values['billing_address'],
+        return [...\App\Services\Billing\BillingCompany::snapshot(array_key_exists('billing_company',$values)?$values['billing_company']:$event->billing_company), ...($booking ? ['quick_payment_source'=>['schema_version'=>1,'booking_id'=>$booking->id,'agreement_sha256'=>$booking->agreement_sha256]] : []), 'client' => ['first_name' => $values['first_name'], 'last_name' => $values['last_name'], 'address' => $values['billing_address'],
             'email' => $values['email'], 'phone' => $values['phone']], 'client_details' => $provenance,
             'event' => ['date_long' => $event->starts_at->setTimezone('America/Chicago')->locale('en')->translatedFormat('D, M j, Y'),
                 'start_time' => $event->starts_at->setTimezone('America/Chicago')->format('g:i a'), 'end_time' => $event->ends_at->setTimezone('America/Chicago')->format('g:i a'), 'address' => $event->address ?: $values['event_address']],

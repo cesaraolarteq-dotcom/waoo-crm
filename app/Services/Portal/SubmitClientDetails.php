@@ -18,7 +18,8 @@ final class SubmitClientDetails
     {
         Sandbox::require('sandbox_documents');
         if ($client->adminAuthenticated) throw new AuthorizationException('Usa el acceso del cliente para completar sus datos.');
-        $data = RecordInput::validate($input, [
+        $input = \App\Services\Billing\BillingCompany::input($input);
+        $data = RecordInput::validate($input, [...\App\Services\Billing\BillingCompany::rules(),
             'expected_event_version' => 'required|integer|min:1', 'expected_revision' => 'required|integer|min:0', 'first_name' => 'required|string|max:120', 'last_name' => 'required|string|max:120',
             'phone' => 'required|string|max:40', 'email' => 'required|email|max:255', 'billing_address' => 'required|string|max:255', 'event_address' => 'required|string|max:255',
             'event_postal_code' => ['required','string','regex:/^[0-9]{5}(?:-[0-9]{4})?$/'], 'locale' => ['sometimes', Rule::in(['es','en'])],

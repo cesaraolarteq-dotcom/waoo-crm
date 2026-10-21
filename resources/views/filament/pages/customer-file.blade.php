@@ -40,6 +40,9 @@
         <p>Información original de HoneyBook; los importes no son recibos verificados en banco.</p>
         @forelse($history['items'] as $item)
             <article class="rounded-xl border border-gray-200 p-4 my-3">
+                @if(config('waoo.sandbox_history_verification'))
+                    <button type="button" wire:click="startHistoryRelink({{ $item['history_id'] }})">Corregir clienta del historial</button>
+                @endif
                 <h3>{{ $item['record_kind'] === 'prospect' ? 'Prospecto sin fecha' : $item['source_date'] }} · {{ $item['project_name'] }}</h3>
                 <p>Total: {{ \App\Filament\Pages\ImportHistory::money($item['booked_total_cents'], $item['currency']) }} · Pagado en HoneyBook: {{ \App\Filament\Pages\ImportHistory::money($item['paid_total_cents'], $item['currency']) }}</p>
                 <p>Festejado/a: {{ $item['source_fields']['child_name'] ?: ($item['source_fields']['celebrant_name'] ?? 'Sin dato') }} · Edad: {{ $item['source_fields']['celebrant_age'] ?? 'Sin dato' }}</p>
@@ -58,6 +61,25 @@
                 </dl></details>
             </article>
         @empty <p>No hay historial importado para esta clienta.</p> @endforelse
+        @if($this->relinkPins)
+            <section class="rounded-xl border p-4" aria-label="Corregir vínculo de historial">
+                <p>Solo cambia esta fiesta histórica. Se conserva la evidencia original.</p>
+                <label>Destino <select wire:model.live="relinkMode"><option value="existing">Clienta existente</option><option value="new">Clienta nueva</option></select></label>
+                @if($this->relinkMode === 'existing')
+                    <label>Clienta <select wire:model="relinkCustomerId"><option value="">Seleccionar</option>
+                        @foreach($this->relinkCustomers as $id=>$option)
+                            <option value="{{ $id }}">#{{ $id }} · {{ $option['name'] }}</option>
+                        @endforeach
+                    </select></label>
+                @else
+                    <label>Nombre <input wire:model="relinkName" maxlength="255"></label>
+                    <label>Correo <input wire:model="relinkEmail" type="email" maxlength="255"></label>
+                    <label>Teléfono <input wire:model="relinkPhone" maxlength="40"></label>
+                @endif
+                <label>Motivo obligatorio <textarea wire:model="relinkReason" minlength="10" maxlength="2000"></textarea></label>
+                <button type="button" wire:click="saveHistoryRelink" wire:loading.attr="disabled">Guardar corrección</button>
+            </section>
+        @endif
         <p>Página {{ $history['page']['number'] }} de {{ $history['page']['last'] }}</p>
         @if($history['page']['number'] > 1)<button wire:click="historyPage({{ $history['page']['number'] - 1 }})">Anteriores</button>@endif
         @if($history['page']['number'] < $history['page']['last'])<button wire:click="historyPage({{ $history['page']['number'] + 1 }})">Siguientes</button>@endif

@@ -17,7 +17,8 @@ final class CreateUnpaidQuickBooking
     {
         QuickPaymentProtocol::gate(); $actor = RecordActor::authorize($actor);
         RecordWriteRejected::unless(DB::transactionLevel() === 0, 409, 'No se pudo iniciar la reserva.');
-        $data = QuickStripeLeases::input($input, [
+        $input = \App\Services\Billing\BillingCompany::input($input);
+        $data = QuickStripeLeases::input($input, [...\App\Services\Billing\BillingCompany::rules(),
             'deposit_received'=>'required|declined', 'deposit'=>'prohibited',
             'customer_id'=>'required_without:new_customer|prohibits:new_customer|integer|exists:customers,id',
             'new_customer'=>'required_without:customer_id|prohibits:customer_id|array:name,phone,email,locale',

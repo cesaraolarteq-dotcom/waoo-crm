@@ -13,7 +13,7 @@ final class HistoricalIntegrity
             $p = $revision->payload;
             self::check(is_array($p) && hash_equals($revision->payload_sha256, MutationKey::hash($p))
                 && ($p['history_id'] ?? null) === $event->id && $revision->historical_event_id === $event->id
-                && ($p['customer_id'] ?? null) === $event->customer_id && $revision->customer_id === $event->customer_id
+                && ($p['customer_id'] ?? null) === $revision->customer_id && (!$current || $revision->customer_id === $event->customer_id)
                 && ($p['version'] ?? null) === $revision->version && (!$current || ($event->version === $revision->version && $event->current_revision_id === $revision->id)) && ($p['created_by'] ?? null) === $revision->created_by
                 && $event->project_key === hash('sha256', $p['source']['project_id'])
                 && $revision->source_sha256 === MutationKey::hash($p['source'])

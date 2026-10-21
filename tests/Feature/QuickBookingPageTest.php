@@ -62,6 +62,14 @@ class QuickBookingPageTest extends TestCase
             'expires_days' => 14], $over);
     }
 
+    public function test_company_checkbox_and_name_reach_the_booking_service(): void
+    {
+        config(['waoo.sandbox_company'=>true]);$this->bind();
+        Livewire::test(QuickBooking::class)->fillForm($this->form(['name'=>'María González','company_enabled'=>true,'company_name'=>'Celebraciones del Sol']))
+            ->call('save')->assertHasNoFormErrors();
+        $this->assertSame(['name'=>'Celebraciones del Sol'],$this->calls[0][1]['billing_company']);
+    }
+
     public function test_page_requires_both_sandbox_flags_even_after_service_exists(): void
     {
         config(['waoo.sandbox_documents' => false]);

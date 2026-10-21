@@ -34,6 +34,7 @@ final class PrintRenderer
     public function html(string $source, string $terms, array $context): string
     {
         $this->validateTerms($terms);
+        if(!empty($context['billing_company']))$source=str_replace('<body>', '<body>{{#billing_company}}<section><p><strong>Facturar a / Bill to: {{name}}</strong> · Atención / Attention: {{person}}<br>{{email}}<br>{{address}}</p></section>{{/billing_company}}', $source);
         // Adapt layout-only evidence wording to the access method actually used. Legal clauses are untouched.
         $source = str_replace('through a personal link sent to that email.', '{{signer.access_description}}', $source);
         $source = str_replace('<span class="muted">Signed {{provider.signed_at}}</span>', '<span class="muted">{{#if provider.signed_at}}Signed {{provider.signed_at}}{{/if}}{{#if provider.pending}}Provider acceptance pending{{/if}}</span>', $source);
