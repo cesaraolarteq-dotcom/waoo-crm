@@ -539,7 +539,19 @@
      "ui_fix_evidence": "Codex implementation bf2ffac/7ebcf2c chosen explicitly; integrated exact bdc6c9e with Claude2d19000. Full 254/2328; server resolves Houston local time with CDT/CST choice. Both HANDOFF histories retained.",
      "ui_fix_reviewed": true,
      "ui_fix_review_evidence": "Approval of exact ee706a6/bdc6c9e relayed in owner chat; latest explicit decision selects Codex implementation. Integrated from Claude2d19000; no main merge or business acceptance claimed.",
-     "link_recovery": "Codex 68c02a5 + Claude #54 aprobado por Codex (81771b2)."
+     "link_recovery": "Codex 68c02a5 + Claude #54 aprobado por Codex (81771b2).",
+     "same_visit_signature": {
+      "api": "docs/APPROVED-CLIENT-FLOW-API.md",
+      "preparation_backend": "e22e456",
+      "contract_before_code": "81ebee7",
+      "verification": "Internal18/83 PASS50.300s; final related91/945 PASS3:36.985 PHP8.3.35/MariaDB11.8, overlapping not summed. Legacy SMS expectation fixed1fbf390: exact approved Spanish version/text, unchecked. PHP lint and diff checks pass; no full repo/GitHub Actions/staging/provider verification.",
+      "http_flow": false,
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "remaining": "B1b: durable submission hook and retry HTTP route, narrow current-source signature validation, immediate portal progression and end-to-end session/PDF/signature/security tests. Existing owner-review requirement for signing remains enforced. No live document or provider operation."
+     }
     },
     {
      "name": "Reserva rápida (tu mitad + la de la clienta)",
@@ -884,7 +896,8 @@
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "blocker": "Reglas de pago de César (tarifa personaje con peluca, preparación, mínimos, transporte, propinas, periodo). Vista previa 8b6fdce sin tarifas reales."
+     "blocker": "Reglas de pago de César (tarifa personaje con peluca, preparación, mínimos, transporte, propinas, periodo). Vista previa 8b6fdce sin tarifas reales.",
+     "design": "docs/STAFFPAY-01-API.md — v1 proposal before implementation, not reviewed; weekly Zelle/package minimum2h/driver-only manual transport/equal tips/Waoo commission. No invented rate or payment."
     },
     {
      "name": "REPORT-A: panel, lecturas y reportes congelados",
@@ -1053,5 +1066,12 @@
    ]
   }
  ],
- "pending_queue": "docs/plans/CODEX-PENDING-2026-10-20.md"
+ "pending_queue": "docs/plans/CODEX-PENDING-2026-10-20.md",
+ "staffpay_api_proposal": {
+  "path": "docs/STAFFPAY-01-API.md",
+  "backend": null,
+  "ui": false,
+  "reviewed": false,
+  "note": "Owner weekly Zelle/package-only minimum120min/driver-only manual transport/equal tips/Waoo commission; owner-only exact manual amounts and explicit unknown states. Automatic rate rounding, ambiguous multi-package duration, actual driver designation and tip-remainder policy remain unresolved; no invented formula or payment. Contract earns no score."
+ }
 }
