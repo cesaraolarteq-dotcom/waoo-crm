@@ -134,7 +134,7 @@ class QuickBooking extends Page
                     ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => \App\Filament\Support\TravelFeeFields::invalidate($get, $set)),
                 \App\Filament\Support\TravelFeeFields::feeField(true, 'Obligatorio aquí: con el depósito se fija el total.',
                     fn (Get $get, Set $set) => self::refreshDeposit($get, $set))
-                    ->afterStateUpdated(fn (Get $get, Set $set) => self::refreshDeposit($get, $set)),
+                    ->afterStateUpdated(fn (Get $get, Set $set) => self::refreshDeposit($get, $set)), // a typed fee also moves the suggested deposit
                 ...\App\Filament\Support\TravelFeeFields::extraFields(),
             ]),
             Section::make('3. Clienta')->columns(2)->schema([
@@ -210,9 +210,15 @@ class QuickBooking extends Page
         EventResource::refreshTiming($get, $set);
     }
 
+    /** Non-native time pickers keep "Y-m-d H:i:s" in raw state; the rest of the page works with Houston "H:i". */
+    public static function hm(?string $time): ?string
+    {
+        return $time !== null && preg_match('/(\d{2}:\d{2})(?::\d{2})?$/', trim($time), $m) ? $m[1] : null;
+    }
+
     public function fillEnd(Get $get, Set $set): void
     {
-        $start = $get('start_time');
+        $start = self::hm($get('start_time'));
         $minutes = PriceVersion::query()->whereIn('price_versions.id', array_map('intval', $get('price_version_ids') ?? []))
             ->join('service_variants', 'service_variants.id', '=', 'price_versions.service_variant_id')->max('service_variants.duration_minutes');
         if ($start && $minutes && preg_match('/^\d{2}:\d{2}/', $start)) {
@@ -256,7 +262,7 @@ class QuickBooking extends Page
         if ($paid && $paid < $target) {
             $line .= ' · faltan '.Labels::money($target - $paid).' para el 50 %';
         }
-        if ($get('date') && $get('start_time') && ($start = array_values(ChicagoTime::candidates($get('date'), $get('start_time')))[0] ?? null)) {
+        if ($get('date') && self::hm($get('start_time')) && ($start = array_values(ChicagoTime::candidates($get('date'), self::hm($get('start_time'))))[0] ?? null)) {
             $line .= ' · el saldo vence '.Labels::when(CarbonImmutable::parse($start)->subHours(24));
         }
 
@@ -425,8 +431,8 @@ class QuickBooking extends Page
 
     public function toServiceInput(array $s): array
     {
-        $start = ChicagoTime::toIso($s['date'], $s['start_time'], $s['start_time_choice'] ?? null, 'data.start_time');
-        $end = ChicagoTime::toIso($s['date'], $s['end_time'], $s['end_time_choice'] ?? null, 'data.end_time');
+        $start = ChicagoTime::toIso($s['date'], (string) self::hm($s['start_time']), $s['start_time_choice'] ?? null, 'data.start_time');
+        $end = ChicagoTime::toIso($s['date'], (string) self::hm($s['end_time']), $s['end_time_choice'] ?? null, 'data.end_time');
         if (strtotime($end) <= strtotime($start)) {
             throw ValidationException::withMessages(['data.end_time' => 'La hora de fin debe ser después de la de inicio (mismo día).']);
         }
@@ -474,6 +480,11 @@ class QuickBooking extends Page
             'msg_en' => "{$helloEn} Thank you for your deposit of {$paid}. We recorded your booking request for {$whenEn}. To finish your booking, please complete your details and sign your contract here: {$link} (link expires {$exp}). Your remaining balance is {$balance}. We're excited to be part of your celebration!",
             'locale' => $r->customer->locale ?? 'es',
             'phone' => $r->customer->phone ?? null,
+            // Costume hold attempted right after the deposit (Codex V1); shown so the owner knows whether the costume is held.
+            'hold' => ($h = (array) ($r->costume_hold ?? [])) && ($h['state'] ?? 'not_required') !== 'not_required' ? [
+                'label' => \App\Filament\Resources\Events\Pages\ViewEvent::HOLD_STATE[$h['state']] ?? $h['state'],
+                'ok' => $h['state'] === 'held' && ($h['issues'] ?? []) === [],
+                'issues' => array_values(array_unique(array_map(fn ($i) => \App\Filament\Resources\Events\Pages\ViewEvent::HOLD_ISSUES[$i] ?? 'Requiere revisión.', $h['issues'] ?? [])))] : null,
         ];
     }
 

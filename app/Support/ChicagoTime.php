@@ -18,6 +18,8 @@ final class ChicagoTime
     /** @return array<string, string> choice => ISO 8601, only the offsets that really produce that local time */
     public static function candidates(?string $date, ?string $time): array
     {
+        // Non-native time pickers keep "Y-m-d H:i:s" in raw form state: only the wall-clock time matters here.
+        if ($time && preg_match('/^\d{4}-\d{2}-\d{2}[ T](\d{2}:\d{2})/', $time, $m)) $time = $m[1];
         if (! $date || ! $time || ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) || ! preg_match('/^\d{2}:\d{2}/', $time)) {
             return [];
         }

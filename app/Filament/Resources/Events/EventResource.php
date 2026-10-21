@@ -161,7 +161,7 @@ class EventResource extends Resource
                         ->visible(fn (Get $get) => count(self::configurablePrices($get('../../price_version_ids') ?? [])) > 1)
                         ->options(fn (Get $get) => self::configurablePrices($get('../../price_version_ids') ?? [])),
                     Select::make('character_id')->label('Personaje')->native(false)->searchable()->nullable()
-                        ->options(fn (Get $get) => self::characterOptions($get('price_version_id'), null, $get('character_id')))
+                        ->options(fn (Get $get) => self::characterOptions(self::rowPrice($get), null, $get('character_id')))
                         ->live()->afterStateUpdated(function (Get $get, Set $set) {
                             $set('outfit', null); self::refreshTitle($get, $set, '../../');
                         }),
@@ -361,7 +361,7 @@ class EventResource extends Resource
             $service = ['price_version_id' => (int) $id];
             if (array_key_exists($id, $configurable)) {
                 // Explicit list for configurable services (even empty), so the backend never keeps stale choices silently.
-                $service['characters'] = collect($data['characters'] ?? [])->filter(fn ($c) => filled($c['character_id'] ?? null) && (int) ($c['price_version_id'] ?? $solePrice) === (int) $id)
+                $service['characters'] = collect($data['characters'] ?? [])->filter(fn ($c) => filled($c['character_id'] ?? null) && (int) (filled($c['price_version_id'] ?? null) ? $c['price_version_id'] : $solePrice) === (int) $id)
                     ->map(fn ($c) => ['character_id' => (int) $c['character_id'], 'quantity' => (int) $c['quantity'],
                         // OUTFIT-01: optional exact costume version and private owner note, kept on every explicit row.
                         'outfit' => filled($c['outfit'] ?? null) ? (string) $c['outfit'] : null,

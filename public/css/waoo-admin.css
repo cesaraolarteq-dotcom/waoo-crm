@@ -225,3 +225,5 @@ a.wdash-item:hover{border-color:#122F94;background:#F5F7FF}
 .wqb-hold summary{cursor:pointer;font-weight:700;min-height:44px;display:flex;align-items:center}
 .wqb-hold details[open]{display:grid;gap:10px}.wqb-hold label{display:grid;gap:6px;font-weight:600}
 .wqb-hold textarea{width:100%;font:inherit;color:inherit;background:transparent;border:1px solid rgba(100,116,139,.5);border-radius:10px;padding:10px}
+
+.wqb-ok{color:#166534;background:#ecfdf3;border:1px solid #bbf7d0;border-radius:10px;padding:10px 12px;margin:8px 0}

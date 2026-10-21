@@ -83,10 +83,10 @@ class QuickBookingCostumeHoldPanelTest extends TestCase
             ->assertSee('No se pudo comprobar la liberación')->assertDontSee('SYNTHETIC_PRIVATE_STORAGE_DETAIL');
         $this->assertDatabaseCount('resource_reservations',1);$this->assertDatabaseCount('ledger_entries',1);$this->assertSame(1,QuickCostumeHold::sole()->version);
     }
-    public function test_event_file_and_saved_quick_booking_embed_the_same_read_only_hold_panel():void
+    public function test_event_file_and_saved_quick_booking_show_the_same_hold_and_literal_zero_wardrobe():void
     {
         \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('admin'));
-        $this->get('/admin/eventos/'.$this->booking->event->id)->assertOk()->assertSee('Apartado por revisar')->assertSee('Vestuario: 0')
+        $this->get('/admin/eventos/'.$this->booking->event->id)->assertOk()->assertSee('Revisar el apartado')->assertSee('Cabeza de Mickey · Mickey (0)')
             ->assertHeader('Cache-Control','no-store, private');
         $result=\App\Filament\Pages\QuickBooking::presentResult($this->booking,[]);
         Livewire::test(\App\Filament\Pages\QuickBooking::class)->set('result',$result)->assertSee('Apartado por revisar')->assertSee('Vestuario: 0');

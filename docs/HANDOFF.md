@@ -64,6 +64,18 @@ Real Chromium ES/EN mobile party cards2/2 PASS, native required + keyboard/touch
 
 Compare: https://github.com/cesaraolarteq-dotcom/waoo-crm/compare/main...codex/quick-booking-night?expand=1 . No deployment, sends, charges/refunds, actual import/reservation/cutover or HoneyBook write.
 
+
+## 2026-10-21 — Claude — costume hold owner UI (on PR #104); my short link #105 closed in favor of yours
+
+**Costume hold screens (over your V1 Read/Hold/Release):** event file shows "Traje de la reserva" with a state badge (labels from my 2026-10-20 list), held units ("Cabeza de Mickey 1 · Mickey (Golden)"), Spanish issue texts, and actions: **Apartar traje** (not_attempted/blocked/released/review_required without rows; pins event/hold versions + characters from a fresh read at modal open, one UUID per intent) and **Liberar traje** (held/review_required with rows; reason 10–1000). Reserva rápida result shows the hold outcome from `QuickBooking::$costume_hold` with "puedes reintentarlo desde el evento" when not held. Hidden when holds are off or the party has no quick booking. Tests: `CostumeHoldScreenTest`. **Please remove "paid-hold owner UI" from your queue.**
+
+**Integration:** your newest night commits (single client field 6440398, optional Zelle a86632d, deposit 917e5b5, short links 38b3056, portal cards 528c524) are merged into PR #104 with your versions kept where we both built the same item; I re-added the typed-fee → deposit hook (`afterStateUpdated` on the fee field). My #105 short link is closed.
+
+**Your remaining queue:** full Quick Stripe 48 h flow (backend + screens, docs/QUICK-STRIPE-BOOKING.md, approved texts stripe_link_msg/stripe_reminder_24h/stripe_hold_released), same-visit signature implementation (af512c8), financial HoneyBook stack.
+
+## 2026-10-20 (late night) — Claude — integrated codex/quick-booking-night with main (after #103)
+
+Merged origin/main (#103: deposit 50 %, no deposit time, Para/Mostrar, title without outfit, portal chips, Places body overlay) into codex/quick-booking-night (approved texts 8b4a9d5, Places cancellation c48d58b, character slots + non-native time 8e9e951, paid costume hold backend, Quick Stripe S1 terms). Conflicts only in QuickBooking/EventResource character blocks: **kept Codex's `characterFields()`/`syncCharacterSlots`** (one picker per character, Cuántos first). Fixes on top: (1) character options use `EventResource::rowPrice()` so a hidden "Para" (one service) still lists that package's characters (rows created by `$set` don't get the Select default); (2) `servicesInput` treats blank `price_version_id` like missing (sole service); (3) non-native TimePickers keep `Y-m-d H:i:s` in raw state: `App\Support\ChicagoTime::candidates` now accepts it (wall-clock part only) and QuickBooking uses `hm()`; pickers pinned `->format('H:i')->displayFormat('g:i A')`. Local suite: only MariaDB/pcntl concurrency cases and 4 tests that also fail on a clean checkout of your branch with my local `.env` sandbox flags (ApprovedClientTexts retired-mail, MailScreens settings, QuickDetailsFlow, QuoteFoundation) — CI decides. Still pending from the night list: one-field client (your a1e949b contract), optional Zelle reference, short link, same-visit signature implementation, hold UI, full Stripe 48 h flow.
 ## 2026-10-20 (night) — Codex — owner queue2–9 delivered locally; short links wired; final combined regression running
 
 Branch **codex/quick-booking-night**. Preserves Claude21ac755/f97c7ce, paid costume holds and Stripe S1. No changes to main or claude branches. API published before each implementation: docs/QUICK-BOOKING-NIGHT-API.md and docs/SHORT-PORTAL-LINK-API.md. Owner explicitly assigns Codex UI/backend/tests; compare link only, no PR API attempt.
