@@ -1,7 +1,8 @@
 # HoneyBook independent verification and customer correction — v1 (2026-10-21)
 
 Contract before implementation. Branch codex/honeybook-independent-verification, based on main after #112.
-All new behavior requires sandbox_history plus default-off WAOO_SANDBOX_HISTORY_VERIFICATION.
+Verification and correction require sandbox_history plus default-off WAOO_SANDBOX_HISTORY_VERIFICATION.
+The stricter phone rule applies whenever the already default-off history intake is enabled.
 No source API calls, migration execution, sends, charges or live writes.
 
 ## Independent verifier
@@ -17,6 +18,7 @@ Optional originals.json: project_id/source_reference/kind/path/sha256 manifest o
 Each path is private snapshot-relative, no links/traversal; local bytes and CRM encrypted bytes compared.
 Without independent bytes, database self-consistency is labelled separately from source authenticity.
 
+Read-only comparison of populated saved source fields as well as typed facts and current customer bindings, in both directions. Unknown saved fields are not silently certified.
 Read-only comparison of every source project against historical/current operating heads, customers,
 original source fields, typed money/facts, imported ledger and originals; reverse coverage finds extra CRM
 projects/files. Source leaves not understood/preserved are retained in the private act as unverified

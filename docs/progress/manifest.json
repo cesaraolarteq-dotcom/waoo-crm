@@ -669,6 +669,17 @@
      "verification": "Final affected MariaDB85 tests/883 assertions PASS03:26.750; Chromium13/13 PASS. Real client details→private PDF→signature, explicit correction, CSRF/source and hold integration covered. Gate defaultsOFF; not whole repository or remote Actions.",
      "scope": "Native genuine paid QuickBook only; latest same-grant details and unchanged original agreement/template/PDF/consent. Durable saved details despite artifact failure; retries and explicit fresh review, no silent version refresh. No native Stripe-unpaid or imported lifecycle.",
      "blocker": "Independent source review, owner sandbox acceptance and explicit deployment/activation; real legal template stays owner-approved. Post-signature identity confirmation is a separate B1c API proposal."
+    },
+    {
+     "name": "Empresa por fiesta: persona, documentos y factura previa",
+     "weight": 1,
+     "agent": "Codex",
+     "backend": "84966bf; BillingCompany, versión independiente, propuesta y firma",
+     "ui": "Reserva rápida y portal ES/EN; bloque del evento; PDF cotización/contrato y borrador factura",
+     "reviewed": false,
+     "merged": false,
+     "accepted": false,
+     "note": "Empresa opcional cifrada; persona sigue siendo clienta y firmante. No cambia capacidad, dinero ni destinatarios. Factura solo vista previa: no existe emisión nativa en esta entrega. Flags apagadas. Regresión185/1462 y prueba final27/147 con conjuntos solapados; no sumar."
     }
    ]
   },
@@ -1128,6 +1139,28 @@
       "reviewed": false,
       "note": "Exclusiones finales del dueño también se aplican antes de guardar texto adicional;12/35 pruebas PASS."
      }
+    },
+    {
+     "name": "Verificación independiente HoneyBook desde API privada",
+     "weight": 1,
+     "agent": "Codex",
+     "backend": "84966bf + fuente monetaria explícita; waoo:honeybook:verify",
+     "ui": null,
+     "reviewed": false,
+     "merged": false,
+     "accepted": false,
+     "blocker": "Claude debe ejecutar en crm-test con snapshot real y comparar ambas actas. No hay verificación real de Codex ni afirmación de100%. Consola agregada; acta0600; desconocidos y cobertura inversa obligatorios."
+    },
+    {
+     "name": "Corrección auditada de clienta histórica y regla de teléfono",
+     "weight": 1,
+     "agent": "Codex",
+     "backend": "84966bf; ReassignHistoricalCustomer, nueva revisión y evidencia cifrada",
+     "ui": "Ficha de clienta: corregir vínculo con versiones fijadas y motivo",
+     "reviewed": false,
+     "merged": false,
+     "accepted": false,
+     "note": "Carrera real de dos dueños verificada: solo una corrección. Los tres casos reales fueron reportados correctos; no se movió ninguno. Teléfono con nombre distinto no se une automáticamente."
     }
    ]
   }
