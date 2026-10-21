@@ -65,6 +65,13 @@ class HoneyBookIndependentVerificationTest extends TestCase
         $p=json_decode(file_get_contents($dir.'/projects.json'),true);$p['projects'][0]['payments'][0]['amount']='51.00';file_put_contents($dir.'/projects.json',json_encode($p));
         $a=$this->verify($dir);$this->assertSame('different',$a['projects'][0]['fields']['payments']['status']);
     }
+    public function test_explicit_cent_units_are_verified_without_hiding_extra_money_metadata(): void {
+        $this->archive();$dir=$this->snapshot(['total'=>['amount_cents'=>12000,'currency'=>'USD']]);
+        $this->assertSame('verified',$this->verify($dir)['verdict']);
+        $p=json_decode(file_get_contents($dir.'/projects.json'),true);$p['projects'][0]['total']['extra_source_field']='Información adicional';file_put_contents($dir.'/projects.json',json_encode($p));
+        $a=$this->verify($dir);$this->assertSame('review_required',$a['verdict']);
+        $this->assertSame('total/extra_source_field',$a['projects'][0]['unverified_source_fields'][0]['path']);
+    }
     public function test_wrong_global_binding_is_detected_even_if_customer_text_is_identical(): void {
         $this->archive();$duplicate=Customer::create(['name'=>'María González','email'=>'history@example.test','phone'=>'+12025550123','locale'=>'es']);
         DB::table('external_customer_links')->update(['customer_id'=>$duplicate->id]);

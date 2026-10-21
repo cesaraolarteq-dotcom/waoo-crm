@@ -115,6 +115,7 @@ final class VerifyHoneyBookMigration
         foreach(['total'=>['total','booked_total','total_amount'],'paid'=>['paid_total','amount_paid'],'balance'=>['balance','balance_due']] as $field=>$paths){
             $value=$this->pick($raw,$paths,$record,$field);
             $expected=$value===null?null:$this->cents($value);
+            if($expected!==null)$this->moneyPaths($record,$paths);
             $actual=$f[match($field){'total'=>$history?'booked_total_cents':'total_cents','paid'=>$history?'paid_total_cents':'paid_cents',default=>'balance_cents'}]??null;
             $this->field($entry,$field.'_cents',$expected,$actual,$value!==null&&$expected===null?'unsupported_money_units':null);
             $entry['fields'][$field.'_cents']['raw_source']=$value;
@@ -228,7 +229,7 @@ final class VerifyHoneyBookMigration
             'project_status'=>['project_status','status'],'status'=>['status','project_status'],
             'event_date'=>['event_date','eventDate','event.date'],'start_time'=>['start_time'],'end_time'=>['end_time'],'end_date'=>['end_date'],
             'postal_code'=>['postal_code','event_zip','event.postal_code'],'event_zip'=>['event_zip','postal_code','event.postal_code'],
-            'city'=>['city','event.city'],'currency'=>['currency'],'archive_reason'=>['archive_reason'],
+            'city'=>['city','event.city'],'currency'=>['currency','total.currency','booked_total.currency','total_amount.currency'],'archive_reason'=>['archive_reason'],
             'event_type'=>['event_type','eventType'],'lead_source'=>['lead_source','lead_source_text'],'lead_source_text'=>['lead_source_text','lead_source'],
             'created_at'=>['created_at','createdAt'],'child_name'=>['child_name','celebrant_name'],'celebrant_name'=>['celebrant_name','child_name'],
             'celebrant_age'=>['celebrant_age','child_age'],'children_count'=>['children_count'],'setup_area'=>['setup_area'],
@@ -255,6 +256,7 @@ final class VerifyHoneyBookMigration
                 else{$raw=$expected;$expected=$this->phone($expected);$actual=$this->phone($actual);if($raw!==null&&$expected===null)$reason='unsupported_source_phone';}
             }elseif(isset($money[$key])){
                 $raw=$this->pick($record['value'],$money[$key],$record,$key);$expected=$this->cents($raw);$actual=$this->cents($actual);
+                if($expected!==null)$this->moneyPaths($record,$money[$key]);
                 if($raw!==null&&$expected===null)$reason='unsupported_money_units';
             }elseif($key==='contract_signed'){
                 $raw=$this->pick($record['value'],['contract_signed','contractSigned'],$record,$key);
@@ -275,6 +277,15 @@ final class VerifyHoneyBookMigration
             }elseif(isset($paths[$key]))$expected=$this->pick($record['value'],$paths[$key],$record,$key);
             else $reason='crm_source_field_not_corroborated';
             $this->field($entry,'source_snapshot.'.$key,$expected,$actual,$reason);
+        }
+    }
+    private function moneyPaths(array $record,array $paths): void
+    {
+        foreach([$record,...($record['related']??[])] as $r)foreach($paths as $path){
+            $value=$r['value'];foreach(explode('.',$path) as $part)$value=is_array($value)?($value[$part]??null):null;
+            if(is_array($value)&&$this->cents($value)!==null){
+                foreach(['amount_cents','currency'] as $field)$this->used[$this->key($r,str_replace('.','/',$path).'/'.$field)]=true;
+            }
         }
     }
     private function field(array &$entry,string $name,mixed $expected,mixed $actual,?string $reason=null): void
