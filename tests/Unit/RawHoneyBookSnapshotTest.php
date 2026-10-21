@@ -25,6 +25,11 @@ class RawHoneyBookSnapshotTest extends TestCase
         $this->put('projects.json',['projects'=>[['id'=>'project-a']],'has_more'=>false,'total_count'=>2,'pipelines'=>['label'=>'Información adicional']]);
         $s=(new RawHoneyBookSnapshot)->read($this->dir);$codes=array_column($s['issues'],'code');
         $this->assertContains('declared_total_not_reconciled',$codes);$this->assertContains('unverified_response_metadata',$codes);
+        $this->put('projects.json',['projects'=>[['id'=>'project-a']],'pagination'=>['has_more'=>false,'total_count'=>2]]);
+        $s=(new RawHoneyBookSnapshot)->read($this->dir);$this->assertContains('declared_total_not_reconciled',array_column($s['issues'],'code'));
+        $this->put('projects.json',['projects'=>[['id'=>'project-a']],'has_more'=>false,'next_cursor'=>'another-page']);
+        $s=(new RawHoneyBookSnapshot)->read($this->dir);$this->assertContains('pagination_metadata_conflict',array_column($s['issues'],'code'));
+
     }
     public function test_source_tool_error_and_unstructured_text_never_mean_a_complete_empty_list():void {
         $this->put('projects.json',['isError'=>true,'content'=>[['type'=>'text','text'=>'Private error']]]);

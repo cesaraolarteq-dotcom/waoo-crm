@@ -59,6 +59,15 @@ final class RawHoneyBookSnapshot
         if(isset($node['pagination'])&&is_array($node['pagination'])){
             foreach(['has_more','hasMore'] as $key)if(array_key_exists($key,$node['pagination']))$this->pagination[$kind][]=$node['pagination'][$key]===false?false:true;
         }
+        if(isset($node['pagination'])&&is_array($node['pagination'])){
+            $p=$node['pagination'];
+            foreach(['total_count','totalCount','total_records'] as $key)if(array_key_exists($key,$p)){
+                if(is_int($p[$key]))$this->totals[$kind][]=$p[$key];else $this->issues[]=['file'=>$file,'path'=>$path.'/pagination/'.$key,'code'=>'unsupported_total_count'];
+            }
+            foreach(['next_cursor','nextCursor','next_page','nextPage'] as $key)if(array_key_exists($key,$p))$this->pagination[$kind][]=!in_array($p[$key],[null,'',false],true);
+            foreach($p as $key=>$value)if(!in_array($key,['total_count','totalCount','total_records','has_more','hasMore','next_cursor','nextCursor','next_page','nextPage'],true))$this->issues[]=['file'=>$file,'path'=>$path.'/pagination/'.$key,'code'=>'unverified_pagination_metadata','raw_value'=>$value];
+        }
+        foreach(['next_cursor','nextCursor','next_page','nextPage'] as $key)if(!in_array($node[$key]??null,[null,'',false],true)&&(($node['has_more']??null)===false||($node['hasMore']??null)===false))$this->issues[]=['file'=>$file,'path'=>$path,'code'=>'pagination_metadata_conflict'];
         if(array_is_list($node)){
             foreach($node as $i=>$value)if(is_array($value))$this->walk($value,$kind,$file,$path.'/'.$i,$depth+1);
             return;
