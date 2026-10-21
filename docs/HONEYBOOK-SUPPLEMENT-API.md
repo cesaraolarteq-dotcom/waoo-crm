@@ -21,3 +21,7 @@ Pestaña de administración `/admin/honeybook-informacion`, «Información por o
 ## Cobertura real
 
 Mantener separados reservas futuras, historial, contactos sin fiesta, formularios/notas, mensajes, originales firmados y otros adjuntos. Contar disponible/copiado/pendiente/no disponible por categoría; no declarar «todo migrado» con solo un CSV. El archivo real permanece fuera de git y logs. La extracción debe ser de solo lectura. Destino previsto crm-test, sin despliegue ni acceso a servidor implícitos en esta entrega. HoneyBook sigue siendo responsable de sus cobros/avisos hasta el traspaso autorizado y conciliado (240 minutos).
+
+## Owner policy amendment — 2026-10-21, main PR110
+
+The generic supplemental-text entry point also rejects known excluded field names `contact_address`, `private_notes`, `sales_tax` (case-insensitive, whitespace normalized to underscores), before any write. This matches the history CSV policy. It does not delete previously stored evidence or attempt to infer semantics from arbitrary note text; Claude must apply the owner's category exclusions when preparing the private extraction. Party special_requests and explicit owner balance-resolution notes remain allowed and distinct from excluded HoneyBook private contact notes.
