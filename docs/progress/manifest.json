@@ -144,14 +144,45 @@
       "scope": "Minutos de montaje/desmontaje por paquete importados y versionados; máximo por campo como valor inicial seguro en eventos nuevos, con edición manual. No cambia eventos, contratos o precios guardados. Claude conecta formularios.",
       "costume_hold_proposal": {
        "api": "docs/QUICK-COSTUME-HOLD-API.md",
-       "design": "docs/QUICK-COSTUME-HOLD-API.md (propuesta, sin código)",
-       "backend": null,
+       "design": "docs/QUICK-COSTUME-HOLD-API.md executable V1, c796c0c + fec0b4f before code",
+       "backend": "bd4978b",
        "ui": false,
        "reviewed": false,
        "merged": false,
        "accepted": false,
-       "note": "Solo propuesta para revisión: sin apartado real ni crédito de implementación. Debe conservar depósito y conectar confirmación/liberación/cancelación antes de habilitar."
+       "note": "Apartado físico pagado, buffers desconocidos sin inventar minutos, confirmación sin duplicados y liberación auditada conservando recibo. UI/revisión/fusión/aceptación pendientes; no vencimiento automático en este flujo pagado.",
+       "branch": "codex/quick-costume-holds",
+       "verification": "Final bd4978b:81 tests/584 assertions PASS,04:01.860,PHP8.3.35/MariaDB11.8. Earlier d6eb2b9 broad149/1191 PASS. Audit rollback independently SQLite1/4 PASS. No full-suite/remote CI/browser/Hostinger claim."
       }
+     },
+     "quick_stripe_booking": {
+      "api": "docs/QUICK-STRIPE-BOOKING-API.md",
+      "design": "6a8bc89 + fec0b4f",
+      "backend": null,
+      "ui": false,
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "note": "Contrato y componente monetario/plazos probado. Backend completo sigue pendiente: apartado sin pago48h, recordatorio24h, portal/Checkout/webhook. Sin pagos activos ni crédito de backend completo.",
+      "branch": "codex/quick-stripe-foundation",
+      "foundation": {
+       "backend": "8542c98",
+       "api": "c7f8d18 before source; docs/QUICK-STRIPE-BOOKING-API.md S1",
+       "verification": "30/96 unit PASS; related50/234 PASS,00:47.284,PHP8.3.35/MariaDB11.8 synthetic gateway; lint/strict Composer/diff PASS. Not whole suite/remote CI/provider.",
+       "scope": "Valor inmutable: principal50/100%,3% separado, límites, huella explícita, plazos absolutos24/48h y plazo de Checkout. Sin rutas, persistencia de apartado, webhook ni envío.",
+       "reviewed": false,
+       "merged": false,
+       "accepted": false
+      }
+     },
+     "night_google_followup": {
+      "backend": null,
+      "ui": "c48d58b + Claude21ac755 overlay",
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "5/5 local synthetic Chromium browser checks PASS; old clipping and late Escape response reproduced before fixes. Actual crm-test403/ERR_TUNNEL_CONNECTION_FAILED, not verified or deployed.",
+      "note": "Cuestión de Google en crm-test sigue pendiente de comprobación allí; sin uso de llave/cuenta/API real."
      }
     },
     {
@@ -548,6 +579,19 @@
       "latest_ui_verification": "Codex exact #54 81771b2, source7048acf: targeted78/882 (85.129s) +4/39 LEAD screen checks (4.838s) pass, PHP8.3/MariaDB11.8. Real same-link/revoke/legacy UI and both contact suites; Node actual Alpine clipboard success/rejection/missing API pass; Vite/syntax/diff pass. No new full/browser/device/provider/main merge/owner acceptance."
      },
      "contact_atomicity": "Codex ad87fae + Claude #49 619720f (aprobado; clases de prueba de contacto conservadas)."
+    },
+    {
+     "name": "Pulido nocturno: personajes, horario, clienta, depósito, Zelle y enlace corto",
+     "weight": 1,
+     "agent": "Codex",
+     "backend": "a86632d +38b3056 (incluye6440398)",
+     "ui": "528c524 (incluye8e9e951 +ceb27b7 +917e5b5)",
+     "reviewed": false,
+     "merged": false,
+     "accepted": false,
+     "api": "docs/QUICK-BOOKING-NIGHT-API.md; docs/SHORT-PORTAL-LINK-API.md",
+     "verification": "49 tests/569 assertions MariaDB PASS01:45.143, includes fixed legacy timeout fixture, Zelle no-reference two-owner race, original link compatibility, short-link revocation/TLS/rate/copy and portal/contract previews. Previous broader150/1432:149 passed, one legacy name-only contact fixture corrected then passed in49. Browser real Blade/script ES+EN mobile2/2 PASS2.740s. New combined regression running; no whole-suite/Actions/staging/owner acceptance claim.",
+     "note": "Items2–9 local: explicit character slots/internal wardrobe, non-native time, one contact search and provisional identity, editable50%, optional Zelle with dedupe/stable day, encrypted12-char short link defaultOFF, large client preference cards. Google actualcrm-test remains blocked/unverified. Full Stripe48h/payment and immediate-signature flow remain pending, not counted here."
     }
    ]
   },
@@ -609,6 +653,16 @@
        "scope": "Claude blocking review addressed: transient/out-of-office evidence never suppresses recipient; only permanent/inactive/complaint outcomes change delivery state. Authenticated provider observation accepts at most5min clock skew. Provider not chosen; HTTPS Hostinger smoke documented, not executed. Tests recorded in HANDOFF when finished.",
        "verification": "Source8611c5d final44 tests/267 assertions PASS2:00.326 PHP8.3.35/MariaDB11.8 (PostmarkBounce,MailOutbox,MailScreens); regression reproduced red before fix. Source lint, strict Composer and diff pass. No new full suite/browser/Hostinger/provider/send proof."
       }
+     },
+     "owner_texts_2026_10_20": {
+      "backend": "8b4a9d5",
+      "ui": "8b4a9d5",
+      "api": "docs/APPROVED-CLIENT-FLOW-API.md A",
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "verification": "Final related131/1212 PASS5:53.743 PHP8.3.35/MariaDB11.8. Seven bilingual approved templates, retired capture/queued suppression, selected-language consent and unchanged historical signature replay. No full suite/CI/staging/provider/send.",
+      "scope": "Textos aprobados no equivalen a habilitar envíos; falta MAIL B/propina para correo y activación del dueño."
      }
     },
     {

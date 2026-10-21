@@ -244,7 +244,7 @@ class QuickBookingCoreTest extends TestCase
         $this->get('/portal/api/contracts/'.$contract->id.'/pdf')->assertOk();
         $this->submit(['expected_revision' => 1, 'notes' => 'Updated client details'])->assertCreated();
         $this->withHeader('Idempotency-Key', (string) Str::uuid())->postJson('/portal/api/contracts/'.$contract->id.'/sign', [
-            'expected_version' => $contract->version, 'presented_pdf_sha256' => $contract->presented_pdf_sha256, 'signer_name' => 'Fixture Client', 'consent' => true, 'intent_to_sign' => true, 'consent_version' => 'esign-consent-v1',
+            'expected_version' => $contract->version, 'presented_pdf_sha256' => $contract->presented_pdf_sha256, 'signer_name' => 'Fixture Client', 'consent' => true, 'intent_to_sign' => true, 'consent_version' => \App\Services\Documents\InHouseSignatureProvider::CONSENT_VERSION,
         ])->assertConflict();
         $this->approve()->assertOk();
         $this->assertSame('superseded', $contract->fresh()->state); $this->assertDatabaseCount('signature_evidence', 0); $this->assertDatabaseCount('ledger_entries', 1);
@@ -280,7 +280,7 @@ class QuickBookingCoreTest extends TestCase
         auth()->logout();
         $this->get('/portal/api/contracts/'.$contract->id.'/pdf')->assertOk();
         $this->withHeader('Idempotency-Key', (string) Str::uuid())->postJson('/portal/api/contracts/'.$contract->id.'/sign', [
-            'expected_version' => $contract->version, 'presented_pdf_sha256' => $contract->presented_pdf_sha256, 'signer_name' => 'Fixture Client', 'consent' => true, 'intent_to_sign' => true, 'consent_version' => 'esign-consent-v1',
+            'expected_version' => $contract->version, 'presented_pdf_sha256' => $contract->presented_pdf_sha256, 'signer_name' => 'Fixture Client', 'consent' => true, 'intent_to_sign' => true, 'consent_version' => \App\Services\Documents\InHouseSignatureProvider::CONSENT_VERSION,
         ])->assertOk();
         $this->submit(['expected_revision' => 1])->assertConflict();
         $this->assertDatabaseCount('signature_evidence', 1);
@@ -395,7 +395,7 @@ class QuickBookingCoreTest extends TestCase
         auth()->logout();
         $this->get('/portal/api/contracts/'.$contract->id.'/pdf')->assertOk();
         $this->withHeader('Idempotency-Key', (string) Str::uuid())->postJson('/portal/api/contracts/'.$contract->id.'/sign', [
-            'expected_version' => $contract->version, 'presented_pdf_sha256' => $contract->presented_pdf_sha256, 'signer_name' => 'Fixture Client', 'consent' => true, 'intent_to_sign' => true, 'consent_version' => 'esign-consent-v1',
+            'expected_version' => $contract->version, 'presented_pdf_sha256' => $contract->presented_pdf_sha256, 'signer_name' => 'Fixture Client', 'consent' => true, 'intent_to_sign' => true, 'consent_version' => \App\Services\Documents\InHouseSignatureProvider::CONSENT_VERSION,
         ])->assertConflict();
         $this->assertDatabaseCount('signature_evidence', 0);
     }
@@ -405,7 +405,7 @@ class QuickBookingCoreTest extends TestCase
         $event = $this->client(); $this->submit()->assertCreated(); $this->approve()->assertOk(); $contract = $this->issue();
         auth()->logout(); $this->get('/portal/api/contracts/'.$contract->id.'/pdf')->assertOk();
         $this->withHeader('Idempotency-Key', (string) Str::uuid())->postJson('/portal/api/contracts/'.$contract->id.'/sign', [
-            'expected_version' => $contract->version, 'presented_pdf_sha256' => $contract->presented_pdf_sha256, 'signer_name' => 'Fixture Client', 'consent' => true, 'intent_to_sign' => true, 'consent_version' => 'esign-consent-v1',
+            'expected_version' => $contract->version, 'presented_pdf_sha256' => $contract->presented_pdf_sha256, 'signer_name' => 'Fixture Client', 'consent' => true, 'intent_to_sign' => true, 'consent_version' => \App\Services\Documents\InHouseSignatureProvider::CONSENT_VERSION,
         ])->assertOk();
         $this->actingAs($this->owner); $current = $event->fresh();
         $this->putJson('/admin/api/events/'.$event->id, $this->draftInput($current, ['address' => 'Forbidden Fictitious Venue']))->assertConflict();
@@ -447,7 +447,7 @@ class QuickBookingCoreTest extends TestCase
         try {
             $page = Livewire::test(QuickBookingPage::class);
             $state = ['price_version_ids' => [PriceVersion::sole()->id], 'event_type' => 'birthday', 'title' => 'Fixture timeout party', 'date' => '2026-12-19', 'start_time' => '15:00', 'end_time' => '16:00',
-                'postal_code' => '00001', 'travel_fee' => '25', 'customer_mode' => 'new', 'name' => 'Fixture Contact', 'locale' => 'es',
+                'postal_code' => '00001', 'travel_fee' => '25', 'customer_mode' => 'new', 'name' => 'María González', 'phone' => '346-555-0100', 'locale' => 'es',
                 'deposit' => ['amount' => '62', 'reference' => 'QB-TIMEOUT-FIXTURE', 'date' => '2026-10-15', 'time' => '00:05', 'verified' => true], 'expires_days' => 30];
             $input = $page->instance()->toServiceInput($state); $key = $page->instance()->key;
             app(QuickBook::class)->execute($this->owner, $input, $key); // Simulate a lost save response; the browser retains its original snapshot/key.

@@ -54,7 +54,7 @@ final class PortalController extends Controller
     public function show(Request $request, string $contract)
     {
         $row = $this->scopedContract($request, $contract);
-        return response()->json(['contract' => $row->only(['id','state','version','revision','issued_at','signed_at','presented_pdf_sha256','final_pdf_sha256']), 'consent' => ['version' => InHouseSignatureProvider::CONSENT_VERSION, 'text' => InHouseSignatureProvider::CONSENT], 'final_pdf_ready' => (bool) $row->final_pdf_path]);
+        return response()->json(['contract' => $row->only(['id','state','version','revision','issued_at','signed_at','presented_pdf_sha256','final_pdf_sha256']), 'consent' => InHouseSignatureProvider::consent($request->query('lang') === 'es' ? 'es' : 'en'), 'final_pdf_ready' => (bool) $row->final_pdf_path]);
     }
     public function pdf(Request $request, string $contract, ArtifactStore $artifacts)
     {

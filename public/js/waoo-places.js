@@ -5,7 +5,7 @@
   var me = document.currentScript, key = me && me.dataset.key;
   if (!key || window.waooPlaces) return;
   window.waooPlaces = true;
-  var lib = null, token = null, timer = null, box = null, items = [], active = -1;
+  var lib = null, token = null, timer = null, box = null, items = [], active = -1, generation = 0;
 
   function load() {
     if (lib) return lib;
@@ -19,6 +19,7 @@
   }
   function field(name) { return document.querySelector('[data-places="' + name + '"]'); }
   function close() { if (box) box.remove(); box = null; items = []; active = -1; }
+  function cancel() { generation++; clearTimeout(timer); close(); }
   function component(el) { var root = el.closest('[wire\\:id]'); return root && window.Livewire ? Livewire.find(root.getAttribute('wire:id')) : null; }
 
   function show(input, suggestions) {
@@ -41,9 +42,12 @@
   }
 
   function pick(input, prediction) {
+    var attempt = ++generation;
+    clearTimeout(timer);
     close();
     var place = prediction.toPlace();
     place.fetchFields({fields: ['formattedAddress', 'addressComponents']}).then(function () {
+      if (attempt !== generation || !input.isConnected) return;
       var zip = (place.addressComponents || []).filter(function (c) { return c.types.indexOf('postal_code') >= 0; })[0];
       var address = (place.formattedAddress || '').replace(/, (USA|EE\. UU\.|Estados Unidos)$/, '');
       token = null;
@@ -52,18 +56,24 @@
       input.value = address; if (zipEl) zipEl.value = zipText;
       if (!wire) return;
       // Setting them on the server also forgets any earlier quote (TravelFeeFields::invalidate).
-      wire.$set('data.address', address).then(function () { return wire.$set('data.postal_code', zipText); }).then(function () {
+      wire.$set('data.address', address).then(function () {
+        if (attempt !== generation) return;
+        return wire.$set('data.postal_code', zipText);
+      }).then(function () {
+        if (attempt !== generation) return;
         if (!zipText) { if (zipEl) zipEl.focus(); return; } // no ZIP from Google: the owner types it, then presses Calcular
         var quote = document.querySelector('[data-places="quote"]');
         if (quote) quote.click();
-      });
-    });
+      }).catch(function () { close(); });
+    }).catch(function () { close(); });
   }
 
   document.addEventListener('input', function (e) {
     var input = e.target;
     if (!input.matches || !input.matches('[data-places="address"]')) return;
+    var attempt = ++generation;
     clearTimeout(timer);
+    close();
     var text = input.value.trim();
     if (text.length < 4) { close(); return; }
     timer = setTimeout(function () {
@@ -71,10 +81,13 @@
         token = token || new places.AutocompleteSessionToken();
         return places.AutocompleteSuggestion.fetchAutocompleteSuggestions({input: text, sessionToken: token, includedRegionCodes: ['us'],
           locationBias: {center: {lat: 29.76, lng: -95.37}, radius: 50000}});
-      }).then(function (r) { if (input.value.trim() === text) show(input, r.suggestions || []); }).catch(function () { close(); });
+      }).then(function (r) {
+        if (attempt === generation && input.isConnected && document.activeElement === input && input.value.trim() === text) show(input, r.suggestions || []);
+      }).catch(function () { if (attempt === generation) close(); });
     }, 250);
   });
   document.addEventListener('keydown', function (e) {
+    if (e.target.matches('[data-places="address"]') && e.key === 'Escape') { cancel(); return; }
     if (!box || !e.target.matches('[data-places="address"]')) return;
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault(); active = (active + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
@@ -82,5 +95,8 @@
     } else if (e.key === 'Enter' && active >= 0) { e.preventDefault(); items[active].dispatchEvent(new MouseEvent('mousedown')); }
     else if (e.key === 'Escape') close();
   });
-  document.addEventListener('focusout', function (e) { if (e.target.matches && e.target.matches('[data-places="address"]')) setTimeout(close, 150); });
+  document.addEventListener('focusout', function (e) { if (e.target.matches && e.target.matches('[data-places="address"]')) cancel(); });
+  // Don't leave a body-level overlay over an unrelated field after scrolling or resizing.
+  window.addEventListener('resize', cancel);
+  document.addEventListener('scroll', function (e) { if (!box || !box.contains(e.target)) cancel(); }, true);
 })();

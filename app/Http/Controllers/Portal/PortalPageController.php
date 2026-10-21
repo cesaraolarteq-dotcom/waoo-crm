@@ -105,7 +105,8 @@ final class PortalPageController extends Controller
         $due = $revision ? CarbonImmutable::instance($revision->balance_due_at)->setTimezone($tz)->locale($lang) : null;
 
         $approvedSms = collect((array) config('waoo.sms_consent_versions', []))->filter(fn ($text) => is_string($text) && $text !== '');
-        $smsVersion = $approvedSms->keys()->first();
+        $smsVersion = $approvedSms->has('client-texts-2026-10-20-sms-'.$lang)
+            ? 'client-texts-2026-10-20-sms-'.$lang : $approvedSms->keys()->first();
 
         return [
             'lang' => $lang, 'step' => $step, 'steps' => $canDetails ? ['details', 'contract', 'pay'] : ['contract', 'pay'], 'test_mode' => true,
@@ -133,7 +134,7 @@ final class PortalPageController extends Controller
             'contract' => $contract ? ['id' => $contract->id, 'version' => $contract->version, 'sha256' => $contract->presented_pdf_sha256,
                 'pdf_url' => url('/portal/api/contracts/'.$contract->id.'/pdf'), 'final_url' => $contract->final_pdf_path ? url('/portal/api/contracts/'.$contract->id.'/pdf?artifact=final') : null,
                 'signed_name' => $signed ? SignatureEvidence::where('contract_id', $contract->id)->value('signer_name') : null] : null,
-            'consent' => ['version' => InHouseSignatureProvider::CONSENT_VERSION, 'text' => InHouseSignatureProvider::CONSENT],
+            'consent' => InHouseSignatureProvider::consent($lang),
             'pay' => ['revision_id' => $revision?->id, 'can_checkout' => in_array('checkout.create', $grant->scopes, true) && ($balance ?? 0) > 0],
             'zelle_memo' => 'WP-'.$event->id,
             // Her own notices, through Codex's client projection only (never the owner's review note, bank reference or ledger).

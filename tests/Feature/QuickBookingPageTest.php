@@ -76,7 +76,7 @@ class QuickBookingPageTest extends TestCase
     {
         $this->bind();
         $page = Livewire::test(QuickBooking::class)->fillForm($this->form())
-            ->assertSet('data.end_time', '16:00') // filled from the package duration
+            ->assertSchemaStateSet(['end_time' => '16:00']) // public form value; non-native picker keeps an internal date
             ->assertSee('Total $125 · depósito 50 % $62.50 · recibido $62.50 · saldo $62.50')
             ->call('save')->assertHasNoFormErrors()
             ->assertSee('https://crm.example.test/p/fixture-secret')->assertSee('Puedes volver a copiarlo desde el evento')

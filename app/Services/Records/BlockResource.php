@@ -22,8 +22,8 @@ final class BlockResource
             Resource::whereKey($resourceId)->lockForUpdate()->firstOrFail();
             $start = \Carbon\CarbonImmutable::parse($data['starts_at'])->utc();
             $end = \Carbon\CarbonImmutable::parse($data['ends_at'])->utc();
-            $bookings = ResourceReservation::where('resource_id', $resourceId)->with('event')->orderBy('starts_at')->get();
-            RecordWriteRejected::when($bookings->contains(fn($r) => $r->event->starts_at->subMinutes($r->event->setup_minutes)->lessThan($end) && $r->event->ends_at->addMinutes($r->event->breakdown_minutes)->greaterThan($start)), 409, 'El bloqueo afecta un evento. Resuelve primero la asignación.');
+            $bookings = ResourceReservation::where('resource_id', $resourceId)->with(['event' => fn ($q) => $q->sharedLock()])->orderBy('starts_at')->lockForUpdate()->get();
+            RecordWriteRejected::when($bookings->contains(fn($r) => $r->event->starts_at->subMinutes($r->event->setup_minutes ?? 0)->lessThan($end) && $r->event->ends_at->addMinutes($r->event->breakdown_minutes ?? 0)->greaterThan($start)), 409, 'El bloqueo afecta un evento. Resuelve primero la asignación.');
             // A later block must also preserve driving intervals already reviewed
             // between the resource's current adjacent commitments.
             for ($i = 1; $i < $bookings->count(); $i++) {

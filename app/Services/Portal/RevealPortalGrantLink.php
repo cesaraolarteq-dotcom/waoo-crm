@@ -36,7 +36,7 @@ final class RevealPortalGrantLink
                 $token = PortalTokenVault::open($grant);
                 $origin = $this->origin();
                 Audit::recordFor($actor, 'portal.link_revealed', $grant, [], ['event_id' => $eventId, 'grant_id' => $grantId]);
-                return new RevealedPortalLink($grantId, $eventId, $origin.'/portal#token='.$token, $grant->expires_at->toIso8601String());
+                return new RevealedPortalLink($grantId, $eventId, $origin.'/portal#token='.$token, $grant->expires_at->toIso8601String(), app(ShortPortalLinks::class)->forLockedGrant($grant));
             }, 3);
         } catch (PortalLinkRejected|\App\Exceptions\ResponsibilityRejected|\App\Exceptions\RecordWriteRejected $e) {
             throw $e;

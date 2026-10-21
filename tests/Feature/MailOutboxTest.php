@@ -124,7 +124,7 @@ class MailOutboxTest extends TestCase
     }
     public function test_settings_flags_roles_and_closed_http_surfaces():void
     {
-        $this->getJson('/admin/api/mail/settings')->assertOk()->assertJsonPath('activation_required',true)->assertJsonCount(18,'templates');config(['waoo.sandbox_mail'=>false]);$this->getJson('/admin/api/events/'.$this->event->id.'/messages')->assertForbidden()->assertHeader('Cache-Control','no-store, private');
+        $this->getJson('/admin/api/mail/settings')->assertOk()->assertJsonPath('activation_required',true)->assertJsonCount(14,'templates');config(['waoo.sandbox_mail'=>false]);$this->getJson('/admin/api/events/'.$this->event->id.'/messages')->assertForbidden()->assertHeader('Cache-Control','no-store, private');
         config(['waoo.sandbox_mail'=>true]);$this->owner->forceFill(['role'=>'staff'])->save();$this->getJson('/admin/api/mail/settings')->assertForbidden();$this->assertSame([],$this->transport->sent);
         $this->postJson('/webhooks/mail',[])->assertNotFound();
     }
@@ -192,4 +192,19 @@ class MailOutboxTest extends TestCase
         $this->assertSame('dispatching',OutboundMessageState::sole()->status);app(DispatchOutboundMail::class)->execute($m->id);$this->assertSame([$m->id],$this->transport->sent);$this->getJson('/admin/api/messages/warnings?status=dispatching')->assertOk()->assertJsonPath('total',1);
     }
 
+    public static function retiredTemplates(): array { return [['contract_ready'], ['zelle_notice_pending']]; }
+    #[\PHPUnit\Framework\Attributes\DataProvider('retiredTemplates')]
+    public function test_preexisting_retired_message_is_blocked_before_transport_even_when_every_other_gate_allows_it(string $key): void
+    {
+        $this->plan(); $message = OutboundMessage::where('template_key', 'balance_reminder')->sole();
+        // Simulate a historical queued row; app code must not delete or rewrite its immutable payload.
+        DB::table('outbound_messages')->where('id', $message->id)->update(['template_key' => $key]);
+        $before = (array) DB::table('outbound_messages')->where('id', $message->id)->first();
+        $this->travelTo($message->due_at);
+        app(DispatchOutboundMail::class)->execute($message->id);
+        $this->assertDatabaseHas('outbound_message_states', ['outbound_message_id' => $message->id,
+            'status' => 'blocked', 'error_code' => 'template_retired_by_owner']);
+        $this->assertSame($before, (array) DB::table('outbound_messages')->where('id', $message->id)->first());
+        $this->assertSame([], $this->transport->sent);
+    }
 }

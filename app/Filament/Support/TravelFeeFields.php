@@ -22,7 +22,7 @@ final class TravelFeeFields
         return FinanceGate::enabled() && (bool) config('waoo.sandbox_routes', false) && class_exists(TravelFeeQuote::class);
     }
 
-    public static function feeField(bool $required, string $help): TextInput
+    public static function feeField(bool $required, string $help, ?\Closure $afterQuote = null): TextInput
     {
         $field = TextInput::make('travel_fee')->label('Costo de transporte (USD)')->prefix('$')
             ->rule($required ? 'required' : 'nullable')->required($required)->live(onBlur: true)
@@ -30,9 +30,9 @@ final class TravelFeeFields
             ->helperText(fn (Get $get) => self::message($get) ?? $help);
         if (self::enabled()) {
             $field->suffixAction(Action::make('quoteTravel')->label('Calcular')->tooltip('Calcular el costo de transporte con la dirección')->icon('heroicon-o-map')->extraAttributes(['data-places' => 'quote'])
-                ->action(function (Get $get, Set $set, $livewire) {
+                ->action(function (Get $get, Set $set) use ($afterQuote) {
                     self::quote($get, $set);
-                    if (method_exists($livewire, 'refreshDeposit')) $livewire->refreshDeposit($get, $set); // Reserva rápida: deposit follows the new total
+                    if ($afterQuote) $afterQuote($get, $set);
                 }));
         }
 

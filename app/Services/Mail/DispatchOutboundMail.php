@@ -13,6 +13,7 @@ final class DispatchOutboundMail
             \App\Models\PortalGrant::whereKey($m->portal_grant_id)->lockForUpdate()->firstOrFail();$event=\App\Models\Event::whereKey($m->event_id)->lockForUpdate()->firstOrFail();
             $state=OutboundMessageState::where('outbound_message_id',$m->id)->lockForUpdate()->firstOrFail();
             if($state->status!=='scheduled'||$m->due_at->isFuture())return false;
+            if(in_array($m->template_key,ApprovedMail::RETIRED,true)){$this->transition($m,$state,'blocked','template_retired_by_owner');return false;}
             if($m->environment!=='sandbox'||$m->channel!=='email'){$this->transition($m,$state,'blocked','unsupported_environment_or_channel');return false;}
             if($event->responsible_system!=='crm'){$this->transition($m,$state,'blocked','responsible_system_honeybook');return false;}
             $policy=EventMessagePolicy::where('event_id',$m->event_id)->lockForUpdate()->first();if($policy?->paused)return false;

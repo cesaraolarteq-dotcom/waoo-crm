@@ -16,7 +16,7 @@
             @endforeach
           </table>
         @else
-          <p style="margin:0 0 14px 0">{{ $p }}</p>
+          <p style="margin:0 0 14px 0">{!! \App\Support\ApprovedClientTexts::paragraphHtml($p) !!}</p>
         @endif
       @endforeach
     </td></tr>

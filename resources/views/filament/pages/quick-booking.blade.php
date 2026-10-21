@@ -10,6 +10,9 @@
     @if ($result)
         <div class="wqb-done">
             <h2>¡Reserva guardada! <span>{{ $result['summary'] }}</span></h2>
+            @if ($result['hold'] ?? null)
+                <p class="{{ $result['hold']['ok'] ? 'wqb-ok' : 'wqb-warn' }}"><b>{{ $result['hold']['label'] }}.</b> @foreach ($result['hold']['issues'] as $i){{ $i }} @endforeach @unless ($result['hold']['ok']) Puedes reintentarlo desde el evento. @endunless</p>
+            @endif
             @if ($result['link_pending'] ?? false)
                 <p class="wqb-warn">El pago y el evento están guardados. Falta crear el enlace: genera otro desde el evento; no vuelvas a registrar el depósito.</p>
             @elseif ($result['shown_before'])

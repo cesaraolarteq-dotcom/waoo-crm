@@ -66,13 +66,22 @@
     <label class="p-field"><span>{{ $t('child_name') }}</span><input name="child_name" required value="{{ $vm['prefill']['child_name'] ?? '' }}"></label>
     <label class="p-field p-narrow"><span>{{ $t('child_age') }}</span><input name="child_age" inputmode="numeric" pattern="[0-9]*" maxlength="3" required value="{{ $vm['prefill']['child_age'] ?? '' }}"></label>
   </div>
-  {{-- Owner 2026-10-20: big tap-friendly choices instead of dark native selects. --}}
-  <fieldset class="p-field p-chips"><legend>{{ $t('event_language') }}</legend><div>
-    @foreach (['es' => 'lang_es', 'en' => 'lang_en', 'bilingual' => 'lang_both'] as $v => $k)<label class="p-chip"><input type="radio" name="event_language" value="{{ $v }}" required @checked(($vm['prefill']['event_language'] ?? '') === $v)><span>{{ $t($k) }}</span></label>@endforeach
-  </div></fieldset>
-  <fieldset class="p-field p-chips"><legend>{{ $t('setup_area') }}</legend><div>
-    @foreach (['indoor' => 'indoor', 'outdoor' => 'outdoor'] as $v => $k)<label class="p-chip"><input type="radio" name="setup_area" value="{{ $v }}" required @checked(($vm['prefill']['setup_area'] ?? '') === $v)><span>{{ $t($k) }}</span></label>@endforeach
-  </div></fieldset>
+  <fieldset class="p-field p-choice-field">
+    <legend>{{ $t('event_language') }}</legend>
+    <div class="p-choices">
+      @foreach (['es' => 'lang_es', 'en' => 'lang_en', 'bilingual' => 'lang_both'] as $v => $k)
+      <label class="p-choice"><input type="radio" name="event_language" value="{{ $v }}" required @checked(($vm['prefill']['event_language'] ?? '') === $v)><span>{{ $t($k) }}</span></label>
+      @endforeach
+    </div>
+  </fieldset>
+  <fieldset class="p-field p-choice-field">
+    <legend>{{ $t('setup_area') }}</legend>
+    <div class="p-choices p-choices-two">
+      @foreach (['indoor' => 'indoor', 'outdoor' => 'outdoor'] as $v => $k)
+      <label class="p-choice"><input type="radio" name="setup_area" value="{{ $v }}" required @checked(($vm['prefill']['setup_area'] ?? '') === $v)><span>{{ $t($k) }}</span></label>
+      @endforeach
+    </div>
+  </fieldset>
   <label class="p-field"><span>{{ $t('children_count') }}</span><input name="children_count" inputmode="numeric" pattern="[0-9]*" maxlength="3" required value="{{ $vm['prefill']['children_count'] ?? '' }}"><small>{{ $t('children_hint') }}</small></label>
   <label class="p-field"><span>{{ $t('notes') }} <em>({{ $t('optional') }})</em></span><textarea name="notes" rows="3">{{ $vm['prefill']['notes'] ?? '' }}</textarea></label>
   @if (! empty($vm['details']['sms_consent']))
@@ -89,8 +98,8 @@
   <a class="p-btn p-btn-quiet" href="{{ $vm['contract']['pdf_url'] }}" target="_blank" rel="noopener noreferrer">{{ $t('open_pdf') }}</a>
   <input type="hidden" name="presented_pdf_sha256" value="{{ $vm['contract']['sha256'] }}">
   <label class="p-field"><span>{{ $t('sign_name') }}</span><input name="signer_name" autocomplete="name" required class="p-sign"></label>
-  <label class="p-check"><input type="checkbox" name="consent" value="1" required> <span>{{ $vm['consent']['text'] ?? $t('consent') }}@if ($vm['lang'] === 'es' && isset($vm['consent'])) <small class="p-small">({{ $t('consent') }})</small>@endif</span></label>
-  <label class="p-check"><input type="checkbox" name="intent_to_sign" value="1" required> {{ $t('intent') }}</label>
+  <label class="p-check"><input type="checkbox" name="consent" value="1" required> <span>{{ $vm['consent']['text'] ?? $t('consent') }}</span></label>
+  <label class="p-check"><input type="checkbox" name="intent_to_sign" value="1" required> {{ $vm['consent']['intent'] ?? $t('intent') }}</label>
   <p class="p-test" id="sign-error" role="alert" hidden></p>
   <button class="p-btn p-btn-pink" type="submit">{{ $t('sign') }}</button>
 </form>

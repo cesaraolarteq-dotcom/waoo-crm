@@ -96,7 +96,8 @@ class MailScreensTest extends TestCase
     {
         $this->app->forgetInstance(MailTransport::class);
         Livewire::test(EmailTemplates::class)->assertSee('¿Listos para enviar?')->assertSee('Sin configurar')->assertSee($this->owner->email)
-            ->assertSee('Aprobar los textos (6 de 18 aprobados')->assertSee('Conectar un proveedor de correo')
+            ->assertSee('Aprobar los textos (6 de 14 aprobados') // fixture templates for 3 of the 7 emails left after retiring contract_ready and zelle_notice_pending
+            ->assertSee('Conectar un proveedor de correo')
             ->assertSee('Tu cotización Waoo Party para el sábado 21 de noviembre');
     }
 

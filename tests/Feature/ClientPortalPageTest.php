@@ -53,7 +53,7 @@ class ClientPortalPageTest extends TestCase
         $this->postJson('/portal/api/session', ['token' => $this->token])->assertOk();
 
         $page = $this->get('/portal')->assertOk()->assertSee('¡Hola, Ana!')->assertSee('en 2 pasos')->assertSee('Tu contrato')->assertSee('$125')->assertSee('$62.50')
-            ->assertSee('I have read and accept the contract')->assertDontSee('Tus datos');
+            ->assertSee('Acepto firmar electrónicamente y recibir este contrato en formato electrónico.')->assertDontSee('Tus datos');
         $contract = Contract::sole();
         $this->postJson("/portal/api/contracts/{$contract->id}/sign", ['expected_version' => $contract->version, 'presented_pdf_sha256' => $contract->presented_pdf_sha256,
             'signer_name' => 'Ana Ficticia', 'consent' => true, 'intent_to_sign' => true, 'consent_version' => \App\Services\Documents\InHouseSignatureProvider::CONSENT_VERSION], ['Idempotency-Key' => (string) Str::uuid()])

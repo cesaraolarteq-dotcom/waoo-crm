@@ -1,8 +1,13 @@
 <?php
 
+$clientTexts = require __DIR__.'/client-texts.php';
+
 return [
-    // Empty until exact owner-approved TCPA wording/version is configured. No provider enrollment is performed.
-    'sms_consent_versions' => [],
+    // Exact owner-approved wording; no transport activation or provider enrollment.
+    'sms_consent_versions' => [
+        'client-texts-2026-10-20-sms-es' => $clientTexts['texts']['sms_consent']['es'],
+        'client-texts-2026-10-20-sms-en' => $clientTexts['texts']['sms_consent']['en'],
+    ],
     'record_forms' => true,
     'sandbox_mail_bounces' => env('WAOO_SANDBOX_MAIL_BOUNCES', false),
     'postmark_bounce_username' => env('WAOO_POSTMARK_BOUNCE_USERNAME'),
@@ -11,7 +16,7 @@ return [
     'postmark_message_stream' => env('WAOO_POSTMARK_MESSAGE_STREAM'),
     'sandbox_mail' => env('WAOO_SANDBOX_MAIL', false),
     'mail_allowlist' => [],
-    'mail_templates' => [], // Only reviewed owner-approved versions; never draft preview copy.
+    'mail_templates' => \App\Support\ApprovedClientTexts::mailDefinitions($clientTexts),
     'mail_review_url' => 'https://g.page/r/CVT57MD29OwXEAE/review', // Waoo Party's public Google review link (owner 2026-10-18).
     'sandbox_lead_intake' => env('WAOO_SANDBOX_LEAD_INTAKE', false),
     'lead_shared_secret' => env('WAOO_LEAD_SHARED_SECRET'),
@@ -25,8 +30,12 @@ return [
     'sandbox_cutover' => env('WAOO_SANDBOX_CUTOVER', false), // Evidence preparation only; no transfer endpoint.
     'cutover_reconciliation_max_age_minutes' => 240, // César approved 2026-10-19; not automatic polling.
     'sandbox_quotes' => env('WAOO_SANDBOX_QUOTES', false),
-    // Empty until the owner approves versioned, outcome-specific ES/EN decision wording.
-    'quote_acceptance_consent' => [],
+    // Owner-approved outcome-specific wording; old presentations retain their frozen text.
+    'quote_acceptance_consent' => ['version' => 'quote-consent-v3-2026-10-20',
+        'es' => ['accepted' => $clientTexts['texts']['quote_accept']['es'], 'rejected' => $clientTexts['texts']['quote_reject']['es']],
+        'en' => ['accepted' => $clientTexts['texts']['quote_accept']['en'], 'rejected' => $clientTexts['texts']['quote_reject']['en']],
+    ],
+    'short_portal_links' => env('WAOO_SHORT_PORTAL_LINKS', false), // Requires log redaction before activation on a host.
     'sandbox_documents' => env('WAOO_SANDBOX_DOCUMENTS', false),
     'sandbox_staff' => env('WAOO_SANDBOX_STAFF', false), // STAFF-01 v2 owner link actions; read by Codex's services too.
     'stripe_test_secret' => env('STRIPE_TEST_SECRET'),

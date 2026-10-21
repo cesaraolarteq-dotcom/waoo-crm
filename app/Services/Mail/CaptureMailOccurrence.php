@@ -8,7 +8,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 
 final class CaptureMailOccurrence
 {
-    public const KEYS = ['inquiry_received', 'quote_sent', 'details_request', 'contract_ready', 'payment_received', 'zelle_notice_pending'];
+    public const KEYS = ['inquiry_received', 'quote_sent', 'details_request', 'payment_received'];
     private const LOCATORS = ['event_id', 'customer_id', 'lead_id', 'submission_id', 'quote_id', 'quote_revision_id',
         'presentation_id', 'portal_grant_id', 'quick_booking_id', 'contract_id', 'financial_revision_id', 'ledger_entry_id', 'notice_id'];
 
@@ -18,7 +18,7 @@ final class CaptureMailOccurrence
     }
     public function record(string $key, int|string $sourceId, array $locator, ?User $actor = null): ?MailOccurrence
     {
-        if (!self::enabled()) return null;
+        if (!self::enabled() || in_array($key, ApprovedMail::RETIRED, true)) return null;
         if (DB::transactionLevel() < 1) throw new \LogicException('Mail occurrences must share the business transaction.');
         if (!in_array($key, self::KEYS, true) || (string) $sourceId === '' || strlen((string) $sourceId) > 128
             || array_diff(array_keys($locator), self::LOCATORS)) throw new \InvalidArgumentException('Invalid mail occurrence locator.');

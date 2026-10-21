@@ -73,6 +73,9 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
     Route::post('/events/{event}/cost-snapshots', [\App\Http\Controllers\Admin\EventCostController::class, 'store']);
     Route::get('/zelle-notices', [\App\Http\Controllers\Admin\ZelleNoticeController::class, 'index']);
     Route::post('/events/{event}/zelle-notices/{notice}/review', [\App\Http\Controllers\Admin\ZelleNoticeController::class, 'review'])->whereNumber('notice');
+    Route::get('/events/{event}/costume-hold', [\App\Http\Controllers\Admin\QuickCostumeHoldController::class, 'show'])->whereNumber('event');
+    Route::post('/events/{event}/costume-hold', [\App\Http\Controllers\Admin\QuickCostumeHoldController::class, 'attempt'])->whereNumber('event');
+    Route::post('/events/{event}/costume-hold/release', [\App\Http\Controllers\Admin\QuickCostumeHoldController::class, 'release'])->whereNumber('event');
     Route::get('/quick-bookings', [\App\Http\Controllers\Admin\QuickBookingController::class, 'index']);
     Route::post('/quick-bookings', [\App\Http\Controllers\Admin\QuickBookingController::class, 'create']);
     Route::get('/events/{event}/client-details', [\App\Http\Controllers\Admin\ClientDetailsController::class, 'index']);
@@ -109,6 +112,7 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->p
 });
 
 // Client portal HTML (Claude); data and writes go through Codex's /portal/api endpoints.
+Route::get('/r/{code}', \App\Http\Controllers\Portal\ShortPortalLinkController::class)->middleware('throttle:20,1');
 Route::get('/portal', [\App\Http\Controllers\Portal\PortalPageController::class, 'show']);
 Route::get('/portal/payment-return', [\App\Http\Controllers\Portal\PortalPageController::class, 'paymentReturn']);
 Route::get('/portal/quote', [\App\Http\Controllers\Portal\PortalPageController::class, 'quote']);

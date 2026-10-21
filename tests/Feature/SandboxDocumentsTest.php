@@ -57,7 +57,7 @@ class SandboxDocumentsTest extends TestCase
     private function signInput(array $extra = []): array
     {
         return [...['expected_version' => $this->contract->version, 'presented_pdf_sha256' => $this->contract->presented_pdf_sha256,
-            'signer_name' => 'Fixture Client', 'consent' => true, 'intent_to_sign' => true, 'consent_version' => 'esign-consent-v1'], ...$extra];
+            'signer_name' => 'Fixture Client', 'consent' => true, 'intent_to_sign' => true, 'consent_version' => \App\Services\Documents\InHouseSignatureProvider::CONSENT_VERSION], ...$extra];
     }
     public function test_revoke_service_reauthorizes_is_idempotent_and_invalidates_existing_session(): void
     {
@@ -359,4 +359,53 @@ class SandboxDocumentsTest extends TestCase
         $this->assertSame(1, DB::table('audit_entries')->where('action', 'contract.final_pdf_retry_requested')->count());
     }
 
+    public static function approvedConsentLanguages(): array { return [['es'], ['en']]; }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('approvedConsentLanguages')]
+    public function test_signature_keeps_both_exact_approved_clauses_in_the_selected_language(string $locale): void
+    {
+        $this->issue(); $this->clientSession();
+        $consent = \App\Services\Documents\InHouseSignatureProvider::consent($locale);
+        $this->getJson('/portal/api/contracts/'.$this->contract->id.'?lang='.$locale)->assertOk()
+            ->assertJsonPath('consent.version', $consent['version'])->assertJsonPath('consent.text', $consent['text'])
+            ->assertJsonPath('consent.intent', $consent['intent']);
+        $this->get('/portal/api/contracts/'.$this->contract->id.'/pdf')->assertOk();
+        $key = (string) Str::uuid(); $input = $this->signInput(['consent_version' => $consent['version']]);
+        $this->withHeader('Idempotency-Key', $key)->postJson('/portal/api/contracts/'.$this->contract->id.'/sign', $input)->assertOk();
+        $signature = \App\Models\SignatureEvidence::sole();
+        $exact = $consent['text']."\n".$consent['intent'];
+        $this->assertSame($exact, $signature->consent_text);
+        $this->assertSame(hash('sha256', $exact), $signature->consent_sha256);
+        $this->assertSame($consent['version'], $signature->consent_version);
+        $this->withHeader('Idempotency-Key', $key)->postJson('/portal/api/contracts/'.$this->contract->id.'/sign', $input)->assertOk();
+        $this->assertDatabaseCount('signature_evidence', 1);
+    }
+
+    public function test_obsolete_consent_cannot_create_a_new_signature(): void
+    {
+        $this->issue(); $this->clientSession();
+        $this->get('/portal/api/contracts/'.$this->contract->id.'/pdf')->assertOk();
+        $this->withHeader('Idempotency-Key', (string) Str::uuid())->postJson('/portal/api/contracts/'.$this->contract->id.'/sign',
+            $this->signInput(['consent_version' => 'esign-consent-v1']))->assertUnprocessable();
+        $this->assertDatabaseCount('signature_evidence', 0);
+        $this->assertSame('issued', $this->contract->fresh()->state);
+    }
+
+    public function test_preupgrade_signature_and_exact_retry_keep_their_original_evidence(): void
+    {
+        $this->issue(); $this->clientSession();
+        $this->get('/portal/api/contracts/'.$this->contract->id.'/pdf')->assertOk();
+        $key = (string) Str::uuid(); $input = $this->signInput();
+        $this->withHeader('Idempotency-Key', $key)->postJson('/portal/api/contracts/'.$this->contract->id.'/sign', $input)->assertOk();
+        // Synthetic persisted pre-upgrade fixture, never an application rewrite of real signature evidence.
+        $old = 'I have read and accept the contract. My electronic signature is as valid as a handwritten one.';
+        DB::table('signature_evidence')->update(['consent_version' => 'esign-consent-v1', 'consent_text' => $old, 'consent_sha256' => hash('sha256', $old)]);
+        $input['consent_version'] = 'esign-consent-v1';
+        DB::table('mutation_receipts')->where('request_key', $key)->update(['request_hash' => \App\Services\Finance\MutationKey::hash($input)]);
+        $before = (array) DB::table('signature_evidence')->sole();
+        $this->withHeader('Idempotency-Key', $key)->postJson('/portal/api/contracts/'.$this->contract->id.'/sign', $input)->assertOk()
+            ->assertJsonPath('signature.consent_version', 'esign-consent-v1');
+        $this->getJson('/portal/api/contracts/'.$this->contract->id.'/signature')->assertOk();
+        $this->assertSame($before, (array) DB::table('signature_evidence')->sole());
+    }
 }

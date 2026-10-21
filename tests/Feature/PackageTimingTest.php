@@ -152,7 +152,7 @@ class PackageTimingTest extends TestCase
     {
         $p = $this->package(['setup_minutes' => 30, 'breakdown_minutes' => 10]); $input = $this->eventInput([$p]);
         DB::listen(function ($query) {
-            if (str_starts_with(strtolower($query->sql), 'insert into `audit_entries`') && in_array('event.created', $query->bindings, true))
+            if (str_starts_with(strtolower($query->sql), 'insert into ') && str_contains(strtolower($query->sql), 'audit_entries') && in_array('event.created', $query->bindings, true))
                 throw new \RuntimeException('Synthetic audit failure');
         });
         try { app(SaveEventDraft::class)->execute($this->owner, $input); $this->fail('Committed a partially audited default'); }

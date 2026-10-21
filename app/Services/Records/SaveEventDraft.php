@@ -63,6 +63,7 @@ final class SaveEventDraft
                 }
                 if ($event->isDirty()) $event->save();
             }
+            if ($id) \App\Services\Booking\QuickCostumeHolds::refreshDraft($actor, $event);
             Audit::recordFor($actor, $id ? 'event.draft_updated' : 'event.created', $event, $before, [...$event->getAttributes(), 'services' => $auditServices]);
             return $event->fresh()->load('services.characters');
         }, 3);

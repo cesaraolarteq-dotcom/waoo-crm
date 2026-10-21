@@ -211,7 +211,7 @@ class EventMoney extends Page
                 $this->run($action, fn () => app(ReviewZelleNotice::class)->execute(Filament::auth()->user(), $this->record->getKey(), $notice->id, [
                     'decision' => 'verified', 'review_note' => trim($data['review_note']),
                     'financial_revision_id' => $this->summary()['financial_revision']?->id,
-                    'amount_cents' => EditServiceVariant::toCents($data['amount']), 'currency' => 'USD', 'reference' => trim($data['reference']),
+                    'amount_cents' => EditServiceVariant::toCents($data['amount']), 'currency' => 'USD', 'reference' => filled($data['reference'] ?? null) ? trim($data['reference']) : null,
                     'received_at' => ChicagoTime::toIso($data['date'], $data['time'], $data['choice'] ?? null, 'date'),
                     'verified_received' => (bool) $data['verified'],
                 ], $this->noticeKey), 'Aviso verificado y pago registrado');
@@ -274,8 +274,8 @@ class EventMoney extends Page
                 Grid::make(2)->schema([
                     TextInput::make('amount')->label('Monto que llegó (USD)')->prefix('$')->required()
                         ->rule('regex:/^\d{1,7}(\.\d{1,2})?$/')->validationMessages(['regex' => 'Escribe solo el número, por ejemplo 250 o 250.50.']),
-                    TextInput::make('reference')->label('Referencia de Zelle')->required()->minLength(3)->maxLength(255)
-                        ->helperText('El número de confirmación. No puede repetirse en otro pago.'),
+                    TextInput::make('reference')->label('Referencia de Zelle (opcional)')->minLength(3)->maxLength(255)
+                        ->helperText('Sin referencia se revisan el monto y la fecha para evitar duplicados.'),
                     DatePicker::make('date')->label('Fecha en que llegó')->native()->required()->live()->maxDate(now(ChicagoTime::TZ)),
                     TimePicker::make('time')->label('Hora (Houston)')->native()->seconds(false)->required()->live(),
                     Radio::make('choice')->label('Esa hora se repite ese día: ¿cuál?')->options(ChicagoTime::CHOICES)->required()->columnSpanFull()
@@ -290,7 +290,7 @@ class EventMoney extends Page
                 $this->run($action, fn () => app(RecordZellePayment::class)->execute(Filament::auth()->user(), $this->record->getKey(), [
                     'financial_revision_id' => $summary['financial_revision']->id,
                     'amount_cents' => EditServiceVariant::toCents($data['amount']), 'currency' => 'USD',
-                    'reference' => trim($data['reference']),
+                    'reference' => filled($data['reference'] ?? null) ? trim($data['reference']) : null,
                     'received_at' => ChicagoTime::toIso($data['date'], $data['time'], $data['choice'] ?? null, 'date'),
                     'verified_received' => (bool) $data['verified'], 'note' => filled($data['note'] ?? null) ? trim($data['note']) : null,
                 ], $this->zelleKey), 'Pago registrado');

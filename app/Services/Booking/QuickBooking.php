@@ -16,5 +16,6 @@ final readonly class QuickBooking
         public string $portal_expires_at,
         public bool $portal_link_already_shown,
         public bool $link_issue_pending,
+        public array $costume_hold = [],
     ) {}
 }
