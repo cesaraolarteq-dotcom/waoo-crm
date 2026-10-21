@@ -1,6 +1,6 @@
 {
  "_about": "Temporary owner progress view (prototype tab 'Avance del proyecto'). Phases = docs/PROJECT_PLAN.md §18. Each agent updates its own evidence; Claude renders. Rules: a design/contract doc counts 0; a part counts only with a tested commit; review, merge to main and owner acceptance are separate steps. Phase % = sum(weight × stage score) / sum(weight). 'design' = preview/contract/plan evidence: shown as a chip, earns 0%.",
- "updated": "2026-10-20",
+ "updated": "2026-10-21",
  "stage_scores": {
   "backend": 0.35,
   "ui": 0.35,
@@ -1011,20 +1011,31 @@
    "name": "Migración final",
    "deliverables": [
     {
-     "name": "Archivo histórico de HoneyBook (262 clientas, 242 fiestas pasadas)",
+     "name": "Archivo histórico HoneyBook (fiestas pasadas y prospectos)",
      "weight": 3,
      "agent": "Codex",
-     "backend": null,
-     "ui": null,
+     "backend": "043d8c0 +6e5fd4d +7eb76a2",
+     "ui": "043d8c0 +6e5fd4d",
      "reviewed": false,
      "merged": false,
      "accepted": false,
-     "design": "docs/tickets/IMPORT-HISTORY.md + docs/plans/PHASE-8.md + docs/IMPORT-HISTORY-API.md (propuesta, no backend)",
+     "design": "docs/IMPORT-HISTORY-API.md + OWNER-2026-10-21-HONEYBOOK-DECISIONS.md",
      "contract": {
       "document": "docs/IMPORT-HISTORY-API.md",
-      "implemented": false,
+      "implemented": true,
       "reviewed": false,
-      "note": "Perfil CSV separado propuesto, archivo cifrado, dedupe explícito, historial inmutable y cero efectos de dinero/capacidad/correos; implementación después de C2/C3. Cero crédito de implementación."
+      "note": "Perfil extendido, archivo/revisiones cifrados, lote atómico sin conflictos, revisión/exclusión/cierre, dedupe y barrera con IMPORT-01; fuentes de cuestionario, saldos y PDF originales privados por hash. Sin efectos de dinero, capacidad, contratos, consentimiento nativo o mensajes."
+     },
+     "blocker": "Pendiente revisión de Claude/Actions, integración, ejecución real en crm-test y doble verificación independiente. No se leyó el export real ni se importó ningún registro real.",
+     "evidence": {
+      "branch": "codex/honeybook-history",
+      "tests": "MariaDB: integración84/603 en6e5fd4d; parser/intake/UI/conteos43/211 en7eb76a2; conjuntos superpuestos, no sumar. No batería completa ni datos reales.",
+      "real_records_imported": 0,
+      "independent_source_destination_reviews": {
+       "claude": false,
+       "codex": false
+      },
+      "original_pdf_acquisition": "Pendiente de Claude; el adaptador no descarga de HoneyBook ni recrea firmas."
      }
     },
     {

@@ -1,4 +1,8 @@
-# IMPORT-HISTORY — archive API proposal v1
+# IMPORT-HISTORY — implemented sandbox contract, review pending
+
+**Current status,2026-10-21:** implemented in `codex/honeybook-history` (`043d8c0`, `6e5fd4d`, `7eb76a2`), default-OFF. Read the **Delivery B**, **Owner decisions PR110**, **Independent-copy verification**, **Changed-source revision review** and **Source questionnaire version isolation** sections below for the current API. They supersede conflicting proposal/intake-only restrictions in the preserved design history. No real import, activation, source completeness, independent data review or owner acceptance is claimed. Practical steps: [IMPORT-HISTORY-RUNBOOK.md](IMPORT-HISTORY-RUNBOOK.md).
+
+# Preserved design history — archive API proposal v1
 
 2026-10-19 · Codex · design published before implementation; review requested from Claude. **Private intake A implemented in35a4b8b; no archive/customer domain commit or real import.** Owner prioritized read-only migration preparation after C2/C3 A; remaining archive implementation is delivery B. Source: docs/tickets/IMPORT-HISTORY.md and ANNIVERSARY-REBOOK.md. No credential/connector needed in the CRM.
 
