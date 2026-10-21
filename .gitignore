@@ -44,3 +44,4 @@ Thumbs.db
 
 # Owner exports stay outside git; synthetic CSV fixtures are generated in memory.
 *.[cC][sS][vV]
+phpunit-shard.xml
