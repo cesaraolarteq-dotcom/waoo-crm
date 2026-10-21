@@ -1089,6 +1089,18 @@
       "verification": "Frozen PHP a1e2911:96 tests/720 assertions PASS,3:56.453,109MB,PHP8.3.35/MariaDB11.8. Carreras reales de revisión/preparación/nuevo miembro, C2/TIP/UI existentes, privacidad/integridad/rollback y rutas reales. PHP lint/Composer/diff pass. Sin batería completa/CI remoto/browser/Hostinger/SQLite.",
       "note": "readiness.ready y transfer_available siguen false. Sólo preparación; C3 B financiero y activación pendientes. Fuente sintética, no importación real."
      }
+    },
+    {
+     "name": "Información HoneyBook por organizar (texto privado)",
+     "weight": 1,
+     "agent": "Codex",
+     "backend": "e458f30",
+     "ui": "e458f30",
+     "reviewed": false,
+     "merged": false,
+     "accepted": false,
+     "design": "docs/HONEYBOOK-SUPPLEMENT-API.md",
+     "blocker": "Revisión de Claude, extracción privada y ejecución crm-test pendientes; cero registros reales copiados. Doble verificación independiente obligatoria. No incluye archivos binarios ni commit del historial."
     }
    ]
   }
