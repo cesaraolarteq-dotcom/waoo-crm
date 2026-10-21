@@ -57,8 +57,8 @@
         <x-filament::section>
             <x-slot name="heading">Datos de la clienta</x-slot>
             <x-slot name="afterHeader">
-                <x-filament::badge :color="match ($s['detailsState']) { 'review_details' => 'warning', 'waiting_details' => 'gray', default => 'success' }">
-                    {{ ['waiting_details' => 'Esperando sus datos', 'review_details' => 'Por revisar', 'ready_to_issue' => 'Aprobados', 'waiting_signature' => 'Aprobados', 'signed' => 'Aprobados · firmado'][$s['detailsState']] ?? '' }}
+                <x-filament::badge :color="$s['submission'] && !$s['detailsReviewed'] ? 'warning' : match ($s['detailsState']) { 'review_details' => 'warning', 'waiting_details' => 'gray', default => 'success' }">
+                    {{ $s['submission'] && !$s['detailsReviewed'] ? ($s['detailsState'] === 'review_details' ? 'Por revisar · sin revisión del dueño' : 'Recibidos · sin revisión del dueño') : (['waiting_details' => 'Esperando sus datos', 'review_details' => 'Por revisar', 'ready_to_issue' => 'Aprobados', 'waiting_signature' => 'Aprobados', 'signed' => 'Aprobados · firmado'][$s['detailsState']] ?? '') }}
                 </x-filament::badge>
             </x-slot>
             @if ($s['submission'])

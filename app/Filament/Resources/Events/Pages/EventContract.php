@@ -93,7 +93,9 @@ class EventContract extends Page
         if (! $e->customer?->email) $blockers[] = 'Falta el correo de la clienta en su ficha.';
         if ($e->services()->where('operational_ready', false)->exists()) $blockers[] = 'Hay un servicio incompleto (personaje o catálogo).';
 
-        return compact('e', 'revision', 'template', 'contract', 'signature', 'grants', 'blockers', 'quick', 'detailsState', 'submission', 'review');
+        $detailRead = ClientDetailsState::portal($e);
+        $detailsReviewed = $detailRead['reviewed'] && $submission && $detailRead['submission']['id'] === $submission->id;
+        return compact('e', 'revision', 'template', 'contract', 'signature', 'grants', 'blockers', 'quick', 'detailsState', 'submission', 'review', 'detailsReviewed');
     }
 
     protected function getHeaderActions(): array

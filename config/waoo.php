@@ -38,6 +38,7 @@ return [
     ],
     'short_portal_links' => env('WAOO_SHORT_PORTAL_LINKS', false), // Requires log redaction before activation on a host.
     'sandbox_documents' => env('WAOO_SANDBOX_DOCUMENTS', false),
+    'sandbox_immediate_contracts' => env('WAOO_SANDBOX_IMMEDIATE_CONTRACTS', false),
     'sandbox_staff' => env('WAOO_SANDBOX_STAFF', false), // STAFF-01 v2 owner link actions; read by Codex's services too.
     'stripe_test_secret' => env('STRIPE_TEST_SECRET'),
     'stripe_test_webhook_secret' => env('STRIPE_TEST_WEBHOOK_SECRET'),

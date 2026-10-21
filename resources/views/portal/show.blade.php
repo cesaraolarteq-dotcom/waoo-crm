@@ -38,7 +38,17 @@
 @endif
 
 @if ($vm['step'] === 'details_sent')
-<section class="p-card"><h2>{{ $t('details_sent_title') }}</h2><p class="p-hint">{{ $t('details_sent') }}</p></section>
+<section class="p-card"><h2>{{ $t('details_sent_title') }}</h2><p class="p-hint">{{ $t(!empty($vm['details']['prepare_action']) ? 'prepare_saved' : 'details_sent') }}</p>
+@if (!empty($vm['details']['prepare_action']))
+<form id="prepare-contract-form" method="POST" action="{{ $vm['details']['prepare_action'] }}"
+ data-event-version="{{ $vm['details']['expected_event_version'] }}" data-revision="{{ $vm['details']['expected_revision'] }}">
+ @csrf
+ <p class="p-test" id="prepare-contract-error" role="alert" hidden></p>
+ <button class="p-btn" type="submit">{{ $t('prepare_contract') }}</button>
+ <a class="p-btn p-btn-quiet" id="prepare-contract-refresh" href="{{ $vm['lang_url'][$vm['lang']] }}" hidden>{{ $t('reload') }}</a>
+</form>
+@endif
+</section>
 @elseif ($vm['step'] === 'waiting')
 <section class="p-card"><h2>{{ $t('waiting_title') }}</h2><p class="p-hint">{{ $t('waiting') }}</p></section>
 @elseif ($vm['step'] === 'details')
@@ -57,8 +67,8 @@
     <label class="p-field"><span>{{ $t('email') }}</span><input name="email" type="email" autocomplete="email" inputmode="email" required value="{{ old('email', $vm['prefill']['email'] ?? '') }}"></label>
   </div>
   <div class="p-row">
-    <label class="p-field"><span>{{ $t('event_address') }}</span><input name="event_address" autocomplete="street-address" required value="{{ old('event_address', $vm['prefill']['event_address'] ?? '') }}"></label>
-    <label class="p-field p-narrow"><span>ZIP</span><input name="event_postal_code" inputmode="numeric" maxlength="10" required value="{{ $vm['prefill']['event_postal_code'] ?? '' }}"></label>
+    <label class="p-field"><span>{{ $t('event_address') }}</span><input name="event_address" autocomplete="street-address" required @readonly($vm['details']['fixed_address'] ?? false) value="{{ ($vm['details']['fixed_address'] ?? false) ? $vm['prefill']['event_address'] : old('event_address', $vm['prefill']['event_address'] ?? '') }}"></label>
+    <label class="p-field p-narrow"><span>ZIP</span><input name="event_postal_code" inputmode="numeric" maxlength="10" required @readonly($vm['details']['fixed_postal_code'] ?? false) value="{{ $vm['prefill']['event_postal_code'] ?? '' }}"></label>
   </div>
   <div class="p-field"><span>{{ $t('party_time') }}</span><strong class="p-fixed">{{ $e['time_range'] ?? $e['start_time'] }}</strong><small>{{ $t('party_time_hint') }}</small></div>
   <h3 class="p-sub-title">{{ $t('questions') }}</h3>
@@ -148,8 +158,20 @@
   function key(name) { try { var k = sessionStorage.getItem(name); if (!k) { k = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random()); sessionStorage.setItem(name, k); } return k; } catch (e) { return crypto.randomUUID ? crypto.randomUUID() : String(Date.now()); } }
   function post(url, body, idem) {
     return fetch(url, {method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf, 'Idempotency-Key': idem}, body: JSON.stringify(body)})
-      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) { var m = j.message || (j.errors && Object.values(j.errors)[0][0]) || 'Error'; throw new Error(m); } return j; }); });
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) { var m = j.message || (j.errors && Object.values(j.errors)[0][0]) || 'Error'; var e = new Error(m); e.status = r.status; throw e; } return j; }); });
   }
+  var prep = document.getElementById('prepare-contract-form');
+  if (prep) prep.addEventListener('submit', function (ev) {
+    ev.preventDefault(); var b = prep.querySelector('button[type=submit]'), err = document.getElementById('prepare-contract-error');
+    var attempt = 'waoo-details-contract-' + prep.dataset.eventVersion + '-' + prep.dataset.revision;
+    b.disabled = true; err.hidden = true;
+    post(prep.action, {expected_event_version: Number(prep.dataset.eventVersion), expected_revision: Number(prep.dataset.revision)}, key(attempt))
+      .then(function () { try { sessionStorage.removeItem(attempt); } catch (e) {} location.reload(); })
+      .catch(function (e) { err.textContent = e.message; err.hidden = false;
+        if (e.status === 409) { document.getElementById('prepare-contract-refresh').hidden = false; }
+        else b.disabled = false;
+      });
+  });
   var det = document.getElementById('details-form');
   if (det) det.addEventListener('submit', function (ev) {
     ev.preventDefault(); var err = document.getElementById('details-error'); err.hidden = true;
