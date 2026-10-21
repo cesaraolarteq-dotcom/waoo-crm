@@ -137,4 +137,23 @@ class QuickBookingProvisionalCustomerTest extends TestCase
         $this->assertDatabaseCount('customers',0);$this->assertDatabaseCount('events',0);
         $this->assertDatabaseCount('ledger_entries',0);$this->assertDatabaseCount('quick_bookings',0);
     }
+    #[\PHPUnit\Framework\Attributes\DataProvider('contacts')]
+    public function test_unknown_name_stays_null_and_real_portal_and_owner_copy_use_neutral_greetings(array $contact):void
+    {
+        config(['waoo.short_portal_links'=>false]);
+        $result=app(QuickBook::class)->execute($this->owner,$this->input($contact),(string)Str::uuid());
+        $panel=QuickBookingPage::presentResult($result,[]);
+        $this->assertStringStartsWith('¡Hola! Gracias',$panel['msg_es']);$this->assertStringStartsWith('Hi! Thank',$panel['msg_en']);
+        parse_str(parse_url($result->portal_url,PHP_URL_FRAGMENT),$fragment);auth()->logout();
+        $this->postJson('/portal/api/session',['token'=>$fragment['token']])->assertOk();
+        $this->get('/portal?lang=es')->assertOk()->assertSee('¡Hola!')->assertDontSee('¡Hola, !')->assertDontSee('Nombre pendiente')->assertSee('name="first_name"',false);
+        $this->get('/portal?lang=en')->assertOk()->assertSee('Hi!')->assertDontSee('Hi, !')->assertDontSee('Nombre pendiente');
+        $this->assertNull($result->customer->fresh()->name);
+        $this->actingAs($this->owner);
+        $grant=\App\Models\PortalGrant::where('event_id',$result->event->id)->sole();
+        $page=Livewire::test(\App\Filament\Resources\Events\Pages\EventContract::class,['record'=>$result->event->id])->callAction('copyLink',[],['id'=>$grant->id]);
+        $this->assertStringStartsWith('¡Hola! Para',$page->get('newLink')['msg_es']);$this->assertStringStartsWith('Hi! To',$page->get('newLink')['msg_en']);
+        $this->assertNull($result->customer->fresh()->name);$this->assertDatabaseCount('ledger_entries',1);
+    }
+
 }

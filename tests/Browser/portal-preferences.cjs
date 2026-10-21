@@ -27,13 +27,13 @@ for(const lang of ['es','en'])test(`large ${lang} party choices preserve require
   for(const [name,value]of Object.entries({first_name:'María',last_name:'González',phone:'346-555-0100',email:'maria@example.test',event_address:'123 Oak Street',event_postal_code:'77493',child_name:'Lucía',child_age:'7',children_count:'15'}))await page.locator(`[name="${name}"]`).fill(value);
   assert.equal(await page.locator('select[name="event_language"],select[name="setup_area"]').count(),0);
   assert.equal(await page.locator('#details-form').evaluate(f=>f.checkValidity()),false);
-  const language=page.locator('.p-choice').filter({has:page.locator('[name="event_language"][value="es"]')});
+  const language=page.locator('.p-chip').filter({has:page.locator('[name="event_language"][value="es"]')});
   assert.ok((await language.boundingBox()).height>=48);
   await language.tap();
   const selected=page.locator('[name="event_language"][value="es"]');
   await selected.focus();await page.keyboard.press('ArrowRight');
   assert.equal(await page.locator('#details-form').evaluate(f=>f.event_language.value),'en');
-  const outdoor=page.locator('.p-choice').filter({has:page.locator('[name="setup_area"][value="outdoor"]')});
+  const outdoor=page.locator('.p-chip').filter({has:page.locator('[name="setup_area"][value="outdoor"]')});
   await outdoor.tap();
   assert.equal(await page.locator('#details-form').evaluate(f=>f.checkValidity()),true);
   await page.locator('#details-form button[type="submit"]').tap();

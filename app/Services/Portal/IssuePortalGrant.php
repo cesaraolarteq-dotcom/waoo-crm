@@ -21,6 +21,7 @@ final class IssuePortalGrant
             return DB::transaction(function () use ($actor, $eventId, $data) {
                 $event = Event::whereKey($eventId)->lockForUpdate()->firstOrFail();
                 \App\Services\Responsibility\RequireCrmResponsibility::check($event);
+                \App\Services\Booking\QuickStripeLeases::assertNoActive($eventId);
                 \App\Services\Imports\ImportedAgreement::blockCrmLifecycle($eventId);
                 abort_unless($event->customer_id === (int) $data['customer_id'], 404);
                 $token = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
@@ -35,7 +36,7 @@ final class IssuePortalGrant
                 \App\Services\Mail\CaptureEventLinkMail::forGrant($event, $grant, $actor);
                 return new IssuedPortalGrant($grant->id, Sandbox::origin().'/portal#token='.$token, $token, $grant->expires_at->toIso8601String(), app(ShortPortalLinks::class)->forLockedGrant($grant));
             }, 3);
-        } catch (\Illuminate\Auth\Access\AuthorizationException|\Illuminate\Database\Eloquent\ModelNotFoundException|\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+        } catch (\App\Exceptions\RecordWriteRejected|\Illuminate\Auth\Access\AuthorizationException|\Illuminate\Database\Eloquent\ModelNotFoundException|\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
             throw $e;
         } catch (\Throwable) {
             \Illuminate\Support\Facades\Log::error('portal.link_issue_unavailable');

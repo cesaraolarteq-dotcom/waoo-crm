@@ -33,6 +33,7 @@ final class RecordZellePayment
                 \App\Services\Responsibility\RequireCrmResponsibility::check($event);
                 \App\Services\Imports\ImportedAgreement::blockCrmLifecycle($eventId);
                 if ($saved = MutationKey::find($scope, $key, $hash)) return LedgerEntry::findOrFail($saved->result_id);
+                \App\Services\Booking\QuickStripeLeases::assertNoActive($eventId);
                 $receivedAt = ZelleReceivedDate::timestamp($data);
                 if (!$hasReference) {
                     $duplicate = LedgerEntry::where('event_id', $eventId)->where('environment', 'test')->where('kind', 'receipt')->where('method', 'zelle')

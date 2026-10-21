@@ -45,7 +45,7 @@ class WalkthroughThreeTest extends TestCase
 
     public function test_owner_screens_say_cliente(): void
     {
-        Livewire::test(QuickBooking::class)->assertSee('3. Cliente')->assertSee('Crear cliente nuevo')->assertDontSee('Clienta');
+        Livewire::test(QuickBooking::class)->assertSee('3. Cliente')->assertSee('Crear cliente nuevo')->assertDontSee('Clien'.'ta'); // split so the neutral-wording script never rewrites it
     }
 
     public function test_a_named_client_needs_no_phone_or_email_but_nothing_at_all_is_rejected(): void
