@@ -33,7 +33,7 @@ class SameVisitContractTest extends TestCase
         $booking = app(QuickBook::class)->execute($this->owner, [
             'new_customer' => ['phone' => '+17135550126', 'locale' => 'es'], 'title' => 'Cumpleaños de Sofía', 'event_type' => 'birthday',
             'starts_at' => $start->toIso8601String(), 'ends_at' => $start->copy()->addHour()->toIso8601String(), 'timezone' => 'America/Chicago',
-            'address' => '123 Example Lane', 'postal_code' => '77001', 'travel_fee_cents' => 0,
+            'address' => '123 Example Lane', 'postal_code' => '77001', 'travel_fee_cents' => 0, 'setup_minutes' => 0, 'breakdown_minutes' => 0,
             'services' => [['price_version_id' => $price->id]], 'deposit' => ['method' => 'zelle', 'amount_cents' => 10000,
                 'reference' => 'MARIAG-001', 'received_at' => now()->subMinute()->toIso8601String(), 'verified_received' => true]], (string) Str::uuid());
         $this->event = $booking->event;
@@ -232,5 +232,41 @@ class SameVisitContractTest extends TestCase
         $this->submit()->assertCreated()->assertJsonPath('contract_preparation.status', 'retry_required')->assertDontSee('Synthetic private');
         $this->assertSame(1, ClientDetailsSubmission::count()); $this->assertSame(0, Contract::count());
         $fail = false; $this->retry()->assertOk(); $this->assertSame(1, ClientDetailsSubmission::count()); $this->assertSame(1, Contract::count());
+    }
+
+    public function test_explicit_client_correction_reissues_only_unsigned_document_and_signed_query_cannot_reopen_details(): void
+    {
+        $this->submit()->assertCreated(); $first = Contract::sole();
+        $this->get('/portal?review_details=1&lang=es')->assertOk()->assertSee('id="details-form"', false)
+            ->assertSee('data-revision="1"', false)->assertSee('Para cambiar la dirección o el ZIP');
+        $this->assertSame(1, ClientDetailsSubmission::count()); $this->assertSame(1, Contract::count());
+        $this->submit(extra: ['expected_revision' => 1, 'first_name' => 'María Elena'])->assertCreated()->assertJsonPath('contract_preparation.status', 'ready');
+        $this->assertSame('superseded', $first->fresh()->state);
+        $current = Contract::where('state', 'issued')->sole();
+        $this->assertSame('María Elena', $current->commercial_snapshot['client']['first_name']);
+        $this->get('/portal')->assertOk()->assertSee('id="sign-form"', false)->assertDontSee('id="details-form"', false);
+        $this->get('/portal/api/contracts/'.$current->id.'/pdf')->assertOk(); $this->sign($current)->assertOk();
+        $this->get('/portal?review_details=1')->assertOk()->assertSee('Tu pago')->assertSee('Revisa aquí los pagos registrados y el saldo pendiente.')
+            ->assertDontSee('id="details-form"', false)->assertDontSee('Tu fecha ya está apartada');
+    }
+
+    public function test_capacity_confirmation_mid_visit_requires_explicit_fresh_submission_and_preserves_assigned_staff(): void
+    {
+        $this->submit()->assertCreated(); $first = Contract::sole();
+        $staff = \App\Models\Resource::create(['code' => 'LUCIA-01', 'name' => 'Lucía Pérez', 'kind' => 'staff', 'status' => 'active', 'skills' => ['entertainer','driver']]);
+        $this->event = app(\App\Services\Finance\ConfirmPaidCapacity::class)->execute($this->owner, $this->event->id,
+            ['expected_version' => $this->event->version, 'financial_revision_id' => $first->financial_revision_id, 'resource_ids' => [$staff->id],
+                'review' => ['staff_confirmed' => true, 'cargo_checked' => true, 'origin_return_note' => 'Se revisó el traslado del equipo para esta fiesta sintética.', 'transfers' => []]]);
+        $this->sign($first)->assertConflict(); $this->retry()->assertConflict();
+        $this->get('/portal')->assertOk()->assertSee('Revisar mis datos')->assertDontSee('id="sign-form"', false);
+        $this->get('/portal?review_details=1')->assertOk()->assertSee('id="details-form"', false)
+            ->assertSee('data-event-version="'.$this->event->version.'"', false)->assertSee('data-revision="1"', false);
+        $this->assertSame(1, ClientDetailsSubmission::count());
+        $this->submit(extra: ['expected_event_version' => $this->event->version, 'expected_revision' => 1])->assertCreated()->assertJsonPath('contract_preparation.status', 'ready');
+        $current = Contract::where('state', 'issued')->sole();
+        $this->get('/portal/api/contracts/'.$current->id.'/pdf')->assertOk(); $this->sign($current)->assertOk();
+        $this->assertSame('capacity_reserved', $this->event->fresh()->status);
+        $this->assertSame([$staff->id], ResourceReservation::where('event_id', $this->event->id)->pluck('resource_id')->all());
+        $this->assertSame(1, LedgerEntry::count()); $this->assertSame(0, ClientDetailsReview::count());
     }
 }

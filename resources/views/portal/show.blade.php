@@ -48,6 +48,7 @@
  <a class="p-btn p-btn-quiet" id="prepare-contract-refresh" href="{{ $vm['lang_url'][$vm['lang']] }}" hidden>{{ $t('reload') }}</a>
 </form>
 @endif
+@if (!empty($vm['details']['review_url']))<a class="p-btn p-btn-quiet" href="{{ $vm['details']['review_url'] }}">{{ $t('review_details') }}</a>@endif
 </section>
 @elseif ($vm['step'] === 'waiting')
 <section class="p-card"><h2>{{ $t('waiting_title') }}</h2><p class="p-hint">{{ $t('waiting') }}</p></section>
@@ -70,6 +71,7 @@
     <label class="p-field"><span>{{ $t('event_address') }}</span><input name="event_address" autocomplete="street-address" required @readonly($vm['details']['fixed_address'] ?? false) value="{{ ($vm['details']['fixed_address'] ?? false) ? $vm['prefill']['event_address'] : old('event_address', $vm['prefill']['event_address'] ?? '') }}"></label>
     <label class="p-field p-narrow"><span>ZIP</span><input name="event_postal_code" inputmode="numeric" maxlength="10" required @readonly($vm['details']['fixed_postal_code'] ?? false) value="{{ $vm['prefill']['event_postal_code'] ?? '' }}"></label>
   </div>
+  @if (($vm['details']['fixed_address'] ?? false) && ($vm['details']['fixed_postal_code'] ?? false))<p class="p-hint">{{ $t('fixed_address_hint') }}</p>@endif
   <div class="p-field"><span>{{ $t('party_time') }}</span><strong class="p-fixed">{{ $e['time_range'] ?? $e['start_time'] }}</strong><small>{{ $t('party_time_hint') }}</small></div>
   <h3 class="p-sub-title">{{ $t('questions') }}</h3>
   <div class="p-row">
@@ -96,6 +98,7 @@
   @csrf
   <h2>{{ $t('contract_title') }}</h2>
   <p class="p-hint">{{ $t('contract_hint') }}</p>
+  @if (!empty($vm['details']['review_url']))<a class="p-btn p-btn-quiet" href="{{ $vm['details']['review_url'] }}">{{ $t('review_details') }}</a>@endif
   <a class="p-btn p-btn-quiet" href="{{ $vm['contract']['pdf_url'] }}" target="_blank" rel="noopener noreferrer">{{ $t('open_pdf') }}</a>
   <input type="hidden" name="presented_pdf_sha256" value="{{ $vm['contract']['sha256'] }}">
   <label class="p-field"><span>{{ $t('sign_name') }}</span><input name="signer_name" autocomplete="name" required class="p-sign"></label>
@@ -185,7 +188,7 @@
     if (f.notes.value.trim()) body.notes = f.notes.value.trim();
     if (f.sms_consent && f.sms_consent.checked) { body.sms_consent = true; body.sms_consent_version = f.sms_consent.dataset.version; }
     post(f.action, body, key('waoo-details-' + f.dataset.revision))
-      .then(function () { try { sessionStorage.removeItem('waoo-details-' + f.dataset.revision); } catch (e) {} location.reload(); })
+      .then(function () { try { sessionStorage.removeItem('waoo-details-' + f.dataset.revision); } catch (e) {} var next = new URL(location.href); next.searchParams.delete('review_details'); location.assign(next.href); })
       .catch(function (e) { err.textContent = e.message; err.hidden = false; b.disabled = false; });
   });
   var sign = document.getElementById('sign-form');

@@ -49,4 +49,25 @@ for(const lang of ['es','en']) {
     }
     assert.equal(await page.locator('[name="first_name"]').isEditable(),true);await page.close();
   });
+  test(`${lang} explicit detail correction saves once and removes the review query before continuing`,async()=>{
+    const html=execFileSync('docker',['exec','waoo-phase1-runtime','php','tests/Browser/render-same-visit.php',lang,'fixed'],{encoding:'utf8'});
+    const page=await browser.newPage({viewport:{width:390,height:844}});let posts=0,reads=0,payload;const errors=[];
+    page.on('pageerror',e=>errors.push(e.message));
+    await page.route('**/*',route=>{
+      const request=route.request(),url=new URL(request.url());
+      if(url.pathname==='/portal/api/details'&&request.method()==='POST'){
+        posts++;payload=request.postDataJSON();return route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({contract_preparation:{status:'ready'}})});
+      }
+      if(url.pathname==='/'){reads++;return route.fulfill({contentType:'text/html',body:html});}
+      return route.abort();
+    });
+    await page.goto(`https://crm.example.test/?review_details=1&lang=${lang}`);
+    for(const [name,value]of Object.entries({first_name:'María',last_name:'González',phone:'+17135550126',email:'maria@example.test',child_name:'Sofía',child_age:'7',children_count:'12'}))await page.locator(`[name="${name}"]`).fill(value);
+    await page.locator('[name="event_language"][value="es"]').check();await page.locator('[name="setup_area"][value="indoor"]').check();
+    await page.locator('#details-form button[type=submit]').click();
+    await page.waitForURL(url=>!url.searchParams.has('review_details'));
+    assert.equal(posts,1);assert.equal(reads,2);assert.equal(payload.expected_event_version,7);assert.equal(payload.expected_revision,3);
+    assert.equal(payload.event_address,'123 Example Lane');assert.equal(payload.event_postal_code,'77001');assert.deepEqual(errors,[]);
+    await page.close();
+  });
 }

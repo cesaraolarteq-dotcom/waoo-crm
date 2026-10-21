@@ -11,6 +11,7 @@ $app->instance('request', $request);
 $response = (new \App\Http\Controllers\Portal\PortalPreviewController)($request, 'details');
 $vm = $response->getOriginalContent()->getData()['vm'];
 $vm['preview'] = false;
+$vm['details']['action'] = 'https://crm.example.test/portal/api/details';
 $vm['lang_url'] = ['es' => 'https://crm.example.test/portal?lang=es', 'en' => 'https://crm.example.test/portal?lang=en'];
 $vm['details']['expected_event_version'] = 7;
 $vm['details']['expected_revision'] = 3;

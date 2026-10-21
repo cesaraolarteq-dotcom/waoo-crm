@@ -95,7 +95,10 @@ final class PortalPageController extends Controller
         }
         $canDetails = in_array('details.submit', $grant->scopes, true);
         $details = $canDetails ? \App\Services\Booking\ClientDetailsState::portal($event) : null;
+        $canReviewDetails = config('waoo.sandbox_immediate_contracts') && $canDetails && !$signed && !$details['reviewed'];
+        $reviewDetails = $canReviewDetails && $request->boolean('review_details');
         $step = match (true) {
+            $reviewDetails => 'details',
             $canDetails && ! $signed && ! $details['submission'] => 'details',
             $canDetails && ! $signed && ! $details['reviewed'] && !$prepared => 'details_sent',
             ! $contract => 'waiting',
@@ -128,12 +131,13 @@ final class PortalPageController extends Controller
                 'prepare_action' => config('waoo.sandbox_immediate_contracts') && $details['submission'] && !$signed && !$details['reviewed'] ? url('/portal/api/details/contract') : null,
                 'fixed_address' => config('waoo.sandbox_immediate_contracts') && filled($event->address),
                 'fixed_postal_code' => config('waoo.sandbox_immediate_contracts') && filled($event->postal_code),
+                'review_url' => $canReviewDetails ? url('/portal?lang='.$lang.'&review_details=1') : null,
                 'sms_consent' => $smsVersion !== null ? ['version' => $smsVersion, 'text' => $approvedSms[$smsVersion]] : null] : null,
             'prefill' => $prefill,
             // The contracting party's own first name when a contract exists; otherwise the owner's record.
             'first_name' => trim((string) ($contract?->commercial_snapshot['client']['first_name'] ?? explode(' ', (string) $event->customer?->name)[0] ?? '')),
             'notice' => $request->session()->get('portal_notice'),
-            'lang_url' => ['es' => url('/portal?lang=es'), 'en' => url('/portal?lang=en')],
+            'lang_url' => ['es' => url('/portal?lang=es'.($reviewDetails ? '&review_details=1' : '')), 'en' => url('/portal?lang=en'.($reviewDetails ? '&review_details=1' : ''))],
             'event' => [
                 'package' => $services ?: $event->title,
                 'characters' => collect($revision?->lines_snapshot ?? [])->flatMap(fn ($l) => $l['characters'] ?? [])->map(fn ($c) => $c['quantity'].' × '.\App\Services\Records\CharacterLabel::fromSnapshot($c))->implode(', '),
