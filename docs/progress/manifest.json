@@ -542,15 +542,16 @@
      "link_recovery": "Codex 68c02a5 + Claude #54 aprobado por Codex (81771b2).",
      "same_visit_signature": {
       "api": "docs/APPROVED-CLIENT-FLOW-API.md",
-      "preparation_backend": "e22e456",
-      "contract_before_code": "81ebee7",
-      "verification": "Internal18/83 PASS50.300s; final related91/945 PASS3:36.985 PHP8.3.35/MariaDB11.8, overlapping not summed. Legacy SMS expectation fixed1fbf390: exact approved Spanish version/text, unchecked. PHP lint and diff checks pass; no full repo/GitHub Actions/staging/provider verification.",
-      "http_flow": false,
-      "ui": false,
+      "backend": "feba333",
+      "ui": "657b262",
+      "main_integration": "7b4b730 (main b5d9828 / PR104)",
+      "http_flow": true,
       "reviewed": false,
       "merged": false,
       "accepted": false,
-      "remaining": "B1b: durable submission hook and retry HTTP route, narrow current-source signature validation, immediate portal progression and end-to-end session/PDF/signature/security tests. Existing owner-review requirement for signing remains enforced. No live document or provider operation."
+      "activation": "WAOO_SANDBOX_IMMEDIATE_CONTRACTS=false by default. No deployment or live signature.",
+      "verification": "Before main integration135/1419 green; integrated broad372 had371 pass and one obsolete p-choice CSS assertion. Assertion now checks real radio semantics. Fresh correction23/266 and13 browser green. Final affected MariaDB85/883 green03:26.750; overlapping runs, not whole repository.",
+      "owner_confirmation_followup": "docs/CLIENT-DETAILS-REVIEW-API.md B1c proposal only; no owner approval is fabricated and signed artifacts stay immutable."
      }
     },
     {
@@ -615,7 +616,7 @@
      "accepted": false,
      "api": "docs/QUICK-BOOKING-NIGHT-API.md; docs/SHORT-PORTAL-LINK-API.md",
      "verification": "Integrated263/2362 PASS09:01.582 on application528c524; final panel/source3fb0f7b related73/666 PASS03:00.273,131MB,MariaDB11.8, including full QuickBookingCore/provisional/UI, event files, short-link quote revision and actual panel embeddings/rollback/access/Locked stale guards. Overlapping runs, not summed. Browser7/7 PASS6.406s: Google synthetic5 + actual Blade preferences ES/EN2, all intercepted/local. Build/PHP lint/strict Composer/diff pass. Not entire repository/remote Actions/actual staging or owner acceptance.",
-     "note": "Items2–9 local: explicit character slots/internal wardrobe, non-native time, one contact search and provisional identity, editable50%, optional Zelle with dedupe/stable day, encrypted12-char short link defaultOFF, large client preference cards. Google actualcrm-test remains blocked/unverified. Full Stripe48h/payment and immediate-signature flow remain pending, not counted here."
+     "note": "Items2–9 local: explicit character slots/internal wardrobe, non-native time, one contact search and provisional identity, editable50%, optional Zelle with dedupe/stable day, encrypted12-char short link defaultOFF, large client preference cards. Google actualcrm-test remains blocked/unverified. Full Stripe48h/payment remains pending. Same-visit signature has its own gated tested row and is not counted again here."
     },
     {
      "name": "Reserva con Stripe: apartado sin pago (base interna)",
@@ -641,6 +642,19 @@
      "accepted": false,
      "design": "docs/QUICK-STRIPE-BOOKING-API.md",
      "blocker": "Pending full create/read UI +dedicated grant/portal, frozen provider request, verified webhook/real Stripe backing, principal vs3% across reports/confirmation, late money handling and24h/48h scheduled lifecycle. No fake option or activation."
+    },
+    {
+     "name": "Datos y firma en la misma visita (sandbox)",
+     "weight": 1,
+     "agent": "Codex",
+     "backend": "feba333",
+     "ui": "657b262",
+     "reviewed": false,
+     "merged": false,
+     "accepted": false,
+     "verification": "Final affected MariaDB85 tests/883 assertions PASS03:26.750; Chromium13/13 PASS. Real client details→private PDF→signature, explicit correction, CSRF/source and hold integration covered. Gate defaultsOFF; not whole repository or remote Actions.",
+     "scope": "Native genuine paid QuickBook only; latest same-grant details and unchanged original agreement/template/PDF/consent. Durable saved details despite artifact failure; retries and explicit fresh review, no silent version refresh. No native Stripe-unpaid or imported lifecycle.",
+     "blocker": "Independent source review, owner sandbox acceptance and explicit deployment/activation; real legal template stays owner-approved. Post-signature identity confirmation is a separate B1c API proposal."
     }
    ]
   },
@@ -1073,5 +1087,12 @@
   "ui": false,
   "reviewed": false,
   "note": "Owner weekly Zelle/package-only minimum120min/driver-only manual transport/equal tips/Waoo commission; owner-only exact manual amounts and explicit unknown states. Automatic rate rounding, ambiguous multi-package duration, actual driver designation and tip-remainder policy remain unresolved; no invented formula or payment. Contract earns no score."
+ },
+ "same_visit_owner_confirmation_proposal": {
+  "api": "docs/CLIENT-DETAILS-REVIEW-API.md",
+  "backend": null,
+  "ui": false,
+  "reviewed": false,
+  "note": "Identity-only actual owner confirmation after signature; current customer/version and genuine evidence, no rewrite of signed agreement, price, receipt or inventory. Proposal, zero completion credit."
  }
 }
