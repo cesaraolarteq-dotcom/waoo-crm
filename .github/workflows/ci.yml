@@ -78,4 +78,4 @@ jobs:
       - run: cp .env.example .env && php artisan key:generate
       # Each shard has its own MariaDB; every test file runs in exactly one shard (tools/ci-shard.php checks it).
       - run: php tools/ci-shard.php 5 ${{ matrix.shard }} > phpunit-shard.xml
-      - run: php artisan test --configuration=phpunit-shard.xml
+      - run: vendor/bin/phpunit --configuration=phpunit-shard.xml
