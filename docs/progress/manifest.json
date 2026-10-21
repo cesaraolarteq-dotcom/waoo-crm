@@ -164,7 +164,7 @@
       "reviewed": false,
       "merged": false,
       "accepted": false,
-      "note": "Contrato y componente monetario/plazos probado. Backend completo sigue pendiente: apartado sin pago48h, recordatorio24h, portal/Checkout/webhook. Sin pagos activos ni crédito de backend completo.",
+      "note": "S1 monetary terms and S2 unpaid inventory backing implemented/tested; full aggregator/Checkout/portal/webhook/real principal-fee accounting/reminder and expiry scheduling remain pending. No provider, route or transport activation; full backend completion remains null.",
       "branch": "codex/quick-stripe-foundation",
       "foundation": {
        "backend": "8542c98",
@@ -175,7 +175,17 @@
        "merged": false,
        "accepted": false
       },
-      "lease_contract": "33816a2 +3cf2c62: S2 internal unpaid lease persistence, guards/lifecycle and S3 genuine Stripe promotion/principal-fee accounting boundary frozen before implementation. Contract only, backend completion remains null."
+      "lease_contract": "33816a2 +3cf2c62: S2 internal unpaid lease persistence, guards/lifecycle and S3 genuine Stripe promotion/principal-fee accounting boundary frozen before implementation. Contract only, backend completion remains null.",
+      "unpaid_backing": {
+       "api": "QUICK-STRIPE-BOOKING-API.md S2,7d0dea5 +b22b3f6 before source",
+       "backend": "ee2e78e",
+       "integration": "09ccaeb (main c1aea4b / Claude10706f9)",
+       "ui": null,
+       "reviewed": false,
+       "merged": false,
+       "accepted": false,
+       "verification": "92/433 backing PASS02:31.440 +200/1537 related PASS07:00.067 before main merge;154/1518 merged booking/portal/lease/main walkthrough PASS05:55.864 on09ccaeb. Overlap, not summed. Native last-unit lease vs paid-booking race, immutable48h/nonrenewal/DST, exact replays, release/expiry/source/auth/audit/corruption guards; no dummy receipt, portal or provider call. Not full repository or remote Actions."
+      }
      },
      "night_google_followup": {
       "backend": null,
@@ -594,6 +604,31 @@
      "api": "docs/QUICK-BOOKING-NIGHT-API.md; docs/SHORT-PORTAL-LINK-API.md",
      "verification": "Integrated263/2362 PASS09:01.582 on application528c524; final panel/source3fb0f7b related73/666 PASS03:00.273,131MB,MariaDB11.8, including full QuickBookingCore/provisional/UI, event files, short-link quote revision and actual panel embeddings/rollback/access/Locked stale guards. Overlapping runs, not summed. Browser7/7 PASS6.406s: Google synthetic5 + actual Blade preferences ES/EN2, all intercepted/local. Build/PHP lint/strict Composer/diff pass. Not entire repository/remote Actions/actual staging or owner acceptance.",
      "note": "Items2–9 local: explicit character slots/internal wardrobe, non-native time, one contact search and provisional identity, editable50%, optional Zelle with dedupe/stable day, encrypted12-char short link defaultOFF, large client preference cards. Google actualcrm-test remains blocked/unverified. Full Stripe48h/payment and immediate-signature flow remain pending, not counted here."
+    },
+    {
+     "name": "Reserva con Stripe: apartado sin pago (base interna)",
+     "weight": 1,
+     "agent": "Codex",
+     "backend": "ee2e78e +integration09ccaeb",
+     "ui": null,
+     "reviewed": false,
+     "merged": false,
+     "accepted": false,
+     "api": "docs/QUICK-STRIPE-BOOKING-API.md S2",
+     "verification": "92/433 +200/1537 before merge;154/1518 current main integration PASS. Runs overlap; no full-suite/Actions/host/owner acceptance.",
+     "note": "Internal only, sandbox_quick_stripe defaultsOFF: physical lease, frozen48h/24h terms, owner release/callable expiry and integrity/source guards. No checkout/payment/portal/cron/reminder or fabricated receipt."
+    },
+    {
+     "name": "Reserva rápida con Stripe: pago y portal",
+     "weight": 2,
+     "agent": "Codex",
+     "backend": null,
+     "ui": false,
+     "reviewed": false,
+     "merged": false,
+     "accepted": false,
+     "design": "docs/QUICK-STRIPE-BOOKING-API.md",
+     "blocker": "Pending full create/read UI +dedicated grant/portal, frozen provider request, verified webhook/real Stripe backing, principal vs3% across reports/confirmation, late money handling and24h/48h scheduled lifecycle. No fake option or activation."
     }
    ]
   },
@@ -1017,5 +1052,6 @@
     }
    ]
   }
- ]
+ ],
+ "pending_queue": "docs/plans/CODEX-PENDING-2026-10-20.md"
 }
