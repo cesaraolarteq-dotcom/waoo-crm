@@ -44,7 +44,7 @@ npm ci --ignore-scripts
 npm run build
 ```
 
-phpunit.xml forces the test database name to prevent accidental use of the normal app DB. The suite migrates and rolls back its test database and uses fake fixtures only. Never run two suites concurrently against that same database. The operational increment adds a resource concurrency test with two actual PHP processes on MariaDB and requires pcntl. CI starts a disposable MariaDB service. This is backend coverage; desktop/mobile UI acceptance remains Claude + owner work.
+phpunit.xml forces the test database name to prevent accidental use of the normal app DB. The suite migrates and rolls back its test database and uses fake fixtures only. Never run two suites concurrently against that same database. The operational increment adds a resource concurrency test with two actual PHP processes on MariaDB and requires pcntl. CI starts a disposable MariaDB service per shard: the suite is split into 5 parallel jobs by `tools/ci-shard.php` (every test file runs in exactly one shard; locally keep using `php artisan test`). A separate `checks` job runs Composer validate/audit, PHP syntax and the Vite build once. Pushes run CI only on `main` and `codex/**`; other branches run it through their PR, and a newer commit cancels the older run on the same branch. This is backend coverage; desktop/mobile UI acceptance remains Claude + owner work.
 
 ## Hostinger constraints carried forward
 
