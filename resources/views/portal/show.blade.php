@@ -4,7 +4,7 @@
     $e = $vm['event'];
 @endphp
 @section('content')
-<h1 class="p-h1">{{ $t('hello', ['name' => $vm['first_name']]) }}</h1>
+<h1 class="p-h1">{{ filled($vm['first_name'] ?? null) ? $t('hello', ['name' => $vm['first_name']]) : $t('hello_generic') }}</h1>
 @if ($vm['step'] !== 'done')<p class="p-sub">{{ $t('intro', ['n' => count($vm['steps'] ?? ['details', 'contract', 'pay'])]) }}</p>@endif
 
 <ol class="p-steps" aria-label="Pasos">

@@ -178,14 +178,16 @@ class EventContract extends Page
     private function linkPanel(string $url, string $expiresIso, bool $details, bool $recovered): array
     {
         $first = trim(explode(' ', (string) $this->record->customer?->name)[0] ?? '');
+        $helloEs = $first === '' ? '¡Hola!' : "¡Hola {$first}!";
+        $helloEn = $first === '' ? 'Hi!' : "Hi {$first}!";
         $exp = Labels::when(\Carbon\CarbonImmutable::parse($expiresIso));
         $until = rtrim($exp, '.');
 
         return ['url' => $url, 'expires' => $exp, 'phone' => $this->record->customer?->phone, 'locale' => $this->record->customer?->locale ?? 'es', 'recovered' => $recovered,
-            'msg_es' => $details ? "¡Hola {$first}! Para terminar tu reserva con Waoo Party, completa tus datos y firma tu contrato aquí: {$url} (vence el {$until}). ¡Estamos emocionados de ser parte de tu celebración!"
-                : "¡Hola {$first}! Aquí puedes leer y firmar tu contrato de Waoo Party y ver cómo pagar tu saldo: {$url} (vence el {$until}). ¡Estamos emocionados de ser parte de tu celebración!",
-            'msg_en' => $details ? "Hi {$first}! To finish your booking with Waoo Party, please complete your details and sign your contract here: {$url} (expires {$until}). We're excited to be part of your celebration!"
-                : "Hi {$first}! Here you can read and sign your Waoo Party contract and see how to pay your balance: {$url} (expires {$until}). We're excited to be part of your celebration!"];
+            'msg_es' => $details ? "{$helloEs} Para terminar tu reserva con Waoo Party, completa tus datos y firma tu contrato aquí: {$url} (vence el {$until}). ¡Estamos emocionados de ser parte de tu celebración!"
+                : "{$helloEs} Aquí puedes leer y firmar tu contrato de Waoo Party y ver cómo pagar tu saldo: {$url} (vence el {$until}). ¡Estamos emocionados de ser parte de tu celebración!",
+            'msg_en' => $details ? "{$helloEn} To finish your booking with Waoo Party, please complete your details and sign your contract here: {$url} (expires {$until}). We're excited to be part of your celebration!"
+                : "{$helloEn} Here you can read and sign your Waoo Party contract and see how to pay your balance: {$url} (expires {$until}). We're excited to be part of your celebration!"];
     }
 
     /**

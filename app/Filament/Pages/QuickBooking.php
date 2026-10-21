@@ -455,6 +455,8 @@ class QuickBooking extends Page
     public static function presentResult(object $r, array $s): array
     {
         $first = trim(explode(' ', (string) ($r->customer->name ?? ''))[0] ?? '');
+        $helloEs = $first === '' ? '¡Hola!' : "¡Hola {$first}!";
+        $helloEn = $first === '' ? 'Hi!' : "Hi {$first}!";
         $f = $r->finance;
         $when = Labels::when($r->event->starts_at);
         $paid = Labels::money($f['net_received_cents']);
@@ -468,8 +470,8 @@ class QuickBooking extends Page
             'event_id' => $r->event->id, 'link' => $link, 'expires' => $exp, 'shown_before' => $link === null && !($r->link_issue_pending ?? false),
             'link_pending' => (bool) ($r->link_issue_pending ?? false),
             'summary' => 'Total '.Labels::money($f['financial_revision']->total_cents).' · recibido '.$paid.' · saldo '.$balance.' (vence '.$due.')',
-            'msg_es' => "¡Hola {$first}! Gracias por tu depósito de {$paid}. Registramos tu solicitud para el {$when}. Para terminar tu reserva, completa tus datos y firma tu contrato aquí: {$link} (el enlace vence el {$exp}). Tu saldo es de {$balance}. ¡Estamos emocionados de ser parte de tu celebración!",
-            'msg_en' => "Hi {$first}! Thank you for your deposit of {$paid}. We recorded your booking request for {$whenEn}. To finish your booking, please complete your details and sign your contract here: {$link} (link expires {$exp}). Your remaining balance is {$balance}. We're excited to be part of your celebration!",
+            'msg_es' => "{$helloEs} Gracias por tu depósito de {$paid}. Registramos tu solicitud para el {$when}. Para terminar tu reserva, completa tus datos y firma tu contrato aquí: {$link} (el enlace vence el {$exp}). Tu saldo es de {$balance}. ¡Estamos emocionados de ser parte de tu celebración!",
+            'msg_en' => "{$helloEn} Thank you for your deposit of {$paid}. We recorded your booking request for {$whenEn}. To finish your booking, please complete your details and sign your contract here: {$link} (link expires {$exp}). Your remaining balance is {$balance}. We're excited to be part of your celebration!",
             'locale' => $r->customer->locale ?? 'es',
             'phone' => $r->customer->phone ?? null,
         ];

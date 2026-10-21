@@ -7,7 +7,7 @@ final class PortalCopy
 {
     public const T = [
         'es' => [
-            'hello' => '¡Hola, :name!', 'intro' => 'Aquí terminas tu reserva en :n pasos. Toma unos 3 minutos.',
+            'hello' => '¡Hola, :name!', 'hello_generic' => '¡Hola!', 'intro' => 'Aquí terminas tu reserva en :n pasos. Toma unos 3 minutos.',
             'steps' => ['details' => 'Tus datos', 'contract' => 'Contrato', 'pay' => 'Pago'],
             'your_party' => 'Tu fiesta', 'package' => 'Paquete', 'when' => 'Fecha', 'total' => 'Total', 'travel' => 'Costo de transporte',
             'paid' => 'Ya pagaste', 'balance' => 'Saldo', 'due' => 'vence',
@@ -51,7 +51,7 @@ final class PortalCopy
             'return_processing' => 'Estamos confirmando tu pago con Stripe. Aparecerá aquí cuando se confirme.', 'return_cancelled' => 'No se hizo ningún cobro.',
         ],
         'en' => [
-            'hello' => 'Hi, :name!', 'intro' => 'Finish your booking in :n steps. It takes about 3 minutes.',
+            'hello' => 'Hi, :name!', 'hello_generic' => 'Hi!', 'intro' => 'Finish your booking in :n steps. It takes about 3 minutes.',
             'steps' => ['details' => 'Your details', 'contract' => 'Contract', 'pay' => 'Payment'],
             'your_party' => 'Your party', 'package' => 'Package', 'when' => 'Date', 'total' => 'Total', 'travel' => 'Travel fee',
             'paid' => 'Paid so far', 'balance' => 'Balance', 'due' => 'due',
