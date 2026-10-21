@@ -6,8 +6,28 @@
     $imported = $bk['imported_confirmation_count_excluded'] ?? null;
 @endphp
 <x-filament-panels::page>
+    @if ($draft = $this->birthdayDraft())
+        <x-filament::section heading="Cumpleaños del próximo año · solo borrador">
+            <p>{{ $draft['candidate_count'] }} cumpleaños completados con fecha confiable. Ninguno habilitado para envío: faltan permisos promocionales verificables y aprobación del texto.</p>
+            <p>Revisión propuesta un mes antes; no cambia la política de envío ni genera códigos.</p>
+            <ul>
+                @foreach ($draft['items'] as $item)
+                    <li>Cliente #{{ $item['customer_id'] }} · {{ $item['source_date'] }} · revisión: {{ $item['proposed_review_on'] ?? 'Revisar 29 de febrero' }}@if (in_array('already_rebooked', $item['reasons'])) · Ya tiene otra fiesta @endif</li>
+                @endforeach
+            </ul>
+            <p>ES (sin aprobar): {{ $draft['copy']['es'] }}</p>
+            <p>EN (not approved): {{ $draft['copy']['en'] }}</p>
+        </x-filament::section>
+    @endif
     @if ($analytics = $this->analytics())
         <x-filament::section heading="Reservas · CRM e historial HoneyBook">
+            <label>Año del análisis
+                <select wire:model.live="analyticsYear">
+                    @for ($year = 2000; $year <= 2100; $year++)
+                        <option value="{{ $year }}">{{ $year }}</option>
+                    @endfor
+                </select>
+            </label>
             <p>Año {{ $analytics['year'] }} · {{ $analytics['booking_count'] }} fiestas confirmadas o completadas. Importes de origen, no recibos bancarios. Borradores y estados desconocidos quedan fuera.</p>
             <p>Ticket promedio: {{ $this->money($analytics['ticket']['average_cents']) }} · {{ $analytics['ticket']['known_count'] }} con monto conocido; {{ $analytics['ticket']['unknown_count'] }} sin monto.</p>
             <p>Anticipación promedio: {{ $analytics['lead_time']['average_days'] ?? 'Pendiente' }} días · {{ $analytics['lead_time']['unknown_count'] }} sin fecha de creación confiable.</p>
@@ -16,7 +36,7 @@
                 <h3>{{ $label }}</h3>
                 <ul>
                     @forelse ($analytics[$dimension] as $key => $count)
-                        <li>{{ $key === 'unknown' ? 'Sin información' : $key }}: {{ $count }}</li>
+                        <li>{{ $key === 'unknown' ? 'Sin información' : ($dimension === 'packages' ? ($analytics['package_labels'][$key] ?? $key) : $key) }}: {{ $count }}</li>
                     @empty
                         <li>Sin datos</li>
                     @endforelse

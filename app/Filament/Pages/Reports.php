@@ -35,6 +35,9 @@ class Reports extends Page
     #[Url(as: 'fecha')]
     public string $asOf = '';
 
+    #[Url(as: 'ano')]
+    public int $analyticsYear = 0;
+
     public ?array $emailPreview = null;
 
     public static function canAccess(): bool
@@ -46,6 +49,7 @@ class Reports extends Page
     {
         abort_unless(static::canAccess(), 403);
         $this->kind = in_array($this->kind, ['weekly', 'monthly'], true) ? $this->kind : 'weekly';
+        if ($this->analyticsYear < 2000 || $this->analyticsYear > 2100) $this->analyticsYear = (int)now('America/Chicago')->year;
         $today = now('America/Chicago')->toDateString();
         $this->asOf = ($d = self::validDate($this->asOf)) && $d <= $today ? $d : $today;
     }
@@ -97,17 +101,24 @@ class Reports extends Page
         return ReportsSource::read(Filament::auth()->user(), $this->kind, $this->asOf);
     }
 
+    public function birthdayDraft(): ?array
+    {
+        if (!config('waoo.sandbox_anniversary', false)) return null;
+        return app(\App\Services\Campaigns\ReadBirthdayCampaignDraft::class)->execute(
+            Filament::auth()->user(), ['as_of' => now('America/Chicago')->toDateString()]);
+    }
+
     public function analytics(): ?array
     {
         if (!config('waoo.sandbox_analytics', false)) return null;
         return app(\App\Services\Reports\ReadBookingAnalytics::class)->execute(
-            Filament::auth()->user(), ['year' => (int)substr($this->asOf, 0, 4)]);
+            Filament::auth()->user(), ['year' => $this->analyticsYear]);
     }
 
     public function exportAnalytics(): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         $report = app(\App\Services\Reports\ReadBookingAnalytics::class)->execute(
-            Filament::auth()->user(), ['year' => (int)substr($this->asOf, 0, 4)]);
+            Filament::auth()->user(), ['year' => $this->analyticsYear]);
         return response()->streamDownload(function () use ($report) {
             echo app(\App\Services\Reports\BookingAnalytics::class)->csv($report);
         }, 'reservas-'.$report['year'].'.csv', ['Content-Type' => 'text/csv; charset=UTF-8', 'Cache-Control' => 'no-store']);

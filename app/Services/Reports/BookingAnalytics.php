@@ -14,17 +14,17 @@ final class BookingAnalytics
             'weekdays' => [], 'packages' => [], 'postal_codes' => [], 'lead_sources' => []];
         $money = $days = $moneyCount = $dayCount = 0;
         foreach ($rows as $row) {
+            $date = $row['date'];
+            if (!is_string($date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/D', $date)
+                || !($parsed = \DateTimeImmutable::createFromFormat('!Y-m-d', $date)) || $parsed->format('Y-m-d') !== $date) {
+                $out['exclusions']['date_unknown_all_years'] = ($out['exclusions']['date_unknown_all_years'] ?? 0) + 1;
+                continue;
+            }
+            if ((int)substr($date, 0, 4) !== $year) continue;
             if (!in_array($row['status'], ['completed', 'capacity_reserved'], true)) {
                 $out['exclusions']['not_confirmed_or_completed'] = ($out['exclusions']['not_confirmed_or_completed'] ?? 0) + 1;
                 continue;
             }
-            $date = $row['date'];
-            if (!is_string($date) || !preg_match('/^\d{4}-\d{2}-\d{2}$/D', $date)
-                || !($parsed = \DateTimeImmutable::createFromFormat('!Y-m-d', $date)) || $parsed->format('Y-m-d') !== $date) {
-                $out['exclusions']['date_unknown'] = ($out['exclusions']['date_unknown'] ?? 0) + 1;
-                continue;
-            }
-            if ((int)substr($date, 0, 4) !== $year) continue;
             $out['booking_count']++;
             $source = $row['source'] === 'crm' ? 'crm' : 'honeybook';
             $out['source_counts'][$source] = ($out['source_counts'][$source] ?? 0) + 1;
@@ -59,6 +59,7 @@ final class BookingAnalytics
             }
         }
         foreach (['source_counts', 'exclusions', 'months', 'weekdays', 'packages', 'postal_codes', 'lead_sources'] as $dimension) ksort($out[$dimension]);
+        foreach (['packages', 'postal_codes', 'lead_sources'] as $dimension) arsort($out[$dimension], SORT_NUMERIC);
         $out['ticket'] = ['currency' => 'USD', 'known_count' => $moneyCount, 'unknown_count' => $out['booking_count'] - $moneyCount,
             'total_cents' => $money, 'average_cents' => $moneyCount ? (int)round($money / $moneyCount) : null];
         $out['lead_time'] = ['known_count' => $dayCount, 'unknown_count' => $out['booking_count'] - $dayCount,

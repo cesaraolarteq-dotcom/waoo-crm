@@ -10,11 +10,12 @@ in the response or CSV. Existing financial Reports remain unchanged.
 Population: current historical revisions of completed events, plus operational capacity-reserved/completed
 CRM events. Imported operational events appear once, using their current source agreement instead of a
 native financial revision. Exclude prospects, cancelled, unknown historical status and CRM drafts. Report
-counts exclusions/unknowns. Historical dates and amounts are source evidence, never verified receipts.
+counts exclusions/unknowns. Status exclusions are scoped to the selected party year;
+undated rows cannot be assigned to a year and are explicitly date_unknown_all_years. Historical dates and amounts are source evidence, never verified receipts.
 Party date in Houston defines the year/month/weekday. Booking lead time requires an explicit source
 creation date; never substitute import time. Negative/unparseable lead time is unknown.
 USD ticket average uses only known nonnegative totals; denominator and unknown count are explicit.
-Packages use canonical catalog variant IDs only, with an unknown bucket for unmapped historical packages.
+Packages use canonical catalog variant IDs (with current catalog names for the owner screen) only, with an unknown bucket for unmapped historical packages.
 Lead sources map to a closed vocabulary; unknown free text stays Other. ZIP requires five digits.
 
 Output schema_version=1, year, timezone, booking_count, source_counts, exclusions,

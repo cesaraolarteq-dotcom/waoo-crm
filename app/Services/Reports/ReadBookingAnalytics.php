@@ -46,7 +46,10 @@ final class ReadBookingAnalytics
                     'total_cents' => $source ? ($source->normalized['total_cents'] ?? null) : $financial?->total_cents,
                     'currency' => $source ? 'USD' : $financial?->currency];
             }
-            return app(BookingAnalytics::class)->summarize($rows, (int)$data['year']);
+            $report = app(BookingAnalytics::class)->summarize($rows, (int)$data['year']);
+            $ids = array_filter(array_keys($report['packages']), fn ($id) => is_int($id) && $id > 0);
+            $report['package_labels'] = \App\Models\ServiceVariant::whereIn('id', $ids)->pluck('name', 'id')->all();
+            return $report;
         });
     }
 }
