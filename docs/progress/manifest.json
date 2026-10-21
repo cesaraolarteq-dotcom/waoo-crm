@@ -649,12 +649,13 @@
      "backend": "4a6e7b7 +5050a37 +b04e151",
      "ui": "4a6e7b7 +5050a37",
      "reviewed": false,
-     "merged": false,
+     "merged": true,
      "accepted": false,
      "design": "docs/QUICK-STRIPE-BOOKING-API.md",
      "api": "docs/QUICK-STRIPE-BOOKING-API.md QP1",
      "verification": "4a6e7b7:196/1460 MariaDB PASS;b04e151:32/284 final focused PASS;Chromium15/15;Composer/Vite/PHP/diff PASS. Related overlapping runs, not full repository/remote Actions or host acceptance.",
-     "note": "Sandbox delivery: unpaid owner toggle/blank client, exact48h costume lease, details→Zelle pending→private PDF/signature, verified bank review, authenticated Stripe card/Klarna50/100+separate3%, immutable retry/recovery/closure, purpose-bound callback/real principal+fee ledger, paid backing/late review, cron24/48h, frozen gated owner/client notifications. DefaultsOFF; no deployment/send/charge/import. Claude reviews/integrates/opens PR."
+     "note": "Sandbox delivery: unpaid owner toggle/blank client, exact48h costume lease, details→Zelle pending→private PDF/signature, verified bank review, authenticated Stripe card/Klarna50/100+separate3%, immutable retry/recovery/closure, purpose-bound callback/real principal+fee ledger, paid backing/late review, cron24/48h, frozen gated owner/client notifications. DefaultsOFF; no deployment/send/charge/import. Claude reviews/integrates/opens PR.",
+     "blocker": "Código de pagos incluido en main98df55c; configuración/recorrido de crm-test, activación controlada y aceptación siguen pendientes. Sin cobros ni envíos reales."
     },
     {
      "name": "Datos y firma en la misma visita (sandbox)",
@@ -1016,8 +1017,8 @@
      "name": "Archivo histórico HoneyBook (fiestas pasadas y prospectos)",
      "weight": 3,
      "agent": "Codex",
-     "backend": "043d8c0 +6e5fd4d +7eb76a2",
-     "ui": "043d8c0 +6e5fd4d",
+     "backend": "043d8c0 +6e5fd4d +7eb76a2; integración adfae32; resoluciones45431b6",
+     "ui": "043d8c0 +6e5fd4d +45431b6",
      "reviewed": false,
      "merged": false,
      "accepted": false,
@@ -1028,16 +1029,25 @@
       "reviewed": false,
       "note": "Perfil extendido, archivo/revisiones cifrados, lote atómico sin conflictos, revisión/exclusión/cierre, dedupe y barrera con IMPORT-01; fuentes de cuestionario, saldos y PDF originales privados por hash. Sin efectos de dinero, capacidad, contratos, consentimiento nativo o mensajes."
      },
-     "blocker": "Pendiente revisión de Claude/Actions, integración, ejecución real en crm-test y doble verificación independiente. No se leyó el export real ni se importó ningún registro real.",
+     "blocker": "Revisar codex/honeybook-history-integration y Actions. Sin importación real ni doble verificación de origen/destino; no despliegue.",
      "evidence": {
-      "branch": "codex/honeybook-history",
-      "tests": "MariaDB: integración84/603 en6e5fd4d; parser/intake/UI/conteos43/211 en7eb76a2; conjuntos superpuestos, no sumar. No batería completa ni datos reales.",
+      "branch": "codex/honeybook-history-integration",
+      "tests": "Main integrado129/731; resoluciones/intake37/199; política supplement12/35; ficha cliente2/13, todos PASS en MariaDB. Conjuntos superpuestos, no sumar. No datos reales ni batería completa.",
       "real_records_imported": 0,
       "independent_source_destination_reviews": {
        "claude": false,
        "codex": false
       },
       "original_pdf_acquisition": "Pendiente de Claude; el adaptador no descarga de HoneyBook ni recrea firmas."
+     },
+     "owner_balance_resolutions": {
+      "api": "docs/HONEYBOOK-BALANCE-RESOLUTIONS-API.md",
+      "backend": "45431b6",
+      "ui": "45431b6",
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "real_resolutions_applied": 0
      }
     },
     {
@@ -1108,10 +1118,16 @@
      "backend": "e458f30",
      "ui": "e458f30",
      "reviewed": false,
-     "merged": false,
+     "merged": true,
      "accepted": false,
      "design": "docs/HONEYBOOK-SUPPLEMENT-API.md",
-     "blocker": "Revisión de Claude, extracción privada y ejecución crm-test pendientes; cero registros reales copiados. Doble verificación independiente obligatoria. No incluye archivos binarios ni commit del historial."
+     "blocker": "Revisión de Claude, extracción privada y ejecución crm-test pendientes; cero registros reales copiados. Doble verificación independiente obligatoria. No incluye archivos binarios ni commit del historial.",
+     "policy_update": {
+      "backend": "0b3ab41",
+      "contract": "docs/HONEYBOOK-SUPPLEMENT-API.md",
+      "reviewed": false,
+      "note": "Exclusiones finales del dueño también se aplican antes de guardar texto adicional;12/35 pruebas PASS."
+     }
     }
    ]
   }
