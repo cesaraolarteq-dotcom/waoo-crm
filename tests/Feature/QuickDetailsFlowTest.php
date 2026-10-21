@@ -69,8 +69,14 @@ class QuickDetailsFlowTest extends TestCase
         // Client, in her own session (an owner session can never act for her).
         auth()->logout();
         $this->postJson('/portal/api/session', ['token' => $token])->assertOk();
-        $this->get('/portal')->assertOk()->assertSee('Tus datos')->assertSee('id="details-form"', false)
-            ->assertSee('data-event-version="'.$event->version.'"', false)->assertSee('data-revision="0"', false)->assertDontSee('name="sms_consent"', false);
+        $page = $this->get('/portal')->assertOk()->assertSee('Tus datos')->assertSee('id="details-form"', false)
+            ->assertSee('data-event-version="'.$event->version.'"', false)->assertSee('data-revision="0"', false)
+            ->assertSee('name="sms_consent"', false)->assertSee('data-version="client-texts-2026-10-20-sms-es"', false)
+            ->assertSee(config('waoo.sms_consent_versions.client-texts-2026-10-20-sms-es'));
+        // Approved wording is available, but consent is never presumed or selected for the client.
+        $dom = new \DOMDocument(); @$dom->loadHTML($page->getContent());
+        $checkbox = (new \DOMXPath($dom))->query('//input[@name="sms_consent"]')->item(0);
+        $this->assertNotNull($checkbox); $this->assertFalse($checkbox->hasAttribute('checked'));
         $this->postJson('/portal/api/details', ['expected_event_version' => $event->version, 'expected_revision' => 0, 'first_name' => 'Ana', 'last_name' => 'Ficticia',
             'phone' => '555-0100', 'email' => 'ana@example.test', 'billing_address' => 'Fixture billing 1', 'event_address' => 'Fixture party 2', 'event_postal_code' => '00001',
             'locale' => 'es', 'start_time_confirmed' => false, 'requested_start_at' => '2026-12-19T16:00:00-06:00'], ['Idempotency-Key' => (string) Str::uuid()])->assertSuccessful();
