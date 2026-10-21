@@ -194,7 +194,7 @@ class EventMoney extends Page
                 Grid::make(2)->schema([
                     TextInput::make('amount')->label('Monto que llegó (USD)')->prefix('$')->required()
                         ->rule('regex:/^\d{1,7}(\.\d{1,2})?$/')->validationMessages(['regex' => 'Escribe solo el número, por ejemplo 250 o 250.50.']),
-                    TextInput::make('reference')->label('Referencia de Zelle en tu banco')->required()->minLength(3)->maxLength(255)
+                    TextInput::make('reference')->label('Referencia de Zelle en tu banco (opcional)')->minLength(3)->maxLength(255)
                         ->helperText('Si ya lo registraste a mano, usa la misma referencia: no se cuenta dos veces.'),
                     DatePicker::make('date')->label('Fecha en que llegó')->native()->required()->live()->maxDate(now(ChicagoTime::TZ)),
                     TimePicker::make('time')->label('Hora (Houston)')->native()->seconds(false)->required()->live(),

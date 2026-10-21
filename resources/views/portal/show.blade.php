@@ -10,7 +10,7 @@
 <ol class="p-steps" aria-label="Pasos">
   @php
       $order = $vm['steps'] ?? ['details', 'contract', 'pay'];
-      $stepKey = $vm['step'] === 'details_sent' ? 'details' : ($vm['step'] === 'waiting' && in_array('details', $order, true) ? 'contract' : $vm['step']);
+      $stepKey = $vm['step'] === 'quick_pay' ? 'pay' : ($vm['step'] === 'details_sent' ? 'details' : ($vm['step'] === 'waiting' && in_array('details', $order, true) ? 'contract' : $vm['step']));
       $cur = $stepKey === 'done' ? count($order) : (array_search($stepKey, $order) === false ? -1 : array_search($stepKey, $order));
   @endphp
   @foreach ($order as $i => $key)
@@ -37,7 +37,10 @@
 <p class="p-test" role="status">{{ $t('return_cancelled') }}</p>
 @endif
 
-@if ($vm['step'] === 'details_sent')
+@if (!empty($vm['quick_payment']['zelle_pending']))<p class="p-test" role="status">{{ $vm['lang']==='es' ? 'Zelle pendiente de aprobación. Puedes continuar con tu contrato; este aviso no es un recibo.' : 'Zelle pending approval. You can continue to your contract; this notice is not a receipt.' }}</p>@endif
+@if ($vm['step'] === 'quick_pay')
+@include('portal.quick-payment')
+@elseif ($vm['step'] === 'details_sent')
 <section class="p-card"><h2>{{ $t('details_sent_title') }}</h2><p class="p-hint">{{ $t(!empty($vm['details']['prepare_action']) ? 'prepare_saved' : 'details_sent') }}</p>
 @if (!empty($vm['details']['prepare_action']))
 <form id="prepare-contract-form" method="POST" action="{{ $vm['details']['prepare_action'] }}"
@@ -176,6 +179,7 @@
         else b.disabled = false;
       });
   });
+  if (prep && @js(!empty($vm['quick_payment']['can_sign']))) prep.requestSubmit();
   var det = document.getElementById('details-form');
   if (det) det.addEventListener('submit', function (ev) {
     ev.preventDefault(); var err = document.getElementById('details-error'); err.hidden = true;

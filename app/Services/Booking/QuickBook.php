@@ -14,8 +14,13 @@ use Illuminate\Validation\{Rule, ValidationException};
 
 final class QuickBook
 {
-    public function execute(User $actor, array $input, string $key): QuickBooking
+    public function execute(User $actor, array $input, string $key): QuickBooking|UnpaidQuickBooking
     {
+        if (array_key_exists('deposit_received', $input)) {
+            RecordInput::validate($input, ['deposit_received'=>'required|boolean']);
+            if (!(bool)$input['deposit_received']) return app(CreateUnpaidQuickBooking::class)->execute($actor,$input,$key);
+            unset($input['deposit_received']);
+        }
         Sandbox::require(); Sandbox::require('sandbox_documents');
         \App\Exceptions\RecordWriteRejected::unless(DB::transactionLevel() === 0, 409, 'No se pudo iniciar la reserva. Recarga e inténtalo de nuevo.');
         $actor = RecordActor::authorize($actor);
@@ -56,7 +61,10 @@ final class QuickBook
             if (blank($data['deposit']['reference'] ?? null)) User::where('role', 'owner_admin')->orderBy('id')->lockForUpdate()->get();
             else User::whereKey($actor->id)->lockForUpdate()->firstOrFail();
             RecordActor::authorize($actor);
-            if ($saved = MutationKey::find($scope, $key, $hash)) return [QuickBookingRecord::findOrFail($saved->result_id), false];
+            if ($saved = MutationKey::find($scope, $key, $hash)) {
+                \App\Exceptions\RecordWriteRejected::unless($saved->result_type==='quick_booking',409,'Esta clave corresponde a otro tipo de reserva.');
+                return [QuickBookingRecord::findOrFail($saved->result_id), false];
+            }
             $lead = null;
             if (isset($data['lead_id'])) {
                 $lead = \App\Models\Lead::whereKey($data['lead_id'])->lockForUpdate()->firstOrFail();

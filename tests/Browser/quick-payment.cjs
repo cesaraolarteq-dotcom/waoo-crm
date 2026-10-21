@@ -1,0 +1,10 @@
+const {test,before,after}=require('node:test');const assert=require('node:assert/strict');const {execFileSync}=require('node:child_process');const {chromium}=require('playwright');let browser;
+before(async()=>{browser=await chromium.launch({headless:true,executablePath:process.env.WAOO_BROWSER_EXECUTABLE||undefined,args:['--no-sandbox']});});after(async()=>{await browser?.close();});
+for(const lang of ['es','en'])test(`${lang} quick payments disclose exact 3%, keep retry payload and never invent payment success`,async()=>{
+ const html=execFileSync('docker',['exec','waoo-phase1-runtime','php','tests/Browser/render-quick-payment.php',lang],{encoding:'utf8'});const page=await browser.newPage({viewport:{width:390,height:844}});const posts=[],errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.route('**/*',route=>{if(route.request().method()==='POST'){posts.push({body:route.request().postDataJSON(),key:route.request().headers()['idempotency-key']});return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({message:'Retry saved attempt'})});}return route.request().url()==='https://crm.example.test/'?route.fulfill({contentType:'text/html',body:html}):route.abort();});
+ await page.goto('https://crm.example.test/');assert.equal(posts.length,0);assert.match(await page.locator('#quick-payment').innerText(),/154\.51/);assert.match(await page.locator('#quick-payment').innerText(),/4\.50/);
+ const button=page.locator('#quick-stripe button');await button.click();await page.waitForFunction(()=>document.querySelector('#quick-payment-error').textContent==='Retry saved attempt');await button.click();await page.waitForFunction(()=>!document.querySelector('#quick-stripe button').disabled);
+ assert.equal(posts.length,2);assert.deepEqual(posts[0],posts[1]);assert.equal(posts[0].body.deposit_percent,50);
+ await page.locator('#quick-stripe [value="100"]').check();await button.click();assert.equal(posts.length,2);assert.deepEqual(errors,[]);await page.close();
+});

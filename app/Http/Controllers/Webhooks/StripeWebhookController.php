@@ -29,6 +29,7 @@ final class StripeWebhookController extends Controller
         $minimal['payment_intent'] = is_string($object['payment_intent'] ?? null) && preg_match('/^pi_[A-Za-z0-9_]{1,200}$/', $object['payment_intent']) ? $object['payment_intent'] : null;
         $metadata = is_array($object['metadata'] ?? null) ? $object['metadata'] : [];
         $minimal['metadata'] = [];
+        if (is_string($metadata['quick_booking_request_id'] ?? null) && \Illuminate\Support\Str::isUuid($metadata['quick_booking_request_id'])) $minimal['metadata']['quick_booking_request_id']=$metadata['quick_booking_request_id'];
         if (is_string($metadata['local_intent_id'] ?? null) && \Illuminate\Support\Str::isUuid($metadata['local_intent_id'])) $minimal['metadata']['local_intent_id'] = $metadata['local_intent_id'];
         if (array_key_exists('kind',$metadata) || array_key_exists('local_tip_intent_id',$metadata) || array_key_exists('grant_id',$metadata)) {
             $minimal['metadata']['kind']=($metadata['kind']??null)==='tip'?'tip':'invalid';

@@ -27,7 +27,11 @@ final readonly class PortalContext
         }
         if (in_array($scope, ['payments.read', 'checkout.create'], true)) {
             \App\Services\Responsibility\RequireCrmResponsibility::forEvent($eventId, $lock);
-            \App\Services\Booking\QuickStripeLeases::assertNoActive($eventId);
+            $booking = \App\Services\Booking\QuickPaymentProtocol::booking($eventId);
+            if ($scope === 'payments.read' && $booking && $booking->portal_grant_id === $row->id && in_array('quick_booking.pay', $row->scopes, true)) {
+                \App\Services\Booking\QuickPaymentProtocol::gate();
+                \App\Services\Booking\QuickPaymentProtocol::verify($booking, \App\Models\Event::findOrFail($eventId));
+            } else \App\Services\Booking\QuickStripeLeases::assertNoActive($eventId);
         }
         return $row;
     }
