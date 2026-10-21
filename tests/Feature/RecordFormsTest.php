@@ -43,7 +43,7 @@ class RecordFormsTest extends TestCase
     public function test_forms_can_be_switched_off_and_then_answer_403(): void
     {
         config(['waoo.record_forms' => false]);
-        foreach (['clientes', 'personajes', 'staff-y-trajes', 'catalogo'] as $slug) {
+        foreach (['clientas', 'personajes', 'staff-y-trajes', 'catalogo'] as $slug) {
             $this->get("/admin/{$slug}")->assertOk()->assertDontSee("/admin/{$slug}/nuevo");
             $this->get("/admin/{$slug}/nuevo")->assertForbidden();
         }

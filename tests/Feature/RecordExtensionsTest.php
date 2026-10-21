@@ -117,8 +117,9 @@ class RecordExtensionsTest extends TestCase
         $event = app(SaveEventDraft::class)->execute($this->owner, $input);
         $original = $event->services->first()->getKey();
         $count = DB::table('audit_entries')->count();
-        $input['services'][0]['characters'][0]['quantity'] = 2;
-        $this->putJson('/admin/api/events/'.$event->id, [...$input, 'expected_version' => 1])->assertUnprocessable()->assertJsonValidationErrors(['services.0.characters']);
+        // Extra characters are now priced add-ons (owner 2026-10-21); a repeated character is still an invalid selection.
+        $input['services'][0]['characters'][] = $input['services'][0]['characters'][0];
+        $this->putJson('/admin/api/events/'.$event->id, [...$input, 'expected_version' => 1])->assertUnprocessable()->assertJsonValidationErrors(['services.0.characters.1.character_id']);
         $this->assertSame(1, $event->fresh()->version);
         $this->assertSame($original, $event->services()->first()->id);
         $this->assertDatabaseCount('event_service_characters', 1);
