@@ -40,6 +40,7 @@ final class CommitHoneyBookEvent
             $domainIntent=['source_sha256'=>$n['source_sha256'],'services'=>$businessSelections,'customer'=>isset($d['customer_id'])?['id'=>$d['customer_id']]:['new'=>true,'locale'=>$d['new_customer_locale']],
                 'setup_minutes'=>$d['setup_minutes'],'breakdown_minutes'=>$d['breakdown_minutes'],...($hasDifference?['source_difference_note'=>$d['source_difference_note']]:[])];$domainHash=MutationKey::hash($domainIntent);
             // Singleton serializes creators. Read parent ID before event -> linkage locks, never linkage -> event.
+            HoneyBookProjectIdentity::operating($row->source_key);
             $existing=ImportedProjectLink::where('project_key',$row->source_key)->first();$event=null;
             if($existing){$event=Event::whereKey($existing->event_id)->lockForUpdate()->firstOrFail();$existing=ImportedProjectLink::whereKey($existing->id)->lockForUpdate()->firstOrFail();
                 if(hash_equals($existing->domain_sha256,$domainHash)){MutationKey::store($scope,$key,$hash,'imported_project_link',$existing->id);return $existing;}

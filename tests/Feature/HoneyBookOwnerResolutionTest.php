@@ -76,7 +76,7 @@ class HoneyBookOwnerResolutionTest extends TestCase
     {
         $b=$this->stageFuture(['payments'=>'2026-10-01|60.00|Cash']);$r=ImportRow::sole();$link=app(CommitHoneyBookEvent::class)->execute($this->owner,$b->id,$r->id,$this->commitInput($b,$r),(string)Str::uuid());
         $read=app(ReadImportedEvent::class)->execute($this->owner,$link->event_id);$label=$read['payment_display'][0];
-        $this->assertSame('Cash',ImportedLedgerLine::sole()->method);$this->assertSame('Cash',$label['raw_method']);$this->assertSame('zelle',$label['canonical_method']);$this->assertSame('Zelle (importado de HoneyBook, no verificado en banco)',$label['display_method']);$this->assertTrue($label['historical_version_frozen']);$this->assertFalse($label['funds_verified']);$this->assertFalse($read['summary']['funds_verified']);
+        $this->assertSame('Cash',ImportedLedgerLine::sole()->method);$this->assertSame('Cash',$label['raw_method']);$this->assertNull($label['canonical_method']);$this->assertSame('Zelle/efectivo (HoneyBook)',$label['display_method']);$this->assertTrue($label['historical_version_frozen']);$this->assertFalse($label['funds_verified']);$this->assertFalse($read['summary']['funds_verified']);
         $this->assertSame('visa',HoneyBookPaymentLabels::display('visa')['display_method']);$this->assertNull(HoneyBookPaymentLabels::display('visa')['canonical_method']);$this->assertFalse(HoneyBookPaymentLabels::display('cash')['historical_version_frozen']);$this->assertDatabaseCount('ledger_entries',0);
     }
 }

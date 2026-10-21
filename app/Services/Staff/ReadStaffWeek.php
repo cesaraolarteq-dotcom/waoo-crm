@@ -62,6 +62,7 @@ final class ReadStaffWeek
             'is_driver'=>$assigned!==null && in_array($person->id,$drivers,true),
             'team'=>$resources->filter(fn($r)=>$r->kind==='staff' && $r->id!==$person->id && ($snapshot===[] || in_array($r->id,$actualStaffIds,true)))->map(fn($r)=>[
                 'first_name'=>$this->firstName($r->name),'drives'=>in_array($r->id,$drivers,true)])->values()->all(),
+            'honeybook'=>\App\Services\History\ReadHoneyBookEventFacts::forEvent($event),
             'bring'=>$payload['bring']??[],'instructions'=>$payload['instructions']??null,
             'day_contact'=>$starts->isSameDay($now) && !empty($payload['contact_name']) && !empty($payload['contact_phone'])
                 ?['name'=>$payload['contact_name'],'phone'=>$payload['contact_phone']]:null];

@@ -95,7 +95,7 @@ class ConfirmCapacity extends Page
             'shortfall_cents' => max(0, intdiv($n['total_cents'] + 1, 2) - $n['paid_cents']), 'contract_signed' => (bool) ($n['contract_signed'] ?? false),
             'payments' => \App\Models\ImportedLedgerLine::where('imported_project_revision_id', $revision->id)->orderBy('source_position')->get()
                 ->map(fn ($l) => $l->received_date->format('Y-m-d').' · '.Labels::money($l->amount_cents).' · '
-                    .\App\Services\Imports\HoneyBookPaymentLabels::display($l->method, $revision->mapping['payment_label_map_version'] ?? null)['display_method'])->all()];
+                    .\App\Services\Imports\HoneyBookPaymentLabels::current($l->method, $revision->mapping['payment_label_map_version'] ?? null)['display_method'])->all()];
     }
 
     public function getSubheading(): ?string

@@ -151,7 +151,7 @@ class ImportHoneyBookPageTest extends TestCase
     public function test_rows_without_a_difference_never_send_the_difference_fields_and_cash_shows_as_unverified_zelle(): void
     {
         $page = $this->uploaded([$this->futureRow(['payments' => '2026-10-01|70.00|Cash;2026-10-02|-10.00|source adjustment'])]);
-        $page->call('openRow', ImportRow::sole()->id)->assertSee('Zelle (importado de HoneyBook, no verificado en banco)')->assertDontSee('Diferencia en el total de HoneyBook');
+        $page->call('openRow', ImportRow::sole()->id)->assertSee('Zelle/efectivo (HoneyBook)')->assertDontSee('Diferencia en el total de HoneyBook');
         $this->fillRow($page)->call('importRow')->assertHasNoErrors();
         $this->assertSame('Cash', ImportedLedgerLine::orderBy('source_position')->value('method')); // raw source text kept
         $this->assertArrayNotHasKey('source_difference', \App\Models\ImportedProjectRevision::sole()->mapping);

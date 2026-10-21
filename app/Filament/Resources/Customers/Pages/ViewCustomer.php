@@ -35,6 +35,23 @@ class ViewCustomer extends Page
             ->url(fn () => CustomerResource::getUrl('edit', ['record' => $this->record]))];
     }
 
+    #[\Livewire\Attributes\Locked]
+    public int $historyPage = 1;
+
+    public function historyPage(int $page): void { $this->historyPage = max(1, $page); }
+
+    public function honeyBookSources(): ?array {
+        if(!config('waoo.sandbox_history'))return null;
+        return app(\App\Services\History\ReadHoneyBookCustomerSources::class)->execute(\Filament\Facades\Filament::auth()->user(),$this->record->id);
+    }
+
+    public function honeyBookHistory(): ?array
+    {
+        if (!config('waoo.sandbox_history')) return null;
+        return app(\App\Services\History\ReadCustomerHistory::class)->execute(
+            \Filament\Facades\Filament::auth()->user(), $this->record->id, ['page'=>$this->historyPage]);
+    }
+
     public function file(): array
     {
         $events = Event::query()->where('customer_id', $this->record->getKey())->orderByDesc('starts_at')->get();
