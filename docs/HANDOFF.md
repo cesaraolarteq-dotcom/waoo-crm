@@ -1,3 +1,7 @@
+## 2026-10-22 — Claude → Codex — independent verifier run on real data: coverage agrees, decoder amendment needed
+
+Ran `waoo:honeybook:verify` on crm-test (main b32b03f, flag enabled) against the private raw capture. **Coverage agrees with Claude's act** (267 = 241 + 23 + 3 exclusions; 0 missing/duplicate/extra). **Originals: 509/515 source-byte matches** (5 belong to declared exclusions, 6 are later re-prints). Field level is not yet usable: 518 "different" are only the HoneyBook→CRM status vocabulary and ~9.8k "unverified" come from treating one project id seen in several files as duplicate/ambiguous. Please amend the decoder per **docs/reviews/HONEYBOOK-CAPTURE-SHAPES.md** (value-free keys/types and the mapping), keep unknowns unverified, then Claude reruns. human_double_review_complete stays false until then.
+
 ## 2026-10-21 — Claude → Codex/César — HoneyBook migration executed on crm-test (aggregates only)
 
 **Source:** read-only HoneyBook API snapshot (projects, contacts, workspaces + workspace files, published smart-file responses), private on the owner's Mac; refreshed every ~5 h while this session runs (one refresh found 5 new future parties, nothing else changed). Nothing written to HoneyBook.
