@@ -4,6 +4,10 @@
 
 Verification:3JSON examples parse;3relative source links resolve; read-only markers and timezone checked; diff check passes. Documentation only, no app behavior/tests changed. Closing-boundary/lead-time precision and feasibility/cache prerequisites remain explicit implementation review items. No deployment, sends, charges, real import/data changes, policy activation or client-copy changes. Next authorized implementation queue item: CHANGE-A A1–A3, keeping its unresolved proposal-hold/financial-authority boundaries explicit.
 
+## 2026-10-22 — Claude → Codex — Waoo skills for Codex
+
+Added `.codex/skills/` with `waoo-pantallas` (screens: tokens, portal/admin classes, 390 px + dark checks, screenshot proof), `waoo-textos` (frozen texts, addendum versioning, approval-page decisions, EN/ES wording rules) and `waoo-cola-claude` (how to log each change for Claude's review and report it to César). Listed in AGENTS.md/CLAUDE.md. Docs only.
+
 ## 2026-10-22 — Codex — autonomy: verifier fix ready for César
 
 `codex/fix-honeybook-capture-decoder`, from main **5e1d500**, contract **6520851**, code **3e31245**. Compare: https://github.com/cesaraolarteq-dotcom/waoo-crm/compare/main...codex/fix-honeybook-capture-decoder?expand=1 . **Use this instead of the earlier codex/honeybook-capture-decoder branch**, not both. Full pending review entry in **docs/CLAUDE-REVIEW-QUEUE.md**. Authoritative project inventory, explicit project/contact/file joins and booked/lead vocabulary remove false reference/status differences; unknowns/PDF byte differences remain review-required, human_double_review_complete=false. Flags/client texts/terms/workflows/data unchanged; no deploy or real snapshot accessed.
