@@ -6,13 +6,14 @@
 @section('content')
 <h1 class="p-h1">{{ filled($vm['first_name'] ?? null) ? $t('hello', ['name' => $vm['first_name']]) : $t('hello_generic') }}</h1>
 @if ($vm['admin_view'] ?? false)<p class="p-test" role="status">{{ $vm['lang'] === 'es' ? 'Estás viendo este enlace con tu sesión de dueño. Para ver y probar lo que ve el cliente (pagar, firmar), ábrelo en una ventana de incógnito o en tu celular.' : 'You are viewing this link with your owner session. To see and test what the client sees (pay, sign), open it in a private window or on your phone.' }}</p>@endif
-@if ($vm['step'] !== 'done')<p class="p-sub">{{ $t('intro', ['n' => count($vm['steps'] ?? ['details', 'contract', 'pay'])]) }}</p>@endif
+@if ($vm['step'] !== 'done' && ! ($vm['reserved'] ?? false))<p class="p-sub">{{ $t('intro', ['n' => count($vm['steps'] ?? ['details', 'contract', 'pay'])]) }}</p>@endif
 
 <ol class="p-steps" aria-label="Pasos">
   @php
       $order = $vm['steps'] ?? ['details', 'contract', 'pay'];
       $stepKey = $vm['step'] === 'quick_pay' ? 'pay' : ($vm['step'] === 'details_sent' ? 'details' : ($vm['step'] === 'waiting' && in_array('details', $order, true) ? 'contract' : $vm['step']));
-      $cur = $stepKey === 'done' ? count($order) : (array_search($stepKey, $order) === false ? -1 : array_search($stepKey, $order));
+      // Owner 2026-10-22: once signed with only the balance left, every step is done (the balance is a reminder, not a pending step).
+      $cur = $stepKey === 'done' || ($vm['step'] === 'pay' && ($vm['reserved'] ?? false)) ? count($order) : (array_search($stepKey, $order) === false ? -1 : array_search($stepKey, $order));
   @endphp
   @foreach ($order as $i => $key)
     @php($label = $t('steps')[$key])
@@ -121,6 +122,7 @@
   <button class="p-btn p-btn-pink" type="submit">{{ $t('sign') }}</button>
 </form>
 @elseif ($vm['step'] === 'pay')
+@if ($vm['reserved'] ?? false)<section class="p-card" role="status"><h2>{{ $vm['lang'] === 'es' ? '¡Tu fiesta está reservada! 🎉' : 'Your party is booked! 🎉' }}</h2><p>{{ $vm['lang'] === 'es' ? 'Tu contrato está firmado y recibimos tu depósito. Solo falta el saldo antes de la fiesta; aquí abajo tienes cómo pagarlo.' : 'Your contract is signed and we received your deposit. Only the balance is left before the party; how to pay it is below.' }}</p></section>@endif
 <section class="p-card">
   <h2>{{ $t('pay_title') }}</h2>
   <p class="p-hint">{{ $t('pay_hint') }}</p>

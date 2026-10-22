@@ -64,7 +64,8 @@ class ClientPortalPageTest extends TestCase
             ->assertSuccessful();
         $this->assertSame('Ana Ficticia', SignatureEvidence::sole()->signer_name);
 
-        $this->get('/portal')->assertOk()->assertSee('Tu pago')->assertSee('Waoo Party LLC · 346-216-8739')->assertSee('WP-'.$this->event->id)->assertSee('Pagar $62.50')->assertSee('Tarjeta de crédito o débito')->assertDontSee('Klarna');
+        // Owner 2026-10-22: signed + deposit met -> the party reads as booked and the balance is a reminder.
+        $this->get('/portal')->assertOk()->assertSee('¡Tu fiesta está reservada!')->assertDontSee('en 2 pasos')->assertSee('Tu pago')->assertSee('Waoo Party LLC · 346-216-8739')->assertSee('WP-'.$this->event->id)->assertSee('Pagar $62.50')->assertSee('Tarjeta de crédito o débito')->assertDontSee('Klarna');
         $this->get('/portal?lang=en')->assertSee('Your payment')->assertSee('Pay $62.50');
         $this->postJson('/portal/api/checkout-intents', ['financial_revision_id' => \App\Models\FinancialRevision::sole()->id, 'purpose' => 'balance'], ['Idempotency-Key' => (string) Str::uuid()])
             ->assertCreated()->assertJsonPath('payable_cents', 6250);

@@ -14,9 +14,8 @@ final class ContractPrintContext
         $snapshot = $contract->commercial_snapshot;
         $services = []; $lines = []; $characters = [];
         foreach ($snapshot['services'] as $service) {
-            $description = [];
-            foreach ($service['requirements_snapshot'] ?? [] as $requirement) $description[] = $requirement['quantity'].' × '.self::requirementLabel($requirement);
-            $services[] = ['name' => $service['name'], 'total' => self::money($service['amount_cents']), 'duration' => $service['duration_minutes'].' minutes', 'includes' => $description, 'long_description' => $service['long_description'] ?? ''];
+            // Owner 2026-10-22: the client sees the package description, not the internal staff/equipment recipe.
+            $services[] = ['name' => $service['name'], 'total' => self::money($service['amount_cents']), 'duration' => $service['duration_minutes'].' minutes', 'includes' => [], 'long_description' => $service['long_description'] ?? ''];
             $lines[] = ['label' => $service['name'], 'amount' => self::money($service['amount_cents'])];
             foreach ($service['characters'] ?? [] as $character) $characters[] = $character['quantity'].' × '.\App\Services\Records\CharacterLabel::fromSnapshot($character);
         }
@@ -36,25 +35,6 @@ final class ContractPrintContext
             'signed_at_local' => $signature->accepted_at->setTimezone('America/Chicago')->format('Y-m-d H:i:s T'), 'signed_at_utc' => $signature->accepted_at->utc()->format('Y-m-d H:i:s'),
             'ip' => $signature->ip, 'user_agent_short' => mb_substr($signature->user_agent ?? '', 0, 120)];
         return $context;
-    }
-    private static function requirementLabel(array $requirement): string
-    {
-        return match ($requirement['kind']) {
-            'staff' => match ($requirement['skill'] ?? null) {
-                'performer' => 'Character performer', 'entertainer' => 'Party entertainer', 'host' => 'Party host',
-                'dj' => 'DJ', 'face_painter' => 'Face painter', 'driver' => 'Driver',
-                'foam_operator' => 'Foam party operator', 'spa_facilitator' => 'Spa party facilitator',
-                'photo_booth' => 'Photo booth attendant', default => 'Staff member',
-            },
-            'equipment' => match ($requirement['equipment_kind'] ?? null) {
-                'speaker' => 'Speaker', 'robot' => 'LED robot', 'photo_booth' => 'Photo booth',
-                'foam_cannon' => 'Foam cannon', 'vanity' => 'Vanity station',
-                'mic' => 'Microphone', 'bubbles' => 'Bubble machine', 'robot_tall' => 'Tall LED robot', 'robot_low' => 'Small LED robot',
-                'smoke' => 'Smoke machine', 'foam' => 'Foam equipment', 'disco_ball' => 'Disco ball', 'sparkler' => 'Sparkler',
-                'table' => 'Table', 'face_kit' => 'Face painting kit', default => 'Equipment unit',
-            },
-            'costume' => 'Character costume', 'vehicle' => 'Vehicle', default => 'Resource unit',
-        };
     }
     public function paymentSnapshot(Event $event): array
     {

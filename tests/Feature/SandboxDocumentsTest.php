@@ -133,32 +133,25 @@ class SandboxDocumentsTest extends TestCase
         $contract = $this->issue();
         $html = app(ArtifactStore::class)->read($contract->presented_html_path, $contract->presented_html_sha256);
         $this->assertStringContainsString('Fixture owner description &amp; details &lt;not executable&gt;.', $html);
-        $this->assertStringContainsString('1 × Character performer', $html);
+        $this->assertStringNotContainsString('Character performer', $html);
         $this->assertStringNotContainsString('1 × performer', $html);
         $this->assertSame($description, $contract->commercial_snapshot['services'][0]['long_description']);
         $this->assertDatabaseHas('audit_entries', ['action' => 'variants.updated', 'subject_id' => (string) $variant->id]);
     }
-    public function test_pdf_requirements_use_friendly_labels_without_leaking_custom_internal_codes(): void
+    public function test_contract_shows_the_package_description_not_the_internal_resource_recipe(): void
     {
+        // Owner 2026-10-22: "1 × Party entertainer / Bubble machine" in the contract read badly; the package description is shown instead.
         $snapshot = $this->contract->commercial_snapshot;
         $snapshot['payments'] = app(\App\Services\Documents\ContractPrintContext::class)->paymentSnapshot($this->event);
         $snapshot['services'][0]['requirements_snapshot'] = [
             ['kind' => 'staff', 'quantity' => 1, 'skill' => 'face_painter'],
-            ['kind' => 'staff', 'quantity' => 1, 'skill' => 'internal_custom_role'],
-            ['kind' => 'equipment', 'quantity' => 2, 'equipment_kind' => 'foam_cannon'],
-            ['kind' => 'equipment', 'quantity' => 1, 'equipment_kind' => 'private_internal_gear'],
+            ['kind' => 'equipment', 'quantity' => 2, 'equipment_kind' => 'private_internal_gear'],
         ];
+        $snapshot['services'][0]['long_description'] = 'Two hours of games and a character show.';
         $this->contract->commercial_snapshot = $snapshot;
         $context = app(\App\Services\Documents\ContractPrintContext::class)->build($this->contract, $this->template);
-        $this->assertSame(['1 × Face painter', '1 × Staff member', '2 × Foam cannon', '1 × Equipment unit'], $context['services'][0]['includes']);
-        $this->assertSame('', $context['services'][0]['long_description']);
-        $equipment = ['mic' => 'Microphone', 'bubbles' => 'Bubble machine', 'robot_tall' => 'Tall LED robot', 'robot_low' => 'Small LED robot',
-            'smoke' => 'Smoke machine', 'foam' => 'Foam equipment', 'disco_ball' => 'Disco ball', 'sparkler' => 'Sparkler', 'table' => 'Table', 'face_kit' => 'Face painting kit'];
-        $snapshot['services'][0]['requirements_snapshot'] = collect(array_keys($equipment))->map(fn ($key) => ['kind' => 'equipment', 'quantity' => 1, 'equipment_kind' => $key])->all();
-        $this->contract->commercial_snapshot = $snapshot;
-        $context = app(\App\Services\Documents\ContractPrintContext::class)->build($this->contract, $this->template);
-        $this->assertSame(array_map(fn ($label) => '1 × '.$label, array_values($equipment)), $context['services'][0]['includes']);
-
+        $this->assertSame([], $context['services'][0]['includes']);
+        $this->assertSame('Two hours of games and a character show.', $context['services'][0]['long_description']);
     }
     public function test_approved_terms_fields_use_frozen_issue_values_and_preserve_legal_hash(): void
     {
