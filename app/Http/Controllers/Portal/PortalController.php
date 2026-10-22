@@ -39,7 +39,7 @@ final class PortalController extends Controller
         $services = collect($revision?->lines_snapshot ?? [])->map(fn ($line) => [
             'name' => $line['name'] ?? null, 'duration_minutes' => $line['duration_minutes'] ?? null,
             'amount_cents' => $line['amount_cents'], 'extra_characters' => (int) ($line['extra_characters'] ?? 0), 'characters' => collect($line['characters'] ?? [])->map(fn ($character) => [
-                'name' => \App\Services\Records\CharacterLabel::fromSnapshot($character), ...(isset($character['outfit']) ? ['outfit' => $character['outfit']] : []), 'quantity' => $character['quantity'],
+                'name' => $character['name'], 'quantity' => $character['quantity'],
             ])->all(),
         ])->all();
         $current = null;

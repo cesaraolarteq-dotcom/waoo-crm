@@ -35,6 +35,10 @@ class ClientPortalPageTest extends TestCase
         $this->event = Event::create(['customer_id' => $customer->id, 'title' => 'Fiesta', 'starts_at' => $start->utc(), 'ends_at' => $start->addHour()->utc(), 'timezone' => 'America/Chicago',
             'address' => 'Fixture address 1', 'postal_code' => '00001', 'travel_fee_cents' => 2500]);
         EventService::create(['event_id' => $this->event->id, 'service_variant_id' => $variant->id, 'price_version_id' => $price->id, 'requirements_snapshot' => $variant->requirements, 'duration_minutes' => 60, 'operational_ready' => true]);
+        $service = $this->event->services()->sole();
+        $service->update(['extra_characters'=>2,'extra_character_cents'=>0]);
+        $character = \App\Models\Character::create(['name'=>'Rumi','active'=>true]);
+        \App\Models\EventServiceCharacter::create(['event_service_id'=>$service->id,'character_id'=>$character->id,'quantity'=>1,'character_name_snapshot'=>'Rumi','outfit'=>'Golden (blanco/negro)']);
         $t = app(CreateTemplateVersion::class)->execute($owner, ['terms_html' => '<p>Fixture terms only.</p>', 'change_note' => 'Fixture portal page test'], (string) Str::uuid());
         app(ActivateTemplateVersion::class)->execute($owner, $t->id, ['expected_source_sha256' => $t->source_sha256, 'approval_note' => 'Fixture approval only']);
         $rev = app(CreateFinancialRevision::class)->execute($owner, $this->event->id, ['expected_version' => $this->event->fresh()->version], (string) Str::uuid());
@@ -71,6 +75,16 @@ class ClientPortalPageTest extends TestCase
             ->assertCreated()->assertJsonPath('payable_cents', 6250);
         $this->get('/portal/payment-return')->assertRedirect('/portal');
         $this->get('/portal?lang=es')->assertSee('Estamos confirmando tu pago');
+    }
+
+    public function test_client_summary_and_api_hide_internal_wardrobe_without_changing_the_financial_snapshot(): void
+    {
+        $this->postJson('/portal/api/session',['token'=>$this->token])->assertOk();
+        foreach (['es','en'] as $lang) {
+            $this->get('/portal?lang='.$lang)->assertOk()->assertSee('Rumi')->assertDontSee('Golden (blanco/negro)')->assertDontSee('+ 2 personajes adicionales')->assertDontSee('+ 2 extra characters');
+        }
+        $this->getJson('/portal/api/event')->assertOk()->assertJsonPath('services.0.characters.0.name','Rumi')->assertJsonMissingPath('services.0.characters.0.outfit');
+        $this->assertSame('Golden (blanco/negro)',\App\Models\FinancialRevision::sole()->lines_snapshot[0]['characters'][0]['outfit']);
     }
 
     public function test_invalid_link_and_disabled_sandbox(): void

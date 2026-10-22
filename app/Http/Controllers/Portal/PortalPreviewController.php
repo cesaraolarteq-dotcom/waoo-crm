@@ -48,7 +48,7 @@ final class PortalPreviewController extends Controller
             'lang_url' => ['es' => url("/dev/portal/{$step}?lang=es"), 'en' => url("/dev/portal/{$step}?lang=en")],
             'quote' => ['number' => 'Q-2026-000123', 'revision' => 2, 'state' => $state, 'valid_until' => $es ? 'vie. 30 oct. 2026' : 'Fri, Oct 30, 2026',
                 'when' => $es ? 'sáb. 21 nov. 2026, 3:00 – 5:00 p. m.' : 'Sat, Nov 21, 2026, 3:00 – 5:00 pm', 'where' => '123 Sample St, Katy, TX 77494',
-                'lines' => [['name' => $es ? 'Música y Juegos 2.0' : 'Music & Games 2.0', 'duration' => '2 h', 'characters' => $es ? '1 × Personaje de ejemplo (Disneyland)' : '1 × Sample character (Disneyland)', 'amount' => '$600']],
+                'lines' => [['name' => $es ? 'Música y Juegos 2.0' : 'Music & Games 2.0', 'duration' => '2 h', 'characters' => $es ? '1 × Personaje de ejemplo' : '1 × Sample character', 'amount' => '$600']],
                 'travel' => '$40', 'discounts' => [['label' => $es ? 'Descuento por reservar hoy' : 'Book-today discount', 'amount' => '$25']],
                 'total' => '$615', 'deposit' => '$307.50', 'pdf_url' => null],
             'consent' => ['version' => 'preview-only', 'text' => $es ? '(Texto de ejemplo; el texto real lo aprueba César.) Acepto esta cotización.' : '(Sample text; the real wording is approved by César.) I accept this quote.'],

@@ -14,10 +14,13 @@ class MailDatesTest extends TestCase
         $this->assertSame('Wed, Sep 30',MailDates::subject($date,'en'));
         $this->assertStringNotContainsString(':',MailDates::subject($date,'es'));
     }
-    public function test_repeated_wall_hour_remains_distinguishable():void
+    public function test_owner_approved_mail_dates_omit_zone_abbreviations_but_keep_houston_time():void
     {
-        $this->assertStringEndsWith('CDT',MailDates::full('2026-11-01T06:30:00Z','es'));
-        $this->assertStringEndsWith('CST',MailDates::full('2026-11-01T07:30:00Z','es'));
-        $this->assertSame(MailDates::subject('2026-11-01T06:30:00Z','es'),MailDates::subject('2026-11-01T07:30:00Z','es'));
+        foreach (['es','en'] as $locale) {
+            foreach (['2026-11-01T06:30:00Z','2026-11-01T07:30:00Z'] as $at) {
+                $this->assertDoesNotMatchRegularExpression('/\\b(?:CST|CDT)\\b/', MailDates::full($at,$locale));
+            }
+            $this->assertSame(MailDates::full('2026-11-01T06:30:00Z',$locale),MailDates::full('2026-11-01T07:30:00Z',$locale));
+        }
     }
 }

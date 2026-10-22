@@ -30,7 +30,7 @@ class ApprovedClientTextsTest extends TestCase
 
     public function test_addendum_matches_its_owner_approved_source_and_the_unpaid_link_message_names_no_amount(): void
     {
-        $source = json_decode(file_get_contents(base_path('docs/templates/APPROVED-CLIENT-TEXTS-2026-10-21.json')), true, 512, JSON_THROW_ON_ERROR);
+        $source = json_decode(file_get_contents(base_path('docs/templates/APPROVED-CLIENT-TEXTS-2026-10-22.json')), true, 512, JSON_THROW_ON_ERROR);
         self::assertSame($source, config('client-texts-addendum'));
         self::assertNull(config('client-texts.texts.quick_unpaid_link_msg'));
         foreach (['es', 'en'] as $locale) {
@@ -63,6 +63,31 @@ class ApprovedClientTextsTest extends TestCase
                 self::assertStringContainsString($vars['review_link'], $rendered['text']);
             }
         }
+    }
+
+    public function test_payment_preview_and_real_mail_separate_balance_from_a_bare_due_date(): void
+    {
+        config(['app.url' => 'https://localhost']);
+        foreach (['es','en'] as $locale) {
+            $vars = ['first_name'=>'María', 'amount'=>'$197.50', 'paid'=>'$197.50', 'balance'=>'$197.50', 'balance_due'=>'20 de noviembre'];
+            $real = ApprovedMail::render('payment_received', $locale, $vars, []);
+            $preview = MailTemplatesDraft::render('payment_received', $locale, $vars);
+            self::assertStringContainsString('$197.50 20 de noviembre', $real['text']);
+            self::assertStringContainsString('$197.50 20 de noviembre', implode(' ', $preview['paragraphs']));
+            self::assertStringNotContainsString('$197.5020', $real['html']);
+            $vars['balance_due'] = '';
+            self::assertStringNotContainsString('20 de noviembre', ApprovedMail::render('payment_received', $locale, $vars, [])['text']);
+        }
+    }
+
+    public function test_requested_copy_stays_pending_and_does_not_override_approved_mail(): void
+    {
+        foreach (['mail_quote_sent','quote_link_msg'] as $key) {
+            self::assertSame('pending_review',config('client-texts-addendum.texts.'.$key.'.status'));
+            foreach (['es','en'] as $locale) self::assertStringContainsString('48',config('client-texts-addendum.texts.'.$key.'.'.$locale));
+        }
+        self::assertSame('client-texts-2026-10-20',ApprovedMail::definition('quote_sent','es')['version']);
+        self::assertSame('Estamos confirmando tu pago con Stripe. Esto tarda unos segundos; esta página se actualiza sola.',ApprovedClientTexts::text('portal_stripe_confirming','es'));
     }
 
     public function test_inquiry_zip_and_inline_html_are_not_an_injection_path(): void

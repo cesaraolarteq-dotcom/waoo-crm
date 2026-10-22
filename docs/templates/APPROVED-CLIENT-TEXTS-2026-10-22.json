@@ -1,0 +1,147 @@
+{
+  "approved_by": "César, Mesa de aprobación en chat, 2026-10-22: APROBADO los elementos indicados; PEDIR CAMBIO mail_quote_sent, mail_payment_received y quote_link_msg. Cambios de cotización pendientes de revisión de palabras; corrección de espacio sin reescribir el texto congelado.",
+  "date": "2026-10-22",
+  "version": "client-texts-2026-10-22",
+  "texts": {
+    "quick_unpaid_link_msg": {
+      "status": "approved",
+      "title": "Mensaje con el enlace cuando el depósito todavía no se recibió (Reserva rápida)",
+      "when": "Lo copias o lo abres en WhatsApp/SMS al crear una Reserva rápida con «Todavía no»",
+      "es": "¡Hola {first_name}! Para confirmar tu {package} del {event_date}, completa tus datos y paga tu depósito aquí: {link}. Puedes pagar por Zelle o con tarjeta. ¡Estamos emocionados de ser parte de tu celebración!",
+      "en": "Hi {first_name}! To confirm your {package} on {event_date}, complete your details and pay your deposit here: {link}. You can pay by Zelle or card. We're excited to be part of your celebration!",
+      "order": 1
+    },
+    "portal_reserved": {
+      "status": "approved",
+      "title": "portal_reserved",
+      "es": "¡Tu fiesta está reservada! 🎉",
+      "en": "Your party is booked! 🎉"
+    },
+    "portal_reserved_body": {
+      "status": "approved",
+      "title": "portal_reserved_body",
+      "es": "Tu contrato está firmado y recibimos tu depósito. Solo falta el saldo antes de la fiesta; aquí abajo tienes cómo pagarlo.",
+      "en": "Your contract is signed and we received your deposit. Only the balance is left before the party; how to pay it is below."
+    },
+    "portal_zelle_memo": {
+      "status": "approved",
+      "title": "portal_zelle_memo",
+      "es": "En la nota del Zelle escribe",
+      "en": "In the Zelle memo write"
+    },
+    "portal_zelle_memo_help": {
+      "status": "approved",
+      "title": "portal_zelle_memo_help",
+      "es": "así sabemos que es tu pago",
+      "en": "so we know it is your payment"
+    },
+    "portal_stripe_confirming": {
+      "status": "approved",
+      "title": "portal_stripe_confirming",
+      "es": "Estamos confirmando tu pago con Stripe. Esto tarda unos segundos; esta página se actualiza sola.",
+      "en": "We are confirming your Stripe payment. This takes a few seconds; this page refreshes by itself."
+    },
+    "portal_owner_notice": {
+      "status": "approved",
+      "title": "portal_owner_notice",
+      "es": "Estás viendo este enlace con tu sesión de dueño. Para ver y probar lo que ve el cliente (pagar, firmar), ábrelo en una ventana de incógnito o en tu celular.",
+      "en": "You are viewing this link with your owner session. To see and test what the client sees (pay, sign), open it in a private window or on your phone."
+    },
+    "pdf_bill_to": {
+      "status": "approved",
+      "title": "pdf_bill_to",
+      "es": "Facturar a:",
+      "en": "Bill to:"
+    },
+    "pdf_attention": {
+      "status": "approved",
+      "title": "pdf_attention",
+      "es": "Atención:",
+      "en": "Attention:"
+    },
+    "mail_quote_sent": {
+      "status": "pending_review",
+      "title": "mail_quote_sent",
+      "es": "Asunto: Tu cotización Waoo Party para el {subject_date}\n\n¡Hola {first_name}! Aquí está tu cotización de {package} para el {event_date}.\n\n[Aquí va la tabla con paquete, transporte y total]\n\nPara apartar tu fecha pedimos un depósito del 50 % ({deposit}). Esta cotización tiene una vigencia máxima de 48 horas, hasta el {valid_until}.\n\n[Botón: Ver y aceptar mi cotización]\n\n¡Estamos emocionados de ser parte de tu celebración!",
+      "en": "Subject: Your Waoo Party quote for {subject_date}\n\nHi {first_name}! Here is your quote for {package} on {event_date}.\n\n[Table with package, travel fee and total goes here]\n\nTo reserve your date we need a 50% deposit ({deposit}). This quote is valid for a maximum of 48 hours, until {valid_until}.\n\n[Button: Review and accept my quote]\n\nWe're excited to be part of your celebration!"
+    },
+    "quote_link_msg": {
+      "status": "pending_review",
+      "title": "quote_link_msg",
+      "es": "¡Hola {first_name}! Aquí está tu cotización de Waoo Party para el {event_date}: {link}. Tiene una vigencia máxima de 48 horas, hasta el {valid_until}.",
+      "en": "Hi {first_name}! Here is your Waoo Party quote for {event_date}: {link}. It is valid for a maximum of 48 hours, until {valid_until}."
+    },
+    "mail_inquiry_received": {
+      "status": "approved",
+      "title": "Correo: Solicitud recibida",
+      "when": "Cuando llega una solicitud desde la web",
+      "es": "Asunto: ¡Recibimos tu solicitud, {first_name}!\n\n¡Hola {first_name}! Gracias por escribir a Waoo Party. Recibimos tu solicitud para el {event_date}.\n\nPuedes revisar el [costo de transporte](https://waooparty.com/es/travel-fee?zip={zip}) hasta tu código postal.\n\nMuy pronto te enviamos opciones de paquetes para tu fecha. Si prefieres hablar antes, escríbenos o llámanos al (346) 851-8830.\n\n¡Estamos emocionados de ser parte de tu celebración!",
+      "en": "Subject: We got your request, {first_name}!\n\nHi {first_name}! Thank you for contacting Waoo Party. We received your request for {event_date}.\n\nYou can check the [travel fee](https://waooparty.com/travel-fee?zip={zip}) to your ZIP code.\n\nWe'll send you package options for your date very soon. If you'd like to talk sooner, text or call us at (346) 851-8830.\n\nWe're excited to be part of your celebration!",
+      "order": 7
+    },
+    "mail_details_request": {
+      "status": "approved",
+      "title": "Correo: Terminar la reserva",
+      "when": "Después del depósito, para completar datos y firmar",
+      "es": "Asunto: Termina tu reserva, {first_name}\n\n¡Hola {first_name}! Gracias por tu depósito de {paid}: registramos tu solicitud para el {event_date}.\n\nPara terminar tu reserva, completa tus datos y firma tu contrato. Solo toma unos minutos.\n\n[Botón: Completar mis datos]\n\n¡Estamos emocionados de ser parte de tu celebración!",
+      "en": "Subject: Finish your booking, {first_name}\n\nHi {first_name}! Thank you for your deposit of {paid} — your request for {event_date} is recorded.\n\nTo finish your booking, please complete your details and sign your contract. It only takes a few minutes.\n\n[Button: Complete my details]\n\nWe're excited to be part of your celebration!",
+      "order": 9
+    },
+    "mail_balance_reminder": {
+      "status": "approved",
+      "title": "Correo: Recordatorio de saldo",
+      "when": "Un día antes de que venza el saldo (solo si hay saldo)",
+      "es": "Asunto: Recordatorio: tu saldo vence el {due}\n\n¡Hola {first_name}! Ya se acerca tu fiesta del {event_date}. Tu saldo de {balance} vence el {due}.\n\nPuedes pagar por Zelle al 346-216-8739 (Waoo Party LLC, sin cargo) o con tarjeta.\n\n[Botón: Pagar mi saldo]\n\n¡Estamos emocionados de ser parte de tu celebración!",
+      "en": "Subject: Friendly reminder: balance due {due}\n\nHi {first_name}! Your party is coming up on {event_date}. Your balance of {balance} is due {due}.\n\nYou can pay by Zelle to 346-216-8739 (Waoo Party LLC, no fee) or by card.\n\n[Button: Pay my balance]\n\nWe're excited to be part of your celebration!",
+      "order": 13
+    },
+    "mail_week_before": {
+      "status": "approved",
+      "title": "Correo: Falta una semana",
+      "when": "7 días antes de la fiesta",
+      "es": "Asunto: ¡Falta una semana, {first_name}!\n\n¡Hola {first_name}! Falta una semana para tu celebración con Waoo Party: {event_date} en {address}.\n\nRevisa que la dirección, la hora y los detalles estén bien. Si algo cambió, respóndenos o escríbenos al (346) 851-8830.\n\n[Botón: Revisar mi fiesta]\n\n¡Nos vemos pronto!",
+      "en": "Subject: One week to go, {first_name}!\n\nHi {first_name}! Your Waoo Party celebration is one week away: {event_date} at {address}.\n\nPlease check that the address, start time and details are right. If anything changed, reply or text us at (346) 851-8830.\n\n[Button: Check my party]\n\nSee you soon!",
+      "order": 14
+    },
+    "mail_thank_you_review": {
+      "status": "approved",
+      "title": "Correo: Gracias y reseña",
+      "when": "El día después de la fiesta, a las 10 a. m.",
+      "es": "Asunto: ¡Gracias por celebrar con nosotros!\n\n¡Hola {first_name}! Gracias por elegir Waoo Party: apreciamos mucho tu apoyo y esperamos que todos la hayan pasado increíble.\n\nSi tienes un minuto, una reseña en Google nos ayuda muchísimo a que otras familias nos encuentren.\n\nY si quieres agradecerle al equipo, también puedes dejar una propina: el 100 % es para el staff de tu fiesta.\n\n[Botón: Dejar una reseña  ·  Dejar una propina]\n\n¡Nos encantaría celebrar contigo otra vez!",
+      "en": "Subject: Thank you for celebrating with us!\n\nHi {first_name}! Thank you for choosing Waoo Party: we truly appreciate your support and hope everyone had an amazing time.\n\nIf you have a minute, a Google review helps other families find us so much.\n\nAnd if you would like to thank the team, you can also leave a tip: 100% goes to the staff of your party.\n\n[Button: Leave a review  ·  Leave a tip]\n\nWe'd love to celebrate with you again!",
+      "order": 15
+    },
+    "quick_booking_msg": {
+      "status": "approved",
+      "title": "Mensaje con el enlace después de la reserva rápida",
+      "when": "Lo copias o lo abres en WhatsApp/SMS al guardar la reserva",
+      "es": "¡Hola {first_name}! Gracias por tu depósito de {paid}. Registramos tu solicitud para el {event_date}. Para terminar tu reserva, completa tus datos y firma tu contrato aquí: {link} (el enlace vence el {expires}). Tu saldo es de {balance}. ¡Estamos emocionados de ser parte de tu celebración!",
+      "en": "Hi {first_name}! Thank you for your deposit of {paid}. We recorded your booking request for {event_date}. To finish your booking, please complete your details and sign your contract here: {link} (link expires {expires}). Your remaining balance is {balance}. We're excited to be part of your celebration!",
+      "order": 6
+    },
+    "stripe_link_msg": {
+      "status": "approved",
+      "title": "Mensaje con el link de pago (Stripe)",
+      "when": "Lo copias o lo abres en WhatsApp/SMS al crear la reserva con Stripe",
+      "es": "¡Hola {first_name}! Para confirmar tu {package} del {event_date}, paga {amount} aquí: {link} (incluye 3 % de procesamiento de pago). ¡Estamos emocionados de ser parte de tu celebración!",
+      "en": "Hi {first_name}! To confirm your {package} on {event_date}, pay {amount} here: {link} (includes a 3% payment processing fee). We're excited to be part of your celebration!",
+      "order": 16
+    },
+    "stripe_reminder_24h": {
+      "status": "approved",
+      "title": "Recordatorio a las 24 horas si no ha pagado",
+      "when": "Automático a las 24 h (o botón para mandarlo tú mientras los envíos estén apagados)",
+      "es": "¡Hola {first_name}! Te recordamos que tu fecha del {event_date} sigue apartada hasta el {hold_until}. Para confirmarla, completa tu pago aquí: {link}. Si tienes alguna duda, escríbenos al (346) 851-8830.",
+      "en": "Hi {first_name}! Just a reminder: your date on {event_date} is held until {hold_until}. To confirm it, please complete your payment here: {link}. Any questions? Text us at (346) 851-8830.",
+      "order": 17
+    },
+    "stripe_hold_released": {
+      "status": "approved",
+      "title": "Aviso cuando se libera la fecha (48 h sin pago)",
+      "when": "Opcional, cuando pasan las 48 horas sin pago",
+      "es": "Hola {first_name}, no recibimos tu pago y liberamos la fecha del {event_date}. Si todavía quieres celebrar con nosotros, escríbenos y vemos la disponibilidad.",
+      "en": "Hi {first_name}, we didn't receive your payment, so we released the date on {event_date}. If you'd still like to celebrate with us, message us and we'll check availability.",
+      "order": 18
+    }
+  }
+}

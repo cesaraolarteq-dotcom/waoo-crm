@@ -44,6 +44,7 @@ class ImportOwnerCatalog extends Command
         $characters = $this->characters($actor, $data['characters'] ?? [], $dry);
         $this->inventory($actor, $data['inventory'] ?? [], $dry);
         $this->staff($actor, $data['staff'] ?? [], $dry);
+        $data['packages'] = \App\Support\OwnerCatalogOptions::packages($data['packages'], config('owner-catalog-options'));
         foreach (collect($data['packages'])->sortBy(fn ($p) => [$p['group'] ?? '', $p['order'] ?? 99]) as $key => $p) {
             try {
                 $this->package($actor, (string) $key, $p, $characters, $dry);

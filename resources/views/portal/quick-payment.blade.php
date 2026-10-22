@@ -4,7 +4,7 @@
 <h2>{{ $es?'Cuánto pagar ahora':'Amount due now' }}: ${{ number_format($q['deposit_cents']/100,2) }}</h2>
 <p>{{ $es?'Total de la fiesta':'Party total' }}: <strong>${{ number_format($q['total_cents']/100,2) }}</strong></p>
 @if(!empty($q['active_checkout']) && request()->has('quick_booking_return') && !request()->has('cancelled'))
-<p role="status" id="quick-confirming">{{ $es?'Estamos confirmando tu pago con Stripe. Esto tarda unos segundos; esta página se actualiza sola.':'We are confirming your Stripe payment. This takes a few seconds; this page refreshes by itself.' }}</p>
+<p role="status" id="quick-confirming">{{ \App\Support\ApprovedClientTexts::text('portal_stripe_confirming', $vm['lang']) }}</p>
 @elseif(!empty($q['active_checkout']))
 <p role="status">{{ $es?'Tu intento de Stripe sigue pendiente. Puedes retomarlo o cerrarlo antes de cambiar a Zelle.':'Your Stripe attempt is pending. Resume it or close it before switching to Zelle.' }}</p>
 @if(!empty($q['active_checkout']['checkout_url']))
@@ -15,7 +15,7 @@
 @endif
 @elseif($q['can_pay'])
 <h3>Zelle</h3><p>{{ $es?'Envía a':'Send to' }}: <b>Waoo Party LLC · 346-216-8739</b></p>
-<p>{{ $es?'En la nota del Zelle escribe':'In the Zelle memo write' }}: <b><code>{{ $vm['zelle_memo'] }}</code></b> <small>({{ $es?'así sabemos que es tu pago':'so we know it is your payment' }})</small></p>
+<p>{{ \App\Support\ApprovedClientTexts::text('portal_zelle_memo', $vm['lang']) }}: <b><code>{{ $vm['zelle_memo'] }}</code></b> <small>({{ \App\Support\ApprovedClientTexts::text('portal_zelle_memo_help', $vm['lang']) }})</small></p>
 <p>{{ $es?'Sin cargo adicional. El dueño verifica el dinero recibido en el banco.':'No additional fee. The owner verifies the money received in the bank.' }}</p>
 <form id="quick-zelle" class="p-form" method="POST" action="{{ url('/portal/api/quick-payment/zelle') }}">@csrf
 <label class="p-field">{{ $es?'Monto enviado (USD)':'Amount sent (USD)' }}<input name="amount" inputmode="decimal" required value="{{ number_format($q['deposit_cents']/100,2,'.','') }}"></label>
@@ -39,7 +39,30 @@
 <script>
 (function(){
  var returned=new URL(location.href).searchParams.has('quick_booking_return');
- if(returned){var polls=0;var timer=setInterval(async function(){if(++polls>60){clearInterval(timer);var c=document.getElementById('quick-confirming');if(c)c.textContent=@js($es?'Tu pago sigue en confirmación. Toca «Actualizar estado» en un minuto; no pagues de nuevo.':'Your payment is still being confirmed. Tap “Refresh status” in a minute; do not pay again.');return;}try{var r=await fetch('/portal/api/quick-payment',{credentials:'same-origin',headers:{Accept:'application/json'}});if(!r.ok){clearInterval(timer);return;}var q=await r.json();if(q.can_sign){clearInterval(timer);var u=new URL(location.href);u.searchParams.delete('quick_booking_return');u.searchParams.delete('cancelled');location.assign(u.href);}else if(!q.can_pay&&!q.active_checkout)clearInterval(timer);}catch(e){}},3000);}
+ var hasActiveCheckout=@js(!empty($q['active_checkout']));
+ if(returned || hasActiveCheckout){
+  var polls=0,stopped=false;
+  var pendingText=@js($es?'Tu pago sigue en confirmación. Toca «Actualizar estado» en un minuto; no pagues de nuevo.':'Your payment is still being confirmed. Tap “Refresh status” in a minute; do not pay again.');
+  function pendingNotice(){var c=document.getElementById('quick-confirming')||document.getElementById('quick-payment-error');if(c){c.textContent=pendingText;c.hidden=false;}}
+  async function poll(){
+   if(stopped)return;
+   if(++polls>60){pendingNotice();return;}
+   var controller=new AbortController(),timeout=setTimeout(function(){controller.abort();},8000);
+   try{
+    var r=await fetch('/portal/api/quick-payment',{credentials:'same-origin',cache:'no-store',signal:controller.signal,headers:{Accept:'application/json'}});
+    if(r.ok){
+     var next=await r.json();
+     if(next.can_sign===true){stopped=true;var u=new URL(location.href);u.searchParams.delete('quick_booking_return');u.searchParams.delete('cancelled');location.assign(u.href);return;}
+     // Refresh an ended attempt so the server can show its current state; never infer payment from a return URL.
+     if(next.can_sign===false && !next.active_checkout){stopped=true;var u=new URL(location.href);u.searchParams.delete('quick_booking_return');u.searchParams.delete('cancelled');location.assign(u.href);return;}
+    }
+   }catch(e){/* A temporary network failure must not permanently stop confirmation checks. */}
+   finally{clearTimeout(timeout);}
+   if(!stopped)setTimeout(poll,3000);
+  }
+  setTimeout(poll,3000);
+ }
+
  var pin=@js(collect($q)->only(['expected_booking_version','expected_payment_sha256'])->all());
  ['quick-zelle','quick-stripe','quick-close','quick-resume'].forEach(function(id){var f=document.getElementById(id);if(!f)return;f.addEventListener('submit',async function(ev){
  ev.preventDefault();var err=document.getElementById('quick-payment-error'),b=f.querySelector('button');err.hidden=true;

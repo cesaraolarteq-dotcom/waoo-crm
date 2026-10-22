@@ -1,0 +1,9 @@
+const {test,before,after}=require('node:test');const assert=require('node:assert/strict');const {execFileSync}=require('node:child_process');const {chromium}=require('playwright');let browser;
+before(async()=>{browser=await chromium.launch({headless:true,executablePath:process.env.WAOO_BROWSER_EXECUTABLE||undefined,args:['--no-sandbox']});});after(async()=>{await browser?.close();});
+for(const lang of ['es','en']) for(const returned of [false,true]) test(`${lang} return=${returned} pending Stripe keeps polling after refresh and a temporary error, then advances only on can_sign`,async()=>{
+ const html=execFileSync('docker',['exec','-w','/app','waoo-phase1-runtime','/usr/local/bin/php','tests/Browser/render-quick-payment.php',lang,'pending'],{encoding:'utf8'});
+ const page=await browser.newPage({viewport:{width:390,height:844}});let polls=0,documents=0;
+ await page.route('**/*',route=>{const u=new URL(route.request().url());if(u.pathname==='/portal/api/quick-payment'){polls++;if(polls===1)return route.fulfill({status:503,body:'temporary'});return route.fulfill({contentType:'application/json',body:JSON.stringify({can_sign:polls>=3,can_pay:false,active_checkout:polls<3?{state:'open'}:null})});}if(route.request().isNavigationRequest()&&u.hostname==='crm.example.test'){documents++;return route.fulfill({contentType:'text/html',body:documents===1?html:'<h1>Contract preparation</h1>'});}return route.abort();});
+ await page.goto('https://crm.example.test/portal?lang='+lang+(returned?'&quick_booking_return=synthetic':''));await page.waitForTimeout(6500);assert.equal(documents,1,'an unconfirmed payment must not advance');
+ await page.waitForFunction(()=>document.body.textContent.includes('Contract preparation'),null,{timeout:10000});assert.ok(polls>=3);assert.equal(documents,2);await page.close();
+});

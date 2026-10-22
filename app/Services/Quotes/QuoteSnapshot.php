@@ -12,7 +12,10 @@ final class QuoteSnapshot
     {
         \App\Services\Booking\QuickStripeLeases::assertNoActive($event->id);
         RecordWriteRejected::unless($event->status === 'draft' && $event->version === $data['expected_event_version'], 409, 'El borrador cambió. Recarga antes de cotizar.');
-        $validUntil = isset($data['valid_until']) ? CarbonImmutable::parse($data['valid_until'])->utc() : CarbonImmutable::now()->addDays(7);
+        $now = CarbonImmutable::now()->utc();
+        $maximum = $now->addHours(48)->min($event->starts_at);
+        $validUntil = isset($data['valid_until']) ? CarbonImmutable::parse($data['valid_until'])->utc() : $maximum;
+        if ($validUntil->greaterThan($maximum)) throw ValidationException::withMessages(['valid_until' => 'La cotización no puede durar más de 48 horas ni superar el comienzo del evento.']);
         if (!$validUntil->isFuture() || $validUntil->greaterThan($event->starts_at)) throw ValidationException::withMessages(['valid_until' => 'La vigencia debe ser futura y no posterior al comienzo del evento.']);
         $customer = Customer::findOrFail($event->customer_id);
         $services = $event->services()->with('characters')->get(); $lines = []; $subtotal = 0;
