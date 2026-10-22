@@ -1,6 +1,6 @@
 {
  "_about": "Temporary owner progress view (prototype tab 'Avance del proyecto'). Phases = docs/PROJECT_PLAN.md §18. Each agent updates its own evidence; Claude renders. Rules: a design/contract doc counts 0; a part counts only with a tested commit; review, merge to main and owner acceptance are separate steps. Phase % = sum(weight × stage score) / sum(weight). 'design' = preview/contract/plan evidence: shown as a chip, earns 0%.",
- "updated": "2026-10-21",
+ "updated": "2026-10-22",
  "stage_scores": {
   "backend": 0.35,
   "ui": 0.35,
@@ -1182,7 +1182,15 @@
      "reviewed": true,
      "merged": false,
      "accepted": false,
-     "blocker": "Claude debe ejecutar en crm-test con snapshot real y comparar ambas actas. No hay verificación real de Codex ni afirmación de100%. Consola agregada; acta0600; desconocidos y cobertura inversa obligatorios."
+     "blocker": "Corrida real reportada por Claude: cobertura267=241+23+3 coincide;509/515 PDF idénticos. Repetir comparaciones de campos con3e31245; desconocidos y diferencias de PDF siguen pendientes.",
+     "decoder_amendment": {
+      "backend": "3e31245; contrato6520851; codex/fix-honeybook-capture-decoder desde main5e1d500",
+      "reviewed": false,
+      "merged": false,
+      "accepted": false,
+      "review_queue": "docs/CLAUDE-REVIEW-QUEUE.md: Verificador HoneyBook: referencias y vocabulario de estados",
+      "note": "Fallo ambiguous_source_field reproducido antes del arreglo. No modifica datos reales ni cierra la doble verificación; Claude repite la captura privada."
+     }
     },
     {
      "name": "Corrección auditada de clienta histórica y regla de teléfono",
