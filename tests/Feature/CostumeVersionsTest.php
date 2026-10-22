@@ -308,7 +308,8 @@ class CostumeVersionsTest extends TestCase
         $this->assertSame('1 × Fixture hero (Racing)', $context['event']['characters']);
         $grant = app(IssuePortalGrant::class)->execute($this->owner, $event->id, ['customer_id' => $event->customer_id, 'expires_at' => now()->addDays(7)->toIso8601String()]);
         $this->postJson('/portal/api/session', ['token' => $grant->token])->assertOk();
-        $this->getJson('/portal/api/event')->assertOk()->assertSee('Fixture hero (Racing)')->assertDontSee('PRIVATE');
-        $this->get('/portal')->assertOk()->assertSee('Fixture hero (Racing)')->assertDontSee('PRIVATE');
+        $this->getJson('/portal/api/event')->assertOk()->assertJsonPath('services.0.characters.0.name', 'Fixture hero')
+            ->assertJsonMissingPath('services.0.characters.0.outfit')->assertDontSee('Racing')->assertDontSee('PRIVATE');
+        $this->get('/portal')->assertOk()->assertSee('Fixture hero')->assertDontSee('Racing')->assertDontSee('PRIVATE');
     }
 }
