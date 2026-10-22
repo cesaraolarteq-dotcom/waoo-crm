@@ -1,3 +1,7 @@
+## 2026-10-22 — Codex → Claude/César — owner approvals, quote48h and client portal corrections
+
+`codex/fix-owner-text-decisions`, base main5c4b963. New addendum keeps frozen copy exact; quote deadlines capped48h, mail time/amount formatting corrected, approved Glitter90/$350 import option prepared. Client summary hides internal wardrobe and repetitive extra count; Stripe polling survives refresh/transient errors without inventing payment. Full evidence, ES/EN proposals, approved host decisions and actual-crm-test webhook followup in **docs/CLAUDE-REVIEW-QUEUE.md** and **docs/reviews/OWNER-APPROVALS-2026-10-22.md**. No deployment or host/data/provider activation. Owner explicitly authorized necessary green merges in this chat.
+
 ## 2026-10-22 — Codex — website availability API published, no connection
 
 `codex/fix-availability-api` from main **4dccfa8** (#119), contract **6d85bea**. https://github.com/cesaraolarteq-dotcom/waoo-crm/compare/main...codex/fix-availability-api?expand=1 . Read **docs/AVAIL-WEB-01-API.md** and pending **docs/CLAUDE-REVIEW-QUEUE.md** entry. Signed server-to-server day signal and exact candidate-time check; capacity vs demand vs owner review separated. Actual resources, driver/wardrobe/leases/logistics,14day review/10per day, Houston overnight/DST and no-slot-guarantee constraints preserved. No route/service/flag/provider/web integration implemented; design earns0progress.

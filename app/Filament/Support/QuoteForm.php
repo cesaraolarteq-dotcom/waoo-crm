@@ -22,7 +22,7 @@ final class QuoteForm
     {
         return [
             Grid::make(3)->schema([
-                DatePicker::make('valid_date')->label('Válida hasta (opcional)')->native()->helperText('Vacío = 7 días. Debe ser antes de la fiesta.'),
+                DatePicker::make('valid_date')->label('Válida hasta (opcional)')->native()->helperText('Vacío = 48 horas o el comienzo de la fiesta, lo que ocurra primero. Máximo 48 horas.'),
                 TimePicker::make('valid_time')->label('Hora (Houston)')->native()->seconds(false),
                 Select::make('locale')->label('Idioma del cliente')->options(['es' => 'Español', 'en' => 'Inglés'])->native(false),
             ]),

@@ -6,4 +6,5 @@ $vm=(new \App\Http\Controllers\Portal\PortalPreviewController)($r,'details')->ge
 $terms=\App\Services\Booking\QuickStripeTerms::freeze(30001,new DateTimeImmutable('2026-10-21T17:00:00Z'));
 $vm['quick_payment']=['expected_booking_version'=>1,'expected_payment_sha256'=>str_repeat('a',64),'state'=>'awaiting_payment','total_cents'=>30001,'deposit_cents'=>15001,'can_pay'=>true,'can_sign'=>false,'zelle_pending'=>false,
  'choices'=>[$terms->snapshot(),\App\Services\Booking\QuickStripeTerms::freeze(30001,new DateTimeImmutable('2026-10-21T17:00:00Z'),100)->snapshot()]];
+if (($argv[2]??'')==='pending') $vm['quick_payment']['active_checkout']=['request_id'=>'11111111-1111-4111-8111-111111111111','state'=>'open','checkout_url'=>'https://checkout.stripe.com/c/pay/synthetic'];
 echo view('portal.show',['vm'=>$vm])->render();

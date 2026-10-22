@@ -23,6 +23,7 @@ final class ApprovedMail
     public static function render(string $key,string $locale,#[\SensitiveParameter] array $vars,array $totals):array
     {
         $d=self::definition($key,$locale);
+        if ($key === 'payment_received' && !empty($vars['balance_due']) && !preg_match('/^[\s\x{00A0}]/u', (string) $vars['balance_due'])) $vars['balance_due'] = ' '. $vars['balance_due'];
         if(array_diff(array_keys($vars),self::VARIABLES))self::fail('unknown_template_variable');
         foreach($d['required_variables'] as $name)if(!array_key_exists($name,$vars)||$vars[$name]===null||$vars[$name]==='')self::fail('missing_template_variable');
         $fill=function(string $text)use($vars){return preg_replace_callback('/\{([^{}]+)\}/',function($m)use($vars){if(!in_array($m[1],self::VARIABLES,true)||!array_key_exists($m[1],$vars)||$vars[$m[1]]===null)self::fail('missing_or_unknown_template_variable');return is_bool($vars[$m[1]])?($vars[$m[1]]?'true':'false'):(string)$vars[$m[1]];},$text);};

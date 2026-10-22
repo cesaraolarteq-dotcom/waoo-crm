@@ -43,6 +43,23 @@ class ImportOwnerCatalogTest extends TestCase
         parent::tearDown();
     }
 
+    public function test_owner_approved_glitter_option_imports_idempotently_without_repricing_two_hours(): void
+    {
+        file_put_contents($this->file,json_encode(['packages'=>['glitter'=>[
+            'name'=>'Glitter Mobile','duration_min'=>120,'price'=>475,'crew'=>['host'=>1],
+            'gear'=>['vanity'=>1],'characters_included'=>0,'ready'=>true,
+        ]]]));
+        for ($i=0;$i<2;$i++) $this->artisan('waoo:import-catalog',['file'=>$this->file,'--actor'=>'owner@example.test'])->assertSuccessful();
+        $original=ServiceVariant::where('name','Glitter Mobile')->sole();
+        $option=ServiceVariant::where('name','Glitter Mobile · 90 min')->sole();
+        $this->assertSame(120,$original->duration_minutes);
+        $this->assertSame(47500,PriceVersion::where('service_variant_id',$original->id)->sole()->amount_cents);
+        $this->assertSame(90,$option->duration_minutes);
+        $this->assertSame(35000,PriceVersion::where('service_variant_id',$option->id)->sole()->amount_cents);
+        $this->assertSame($original->requirements,$option->requirements);
+        $this->assertDatabaseCount('price_versions',2);
+    }
+
     public function test_imports_exact_prices_and_crew_rules_and_is_rerunnable(): void
     {
         $this->artisan('waoo:import-catalog', ['file' => $this->file, '--actor' => 'owner@example.test', '--dry-run' => true])->assertSuccessful();

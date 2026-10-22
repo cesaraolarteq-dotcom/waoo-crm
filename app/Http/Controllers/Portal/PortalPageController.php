@@ -115,8 +115,7 @@ final class PortalPageController extends Controller
         $tz = 'America/Chicago';
         $start = CarbonImmutable::instance($event->starts_at)->setTimezone($tz)->locale($lang);
         $fmt = fn ($c) => $c === null ? '—' : '$'.number_format($c / 100, $c % 100 ? 2 : 0);
-        $services = collect($revision?->lines_snapshot ?? [])->map(fn ($l) => ($l['name'] ?? '').(isset($l['duration_minutes']) ? ' · '.($l['duration_minutes'] >= 60 ? rtrim(rtrim(number_format($l['duration_minutes'] / 60, 1), '0'), '.').' h' : $l['duration_minutes'].' min') : '')
-            .(($n = (int) ($l['extra_characters'] ?? 0)) > 0 ? ($lang === 'en' ? " + {$n} extra ".($n === 1 ? 'character' : 'characters') : " + {$n} ".($n === 1 ? 'personaje adicional' : 'personajes adicionales')) : ''))->implode(' + ');
+        $services = collect($revision?->lines_snapshot ?? [])->map(fn ($l) => ($l['name'] ?? '').(isset($l['duration_minutes']) ? ' · '.($l['duration_minutes'] >= 60 ? rtrim(rtrim(number_format($l['duration_minutes'] / 60, 1), '0'), '.').' h' : $l['duration_minutes'].' min') : ''))->implode(' + ');
         $due = $revision?->balance_due_at ? CarbonImmutable::instance($revision->balance_due_at)->setTimezone($tz)->locale($lang) : null;
 
         $approvedSms = collect((array) config('waoo.sms_consent_versions', []))->filter(fn ($text) => is_string($text) && $text !== '');
@@ -149,7 +148,7 @@ final class PortalPageController extends Controller
             'lang_url' => ['es' => url('/portal?lang=es'.($reviewDetails ? '&review_details=1' : '')), 'en' => url('/portal?lang=en'.($reviewDetails ? '&review_details=1' : ''))],
             'event' => [
                 'package' => $services ?: $event->title,
-                'characters' => collect($revision?->lines_snapshot ?? [])->flatMap(fn ($l) => $l['characters'] ?? [])->map(fn ($c) => $c['quantity'].' × '.\App\Services\Records\CharacterLabel::fromSnapshot($c))->implode(', '),
+                'characters' => collect($revision?->lines_snapshot ?? [])->flatMap(fn ($l) => $l['characters'] ?? [])->map(fn ($c) => $c['quantity'].' × '.$c['name'])->implode(', '),
                 'when' => $lang === 'es' ? $start->translatedFormat('D j M Y, g:i a') : $start->format('D, M j, Y \a\t g:i a'),
                 'start_time' => $lang === 'es' ? $start->translatedFormat('g:i a') : $start->format('g:i a'),
                 // Owner 2026-10-20: the time is the one he agreed when she paid; shown as a fixed range, never a choice.

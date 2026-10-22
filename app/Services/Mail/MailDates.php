@@ -5,7 +5,7 @@ final class MailDates
 {
     public static function full($at,string $locale):string
     {
-        return self::local($at,$locale)->translatedFormat($locale==='es'?'l j \d\e F \d\e Y, g:i a T':'D, M j, Y g:i A T');
+        return self::local($at,$locale)->translatedFormat($locale==='es'?'l j \d\e F \d\e Y, g:i a':'D, M j, Y g:i A');
     }
     public static function due($at,string $locale):string
     {

@@ -30,6 +30,7 @@ final class MailTemplatesDraft
     public static function render(string $key, string $lang, array $vars): array
     {
         abort_unless(in_array($key, self::KEYS, true), 404);
+        if ($key === 'payment_received' && !empty($vars['balance_due']) && !preg_match('/^[\s\x{00A0}]/u', (string) $vars['balance_due'])) $vars['balance_due'] = ' '. $vars['balance_due'];
         $d = ApprovedClientTexts::mailDefinitions(config('client-texts'))[$key][$lang === 'en' ? 'en' : 'es'];
         $fill = fn (string $s) => preg_replace_callback('/\{(\w+)\}/', fn ($m) => (string) ($vars[$m[1]] ?? ''), $s);
         $subject = str_replace('{first_name}', mb_substr((string) ($vars['first_name'] ?? ''), 0, 20), $d['subject']);

@@ -46,6 +46,30 @@ class QuoteFoundationTest extends TestCase
     }
     private function revisionInput(array $over = []): array { return [...['expected_version' => 1, 'expected_event_version' => $this->event->fresh()->version, 'discounts' => []], ...$over]; }
 
+    public function test_owner_limit_defaults_to_48_hours_and_rejects_longer_create_or_revision(): void
+    {
+        $this->travelTo(now()->startOfSecond());
+        $this->withHeader('Idempotency-Key', (string) Str::uuid())->postJson('/admin/api/quotes', $this->input([
+            'valid_until' => now()->addHours(48)->addSecond()->toIso8601String(),
+        ]))->assertUnprocessable()->assertJsonValidationErrors('valid_until');
+        $r = $this->create();
+        $this->assertTrue($r->valid_until->equalTo(now()->addHours(48)));
+        $this->withHeader('Idempotency-Key', (string) Str::uuid())->postJson("/admin/api/quotes/{$r->quote_id}/revisions", $this->revisionInput([
+            'valid_until' => now()->addHours(49)->toIso8601String(),
+        ]))->assertUnprocessable()->assertJsonValidationErrors('valid_until');
+        $this->assertDatabaseCount('quote_revisions', 1);
+    }
+
+    public function test_quote_deadline_stops_at_event_start_and_allows_shorter_explicit_validity(): void
+    {
+        $this->travelTo(now()->startOfSecond());
+        $this->event->forceFill(['starts_at' => now()->addHours(24), 'ends_at' => now()->addHours(25)])->save();
+        $r = $this->create();
+        $this->assertTrue($r->valid_until->equalTo($this->event->starts_at));
+        $short = app(ReviseQuote::class)->execute($this->owner, $r->quote_id, $this->revisionInput(['valid_until' => now()->addHours(12)->toIso8601String()]), (string) Str::uuid());
+        $this->assertTrue($short->valid_until->equalTo(now()->addHours(12)));
+    }
+
     public function test_quote_totals_odd_cent_discount_and_approval_are_server_derived_without_booking_side_effects(): void
     {
         $r = $this->withHeader('Idempotency-Key', (string) Str::uuid())->postJson('/admin/api/quotes', $this->input([
