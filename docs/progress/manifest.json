@@ -476,7 +476,9 @@
      "ui": null,
      "reviewed": false,
      "merged": false,
-     "accepted": false
+     "accepted": false,
+     "design": "6d85bea · docs/AVAIL-WEB-01-API.md; solo contrato, sin conexión web",
+     "note": "3ejemplos JSON y enlaces validados; revisión pendiente en CLAUDE-REVIEW-QUEUE. Backend/UI no implementados; sin puntos ni activación."
     }
    ]
   },
