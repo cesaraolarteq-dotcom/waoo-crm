@@ -8,7 +8,7 @@ use App\Services\Finance\{ConfirmPaidCapacity, CreateFinancialRevision, RecordZe
 use App\Services\Mail\{EventMailSource, MailTransport, PauseEventMail, PlanEventMail};
 use App\Services\Portal\IssuePortalGrant;
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\Support\{FakeMailTransport, QuoteScenario};
@@ -17,7 +17,7 @@ use Tests\TestCase;
 // MAIL-01 owner screens over Codex's outbox (synthetic copy marked as NOT owner approval; nothing is ever sent here).
 class MailScreensTest extends TestCase
 {
-    use DatabaseMigrations, QuoteScenario;
+    use RefreshDatabase, QuoteScenario;
 
     private FinancialRevision $finance;
     private int $grantId;

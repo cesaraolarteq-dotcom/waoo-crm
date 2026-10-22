@@ -30,6 +30,7 @@ final class ContractPrintContext
             'template' => ['version' => $template->version], 'contract_number' => 'WP-'.$contract->event_id.'-'.$contract->revision,
             'status_label' => $signature ? 'Signed' : 'Awaiting signature', 'signed' => $signature !== null,
             'document' => ['sha256' => $contract->presented_pdf_sha256]];
+        if(isset($snapshot['billing_company']))$context['billing_company']=[...$snapshot['billing_company'],'person'=>trim($snapshot['client']['first_name'].' '.$snapshot['client']['last_name'])];
         if ($signature) $context['signer'] = ['name' => $signature->signer_name, 'email' => $signature->signer_email,
             'access_description' => 'through a scoped personal access link associated with this customer record; email delivery and verification were not asserted.',
             'signed_at_local' => $signature->accepted_at->setTimezone('America/Chicago')->format('Y-m-d H:i:s T'), 'signed_at_utc' => $signature->accepted_at->utc()->format('Y-m-d H:i:s'),

@@ -3,13 +3,13 @@ namespace Tests\Feature;
 
 use App\Models\{Customer, Event, EventService, PriceVersion, Resource, ServiceVariant, User};
 use App\Services\Records\ConfirmCapacity;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class ConfirmCapacityServiceTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
     public function test_explicit_actor_owns_evidence_review_and_audit_even_with_another_session_user(): void
     {
         $owner = User::factory()->create(['role' => 'owner_admin', 'active' => true, 'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'), 'two_factor_confirmed_at' => now()]);

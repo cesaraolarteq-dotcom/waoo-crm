@@ -307,6 +307,17 @@
      "accepted": false,
      "blocker": null,
      "progress_note": "2026-10-16: main cd52aec desplegado en crm-test; cuenta de César con 2FA; catálogo importado (31/32). Pendiente: staff, equipo, cron de PDFs, Stripe de prueba (permiso), recorrido de César."
+    },
+    {
+     "name": "CI: reutilización del esquema en 52 clases aptas",
+     "weight": 1,
+     "agent": "Codex",
+     "backend": "codex/owner-analytics; docs/TEST-DATABASE-REUSE.md",
+     "ui": null,
+     "reviewed": true,
+     "merged": false,
+     "accepted": false,
+     "note": "Mismos tests/assertions; concurrencia real, migraciones y entradas QuickBook de transacción raíz sin cambios. MariaDB 279/2699 en 69.365 s; muestra idéntica 8/47: 18.950 → 3.933 s. No es evidencia de suite completa ni nueva duración de GitHub."
     }
    ]
   },
@@ -512,7 +523,7 @@
      "agent": "Codex+Claude",
      "backend": "0cd7f5a",
      "ui": "2074213",
-     "reviewed": false,
+     "reviewed": true,
      "merged": true,
      "accepted": false,
      "blocker": "Real test-account probe and fee/payment-method rules before any real operation; current sandbox has no surcharge",
@@ -524,7 +535,7 @@
      "agent": "Codex+Claude",
      "backend": "0cd7f5a",
      "ui": "2074213",
-     "reviewed": false,
+     "reviewed": true,
      "merged": true,
      "accepted": false,
      "blocker": "Revisión de abogado antes de clientas reales",
@@ -622,8 +633,8 @@
      "agent": "Codex",
      "backend": "a86632d +38b3056 (incluye6440398)",
      "ui": "528c524 +3fb0f7b",
-     "reviewed": false,
-     "merged": false,
+     "reviewed": true,
+     "merged": true,
      "accepted": false,
      "api": "docs/QUICK-BOOKING-NIGHT-API.md; docs/SHORT-PORTAL-LINK-API.md",
      "verification": "Integrated263/2362 PASS09:01.582 on application528c524; final panel/source3fb0f7b related73/666 PASS03:00.273,131MB,MariaDB11.8, including full QuickBookingCore/provisional/UI, event files, short-link quote revision and actual panel embeddings/rollback/access/Locked stale guards. Overlapping runs, not summed. Browser7/7 PASS6.406s: Google synthetic5 + actual Blade preferences ES/EN2, all intercepted/local. Build/PHP lint/strict Composer/diff pass. Not entire repository/remote Actions/actual staging or owner acceptance.",
@@ -635,8 +646,8 @@
      "agent": "Codex",
      "backend": "ee2e78e +integration09ccaeb",
      "ui": null,
-     "reviewed": false,
-     "merged": false,
+     "reviewed": true,
+     "merged": true,
      "accepted": false,
      "api": "docs/QUICK-STRIPE-BOOKING-API.md S2",
      "verification": "92/433 +200/1537 before merge;154/1518 current main integration PASS. Runs overlap; no full-suite/Actions/host/owner acceptance.",
@@ -648,7 +659,7 @@
      "agent": "Codex",
      "backend": "4a6e7b7 +5050a37 +b04e151",
      "ui": "4a6e7b7 +5050a37",
-     "reviewed": false,
+     "reviewed": true,
      "merged": true,
      "accepted": false,
      "design": "docs/QUICK-STRIPE-BOOKING-API.md",
@@ -663,12 +674,23 @@
      "agent": "Codex",
      "backend": "feba333",
      "ui": "657b262",
-     "reviewed": false,
-     "merged": false,
+     "reviewed": true,
+     "merged": true,
      "accepted": false,
      "verification": "Final affected MariaDB85 tests/883 assertions PASS03:26.750; Chromium13/13 PASS. Real client details→private PDF→signature, explicit correction, CSRF/source and hold integration covered. Gate defaultsOFF; not whole repository or remote Actions.",
      "scope": "Native genuine paid QuickBook only; latest same-grant details and unchanged original agreement/template/PDF/consent. Durable saved details despite artifact failure; retries and explicit fresh review, no silent version refresh. No native Stripe-unpaid or imported lifecycle.",
      "blocker": "Independent source review, owner sandbox acceptance and explicit deployment/activation; real legal template stays owner-approved. Post-signature identity confirmation is a separate B1c API proposal."
+    },
+    {
+     "name": "Empresa por fiesta: persona, documentos y factura previa",
+     "weight": 1,
+     "agent": "Codex",
+     "backend": "84966bf; BillingCompany, versión independiente, propuesta y firma",
+     "ui": "Reserva rápida y portal ES/EN; bloque del evento; PDF cotización/contrato y borrador factura",
+     "reviewed": true,
+     "merged": false,
+     "accepted": false,
+     "note": "Empresa opcional cifrada; persona sigue siendo clienta y firmante. No cambia capacidad, dinero ni destinatarios. Factura solo vista previa: no existe emisión nativa en esta entrega. Flags apagadas. Regresión185/1462 y prueba final27/147 con conjuntos solapados; no sumar."
     }
    ]
   },
@@ -954,6 +976,28 @@
      "merged": false,
      "accepted": false,
      "note": "Separate from tested read/snapshot backend; scheduler, approved copy and MAIL transport/explicit activation remain pending. Nothing sent."
+    },
+    {
+     "name": "Reportes comerciales: agregados CRM + historial y CSV",
+     "weight": 1,
+     "agent": "Codex",
+     "backend": "codex/owner-analytics; ReadBookingAnalytics, BookingAnalytics",
+     "ui": "Reports: análisis anual y descarga CSV",
+     "reviewed": true,
+     "merged": false,
+     "accepted": false,
+     "note": "Flag analytics apagada; sin datos de clientas en la proyección comercial/CSV. Totales fuente no son recibos. Historial sin estado completado no se cuenta como reserva confirmada; paquetes sin catálogo y creación desconocida explícitos."
+    },
+    {
+     "name": "ANNIV-01: preparación en borrador",
+     "weight": 1,
+     "agent": "Codex",
+     "backend": "codex/owner-analytics; BirthdayDraft, ReadBirthdayCampaignDraft",
+     "ui": "Reports: fechas propuestas, bloqueos y textos ES/EN sin aprobar",
+     "reviewed": true,
+     "merged": false,
+     "accepted": false,
+     "note": "Flag anniversary apagada. Solo cumpleaños completados/fecha válida. Todo bloqueado por permiso promocional no verificado y texto sin aprobar. Sin códigos, outbox, cron ni envío. Revisión propuesta un mes antes; no cambia la política de envío existente."
     }
    ]
   },
@@ -1019,8 +1063,8 @@
      "agent": "Codex",
      "backend": "043d8c0 +6e5fd4d +7eb76a2; integración adfae32; resoluciones45431b6",
      "ui": "043d8c0 +6e5fd4d +45431b6",
-     "reviewed": false,
-     "merged": false,
+     "reviewed": true,
+     "merged": true,
      "accepted": false,
      "design": "docs/IMPORT-HISTORY-API.md + OWNER-2026-10-21-HONEYBOOK-DECISIONS.md",
      "contract": {
@@ -1117,7 +1161,7 @@
      "agent": "Codex",
      "backend": "e458f30",
      "ui": "e458f30",
-     "reviewed": false,
+     "reviewed": true,
      "merged": true,
      "accepted": false,
      "design": "docs/HONEYBOOK-SUPPLEMENT-API.md",
@@ -1128,6 +1172,28 @@
       "reviewed": false,
       "note": "Exclusiones finales del dueño también se aplican antes de guardar texto adicional;12/35 pruebas PASS."
      }
+    },
+    {
+     "name": "Verificación independiente HoneyBook desde API privada",
+     "weight": 1,
+     "agent": "Codex",
+     "backend": "84966bf + fuente monetaria explícita; waoo:honeybook:verify",
+     "ui": null,
+     "reviewed": true,
+     "merged": false,
+     "accepted": false,
+     "blocker": "Claude debe ejecutar en crm-test con snapshot real y comparar ambas actas. No hay verificación real de Codex ni afirmación de100%. Consola agregada; acta0600; desconocidos y cobertura inversa obligatorios."
+    },
+    {
+     "name": "Corrección auditada de clienta histórica y regla de teléfono",
+     "weight": 1,
+     "agent": "Codex",
+     "backend": "84966bf; ReassignHistoricalCustomer, nueva revisión y evidencia cifrada",
+     "ui": "Ficha de clienta: corregir vínculo con versiones fijadas y motivo",
+     "reviewed": true,
+     "merged": false,
+     "accepted": false,
+     "note": "Carrera real de dos dueños verificada: solo una corrección. Los tres casos reales fueron reportados correctos; no se movió ninguno. Teléfono con nombre distinto no se une automáticamente."
     }
    ]
   }

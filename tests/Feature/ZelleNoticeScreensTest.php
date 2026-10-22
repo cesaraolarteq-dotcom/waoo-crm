@@ -8,7 +8,7 @@ use App\Services\Finance\{CreateFinancialRevision, FinanceSummary, RecordZellePa
 use App\Services\Portal\IssuePortalGrant;
 use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
@@ -18,7 +18,7 @@ use Tests\TestCase;
 // the owner verifies what really arrived or rejects it on Dinero; Inicio and the event history show it. Fixtures only.
 class ZelleNoticeScreensTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     private User $owner;
     private Event $event;

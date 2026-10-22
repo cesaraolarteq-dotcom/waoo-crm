@@ -5,7 +5,7 @@ use App\Filament\Resources\Events\Pages\{ConfirmCapacity, EventMoney};
 use App\Models\{Customer, Event, EventService, FinancialRevision, LedgerEntry, PriceVersion, Resource, ServiceVariant, User};
 use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -13,7 +13,7 @@ use Tests\TestCase;
 // "Dinero" page and paid-mode confirmation against Codex's real sandbox Finance services. Fictitious amounts.
 class EventMoneyPageTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     private User $owner;
     private Event $event;

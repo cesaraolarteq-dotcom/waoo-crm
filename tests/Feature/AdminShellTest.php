@@ -4,13 +4,13 @@ namespace Tests\Feature;
 use App\Http\Middleware\RequireOwnerAdmin;
 use App\Models\User;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use PragmaRX\Google2FA\Google2FA;
 use Tests\TestCase;
 
 class AdminShellTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     private function owner(array $attributes = []): User
     {

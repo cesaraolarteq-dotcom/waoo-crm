@@ -3,7 +3,7 @@ namespace Tests\Feature;
 
 use App\Filament\Resources\Events\Pages\ViewEvent;
 use App\Models\StaffJobInstructions;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use Tests\Support\QuoteScenario;
@@ -12,7 +12,7 @@ use Tests\TestCase;
 // Owner screens over Codex's C1 responsibility guard and versioned staff instructions (fictitious data).
 class C1AndInstructionsScreensTest extends TestCase
 {
-    use DatabaseMigrations, QuoteScenario;
+    use RefreshDatabase, QuoteScenario;
 
     protected function setUp(): void
     {

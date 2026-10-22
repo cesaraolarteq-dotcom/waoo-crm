@@ -6,7 +6,7 @@ use App\Models\{BookingEvidence, Customer, Event, EventService, PriceVersion, Re
 use App\Services\ConfirmBooking;
 use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -14,7 +14,7 @@ use Tests\TestCase;
 // payload to Codex's real ConfirmBooking, so the payload shape and the business checks are exercised for real.
 class ConfirmCapacityPageTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     private User $owner;
     private Event $event;

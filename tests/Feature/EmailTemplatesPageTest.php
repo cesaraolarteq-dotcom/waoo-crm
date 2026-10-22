@@ -3,13 +3,13 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 // MAIL-01 settings page: read-only list of the 9 client emails with EN/ES previews in sandboxed iframes; nothing is sent.
 class EmailTemplatesPageTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     public function test_owner_sees_all_drafts_with_sandboxed_previews(): void
     {

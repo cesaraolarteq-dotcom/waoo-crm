@@ -4,7 +4,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Services\RecoveryCodeDelivery;
 use Illuminate\Database\Events\QueryExecuted;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Laravel\Fortify\Actions\GenerateNewRecoveryCodes;
 use PragmaRX\Google2FA\Google2FA;
@@ -13,7 +13,7 @@ use Tests\TestCase;
 // Codex review of PR #19: R1 (no-store on every sensitive auth response) and R2 (one-time delivery per generation).
 class RecoveryCodeDeliveryTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     private const SECRET = 'JBSWY3DPEHPK3PXP';
 

@@ -2,12 +2,12 @@
 namespace Tests\Feature;
 
 use App\Models\{Character, Customer, Event, EventService, PriceVersion, Resource, ServiceVariant, User};
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class AdminScreensTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     private function owner(array $attributes = []): User
     {

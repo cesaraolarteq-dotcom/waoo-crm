@@ -51,6 +51,7 @@ class SameVisitContractTest extends TestCase
     protected function tearDown(): void
     {
         if (Schema::hasTable('customers')) DB::table('customers')->whereNull('name')->update(['name' => 'María González']);
+        if(Schema::hasColumn('events','billing_company')) DB::table('events')->update(['billing_company'=>null,'billing_company_version'=>0]);
         parent::tearDown();
     }
 
@@ -70,6 +71,25 @@ class SameVisitContractTest extends TestCase
         return $this->postJson('/portal/api/contracts/'.$contract->id.'/sign', ['expected_version' => $contract->version,
             'presented_pdf_sha256' => $contract->presented_pdf_sha256, 'signer_name' => 'María González',
             'consent' => true, 'intent_to_sign' => true, 'consent_version' => 'esign-consent-v2-2026-10-20-es', ...$extra], ['Idempotency-Key' => $key ?? (string) Str::uuid()]);
+    }
+
+    public function test_company_is_frozen_in_the_same_visit_and_person_remains_the_signer(): void
+    {
+        config(['waoo.sandbox_company'=>true]);
+        $this->get('/portal?lang=es')->assertOk()->assertSee('Es para una empresa');
+        $this->get('/portal?lang=en')->assertOk()->assertSee('This is for a company');
+        $this->submit(extra:['billing_company'=>['name'=>'Celebraciones del Sol','email'=>'billing@example.test']])->assertCreated()->assertJsonPath('contract_preparation.status','ready');
+        $contract=Contract::sole();
+        $this->assertSame('Celebraciones del Sol',$contract->commercial_snapshot['billing_company']['name']);
+        $this->assertSame(2,$contract->commercial_snapshot['client_details']['schema_version']);
+        $beforeVersion=$this->event->version;
+        $this->get('/portal/api/contracts/'.$contract->id.'/pdf')->assertOk();
+        $this->sign($contract)->assertOk();
+        $this->assertSame('María González',SignatureEvidence::sole()->signer_name);
+        $this->assertSame('Celebraciones del Sol',$this->event->fresh()->billing_company['name']);
+        $this->assertSame($beforeVersion,$this->event->fresh()->version);
+        $this->assertDatabaseCount('ledger_entries',1);
+        $this->assertSame(1,SignatureEvidence::count());
     }
 
     public function test_one_actual_client_session_submits_opens_exact_pdf_signs_and_continues_without_owner_review(): void

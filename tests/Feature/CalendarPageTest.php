@@ -5,13 +5,13 @@ use App\Filament\Pages\Calendar;
 use App\Models\{Customer, Event, EventService, PriceVersion, Resource, ResourceReservation, ServiceVariant, User};
 use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
 
 class CalendarPageTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     private User $owner;
 

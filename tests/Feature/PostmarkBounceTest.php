@@ -4,7 +4,7 @@ namespace Tests\Feature;
 use App\Models\{OutboundMessage, OutboundMessageState};
 use App\Services\Finance\CreateFinancialRevision;
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\{DB, Http, Mail};
 use Illuminate\Support\Str;
 use Tests\Support\QuoteScenario;
@@ -12,7 +12,7 @@ use Tests\TestCase;
 
 class PostmarkBounceTest extends TestCase
 {
-    use DatabaseMigrations, QuoteScenario;
+    use RefreshDatabase, QuoteScenario;
     private OutboundMessage $message;
     private array $record;
     protected function setUp(): void

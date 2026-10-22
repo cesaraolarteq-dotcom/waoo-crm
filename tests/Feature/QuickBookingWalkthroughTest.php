@@ -5,7 +5,7 @@ use App\Filament\Pages\QuickBooking;
 use App\Filament\Resources\Events\EventResource;
 use App\Models\{Customer, PriceVersion, ServiceVariant, User};
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -13,7 +13,7 @@ use Tests\TestCase;
 // the package, likely duplicates while typing a new client, phone or email, deposit dated today with an optional time.
 class QuickBookingWalkthroughTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     private array $prices = [];
 

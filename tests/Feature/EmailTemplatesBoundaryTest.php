@@ -2,14 +2,14 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\{Mail,Queue};
 use Livewire\Livewire;
 use Tests\TestCase;
 
 class EmailTemplatesBoundaryTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
     private function owner(array $attributes=[]):User
     {
         return User::factory()->create([...['role'=>'owner_admin','active'=>true,'password'=>'FictitiousPassword123!',

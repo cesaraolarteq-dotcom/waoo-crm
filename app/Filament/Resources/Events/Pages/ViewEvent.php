@@ -175,11 +175,40 @@ class ViewEvent extends Page
         return ($this->record->customer?->name ?? '').' · '.Labels::when($this->record->starts_at).' – '.$this->record->ends_at->setTimezone(Labels::TZ)->locale('es')->translatedFormat('g:i a');
     }
 
+    #[\Livewire\Attributes\Locked]
+    public array $billingPins=[];
+    #[\Livewire\Attributes\Locked]
+    public string $billingKey='';
+
     protected function getHeaderActions(): array
     {
         $e = $this->record;
 
         return [
+            Action::make('billingCompany')->label('Facturar a empresa')->visible(fn()=>config('waoo.sandbox_company',false))
+                ->mountUsing(function(Action $action) use($e) {
+                    $current=\App\Models\Event::findOrFail($e->id);
+                    $this->billingPins=['expected_event_version'=>$current->version,'expected_billing_version'=>$current->billing_company_version];
+                    $this->billingKey=(string)\Illuminate\Support\Str::uuid();
+                    $action->fillForm(['enabled'=>$current->billing_company!==null,...($current->billing_company??[])]);
+                })
+                ->schema([
+                    \Filament\Forms\Components\Checkbox::make('enabled')->label('Facturar a empresa')->live(),
+                    \Filament\Forms\Components\TextInput::make('name')->label('Nombre de la empresa')->required(fn(\Filament\Schemas\Components\Utilities\Get $get)=>(bool)$get('enabled'))->maxLength(255),
+                    \Filament\Forms\Components\TextInput::make('email')->label('Correo de facturación (opcional)')->email()->maxLength(255),
+                    \Filament\Forms\Components\Textarea::make('address')->label('Dirección de facturación (opcional)')->maxLength(1000),
+                ])
+                ->action(function(array $data,Action $action)use($e){
+                    try {
+                        app(\App\Services\Billing\SaveEventBillingCompany::class)->execute(\Filament\Facades\Filament::auth()->user(),$e->id,
+                            [...$this->billingPins,'billing_company'=>!empty($data['enabled'])?array_intersect_key($data,array_flip(['name','email','address'])):null],$this->billingKey);
+                    } catch(\App\Exceptions\RecordWriteRejected|\Illuminate\Validation\ValidationException|\Illuminate\Auth\Access\AuthorizationException $ex){
+                        \Filament\Notifications\Notification::make()->danger()->title('No se guardó')->body($ex instanceof \Illuminate\Validation\ValidationException?collect($ex->errors())->flatten()->first():$ex->getMessage())->send();$action->halt();return;
+                    }
+                    $this->record->refresh();\Filament\Notifications\Notification::make()->success()->title('Datos de empresa guardados')->send();
+                }),
+            Action::make('billingPreview')->label('Factura: vista previa')->visible(fn()=>config('waoo.sandbox_company',false)&&FinanceGate::enabled()&&\App\Models\FinancialRevision::where('event_id',$e->id)->exists())
+                ->url(fn()=>url('/admin/api/events/'.$e->id.'/billing-preview.pdf'))->openUrlInNewTab(),
             Action::make('edit')->label('Editar borrador')->color('gray')->visible(fn () => EventResource::canEdit($e))->url(fn () => EventResource::getUrl('edit', ['record' => $e])),
             Action::make('money')->label('Dinero')->icon('heroicon-o-banknotes')->color('gray')->visible(fn () => FinanceGate::enabled())->url(fn () => EventResource::getUrl('money', ['record' => $e])),
             Action::make('quoteView')->label('Ver cotización')->icon('heroicon-o-document-currency-dollar')->color('gray')

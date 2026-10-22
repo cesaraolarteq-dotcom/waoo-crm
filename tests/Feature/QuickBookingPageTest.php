@@ -6,7 +6,7 @@ use App\Models\{Customer, Event, FinancialRevision, LedgerEntry, PriceVersion, S
 use App\Services\Finance\{CreateFinancialRevision, FinanceSummary, RecordZellePayment};
 use App\Services\Records\{SaveCustomer, SaveEventDraft};
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -15,7 +15,7 @@ use Tests\TestCase;
 // (customer, draft, financial revision, verified Zelle) and returns a fictitious one-time link.
 class QuickBookingPageTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     private User $owner;
     private PriceVersion $price;
@@ -60,6 +60,14 @@ class QuickBookingPageTest extends TestCase
             'customer_mode' => 'new', 'name' => 'Ana Ficticia', 'phone' => '555-0100', 'locale' => 'es',
             'deposit' => ['amount' => '62.50', 'reference' => 'ZELLE-QB-1', 'date' => now('America/Chicago')->subDay()->format('Y-m-d'), 'time' => '00:05', 'verified' => true],
             'expires_days' => 14], $over);
+    }
+
+    public function test_company_checkbox_and_name_reach_the_booking_service(): void
+    {
+        config(['waoo.sandbox_company'=>true]);$this->bind();
+        Livewire::test(QuickBooking::class)->fillForm($this->form(['name'=>'María González','company_enabled'=>true,'company_name'=>'Celebraciones del Sol']))
+            ->call('save')->assertHasNoFormErrors();
+        $this->assertSame(['name'=>'Celebraciones del Sol'],$this->calls[0][1]['billing_company']);
     }
 
     public function test_page_requires_both_sandbox_flags_even_after_service_exists(): void

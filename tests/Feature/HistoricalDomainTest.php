@@ -67,7 +67,10 @@ class HistoricalDomainTest extends TestCase
     }
     public function test_phone_match_is_conservative():void {
         $customer=Customer::create(['name'=>'Laura Martínez','email'=>null,'phone'=>'+1 (202) 555-0123','locale'=>'es']);
-        $id=$this->stage([$this->historyRow(['client_email'=>''])]);$this->bulk($id);$this->assertSame($customer->id,HistoricalEvent::sole()->customer_id);
+        $id=$this->stage([$this->historyRow(['client_email'=>''])]);$result=$this->bulk($id);
+        $this->assertSame(0,$result['imported']);$this->assertSame(1,$result['review_required']);$this->assertDatabaseCount('historical_events',0);
+        $id=$this->stage([$this->historyRow(['project_id'=>'matching-name','contact_id'=>'matching-contact','client_name'=>'Laura Martínez','client_email'=>''])]);
+        $this->assertSame(1,$this->bulk($id)['imported']);$this->assertSame($customer->id,HistoricalEvent::sole()->customer_id);
     }
     public function test_conflicting_email_and_phone_are_left_for_review_while_safe_row_imports():void {
         Customer::create(['name'=>'Laura Martínez','email'=>'history@example.test','phone'=>null,'locale'=>'es']);

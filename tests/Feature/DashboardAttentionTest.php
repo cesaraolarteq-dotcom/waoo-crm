@@ -4,13 +4,13 @@ namespace Tests\Feature;
 use App\Models\{Customer, Event, EventService, PriceVersion, Resource, ServiceVariant, User};
 use App\Services\Finance\{CreateFinancialRevision, RecordZellePayment};
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class DashboardAttentionTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     private User $owner;
 

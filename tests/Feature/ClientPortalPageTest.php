@@ -6,7 +6,7 @@ use App\Services\Documents\{ActivateTemplateVersion, CreateContract, CreateTempl
 use App\Services\Finance\{CreateFinancialRevision, RecordZellePayment, StripeGateway};
 use App\Services\Portal\IssuePortalGrant;
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Tests\Support\FakeStripeGateway;
@@ -15,7 +15,7 @@ use Tests\TestCase;
 // The client's real portal page end to end, through Codex's services and /portal/api (fixture terms; fake Stripe adapter).
 class ClientPortalPageTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     private string $token;
     private Event $event;

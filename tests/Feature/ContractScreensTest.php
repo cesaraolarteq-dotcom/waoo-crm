@@ -7,7 +7,7 @@ use App\Models\{Contract, ContractTemplateVersion, Customer, Event, EventService
 use App\Services\Finance\CreateFinancialRevision;
 use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -15,7 +15,7 @@ use Tests\TestCase;
 // Owner contract screens against Codex's real sandbox Documents/Portal services. Fixture terms only, never the legal contract.
 class ContractScreensTest extends TestCase
 {
-    use DatabaseMigrations;
+    use RefreshDatabase;
 
     private User $owner;
     private Event $event;
