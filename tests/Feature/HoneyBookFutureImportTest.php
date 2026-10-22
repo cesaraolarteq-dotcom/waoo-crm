@@ -35,6 +35,24 @@ class HoneyBookFutureImportTest extends TestCase
         return ['expected_version'=>Event::findOrFail($link->event_id)->version,'imported_revision_id'=>$link->current_revision_id,'resource_ids'=>$ids,
             'review'=>['staff_confirmed'=>true,'cargo_checked'=>true,'origin_return_note'=>'Owner reviewed fictional source travel and return plan.','transfers'=>[]]];
     }
+    public function test_independent_flat_capture_checks_future_agreement_and_each_source_payment():void
+    {
+        $link=$this->commit(['client_first_name'=>'María','client_last_name'=>'González','amount_paid'=>'60.00','balance'=>'60.00','payments'=>'2026-10-01|60.00|Cash']);
+        $d=\Tests\Unit\FlatHoneyBookCaptureTest::capture();
+        $d=json_decode(str_replace(['project-a','maria@example.test','+12025550123'],['HB-FAKE-1','fixture-source@example.test','+13465550100'],json_encode($d,JSON_UNESCAPED_UNICODE)),true);
+        $d['projects.json'][0]=['id'=>'HB-FAKE-1','name'=>'Fictional Source Party','project_date'=>'2026-12-20','project_time_start'=>'3:00 pm','project_time_end'=>'4:00 pm'];
+        $d['file-responses.json']['file-a']['payments']['amount_paid']['amount']=6000;$d['file-responses.json']['file-a']['payments']['balance_due']['amount']=6000;
+        $x=&$d['workspaces.json']['workspace_files']['workspace-a'][0]['payment_variables'][0]['value'];$x['amount_paid']=60;$x['charge_date']='2026-10-01';
+        $dir=sys_get_temp_dir().'/future-independent-'.Str::uuid();mkdir($dir,0700);
+        try{
+            foreach($d as $file=>$value)file_put_contents($dir.'/'.$file,json_encode($value,JSON_THROW_ON_ERROR));file_put_contents($dir.'/originals.json','[]');
+            $run=fn()=>app(\App\Services\MigrationVerification\VerifyHoneyBookMigration::class)->execute(app(\App\Services\MigrationVerification\RawHoneyBookSnapshot::class)->read($dir),$dir);
+            $a=$run();$this->assertSame(1,$a['summary']['operating_projects']);$this->assertSame(0,$a['summary']['duplicate_source_projects']);
+            foreach(['project_status','start_time','end_time','event_date','total_cents','paid_cents','balance_cents','payments','imported_ledger_paid_cents'] as $key)$this->assertSame('matched',$a['projects'][0]['fields'][$key]['status'],$key);
+            DB::table('imported_ledger_lines')->where('imported_project_revision_id',$link->current_revision_id)->update(['amount_cents'=>6001]);
+            $a=$run();$this->assertSame('different',$a['projects'][0]['fields']['payments']['status']);$this->assertSame('different',$a['projects'][0]['fields']['imported_ledger_paid_cents']['status']);
+        }finally{foreach(glob($dir.'/*') as $file)unlink($file);rmdir($dir);}
+    }
     public function test_responsibility_migration_classifies_existing_links_and_keeps_source_money_and_versions():void
     {
         $link=$this->commit();$imported=Event::findOrFail($link->event_id);

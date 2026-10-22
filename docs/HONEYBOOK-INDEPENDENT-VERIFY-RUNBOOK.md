@@ -29,8 +29,7 @@ change HoneyBook, import rows, send messages or deploy this delivery.
    converted to zeros, guessed values or silently marked matched. If an API envelope needs support, share
    only synthetic/anonymized structural keys with Codex; no real raw payload in HANDOFF/git/logs.
 6. Compare independently with Claude's act, using the same source snapshot hashes and consistent CRM state.
-   Latest owner-supplied baseline is262 projects=241 history+18 future+3 declared exclusions,515 originals,
-   zero unresolved differences in Claude's act. Those are a comparison baseline, **not constants in the code**.
+   Latest reported real run (2026-10-22) is267 projects=241 history+23 future+3 declared exclusions,515 stored originals and509 matching source PDFs. The other6 PDF byte differences remain unresolved by this verifier; do not waive them as reprints. Those are a comparison baseline, **not constants in the code**.
    Do not claim independent agreement until both actual acts have been compared. human_double_review_complete
    deliberately remainsfalse in the technical act.
 7. Share only aggregate outcomes in HANDOFF: source/destination counts, duplicate/missing/extra counts,
@@ -49,3 +48,15 @@ history/revision/hash and target customer version; stale edits are rejected. It 
 head through a new revision, leaving original source, previous customer evidence and source contact link
 intact. Other projects sharing a disputed global contact stop being automatically assigned. No operating
 party, original PDF, payment, customer record or ledger is rewritten.
+
+## Flat capture decoder v2 (2026-10-22)
+
+See HONEYBOOK-CAPTURE-DECODER-API.md. Shapes reviewed from Claude's value-free document on claude/verify-shapes at39656c7; no real capture was accessed in development. Same command, flags, private input and exclusive new act path. The four files must belong to the same capture.
+
+projects.json is the sole project inventory. Contacts/workspaces/files reference it; their IDs do not become extra projects. Workspace names/creation dates do not override project facts. Contact workspaces.data[].project_id binds the person. Duplicate authoritative project rows, conflicting contacts/statuses and multiple eligible agreements remain review incidents.
+
+Smart-file amount+USD integer objects are cents; workspace amount_paid is dollars, converted exactly without rounding. Paid variables use charge_date and payment_method_name; explicit timezone timestamps are converted to Houston's date, while date-only values keep their date. Invalid dates, unknown payment labels/currencies, partial or refunded variables remain unsupported. Noncancelled agreement selection never chooses the newest document to resolve ambiguity. Simple line items use price × quantity; nested child pricing remains unverified pending explicit source semantics. Required client signatures are checked independently of unsigned vendor signatures; unknown signature requirements never mean signed.
+
+client ↔ completed/confirmed is a documented booked vocabulary match. Its temporal classification is separately compared to raw project_date at the stored revision creation date in Houston, never the rerun day; missing raw dates leave that classification unverified. lead/lead_sent ↔ lead/prospect is explicit. Unknown statuses remain unverified; cancellation is not inferred from archived=true or accepted without owner evidence. Raw values and comparison basis are kept in the private act.
+
+The private summary separates unverified_comparisons from unverified_raw_fields; their sum remains unverified_fields. Raw metadata/questionnaire HTML labels not explicitly understood are preserved privately, not silently discarded or treated as verified. Thus coverage agreement does not imply every field is verified. Share only unknown structural keys or synthetic question labels if another decoder amendment is needed. Original-PDF byte checks are unchanged; human_double_review_complete remains false.

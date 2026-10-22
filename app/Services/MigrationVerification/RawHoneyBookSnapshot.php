@@ -17,17 +17,22 @@ final class RawHoneyBookSnapshot
     public function read(string $directory): array
     {
         $this->records=array_fill_keys(['projects','contacts','workspaces','files','responses'],[]);
-        $this->issues=[];$this->pagination=[];$this->recognized=0;$this->totals=[];$hashes=[];
+        $this->issues=[];$this->pagination=[];$this->recognized=0;$this->totals=[];$hashes=[];$documents=[];
         foreach(['projects.json'=>'projects','contacts-pipeline-files.json'=>'contacts','workspaces.json'=>'workspaces','file-responses.json'=>'responses'] as $file=>$kind){
             $bytes=$this->bytes($directory,$file);$hashes[$file]=hash('sha256',$bytes);
             $value=json_decode($bytes,true,128,JSON_THROW_ON_ERROR);
             if(!is_array($value))throw new \RuntimeException('invalid_snapshot');
+            $documents[$file]=$value;
+        }
+        $flat=(new FlatHoneyBookCapture)->decode($documents);
+        if($flat===null)foreach(['projects.json'=>'projects','contacts-pipeline-files.json'=>'contacts','workspaces.json'=>'workspaces','file-responses.json'=>'responses'] as $file=>$kind){
+            $value=$documents[$file];
             $before=$this->recognized;
             $this->walk($value,$kind,$file,'');
             if($this->recognized===$before)$this->issues[]=['file'=>$file,'code'=>'empty_or_unsupported_response'];
         }
         foreach($this->totals as $kind=>$totals)if(count(array_unique($totals))!==1||$totals[0]!==count($this->records[$kind]))$this->issues[]=['kind'=>$kind,'code'=>'declared_total_not_reconciled'];
-        foreach(['projects','contacts','workspaces','files'] as $kind){
+        if($flat===null)foreach(['projects','contacts','workspaces','files'] as $kind){
             $pages=$this->pagination[$kind]??[];
             if(!$pages||end($pages)!==false)$this->issues[]=['kind'=>$kind,'code'=>'pagination_completeness_unverified'];
         }
@@ -39,7 +44,8 @@ final class RawHoneyBookSnapshot
                 if(!is_array($optional[$file])||!array_is_list($optional[$file]))throw new \RuntimeException('invalid_manifest');
             }
         }
-        return ['records'=>$this->records,'issues'=>$this->issues,'snapshot_sha256'=>$hashes,
+        return ['records'=>$flat['records']??$this->records,'issues'=>$flat['issues']??$this->issues,
+            'capture_shape'=>$flat['capture_shape']??'envelopes-v1','project_relations'=>$flat['project_relations']??[], 'snapshot_sha256'=>$hashes,
             'exclusions'=>$optional['exclusions.json']??[],'originals'=>$optional['originals.json']??null];
     }
     public function bytes(string $directory,string $relative): string
