@@ -26,3 +26,9 @@ The same rules are in `AGENTS.md`. Keep both files identical.
 - Log every delivery at the top of `docs/HANDOFF.md`: date, author, branch, what changed, files, how it was verified, and open items.
 - Tests and checks pass before a PR. Say plainly what was not verified.
 - Deployment to Hostinger (crm.waooparty.com) and any live Stripe/Twilio change need the owner's explicit approval.
+
+## Skills (Waoo-specific, in `.codex/skills/`)
+- `waoo-pantallas`: any screen, portal, PDF or CSS change.
+- `waoo-textos`: any word a client reads, and César's approval-page decisions.
+- `waoo-cola-claude`: logging every change in `docs/CLAUDE-REVIEW-QUEUE.md` for Claude's review.
+Claude Code follows the same files when it works on those areas.

@@ -20,7 +20,8 @@ honeybook*.csv
 .env.production
 .phpactor.json
 .phpunit.result.cache
-/.codex
+/.codex/*
+!/.codex/skills/
 /.cursor/
 /.idea
 /.nova
