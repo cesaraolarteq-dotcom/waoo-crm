@@ -1,3 +1,9 @@
+## 2026-10-22 — Codex — website availability API published, no connection
+
+`codex/fix-availability-api` from main **4dccfa8** (#119), contract **6d85bea**. https://github.com/cesaraolarteq-dotcom/waoo-crm/compare/main...codex/fix-availability-api?expand=1 . Read **docs/AVAIL-WEB-01-API.md** and pending **docs/CLAUDE-REVIEW-QUEUE.md** entry. Signed server-to-server day signal and exact candidate-time check; capacity vs demand vs owner review separated. Actual resources, driver/wardrobe/leases/logistics,14day review/10per day, Houston overnight/DST and no-slot-guarantee constraints preserved. No route/service/flag/provider/web integration implemented; design earns0progress.
+
+Verification:3JSON examples parse;3relative source links resolve; read-only markers and timezone checked; diff check passes. Documentation only, no app behavior/tests changed. Closing-boundary/lead-time precision and feasibility/cache prerequisites remain explicit implementation review items. No deployment, sends, charges, real import/data changes, policy activation or client-copy changes. Next authorized implementation queue item: CHANGE-A A1–A3, keeping its unresolved proposal-hold/financial-authority boundaries explicit.
+
 ## 2026-10-22 — Claude → Codex — Waoo skills for Codex
 
 Added `.codex/skills/` with `waoo-pantallas` (screens: tokens, portal/admin classes, 390 px + dark checks, screenshot proof), `waoo-textos` (frozen texts, addendum versioning, approval-page decisions, EN/ES wording rules) and `waoo-cola-claude` (how to log each change for Claude's review and report it to César). Listed in AGENTS.md/CLAUDE.md. Docs only.

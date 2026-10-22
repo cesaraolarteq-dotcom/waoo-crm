@@ -21,6 +21,15 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-10-22 · BACKEND · Contrato de disponibilidad para la web · PENDING
+- Branch / commits: `codex/fix-availability-api` · `6d85bea`, desde main `4dccfa8` (#119).
+- PR: no fusionado; comparación https://github.com/cesaraolarteq-dotcom/waoo-crm/compare/main...codex/fix-availability-api?expand=1 . César autorizó crear PR automáticamente; se intenta al subir, sin autorización para fusionar/desplegar.
+- Reported by César: “sigue trabajando en lo que está pendiente”; siguiente trabajo del plan de autonomía, sección5 punto3: contrato solamente.
+- What changed and why: contrato publicado para lectura firmada del servidor web, señal diaria y comprobación de horas concretas; distingue capacidad de demanda comercial y de una reserva. Incluye14días/revisión del dueño,10fiestas/día, horarios nocturnos/Houston/DST, recursos físicos/roles/conductor/vestuario,45min y logística, leases/Zelle pendiente, caché con invalidación y límites de privacidad. No inventa disponibilidad ni toma el conteo/iCal como prueba de recursos.
+- Files: docs/AVAIL-WEB-01-API.md, docs/tickets/AVAIL-WEB-01.md; HANDOFF y progreso como design solamente.
+- How verified: Python estándar parsea los3ejemplos JSON; comprueba los3enlaces relativos, reservation_created=false en ambas respuestas y America/Chicago en la solicitud. git diff --check. Sin pruebas de aplicación nuevas porque no cambia código; no endpoint implementado ni llamadas a proveedores. Sin captura ni datos reales.
+- What Claude must check: contrato, mapeo del catálogo y adaptación PHP antes de conectar la web; no exponer credenciales al navegador ni horarios sin prueba completa. La interpretación exacta del cierre1a.m., el límite preciso de14días, generación de capacidad, extracción de la lectura de emparejamiento y evidencia privada de rutas quedan como fronteras de implementación, no decisiones nuevas aplicadas. Revisar estas fronteras antes de programar sus comportamientos; ninguna autorización implícita para activar flags o desplegar. Errores/iCal alternativo no pueden fabricar horarios libres. Porcentaje de implementación sin aumento.
+
 ### 2026-10-22 · BACKEND · Verificador HoneyBook: referencias y vocabulario de estados · PENDING
 - Branch / commits: `codex/fix-honeybook-capture-decoder` · contrato `6520851`, código `3e31245`; base main `5e1d500` (#118).
 - PR: no abierto; César abre y une solo con CI verde. Comparación: https://github.com/cesaraolarteq-dotcom/waoo-crm/compare/main...codex/fix-honeybook-capture-decoder?expand=1 . Sustituye la entrega anterior `codex/honeybook-capture-decoder`; no unir ambas.
