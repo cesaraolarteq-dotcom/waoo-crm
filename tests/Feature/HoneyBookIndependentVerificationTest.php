@@ -47,6 +47,70 @@ class HoneyBookIndependentVerificationTest extends TestCase
             'owner_reason'=>'La dueña revisó el contacto original y confirmó la identidad correcta.',
             'target'=>['mode'=>'existing','id'=>$target->id,'expected_version'=>$target->fresh()->version]];
     }
+    private function flatSnapshot(): string {
+        $d=\Tests\Unit\FlatHoneyBookCaptureTest::capture();$source=$this->historyRow();
+        $d=json_decode(str_replace(['project-a','contact-a','maria@example.test'],[$source['project_id'],$source['contact_id'],$source['client_email']],json_encode($d,JSON_UNESCAPED_UNICODE)),true);
+        $d['projects.json'][0]['name']=$source['project_name'];$d['projects.json'][0]['project_date']=$source['event_date'];
+        $dir=$this->directory();foreach($d as $file=>$value)file_put_contents($dir.'/'.$file,json_encode($value,JSON_THROW_ON_ERROR));
+        file_put_contents($dir.'/originals.json','[]');return $dir;
+    }
+    public function test_real_capture_references_are_not_duplicate_projects_and_booked_status_is_semantic(): void {
+        $this->archive(['start_time'=>'15:00','end_time'=>'17:00','paid_total'=>'50.00','balance'=>'70.00','contract_signed'=>'true','line_items'=>'Celebración|120.00','payments'=>'2025-07-01|50.00|Cash']);
+        $dir=$this->flatSnapshot();$a=$this->verify($dir);$fields=$a['projects'][0]['fields'];
+        $this->assertSame(1,$a['summary']['source_projects']);$this->assertSame(0,$a['summary']['duplicate_source_projects']);
+        $this->assertNotContains('ambiguous_source_field',array_column($a['issues'],'code'));
+        foreach(['project_status','source_snapshot.project_status','start_time','end_time','total_cents','paid_cents','balance_cents','customer_name','customer_email','source_contact_id','contract_signed','payments','line_items'] as $key)$this->assertSame('matched',$fields[$key]['status'],$key.': '.json_encode($fields[$key]));
+        $this->assertSame('client',$fields['project_status']['source']);$this->assertSame('completed',$fields['project_status']['crm']);
+        $this->assertSame('review_required',$a['verdict']); // Unmapped raw metadata never disappears.
+        $this->assertFalse($a['human_double_review_complete']);
+        $p=json_decode(file_get_contents($dir.'/file-responses.json'),true);$p['file-a']['payments']['amount_paid']['amount']=5100;file_put_contents($dir.'/file-responses.json',json_encode($p));
+        $b=$this->verify($dir);$this->assertSame('different',$b['projects'][0]['fields']['paid_cents']['status']);
+    }
+    public function test_missing_date_cannot_verify_temporal_status_and_duplicate_authority_still_fails(): void {
+        $this->archive();$dir=$this->flatSnapshot();$p=json_decode(file_get_contents($dir.'/projects.json'),true);$p[0]['project_date']=null;file_put_contents($dir.'/projects.json',json_encode($p));
+        $a=$this->verify($dir);$field=$a['projects'][0]['fields']['project_status'];
+        $this->assertSame('matched',$field['status']);$this->assertSame('unverified',$field['temporal_classification']);
+        $this->assertSame('source_date_absent_for_status_classification',$field['reason']);
+        $p[]=$p[0];file_put_contents($dir.'/projects.json',json_encode($p));
+        $this->assertSame(1,$this->verify($dir)['summary']['duplicate_source_projects']);
+    }
+    public function test_workspace_reference_metadata_cannot_override_project_creation_or_name(): void {
+        $this->archive();$dir=$this->flatSnapshot();$a=$this->verify($dir);$fields=$a['projects'][0]['fields'];
+        $this->assertSame('matched',$fields['project_name']['status']);$this->assertSame('2025-06-01',$fields['created_at']['source']);
+        $w=json_decode(file_get_contents($dir.'/workspaces.json'),true);$w['workspaces'][0]['status']='unknown_status';file_put_contents($dir.'/workspaces.json',json_encode($w));
+        $a=$this->verify($dir);$this->assertSame('unverified',$a['projects'][0]['fields']['project_status']['status']);
+        $this->assertSame('unsupported_source_status',$a['projects'][0]['fields']['project_status']['reason']);
+    }
+    public function test_extra_fields_in_recognized_cent_objects_and_questions_are_still_private_unverified(): void {
+        $this->archive();$dir=$this->flatSnapshot();$f=json_decode(file_get_contents($dir.'/file-responses.json'),true);
+        $f['file-a']['payments']['total']['new_source_metadata']='Información adicional';
+        $f['file-a']['questionnaire']=['questions'=>[['question'=>'<p>Una pregunta desconocida</p>','answer'=>'Dato privado']]];
+        file_put_contents($dir.'/file-responses.json',json_encode($f));$a=$this->verify($dir);
+        $this->assertSame('matched',$a['projects'][0]['fields']['total_cents']['status']);
+        $raw=array_values(array_filter($a['unverified_source'],fn($r)=>$r['kind']==='responses'))[0]['fields'];
+        $paths=array_column($raw,'path');$this->assertContains('payments/total/new_source_metadata',$paths);
+        $this->assertContains('questionnaire/questions/0/answer',$paths);
+        $this->assertNotContains('payments/total/amount',$paths);$this->assertSame('review_required',$a['verdict']);
+        $this->assertSame($a['summary']['unverified_fields'],$a['summary']['unverified_comparisons']+$a['summary']['unverified_raw_fields']);
+    }
+    public function test_date_classification_uses_revision_date_not_the_day_the_verifier_is_rerun(): void {
+        $this->archive();$dir=$this->flatSnapshot();$w=json_decode(file_get_contents($dir.'/workspaces.json'),true);$w['workspaces'][0]['status']='lead_sent';file_put_contents($dir.'/workspaces.json',json_encode($w));
+        $this->assertSame('different',$this->verify($dir)['projects'][0]['fields']['project_status']['status']);
+        $w['workspaces'][0]['status']='client';file_put_contents($dir.'/workspaces.json',json_encode($w));
+        $p=json_decode(file_get_contents($dir.'/projects.json'),true);$p[0]['project_date']='2026-10-22';file_put_contents($dir.'/projects.json',json_encode($p));
+        $this->travelTo(\Carbon\CarbonImmutable::parse('2027-10-22T16:00:00Z'));$a=$this->verify($dir);
+        $this->assertSame('different',$a['projects'][0]['fields']['project_status']['status']);
+        $this->assertSame('2026-10-21',$a['projects'][0]['status_classification_date']);
+    }
+    public function test_honeybook_sms_boolean_is_only_origin_evidence_and_unknown_text_is_not_guessed(): void {
+        $this->archive(['sms_consent_honeybook'=>'false']);$dir=$this->flatSnapshot();$c=json_decode(file_get_contents($dir.'/contacts-pipeline-files.json'),true);
+        $c['contacts'][0]['sms_consent_confirmed']=false;file_put_contents($dir.'/contacts-pipeline-files.json',json_encode($c));$a=$this->verify($dir);
+        $this->assertSame('matched',$a['projects'][0]['fields']['sms_consent_honeybook']['status']);
+        $this->assertSame('matched',$a['projects'][0]['fields']['source_snapshot.sms_consent_honeybook']['status']);
+        $c['contacts'][0]['sms_consent_confirmed']='Unknown new policy';file_put_contents($dir.'/contacts-pipeline-files.json',json_encode($c));$a=$this->verify($dir);
+        $this->assertSame('unverified',$a['projects'][0]['fields']['sms_consent_honeybook']['status']);
+        $this->assertSame('unsupported_origin_consent_vocabulary',$a['projects'][0]['fields']['sms_consent_honeybook']['reason']);
+    }
     public function test_independent_source_fields_and_reverse_coverage_detect_actual_errors(): void {
         $h=$this->archive();$dir=$this->snapshot();$a=$this->verify($dir);
         $this->assertSame('verified',$a['verdict'],json_encode($a['issues']));$this->assertSame(1,$a['summary']['source_projects']);

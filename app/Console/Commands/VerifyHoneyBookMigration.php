@@ -24,6 +24,7 @@ final class VerifyHoneyBookMigration extends Command
             $s=$act['summary'];
             $this->info('Proyectos de origen: '.$s['source_projects'].'. Historial: '.$s['historical_projects'].'. Operativos: '.$s['operating_projects'].'. Excluidos: '.$s['excluded_projects'].'.');
             $this->info('Duplicados: '.$s['duplicate_destination_keys'].'. Extras: '.$s['extra_projects'].'. Campos coincidentes: '.$s['matched_fields'].'. Diferentes: '.$s['different_fields'].'. Sin verificar: '.$s['unverified_fields'].'.');
+            $this->info('Sin verificar: comparaciones '.$s['unverified_comparisons'].', campos crudos '.$s['unverified_raw_fields'].'.');
             $this->info('Originales: '.$s['originals']['database_count'].'. Hash interno válido: '.$s['originals']['database_hash_valid'].'. PDF de origen coincidente: '.$s['originals']['source_pdf_matched'].'.');
             $this->info('Incidencias: '.$s['issues'].'. Acta privada guardada. Resultado: '.$act['verdict'].'.');
             return $act['verdict']==='verified'?self::SUCCESS:2;

@@ -29,13 +29,13 @@ final class VerifyHoneyBookMigration
                 }
                 $key=hash('sha256',$p['source']['project_id']);
                 if($key!==$head->project_key)$this->issues[]=['code'=>'history_project_binding','history_id'=>$head->id];
-                $destination[$key][]=['kind'=>'history','id'=>$head->id,'customer_id'=>$head->customer_id,'source'=>$p['source'],'facts'=>$p['facts'],'revision_id'=>$r->id];
+                $destination[$key][]=['kind'=>'history','id'=>$head->id,'customer_id'=>$head->customer_id,'source'=>$p['source'],'facts'=>$p['facts'],'revision_id'=>$r->id,'classification_date'=>$r->created_at?->setTimezone('America/Chicago')->toDateString()];
             }catch(\Throwable){$this->issues[]=['code'=>'history_unreadable','history_id'=>$head->id];} }
             foreach(ImportedProjectLink::orderBy('id')->get() as $head){ try {
                 $r=ImportedProjectRevision::findOrFail($head->current_revision_id);$event=Event::findOrFail($head->event_id);
                 if($r->imported_project_link_id!==$head->id||$r->revision!==$head->version||$this->hash($r->source_snapshot)!==$r->source_sha256||($r->normalized['source_sha256']??null)!==$r->source_sha256)$this->issues[]=['code'=>'operating_revision_binding','link_id'=>$head->id];
                 $destination[$head->project_key][]=['kind'=>'operating','id'=>$event->id,'customer_id'=>$event->customer_id,
-                    'source'=>$r->source_snapshot,'facts'=>$r->normalized,'revision_id'=>$r->id,'event'=>$event];
+                    'source'=>$r->source_snapshot,'facts'=>$r->normalized,'revision_id'=>$r->id,'classification_date'=>$r->created_at?->setTimezone('America/Chicago')->toDateString(),'event'=>$event];
             }catch(\Throwable){$this->issues[]=['code'=>'operating_unreadable','link_id'=>$head->id];} }
             foreach($destination as $key=>$rows)if(count($rows)!==1)$duplicates[]=$key;
             $excluded=[];
@@ -57,8 +57,9 @@ final class VerifyHoneyBookMigration
                     if($rows)$this->issues[]=['code'=>'excluded_but_present','project_id'=>$id];
                 }elseif(count($rows)!==1){$this->issues[]=['code'=>$rows?'duplicate_destination':'missing_destination','project_id'=>$id];}
                 else {
-                    $record['related']=[];
-                    foreach($snapshot['records']['workspaces'] as $workspace){
+                    $record['related']=$snapshot['project_relations'][$id]??[];
+                    $record['capture_shape']=$snapshot['capture_shape']??'envelopes-v1';
+                    foreach(($record['capture_shape']==='flat-lists-v1'?[]:$snapshot['records']['workspaces']) as $workspace){
                         $v=$workspace['value'];$wid=$v['id']??$v['_id']??null;
                         if((isset($v['project_id'])&&(string)$v['project_id']===$id)||($wid!==null&&(string)($raw['workspace_id']??$id)===(string)$wid)){
                             $record['related'][]=$workspace;
@@ -84,12 +85,13 @@ final class VerifyHoneyBookMigration
                 $fields=$this->unread($record['value'],$record);
                 if($fields){$unread[]=['kind'=>$kind,'file'=>$record['file'],'path'=>$record['path'],'fields'=>$fields];$this->unverified+=count($fields);}
             }
-            $summary=['database_history_heads'=>HistoricalEvent::count(),'database_operating_links'=>ImportedProjectLink::count(),'source_projects'=>count($this->source),'historical_projects'=>count(array_filter($destination,fn($r)=>count($r)===1&&$r[0]['kind']==='history')),
+            $rawUnverified=array_sum(array_map(fn($p)=>count($p['unverified_source_fields']??[]),$this->projects))+array_sum(array_map(fn($r)=>count($r['fields']),$unread));
+            $summary=['unverified_comparisons'=>$this->unverified-$rawUnverified,'unverified_raw_fields'=>$rawUnverified,'database_history_heads'=>HistoricalEvent::count(),'database_operating_links'=>ImportedProjectLink::count(),'source_projects'=>count($this->source),'historical_projects'=>count(array_filter($destination,fn($r)=>count($r)===1&&$r[0]['kind']==='history')),
                 'operating_projects'=>count(array_filter($destination,fn($r)=>count($r)===1&&$r[0]['kind']==='operating')),
                 'missing_projects'=>count(array_filter($this->issues,fn($i)=>$i['code']==='missing_destination')),'duplicate_source_projects'=>count(array_filter($this->issues,fn($i)=>$i['code']==='duplicate_source_project')),'excluded_projects'=>count($excluded),'duplicate_destination_keys'=>count($duplicates),'extra_projects'=>count($extras),
                 'matched_fields'=>$this->matches,'different_fields'=>$this->mismatches,'unverified_fields'=>$this->unverified,
                 'issues'=>count($this->issues),'originals'=>$originals['summary']];
-            return ['verifier'=>'codex-independent-honeybook-v1','generated_at'=>now()->toIso8601String(),
+            return ['verifier'=>'codex-independent-honeybook-v2','generated_at'=>now()->toIso8601String(),
                 'snapshot_sha256'=>$snapshot['snapshot_sha256'],'summary'=>$summary,
                 'verdict'=>!$this->issues&&!$this->mismatches&&!$this->unverified?'verified':'review_required',
                 'human_double_review_complete'=>false,'projects'=>$this->projects,'issues'=>$this->issues,'unverified_source'=>$unread,'originals'=>$originals['details']];
@@ -99,16 +101,19 @@ final class VerifyHoneyBookMigration
     {
         $entry['destination']=['kind'=>$target['kind'],'id'=>$target['id'],'revision_id'=>$target['revision_id']];
         $s=$target['source'];$f=$target['facts'];$raw=$record['value'];$history=$target['kind']==='history';
+        $entry['capture_shape']=$record['capture_shape']??'envelopes-v1';
+        $entry['raw_project_date']=$raw['project_date']??null;
+        $entry['status_classification_date']=$target['classification_date']??null;
         $checks=[
             'project_status'=>[['project_status','status'], $s['project_status']??$s['status']??null],
-            'start_time'=>[['start_time'], $s['start_time']??null],
-            'end_time'=>[['end_time'], $s['end_time']??null],
-            'end_date'=>[['end_date'], $s['end_date']??null],
+            'start_time'=>[['start_time','project_time_start'], $s['start_time']??null],
+            'end_time'=>[['end_time','project_time_end'], $s['end_time']??null],
+            'end_date'=>[['end_date','project_end_date'], $s['end_date']??null],
             'project_name'=>[['title','name','project_name'], $s['project_name']??$s['title']??null],
-            'event_date'=>[['event_date','eventDate','event.date'], $f['source_date']??($history?null:$target['event']->starts_at?->setTimezone('America/Chicago')->toDateString())],
+            'event_date'=>[['event_date','eventDate','event.date','project_date'], $f['source_date']??($history?null:$target['event']->starts_at?->setTimezone('America/Chicago')->toDateString())],
             'postal_code'=>[['postal_code','event_zip','event.postal_code'], $s['postal_code']??$s['event_zip']??null],
             'event_type'=>[['event_type','eventType'], $s['event_type']??null],
-            'lead_source'=>[['lead_source','lead_source_text'], $s['lead_source_text']??$s['lead_source']??null],
+            'lead_source'=>[['lead_source','lead_source_text','lead_source_label'], $s['lead_source_text']??$s['lead_source']??null],
             'created_at'=>[['created_at','createdAt'], $s['created_at']??null],
         ];
         foreach($checks as $field=>[$paths,$actual])$this->field($entry,$field,$this->pick($raw,$paths,$record,$field),$actual);
@@ -134,7 +139,7 @@ final class VerifyHoneyBookMigration
             }
             $actual=$history?array_map(fn($i)=>['title'=>$i['title'],'amount_cents'=>$this->cents($i['amount_text'])],$f['line_items']??[]):null;
             $this->field($entry,'line_items',$expected,$actual,!$history?'source_line_items_not_retained':($unsupported?'unsupported_line_item_fields_or_units':null));
-            if(!$unsupported)foreach([$record,...($record['related']??[])] as $r)if(isset($r['value']['line_items']))$this->used[$this->key($r,'line_items')]=true;
+            if(!$unsupported)foreach([$record,...($record['related']??[])] as $r)if(isset($r['value']['line_items'])&&!array_key_exists('line_items',$r['origins']??[]))$this->used[$this->key($r,'line_items')]=true;
         }
         $payments=$this->pick($raw,['payments'],$record,'payments');
         if($payments!==null){
@@ -148,7 +153,7 @@ final class VerifyHoneyBookMigration
                 :ImportedLedgerLine::where('imported_project_revision_id',$target['revision_id'])->orderBy('source_position')->get()
                     ->map(fn($p)=>['date'=>$p->received_date->toDateString(),'amount_cents'=>$p->amount_cents,'method'=>$p->method])->all();
             $this->field($entry,'payments',$expected,$actual,$unsupported?'unsupported_payment_fields_or_units':null);
-            if(!$unsupported)foreach([$record,...($record['related']??[])] as $r)if(isset($r['value']['payments']))$this->used[$this->key($r,'payments')]=true;
+            if(!$unsupported)foreach([$record,...($record['related']??[])] as $r)if(isset($r['value']['payments'])&&!array_key_exists('payments',$r['origins']??[]))$this->used[$this->key($r,'payments')]=true;
         }
         if($payments===null&&(!$history||!empty($f['payments'])))$this->field($entry,'payment_details',null,$history?($f['payments']??[]):ImportedLedgerLine::where('imported_project_revision_id',$target['revision_id'])->get()->toArray(),'source_payment_details_absent');
         $contactId=$this->pick($raw,['contact_id','contactId','client.id','client._id','contact.id'],$record,'contact_id');
@@ -227,10 +232,10 @@ final class VerifyHoneyBookMigration
         $paths=[
             'project_name'=>['project_name','title','name'],'title'=>['title','name','project_name'],
             'project_status'=>['project_status','status'],'status'=>['status','project_status'],
-            'event_date'=>['event_date','eventDate','event.date'],'start_time'=>['start_time'],'end_time'=>['end_time'],'end_date'=>['end_date'],
+            'event_date'=>['event_date','eventDate','event.date','project_date'],'start_time'=>['start_time','project_time_start'],'end_time'=>['end_time','project_time_end'],'end_date'=>['end_date','project_end_date'],
             'postal_code'=>['postal_code','event_zip','event.postal_code'],'event_zip'=>['event_zip','postal_code','event.postal_code'],
             'city'=>['city','event.city'],'currency'=>['currency','total.currency','booked_total.currency','total_amount.currency'],'archive_reason'=>['archive_reason'],
-            'event_type'=>['event_type','eventType'],'lead_source'=>['lead_source','lead_source_text'],'lead_source_text'=>['lead_source_text','lead_source'],
+            'event_type'=>['event_type','eventType'],'lead_source'=>['lead_source','lead_source_text','lead_source_label'],'lead_source_text'=>['lead_source_text','lead_source','lead_source_label'],
             'created_at'=>['created_at','createdAt'],'child_name'=>['child_name','celebrant_name'],'celebrant_name'=>['celebrant_name','child_name'],
             'celebrant_age'=>['celebrant_age','child_age'],'children_count'=>['children_count'],'setup_area'=>['setup_area'],
             'event_language'=>['event_language'],'special_requests'=>['special_requests','notes'],'notes'=>['notes','special_requests'],
@@ -284,12 +289,39 @@ final class VerifyHoneyBookMigration
         foreach([$record,...($record['related']??[])] as $r)foreach($paths as $path){
             $value=$r['value'];foreach(explode('.',$path) as $part)$value=is_array($value)?($value[$part]??null):null;
             if(is_array($value)&&$this->cents($value)!==null){
-                foreach(['amount_cents','currency'] as $field)$this->used[$this->key($r,str_replace('.','/',$path).'/'.$field)]=true;
+                foreach(['amount_cents','amount','currency'] as $field)if(array_key_exists($field,$value))foreach($r['origins'][$path]??[str_replace('.','/',$path)] as $origin)$this->used[$this->key($r,$origin.'/'.$field)]=true;
             }
         }
     }
     private function field(array &$entry,string $name,mixed $expected,mixed $actual,?string $reason=null): void
     {
+        if(($entry['capture_shape']??null)==='flat-lists-v1'){
+            if(in_array($name,['project_status','source_snapshot.project_status','source_snapshot.status'],true)){
+                if($expected==='client'&&in_array($actual,['completed','confirmed'],true)){
+                    $date=$entry['raw_project_date']??null;
+                    $temporal=is_string($date)&&isset($entry['status_classification_date'])&&preg_match('/^\d{4}-\d{2}-\d{2}$/D',$date)?($date<($entry['status_classification_date']??'')?'completed':'confirmed'):null;
+                    $this->matches++;
+                    $entry['fields'][$name]=['status'=>'matched','source'=>$expected,'crm'=>$actual,'basis'=>'honeybook-booked-vocabulary-v1','temporal_classification'=>$temporal===null?'unverified':($temporal===$actual?'matched':'different')];
+                    if($temporal===null){$this->unverified++;$entry['fields'][$name]['reason']='source_date_absent_for_status_classification';}
+                    elseif($temporal!==$actual){$this->matches--;$this->mismatches++;$entry['fields'][$name]['status']='different';}
+                    return;
+                }
+                if($expected==='client'&&$actual==='cancelled')$reason='owner_cancellation_evidence_required';
+                if($expected!==null&&!in_array($expected,['client','lead','lead_sent'],true))$reason='unsupported_source_status';
+                if(in_array($expected,['lead','lead_sent'],true)&&in_array($actual,['lead','prospect'],true)){
+                    $this->matches++;$entry['fields'][$name]=['status'=>'matched','source'=>$expected,'crm'=>$actual,'basis'=>'honeybook-lead-vocabulary-v1'];return;
+                }
+            }
+            if(in_array($name,['sms_consent_honeybook','source_snapshot.sms_consent_honeybook'],true)){
+                $bool=fn($v)=>match($v){true,'true','yes'=>true,false,'false','no'=>false,default=>null};
+                $sourceConsent=$bool($expected);$storedConsent=$bool($actual);
+                if(($expected!==null&&$sourceConsent===null)||($actual!==null&&$actual!==''&&$storedConsent===null))$reason='unsupported_origin_consent_vocabulary';
+                else {$expected=$sourceConsent;$actual=$storedConsent;}
+            }
+            if(in_array($name,['start_time','end_time','source_snapshot.start_time','source_snapshot.end_time'],true)){
+                $expected=$this->time($expected);$actual=$this->time($actual);
+            }
+        }
         if($expected==='')$expected=null; if($actual==='')$actual=null;
         $status=$reason?'unverified':($expected===null&&$actual===null?'absent_in_both':($expected===null?'unverified':($expected===$actual?'matched':'different')));
         match($status){'matched'=>$this->matches++,'different'=>$this->mismatches++,'absent_in_both'=>null,default=>$this->unverified++};
@@ -298,8 +330,8 @@ final class VerifyHoneyBookMigration
     private function pick(array $raw,array $paths,array $record,string $field): mixed
     {
         $values=[];
-        foreach([['value'=>$raw,'file'=>$record['file'],'path'=>$record['path']],...($record['related']??[])] as $candidate)foreach($paths as $path){$v=$candidate['value'];$found=true;foreach(explode('.',$path) as $part){if(!is_array($v)||!array_key_exists($part,$v)){$found=false;break;}$v=$v[$part];}
-            if($found){$values[]=$v;if(!is_array($v))$this->used[$this->key($candidate,str_replace('.','/',$path))]=true;}}
+        foreach([['value'=>$raw,'file'=>$record['file'],'path'=>$record['path'],'origins'=>$record['origins']??[]],...($record['related']??[])] as $candidate)foreach($paths as $path){$v=$candidate['value'];$found=true;foreach(explode('.',$path) as $part){if(!is_array($v)||!array_key_exists($part,$v)){$found=false;break;}$v=$v[$part];}
+            if($found){$values[]=$v;foreach($candidate['leaf_origins'][$path]??[] as $origin)$this->used[$this->key($candidate,$origin)]=true;if(!is_array($v))foreach($candidate['origins'][$path]??[str_replace('.','/',$path)] as $origin)$this->used[$this->key($candidate,$origin)]=true;}}
         if(count(array_unique(array_map(fn($v)=>json_encode($v),$values)))>1){$this->issues[]=['code'=>'ambiguous_source_field','values'=>$values,'field'=>$field,'file'=>$record['file'],'path'=>$record['path']];return null;}
         return $values[0]??null;
     }
@@ -318,9 +350,19 @@ final class VerifyHoneyBookMigration
         return hash('sha256',json_encode($sort($value),JSON_THROW_ON_ERROR));
     }
     private function cents(mixed $value): ?int {
-        if(is_array($value)&&isset($value['amount_cents'])&&is_int($value['amount_cents'])&&($value['currency']??null)==='USD')return $value['amount_cents'];
+        if(is_array($value)&&($value['currency']??null)==='USD'){
+            $keys=array_intersect(['amount_cents','amount'],array_keys($value));
+            if(count($keys)===1&&is_int($value[current($keys)]))return $value[current($keys)];
+        }
         if(!is_string($value)||!preg_match('/^-?(?:0|[1-9][0-9]{0,8})\.[0-9]{2}$/D',$value))return null;
         $sign=str_starts_with($value,'-')?-1:1;return $sign*(int)str_replace('.','',ltrim($value,'-'));
+    }
+    private function time(mixed $value): mixed {
+        if(!is_string($value)||$value==='')return $value;
+        $text=mb_strtolower(trim(preg_replace('/[\s\x{202f}\x{a0}]+/u',' ',$value)));
+        if(preg_match('/^(0?[1-9]|1[0-2]):([0-5][0-9]) ?(am|pm)$/D',$text,$m))return sprintf('%02d:%s',((int)$m[1]%12)+($m[3]==='pm'?12:0),$m[2]);
+        if(preg_match('/^([01][0-9]|2[0-3]):([0-5][0-9])(?::00)?$/D',$text,$m))return $m[1].':'.$m[2];
+        return $value;
     }
     private function name(mixed $value): ?string {return is_string($value)?mb_strtolower(preg_replace('/\s+/u',' ',trim(\Normalizer::normalize($value)))):null;}
     private function phone(mixed $value): ?string {
