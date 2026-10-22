@@ -134,7 +134,7 @@ final class PortalPageController extends Controller
         if(config('waoo.sandbox_company',false)&&!array_key_exists('billing_company',$prefill))$prefill['billing_company']=$event->billing_company;
 
         return [
-            'lang' => $lang, 'step' => $step, 'admin_view' => $client->adminAuthenticated, 'quick_payment'=>$quickPayment, 'steps' => $quickPayment ? ['details','pay','contract'] : ($canDetails ? ['details', 'contract', 'pay'] : ['contract', 'pay']), 'test_mode' => true,
+            'lang' => $lang, 'step' => $step, 'reserved' => $signed && ($f['deposit_shortfall_cents'] ?? 1) === 0, 'admin_view' => $client->adminAuthenticated, 'quick_payment'=>$quickPayment, 'steps' => $quickPayment ? ['details','pay','contract'] : ($canDetails ? ['details', 'contract', 'pay'] : ['contract', 'pay']), 'test_mode' => true,
             'details' => $details ? ['expected_event_version' => $details['expected_event_version'], 'expected_revision' => $details['expected_revision'],
                 'action' => url('/portal/api/details'),
                 'prepare_action' => (config('waoo.sandbox_immediate_contracts') || ($quickPayment['can_sign'] ?? false)) && $details['submission'] && !$signed && !$details['reviewed'] ? url('/portal/api/details/contract') : null,
