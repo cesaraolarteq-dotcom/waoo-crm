@@ -21,7 +21,15 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
-### 2026-10-22 · TEXT / UI / BUG / DATA / DECISION · Mesa de aprobación, cotizaciones 48h y portal de clienta · PENDING
+### 2026-10-25 · BACKEND · Livewire security patch unblocks the review merge · PENDING
+- Branch / commits: `codex/fix-livewire-security-20261025`; package patch `bcea061`. Includes PR #123 through a preserving merge, without rewriting Claude's commits or editing workflows.
+- Reported by César: Claude has returned and sent instructions; PR #123 asks Codex to merge once CI is green, consistent with César's existing merge authorization.
+- What changed and why: `composer.lock` changes only Livewire v4.4.7 → v4.4.8. Public advisory [GHSA-mhf7-xp6r-6qrc](https://github.com/advisories/GHSA-mhf7-xp6r-6qrc), published October 23, affects >=4.3.0,<4.4.8; the upstream patch fixes authorization ordering and parameter validation. No ignored advisory, relaxed audit, version-constraint change or application workaround. No direct `#[Authorize]` use found in app/tests; no claim of an observed exploit.
+- Files: `composer.lock`; this queue and `docs/HANDOFF.md`. Claude's reviewed statuses and notes from #123 are preserved.
+- How verified: PR #123 run 40215312157 fails specifically at `composer audit --locked` while all five test shards pass. Independent advisory/version comparison confirms the old locked version is affected and 4.4.8 is patched. Fresh install and strict Composer validation pass. Existing Auth/AdminShellSecurity/AdminScreens/QuoteScreens/CostumeHoldScreen/ClientPortalPage regression: **33 tests / 331 assertions PASS**, PHP8.3.36/MariaDB11.8, 26.664s. Vite build and diff check pass. Local standalone Packagist audit is blocked by the environment proxy (403); CI must provide the definitive locked-audit and full-suite result before merge. Necessary network domains were saved to the environment draft, not represented as applied.
+- What Claude must check: the package-only version diff, upstream advisory, and final GitHub audit/full-suite results. Queue review is not host verification: Stripe return, private HoneyBook capture and approved crm-test configuration remain separate followups. No deployment, live-provider action, customer data, price or approved wording changed.
+
+### 2026-10-22 · TEXT / UI / BUG / DATA / DECISION · Mesa de aprobación, cotizaciones 48h y portal de clienta · REVIEWED
 - Branch / commits: `codex/fix-owner-text-decisions`, base main `5c4b963` (#120/#121). Owner explicitly authorized Codex in this chat to resolve and merge necessary green PRs; this overrides the earlier owner-only merge workflow, without authorizing deployment.
 - Reported by César: Mesa de aprobación pasted in chat; quotes must never last more than 48 hours. Reports internal wardrobe details and repeated additional-character counts in the client summary, plus a paid Stripe test return stuck before contract on crm-test.
 - What changed and why: new `client-texts-2026-10-22` addendum archives exact approved words; quote-copy proposals remain pending_review. Remove CST/CDT only from mail display; separate payment amount/date in actual render and preview. New quote/revision deadlines default to min(48 elapsed hours, event start) and reject longer explicit values. Additional 90-minute $350 Glitter Mobile option comes from the existing owner-supplied 120-minute recipe during an explicit future catalog import; no repricing of two hours or inferred resources. Baby Shower15/15 confirmed, log only.
@@ -32,6 +40,7 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 - What Claude must check: client summary, internal wardrobe retained in source only, quote expiry boundaries and old receipts, exact approved copy/new quote proposals, Glitter90 import after verifying the private source recipe. Reproduce the reported successful Stripe test return on crm-test and inspect private webhook/receipt/reconciliation state; no host access or real reservation fix is claimed here. No deployment, flags, real data, sends, charges, live provider calls or HoneyBook writes.
 - Approved host decisions (logged only per temporary plan): analytics/company/anniversary flags on crm-test; exclude nameless HoneyBook contacts in the private import; connect Google Calendar on crm-test. OAuth/provider/host execution remains Claude's workflow. `birthday_draft` approved as draft only: campaign permissions/terms and sending stay blocked. Stripe release-message note clarified as the48h quote policy; current approved release text retained.
 - Already-approved existing messages are reproduced verbatim in the new source; frozen base and the previous approved source are unchanged. Requested quote text below is NOT yet approved for sending. `mail_payment_received` words are unchanged; its amount/date separator is corrected.
+- Claude review 2026-10-25: matches César's approval page (48h quotes, no CST/CDT, approved texts, Glitter 90 min $350, Baby Shower 15/15). Revisions go through QuoteSnapshot too, so the 48h cap covers them. Every real `balance_due` producer (EventMailSource, QuickPaymentNotifications) already starts with " · vence" / ", vence el"; the "197.5020" César saw was the approval page sample, so the leading-space guard is a harmless no-op. Portal shows `name` only, which every snapshot carries (CharacterLabel reads the same key). Polling stops after 60 tries or on reload without the return param, no loop. main CI green at 055bffb. Still open: reproduce the Stripe test return on crm-test after deploy.
 
 **portal_reserved · approved**
 
@@ -114,7 +123,7 @@ ES: ¡Hola {first_name}! Aquí está tu cotización de Waoo Party para el {event
 EN: Hi {first_name}! Here is your Waoo Party quote for {event_date}: {link}. It is valid for a maximum of 48 hours, until {valid_until}.
 
 
-### 2026-10-22 · BACKEND · Contrato de disponibilidad para la web · PENDING
+### 2026-10-22 · BACKEND · Contrato de disponibilidad para la web · REVIEWED
 - Branch / commits: `codex/fix-availability-api` · `6d85bea`, desde main `4dccfa8` (#119).
 - PR: no fusionado; comparación https://github.com/cesaraolarteq-dotcom/waoo-crm/compare/main...codex/fix-availability-api?expand=1 . César autorizó crear PR automáticamente; se intenta al subir, sin autorización para fusionar/desplegar.
 - Reported by César: “sigue trabajando en lo que está pendiente”; siguiente trabajo del plan de autonomía, sección5 punto3: contrato solamente.
@@ -122,8 +131,9 @@ EN: Hi {first_name}! Here is your Waoo Party quote for {event_date}: {link}. It 
 - Files: docs/AVAIL-WEB-01-API.md, docs/tickets/AVAIL-WEB-01.md; HANDOFF y progreso como design solamente.
 - How verified: Python estándar parsea los3ejemplos JSON; comprueba los3enlaces relativos, reservation_created=false en ambas respuestas y America/Chicago en la solicitud. git diff --check. Sin pruebas de aplicación nuevas porque no cambia código; no endpoint implementado ni llamadas a proveedores. Sin captura ni datos reales.
 - What Claude must check: contrato, mapeo del catálogo y adaptación PHP antes de conectar la web; no exponer credenciales al navegador ni horarios sin prueba completa. La interpretación exacta del cierre1a.m., el límite preciso de14días, generación de capacidad, extracción de la lectura de emparejamiento y evidencia privada de rutas quedan como fronteras de implementación, no decisiones nuevas aplicadas. Revisar estas fronteras antes de programar sus comportamientos; ninguna autorización implícita para activar flags o desplegar. Errores/iCal alternativo no pueden fabricar horarios libres. Porcentaje de implementación sin aumento.
+- Claude review 2026-10-25: design doc only, no code. Accepted as the contract; the listed boundaries (1 a.m. cutoff, 14-day limit, capacity generation) get decided when implementation starts.
 
-### 2026-10-22 · BACKEND · Verificador HoneyBook: referencias y vocabulario de estados · PENDING
+### 2026-10-22 · BACKEND · Verificador HoneyBook: referencias y vocabulario de estados · REVIEWED
 - Branch / commits: `codex/fix-honeybook-capture-decoder` · contrato `6520851`, código `3e31245`; base main `5e1d500` (#118).
 - PR: no abierto; César abre y une solo con CI verde. Comparación: https://github.com/cesaraolarteq-dotcom/waoo-crm/compare/main...codex/fix-honeybook-capture-decoder?expand=1 . Sustituye la entrega anterior `codex/honeybook-capture-decoder`; no unir ambas.
 - Reported by César: “Cuando no tengas nada mío, empieza por la corrección del verificador”. Formas de captura: docs/reviews/HONEYBOOK-CAPTURE-SHAPES.md, ya en main.
@@ -131,7 +141,9 @@ EN: Hi {first_name}! Here is your Waoo Party quote for {event_date}: {link}. It 
 - Files: app/Services/MigrationVerification/{FlatHoneyBookCapture,RawHoneyBookSnapshot,VerifyHoneyBookMigration}.php; comando VerifyHoneyBookMigration; pruebas RawHoneyBookSnapshot/FlatHoneyBookCapture/HoneyBookIndependentVerification/HoneyBookFutureImport; contrato y runbook del decodificador. Sin pantallas, textos para clientas, banderas, workflows ni datos reales modificados.
 - How verified: prueba reproducida contra el decodificador de main: FAIL con ambiguous_source_field (1 prueba,3 aserciones); regresión final en main5e1d500 + arreglo: PASS70 pruebas/337 aserciones,2:23.093, PHP8.3.35/MariaDB11.8. No batería completa ni SQLite/browser/Hostinger. Composer estricto y diff sin errores; datos sintéticos solamente. No captura real ni despliegue.
 - What Claude must check: revisar los enlaces por proyecto/contacto/archivo; correr la misma captura privada en crm-test con un nombre de acta nuevo y comparar hashes/estado consistente. Desconocidos, acuerdos ambiguos, semántica de reembolsos/pagos parciales, precios anidados y preguntas no mapeadas siguen sin verificar. Ninguna diferencia de bytes de PDF se excusa por reimpresión. human_double_review_complete=false; no declarar100% ni activar nada con esta entrega. Confirmar Actions antes de integrar; acceso GitHub API del entorno limitado (se vuelve a intentar tras el push).
+- Claude review 2026-10-25: read-only verification tooling, no screens or client data paths; tests added, main CI green. Still open: run the private capture on crm-test with a new report name.
 
-### 2026-10-22 · DECISION · Pending owner decisions that need host access · PENDING
+### 2026-10-22 · DECISION · Pending owner decisions that need host access · REVIEWED
 - Branch / commits: none (logged by Claude before leaving)
 - What Claude must check: César's answers in the Mesa de aprobación page for `dec_flag_analytics`, `dec_flag_company`, `dec_flag_anniversary`, `dec_nameless_leads`, `dec_google_calendar`. Apply on crm-test only after his "súbelo". PR #117 (contract shows the package description; portal reads as booked) is merged and **not deployed** yet.
+- Claude review 2026-10-25: César approved all five (analytics, company, anniversary flags; exclude nameless leads; Google Calendar on crm-test). Applied on crm-test at the next deploy, after his "súbelo".

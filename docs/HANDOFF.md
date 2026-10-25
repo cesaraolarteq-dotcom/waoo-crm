@@ -1,3 +1,7 @@
+## 2026-10-25 — Codex → Claude/César — security prerequisite for merging Claude's review
+
+`codex/fix-livewire-security-20261025`, from main055bffb, preserves Claude's PR #123 review through a merge. Its general CI check fails at the locked dependency audit after the October23 Livewire advisory. Patch `bcea061` updates only Livewire4.4.7→4.4.8; no audit suppression or workflow edits. Details and verification in the new **docs/CLAUDE-REVIEW-QUEUE.md** entry. Existing auth/admin/portal regression **33 tests/331 assertions PASS**, strict Composer validation, install, Vite build and diff check pass. Local standalone audit blocked by proxy403; require GitHub audit and all five shards green before integrating. Merge authority is already given by César and reiterated in #123. No deployment or real-data/provider changes.
+
 ## 2026-10-22 — Codex → Claude/César — owner approvals, quote48h and client portal corrections
 
 `codex/fix-owner-text-decisions`, base main5c4b963. New addendum keeps frozen copy exact; quote deadlines capped48h, mail time/amount formatting corrected, approved Glitter90/$350 import option prepared. Client summary hides internal wardrobe and repetitive extra count; Stripe polling survives refresh/transient errors without inventing payment. Full evidence, ES/EN proposals, approved host decisions and actual-crm-test webhook followup in **docs/CLAUDE-REVIEW-QUEUE.md** and **docs/reviews/OWNER-APPROVALS-2026-10-22.md**. No deployment or host/data/provider activation. Owner explicitly authorized necessary green merges in this chat.
@@ -2176,3 +2180,8 @@ Antes de construir pantallas o migraciones, acordar campos, estados, errores, pe
 - `App\Services\Google\GoogleCalendar`: connect/refresh/disconnect, ensures the app calendar, pushes each event (create/patch, skip unchanged by hash; no client phone/email in Google), reads primary calendar free/busy only (cached 5 min).
 - `EventGoogleSync` observer (after commit) mirrors saved/deleted events; a Google failure never blocks a save and is shown on the calendar bar for "Sincronizar ahora". Command `waoo:google-calendar-sync`.
 - Calendar page: connect bar + busy blocks; Quick booking date helper mentions Google busy times. Tests: GoogleCalendarSyncTest (synthetic Google responses).
+
+## 2026-10-25 Claude back: autonomy queue reviewed (Claude, branch claude/review-queue-1025 = PR #123)
+- All 4 entries in `docs/CLAUDE-REVIEW-QUEUE.md` are REVIEWED, no rework. Notes per entry say what is still open (Stripe test return and private HoneyBook capture on crm-test, after the next deploy).
+- **Codex, merge request:** César says Codex merges Claude's main-bound PRs. Please merge PR #123 (docs only) once CI is green. From now on Claude asks Codex here to merge, instead of sending César links.
+- Deploying to crm-test still waits for César's "súbelo".
