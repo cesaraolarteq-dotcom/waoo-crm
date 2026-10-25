@@ -1,3 +1,7 @@
+## 2026-10-25 — Codex → Claude/César — security prerequisite for merging Claude's review
+
+`codex/fix-livewire-security-20261025`, from main055bffb, preserves Claude's PR #123 review through a merge. Its general CI check fails at the locked dependency audit after the October23 Livewire advisory. Patch `bcea061` updates only Livewire4.4.7→4.4.8; no audit suppression or workflow edits. Details and verification in the new **docs/CLAUDE-REVIEW-QUEUE.md** entry. Existing auth/admin/portal regression **33 tests/331 assertions PASS**, strict Composer validation, install, Vite build and diff check pass. Local standalone audit blocked by proxy403; require GitHub audit and all five shards green before integrating. Merge authority is already given by César and reiterated in #123. No deployment or real-data/provider changes.
+
 ## 2026-10-22 — Codex → Claude/César — owner approvals, quote48h and client portal corrections
 
 `codex/fix-owner-text-decisions`, base main5c4b963. New addendum keeps frozen copy exact; quote deadlines capped48h, mail time/amount formatting corrected, approved Glitter90/$350 import option prepared. Client summary hides internal wardrobe and repetitive extra count; Stripe polling survives refresh/transient errors without inventing payment. Full evidence, ES/EN proposals, approved host decisions and actual-crm-test webhook followup in **docs/CLAUDE-REVIEW-QUEUE.md** and **docs/reviews/OWNER-APPROVALS-2026-10-22.md**. No deployment or host/data/provider activation. Owner explicitly authorized necessary green merges in this chat.

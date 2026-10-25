@@ -21,6 +21,14 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-10-25 · BACKEND · Livewire security patch unblocks the review merge · PENDING
+- Branch / commits: `codex/fix-livewire-security-20261025`; package patch `bcea061`. Includes PR #123 through a preserving merge, without rewriting Claude's commits or editing workflows.
+- Reported by César: Claude has returned and sent instructions; PR #123 asks Codex to merge once CI is green, consistent with César's existing merge authorization.
+- What changed and why: `composer.lock` changes only Livewire v4.4.7 → v4.4.8. Public advisory [GHSA-mhf7-xp6r-6qrc](https://github.com/advisories/GHSA-mhf7-xp6r-6qrc), published October 23, affects >=4.3.0,<4.4.8; the upstream patch fixes authorization ordering and parameter validation. No ignored advisory, relaxed audit, version-constraint change or application workaround. No direct `#[Authorize]` use found in app/tests; no claim of an observed exploit.
+- Files: `composer.lock`; this queue and `docs/HANDOFF.md`. Claude's reviewed statuses and notes from #123 are preserved.
+- How verified: PR #123 run 40215312157 fails specifically at `composer audit --locked` while all five test shards pass. Independent advisory/version comparison confirms the old locked version is affected and 4.4.8 is patched. Fresh install and strict Composer validation pass. Existing Auth/AdminShellSecurity/AdminScreens/QuoteScreens/CostumeHoldScreen/ClientPortalPage regression: **33 tests / 331 assertions PASS**, PHP8.3.36/MariaDB11.8, 26.664s. Vite build and diff check pass. Local standalone Packagist audit is blocked by the environment proxy (403); CI must provide the definitive locked-audit and full-suite result before merge. Necessary network domains were saved to the environment draft, not represented as applied.
+- What Claude must check: the package-only version diff, upstream advisory, and final GitHub audit/full-suite results. Queue review is not host verification: Stripe return, private HoneyBook capture and approved crm-test configuration remain separate followups. No deployment, live-provider action, customer data, price or approved wording changed.
+
 ### 2026-10-22 · TEXT / UI / BUG / DATA / DECISION · Mesa de aprobación, cotizaciones 48h y portal de clienta · REVIEWED
 - Branch / commits: `codex/fix-owner-text-decisions`, base main `5c4b963` (#120/#121). Owner explicitly authorized Codex in this chat to resolve and merge necessary green PRs; this overrides the earlier owner-only merge workflow, without authorizing deployment.
 - Reported by César: Mesa de aprobación pasted in chat; quotes must never last more than 48 hours. Reports internal wardrobe details and repeated additional-character counts in the client summary, plus a paid Stripe test return stuck before contract on crm-test.
