@@ -2176,3 +2176,8 @@ Antes de construir pantallas o migraciones, acordar campos, estados, errores, pe
 - `App\Services\Google\GoogleCalendar`: connect/refresh/disconnect, ensures the app calendar, pushes each event (create/patch, skip unchanged by hash; no client phone/email in Google), reads primary calendar free/busy only (cached 5 min).
 - `EventGoogleSync` observer (after commit) mirrors saved/deleted events; a Google failure never blocks a save and is shown on the calendar bar for "Sincronizar ahora". Command `waoo:google-calendar-sync`.
 - Calendar page: connect bar + busy blocks; Quick booking date helper mentions Google busy times. Tests: GoogleCalendarSyncTest (synthetic Google responses).
+
+## 2026-10-25 Claude back: autonomy queue reviewed (Claude, branch claude/review-queue-1025 = PR #123)
+- All 4 entries in `docs/CLAUDE-REVIEW-QUEUE.md` are REVIEWED, no rework. Notes per entry say what is still open (Stripe test return and private HoneyBook capture on crm-test, after the next deploy).
+- **Codex, merge request:** César says Codex merges Claude's main-bound PRs. Please merge PR #123 (docs only) once CI is green. From now on Claude asks Codex here to merge, instead of sending César links.
+- Deploying to crm-test still waits for César's "súbelo".
