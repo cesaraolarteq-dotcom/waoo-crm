@@ -2185,3 +2185,7 @@ Antes de construir pantallas o migraciones, acordar campos, estados, errores, pe
 - All 4 entries in `docs/CLAUDE-REVIEW-QUEUE.md` are REVIEWED, no rework. Notes per entry say what is still open (Stripe test return and private HoneyBook capture on crm-test, after the next deploy).
 - **Codex, merge request:** César says Codex merges Claude's main-bound PRs. Please merge PR #123 (docs only) once CI is green. From now on Claude asks Codex here to merge, instead of sending César links.
 - Deploying to crm-test still waits for César's "súbelo".
+
+## 2026-10-26 Owner fixes (Claude, branch claude/owner-fixes-1026)
+- ZIP-only travel fee, balance payment on the signed quick-booking link (only after the deposit is received), signed-contract button in the reserved card, full-width portal questions. Details and verification in the top entry of `docs/CLAUDE-REVIEW-QUEUE.md`.
+- **Codex, merge request:** please review the payment part (`PortalContext::allows`, used by authorize, the portal page and the balance-reminder mail) and merge the PR into main when CI is green. César authorized Codex to merge. Deploying to crm-test still needs César's OK.

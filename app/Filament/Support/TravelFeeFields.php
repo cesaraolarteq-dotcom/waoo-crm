@@ -29,7 +29,7 @@ final class TravelFeeFields
             ->rule('regex:/^\d{1,7}(\.\d{1,2})?$/')->validationMessages(['regex' => 'Escribe solo el número, por ejemplo 40 o 40.50.'])
             ->helperText(fn (Get $get) => self::message($get) ?? $help);
         if (self::enabled()) {
-            $field->suffixAction(Action::make('quoteTravel')->label('Calcular')->tooltip('Calcular el costo de transporte con la dirección')->icon('heroicon-o-map')->extraAttributes(['data-places' => 'quote'])
+            $field->suffixAction(Action::make('quoteTravel')->label('Calcular')->tooltip('Calcular el costo de transporte con el ZIP (o la dirección)')->icon('heroicon-o-map')->extraAttributes(['data-places' => 'quote'])
                 ->action(function (Get $get, Set $set) use ($afterQuote) {
                     self::quote($get, $set);
                     if ($afterQuote) $afterQuote($get, $set);
@@ -57,8 +57,8 @@ final class TravelFeeFields
     public static function quote(Get $get, Set $set): void
     {
         $address = trim((string) $get('address')); $zip = trim((string) $get('postal_code'));
-        if (mb_strlen($address) < 10) {
-            Notification::make()->warning()->title('Escribe la dirección completa')->body('Para calcular se usa la dirección exacta de la fiesta (calle, ciudad y ZIP).')->send();
+        if ($zip === '' && mb_strlen($address) < 10) {
+            Notification::make()->warning()->title('Escribe el ZIP')->body('Con el ZIP de la fiesta se calcula el costo de transporte. La dirección completa es opcional.')->send();
 
             return;
         }
@@ -99,7 +99,7 @@ final class TravelFeeFields
 
         return match ($q['status']) {
             'ok' => ! empty($b['special_zip']) ? 'Calculado: '.Labels::money($q['fee_cents']).' (precio fijo de ese ZIP).'
-                : 'Calculado: '.Labels::money($q['fee_cents']).' · '.round((float) ($b['round_trip_miles'] ?? 0)).' mi ida y vuelta · peajes '.Labels::money((int) ($b['round_trip_tolls_cents'] ?? 0)).'.',
+                : 'Calculado'.(! empty($b['zip_only']) ? ' con el ZIP' : '').': '.Labels::money($q['fee_cents']).' · '.round((float) ($b['round_trip_miles'] ?? 0)).' mi ida y vuelta · peajes '.Labels::money((int) ($b['round_trip_tolls_cents'] ?? 0)).'.',
             'outside' => 'Fuera de Texas: escribe el costo a mano con una nota.',
             'review' => 'Requiere revisión ('.($reason ?? 'revisar dirección').'): escribe el costo a mano con una nota.',
             default => 'Pendiente: no se pudo calcular ahora'.($reason ? ' ('.$reason.')' : '').'. Escribe el costo a mano con una nota o intenta más tarde.',

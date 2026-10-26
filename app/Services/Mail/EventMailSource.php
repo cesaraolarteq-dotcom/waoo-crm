@@ -34,7 +34,7 @@ final class EventMailSource
     public static function compose(string $key,#[\SensitiveParameter] array $source):array
     {
         [$e,$c,$f,$g,$net]=$source;$locale=$c->locale;if(!in_array($locale,['es','en'],true))ApprovedMail::fail('missing_recipient_locale');
-        if($key==='balance_reminder'&&!in_array('checkout.create',$g->scopes,true))ApprovedMail::fail('payment_link_scope_required');
+        if($key==='balance_reminder'&&!\App\Services\Portal\PortalContext::allows($g,'checkout.create'))ApprovedMail::fail('payment_link_scope_required');
         $balance=max(0,$f->total_cents-$net);$money=fn(int $v)=>'$'.number_format(intdiv($v,100),0,'.',',').'.'.str_pad((string)($v%100),2,'0',STR_PAD_LEFT);
         $date=fn($d)=>MailDates::full($d,$locale);
         $link=Sandbox::origin().'/portal#token='.PortalTokenVault::open($g);

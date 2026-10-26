@@ -22,7 +22,7 @@ final readonly class PortalContext
         Sandbox::require('sandbox_documents');
         $query = PortalGrant::whereKey($this->grantId);
         $row = ($lock ? $query->lockForUpdate() : $query)->first();
-        if (! $row || $row->revoked_at || ! $row->expires_at->isFuture() || $row->event_id !== $eventId || $row->customer_id !== $this->customerId || ! in_array($scope, $row->scopes, true)) {
+        if (! $row || $row->revoked_at || ! $row->expires_at->isFuture() || $row->event_id !== $eventId || $row->customer_id !== $this->customerId || ! self::allows($row, $scope)) {
             throw new AuthorizationException('Este acceso no permite esa operación.');
         }
         if (in_array($scope, ['payments.read', 'checkout.create'], true)) {
@@ -34,6 +34,20 @@ final readonly class PortalContext
             } else \App\Services\Booking\QuickStripeLeases::assertNoActive($eventId);
         }
         return $row;
+    }
+    /**
+     * Owner 2026-10-26: a quick-booking link pays the deposit before signing. Once its contract is signed and the deposit is
+     * fully received, the same link may pay the balance (card or Zelle notice); before that it never can, so a pending
+     * Zelle deposit cannot be paid twice. Other links keep exactly their issued scopes.
+     */
+    public static function allows(PortalGrant $grant, string $scope): bool
+    {
+        if (in_array($scope, $grant->scopes, true)) return true;
+        if ($scope !== 'checkout.create' || ! in_array('quick_booking.pay', $grant->scopes, true)) return false;
+        $signed = \App\Models\Contract::where('event_id', $grant->event_id)->where('signer_customer_id', $grant->customer_id)->where('state', 'signed')->exists();
+        if (! $signed) return false;
+        $finance = app(\App\Services\Finance\FinanceSummary::class)->forEvent(\App\Models\Event::findOrFail($grant->event_id));
+        return ($finance['deposit_shortfall_cents'] ?? 1) === 0;
     }
     public static function requireTransport(Request $request): void
     {
