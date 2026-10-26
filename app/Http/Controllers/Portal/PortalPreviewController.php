@@ -30,7 +30,7 @@ final class PortalPreviewController extends Controller
             // Design-only sample; this controller is closed in production and never records consent.
             'details' => ['sms_consent' => ['version' => 'preview-only', 'text' => \App\Support\PortalCopy::get($lang, 'sms')]],
             'prefill' => ['first_name' => 'Ana', 'last_name' => '', 'phone' => '555-0100'],
-            'contract' => ['pdf_url' => url('/dev/portal/contract?lang='.$lang.'#pdf'), 'sha256' => str_repeat('0', 64)],
+            'contract' => ['pdf_url' => url('/dev/portal/contract?lang='.$lang.'#pdf'), 'sha256' => str_repeat('0', 64), 'final_url' => in_array($step, ['pay', 'done'], true) ? url('/dev/portal/contract?lang='.$lang.'&signed=1') : null],
             'zelle_memo' => 'WP-0001',
             'actions' => ['details' => url("/dev/portal/{$next}?lang={$lang}"), 'sign' => url("/dev/portal/{$next}?lang={$lang}"), 'checkout' => url("/dev/portal/{$next}?lang={$lang}")],
         ]])->header('Cache-Control', 'no-store, private')->header('Referrer-Policy', 'no-referrer');

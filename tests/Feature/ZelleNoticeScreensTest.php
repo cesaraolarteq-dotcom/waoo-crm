@@ -69,12 +69,14 @@ class ZelleNoticeScreensTest extends TestCase
 
     public function test_client_notice_is_pending_until_the_owner_verifies_the_real_amount(): void
     {
-        $this->get('/portal')->assertOk()->assertSee('Tu pago')->assertSee('id="zelle-form"', false)->assertSee('Ya envié el Zelle')->assertSee('value="62.50"', false);
-        $this->get('/portal?lang=en')->assertSee('I sent my Zelle payment');
+        $this->get('/portal')->assertOk()->assertSee('Tu pago')->assertSee('Waoo Party LLC')
+            // Owner 2026-10-26: the portal no longer shows the "Ya envié el Zelle" form; the notice API stays for existing clients.
+            ->assertDontSee('id="zelle-form"', false)->assertDontSee('Ya envié el Zelle');
+        $this->get('/portal?lang=en')->assertDontSee('I sent my Zelle payment');
         $id = $this->clientNotice(6250);
 
         // Pending: the client sees it is not a payment yet; the balance does not move.
-        $this->get('/portal?lang=es')->assertSee('Pendiente de verificación')->assertSee('¿Enviaste otro Zelle? Avísanos')->assertSee('Saldo')->assertSee('$62.50');
+        $this->get('/portal?lang=es')->assertSee('Pendiente de verificación')->assertDontSee('¿Enviaste otro Zelle? Avísanos')->assertSee('Saldo')->assertSee('$62.50');
         $this->assertSame(6250, app(FinanceSummary::class)->forEvent($this->event->fresh())['balance_cents']);
         $this->assertSame(1, LedgerEntry::count());
 
@@ -114,7 +116,7 @@ class ZelleNoticeScreensTest extends TestCase
         $this->get("/admin/eventos/{$this->event->id}")->assertSee('Revisó un aviso de Zelle del cliente: rechazado');
 
         auth()->logout();
-        $this->get('/portal')->assertSee('No pudimos verificar tu aviso de $62.50')->assertDontSee('No aparece en el banco')->assertSee('Ya envié el Zelle');
+        $this->get('/portal')->assertSee('No pudimos verificar tu aviso de $62.50')->assertDontSee('No aparece en el banco')->assertDontSee('id="zelle-form"', false);
     }
 
     public function test_notices_from_another_event_are_not_reachable_from_this_dinero_page(): void

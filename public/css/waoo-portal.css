@@ -91,3 +91,6 @@ dt{color:var(--muted);font-size:14px}dd{margin:0;font-weight:700;overflow-wrap:a
 /* Owner 2026-10-21: every required client field is visibly marked. */
 .p-field:has(> input[required]:not([readonly]))>span::after,.p-field:has(> select[required])>span::after{content:" *";color:var(--pink);font-weight:700}
 .p-required-note{font-size:13px;color:var(--muted);margin:0}
+/* Owner 2026-10-26: signed contract card buttons (open + download), side by side, wrapping on phones. */
+.p-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.p-actions .p-btn{flex:1 1 200px;text-align:center}

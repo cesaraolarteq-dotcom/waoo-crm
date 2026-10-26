@@ -21,6 +21,13 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-10-26 · UI / TEXT · Portal: tarjeta "Tu contrato" con descarga, sin formulario "Ya envié el Zelle", preguntas en Safari · REVIEWED
+- Branch: `claude/portal-contract-zelle` (includes the Safari legend fix from PR #130).
+- Reported by César: "sigo sin ver la opción para ver el contrato después de firmarlo y tener la opción de descargarlo"; "mejor quitemos esta parte es confusa" (the "Ya envié el Zelle" form in Tu pago); questions still wrapped word by word in his browser.
+- What changed: pay and done steps show a "Tu contrato / Your contract" card when the final signed PDF exists, with "Ver mi contrato firmado" and new "Descargar (PDF) / Download (PDF)" (owner-requested wording, logged here as TEXT). `GET /portal/api/contracts/{id}/pdf?artifact=final&download=1` answers `attachment`. The Zelle notice form and its note ("Tu aviso no cuenta como pago…") are gone from the portal; existing notice states still show, the notice API is unchanged. Legend: float + full width (Safari ignored width:100% on a legend in a grid fieldset).
+- How verified: ZelleNoticeScreens + QuickPayments 35 tests/310 assertions PASS (SQLite); download header asserted; screenshot 390px dark: contract card with both buttons, Tu pago shows Zelle data + card, no overflow.
+- Claude must check: César confirms in Safari.
+
 ### 2026-10-26 · BUG / UI · Reserva rápida con solo ZIP, saldo con tarjeta en el link rápido, contrato firmado visible, preguntas a lo ancho · REVIEWED
 - Branch / commits: `claude/owner-fixes-1026` (Claude; Codex reviews and merges).
 - Reported by César (2026-10-26): "it should be only the zip code mandatory to calculate the travel fee"; "¿En qué idioma prefieres / ¿Dónde será la actividad? … todo junto hacia la izquierda"; "¿al cliente le llega una copia del contrato ya firmada …? en donde dice tu pago también debería aparecer la opción rápida para pagar por stripe".

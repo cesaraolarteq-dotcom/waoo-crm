@@ -122,7 +122,17 @@
   <button class="p-btn p-btn-pink" type="submit">{{ $t('sign') }}</button>
 </form>
 @elseif ($vm['step'] === 'pay')
-@if ($vm['reserved'] ?? false)<section class="p-card" role="status"><h2>{{ \App\Support\ApprovedClientTexts::text('portal_reserved', $vm['lang']) }}</h2><p>{{ \App\Support\ApprovedClientTexts::text('portal_reserved_body', $vm['lang']) }}</p>@if (! empty($vm['contract']['final_url']))<a class="p-btn p-btn-quiet" href="{{ $vm['contract']['final_url'] }}" target="_blank" rel="noopener noreferrer">{{ $t('open_signed') }}</a>@endif</section>@endif
+@if ($vm['reserved'] ?? false)<section class="p-card" role="status"><h2>{{ \App\Support\ApprovedClientTexts::text('portal_reserved', $vm['lang']) }}</h2><p>{{ \App\Support\ApprovedClientTexts::text('portal_reserved_body', $vm['lang']) }}</p></section>@endif
+@if (! empty($vm['contract']['final_url']))
+{{-- Owner 2026-10-26: after signing the client can open and download the signed contract, in its own card. --}}
+<section class="p-card">
+  <h2>{{ $t('contract_title') }}</h2>
+  <div class="p-actions">
+    <a class="p-btn" href="{{ $vm['contract']['final_url'] }}" target="_blank" rel="noopener noreferrer">{{ $t('open_signed') }}</a>
+    <a class="p-btn p-btn-quiet" href="{{ $vm['contract']['final_url'] }}&amp;download=1" download>{{ $t('download_pdf') }}</a>
+  </div>
+</section>
+@endif
 <section class="p-card">
   <h2>{{ $t('pay_title') }}</h2>
   <p class="p-hint">{{ $t('pay_hint') }}</p>
@@ -134,24 +144,10 @@
         <div><dt>{{ $t('zelle_amount') }}</dt><dd><b>{{ $e['balance'] }}</b></dd></div>
         <div><dt>{{ $t('zelle_memo') }}</dt><dd><code>{{ $vm['zelle_memo'] }}</code></dd></div>
       </dl>
-      <p class="p-hint">{{ $t('zelle_note') }}</p>
       @foreach ($vm['zelle']['notices'] ?? [] as $n)
         <p class="p-notice p-notice-{{ $n['state'] }}" role="status">{{ $t('zelle_state_'.$n['state'], ['amount' => $n['amount'], 'verified' => $n['verified'] ?? '', 'when' => $n['when']]) }}</p>
       @endforeach
-      @if ($vm['zelle']['can_notify'] ?? false)
-      @php($hasPending = collect($vm['zelle']['notices'])->contains('state', 'pending'))
-      <details class="p-zelle" @if (! $hasPending) open @endif>
-        <summary>{{ $hasPending ? $t('zelle_again') : $t('zelle_sent_btn') }}</summary>
-        <form class="p-form p-zelle-form" method="POST" action="{{ $vm['zelle']['action'] }}" id="zelle-form" data-revision="{{ $vm['pay']['revision_id'] ?? '' }}" novalidate>
-          @csrf
-          <label class="p-field"><span>{{ $t('zelle_amount_sent') }} (USD)</span><input name="amount" inputmode="decimal" value="{{ $vm['zelle']['amount'] }}" required autocomplete="off"></label>
-          <label class="p-field"><span>{{ $t('zelle_payer') }} <em>({{ $t('optional') }})</em></span><input name="payer_name" maxlength="120" autocomplete="name"></label>
-          <label class="p-field"><span>{{ $t('zelle_ref') }} <em>({{ $t('optional') }})</em></span><input name="reference" maxlength="255" autocomplete="off"></label>
-          <p class="p-test" id="zelle-error" role="alert" hidden></p>
-          <button class="p-btn" type="submit">{{ $t('zelle_sent_btn') }}</button>
-        </form>
-      </details>
-      @endif
+      {{-- Owner 2026-10-26: no "Ya envié el Zelle" form here; he checks the bank and records the payment. --}}
     </div>
     <form class="p-opt" method="POST" action="{{ $vm['actions']['checkout'] }}" id="pay-form" data-revision="{{ $vm['pay']['revision_id'] ?? '' }}" @if (isset($vm['pay']) && ! $vm['pay']['can_checkout']) hidden @endif>
       @csrf
@@ -166,8 +162,17 @@
 <section class="p-card p-done">
   <h2>{{ $t('done_title') }}</h2>
   <p>{{ $t('done', ['when' => $e['when']]) }}</p>
-  @if (! empty($vm['contract']['final_url']))<a class="p-btn p-btn-quiet" href="{{ $vm['contract']['final_url'] }}" target="_blank" rel="noopener noreferrer">{{ $t('open_signed') }}</a>@endif
 </section>
+@if (! empty($vm['contract']['final_url']))
+{{-- Owner 2026-10-26: after signing the client can open and download the signed contract, in its own card. --}}
+<section class="p-card">
+  <h2>{{ $t('contract_title') }}</h2>
+  <div class="p-actions">
+    <a class="p-btn" href="{{ $vm['contract']['final_url'] }}" target="_blank" rel="noopener noreferrer">{{ $t('open_signed') }}</a>
+    <a class="p-btn p-btn-quiet" href="{{ $vm['contract']['final_url'] }}&amp;download=1" download>{{ $t('download_pdf') }}</a>
+  </div>
+</section>
+@endif
 @endif
 @if (! ($vm['preview'] ?? false))
 <script>
