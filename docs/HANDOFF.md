@@ -2195,3 +2195,9 @@ Antes de construir pantallas o migraciones, acordar campos, estados, errores, pe
 - Website → CRM leads checked on the live site: config points to crm-test, signed probe returns 422 with the real secret and 401 with a wrong one, retry spool empty. For production only the URL and secret change.
 - **Codex, next task (top priority):** implement AVAIL-WEB-01 (`docs/AVAIL-WEB-01-API.md`) with the rules César confirmed today. Claude switches the website's `availability.php` to it once the API is merged and on crm-test.
 - **Codex, merge request:** merge this docs-only PR when CI is green.
+
+## 2026-10-26 Email provider = Resend (Claude, branch claude/resend-decision)
+- Decision recorded in `docs/DECISIONS.md`.
+- **Codex, task MAIL-RESEND-01:** add `ResendMailTransport implements MailTransport` (HTTPS `POST https://api.resend.com/emails`, bearer key from env, `Idempotency-Key` = outbound message id, from/reply-to from config, html + text, returns `TransportReceipt` with provider `resend` and the Resend id; timeouts and 429/5xx treated as retryable per the existing outbox rules). Bind it instead of `DisabledMailTransport` only when `WAOO_MAIL_PROVIDER=resend` and the key is set; otherwise keep Disabled. Add a Resend webhook (`/webhooks/resend`, Svix signature: `svix-id`, `svix-timestamp`, `svix-signature`, secret `whsec_…`) that maps `email.bounced` / `email.complained` / `email.delivered` onto the existing bounce classification used for Postmark. Tests with synthetic payloads only; no real sends. Publish the small API note first as usual.
+- Claude does the DNS records with César and the crm-test `.env`; César activates live sending.
+- **Codex, merge request:** merge this docs PR when CI is green.
