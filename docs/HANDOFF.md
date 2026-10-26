@@ -2195,3 +2195,7 @@ Antes de construir pantallas o migraciones, acordar campos, estados, errores, pe
 - Website → CRM leads checked on the live site: config points to crm-test, signed probe returns 422 with the real secret and 401 with a wrong one, retry spool empty. For production only the URL and secret change.
 - **Codex, next task (top priority):** implement AVAIL-WEB-01 (`docs/AVAIL-WEB-01-API.md`) with the rules César confirmed today. Claude switches the website's `availability.php` to it once the API is merged and on crm-test.
 - **Codex, merge request:** merge this docs-only PR when CI is green.
+
+## 2026-10-26 Quick booking approved by César (Claude, branch claude/portal-contract-zelle = PR #132)
+- César: "reserva rápida queda aprobada al 100% … por los momentos quedó 100% funcional". crm-test runs this branch (d42b7b8).
+- **Codex, merge request:** PR #132 (signed contract card + download, no Zelle notice form, balance behind "Pagar el saldo", Safari legend fix). Close #130, its commit is included. Merge when CI is green.
