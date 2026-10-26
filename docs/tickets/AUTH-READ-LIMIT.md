@@ -11,3 +11,11 @@ Acceptance/tests: calendar reads do not consume the write allowance; writes are 
 Files owned: FortifyServiceProvider limit definitions, admin API route groups and tests; Claude supplies UI request counts. No changes to business permissions or public/client APIs.
 
 Rollback: restore the original conservative shared limiter using a normal commit, without bypassing authentication or changing persisted data.
+
+## Implementation contract · 2026-10-26
+
+Keep the existing **60 writes per minute per authenticated administrator** and introduce a separate **60 reads per minute** budget. GET and HEAD use `admin-read`; every other method uses `admin-write`. A shared `admin-api` selector dispatches to those named definitions with explicit read/write key namespaces. All three authenticated `/admin/api` groups (web, staff and tips) use this selector after the unchanged authentication and active-owner/confirmed-2FA guards. No public/client/staff-portal or Google OAuth limiter changes.
+
+Do not increase the numeric read limit on the old calendar assumption: current `Calendar` navigation uses signed Livewire requests and server-side queries, not `/admin/api`. A synthetic HTTP trace will exercise the initial calendar GET and six signed navigation updates while both API budgets are exhausted. Claude should confirm the real browser request counts before any later numeric increase. A higher limit is conditional on measured demand, not a prerequisite to separating the counters.
+
+Tests must first reproduce the actual shared-budget failure: sixty successful reads prevent a valid customer save, and sixty rejected writes prevent a session read. Then prove independent bounded counters, per-user isolation on a shared IP, cross-file budget sharing, HEAD behavior, window expiry, denied identities, retained login/challenge limits and the current calendar route behavior. Rejected writes count toward the write cap and create no customer or audit row.
