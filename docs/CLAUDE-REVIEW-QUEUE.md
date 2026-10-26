@@ -21,6 +21,18 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-10-26 · BUG / UI · Reserva rápida con solo ZIP, saldo con tarjeta en el link rápido, contrato firmado visible, preguntas a lo ancho · REVIEWED
+- Branch / commits: `claude/owner-fixes-1026` (Claude; Codex reviews and merges).
+- Reported by César (2026-10-26): "it should be only the zip code mandatory to calculate the travel fee"; "¿En qué idioma prefieres / ¿Dónde será la actividad? … todo junto hacia la izquierda"; "¿al cliente le llega una copia del contrato ya firmada …? en donde dice tu pago también debería aparecer la opción rápida para pagar por stripe".
+- What changed and why:
+  - Travel fee: `TravelFeeQuote` accepts the ZIP alone (address under 10 letters or empty) and routes Google to "<ZIP>, TX, USA"; breakdown gets `zip_only`. Without ZIP the address still needs 10+ letters. Admin API and the "Calcular" button follow; summary says "Calculado con el ZIP". Acceptance hash is unchanged (same address/ZIP inputs as the draft).
+  - Balance on the quick-booking link: `PortalContext::allows()` lets a `quick_booking.pay` grant use `checkout.create` only when its contract is signed and `deposit_shortfall_cents === 0`. Pending Zelle deposits stay blocked (no double pay). Grant scopes are not mutated; portal card/Zelle forms and the balance-reminder mail use the same check.
+  - Signed contract: the existing approved button "Ver mi contrato firmado / View my signed contract" now also shows in the "¡Tu fiesta está reservada!" card (before it only showed when the balance was $0). No new client text.
+  - Portal CSS: `.p-field legend{width:100%}` so fieldset questions are full width (a legend in a grid fieldset shrank to its narrowest word).
+- Files: app/Services/Routing/TravelFeeQuote.php, app/Filament/Support/TravelFeeFields.php, app/Http/Controllers/Admin/TravelFeeController.php, app/Services/Portal/PortalContext.php, app/Http/Controllers/Portal/PortalPageController.php, app/Services/Mail/EventMailSource.php, resources/views/portal/show.blade.php, public/css/waoo-portal.css, tests TravelFeeQuotesTest/QuickPaymentsTest.
+- How verified: local PHP 8.3 + SQLite, 8 suites (TravelFee×2, QuickPayments, ClientPortalPage, ZelleNoticeScreens, SandboxDocuments, QuickBookingCore, SameVisitContract): 129 tests, 1285 assertions, only the 5 MariaDB/pcntl concurrency tests error locally (CI authority). New: ZIP-only quote + draft acceptance + API; pending-Zelle signed link cannot pay balance; paid+signed link shows card, Zelle and signed-contract button. Screenshot 390px dark: both questions full width (322px), no horizontal scroll.
+- Not done: a client receipt (PDF or payment list with dates) does not exist yet; needs new client text, so it waits for César's decision.
+
 ### 2026-10-25 · BACKEND · Livewire security patch unblocks the review merge · PENDING
 - Branch / commits: `codex/fix-livewire-security-20261025`; package patch `bcea061`. Includes PR #123 through a preserving merge, without rewriting Claude's commits or editing workflows.
 - Reported by César: Claude has returned and sent instructions; PR #123 asks Codex to merge once CI is green, consistent with César's existing merge authorization.

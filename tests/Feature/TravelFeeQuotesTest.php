@@ -42,6 +42,17 @@ class TravelFeeQuotesTest extends TestCase
         $this->assertEqualsWithDelta(43000 / 1609.344, $quote['breakdown']['one_way_miles'], 0.000001);
         $this->assertSame(1000, $quote['breakdown']['round_trip_tolls_cents']);
     }
+    public function test_zip_alone_is_enough_and_the_draft_accepts_that_quote_without_address(): void
+    {
+        Http::fake(['*' => Http::response(['routes' => [$this->route(20000)]])]);
+        $q = $this->quote('', '77450');
+        $this->assertSame('ok', $q['status']); $this->assertTrue($q['breakdown']['zip_only']); $this->assertNotNull($q['fee_cents']);
+        Http::assertSent(fn ($r) => $r['destination']['address'] === '77450, TX, USA');
+        $event = app(SaveEventDraft::class)->execute($this->owner, [...$this->draft, 'address' => null, 'postal_code' => '77450', 'travel_fee_cents' => $q['fee_cents'], 'travel_fee_quote_id' => $q['quote_id']]);
+        $this->assertSame('calculated', $event->travel_fee_evidence['mode']);
+        $this->postJson('/admin/api/travel-fee-quotes', ['zip' => '77450'])->assertCreated();
+        $this->postJson('/admin/api/travel-fee-quotes', ['address' => 'Katy'])->assertUnprocessable();
+    }
     public function test_all_seven_fixed_zips_skip_google_even_without_key(): void
     {
         Http::fake(); config(['waoo.google_routes_key' => null]);

@@ -161,10 +161,10 @@ final class PortalPageController extends Controller
                 'pdf_url' => url('/portal/api/contracts/'.$contract->id.'/pdf'), 'final_url' => $contract->final_pdf_path ? url('/portal/api/contracts/'.$contract->id.'/pdf?artifact=final') : null,
                 'signed_name' => $signed ? SignatureEvidence::where('contract_id', $contract->id)->value('signer_name') : null] : null,
             'consent' => InHouseSignatureProvider::consent($lang),
-            'pay' => ['revision_id' => $revision?->id, 'can_checkout' => in_array('checkout.create', $grant->scopes, true) && ($balance ?? 0) > 0],
+            'pay' => ['revision_id' => $revision?->id, 'can_checkout' => \App\Services\Portal\PortalContext::allows($grant, 'checkout.create') && ($balance ?? 0) > 0],
             'zelle_memo' => 'WP-'.$event->id,
             // Her own notices, through Codex's client projection only (never the owner's review note, bank reference or ledger).
-            'zelle' => ['can_notify' => in_array('checkout.create', $grant->scopes, true) && ($balance ?? 0) > 0, 'action' => url('/portal/api/zelle-notices'),
+            'zelle' => ['can_notify' => \App\Services\Portal\PortalContext::allows($grant, 'checkout.create') && ($balance ?? 0) > 0, 'action' => url('/portal/api/zelle-notices'),
                 'amount' => $balance ? number_format($balance / 100, 2, '.', '') : '',
                 'notices' => \App\Models\ZelleNotice::where('event_id', $event->id)->where('customer_id', $client->customerId)->with('review.ledgerEntry')->orderByDesc('id')->limit(10)->get()
                     ->map(fn ($n) => \App\Services\Portal\ZelleNoticeView::client($n))

@@ -12,8 +12,8 @@ final class TravelFeeController extends Controller
 {
     public function store(Request $request, TravelFeeQuote $service)
     {
-        $data = $request->validate(['address' => 'required|string|min:10|max:255', 'zip' => ['nullable','string','regex:/^\d{5}(?:-\d{4})?$/']]);
-        return response()->json($service->forAddress($request->user(), $data['address'], $data['zip'] ?? null), 201);
+        $data = $request->validate(['address' => 'nullable|string|max:255', 'zip' => ['nullable','string','regex:/^\d{5}(?:-\d{4})?$/']]);
+        return response()->json($service->forAddress($request->user(), $data['address'] ?? '', $data['zip'] ?? null), 201);
     }
     public function evidence(Request $request, Event $event)
     {

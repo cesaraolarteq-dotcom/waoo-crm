@@ -122,7 +122,7 @@
   <button class="p-btn p-btn-pink" type="submit">{{ $t('sign') }}</button>
 </form>
 @elseif ($vm['step'] === 'pay')
-@if ($vm['reserved'] ?? false)<section class="p-card" role="status"><h2>{{ \App\Support\ApprovedClientTexts::text('portal_reserved', $vm['lang']) }}</h2><p>{{ \App\Support\ApprovedClientTexts::text('portal_reserved_body', $vm['lang']) }}</p></section>@endif
+@if ($vm['reserved'] ?? false)<section class="p-card" role="status"><h2>{{ \App\Support\ApprovedClientTexts::text('portal_reserved', $vm['lang']) }}</h2><p>{{ \App\Support\ApprovedClientTexts::text('portal_reserved_body', $vm['lang']) }}</p>@if (! empty($vm['contract']['final_url']))<a class="p-btn p-btn-quiet" href="{{ $vm['contract']['final_url'] }}" target="_blank" rel="noopener noreferrer">{{ $t('open_signed') }}</a>@endif</section>@endif
 <section class="p-card">
   <h2>{{ $t('pay_title') }}</h2>
   <p class="p-hint">{{ $t('pay_hint') }}</p>

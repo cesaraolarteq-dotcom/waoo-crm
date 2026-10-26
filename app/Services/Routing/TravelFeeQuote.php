@@ -11,7 +11,9 @@ final class TravelFeeQuote
     public function forAddress(User $actor, string $address, ?string $zip): array
     {
         Sandbox::require('sandbox_routes'); $actor = RecordActor::authorize($actor);
-        RecordInput::validate(['address' => $address, 'zip' => $zip], ['address' => 'required|string|min:10|max:255', 'zip' => ['nullable','string','regex:/^\d{5}(?:-\d{4})?$/']]);
+        // Owner 2026-10-26: the ZIP alone is enough to quote (the street address is optional); Google routes to the ZIP area.
+        $address = trim($address); $zipOnly = filled($zip) && mb_strlen($address) < 10;
+        RecordInput::validate(['address' => $address === '' ? null : $address, 'zip' => $zip], ['address' => [...($zipOnly ? [] : ['required', 'min:10']), 'nullable', 'string', 'max:255'], 'zip' => ['nullable','string','regex:/^\d{5}(?:-\d{4})?$/']]);
         $inputs = TravelFeeRules::normalize($address, $zip); $hash = TravelFeeRules::inputHash($inputs); $rulesHash = TravelFeeRules::hash();
         $cached = TravelFeeQuoteRecord::where('input_hash', $hash)->where('rules_hash', $rulesHash)->whereIn('status', ['ok','outside','review'])->where('expires_at', '>', now())->orderByDesc('id')->first();
         if ($cached) return $this->present($cached, true);
@@ -21,9 +23,9 @@ final class TravelFeeQuote
         elseif (array_key_exists($inputs['zip'], $cfg['special_zips'])) { $status = 'ok'; $fee = (int) ($cfg['special_zips'][$inputs['zip']] * 100); $breakdown = ['special_zip' => true, 'route_type' => 'fixed_zip']; }
         elseif (is_string(config('waoo.google_routes_key')) && config('waoo.google_routes_key') !== '') {
             if (!$this->takeCall((int) $cfg['google_calls_per_day'])) $breakdown['reason'] = 'daily_cap';
-            elseif (!$route = app(GoogleTravelRoute::class)->forAddress($address)) $breakdown['reason'] = 'provider_unavailable';
+            elseif (!$route = app(GoogleTravelRoute::class)->forAddress($zipOnly ? substr((string) $zip, 0, 5).', TX, USA' : $address)) $breakdown['reason'] = 'provider_unavailable';
             else {
-                $breakdown = [...TravelFeeRules::calculate($route['miles'], $route['toll_cents']), 'route_type' => $route['route_type'], 'special_zip' => false];
+                $breakdown = [...TravelFeeRules::calculate($route['miles'], $route['toll_cents']), 'route_type' => $route['route_type'], 'special_zip' => false, 'zip_only' => $zipOnly];
                 if ($route['miles'] * 2 > $cfg['max_round_trip_miles']) { $status = 'review'; $breakdown['reason'] = 'distance_limit'; }
                 else { $status = 'ok'; $fee = $breakdown['fee_cents']; }
                 unset($breakdown['fee_cents']);

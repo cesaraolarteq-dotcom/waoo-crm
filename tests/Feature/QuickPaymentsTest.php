@@ -173,6 +173,27 @@ class QuickPaymentsTest extends TestCase
             'signer_name'=>'Elena Martínez','consent'=>true,'intent_to_sign'=>true,'consent_version'=>'esign-consent-v2-2026-10-20-es'])->assertOk();
         $this->assertDatabaseCount('signature_evidence',1);$this->assertDatabaseCount('ledger_entries',0);$this->assertDatabaseCount('client_details_reviews',0);
         $this->assertSame('zelle_pending',QuickPaymentBooking::sole()->state);
+        // Owner 2026-10-26: the balance opens on the same link only after the deposit is received, never on a pending Zelle.
+        $this->assertFalse(\App\Services\Portal\PortalContext::allows(\App\Models\PortalGrant::sole(),'checkout.create'));
+    }
+    public function test_signed_quick_link_pays_the_balance_after_the_deposit_is_received():void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');$r=$this->create();
+        $t=app(\App\Services\Documents\CreateTemplateVersion::class)->execute($this->owner,['terms_html'=>'<p>Acuerdo sintético de María.</p>','change_note'=>'Plantilla sintética para el saldo de Elena.'],(string)Str::uuid());
+        app(\App\Services\Documents\ActivateTemplateVersion::class)->execute($this->owner,$t->id,['expected_source_sha256'=>$t->source_sha256,'approval_note'=>'Aprobación ficticia para prueba automatizada.']);
+        $this->client($r);$this->details();$g=$this->gateway();$this->checkout();$sid=\App\Models\PaymentIntent::sole()->stripe_checkout_session_id;$g->pay($sid);$this->webhook($g,$sid);
+        $this->assertSame('paid',QuickPaymentBooking::sole()->state);
+        $grant=\App\Models\PortalGrant::sole();$this->assertFalse(\App\Services\Portal\PortalContext::allows($grant,'checkout.create'));
+        $this->withHeader('Idempotency-Key',(string)Str::uuid())->postJson('/portal/api/details/contract',['expected_event_version'=>\App\Models\Event::sole()->version,'expected_revision'=>\App\Models\FinancialRevision::where('event_id',\App\Models\Event::sole()->id)->max('revision')])->assertOk();
+        $c=\App\Models\Contract::sole();$this->get('/portal/api/contracts/'.$c->id.'/pdf')->assertOk();
+        $this->withHeader('Idempotency-Key',(string)Str::uuid())->postJson('/portal/api/contracts/'.$c->id.'/sign',['expected_version'=>$c->version,'presented_pdf_sha256'=>$c->presented_pdf_sha256,
+            'signer_name'=>'Elena Martínez','consent'=>true,'intent_to_sign'=>true,'consent_version'=>'esign-consent-v2-2026-10-20-es'])->assertOk();
+        $this->assertTrue(\App\Services\Portal\PortalContext::allows($grant->fresh(),'checkout.create'));
+        $this->assertSame($grant->scopes,$grant->fresh()->scopes);
+        $html=$this->get('/portal?lang=es')->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/id="pay-form"[^>]*>/',$html);$this->assertDoesNotMatchRegularExpression('/id="pay-form"[^>]*\shidden/',$html);
+        $this->assertMatchesRegularExpression('/id="zelle-form"/',$html);
+        $this->assertNotNull(\App\Models\Contract::sole()->final_pdf_path);$this->assertStringContainsString('artifact=final',$html);$this->assertStringContainsString('Ver mi contrato firmado',$html);
     }
     public function test_automatic_confirmation_is_frozen_gated_and_never_retried_after_unknown_delivery():void
     {
