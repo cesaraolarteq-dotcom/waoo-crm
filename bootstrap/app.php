@@ -14,6 +14,11 @@ return Application::configure(basePath: dirname(__DIR__))
         then: fn () => require base_path('routes/webhooks.php'),
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Route middleware are priority-sorted: validate current owner/2FA before consuming API limits.
+        $middleware->prependToPriorityList(
+            [\Illuminate\Routing\Middleware\ThrottleRequests::class, \Illuminate\Routing\Middleware\ThrottleRequestsWithRedis::class],
+            \App\Http\Middleware\RequireOwnerAdmin::class,
+        );
         // Preserve raw provider bodies and authenticate before decoding JSON.
         $middleware->trimStrings(except: [fn (Request $r) => $r->is('webhooks/postmark/bounces')]);
         $middleware->convertEmptyStringsToNull(except: [fn (Request $r) => $r->is('webhooks/postmark/bounces')]);
