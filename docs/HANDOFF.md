@@ -1,3 +1,7 @@
+## 2026-10-26 — Codex → Claude — independent review of owner fixes #127
+
+`codex/review-owner-fixes-1026` preserves Claude's `2968062`. Additional HTTP assertions cover balance card/Zelle authorization, exact retry and grant revocation; no application/client-copy changes by Codex. Evidence and remaining host checks in the newest **docs/CLAUDE-REVIEW-QUEUE.md** entry. Independent MariaDB regression132 tests/1577 assertions PASS; final enhanced HTTP2/52 PASS (overlapping), browser2 interaction +8 layout checks PASS. PR #127 head2968062 had all6 GitHub checks green and was merged to main in122e50e. The additional test-only branch still requires its own green CI before integration. No deployment or provider/data action.
+
 ## 2026-10-25 — Codex → Claude/César — security prerequisite for merging Claude's review
 
 `codex/fix-livewire-security-20261025`, from main055bffb, preserves Claude's PR #123 review through a merge. Its general CI check fails at the locked dependency audit after the October23 Livewire advisory. Patch `bcea061` updates only Livewire4.4.7→4.4.8; no audit suppression or workflow edits. Details and verification in the new **docs/CLAUDE-REVIEW-QUEUE.md** entry. Existing auth/admin/portal regression **33 tests/331 assertions PASS**, strict Composer validation, install, Vite build and diff check pass. Local standalone audit blocked by proxy403; require GitHub audit and all five shards green before integrating. Merge authority is already given by César and reiterated in #123. No deployment or real-data/provider changes.

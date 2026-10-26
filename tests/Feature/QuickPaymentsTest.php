@@ -175,6 +175,11 @@ class QuickPaymentsTest extends TestCase
         $this->assertSame('zelle_pending',QuickPaymentBooking::sole()->state);
         // Owner 2026-10-26: the balance opens on the same link only after the deposit is received, never on a pending Zelle.
         $this->assertFalse(\App\Services\Portal\PortalContext::allows(\App\Models\PortalGrant::sole(),'checkout.create'));
+        $this->withHeader('Idempotency-Key',(string)Str::uuid())->postJson('/portal/api/checkout-intents',[
+            'financial_revision_id'=>$r->financial_revision->id,'purpose'=>'balance'])->assertForbidden();
+        $this->withHeader('Idempotency-Key',(string)Str::uuid())->postJson('/portal/api/zelle-notices',[
+            'financial_revision_id'=>$r->financial_revision->id,'amount_cents'=>15000])->assertForbidden();
+        $this->assertDatabaseCount('payment_intents',0);$this->assertDatabaseCount('zelle_notices',1);
     }
     public function test_signed_quick_link_pays_the_balance_after_the_deposit_is_received():void
     {
@@ -194,6 +199,24 @@ class QuickPaymentsTest extends TestCase
         $this->assertMatchesRegularExpression('/id="pay-form"[^>]*>/',$html);$this->assertDoesNotMatchRegularExpression('/id="pay-form"[^>]*\shidden/',$html);
         $this->assertMatchesRegularExpression('/id="zelle-form"/',$html);
         $this->assertNotNull(\App\Models\Contract::sole()->final_pdf_path);$this->assertStringContainsString('artifact=final',$html);$this->assertStringContainsString('Ver mi contrato firmado',$html);
+        // Exercise the authenticated write endpoints, not just the displayed buttons or the scope helper.
+        $ledgerBefore=LedgerEntry::orderBy('id')->get()->toArray();
+        $noticeKey=(string)Str::uuid();$notice=['financial_revision_id'=>$r->financial_revision->id,'amount_cents'=>15000];
+        $noticeId=$this->withHeader('Idempotency-Key',$noticeKey)->postJson('/portal/api/zelle-notices',$notice)
+            ->assertCreated()->assertJsonPath('notice.state','pending')->json('notice.id');
+        $this->withHeader('Idempotency-Key',$noticeKey)->postJson('/portal/api/zelle-notices',$notice)
+            ->assertCreated()->assertJsonPath('notice.id',$noticeId);
+        $this->assertSame($ledgerBefore,LedgerEntry::orderBy('id')->get()->toArray());$this->assertDatabaseCount('zelle_notices',1);
+        $payKey=(string)Str::uuid();$pay=['financial_revision_id'=>$r->financial_revision->id,'purpose'=>'balance'];
+        $intentId=$this->withHeader('Idempotency-Key',$payKey)->postJson('/portal/api/checkout-intents',$pay)
+            ->assertCreated()->assertJsonPath('principal_cents',15000)->assertJsonPath('status','open')->json('id');
+        $this->withHeader('Idempotency-Key',$payKey)->postJson('/portal/api/checkout-intents',$pay)
+            ->assertCreated()->assertJsonPath('id',$intentId);
+        $this->assertSame(2,$g->creates);$this->assertDatabaseCount('payment_intents',2);$this->assertSame($ledgerBefore,LedgerEntry::orderBy('id')->get()->toArray());
+        $grant->update(['revoked_at'=>now()]);
+        $this->withHeader('Idempotency-Key',(string)Str::uuid())->postJson('/portal/api/checkout-intents',$pay)->assertForbidden();
+        $this->withHeader('Idempotency-Key',(string)Str::uuid())->postJson('/portal/api/zelle-notices',$notice)->assertForbidden();
+        $this->assertDatabaseCount('payment_intents',2);$this->assertDatabaseCount('zelle_notices',1);
     }
     public function test_automatic_confirmation_is_frozen_gated_and_never_retried_after_unknown_delivery():void
     {
