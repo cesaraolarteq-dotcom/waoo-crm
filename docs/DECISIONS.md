@@ -45,3 +45,13 @@ Fuente: inventario de solo lectura de Claude en HOSTINGER_INVENTORY.md, integrad
 Consecuencias propuestas: compilar assets fuera del hosting; evaluar PDF puro PHP (p. ej. dompdf) sin binario externo y probar fuentes/imágenes/plantilla real. Aplicación, vendor, .env y documentos fuera de public_html; servir archivos privados mediante controladores autorizados, sin depender de storage:link. Cron con lock y ejecución acotada de cola, midiendo solapamientos y reintentos; no asumir worker permanente. Verificar servidor MySQL/MariaDB real y transacciones, no inferirlo por versión del cliente. Ni espacio actualmente usado ni ausencia de error HTTP prueban cuota, capacidad o integración completa.
 
 Comparación de precios: se incorpora la evidencia de Claude en arch/ARCH-01-esign-email.md, no una verificación independiente de Codex. BoldSign + Resend es una candidata razonable, aún no elección D4. Revisar exportación PDF/certificado, retención, límites de sandbox y excedentes antes de decidir. Para Resend, 400 correos/mes no garantiza respetar 100/día en importaciones o reintentos: programar cola, gestionar límites y medir entregabilidad. El rango de USD 0–30 es subtotal de firma/email, no costo operativo total: faltan Maps, backups, monitoreo, procesamiento y mantenimiento. Costos de sobrecuota DocuSign/Dropbox no confirmados no implican que subir de plan sea la única opción.
+
+## 2026-10-26 · César (chat with Claude and his checklist page)
+- Test data: every party created inside the CRM on crm-test was test data. Claude removed the 8 CRM-created events (with their payments, contracts, links and Google Calendar copies) and 3 test customers; the 23 HoneyBook events stay. DB backup `~/backups-crm-test/db-before-purge-tests-*.sql.gz`.
+- WhatsApp Business number: the one ending in **8830**.
+- HoneyBook: no cut-off date; César keeps paying until he decides it is no longer needed.
+- Extras: any service already in the catalog; no owner approval; allowed when the system shows availability and until **7 days** before the party.
+- Website availability rules for AVAIL-WEB-01 confirmed: parties 8 a.m.–1 a.m. Houston, maximum 10 parties per operating day, under 14 days of notice needs owner approval.
+- History import: approved; Claude runs the dry run first and imports after showing the summary.
+- Production: once crm-test is complete, move to crm.waooparty.com and connect live Stripe.
+- Twilio: no number transfer; waiting for Twilio's approval.
