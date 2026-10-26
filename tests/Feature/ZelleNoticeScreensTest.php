@@ -69,7 +69,7 @@ class ZelleNoticeScreensTest extends TestCase
 
     public function test_client_notice_is_pending_until_the_owner_verifies_the_real_amount(): void
     {
-        $this->get('/portal')->assertOk()->assertSee('Tu pago')->assertSee('Waoo Party LLC')
+        $this->get('/portal')->assertOk()->assertSee('Saldo pendiente')->assertSee('Waoo Party LLC')
             // Owner 2026-10-26: the portal no longer shows the "Ya envié el Zelle" form; the notice API stays for existing clients.
             ->assertDontSee('id="zelle-form"', false)->assertDontSee('Ya envié el Zelle');
         $this->get('/portal?lang=en')->assertDontSee('I sent my Zelle payment');

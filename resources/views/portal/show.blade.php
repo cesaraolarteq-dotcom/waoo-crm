@@ -134,8 +134,18 @@
 </section>
 @endif
 <section class="p-card">
+  @if ($vm['reserved'] ?? false)
+  {{-- Owner 2026-10-26: right after signing, paying again must not look required. Show the balance and its due date; the
+       payment options stay closed until the client chooses to pay. --}}
+  <h2>{{ $t('balance_title') }}</h2>
+  <p class="p-balance"><b>{{ $e['balance'] }}</b> · {{ $t('balance_due', ['due' => $e['due']]) }}</p>
+  <p class="p-hint">{{ $t('balance_not_now') }}</p>
+  <details class="p-paybox">
+  <summary class="p-btn p-btn-quiet">{{ $t('balance_open') }}</summary>
+  @else
   <h2>{{ $t('pay_title') }}</h2>
   <p class="p-hint">{{ $t('pay_hint') }}</p>
+  @endif
   <div class="p-pay">
     <div class="p-opt">
       <h3>{{ $t('zelle') }}</h3>
@@ -157,6 +167,7 @@
       <button class="p-btn" type="submit">{{ $t('card_btn', ['amount' => $e['balance']]) }}</button>
     </form>
   </div>
+  @if ($vm['reserved'] ?? false)</details>@endif
 </section>
 @else
 <section class="p-card p-done">

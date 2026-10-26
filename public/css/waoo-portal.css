@@ -97,3 +97,9 @@ dt{color:var(--muted);font-size:14px}dd{margin:0;font-weight:700;overflow-wrap:a
 /* Owner 2026-10-26: signed contract card buttons (open + download), side by side, wrapping on phones. */
 .p-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
 .p-actions .p-btn{flex:1 1 200px;text-align:center}
+/* Owner 2026-10-26: balance after booking; payment options behind "Pagar el saldo" so nobody pays twice by mistake. */
+.p-balance{font-size:18px;margin:2px 0 0}
+.p-paybox{margin-top:12px}
+.p-paybox>summary{list-style:none}
+.p-paybox>summary::-webkit-details-marker{display:none}
+.p-paybox[open]>summary{margin-bottom:12px}
