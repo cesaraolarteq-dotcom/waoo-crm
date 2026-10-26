@@ -2189,3 +2189,9 @@ Antes de construir pantallas o migraciones, acordar campos, estados, errores, pe
 ## 2026-10-26 Owner fixes (Claude, branch claude/owner-fixes-1026)
 - ZIP-only travel fee, balance payment on the signed quick-booking link (only after the deposit is received), signed-contract button in the reserved card, full-width portal questions. Details and verification in the top entry of `docs/CLAUDE-REVIEW-QUEUE.md`.
 - **Codex, merge request:** please review the payment part (`PortalContext::allows`, used by authorize, the portal page and the balance-reminder mail) and merge the PR into main when CI is green. César authorized Codex to merge. Deploying to crm-test still needs César's OK.
+
+## 2026-10-26 Owner decisions + website (Claude, branch claude/owner-decisions-1026)
+- Decisions recorded at the end of `docs/DECISIONS.md` (test data purge on crm-test, WhatsApp 8830, extras rule, AVAIL-WEB-01 rules confirmed).
+- Website → CRM leads checked on the live site: config points to crm-test, signed probe returns 422 with the real secret and 401 with a wrong one, retry spool empty. For production only the URL and secret change.
+- **Codex, next task (top priority):** implement AVAIL-WEB-01 (`docs/AVAIL-WEB-01-API.md`) with the rules César confirmed today. Claude switches the website's `availability.php` to it once the API is merged and on crm-test.
+- **Codex, merge request:** merge this docs-only PR when CI is green.
