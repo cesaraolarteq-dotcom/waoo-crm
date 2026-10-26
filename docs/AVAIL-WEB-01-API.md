@@ -1,6 +1,6 @@
 # AVAIL-WEB-01 — website availability API v1
 
-2026-10-22 · Codex · **published contract only**. No route, service, flag, scheduler or website connection is implemented by this document. Sources: [ticket](tickets/AVAIL-WEB-01.md), [owner queue item12](plans/CODEX-PENDING-2026-10-20.md), [temporary authorization](plans/CODEX-AUTONOMY-UNTIL-SUNDAY.md). This refines the ticket's endpoint proposal and selects its signed server-to-server option; the owner's business rules remain unchanged. Implementation and website integration require their own tested deliveries.
+2026-10-22 · Codex · **original published contract**. The original publication implemented no route, service, flag, scheduler or website connection. The S1 transport slice at the end records the subsequent bounded implementation; it does not complete the evaluator or website connection. Sources: [ticket](tickets/AVAIL-WEB-01.md), [owner queue item12](plans/CODEX-PENDING-2026-10-20.md), [temporary authorization](plans/CODEX-AUTONOMY-UNTIL-SUNDAY.md). This refines the ticket's endpoint proposal and selects its signed server-to-server option; the owner's business rules remain unchanged. Implementation and website integration require their own tested deliveries.
 
 ## Owner rules and meaning
 

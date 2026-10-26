@@ -14,9 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
         then: fn () => require base_path('routes/webhooks.php'),
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->replace(\Illuminate\Http\Middleware\HandleCors::class, \App\Http\Middleware\ServerAvailabilityCors::class);
         // Preserve raw provider bodies and authenticate before decoding JSON.
-        $middleware->trimStrings(except: [fn (Request $r) => $r->is('webhooks/postmark/bounces')]);
-        $middleware->convertEmptyStringsToNull(except: [fn (Request $r) => $r->is('webhooks/postmark/bounces')]);
+        $middleware->trimStrings(except: [fn (Request $r) => $r->is('webhooks/postmark/bounces', 'api/availability', 'api/availability/*')]);
+        $middleware->convertEmptyStringsToNull(except: [fn (Request $r) => $r->is('webhooks/postmark/bounces', 'api/availability', 'api/availability/*')]);
         $middleware->append(\App\Http\Middleware\SensitiveApplicationResponses::class);
         $middleware->validateCsrfTokens(except: ['webhooks/stripe']);
     })
@@ -24,6 +25,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->dontFlash(['token']);
         // Denials/validation/CSRF failures need the same privacy headers as successful portal responses.
         $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response) {
+            if (request()->is('api/availability', 'api/availability/*') && $response->getStatusCode() >= 400) {
+                $status = $response->getStatusCode();
+                $code = match ($status) { 404 => 'not_found', 405 => 'method_not_allowed', 413 => 'payload_too_large', 429 => 'rate_limited', default => 'availability_unavailable' };
+                $response = \App\Http\Middleware\AuthenticateWebsiteAvailability::error($code, $status >= 500 ? 503 : $status);
+            }
             if (\App\Http\Middleware\SensitiveApplicationResponses::appliesTo(request())) {
                 $response->headers->set('Cache-Control', 'no-store, private');
                 $response->headers->set('Pragma', 'no-cache');
