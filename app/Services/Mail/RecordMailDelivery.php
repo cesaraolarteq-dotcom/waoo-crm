@@ -45,6 +45,18 @@ final class RecordMailDelivery
         $this->record($provider, $providerMessageId, $providerEventId, $outcome, $occurredAt, $evidence, 5);
     }
 
+    // Inbound signed evidence is independent of outbound activation.
+    public function authenticatedResend(string $messageId, string $eventId, string $outcome, CarbonImmutable $occurredAt, string $providerTimestamp): void
+    {
+        Sandbox::require('sandbox_resend_webhooks');
+        if (!in_array($outcome, ['delivered', 'bounced', 'complained'], true)) {
+            throw ValidationException::withMessages(['mail' => 'invalid_provider_event']);
+        }
+        // Keep sub-second provider identity even when the database datetime precision is seconds.
+        $this->record('resend', $messageId, $eventId, $outcome, $occurredAt,
+            ['provider_timestamp_sha256' => hash('sha256', $providerTimestamp)], 5);
+    }
+
     private function record(string $provider, string $providerMessageId, string $providerEventId, string $outcome, CarbonImmutable $occurredAt, array $evidence = [], int $futureMinutes = 0): void
     {
         if (!in_array($outcome, ['delivered', 'bounced', 'complained', 'provider_notice'], true)

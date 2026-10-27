@@ -15,8 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Preserve raw provider bodies and authenticate before decoding JSON.
-        $middleware->trimStrings(except: [fn (Request $r) => $r->is('webhooks/postmark/bounces')]);
-        $middleware->convertEmptyStringsToNull(except: [fn (Request $r) => $r->is('webhooks/postmark/bounces')]);
+        $middleware->trimStrings(except: [fn (Request $r) => $r->is('webhooks/postmark/bounces', 'webhooks/resend')]);
+        $middleware->convertEmptyStringsToNull(except: [fn (Request $r) => $r->is('webhooks/postmark/bounces', 'webhooks/resend')]);
         $middleware->append(\App\Http\Middleware\SensitiveApplicationResponses::class);
         $middleware->validateCsrfTokens(except: ['webhooks/stripe']);
     })
@@ -24,6 +24,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->dontFlash(['token']);
         // Denials/validation/CSRF failures need the same privacy headers as successful portal responses.
         $exceptions->respond(function (\Symfony\Component\HttpFoundation\Response $response) {
+            if (request()->is('webhooks/resend') && $response->getStatusCode() >= 400) {
+                $status = $response->getStatusCode();
+                $headers = $response->headers->has('Retry-After') ? ['Retry-After' => $response->headers->get('Retry-After')] : [];
+                $response = response()->json(['error' => 'resend_webhook_rejected'], $status >= 500 ? 503 : $status, $headers);
+            }
             if (\App\Http\Middleware\SensitiveApplicationResponses::appliesTo(request())) {
                 $response->headers->set('Cache-Control', 'no-store, private');
                 $response->headers->set('Pragma', 'no-cache');

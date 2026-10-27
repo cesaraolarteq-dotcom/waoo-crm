@@ -13,7 +13,9 @@ final class DispatchQuickPaymentNotifications
         QuickPaymentProtocol::gate(true);
         // Explicitly separate storing automatic notices from enabling outbound transport.
         if(!config('waoo.sandbox_quick_payment_notifications')||!config('waoo.sandbox_mail'))return;
-        $transport=app(MailTransport::class);if(!$transport->configured())return;
+        $transport=app(MailTransport::class);
+        // This separate table has no provider receipt mapping yet. Do not claim an unsupported Resend notice.
+        if($transport instanceof \App\Services\Mail\ResendMailTransport || !$transport->configured())return;
         foreach(QuickPaymentNotification::where('status','pending')->where('due_at','<=',now())->orderBy('id')->limit($limit)->pluck('id') as $id){
             $mail=DB::transaction(function()use($id){
                 $stub=QuickPaymentNotification::findOrFail($id);$stubB=QuickPaymentBooking::findOrFail($stub->quick_payment_booking_id);
