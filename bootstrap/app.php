@@ -15,6 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->replace(\Illuminate\Http\Middleware\HandleCors::class, \App\Http\Middleware\ServerAvailabilityCors::class);
+
+        // Route middleware are priority-sorted: validate current owner/2FA before consuming API limits.
+        $middleware->prependToPriorityList(
+            [\Illuminate\Routing\Middleware\ThrottleRequests::class, \Illuminate\Routing\Middleware\ThrottleRequestsWithRedis::class],
+            \App\Http\Middleware\RequireOwnerAdmin::class,
+        );
         // Preserve raw provider bodies and authenticate before decoding JSON.
         $middleware->trimStrings(except: [fn (Request $r) => $r->is('webhooks/postmark/bounces', 'webhooks/resend', 'api/availability', 'api/availability/*')]);
         $middleware->convertEmptyStringsToNull(except: [fn (Request $r) => $r->is('webhooks/postmark/bounces', 'webhooks/resend', 'api/availability', 'api/availability/*')]);
