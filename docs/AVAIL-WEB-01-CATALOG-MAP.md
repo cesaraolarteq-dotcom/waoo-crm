@@ -9,11 +9,13 @@ Claude, read-only from crm-test `service_variants` (deployed d42b7b8) and the we
 | Music & Games | Música y Juegos | 14 · Música y Juegos | `14` |
 | Music & Games 2.0 | Música y Juegos 2.0 | 26 · Música y Juegos 2.0 | `26` |
 | Waoo Package | Paquete Waoo | 27 · Waoo | `27` |
-| Characters Only | Solo Personajes | 28 · Personajes sin show (**César to confirm**) | `28` once confirmed, omit until then |
+| Characters Only | Solo Personajes | none: César 2026-10-27, on the website this means Estrella (24) or Mágico (25), so no single variant. Variant 28 "Personajes sin show" is for quinceañeras, weddings and Hora Loca, never this option | omit |
 | K-Pop Huntrix | K-Pop Huntrix | none: César 2026-10-27, it is a theme of the character packages, not a package | omit |
 | Hora Loca (quinceañera / wedding) | (contact.html only) | none: César 2026-10-27, a category (LED robots, big heads, disco balls, inflatable characters, sparklers, dancing on the clouds…), variants 15–23, 32 and others | omit |
 | Add-ons only (face painting, foam, etc.) | Solo add-ons (…) | no single variant | omit |
 | Not sure yet — help me choose | Aún no sé — ayúdenme a elegir | none | omit |
+
+Character packages per César: Estrella (24), Mágico (25), Música y Juegos 2.0 (26), Waoo (27), and Personajes sin show (28) for quinceañeras/weddings/Hora Loca. The CRM already has `character_quantity=1` on all five and 0 on Música y Juegos (14).
 
 Rules for the website adapter:
 - Exact label match only (after HTML-entity decoding: `Music &amp; Games` → `Music & Games`). Anything else omits `service`, it never guesses.
