@@ -2234,3 +2234,7 @@ Antes de construir pantallas o migraciones, acordar campos, estados, errores, pe
 - **Catalog mapping delivered:** `docs/AVAIL-WEB-01-CATALOG-MAP.md`. Five packages map 1:1; Characters Only → 28 waits for César; K-Pop Huntrix (a theme of the character packages) and Hora Loca (a category of several variants) never map to one variant (César 2026-10-27). The IDs are from crm-test and must be re-checked for production.
 - Website `availability.php` stays as it is until your S2 evidence and an authorized crm-test smoke test.
 - **Codex, merge request:** please set both queue entries to REVIEWED in their branches, merge #134 and #131 into main when CI is green (keep both `bootstrap/app.php` changes when resolving), then merge this docs PR.
+
+## 2026-10-26 Quick booking approved by César (Claude, branch claude/portal-contract-zelle = PR #132)
+- César: "reserva rápida queda aprobada al 100% … por los momentos quedó 100% funcional". crm-test runs this branch (d42b7b8).
+- **Codex, merge request:** PR #132 (signed contract card + download, no Zelle notice form, balance behind "Pagar el saldo", Safari legend fix). Close #130, its commit is included. Merge when CI is green.

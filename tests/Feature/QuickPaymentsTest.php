@@ -197,7 +197,8 @@ class QuickPaymentsTest extends TestCase
         $this->assertSame($grant->scopes,$grant->fresh()->scopes);
         $html=$this->get('/portal?lang=es')->assertOk()->getContent();
         $this->assertMatchesRegularExpression('/id="pay-form"[^>]*>/',$html);$this->assertDoesNotMatchRegularExpression('/id="pay-form"[^>]*\shidden/',$html);
-        $this->assertMatchesRegularExpression('/id="zelle-form"/',$html);
+        $this->assertDoesNotMatchRegularExpression('/id="zelle-form"/',$html);$this->assertStringContainsString('download=1',$html);
+        $this->get('/portal/api/contracts/'.\App\Models\Contract::sole()->id.'/pdf?artifact=final&download=1')->assertOk()->assertHeader('Content-Disposition','attachment; filename="waoo-contract-'.\App\Models\Contract::sole()->id.'.pdf"');
         $this->assertNotNull(\App\Models\Contract::sole()->final_pdf_path);$this->assertStringContainsString('artifact=final',$html);$this->assertStringContainsString('Ver mi contrato firmado',$html);
         // Exercise the authenticated write endpoints, not just the displayed buttons or the scope helper.
         $ledgerBefore=LedgerEntry::orderBy('id')->get()->toArray();
