@@ -14,9 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
         then: fn () => require base_path('routes/webhooks.php'),
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->replace(\Illuminate\Http\Middleware\HandleCors::class, \App\Http\Middleware\ServerAvailabilityCors::class);
         // Preserve raw provider bodies and authenticate before decoding JSON.
-        $middleware->trimStrings(except: [fn (Request $r) => $r->is('webhooks/postmark/bounces', 'webhooks/resend')]);
-        $middleware->convertEmptyStringsToNull(except: [fn (Request $r) => $r->is('webhooks/postmark/bounces', 'webhooks/resend')]);
+        $middleware->trimStrings(except: [fn (Request $r) => $r->is('webhooks/postmark/bounces', 'webhooks/resend', 'api/availability', 'api/availability/*')]);
+        $middleware->convertEmptyStringsToNull(except: [fn (Request $r) => $r->is('webhooks/postmark/bounces', 'webhooks/resend', 'api/availability', 'api/availability/*')]);
         $middleware->append(\App\Http\Middleware\SensitiveApplicationResponses::class);
         $middleware->validateCsrfTokens(except: ['webhooks/stripe']);
     })
@@ -28,6 +29,11 @@ return Application::configure(basePath: dirname(__DIR__))
                 $status = $response->getStatusCode();
                 $headers = $response->headers->has('Retry-After') ? ['Retry-After' => $response->headers->get('Retry-After')] : [];
                 $response = response()->json(['error' => 'resend_webhook_rejected'], $status >= 500 ? 503 : $status, $headers);
+            }
+            if (request()->is('api/availability', 'api/availability/*') && $response->getStatusCode() >= 400) {
+                $status = $response->getStatusCode();
+                $code = match ($status) { 404 => 'not_found', 405 => 'method_not_allowed', 413 => 'payload_too_large', 429 => 'rate_limited', default => 'availability_unavailable' };
+                $response = \App\Http\Middleware\AuthenticateWebsiteAvailability::error($code, $status >= 500 ? 503 : $status);
             }
             if (\App\Http\Middleware\SensitiveApplicationResponses::appliesTo(request())) {
                 $response->headers->set('Cache-Control', 'no-store, private');
