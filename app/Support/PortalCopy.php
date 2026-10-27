@@ -50,7 +50,7 @@ final class PortalCopy
             'link_missing' => 'Falta tu enlace', 'link_missing_hint' => 'Abre el enlace completo que te enviamos por WhatsApp o mensaje.',
             'link_expired' => 'Este enlace venció o ya no es válido', 'link_expired_hint' => 'Escríbenos y te mandamos uno nuevo.',
             'waiting_title' => 'Estamos preparando tu contrato', 'waiting' => 'Te avisamos cuando esté listo para firmar.',
-            'open_signed' => 'Ver mi contrato firmado', 'pay_retry' => 'No se pudo abrir el pago. Inténtalo de nuevo.',
+            'open_signed' => 'Ver mi contrato firmado', 'download_pdf' => 'Descargar (PDF)', 'balance_title' => 'Saldo pendiente', 'balance_due' => 'vence :due', 'balance_not_now' => 'Tu depósito ya está pagado. No tienes que pagar nada más ahora: paga el saldo antes de la fiesta, cuando quieras, desde este mismo link.', 'balance_open' => 'Pagar el saldo', 'pay_retry' => 'No se pudo abrir el pago. Inténtalo de nuevo.',
             'return_processing' => 'Estamos confirmando tu pago con Stripe. Aparecerá aquí cuando se confirme.', 'return_cancelled' => 'No se hizo ningún cobro.',
         ],
         'en' => [
@@ -97,7 +97,7 @@ final class PortalCopy
             'link_missing' => 'Your link is missing', 'link_missing_hint' => 'Open the full link we sent you by WhatsApp or text.',
             'link_expired' => 'This link expired or is no longer valid', 'link_expired_hint' => 'Message us and we will send you a new one.',
             'waiting_title' => 'We are preparing your contract', 'waiting' => 'We will let you know when it is ready to sign.',
-            'open_signed' => 'View my signed contract', 'pay_retry' => 'The payment could not open. Please try again.',
+            'open_signed' => 'View my signed contract', 'download_pdf' => 'Download (PDF)', 'balance_title' => 'Remaining balance', 'balance_due' => 'due :due', 'balance_not_now' => 'Your deposit is paid. You do not need to pay anything else now: pay the balance before the party, whenever you like, from this same link.', 'balance_open' => 'Pay the balance', 'pay_retry' => 'The payment could not open. Please try again.',
             'return_processing' => 'We are confirming your payment with Stripe. It will show here once confirmed.', 'return_cancelled' => 'No charge was made.',
         ],
     ];

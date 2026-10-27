@@ -16,7 +16,7 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:20,1'])->prefix('
     Route::get('/connect', [\App\Http\Controllers\Admin\GoogleCalendarController::class, 'connect']);
     Route::get('/callback', [\App\Http\Controllers\Admin\GoogleCalendarController::class, 'callback']);
 });
-Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-write'])->prefix('admin/api')->group(function () {
+Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-api'])->prefix('admin/api')->group(function () {
     Route::get('/cutover/honeybook', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'index']);
     Route::get('/cutover/honeybook/events/{event}', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'show'])->whereNumber('event');
     Route::post('/cutover/honeybook/events/{event}', [\App\Http\Controllers\Admin\HoneyBookCutoverController::class, 'review'])->whereNumber('event');

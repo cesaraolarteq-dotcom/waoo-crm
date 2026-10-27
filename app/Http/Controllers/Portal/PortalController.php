@@ -63,7 +63,8 @@ final class PortalController extends Controller
         abort_unless($row->{$kind.'_pdf_path'} && $row->{$kind.'_pdf_sha256'}, 404);
         $bytes = $artifacts->read($row->{$kind.'_pdf_path'}, $row->{$kind.'_pdf_sha256'});
         if ($kind === 'presented') DB::table('contract_presentations')->insertOrIgnore(['contract_id' => $row->id, 'portal_grant_id' => $request->attributes->get('portal_context')->grantId, 'presented_pdf_sha256' => $row->presented_pdf_sha256, 'served_at' => now()]);
-        return response($bytes, 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="contract-'.$row->id.'.pdf"']);
+        $disposition = $kind === 'final' && $request->boolean('download') ? 'attachment' : 'inline';
+        return response($bytes, 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => $disposition.'; filename="waoo-contract-'.$row->id.'.pdf"']);
     }
     public function sign(Request $request, string $contract, AcceptSignature $service)
     {

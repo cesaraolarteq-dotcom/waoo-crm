@@ -32,6 +32,14 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::confirmPasswordView(fn () => view('auth.confirm-password'));
         RateLimiter::for('login', fn (Request $request) => Limit::perMinute(5)->by(mb_strtolower((string) $request->email).'|'.$request->ip()));
         RateLimiter::for('two-factor', fn (Request $request) => Limit::perMinute(5)->by($request->session()->get('login.id').'|'.$request->ip()));
-        RateLimiter::for('admin-write', fn (Request $request) => Limit::perMinute(60)->by($request->user()?->id ?? $request->ip()));
+        // Reading the owner's API must not consume the allowance needed to save a record.
+        // Keep both caps bounded at the existing value until measured usage calls for a higher read cap.
+        RateLimiter::for('admin-read', fn (Request $request) => Limit::perMinute(60)->by('read:'.($request->user()?->id ?? $request->ip())));
+        RateLimiter::for('admin-write', fn (Request $request) => Limit::perMinute(60)->by('write:'.($request->user()?->id ?? $request->ip())));
+        RateLimiter::for('admin-api', function (Request $request) {
+            $name = in_array($request->method(), ['GET', 'HEAD'], true) ? 'admin-read' : 'admin-write';
+
+            return RateLimiter::limiter($name)($request);
+        });
     }
 }

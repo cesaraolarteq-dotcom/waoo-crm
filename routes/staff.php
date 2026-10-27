@@ -4,7 +4,7 @@ use App\Http\Controllers\Staff\StaffPortalController;
 use App\Http\Middleware\RequireOwnerAdmin;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth',RequireOwnerAdmin::class,'throttle:admin-write'])->prefix('admin/api')->group(function () {
+Route::middleware(['auth',RequireOwnerAdmin::class,'throttle:admin-api'])->prefix('admin/api')->group(function () {
     Route::get('/staff/links',[StaffController::class,'index']);
     Route::post('/staff/identities',[StaffController::class,'identities']);
     Route::post('/staff/{staff}/grants',[StaffController::class,'issue'])->whereNumber('staff');
