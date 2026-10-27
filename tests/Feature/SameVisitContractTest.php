@@ -127,7 +127,7 @@ class SameVisitContractTest extends TestCase
         $this->assertNotNull($contract->fresh()->final_pdf_sha256);
         $this->assertSame($contract->presented_pdf_sha256, $contract->fresh()->presented_pdf_sha256);
         $this->getJson('/portal/api/event')->assertOk()->assertJsonPath('details.reviewed', false);
-        $this->get('/portal?lang=es')->assertOk()->assertSee('Tu pago')->assertDontSee('id="sign-form"', false);
+        $this->get('/portal?lang=es')->assertOk()->assertSee('Saldo pendiente')->assertSee('Pagar el saldo')->assertSee('Ver mi contrato firmado')->assertSee('Descargar (PDF)')->assertDontSee('id="sign-form"', false);
         $this->submit(extra: ['expected_revision' => 1])->assertConflict();
         $this->assertSame($before, $this->event->fresh()->getRawOriginal()); $this->assertSame($receipt, LedgerEntry::sole()->getRawOriginal());
         $this->assertNull(Customer::sole()->name); $this->assertSame(0, ResourceReservation::count());
@@ -266,8 +266,12 @@ class SameVisitContractTest extends TestCase
         $this->assertSame('María Elena', $current->commercial_snapshot['client']['first_name']);
         $this->get('/portal')->assertOk()->assertSee('id="sign-form"', false)->assertDontSee('id="details-form"', false);
         $this->get('/portal/api/contracts/'.$current->id.'/pdf')->assertOk(); $this->sign($current)->assertOk();
-        $this->get('/portal?review_details=1')->assertOk()->assertSee('Tu pago')->assertSee('Revisa aquí los pagos registrados y el saldo pendiente.')
-            ->assertDontSee('id="details-form"', false)->assertDontSee('Tu fecha ya está apartada');
+        // A signed contract cannot expose a final-download link until its queued PDF artifact actually exists.
+        $this->get('/portal?review_details=1')->assertOk()->assertSee('Saldo pendiente')->assertSee('Tu depósito ya está pagado.')
+            ->assertDontSee('Ver mi contrato firmado')->assertDontSee('id="details-form"', false)->assertDontSee('Tu fecha ya está apartada');
+        (new \App\Jobs\FinalizeSignedContract($current->id))->handle();
+        $this->get('/portal?review_details=1')->assertOk()->assertSee('Ver mi contrato firmado')->assertSee('Descargar (PDF)')
+            ->assertDontSee('id="details-form"', false);
     }
 
     public function test_capacity_confirmation_mid_visit_requires_explicit_fresh_submission_and_preserves_assigned_staff(): void
