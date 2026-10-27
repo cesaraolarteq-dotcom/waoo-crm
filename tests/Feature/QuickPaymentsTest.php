@@ -206,6 +206,17 @@ class QuickPaymentsTest extends TestCase
         $mail->fail=true;$service=app(\App\Services\Booking\DispatchQuickPaymentNotifications::class);$service->execute();$service->execute();
         $this->assertCount(1,$mail->sent);$this->assertSame('delivery_unknown',$n->fresh()->status);$this->assertStringContainsString('tu pago de $154.51',$mail->sent[0]->text);$this->assertStringContainsString('Pagado hasta hoy: $150.01',$mail->sent[0]->text);
     }
+    public function test_resend_never_claims_the_unmapped_parallel_notification_channel():void
+    {
+        $this->owner->update(['email'=>'elena@example.test']);
+        $r=$this->create();$this->client($r);$this->details();$g=$this->gateway();$this->checkout();$sid=\App\Models\PaymentIntent::sole()->stripe_checkout_session_id;$g->pay($sid);$this->webhook($g,$sid);
+        config(['waoo.mail_delivery_enabled'=>true,'waoo.sandbox_mail'=>true,'waoo.sandbox_quick_payment_notifications'=>true,
+            'waoo.mail_provider'=>'resend','services.resend.key'=>str_repeat('synthetic-key-',4),'waoo.mail_from_address'=>'sender@example.test',
+            'waoo.mail_from_name'=>'Waoo Party','waoo.mail_reply_to'=>'reply@example.test','waoo.mail_allowlist'=>['elena@example.test']]);
+        $this->assertInstanceOf(\App\Services\Mail\ResendMailTransport::class,app(\App\Services\Mail\MailTransport::class));
+        app(\App\Services\Booking\DispatchQuickPaymentNotifications::class)->execute();
+        $this->assertSame('pending',\App\Models\QuickPaymentNotification::sole()->status);Http::assertNothingSent();
+    }
     public function test_unknown_provider_response_retries_the_same_request_and_key():void
     {
         $r=$this->create();$this->client($r);$this->details();$g=$this->gateway();$key=(string)Str::uuid();

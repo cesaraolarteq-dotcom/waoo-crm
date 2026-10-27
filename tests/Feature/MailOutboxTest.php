@@ -105,6 +105,26 @@ class MailOutboxTest extends TestCase
         $this->assertSame('bounced',OutboundMessageState::sole()->status);$this->assertSame(1,OutboundMessageEvent::where('kind','bounced')->count());$this->getJson('/admin/api/messages/warnings')->assertOk()->assertJsonPath('total',1);
         $this->expectException(RecordWriteRejected::class);$record->execute('fake-only','fake-'.$m->id,'fixture-bounce','complained',$at);
     }
+    public function test_resend_key_and_provider_cannot_lift_owner_hold_or_claim_a_due_message():void
+    {
+        \Illuminate\Support\Facades\Http::preventStrayRequests();
+        config(['waoo.mail_delivery_enabled'=>false,'waoo.mail_provider'=>'resend','services.resend.key'=>str_repeat('synthetic-key-',4),
+            'waoo.mail_from_address'=>'sender@example.test','waoo.mail_from_name'=>'Waoo Party','waoo.mail_reply_to'=>'reply@example.test']);
+        $this->app->forgetInstance(MailTransport::class);
+        $this->plan();$m=OutboundMessage::sole();$this->due($m);app(DispatchOutboundMail::class)->execute($m->id);
+        $this->assertSame('blocked',OutboundMessageState::sole()->status);$this->assertSame(0,OutboundMessageState::sole()->attempt_count);
+        \Illuminate\Support\Facades\Http::assertNothingSent();
+    }
+    public function test_mocked_resend_failure_crosses_the_outbox_boundary_once_without_automatic_retry():void
+    {
+        config(['waoo.mail_delivery_enabled'=>true,'waoo.mail_provider'=>'resend','services.resend.key'=>str_repeat('synthetic-key-',4),
+            'waoo.mail_from_address'=>'sender@example.test','waoo.mail_from_name'=>'Waoo Party','waoo.mail_reply_to'=>'reply@example.test']);
+        \Illuminate\Support\Facades\Http::fake(['https://api.resend.com/emails'=>\Illuminate\Support\Facades\Http::response(['message'=>'PRIVATE_RESPONSE'],429)]);
+        $this->app->forgetInstance(MailTransport::class);
+        $this->plan();$m=OutboundMessage::sole();$this->due($m);app(DispatchOutboundMail::class)->execute($m->id);app(DispatchOutboundMail::class)->execute($m->id);
+        $this->assertSame('delivery_unknown',OutboundMessageState::sole()->status);$this->assertSame(1,OutboundMessageState::sole()->attempt_count);
+        \Illuminate\Support\Facades\Http::assertSentCount(1);
+    }
     public function test_default_disabled_transport_is_a_safe_explicit_block_without_native_mail_or_log_calls():void
     {
         $this->plan();$m=OutboundMessage::sole();$this->app->instance(MailTransport::class,new \App\Services\Mail\DisabledMailTransport());$this->due($m);app(DispatchOutboundMail::class)->execute($m->id);$this->assertSame('transport_unconfigured',OutboundMessageState::sole()->error_code);$this->assertSame(0,OutboundMessageState::sole()->attempt_count);

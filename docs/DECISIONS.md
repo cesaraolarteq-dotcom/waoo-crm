@@ -60,3 +60,8 @@ Comparación de precios: se incorpora la evidencia de Claude en arch/ARCH-01-esi
 - César chose **Resend** on the comparison page (estimate 40 parties + 80 non-booking inquiries ≈ 490 emails/month, inside the free plan: 3,000/month, 100/day).
 - Sender proposed by Claude: `Waoo Party <sales@waooparty.com>` with replies to sales@waooparty.com (the address the website already uses). Domain verification through Resend's DNS records (DKIM + SPF/MX on Resend's `send.` subdomain, so Hostinger mail is not affected) plus a DMARC record if none exists.
 - Activation stays explicit: sandbox/crm-test first, live only after César's OK.
+
+## 2026-10-27 · César · Resend preparation without outgoing email
+- Owner explicitly: “no quiero que aun slagan correeo hasta que el crm este 100% operativo”. Preparation of provider/DNS/keys/backend is separate from activation; no real test email to clients or owners while this hold is active.
+- Resend/provider/key selection does not open sending. Independent delivery gate defaultsOFF, no automatic percentage/CI/time activation; operational acceptance and a new explicit sending authorization are required. Existing MAIL-RESEND-01 binding instructions from October26 are superseded to that extent.
+- No host setting, DNS change, provider registration or actual email was performed by Codex in implementing this restriction. Claude must retain/check the host hold without a test send. Actual deliverability verification waits for the later sending authorization.

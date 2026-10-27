@@ -28,6 +28,6 @@ final class ReadOutboundMail
     {
         \App\Services\Portal\PortalContext::requireTransport(request());\App\Services\Records\RecordActor::authorize($actor);$templates=[];
         foreach(ApprovedMail::KEYS as $key)foreach(['es','en'] as $locale){try{$d=ApprovedMail::definition($key,$locale);$templates[]=['key'=>$key,'locale'=>$locale,'version'=>$d['version'],'approved'=>true];}catch(\Illuminate\Validation\ValidationException){$templates[]=['key'=>$key,'locale'=>$locale,'version'=>null,'approved'=>false];}}
-        return ['environment'=>'sandbox','enabled'=>app()->environment(['local','testing','staging'])&&(bool)config('waoo.sandbox_mail'),'transport_configured'=>app(MailTransport::class)->configured(),'allowlist'=>MailGuard::allowlist(),'templates'=>$templates,'activation_required'=>true];
+        return ['environment'=>'sandbox','enabled'=>app()->environment(['local','testing','staging'])&&(bool)config('waoo.sandbox_mail'),'delivery_enabled'=>MailDeliveryGate::enabled(),'transport_configured'=>app(MailTransport::class)->configured(),'allowlist'=>MailGuard::allowlist(),'templates'=>$templates,'activation_required'=>true];
     }
 }
