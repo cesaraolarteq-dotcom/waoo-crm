@@ -9,7 +9,7 @@ final class SensitiveApplicationResponses
 {
     public static function appliesTo(Request $request): bool
     {
-        return $request->is('webhooks/postmark/bounces', 'webhooks/resend', 'api/leads', 'admin', 'admin/*', 'r/*', 'portal', 'portal/*', 'staff', 'staff/*')
+        return $request->is('webhooks/postmark/bounces', 'webhooks/resend', 'api/leads', 'api/availability', 'api/availability/*', 'admin', 'admin/*', 'r/*', 'portal', 'portal/*', 'staff', 'staff/*')
             || str_ends_with((string) $request->route()?->getName(), 'livewire.update');
     }
 

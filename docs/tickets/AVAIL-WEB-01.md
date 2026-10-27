@@ -1,10 +1,10 @@
 # AVAIL-WEB-01 · Website availability from the CRM (Phase 3)
 
-Status: contract proposal by Claude (website) for Codex (CRM endpoint). Replaces the website's iCal-based `availability.php` signal once the CRM is the source of truth; until then both run and the website falls back to iCal.
+Status: S1 signed transport prepared for review; full capacity evaluator and website cutover NOT delivered. Original contract proposal by Claude (website) for Codex (CRM endpoint). Replaces the website's iCal-based `availability.php` signal once the CRM is the source of truth; until then both run and the website falls back to iCal.
 
 ## Published API contract (2026-10-22)
 
-See [AVAIL-WEB-01-API.md](../AVAIL-WEB-01-API.md): authenticated server-to-server day signal plus candidate-time check, strict public projection, owner-approved14day review rule and actual physical/resource/logistics constraints. **Documentation only; no endpoints, website connection or activation delivered.** Legacy iCal fallback cannot manufacture verified CRM slots. Closing-time details and the precise lead-time boundary remain implementation review items.
+See [AVAIL-WEB-01-API.md](../AVAIL-WEB-01-API.md): authenticated server-to-server day signal plus candidate-time check, strict public projection, owner-approved14day review rule and actual physical/resource/logistics constraints. **Original contract was documentation only. S1 now prepares signed GET demand/unknown and POST503; no verified slots, website connection or activation.** See [website handoff](../AVAIL-WEB-01-WEBSITE-HANDOFF.md). Legacy iCal fallback cannot manufacture verified CRM slots. Closing-time details and the precise lead-time boundary remain implementation review items.
 
 ## Today
 `availability.php?date=YYYY-MM-DD[&alts=1]` returns only `open|filling|full|unknown` + up to 3 nearby open dates, from the HoneyBook→Google Calendar iCal (counts events; next 8 Saturdays/Sundays always “filling”). It never exposes event details. The form never blocks a request.
