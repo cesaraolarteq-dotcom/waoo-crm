@@ -55,3 +55,8 @@ Comparación de precios: se incorpora la evidencia de Claude en arch/ARCH-01-esi
 - History import: approved; Claude runs the dry run first and imports after showing the summary.
 - Production: once crm-test is complete, move to crm.waooparty.com and connect live Stripe.
 - Twilio: no number transfer; waiting for Twilio's approval.
+
+## 2026-10-26 · César · Email provider: Resend
+- César chose **Resend** on the comparison page (estimate 40 parties + 80 non-booking inquiries ≈ 490 emails/month, inside the free plan: 3,000/month, 100/day).
+- Sender proposed by Claude: `Waoo Party <sales@waooparty.com>` with replies to sales@waooparty.com (the address the website already uses). Domain verification through Resend's DNS records (DKIM + SPF/MX on Resend's `send.` subdomain, so Hostinger mail is not affected) plus a DMARC record if none exists.
+- Activation stays explicit: sandbox/crm-test first, live only after César's OK.
