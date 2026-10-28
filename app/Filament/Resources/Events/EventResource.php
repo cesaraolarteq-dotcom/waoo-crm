@@ -57,7 +57,12 @@ class EventResource extends Resource
 
         return $schema->columns(2)->components([
             Section::make('La fiesta')->columns(2)->columnSpanFull()->schema([
-                Select::make('customer_id')->label('Cliente')->required()->native(false)->searchable()
+                // "Crear cotización" from a website lead (CreateEvent::fillFromLead): what she sent, and who becomes a client on save.
+                \Filament\Schemas\Components\Text::make(fn ($livewire) => self::leadNotice($livewire))->columnSpanFull()
+                    ->visible(fn ($livewire) => filled($livewire->leadSummary ?? null)),
+                Select::make('customer_id')->label('Cliente')->required(fn ($livewire) => blank($livewire->leadClient ?? null))->native(false)->searchable()
+                    ->placeholder(fn ($livewire) => filled($livewire->leadClient ?? null) ? 'Cliente nuevo: '.$livewire->leadClient['name'] : null)
+                    ->helperText(fn ($livewire) => filled($livewire->leadClient ?? null) ? 'Déjalo vacío y se registra como cliente al guardar, o elige un cliente que ya tengas.' : null)
                     ->options(fn () => Customer::query()->orderBy('name')->pluck('name', 'id'))
                     ->live()->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set)),
                 self::titleField(),
@@ -255,6 +260,21 @@ class EventResource extends Resource
             }
             $set($p.$field.'_auto', $defaults[$field] === null ? null : (string) $defaults[$field]);
         }
+    }
+
+    /** One line with what the website lead asked for, so nothing has to be re-read from the leads page. */
+    public static function leadNotice($livewire): string
+    {
+        $s = (array) ($livewire->leadSummary ?? []);
+        $c = $livewire->leadClient ?? null;
+        $parts = array_filter([
+            $c ? 'Desde la web: '.$c['name'].' · '.implode(' · ', array_filter([$c['phone'] ?? null, $c['email'] ?? null])) : 'Desde la web (cliente ya registrado)',
+            filled($s['package'] ?? null) && $s['package'] !== 'unspecified' ? 'Pidió: '.$s['package'] : null,
+            filled($s['travel'] ?? null) ? 'Transporte que vio: '.$s['travel'] : null,
+            filled($s['message'] ?? null) ? 'Mensaje: “'.$s['message'].'”' : null,
+        ]);
+
+        return implode('  ·  ', $parts).'. Revisa paquete, horas y personajes; luego guarda y se abre la cotización.';
     }
 
     /** Fill the title from the suggestion unless the owner already typed her own. $p = path prefix from inside a repeater. */
