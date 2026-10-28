@@ -9,7 +9,7 @@ Claude, read-only from crm-test `service_variants` (deployed d42b7b8) and the we
 | Music & Games | Música y Juegos | 14 · Música y Juegos | `14` |
 | Music & Games 2.0 | Música y Juegos 2.0 | 26 · Música y Juegos 2.0 | `26` |
 | Waoo Package | Paquete Waoo | 27 · Waoo | `27` |
-| Characters Only | Solo Personajes | 28 · Personajes sin show (**César to confirm**) | `28` once confirmed, omit until then |
+| Characters Only (Star or Magic) | Solo Personajes (Estrella o Mágico) | none: César 2026-10-27, Estrella (24) or Mágico (25). Labels changed on the live website 2026-10-27 (old labels "Characters Only"/"Solo Personajes" may still arrive from open forms) | omit |
 | K-Pop Huntrix | K-Pop Huntrix | none: César 2026-10-27, it is a theme of the character packages, not a package | omit |
 | Hora Loca (quinceañera / wedding) | (contact.html only) | none: César 2026-10-27, a category (LED robots, big heads, disco balls, inflatable characters, sparklers, dancing on the clouds…), variants 15–23, 32 and others | omit |
 | Add-ons only (face painting, foam, etc.) | Solo add-ons (…) | no single variant | omit |
