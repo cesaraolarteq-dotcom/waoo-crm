@@ -1,3 +1,7 @@
+## 2026-10-28 · Codex · Reuse Claude’s security patch for the audit blocker
+Port of Claude f03c2f0: Symfony Mime7.4.19→7.4.22 and Polyfill Mbstring1.43.0→1.43.3 (CVE-2026-45070). Original PR145 has6green checks; this branch still requires its own CI. See newest queue entry. No audit suppression, workflow, provider, email or activation change.
+
+
 ## 2026-10-28 · Codex · Existing-history aggregate dry-run CLI (point4)
 `codex/fix-history-dry-run`: waoo:history:import requires --dry-run and existing owner/batch; reuses importer plan and source/destination verification under one lock, aggregate JSON only, zero command SQL mutations. **43tests/302assertions PASS**; see newest docs/CLAUDE-REVIEW-QUEUE.md and docs/HISTORY-DRY-RUN-CLI.md. No reimport, host action, mail or flag change; real independent review is not claimed. Other assigned backend points continue in isolated branches.
 

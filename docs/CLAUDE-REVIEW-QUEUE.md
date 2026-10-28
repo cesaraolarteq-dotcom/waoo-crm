@@ -21,6 +21,13 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-10-28 · BACKEND · Preserve Claude’s dependency security patch on pending delivery · PENDING
+- Source: Claude commit f03c2f0127a434b7dc561674140f13eca2366c5e, from PR143/145 ancestry. Symfony Mime7.4.19→7.4.22 and Polyfill Mbstring1.43.0→1.43.3, owner-visible audit blocker CVE-2026-45070 identified in Claude HANDOFF. Dependency lock changes identical to his generated patch.
+- Proof: both previous branch test matrices green, audit step red; Claude PR145 exact dead5fe has all6checks green with this patch. This branch requires its own complete CI before merge; local advisory endpoint remains proxy403, no fabricated local audit pass. No new behavioral test for lockfile-only patch.
+- Claude check: exact dependency versions and fresh CI audit, no workflow bypass. Mail hold and all feature gates unchanged; no deployment/provider/customer-data action.
+
+
+
 ### 2026-10-28 · BACKEND · Aggregate-only existing-history dry-run CLI (point4) · PENDING
 - Branch: codex/fix-history-dry-run, basea54b626. César assigned points1–4; existing history/importer is reused, never reimported. API docs/HISTORY-DRY-RUN-CLI.md precedes implementation.
 - Command: waoo:history:import --owner=<id> --batch=<existing-id> --dry-run. No file or write mode; explicit dry-run mandatory. Reuses ReadHistoricalImport + VerifyHistoricalImport under one existing import transaction/lock, including encrypted source/staging/destination coverage and current matching. Retains owner2FA/history gate/staging transport; production denied.
