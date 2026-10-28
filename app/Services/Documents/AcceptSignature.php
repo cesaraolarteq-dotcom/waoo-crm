@@ -48,7 +48,10 @@ final class AcceptSignature
             FinalizeSignedContract::dispatch($contract->id)->afterCommit();
             // Owner 2026-10-28: make the signed PDF right after answering the client (seconds), not at the next queue run (up to a minute).
             // The queued job stays as the fallback; the job is idempotent, so whichever finishes first wins.
-            FinalizeSignedContract::dispatchAfterResponse($contract->id);
+            $finalize = $contract->id;
+            app()->terminating(function () use ($finalize) {
+                try { (new FinalizeSignedContract($finalize))->handle(); } catch (\Throwable) {}
+            });
             return $signature;
         }, 3);
     }
