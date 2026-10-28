@@ -152,10 +152,12 @@
     </div>
     <form class="p-opt" method="POST" action="{{ $vm['actions']['checkout'] }}" id="pay-form" data-revision="{{ $vm['pay']['revision_id'] ?? '' }}" @if (isset($vm['pay']) && ! $vm['pay']['can_checkout']) hidden @endif>
       @csrf
-      <h3>{{ $t('card') }}</h3>
-      <p class="p-hint">{{ $t('card_hint') }}</p>
+      {{-- CARD-FEE-01 (owner 2026-10-28): credit cards only, the 3% shown with the amounts before paying, same as quick booking. --}}
+      <h3>{{ $t('card_credit') }}</h3>
+      <p class="p-hint">{{ $t('card_fee_hint') }}</p>
+      @if (! empty($vm['pay']['card']))<p class="p-card-math">{{ $vm['pay']['card']['principal'] }} + {{ $vm['pay']['card']['fee'] }} (3 %) = <b>{{ $vm['pay']['card']['total'] }}</b></p>@endif
       <p class="p-test" id="pay-error" role="alert" hidden></p>
-      <button class="p-btn" type="submit">{{ $t('card_btn', ['amount' => $e['balance']]) }}</button>
+      <button class="p-btn" type="submit">{{ $t('card_btn', ['amount' => $vm['pay']['card']['total'] ?? $e['balance']]) }}</button>
     </form>
   </div>
   @if ($vm['reserved'] ?? false)</details>@endif

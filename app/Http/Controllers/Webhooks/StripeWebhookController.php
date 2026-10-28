@@ -38,7 +38,8 @@ final class StripeWebhookController extends Controller
         }
         foreach (['event_id','financial_revision_id'] as $field) if (is_scalar($metadata[$field] ?? null) && ctype_digit((string) $metadata[$field])) $minimal['metadata'][$field] = (string) $metadata[$field];
         $payload = ['id' => $event['id'], 'type' => $event['type'], 'livemode' => false, 'account' => $event['account'] ?? null, 'created' => $event['created'] ?? null, 'data' => ['object' => $minimal]];
-        DB::transaction(function () use ($event, $raw, $payload) {
+        $inserted = false;
+        DB::transaction(function () use ($event, $raw, $payload, &$inserted) {
             $inserted = WebhookReceipt::query()->insertOrIgnore(['id' => $event['id'], 'event_type' => $event['type'], 'raw_sha256' => hash('sha256', $raw),
                 'encrypted_payload' => Crypt::encryptString(json_encode($payload, JSON_THROW_ON_ERROR)), 'stripe_account_id' => $event['account'] ?? null,
                 'verified_at' => now(), 'state' => 'queued', 'attempts' => 0, 'created_at' => now(), 'updated_at' => now()]);
@@ -50,6 +51,13 @@ final class StripeWebhookController extends Controller
             $id = $event['id'];
             app()->terminating(function () use ($id) {
                 try { app(\App\Services\Booking\ProcessQuickPaymentReceipt::class)->execute($id); } catch (\Throwable) {}
+            });
+        } elseif ($inserted) {
+            // Owner 2026-10-28: portal deposits/balances and tips confirm right away too (the client saw the balance still open for ~45 s).
+            // Same router as the queued job; a failure leaves the receipt queued for the cron's retry.
+            $id = $event['id'];
+            app()->terminating(function () use ($id) {
+                try { app(\App\Services\Finance\StripeReceiptRouter::class)->execute($id, app(\App\Services\Finance\StripeReceiptProcessor::class)); } catch (\Throwable) {}
             });
         }
         return response()->json(['received' => true]);

@@ -13,7 +13,7 @@ final class FakeStripeGateway implements StripeGateway
         if (!isset($this->keys[$key])) {
             $id = 'cs_test_fixture_'.(count($this->sessions) + 1); $this->keys[$key] = $id;
             $this->sessions[$id] = ['id' => $id, 'livemode' => false, '_verified_account' => 'acct_fixture', 'client_reference_id' => $parameters['client_reference_id'],
-                'metadata' => $parameters['metadata'], 'amount_total' => $parameters['line_items'][0]['price_data']['unit_amount'], 'currency' => 'usd',
+                'metadata' => $parameters['metadata'], 'amount_total' => array_sum(array_map(fn ($l) => (int) $l['price_data']['unit_amount'] * (int) ($l['quantity'] ?? 1), $parameters['line_items'])), 'currency' => 'usd',
                 'status' => 'open', 'payment_status' => 'unpaid', 'payment_intent' => null, 'url' => 'https://checkout.stripe.com/c/pay/'.$id];
         }
         if ($this->failAfterCreate) { $this->failAfterCreate = false; throw new \RuntimeException('Fixture timeout after remote creation'); }

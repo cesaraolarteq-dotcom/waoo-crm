@@ -72,13 +72,18 @@ final class StripeReceiptProcessor
             $locked = PaymentIntent::whereKey($intent->id)->lockForUpdate()->firstOrFail();
             $transaction = 'stripe:test:'.$session['_verified_account'].':'.$payment['id'];
             $existing = LedgerEntry::where('external_identity_key', $transaction)->first();
-            if ($existing && ($existing->event_id !== $intent->event_id || $existing->amount_cents !== $intent->payable_cents || $existing->financial_revision_id !== $intent->financial_revision_id)) {
+            if ($existing && ($existing->event_id !== $intent->event_id || $existing->amount_cents !== $intent->principal_cents || $existing->financial_revision_id !== $intent->financial_revision_id)) {
                 $this->problem($receipt, $intent, 'transaction_already_allocated'); return;
             }
             if (!$existing) {
-                $entry = LedgerEntry::create(['event_id' => $intent->event_id, 'financial_revision_id' => $intent->financial_revision_id, 'environment' => 'test', 'kind' => 'receipt', 'method' => 'stripe',
-                    'amount_cents' => $payment['amount_received'], 'currency' => 'USD', 'received_at' => CarbonImmutable::createFromTimestampUTC($charge['created']),
-                    'external_reference' => $payment['id'], 'external_identity_key' => $transaction, 'verified_by' => null, 'source_type' => 'verified_stripe_webhook', 'source_id' => $receipt->id]);
+                // CARD-FEE-01: the principal pays the balance; the 3% is its own customer_fee line, so it never reduces the balance or looks like an overpayment.
+                $fields = ['event_id' => $intent->event_id, 'financial_revision_id' => $intent->financial_revision_id, 'environment' => 'test', 'method' => 'stripe', 'currency' => 'USD',
+                    'received_at' => CarbonImmutable::createFromTimestampUTC($charge['created']), 'external_reference' => $payment['id'], 'verified_by' => null,
+                    'source_type' => 'verified_stripe_webhook', 'source_id' => $receipt->id];
+                $entry = LedgerEntry::create([...$fields, 'kind' => 'receipt', 'amount_cents' => $intent->principal_cents, 'external_identity_key' => $transaction]);
+                if ($intent->customer_fee_cents > 0) {
+                    LedgerEntry::create([...$fields, 'kind' => 'customer_fee', 'amount_cents' => $intent->customer_fee_cents, 'external_identity_key' => 'stripe:fee:'.hash('sha256', $transaction)]);
+                }
                 app(\App\Services\Mail\CaptureMailOccurrence::class)->record('payment_received', $entry->id, ['event_id'=>$event->id, 'customer_id'=>$event->customer_id, 'financial_revision_id'=>$intent->financial_revision_id, 'ledger_entry_id'=>$entry->id]);
                 Audit::recordSystem('payment.stripe_received', $entry, [], ['intent_id' => $intent->id, 'webhook_id' => $receipt->id, 'amount_cents' => $entry->amount_cents]);
             }

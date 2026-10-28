@@ -96,16 +96,17 @@ class StripeSandboxTest extends TestCase
         $this->assertDatabaseHas('payment_exceptions',['event_id'=>$this->event->id,'kind'=>'responsibility_reconciliation','state'=>'open']);
         $this->assertSame(1,\Illuminate\Support\Facades\DB::table('payment_exceptions')->where('kind','responsibility_reconciliation')->count());
     }
-    public function test_checkout_uses_server_amount_card_allowlist_no_affirm_and_no_fee(): void
+    public function test_checkout_uses_server_amount_card_allowlist_no_affirm_and_the_3_percent_fee(): void
     {
         $key = (string) Str::uuid();
-        $response = $this->create($key)->assertCreated()->assertJsonPath('payable_cents', 22750)->assertJsonPath('customer_fee_cents', 0)->assertJsonPath('status', 'open');
+        $response = $this->create($key)->assertCreated()->assertJsonPath('principal_cents', 22750)->assertJsonPath('customer_fee_cents', 683)->assertJsonPath('payable_cents', 23433)->assertJsonPath('status', 'open');
         $this->create($key)->assertCreated()->assertJsonPath('id', $response->json('id'));
         $this->create()->assertConflict();
         $parameters = $this->stripe->calls[0]['parameters'];
         $this->assertSame(['card'], $parameters['payment_method_types']);
         $this->assertArrayNotHasKey('automatic_payment_methods', $parameters);
         $this->assertSame(22750, $parameters['line_items'][0]['price_data']['unit_amount']);
+        $this->assertSame([683, 'Card processing fee (3%)'], [$parameters['line_items'][1]['price_data']['unit_amount'], $parameters['line_items'][1]['price_data']['product_data']['name']]);
         $this->assertCount(1, $this->stripe->calls);
         $this->assertDatabaseCount('ledger_entries', 0);
     }
@@ -117,9 +118,11 @@ class StripeSandboxTest extends TestCase
         $this->assertStringNotContainsString('fake-data-that-must-not-be-stored', Crypt::decryptString(WebhookReceipt::first()->encrypted_payload));
         app(StripeReceiptProcessor::class)->execute('evt_fixture_one');
         $this->webhook($intent, 'evt_fixture_second')->assertOk(); app(StripeReceiptProcessor::class)->execute('evt_fixture_second');
-        $this->assertDatabaseCount('ledger_entries', 1);
-        $this->assertSame(22750, LedgerEntry::first()->amount_cents);
-        $this->assertNull(LedgerEntry::first()->verified_by);
+        // The principal pays the balance; the 3% is its own line and never counts as payment toward it.
+        $this->assertDatabaseCount('ledger_entries', 2);
+        $this->assertSame(22750, LedgerEntry::where('kind', 'receipt')->sole()->amount_cents);
+        $this->assertSame(683, LedgerEntry::where('kind', 'customer_fee')->sole()->amount_cents);
+        $this->assertNull(LedgerEntry::where('kind', 'receipt')->sole()->verified_by);
         $this->assertSame('paid', $intent->fresh()->status);
         $this->assertDatabaseCount('resource_reservations', 0);
         $this->getJson('/admin/api/events/'.$this->event->id.'/finance')->assertOk()->assertJsonPath('balance_cents', 22750);
@@ -132,7 +135,7 @@ class StripeSandboxTest extends TestCase
         $this->stripe->paid($intent->stripe_checkout_session_id);
         $this->webhook($intent)->assertOk(); app(StripeReceiptProcessor::class)->execute('evt_fixture_one');
         $this->webhook($intent, 'evt_fixture_second')->assertOk(); app(StripeReceiptProcessor::class)->execute('evt_fixture_second');
-        $entry = LedgerEntry::sole(); $occurrence = \App\Models\MailOccurrence::sole();
+        $entry = LedgerEntry::where('kind', 'receipt')->sole(); $occurrence = \App\Models\MailOccurrence::sole();
         $this->assertSame('verified_stripe_webhook', $entry->source_type);
         $this->assertSame('payment_received', $occurrence->key);
         $this->assertSame($entry->id, $occurrence->locator['ledger_entry_id']);

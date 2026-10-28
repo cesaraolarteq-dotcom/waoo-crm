@@ -36,8 +36,10 @@ final class CreateCheckoutIntent
             if ($amount <= 0 || $amount > $summary['balance_cents'] || (isset($data['amount_cents']) && (int) $data['amount_cents'] !== $amount)) {
                 throw ValidationException::withMessages(['amount_cents' => 'Revisa el saldo y el importe de este abono. No se cobra de más.']);
             }
+            // CARD-FEE-01 (owner rule): cards carry a 3% processing fee, shown before paying and kept apart from the balance.
+            $fee = self::cardFee($amount);
             $intent = PaymentIntent::create(['id' => (string) Str::uuid(), 'event_id' => $eventId, 'financial_revision_id' => $revision->id,
-                'environment' => 'test', 'purpose' => $data['purpose'], 'currency' => 'USD', 'principal_cents' => $amount, 'customer_fee_cents' => 0, 'payable_cents' => $amount,
+                'environment' => 'test', 'purpose' => $data['purpose'], 'currency' => 'USD', 'principal_cents' => $amount, 'customer_fee_cents' => $fee, 'payable_cents' => $amount + $fee,
                 'status' => 'creating', 'collection_slot' => 'event:'.$eventId, 'expires_at' => now()->addHour()]);
             if ($actor instanceof User) \App\Services\Audit::recordFor($actor, 'payment.checkout_intent_created', $intent, [], ['amount_cents' => $amount, 'environment' => 'test']);
             else \App\Services\Audit::recordSystem('payment.checkout_intent_created', $intent, [], ['amount_cents' => $amount, 'portal_grant_id' => $actor->grantId, 'environment' => 'test']);
@@ -51,7 +53,7 @@ final class CreateCheckoutIntent
         \App\Services\Responsibility\RequireCrmResponsibility::forEvent($eventId);
         try {
             $session = app(StripeGateway::class)->createCheckout(['mode' => 'payment', 'payment_method_types' => ['card'], 'client_reference_id' => $intent->id,
-                'metadata' => $metadata, 'payment_intent_data' => ['metadata' => $metadata], 'line_items' => [['quantity' => 1, 'price_data' => ['currency' => 'usd', 'unit_amount' => $intent->payable_cents, 'product_data' => ['name' => 'Waoo Party · test payment']]]],
+                'metadata' => $metadata, 'payment_intent_data' => ['metadata' => $metadata], 'line_items' => self::lineItems($intent),
                 'expires_at' => $intent->expires_at->timestamp, 'success_url' => $origin.'/portal/payment-return?intent='.$intent->id, 'cancel_url' => $origin.'/portal/payment-return?intent='.$intent->id.'&cancelled=1'], 'waoo-test:'.$intent->id);
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             PaymentIntent::whereKey($intent->id)->update(['last_error' => 'provider_configuration_denied', 'updated_at' => now()]);
@@ -90,6 +92,22 @@ final class CreateCheckoutIntent
         RecordWriteRejected::when(in_array($updated->status, ['superseded','reconciliation_required','failed','expired'], true), 409, 'El intento ya no admite un cobro. Actualiza el saldo.');
         return $updated;
     }
+    /** Same rounding as QuickStripeTerms: 3% of the amount applied to the balance, half-cent up. */
+    public static function cardFee(int $principalCents): int
+    {
+        return intdiv($principalCents * 3 + 50, 100);
+    }
+
+    /** Principal and processing fee as separate lines, so the client sees the 3% on Stripe too. */
+    private static function lineItems(PaymentIntent $intent): array
+    {
+        $lines = [['quantity' => 1, 'price_data' => ['currency' => 'usd', 'unit_amount' => $intent->principal_cents, 'product_data' => ['name' => 'Waoo Party · test payment']]]];
+        if ($intent->customer_fee_cents > 0) {
+            $lines[] = ['quantity' => 1, 'price_data' => ['currency' => 'usd', 'unit_amount' => $intent->customer_fee_cents, 'product_data' => ['name' => 'Card processing fee (3%)']]];
+        }
+        return $lines;
+    }
+
     private function reconcile(PaymentIntent $intent, string $reason): void
     {
         DB::transaction(function () use ($intent, $reason) {
