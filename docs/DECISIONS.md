@@ -65,3 +65,6 @@ Comparación de precios: se incorpora la evidencia de Claude en arch/ARCH-01-esi
 - Owner explicitly: “no quiero que aun slagan correeo hasta que el crm este 100% operativo”. Preparation of provider/DNS/keys/backend is separate from activation; no real test email to clients or owners while this hold is active.
 - Resend/provider/key selection does not open sending. Independent delivery gate defaultsOFF, no automatic percentage/CI/time activation; operational acceptance and a new explicit sending authorization are required. Existing MAIL-RESEND-01 binding instructions from October26 are superseded to that extent.
 - No host setting, DNS change, provider registration or actual email was performed by Codex in implementing this restriction. Claude must retain/check the host hold without a test send. Actual deliverability verification waits for the later sending authorization.
+
+## 2026-10-28 · César · Short-notice approval: 14 days for the website only
+- Asked whether the 14-day owner-approval rule should also apply inside the CRM, he answered **"b"**: only bookings that come **from the website** need owner approval under 14 Houston calendar days. Inside the CRM (owner "Confirmar capacidad" form and `ConfirmBooking`), the short-notice reason stays at **under 7 days**, because the owner is already deciding when he confirms. Quick booking is unchanged.
