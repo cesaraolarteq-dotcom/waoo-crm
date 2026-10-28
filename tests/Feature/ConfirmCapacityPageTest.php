@@ -84,6 +84,39 @@ class ConfirmCapacityPageTest extends TestCase
         $this->get("/admin/eventos/{$this->event->id}/editar")->assertSee('Apartar recursos y confirmar');
     }
 
+    public function test_owner_form_requires_reason_at_six_days_and_preserves_it_with_the_booking(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-12-13T15:00:00-06:00'));
+        $this->bindService();
+        $page = Livewire::test(ConfirmCapacity::class, ['record' => $this->event->id])
+            ->assertSee('Faltan menos de 7 días: ¿por qué se aprueba?')
+            ->assertFormFieldIsVisible('short_notice_reason')
+            ->fillForm($this->form())->call('confirm')->assertHasFormErrors(['short_notice_reason']);
+        $this->assertDatabaseCount('booking_evidence', 0);
+        $reason = 'César confirmó disponibilidad y preparación del equipo para esta fiesta ficticia.';
+        $page->fillForm($this->form(['short_notice_reason' => $reason]))->call('confirm')
+            ->assertHasNoFormErrors()->assertNotified('Recursos apartados');
+        $this->assertSame($reason, \App\Models\OperationalReview::where('event_id', $this->event->id)->sole()->evidence['short_notice_reason']);
+    }
+
+    public function test_owner_form_and_backend_agree_at_the_exact_seven_day_boundary(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-12-12T15:00:00-06:00'));
+        $this->bindService();
+        Livewire::test(ConfirmCapacity::class, ['record' => $this->event->id])
+            ->assertFormFieldIsHidden('short_notice_reason')
+            ->fillForm($this->form())->call('confirm')->assertHasNoFormErrors()->assertNotified('Recursos apartados');
+    }
+
+    public function test_owner_form_at_ten_days_does_not_apply_the_website_fourteen_day_rule(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-12-09T15:00:00-06:00'));
+        $this->bindService();
+        Livewire::test(ConfirmCapacity::class, ['record' => $this->event->id])
+            ->assertFormFieldIsHidden('short_notice_reason')
+            ->fillForm($this->form())->call('confirm')->assertHasNoFormErrors()->assertNotified('Recursos apartados');
+    }
+
     public function test_confirms_with_the_exact_payload_and_reserves_the_units(): void
     {
         $this->bindService();
