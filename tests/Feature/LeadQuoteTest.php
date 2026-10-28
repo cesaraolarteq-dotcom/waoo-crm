@@ -94,6 +94,16 @@ class LeadQuoteTest extends TestCase
         $page->assertRedirect(EventResource::getUrl('view', ['record' => Event::sole(), 'action' => 'quoteCreate']));
     }
 
+    public function test_a_client_without_name_does_not_break_the_new_event_page(): void
+    {
+        // Quick booking may leave a provisional client with no name (crm-test 500, 2026-10-28).
+        Customer::create(['name' => null, 'phone' => '(346) 555-0199', 'locale' => 'es']);
+        $lead = $this->lead();
+        $this->get(EventResource::getUrl('create', ['lead' => $lead->id]))->assertOk();
+        $this->assertContains('Cliente sin nombre ((346) 555-0199)', EventResource::customerOptions());
+        $this->get(EventResource::getUrl('create'))->assertOk();
+    }
+
     public function test_plain_new_event_still_requires_a_client(): void
     {
         Livewire::test(CreateEvent::class)

@@ -63,7 +63,7 @@ class EventResource extends Resource
                 Select::make('customer_id')->label('Cliente')->required(fn ($livewire) => blank($livewire->leadClient ?? null))->native(false)->searchable()
                     ->placeholder(fn ($livewire) => filled($livewire->leadClient ?? null) ? 'Cliente nuevo: '.$livewire->leadClient['name'] : null)
                     ->helperText(fn ($livewire) => filled($livewire->leadClient ?? null) ? 'Déjalo vacío y se registra como cliente al guardar, o elige un cliente que ya tengas.' : null)
-                    ->options(fn () => Customer::query()->orderBy('name')->pluck('name', 'id'))
+                    ->options(fn () => self::customerOptions())
                     ->live()->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set)),
                 self::titleField(),
                 Hidden::make('title_suggested')->dehydrated(false),
@@ -260,6 +260,13 @@ class EventResource extends Resource
             }
             $set($p.$field.'_auto', $defaults[$field] === null ? null : (string) $defaults[$field]);
         }
+    }
+
+    /** Client choices; a provisional client with no name yet (quick booking) shows her phone or email instead of breaking the list. */
+    public static function customerOptions(): array
+    {
+        return Customer::query()->orderBy('name')->get(['id', 'name', 'phone', 'email'])
+            ->mapWithKeys(fn (Customer $c) => [$c->id => filled($c->name) ? $c->name : 'Cliente sin nombre ('.($c->phone ?: $c->email ?: '#'.$c->id).')'])->all();
     }
 
     /** One line with what the website lead asked for, so nothing has to be re-read from the leads page. */
