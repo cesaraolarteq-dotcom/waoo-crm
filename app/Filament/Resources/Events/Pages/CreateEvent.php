@@ -44,9 +44,14 @@ class CreateEvent extends CreateRecord
     #[\Livewire\Attributes\Locked]
     public ?array $leadSummary = null;
 
+    /** "Nueva cotización" (Cotizaciones page): after saving, open the quote right away. */
+    #[\Livewire\Attributes\Locked]
+    public bool $quoteAfterSave = false;
+
     public function mount(): void
     {
         parent::mount();
+        $this->quoteAfterSave = request()->boolean('cotizar');
         $this->fillFromLead(request()->integer('lead') ?: null);
     }
 
@@ -112,8 +117,12 @@ class CreateEvent extends CreateRecord
     protected function getRedirectUrl(): string
     {
         // From a lead, go straight to the quote: the event page opens "Crear cotización" and marks the lead quoted when it is created.
-        return $this->leadId !== null
-            ? static::getResource()::getUrl('view', ['record' => $this->record, 'action' => 'quoteCreate', 'lead' => $this->leadId, 'lead_version' => $this->leadVersion])
+        if ($this->leadId !== null) {
+            return static::getResource()::getUrl('view', ['record' => $this->record, 'action' => 'quoteCreate', 'lead' => $this->leadId, 'lead_version' => $this->leadVersion]);
+        }
+
+        return $this->quoteAfterSave
+            ? static::getResource()::getUrl('view', ['record' => $this->record, 'action' => 'quoteCreate'])
             : static::getResource()::getUrl('index');
     }
 }

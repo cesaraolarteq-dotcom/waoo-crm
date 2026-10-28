@@ -83,6 +83,17 @@ class LeadQuoteTest extends TestCase
         $this->assertSame($client->id, Event::sole()->customer_id);
     }
 
+    public function test_new_quote_button_on_quotes_page_opens_the_quote_after_save(): void
+    {
+        $this->get(\App\Filament\Pages\Quotes::getUrl())->assertOk()->assertSee('Nueva cotización')->assertSee('Desde un prospecto');
+        $client = Customer::create(['name' => 'Sofía Méndez', 'locale' => 'es']);
+        $page = Livewire::withQueryParams(['cotizar' => 1])->test(CreateEvent::class)->assertSet('quoteAfterSave', true)
+            ->fillForm(['customer_id' => $client->id, 'title' => 'Fiesta Sofía', 'date' => '2026-12-19', 'start_time' => '15:00', 'end_time' => '16:00',
+                'price_version_ids' => [(string) $this->price->id], 'travel_fee' => '40'])
+            ->call('create')->assertHasNoFormErrors();
+        $page->assertRedirect(EventResource::getUrl('view', ['record' => Event::sole(), 'action' => 'quoteCreate']));
+    }
+
     public function test_plain_new_event_still_requires_a_client(): void
     {
         Livewire::test(CreateEvent::class)
