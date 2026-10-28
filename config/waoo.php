@@ -28,6 +28,9 @@ return [
     'mail_reply_to' => env('WAOO_MAIL_REPLY_TO'),
     'sandbox_resend_webhooks' => env('WAOO_SANDBOX_RESEND_WEBHOOKS', false),
     'resend_webhook_secret' => env('WAOO_RESEND_WEBHOOK_SECRET'),
+    // Run signed-contract PDFs and Stripe receipts right after the HTTP response (seconds) instead of waiting for the cron queue.
+    // Off in the test suite (phpunit.xml): one PHP process keeps the terminating callbacks between test requests.
+    'process_after_response' => env('WAOO_PROCESS_AFTER_RESPONSE', true),
     'sandbox_mail' => env('WAOO_SANDBOX_MAIL', false),
     'mail_allowlist' => [],
     'mail_templates' => \App\Support\ApprovedClientTexts::mailDefinitions($clientTexts),

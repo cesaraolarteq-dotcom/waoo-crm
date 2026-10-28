@@ -18,6 +18,7 @@ body.portal{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 ui-sans
 .p-card{background:var(--surface);border-radius:18px;padding:18px;box-shadow:var(--shadow);display:grid;gap:12px}
 .p-card h2{margin:0;font-size:19px}
 .p-hint{margin:0;color:var(--muted);font-size:14px}
+.p-card-math{margin:0;font-size:15px;font-variant-numeric:tabular-nums}
 .p-party dl,.p-opt dl{margin:0;display:grid;gap:8px}
 .p-party dl div,.p-opt dl div{display:grid;grid-template-columns:110px minmax(0,1fr);gap:8px}
 dt{color:var(--muted);font-size:14px}dd{margin:0;font-weight:700;overflow-wrap:anywhere}dd small{font-weight:500;color:var(--muted)}dd.ok{color:var(--ok)}

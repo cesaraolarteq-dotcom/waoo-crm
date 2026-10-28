@@ -61,7 +61,7 @@ final class CreateCheckoutIntent
         \App\Services\Responsibility\RequireCrmResponsibility::forEvent($eventId);
         try {
             $session = app(StripeGateway::class)->createCheckout(['mode' => 'payment', 'payment_method_types' => ['card'], 'client_reference_id' => $intent->id,
-                'metadata' => $metadata, 'payment_intent_data' => ['metadata' => $metadata], 'line_items' => [['quantity' => 1, 'price_data' => ['currency' => 'usd', 'unit_amount' => $intent->payable_cents, 'product_data' => ['name' => 'Waoo Party · test payment']]]],
+                'metadata' => $metadata, 'payment_intent_data' => ['metadata' => $metadata], 'line_items' => self::lineItems($intent),
                 'expires_at' => $intent->expires_at->timestamp, 'success_url' => $origin.'/portal/payment-return?intent='.$intent->id, 'cancel_url' => $origin.'/portal/payment-return?intent='.$intent->id.'&cancelled=1'], 'waoo-test:'.$intent->id);
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             PaymentIntent::whereKey($intent->id)->update(['last_error' => 'provider_configuration_denied', 'updated_at' => now()]);
@@ -99,6 +99,13 @@ final class CreateCheckoutIntent
         });
         RecordWriteRejected::when(in_array($updated->status, ['superseded','reconciliation_required','failed','expired'], true), 409, 'El intento ya no admite un cobro. Actualiza el saldo.');
         return $updated;
+    }
+    public static function cardFee(int $principal): int { return $principal===0 ? 0 : CardFees::quote($principal)['customer_fee_cents']; }
+    private static function lineItems(PaymentIntent $intent): array
+    {
+        $lines=[['quantity'=>1,'price_data'=>['currency'=>'usd','unit_amount'=>$intent->principal_cents,'product_data'=>['name'=>'Waoo Party · test payment']]]];
+        if($intent->customer_fee_cents>0)$lines[]=['quantity'=>1,'price_data'=>['currency'=>'usd','unit_amount'=>$intent->customer_fee_cents,'product_data'=>['name'=>'Card processing fee (3%)']]];
+        return $lines;
     }
     private function reconcile(PaymentIntent $intent, string $reason): void
     {

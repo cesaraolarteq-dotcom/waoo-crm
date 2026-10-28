@@ -381,7 +381,7 @@ class ImportHoneyBook extends Page
                 Radio::make('customer_mode')->hiddenLabel()->inline()->live()->columnSpanFull()
                     ->options(['existing' => 'Ya es cliente', 'new' => 'Crear cliente nuevo con los datos del archivo']),
                 Select::make('customer_id')->label('Cliente')->native(false)->required()->columnSpanFull()
-                    ->options(fn () => Customer::query()->whereIn('id', array_keys($this->pinned['customers'] ?? []))->pluck('name', 'id'))
+                    ->options(fn () => Customer::query()->whereIn('id', array_keys($this->pinned['customers'] ?? []))->get(['id', 'name'])->mapWithKeys(fn ($c) => [$c->id => $c->name ?: 'Cliente sin nombre #'.$c->id])->all())
                     ->helperText('Solo se muestran fichas con el mismo correo o teléfono. Su ficha no se modifica.')
                     ->visible(fn (Get $get) => $get('customer_mode') === 'existing'),
                 Select::make('locale')->label('Idioma de sus mensajes')->native(false)->options(['es' => 'Español', 'en' => 'Inglés'])->required()

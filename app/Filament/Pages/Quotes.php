@@ -28,6 +28,19 @@ class Quotes extends Page
 
     public array $pageInfo = [];
 
+    /** Owner 2026-10-28: start a quote from here too (new draft → the quote modal opens on save). */
+    protected function getHeaderActions(): array
+    {
+        return [
+            \Filament\Actions\Action::make('newQuote')->label('Nueva cotización')->icon('heroicon-o-plus')
+                ->visible(fn () => \App\Filament\Resources\Events\EventResource::canCreate())
+                ->url(fn () => \App\Filament\Resources\Events\EventResource::getUrl('create', ['cotizar' => 1])),
+            \Filament\Actions\Action::make('fromLead')->label('Desde un prospecto')->color('gray')
+                ->visible(fn () => (bool) config('waoo.sandbox_lead_intake', false))
+                ->url(fn () => Leads::getUrl()),
+        ];
+    }
+
     public static function canAccess(): bool
     {
         return parent::canAccess() && QuoteForm::enabled();
