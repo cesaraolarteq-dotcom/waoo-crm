@@ -1,3 +1,6 @@
+## 2026-10-28 · Codex · Repair PR142 dependency audit prerequisite
+Reuse Claude f03c2f0 exact composer.lock (Symfony Mime7.4.22/Polyfill Mbstring1.43.3 for CVE-2026-45070). PR142 latest a89ea46 has5green test shards but auditcheckFAIL; same security patch already passes PR143/145. No audit suppression, workflow, flag, provider, real data or sending change. Fresh complete CI required. See newest queue entry.
+
 ## 2026-10-28 · Codex · Notice rework from César’s #141 decision
 `codex/fix-houston-booking-notice` / #140 now separates website14days from internal owner confirmation7days with named Houston-local policy methods. New tests retain web14days and verify internal7day boundaries across both DST changes plus owner form at6/7/10days. This supersedes the earlier shared14day implementation, never deployed. #141 decision/docs merged after6checks. Newest **docs/CLAUDE-REVIEW-QUEUE.md** entry carries final proof/review scope. Mail remains held; no deployment/provider/real data change. Full capacity/evaluator still pending.
 
