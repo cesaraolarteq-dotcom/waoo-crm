@@ -1,3 +1,6 @@
+## 2026-10-28 · Codex · Shared daily10-party admission prerequisite
+`codex/fix-daily-capacity-admission`: global mutation admission protocol across paid/unpaid/native/imported commitments, overnight/Houston day, actual-money preservation and native moves. **200tests/1514assertions PASS** including real-process last-place race; see newest docs/CLAUDE-REVIEW-QUEUE.md and docs/DAILY-CAPACITY-API.md. #140 internal7/web14 already merged maina54b626 after12green checks. Full AVAIL evaluator/positive slots still pending; separate CARD-FEE, C3 and aggregate-only history CLI work underway. Mail hold intact, no deployment/provider/real cohort action.
+
 ## 2026-10-28 · Codex · Notice rework from César’s #141 decision
 `codex/fix-houston-booking-notice` / #140 now separates website14days from internal owner confirmation7days with named Houston-local policy methods. New tests retain web14days and verify internal7day boundaries across both DST changes plus owner form at6/7/10days. This supersedes the earlier shared14day implementation, never deployed. #141 decision/docs merged after6checks. Newest **docs/CLAUDE-REVIEW-QUEUE.md** entry carries final proof/review scope. Mail remains held; no deployment/provider/real data change. Full capacity/evaluator still pending.
 

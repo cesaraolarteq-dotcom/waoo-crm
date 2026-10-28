@@ -13,7 +13,7 @@ final class PromoteQuickPayment
         $summary=app(\App\Services\Finance\FinanceSummary::class)->forEvent($e);
         $grant=PortalGrant::whereKey($b->portal_grant_id)->lockForUpdate()->first();
         $ownerReviewedZelle=$actor!==null && $receipt->source_type==='owner_verified' && $receipt->method==='zelle' && $receipt->verified_by===$actor->id && (QuickPaymentProtocol::pendingNotice($b)!==null || $b->receipt_id!==null);
-        $valid=$grant && !$grant->revoked_at && $grant->expires_at->isFuture() && $b->quick_booking_id===null&&($b->expires_at->isFuture()||$ownerReviewedZelle)&&$e->starts_at->isFuture()&&$e->responsible_system==='crm'&&$lease->state==='active'&&$summary['deposit_shortfall_cents']===0;
+        $valid=\App\Services\Scheduling\DailyCapacity::room($e) && $grant && !$grant->revoked_at && $grant->expires_at->isFuture() && $b->quick_booking_id===null&&($b->expires_at->isFuture()||$ownerReviewedZelle)&&$e->starts_at->isFuture()&&$e->responsible_system==='crm'&&$lease->state==='active'&&$summary['deposit_shortfall_cents']===0;
         try{
             QuickPaymentProtocol::verify($b,$e);
             $p=QuickStripeLeases::verify($lease,$e,false,true);QuickStripeLeases::lockInventory($p);

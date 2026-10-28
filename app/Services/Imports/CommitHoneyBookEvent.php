@@ -25,6 +25,7 @@ final class CommitHoneyBookEvent
         $d['source_confirmed']=true;$d['source_evidence_reviewed']=true;if(isset($d['create_separate_customer']))$d['create_separate_customer']=true;$d['remember_mapping']=(bool)($d['remember_mapping']??false);
         $hash=MutationKey::hash($d);$scope="owner:{$actor->id}:import:{$batchId}:row:{$rowId}:commit";
         return ImportPersistence::transaction(function()use($actor,$batchId,$rowId,$d,$hash,$scope,$key){
+            \App\Services\Scheduling\DailyCapacity::lock();
             User::whereKey($actor->id)->lockForUpdate()->firstOrFail();ImportInput::lock();ImportInput::actor($actor);
             $b=ImportBatch::whereKey($batchId)->lockForUpdate()->firstOrFail();
             if($receipt=MutationKey::find($scope,$key,$hash))return ImportedProjectLink::findOrFail($receipt->result_id);

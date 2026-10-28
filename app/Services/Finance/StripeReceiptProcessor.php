@@ -11,6 +11,7 @@ final class StripeReceiptProcessor
     private function problem(WebhookReceipt $receipt, PaymentIntent $intent, string $reason): void
     {
         DB::transaction(function () use ($receipt, $intent, $reason) {
+            \App\Services\Scheduling\DailyCapacity::lock();
             Event::whereKey($intent->event_id)->lockForUpdate()->firstOrFail();
             $locked = PaymentIntent::whereKey($intent->id)->lockForUpdate()->firstOrFail();
             $locked->fill(['status' => 'reconciliation_required', 'last_error' => $reason])->save();
@@ -48,6 +49,7 @@ final class StripeReceiptProcessor
         if (!$valid) { $this->problem($receipt, $intent, 'session_binding_or_amount_mismatch'); return; }
         if (($session['payment_status'] ?? null) !== 'paid') {
             DB::transaction(function () use ($intent, $receipt, $session) {
+            \App\Services\Scheduling\DailyCapacity::lock();
                 Event::whereKey($intent->event_id)->lockForUpdate()->firstOrFail();
                 $locked = PaymentIntent::whereKey($intent->id)->lockForUpdate()->firstOrFail();
                 if (!in_array($locked->status, ['paid','superseded','reconciliation_required'], true)) {
@@ -68,6 +70,7 @@ final class StripeReceiptProcessor
             $this->problem($receipt, $intent, 'unverified_payment_intent'); return;
         }
         DB::transaction(function () use ($intent, $receipt, $session, $payment, $charge) {
+            \App\Services\Scheduling\DailyCapacity::lock();
             $event = Event::whereKey($intent->event_id)->lockForUpdate()->firstOrFail();
             $locked = PaymentIntent::whereKey($intent->id)->lockForUpdate()->firstOrFail();
             $transaction = 'stripe:test:'.$session['_verified_account'].':'.$payment['id'];
@@ -79,6 +82,7 @@ final class StripeReceiptProcessor
                 $entry = LedgerEntry::create(['event_id' => $intent->event_id, 'financial_revision_id' => $intent->financial_revision_id, 'environment' => 'test', 'kind' => 'receipt', 'method' => 'stripe',
                     'amount_cents' => $payment['amount_received'], 'currency' => 'USD', 'received_at' => CarbonImmutable::createFromTimestampUTC($charge['created']),
                     'external_reference' => $payment['id'], 'external_identity_key' => $transaction, 'verified_by' => null, 'source_type' => 'verified_stripe_webhook', 'source_id' => $receipt->id]);
+                \App\Services\Scheduling\DailyCapacity::recordPaidOverflow($event,$intent->financial_revision_id,$entry->id);
                 app(\App\Services\Mail\CaptureMailOccurrence::class)->record('payment_received', $entry->id, ['event_id'=>$event->id, 'customer_id'=>$event->customer_id, 'financial_revision_id'=>$intent->financial_revision_id, 'ledger_entry_id'=>$entry->id]);
                 Audit::recordSystem('payment.stripe_received', $entry, [], ['intent_id' => $intent->id, 'webhook_id' => $receipt->id, 'amount_cents' => $entry->amount_cents]);
             }

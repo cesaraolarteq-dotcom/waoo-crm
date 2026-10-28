@@ -21,6 +21,7 @@ final class ApproveClientDetails
         $data['expected_event_version'] = (int) $data['expected_event_version']; $data['expected_revision'] = (int) $data['expected_revision']; $data['travel_fee_confirmed'] = true;
         $scope = "owner:{$actor->id}:event:{$eventId}:details:{$submissionId}:approve"; $hash = MutationKey::hash($data);
         return DB::transaction(function () use ($actor, $eventId, $submissionId, $data, $scope, $hash, $key) {
+            \App\Services\Scheduling\DailyCapacity::lock();
             $event = Event::whereKey($eventId)->lockForUpdate()->firstOrFail();
             if ($saved = MutationKey::find($scope, $key, $hash)) return ClientDetailsReview::findOrFail($saved->result_id);
             $submission = ClientDetailsSubmission::where('event_id', $eventId)->where('customer_id', $event->customer_id)->whereKey($submissionId)->firstOrFail();
