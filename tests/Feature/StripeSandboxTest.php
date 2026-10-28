@@ -82,7 +82,7 @@ class StripeSandboxTest extends TestCase
         $result=$this->create();if($policy==='crm')$result->assertCreated();else $result->assertConflict();
         $intent=PaymentIntent::sole();$this->assertSame('paid',$intent->status);
         $this->assertSame('pi_fixture_'.$intent->id,$intent->stripe_payment_intent_id);$this->assertNull($intent->collection_slot);
-        $this->assertDatabaseCount('ledger_entries',1);$this->assertSame('processed',WebhookReceipt::sole()->state);
+        $this->assertDatabaseCount('ledger_entries',2);$this->assertSame('processed',WebhookReceipt::sole()->state);
         (new ExpireTestCheckout($intent->id))->handle();$this->assertSame([],$fake->expired);
     }
     public function test_honeybook_late_verified_money_commits_but_skips_mail_and_flags_reconciliation():void
@@ -91,7 +91,7 @@ class StripeSandboxTest extends TestCase
         $this->event->forceFill(['responsible_system'=>'honeybook'])->save();$this->stripe->paid($intent->stripe_checkout_session_id);
         $this->webhook($intent)->assertOk();app(StripeReceiptProcessor::class)->execute('evt_fixture_one');
         $this->webhook($intent,'evt_second_late')->assertOk();app(StripeReceiptProcessor::class)->execute('evt_second_late');
-        $this->assertDatabaseCount('ledger_entries',1);$this->assertSame('paid',$intent->fresh()->status);
+        $this->assertDatabaseCount('ledger_entries',2);$this->assertSame('paid',$intent->fresh()->status);
         $this->assertDatabaseCount('mail_occurrences',0);$this->assertDatabaseCount('outbound_messages',0);
         $this->assertDatabaseHas('payment_exceptions',['event_id'=>$this->event->id,'kind'=>'responsibility_reconciliation','state'=>'open']);
         $this->assertSame(1,\Illuminate\Support\Facades\DB::table('payment_exceptions')->where('kind','responsibility_reconciliation')->count());
@@ -168,7 +168,7 @@ class StripeSandboxTest extends TestCase
         $this->stripe->paid($intent->stripe_checkout_session_id);
         $this->webhook($intent, 'evt_async_success', ['type' => 'checkout.session.async_payment_succeeded'])->assertOk(); app(StripeReceiptProcessor::class)->execute('evt_async_success');
         $this->webhook($intent, 'evt_old_expired', ['type' => 'checkout.session.expired'])->assertOk(); app(StripeReceiptProcessor::class)->execute('evt_old_expired');
-        $this->assertSame('paid', $intent->fresh()->status); $this->assertDatabaseCount('ledger_entries', 1);
+        $this->assertSame('paid', $intent->fresh()->status); $this->assertDatabaseCount('ledger_entries', 2);
     }
     public function test_zelle_supersedes_checkout_but_late_provider_money_is_still_recorded_as_credit(): void
     {
@@ -177,7 +177,7 @@ class StripeSandboxTest extends TestCase
             'financial_revision_id' => $this->finance->id, 'amount_cents' => 45500, 'currency' => 'USD', 'reference' => 'FIXTURE-ZELLE-FULL', 'received_at' => now()->subHour()->toIso8601String(), 'verified_received' => true])->assertCreated();
         $this->assertSame('superseded', $intent->fresh()->status); Queue::assertPushed(ExpireTestCheckout::class);
         $this->stripe->paid($intent->stripe_checkout_session_id); $this->webhook($intent)->assertOk(); app(StripeReceiptProcessor::class)->execute('evt_fixture_one');
-        $this->assertDatabaseCount('ledger_entries', 2);
+        $this->assertDatabaseCount('ledger_entries', 3);
         $this->getJson('/admin/api/events/'.$this->event->id.'/finance')->assertOk()->assertJsonPath('credit_cents', 22750)->assertJsonPath('balance_cents', 0);
         $this->assertDatabaseHas('payment_exceptions', ['kind' => 'overpayment', 'state' => 'open']);
     }
@@ -212,7 +212,7 @@ class StripeSandboxTest extends TestCase
             function () { app(StripeReceiptProcessor::class)->execute('evt_fixture_one'); return 'stripe'; },
         ]);
         $this->assertSame(['zelle','stripe'], $results);
-        $this->assertDatabaseCount('ledger_entries', 2);
+        $this->assertDatabaseCount('ledger_entries', 3);
         $this->getJson('/admin/api/events/'.$eventId.'/finance')->assertOk()->assertJsonPath('credit_cents', 22750);
         $this->assertDatabaseHas('payment_exceptions', ['kind' => 'overpayment', 'state' => 'open']);
     }

@@ -69,7 +69,7 @@ class ClientPortalPageTest extends TestCase
         $this->assertSame('Ana Ficticia', SignatureEvidence::sole()->signer_name);
 
         // Owner 2026-10-22: signed + deposit met -> the party reads as booked and the balance is a reminder.
-        $this->get('/portal')->assertOk()->assertSee('¡Tu fiesta está reservada!')->assertDontSee('en 2 pasos')->assertSee('Saldo pendiente')->assertSee('No tienes que pagar nada más ahora')->assertSee('Pagar el saldo')->assertSee('Waoo Party LLC · 346-216-8739')->assertSee('WP-'.$this->event->id)->assertSee('Pagar $64.38')->assertSee('Tarjeta de crédito o débito')->assertDontSee('Klarna');
+        $this->get('/portal')->assertOk()->assertSee('¡Tu fiesta está reservada!')->assertDontSee('en 2 pasos')->assertSee('Saldo pendiente')->assertSee('No tienes que pagar nada más ahora')->assertSee('Pagar el saldo')->assertSee('Waoo Party LLC · 346-216-8739')->assertSee('WP-'.$this->event->id)->assertSee('Pagar $64.38')->assertSee('Tarjeta de crédito')->assertDontSee('Klarna');
         $this->get('/portal?lang=en')->assertSee('Remaining balance')->assertSee('Pay the balance')->assertSee('Pay $64.38')->assertSee('$62.50 + $1.88 (3 %) =')->assertSee('Cards carry a 3% processing fee');
         $this->postJson('/portal/api/checkout-intents', ['financial_revision_id' => \App\Models\FinancialRevision::sole()->id, 'purpose' => 'balance'], ['Idempotency-Key' => (string) Str::uuid()])
             ->assertCreated()->assertJsonPath('principal_cents', 6250)->assertJsonPath('customer_fee_cents', 188)->assertJsonPath('payable_cents', 6438);
