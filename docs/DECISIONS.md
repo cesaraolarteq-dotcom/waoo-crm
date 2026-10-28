@@ -68,3 +68,8 @@ Comparación de precios: se incorpora la evidencia de Claude en arch/ARCH-01-esi
 
 ## 2026-10-28 · César · Short-notice approval: 14 days for the website only
 - Asked whether the 14-day owner-approval rule should also apply inside the CRM, he answered **"b"**: only bookings that come **from the website** need owner approval under 14 Houston calendar days. Inside the CRM (owner "Confirmar capacidad" form and `ConfirmBooking`), the short-notice reason stays at **under 7 days**, because the owner is already deciding when he confirms. Quick booking is unchanged.
+
+## 2026-10-28 · César · Staffing of the animation packages
+- Música y Juegos, Música y Juegos 2.0 and Waoo = **1 animador + 2 recreadores**. In Waoo one of the two recreadores paints faces (3 people in total).
+- Applied on crm-test through `SaveVariant` with the owner as actor (audited): Música y Juegos 2.0 v4 (`host` 1 → 2); Waoo v4 (`entertainer` 1, `host` 1, `face_painter` 1). Música y Juegos was already 1 + 2.
+- **Production catalog import must carry the same staffing** (the owner catalog source still had the old values for 2.0 and Waoo).
