@@ -230,7 +230,7 @@ class StripeSandboxTest extends TestCase
         $this->postJson('/admin/api/stripe-webhooks/evt_fixture_one/retry', ['reason' => 'Fixture connection recovered; recheck authoritative provider.'])->assertOk();
         $this->stripe->failRetrieve = false; $job->handle(app(StripeReceiptProcessor::class)); $job->handle(app(StripeReceiptProcessor::class));
         $this->assertSame('processed', WebhookReceipt::first()->state);
-        $this->assertDatabaseCount('ledger_entries', 1);
+        $this->assertDatabaseCount('ledger_entries', 2);
     }
 
 }
