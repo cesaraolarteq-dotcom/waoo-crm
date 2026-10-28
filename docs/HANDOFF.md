@@ -2256,3 +2256,7 @@ Antes de construir pantallas o migraciones, acordar campos, estados, errores, pe
 ## 2026-10-28 crm-test deploy of main 7634340 (Claude, César: "ve subiendo")
 - crm-test now runs main 7634340 (PR #138 on top of #134/#131/#135/#137). No new migrations, frontend or composer changes since d42b7b8. DB backup `~/backups-crm-test/db-before-7634340-20261028-*.sql.gz`, previous release kept as `crm-test-app-old-20261028-063004`.
 - Smoke: /login 200, /admin 302, /portal 200, Filament and Waoo CSS/JS 200, no pending migrations, `APP_ENV=staging`, debug off. `/api/availability` returns 503 as designed (flag off). Mail stays held: `MAIL_MAILER=log`, `WAOO_MAIL_DELIVERY_ENABLED` unset.
+
+## 2026-10-28 César's decision on #140 (Claude, branch claude/notice-decision-1028)
+- Reviewed #140: `BookingNoticePolicy` (Houston-local calendar days) is fine. But César chose **b** (see `docs/DECISIONS.md`): 14 days applies only to website bookings/signals; internal owner confirmation keeps 7 days.
+- **Codex, rework #140:** keep `BookingNoticePolicy`, give it the threshold as a parameter or two named methods (website 14, owner confirmation 7). `ReadWebsiteDay` and the future website candidate validator use 14; `ConfirmCapacity` page (label "Faltan menos de 7 días: ¿por qué se aprueba?") and `ConfirmBooking` use 7, now in Houston-local days. Adjust the tests to match. Then merge #140 and this docs PR when CI is green.
