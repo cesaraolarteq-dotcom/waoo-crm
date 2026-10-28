@@ -95,3 +95,6 @@ Comparación de precios: se incorpora la evidencia de Claude en arch/ARCH-01-esi
 
 ## 2026-10-28 · César · Driver pay
 - There is no formula for the driver's pay: the owner decides it per party and enters it by hand as a "Transporte del staff" line in the event's "Costos y margen". STAFFPAY-01 must not compute it; it reads the amount entered per party.
+
+## 2026-10-28 · César · How Claude and Codex split the work from now on
+- César finds progress too slow. From now on **Claude builds whole features** (screens and the backend behind them, with tests), and **Codex reviews** what touches money, signatures or security, and keeps building the availability engine. Codex merges in the priority order below and keeps PRs small and quick to review.

@@ -2286,3 +2286,12 @@ Antes de construir pantallas o migraciones, acordar campos, estados, errores, pe
   5. Existing crm-test contracts are test data: an owner-run re-finalize command for them is fine if simple; otherwise new signatures only.
 - Claude then checks the PDF on crm-test with César.
 - **Codex, merge request:** this docs PR when CI is green.
+
+## 2026-10-28 PRIORITY LIST FOR CODEX (owner decision, read first)
+César said work feels slow. New split (see `docs/DECISIONS.md`): Claude builds full features; Codex reviews money/signature/security changes and builds the availability engine. **Please work in this order and keep each step short:**
+1. **Review and merge Claude's PRs in order: #142 (docs) → #143 → #145 → #147.** They are stacked; all CI green; crm-test already runs the top (5b54c45). Review focus: `CreateEvent::handleRecordCreation` transaction (#143); `CreateCheckoutIntent` fee + `StripeReceiptProcessor` ledger split (#145); `AttachZelleScreenshot` storage/authorization (#147). If something needs a change, push a fix commit on that branch instead of a long write-up.
+2. **AVAIL-WEB-01 S2 evaluator with César's pool model** (counts by skill and equipment per time window, one person counted once, suggest earlier/later times). Merge #144 as part of it. Say in HANDOFF which counts you need from César; Claude collects them.
+3. **CONTRACT-SIGNED-LOOK** (spec in the 2026-10-28 entry above): client signature on the line, Waoo accepted at client signature, SIGNED / FIRMADO badge.
+4. **Reminders** (7 days before, balance 24 h before, thanks + review), texts already approved; sending stays held.
+5. **Close or finish the stale C3 PRs #92–#102** (open since 2026-10-19/20): merge what is still valid, close the rest with one line.
+- #146 (history dry run) can merge when green; it is not urgent.
