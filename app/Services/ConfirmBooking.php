@@ -38,8 +38,8 @@ final class ConfirmBooking
                 if ($event->starts_at->isPast()) {
                     $this->fail('No se puede reservar un evento pasado.');
                 }
-                // Conservative Phase 1: approve a short-notice event manually; no automatic offers.
-                if ($event->starts_at->lessThan(now()->addDays(7)) && empty($data['review']['short_notice_reason'])) {
+                // Same Houston-local notice policy as the owner form and website signal.
+                if (\App\Services\Scheduling\BookingNoticePolicy::requiresOwnerApproval($event->starts_at) && empty($data['review']['short_notice_reason'])) {
                     $this->fail('Requiere aprobación por proximidad de fecha.');
                 }
                 $services = $event->services()->get();

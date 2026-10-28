@@ -24,7 +24,7 @@ class CoreTest extends TestCase
     }
     private function event(?CarbonImmutable $start = null, array $requirements = [['kind' => 'equipment', 'equipment_kind' => 'speaker', 'quantity' => 1]]): Event
     {
-        $start ??= CarbonImmutable::now()->addDays(14)->startOfHour();
+        $start ??= CarbonImmutable::now()->addDays(20)->startOfHour();
         $customer = Customer::create(['name' => 'Fictitious client', 'email' => 'client@example.test', 'locale' => 'es']);
         $variant = ServiceVariant::create(['name' => 'Fictitious service', 'status' => 'active', 'duration_minutes' => 60, 'requirements' => $requirements]);
         $price = PriceVersion::create(['service_variant_id' => $variant->id, 'amount_cents' => 20000, 'currency' => 'USD', 'created_by' => $this->owner->id]);
@@ -129,6 +129,47 @@ class CoreTest extends TestCase
         $p['review']['short_notice_reason'] = 'Staff and preparation checked by owner.';
         $this->confirm($e, $p)->assertOk();
     }
+    public static function houstonNoticeBoundaries(): array
+    {
+        return [
+            'nine days needs approval' => ['2026-10-26T12:00:00-05:00', '2026-11-04T12:00:00-06:00', true],
+            'fall before' => ['2026-10-26T12:00:00-05:00', '2026-11-09T11:59:59-06:00', true],
+            'fall equal' => ['2026-10-26T12:00:00-05:00', '2026-11-09T12:00:00-06:00', false],
+            'fall after' => ['2026-10-26T12:00:00-05:00', '2026-11-09T12:00:01-06:00', false],
+            'spring before' => ['2027-03-01T12:00:00-06:00', '2027-03-15T11:59:59-05:00', true],
+            'spring equal' => ['2027-03-01T12:00:00-06:00', '2027-03-15T12:00:00-05:00', false],
+            'spring after' => ['2027-03-01T12:00:00-06:00', '2027-03-15T12:00:01-05:00', false],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('houstonNoticeBoundaries')]
+    public function test_http_confirmation_uses_fourteen_houston_calendar_days_and_audits_owner_exception(string $clock, string $start, bool $needsApproval): void
+    {
+        // The server/event storage is UTC; the owner's notice policy uses Houston's local clock.
+        config(['app.timezone' => 'UTC']);
+        $this->travelTo(CarbonImmutable::parse($clock));
+        $event = $this->event(CarbonImmutable::parse($start)->utc());
+        $payload = $this->payload($event, [$this->resource()->id]);
+        if ($needsApproval) {
+            $this->confirm($event, $payload)->assertUnprocessable()->assertJsonValidationErrors('booking');
+            $this->assertSame('draft', $event->fresh()->status);
+            foreach (['resource_reservations', 'booking_evidence', 'operational_reviews', 'audit_entries'] as $table) {
+                $this->assertDatabaseCount($table, 0);
+            }
+            $payload['review']['short_notice_reason'] = 'Owner explicitly checked crew and preparation for this fictional party.';
+        }
+        $this->confirm($event, $payload)->assertOk()->assertJsonPath('status', 'capacity_reserved');
+        $this->assertDatabaseHas('booking_evidence', ['event_id' => $event->id, 'verified_by' => $this->owner->id]);
+        $review = \App\Models\OperationalReview::where('event_id', $event->id)->sole();
+        $this->assertSame($payload['review'], $review->evidence);
+        $this->assertSame($this->owner->id, $review->reviewed_by);
+        // An already-confirmed exact retry is not reclassified as a new booking as time advances.
+        $this->travel(6)->hours();
+        $this->confirm($event, $payload)->assertOk();
+        $this->assertDatabaseCount('resource_reservations', 1);
+        $this->assertDatabaseCount('booking_evidence', 1);
+        $this->assertDatabaseCount('operational_reviews', 1);
+    }
     public function test_travel_unknown_and_incomplete_catalog_never_become_zero_or_ready(): void
     {
         $e = $this->event();
@@ -197,7 +238,7 @@ class CoreTest extends TestCase
     }
     public function test_four_speakers_cover_four_overlaps_and_a_fifth_is_refused(): void
     {
-        $start = CarbonImmutable::now()->addDays(14)->startOfHour();
+        $start = CarbonImmutable::now()->addDays(20)->startOfHour();
         $units = [];
         for ($i = 0; $i < 4; $i++) {
             $units[] = $this->resource();
