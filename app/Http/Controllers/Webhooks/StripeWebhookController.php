@@ -52,7 +52,7 @@ final class StripeWebhookController extends Controller
             app()->terminating(function () use ($id) {
                 try { app(\App\Services\Booking\ProcessQuickPaymentReceipt::class)->execute($id); } catch (\Throwable) {}
             });
-        } elseif ($inserted) {
+        } elseif ($inserted && config('waoo.process_after_response')) {
             // Owner 2026-10-28: portal deposits/balances and tips confirm right away too (the client saw the balance still open for ~45 s).
             // Same router as the queued job; a failure leaves the receipt queued for the cron's retry.
             $id = $event['id'];
