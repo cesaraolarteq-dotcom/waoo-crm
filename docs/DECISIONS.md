@@ -73,3 +73,16 @@ Comparación de precios: se incorpora la evidencia de Claude en arch/ARCH-01-esi
 - Música y Juegos, Música y Juegos 2.0 and Waoo = **1 animador + 2 recreadores**. In Waoo one of the two recreadores paints faces (3 people in total).
 - Applied on crm-test through `SaveVariant` with the owner as actor (audited): Música y Juegos 2.0 v4 (`host` 1 → 2); Waoo v4 (`entertainer` 1, `host` 1, `face_painter` 1). Música y Juegos was already 1 + 2.
 - **Production catalog import must carry the same staffing** (the owner catalog source still had the old values for 2.0 and Waoo).
+
+## 2026-10-28 · César · Notes from the owner's phase checklist
+**Availability is capacity by role pools, not named people (AVAIL-WEB-01 S2 input).** César: the system should keep a count of the staff available that day by skill and block *combinations*, not specific people. Example: 3 parties at once (2 Waoo + 1 Música y Juegos) use 3 animadores + 6 recreadores (2 of them face painters) + drivers; if those counts are used up at that time, only earlier or later start times are offered. A person counts once at a time: an animador already used cannot also count as a recreador. Drivers are a pool too. Equipment is a pool as well: if two Waoo parties overlap and there are only two face-paint kits ("maletas"), a face-painting add-on cannot be sold for that time. When a pool is full, suggest the nearest earlier/later times (same day first). Named assignment stays an owner step at confirmation; the pool check is what the website and quick booking rely on. César offered to go deeper on this; Claude will collect the exact counts with him.
+
+**Pickups.** Drivers always pick every staff member up at home. Later: store each staff address, compute the pickup route (driver's home → each staff home → party) with a start time for each person, and let the owner remove someone who goes straight to the party.
+
+**Staff pay (STAFFPAY-01).** Known rates stand (recreador $25/h, animador $35/h, personaje $60/h, personaje de traje $80/h). "Personaje de traje" = wig characters (Disney princesses, K-Pop Rumi…). Preparation time is included in the rate (that is why it is higher). Only event time is paid, with a **$50 minimum per service** (e.g. a 1-hour service pays at least $50). Driver transport pay varies with the number of stops and distance (formula still to be given). Tips are split equally among everyone at the party.
+
+**Costs and margin.** Materials: about **$30 per service** as a default. Gas is part of the travel fee, and the **travel fee is not profit** (exclude it from margin).
+
+**Setup/breakdown defaults.** The 6 services without times now have 20/20 minutes on crm-test (SaveVariant, audited): Mural creativo, Pintacaritas agregado, Personajes inflables y bolas disco, 2 chisperos, 4 chisperos, Pool Party + Cañón de espuma.
+
+**Weekly blocks** (vacations, days off) are entered week by week by the owner.
