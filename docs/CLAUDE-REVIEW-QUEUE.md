@@ -21,6 +21,11 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-10-28 · BACKEND · Preserve Claude’s dependency security patch on pending delivery · PENDING
+- Source: Claude commit f03c2f0127a434b7dc561674140f13eca2366c5e, from PR143/145 ancestry. Symfony Mime7.4.19→7.4.22 and Polyfill Mbstring1.43.0→1.43.3, owner-visible audit blocker CVE-2026-45070 identified in Claude HANDOFF. Dependency lock changes identical to his generated patch.
+- Proof: both previous branch test matrices green, audit step red; Claude PR145 exact dead5fe has all6checks green with this patch. This branch requires its own complete CI before merge; local advisory endpoint remains proxy403, no fabricated local audit pass. No new behavioral test for lockfile-only patch.
+- Claude check: exact dependency versions and fresh CI audit, no workflow bypass. Mail hold and all feature gates unchanged; no deployment/provider/customer-data action.
+
 ### 2026-10-28 · BACKEND · Shared ten-party daily admission across native, lease, paid and imported paths · PENDING
 - Branch: codex/fix-daily-capacity-admission, base maina54b626 (#140 internal7/web14 already merged12checks; same tested tree). César expressly assigned points1–4. This delivers the shared quota prerequisite of point1, not the entire read-only web evaluator.
 - API: docs/DAILY-CAPACITY-API.md, published before implementation. One seeded global admission mutex (mutation transactions only), acquired before parent user/event locks. Current locking reads count distinct effective event commitments in Houston08:00→08:00; archived tables/drafts/cancelled events excluded. Includes paid/reserved/resource/active-lease/imported-HoneyBook commitments; lease clock expiry/refund alone cannot free a date. Promotion/multiple units count once.

@@ -1,3 +1,6 @@
+## 2026-10-28 · Codex · Reuse Claude’s security patch for the audit blocker
+Port of Claude f03c2f0: Symfony Mime7.4.19→7.4.22 and Polyfill Mbstring1.43.0→1.43.3 (CVE-2026-45070). Original PR145 has6green checks; this branch still requires its own CI. See newest queue entry. No audit suppression, workflow, provider, email or activation change.
+
 ## 2026-10-28 · Codex · Shared daily10-party admission prerequisite
 `codex/fix-daily-capacity-admission`: global mutation admission protocol across paid/unpaid/native/imported commitments, overnight/Houston day, actual-money preservation and native moves. **200tests/1514assertions PASS** including real-process last-place race; see newest docs/CLAUDE-REVIEW-QUEUE.md and docs/DAILY-CAPACITY-API.md. #140 internal7/web14 already merged maina54b626 after12green checks. Full AVAIL evaluator/positive slots still pending; separate CARD-FEE, C3 and aggregate-only history CLI work underway. Mail hold intact, no deployment/provider/real cohort action.
 
