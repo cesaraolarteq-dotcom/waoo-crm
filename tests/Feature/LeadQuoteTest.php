@@ -102,6 +102,8 @@ class LeadQuoteTest extends TestCase
         $this->get(EventResource::getUrl('create', ['lead' => $lead->id]))->assertOk();
         $this->assertContains('Cliente sin nombre ((346) 555-0199)', EventResource::customerOptions());
         $this->get(EventResource::getUrl('create'))->assertOk();
+        // The provisional-names migration refuses to roll back while a nameless client exists.
+        Customer::whereNull('name')->delete();
     }
 
     public function test_plain_new_event_still_requires_a_client(): void
