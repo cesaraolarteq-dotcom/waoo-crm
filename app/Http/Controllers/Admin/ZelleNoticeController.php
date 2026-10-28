@@ -9,6 +9,15 @@ use Illuminate\Validation\Rule;
 
 final class ZelleNoticeController extends Controller
 {
+    /** Owner-only view of the client's optional Zelle screenshot (private file, never cached or indexed). */
+    public function screenshot(int $notice)
+    {
+        Sandbox::require(); Sandbox::require('sandbox_documents');
+        $shot = \App\Models\ZelleNoticeScreenshot::where('notice_id', $notice)->firstOrFail();
+        abort_unless(\Illuminate\Support\Facades\Storage::disk('local')->exists($shot->path), 404);
+        return response()->file(\Illuminate\Support\Facades\Storage::disk('local')->path($shot->path), ['Content-Type' => $shot->mime,
+            'Content-Disposition' => 'inline; filename="zelle-'.$notice.'"', 'Cache-Control' => 'no-store, private', 'X-Robots-Tag' => 'noindex', 'X-Content-Type-Options' => 'nosniff']);
+    }
     public function index(Request $request)
     {
         Sandbox::require(); Sandbox::require('sandbox_documents');

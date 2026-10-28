@@ -163,6 +163,7 @@ class EventMoney extends Page
         return ZelleNotice::query()->where('event_id', $this->record->getKey())->with('review.ledgerEntry')->orderByDesc('id')->get()
             ->map(fn ($n) => (object) ['id' => $n->id, 'amount' => Labels::money($n->amount_cents), 'when' => Labels::when($n->submitted_at),
                 'sent' => $n->sent_at ? Labels::when($n->sent_at) : null, 'reference' => $n->reference, 'payer' => $n->payer_name, 'note' => $n->note,
+                'screenshot' => \App\Models\ZelleNoticeScreenshot::where('notice_id', $n->id)->exists() ? url('/admin/api/zelle-notices/'.$n->id.'/screenshot') : null,
                 'old_amounts' => $current !== null && $n->financial_revision_id !== $current,
                 'state' => $n->review?->decision ?? 'pending', 'review_note' => $n->review?->review_note,
                 'real' => $n->review?->ledgerEntry ? Labels::money($n->review->ledgerEntry->amount_cents) : null,

@@ -70,13 +70,12 @@ class ZelleNoticeScreensTest extends TestCase
     public function test_client_notice_is_pending_until_the_owner_verifies_the_real_amount(): void
     {
         $this->get('/portal')->assertOk()->assertSee('Saldo pendiente')->assertSee('Waoo Party LLC')
-            // Owner 2026-10-26: the portal no longer shows the "Ya envié el Zelle" form; the notice API stays for existing clients.
-            ->assertDontSee('id="zelle-form"', false)->assertDontSee('Ya envié el Zelle');
-        $this->get('/portal?lang=en')->assertDontSee('I sent my Zelle payment');
+            // Owner 2026-10-28 (replaces 2026-10-26): the "Ya envié el Zelle" form is back, with an optional screenshot.
+            ->assertSee('id="zelle-form"', false)->assertSee('Ya envié el Zelle')->assertSee('Captura del Zelle');
         $id = $this->clientNotice(6250);
 
         // Pending: the client sees it is not a payment yet; the balance does not move.
-        $this->get('/portal?lang=es')->assertSee('Pendiente de verificación')->assertDontSee('¿Enviaste otro Zelle? Avísanos')->assertSee('Saldo')->assertSee('$62.50');
+        $this->get('/portal?lang=es')->assertSee('Esperando confirmación de Waoo Party')->assertSee('¿Enviaste otro Zelle? Avísanos')->assertSee('Saldo')->assertSee('$62.50');
         $this->assertSame(6250, app(FinanceSummary::class)->forEvent($this->event->fresh())['balance_cents']);
         $this->assertSame(1, LedgerEntry::count());
 
@@ -102,6 +101,24 @@ class ZelleNoticeScreensTest extends TestCase
         $this->get('/portal')->assertSee('Verificamos tu Zelle: llegaron $60')->assertDontSee('BANK-REF-77')->assertDontSee('Llegaron 60 en el banco');
     }
 
+    public function test_optional_screenshot_is_private_one_per_notice_and_only_for_the_owner(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+        $id = $this->clientNotice(6250);
+        $file = \Illuminate\Http\UploadedFile::fake()->image('zelle.jpg', 600, 900);
+        $this->post('/portal/api/zelle-notices/'.$id.'/screenshot', ['screenshot' => $file], ['Accept' => 'application/json'])->assertCreated();
+        $this->post('/portal/api/zelle-notices/'.$id.'/screenshot', ['screenshot' => \Illuminate\Http\UploadedFile::fake()->image('again.jpg')], ['Accept' => 'application/json'])->assertStatus(409);
+        $this->post('/portal/api/zelle-notices/'.$id.'/screenshot', ['screenshot' => \Illuminate\Http\UploadedFile::fake()->create('virus.exe', 10)], ['Accept' => 'application/json'])->assertStatus(422);
+        $shot = \App\Models\ZelleNoticeScreenshot::sole();
+        \Illuminate\Support\Facades\Storage::disk('local')->assertExists($shot->path);
+        $this->get('/admin/api/zelle-notices/'.$id.'/screenshot')->assertRedirect(); // a client session is not the owner
+        $this->asOwner();
+        $this->get('/admin')->assertSee('dice $62.50')->assertSee('con captura');
+        $this->get("/admin/eventos/{$this->event->id}/dinero")->assertSee('Ver captura');
+        $this->get('/admin/api/zelle-notices/'.$id.'/screenshot')->assertOk()->assertHeader('Cache-Control', 'no-store, private');
+        $this->assertSame(6250, app(FinanceSummary::class)->forEvent($this->event->fresh())['balance_cents'], 'A screenshot is never money.');
+    }
+
     public function test_owner_rejects_a_notice_without_touching_money(): void
     {
         $id = $this->clientNotice(6250, 'NOT-IN-BANK');
@@ -116,7 +133,7 @@ class ZelleNoticeScreensTest extends TestCase
         $this->get("/admin/eventos/{$this->event->id}")->assertSee('Revisó un aviso de Zelle del cliente: rechazado');
 
         auth()->logout();
-        $this->get('/portal')->assertSee('No pudimos verificar tu aviso de $62.50')->assertDontSee('No aparece en el banco')->assertDontSee('id="zelle-form"', false);
+        $this->get('/portal')->assertSee('No pudimos verificar tu aviso de $62.50')->assertDontSee('No aparece en el banco')->assertSee('id="zelle-form"', false);
     }
 
     public function test_notices_from_another_event_are_not_reachable_from_this_dinero_page(): void
