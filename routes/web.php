@@ -79,6 +79,7 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-api'])->pre
     Route::get('/zelle-notices', [\App\Http\Controllers\Admin\ZelleNoticeController::class, 'index']);
     Route::post('/events/{event}/zelle-notices/{notice}/review', [\App\Http\Controllers\Admin\ZelleNoticeController::class, 'review'])->whereNumber('notice');
     Route::get('/zelle-notices/{notice}/screenshot', [\App\Http\Controllers\Admin\ZelleNoticeController::class, 'screenshot'])->whereNumber('notice');
+    Route::get('/events/{event}/honeybook-copy', \App\Http\Controllers\Admin\HoneyBookCopyController::class)->whereNumber('event');
     Route::get('/events/{event}/costume-hold', [\App\Http\Controllers\Admin\QuickCostumeHoldController::class, 'show'])->whereNumber('event');
     Route::post('/events/{event}/costume-hold', [\App\Http\Controllers\Admin\QuickCostumeHoldController::class, 'attempt'])->whereNumber('event');
     Route::post('/events/{event}/costume-hold/release', [\App\Http\Controllers\Admin\QuickCostumeHoldController::class, 'release'])->whereNumber('event');

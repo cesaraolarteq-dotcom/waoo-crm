@@ -2298,3 +2298,8 @@ Antes de construir pantallas o migraciones, acordar campos, estados, errores, pe
 - Copy: pending notice now "Esperando confirmación de Waoo Party: …" / "Waiting for Waoo Party to confirm: …"; new label "Captura del Zelle" / "Zelle screenshot".
 - Tests: ZelleNoticeScreensTest (form back, new pending text, screenshot privacy/one-per-notice/type), QuickPaymentsTest (form now present). **Migration** `2026_10_28_100000_create_zelle_notice_screenshots`.
 - **Codex:** please review the upload service (storage path, validation, authorization) before merging.
+
+## 2026-10-28 HoneyBook record copies on the event page (Claude, branch claude/honeybook-copies, stacked on claude/zelle-balance)
+- HoneyBook has no PDF download (only the browser print dialog) and the connector returns data, not files. With César's OK, Claude built **record copies** for the upcoming HoneyBook parties from the connector data: banner "COPY FROM HONEYBOOK / COPIA DE HONEYBOOK", signature status, invoice lines + travel/other charges + discount + total/paid/balance + schedule, then the contract with the client's filled fields. Rendered with Dompdf on crm-test into `storage/app/private/honeybook-copies/<hb_project_id>.pdf` + `manifest.json` (HoneyBook project → event matched by exact title). Never presented as signed originals. No client data in Git.
+- Code: `App\Support\HoneyBookCopies::forEvent()`, owner-only `/admin/api/events/{event}/honeybook-copy` (`no-store`), "Copia de HoneyBook (PDF)" action on the event page. Test: HoneyBookCopiesTest (fictitious data).
+- **Codex, merge request:** after #147, merge when CI is green.
