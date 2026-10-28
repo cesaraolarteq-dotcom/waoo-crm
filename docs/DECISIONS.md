@@ -86,3 +86,9 @@ Comparación de precios: se incorpora la evidencia de Claude en arch/ARCH-01-esi
 **Setup/breakdown defaults.** The 6 services without times now have 20/20 minutes on crm-test (SaveVariant, audited): Mural creativo, Pintacaritas agregado, Personajes inflables y bolas disco, 2 chisperos, 4 chisperos, Pool Party + Cañón de espuma.
 
 **Weekly blocks** (vacations, days off) are entered week by week by the owner.
+
+## 2026-10-28 · César · How the signed contract looks
+- César saw the final PDF with an empty client line and "Provider acceptance pending" and did not recognise it as a signed contract (the proof was only on the appended last page).
+- **Decision 1:** the final PDF must look signed on the contract pages too: the client's typed signature and date on the "Client" line, the electronic-signature record under the signature table, and a visible "SIGNED / FIRMADO" mark next to the contract number on page 1. The appended "Electronic Signature Record" page stays. The presented (unsigned) HTML/PDF and their hashes stay stored unchanged as evidence.
+- **Decision 2 (option a):** Waoo Party LLC accepts at the moment the client signs (César issued the contract). The provider line shows "Signed <same date/time>" instead of "Provider acceptance pending", and the record page states that provider acceptance was recorded at the client's signature by owner decision of 2026-10-28.
+- To be included in the one-page summary for the lawyer (go-live checklist).

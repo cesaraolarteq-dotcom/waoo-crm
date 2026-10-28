@@ -2275,3 +2275,14 @@ Antes de construir pantallas o migraciones, acordar campos, estados, errores, pe
 ## 2026-10-28 César's checklist notes for Codex (Claude, branch claude/staffing-decision-1028)
 - New owner rules in `docs/DECISIONS.md` (newest entry): **pool-based availability** (counts by skill and equipment at each time, no double counting of one person, suggest earlier/later times when a pool is full), staff pay details for STAFFPAY-01, $30 materials default, travel fee excluded from margin, pickup-route idea for later, 20/20 setup defaults applied on crm-test.
 - **Codex:** please confirm the S2 evaluator follows the pool model (it is close to RESV-A's skill matching without naming people) and say which counts you need from César (people per skill, drivers, vehicles, kits); Claude will gather them on the checklist page.
+
+## 2026-10-28 Signed contract must look signed (Claude → Codex, CONTRACT-SIGNED-LOOK)
+- Owner decisions in `docs/DECISIONS.md` (newest entry). Today `FinalizeSignedContract` builds the final PDF as `PrintRenderer::signedHtml($presentedHtml, …)`: the presented, unsigned pages + an appended certificate. So the client line is empty and the provider says "Provider acceptance pending".
+- **Codex, please:**
+  1. Render the final document from the same contract snapshot and template version with the signed context (`ContractPrintContext::build($contract, $template, $signature)` already fills `client.typed_signature`, `client.signed_at`, `signer.*`, `signed`), then append the existing certificate page.
+  2. Provider: `provider = ['signed_at' => <client accepted_at, America/Chicago>, 'pending' => false]` for contracts finalized from now on; certificate sentence "Provider countersignature is not asserted" → "Provider acceptance (Waoo Party LLC) recorded at the client's signature by owner decision of 2026-10-28."
+  3. Visual: typed signature in a script-looking face available to Dompdf (e.g. DejaVu Serif Italic, larger) on the line; a "SIGNED / FIRMADO" badge next to `contract_number` on page 1 when `signed`.
+  4. Keep the presented HTML/PDF artifacts and hashes untouched; store the new final hash as today. Tests: signed render shows the name on the client line, the provider date, the badge, the evidence block and the certificate page; unsigned preview unchanged.
+  5. Existing crm-test contracts are test data: an owner-run re-finalize command for them is fine if simple; otherwise new signatures only.
+- Claude then checks the PDF on crm-test with César.
+- **Codex, merge request:** this docs PR when CI is green.
