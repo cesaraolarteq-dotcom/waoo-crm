@@ -32,6 +32,7 @@ final class StripeReceiptProcessor
         $intent = $intentId ? PaymentIntent::find($intentId) : null;
         if (!$intent && !empty($object['payment_intent'])) $intent = PaymentIntent::where('stripe_payment_intent_id', $object['payment_intent'])->first();
         if (!$intent) { $receipt->fill(['state' => 'ignored', 'last_error' => 'unlinked_provider_event', 'processed_at' => now()])->save(); return; }
+        if(!CardFees::valid($intent)){$this->problem($receipt,$intent,'invalid_frozen_card_terms');return;}
         if (!in_array($receipt->event_type, ['checkout.session.completed','checkout.session.async_payment_succeeded','checkout.session.async_payment_failed','checkout.session.expired','payment_intent.succeeded'], true)) {
             $this->problem($receipt, $intent, 'unsupported_financial_event'); return;
         }
@@ -67,18 +68,32 @@ final class StripeReceiptProcessor
             || !isset($charge['created']) || (int) $charge['created'] <= 0 || (int) $charge['created'] > time()) {
             $this->problem($receipt, $intent, 'unverified_payment_intent'); return;
         }
+        if($intent->card_fee_policy!==null && ($charge['payment_method_details']['card']['funding']??null)!=='credit'){
+            $this->problem($receipt,$intent,'credit_card_policy_mismatch');return;
+        }
         DB::transaction(function () use ($intent, $receipt, $session, $payment, $charge) {
             $event = Event::whereKey($intent->event_id)->lockForUpdate()->firstOrFail();
             $locked = PaymentIntent::whereKey($intent->id)->lockForUpdate()->firstOrFail();
             $transaction = 'stripe:test:'.$session['_verified_account'].':'.$payment['id'];
             $existing = LedgerEntry::where('external_identity_key', $transaction)->first();
-            if ($existing && ($existing->event_id !== $intent->event_id || $existing->amount_cents !== $intent->payable_cents || $existing->financial_revision_id !== $intent->financial_revision_id)) {
+            if ($existing && ($existing->event_id !== $intent->event_id || $existing->amount_cents !== $intent->principal_cents || $existing->financial_revision_id !== $intent->financial_revision_id
+                || $existing->kind!=='receipt' || $existing->method!=='stripe' || $existing->currency!=='USD' || $existing->external_reference!==$payment['id'])) {
                 $this->problem($receipt, $intent, 'transaction_already_allocated'); return;
             }
+            $feeIdentity='stripe:fee:'.hash('sha256',$transaction);
+            $existingFee=LedgerEntry::where('external_identity_key',$feeIdentity)->first();
+            if($existing && (($intent->customer_fee_cents>0 && (!$existingFee || $existingFee->event_id!==$intent->event_id || $existingFee->financial_revision_id!==$intent->financial_revision_id || $existingFee->kind!=='customer_fee' || $existingFee->amount_cents!==$intent->customer_fee_cents)) || ($intent->customer_fee_cents===0 && $existingFee))){
+                $this->problem($receipt,$intent,'fee_allocation_mismatch');return;
+            }
+            if(!$existing && $existingFee){$this->problem($receipt,$intent,'fee_allocation_mismatch');return;}
             if (!$existing) {
                 $entry = LedgerEntry::create(['event_id' => $intent->event_id, 'financial_revision_id' => $intent->financial_revision_id, 'environment' => 'test', 'kind' => 'receipt', 'method' => 'stripe',
-                    'amount_cents' => $payment['amount_received'], 'currency' => 'USD', 'received_at' => CarbonImmutable::createFromTimestampUTC($charge['created']),
+                    'amount_cents' => $intent->principal_cents, 'currency' => 'USD', 'received_at' => CarbonImmutable::createFromTimestampUTC($charge['created']),
                     'external_reference' => $payment['id'], 'external_identity_key' => $transaction, 'verified_by' => null, 'source_type' => 'verified_stripe_webhook', 'source_id' => $receipt->id]);
+                if($intent->customer_fee_cents>0)LedgerEntry::create(['event_id'=>$intent->event_id,'financial_revision_id'=>$intent->financial_revision_id,
+                    'environment'=>'test','kind'=>'customer_fee','method'=>'stripe','amount_cents'=>$intent->customer_fee_cents,'currency'=>'USD',
+                    'received_at'=>CarbonImmutable::createFromTimestampUTC($charge['created']),'external_reference'=>$payment['id'],
+                    'external_identity_key'=>$feeIdentity,'verified_by'=>null,'source_type'=>'verified_stripe_webhook','source_id'=>$receipt->id]);
                 app(\App\Services\Mail\CaptureMailOccurrence::class)->record('payment_received', $entry->id, ['event_id'=>$event->id, 'customer_id'=>$event->customer_id, 'financial_revision_id'=>$intent->financial_revision_id, 'ledger_entry_id'=>$entry->id]);
                 Audit::recordSystem('payment.stripe_received', $entry, [], ['intent_id' => $intent->id, 'webhook_id' => $receipt->id, 'amount_cents' => $entry->amount_cents]);
             }

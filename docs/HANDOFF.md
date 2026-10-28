@@ -1,3 +1,6 @@
+## 2026-10-28 · Codex · CARD-FEE-01 monetary backend and DTO (point2)
+`codex/fix-standard-card-fee`: frozen3% credit terms, atomic principal/customer_fee ledger split, server quote hash/formatted DTO and funding/account-policy gates. **118tests/1032assertions PASS**. New feature DEFAULT-OFF; no existing client text/template/JS changed or hidden surcharge enabled. Claude can wire approved disclosure/quote acknowledgment; actual external credit-only policy verification for the configured account is still required before activation. See newest queue entry and docs/CARD-FEE-01-API.md. No provider call, deployment, real charge/import, email/probe or flags enabled.
+
 ## 2026-10-28 · Codex · Notice rework from César’s #141 decision
 `codex/fix-houston-booking-notice` / #140 now separates website14days from internal owner confirmation7days with named Houston-local policy methods. New tests retain web14days and verify internal7day boundaries across both DST changes plus owner form at6/7/10days. This supersedes the earlier shared14day implementation, never deployed. #141 decision/docs merged after6checks. Newest **docs/CLAUDE-REVIEW-QUEUE.md** entry carries final proof/review scope. Mail remains held; no deployment/provider/real data change. Full capacity/evaluator still pending.
 

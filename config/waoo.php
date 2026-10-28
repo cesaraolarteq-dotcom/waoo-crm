@@ -3,6 +3,8 @@
 $clientTexts = require __DIR__.'/client-texts.php';
 
 return [
+    'regular_card_fee_enabled' => env('WAOO_REGULAR_CARD_FEE_ENABLED', false),
+    'stripe_credit_only_account' => env('WAOO_STRIPE_CREDIT_ONLY_ACCOUNT'),
     'sandbox_company' => env('WAOO_SANDBOX_COMPANY', false),
     'sandbox_history_verification' => env('WAOO_SANDBOX_HISTORY_VERIFICATION', false),
     'sandbox_anniversary' => env('WAOO_SANDBOX_ANNIVERSARY', false),
