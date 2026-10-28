@@ -37,6 +37,9 @@
                             <a class="wcal-btn" href="{{ \App\Filament\Resources\Events\EventResource::getUrl('view', ['record' => $r->event_id]) }}">Ver la reserva</a>
                         @elseif (in_array($r->status, ['new', 'contacted', 'quoted'], true))
                             <a class="wcal-btn on" href="{{ \App\Filament\Pages\QuickBooking::getUrl(['lead' => $r->id]) }}">Convertir en reserva rápida</a>
+                            @if (\App\Filament\Support\QuoteForm::enabled() && \App\Filament\Resources\Events\EventResource::canCreate())
+                                <a class="wcal-btn" href="{{ \App\Filament\Resources\Events\EventResource::getUrl('create', ['lead' => $r->id]) }}">Crear cotización</a>
+                            @endif
                         @endif
                         {{ ($this->updateAction)(['id' => $r->id]) }}
                     </div>

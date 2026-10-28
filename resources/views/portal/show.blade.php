@@ -123,16 +123,7 @@
 </form>
 @elseif ($vm['step'] === 'pay')
 @if ($vm['reserved'] ?? false)<section class="p-card" role="status"><h2>{{ \App\Support\ApprovedClientTexts::text('portal_reserved', $vm['lang']) }}</h2><p>{{ \App\Support\ApprovedClientTexts::text('portal_reserved_body', $vm['lang']) }}</p></section>@endif
-@if (! empty($vm['contract']['final_url']))
-{{-- Owner 2026-10-26: after signing the client can open and download the signed contract, in its own card. --}}
-<section class="p-card">
-  <h2>{{ $t('contract_title') }}</h2>
-  <div class="p-actions">
-    <a class="p-btn" href="{{ $vm['contract']['final_url'] }}" target="_blank" rel="noopener noreferrer">{{ $t('open_signed') }}</a>
-    <a class="p-btn p-btn-quiet" href="{{ $vm['contract']['final_url'] }}&amp;download=1" download>{{ $t('download_pdf') }}</a>
-  </div>
-</section>
-@endif
+@include('portal._signed-contract')
 <section class="p-card">
   @if ($vm['reserved'] ?? false)
   {{-- Owner 2026-10-26: right after signing, paying again must not look required. Show the balance and its due date; the
@@ -174,16 +165,7 @@
   <h2>{{ $t('done_title') }}</h2>
   <p>{{ $t('done', ['when' => $e['when']]) }}</p>
 </section>
-@if (! empty($vm['contract']['final_url']))
-{{-- Owner 2026-10-26: after signing the client can open and download the signed contract, in its own card. --}}
-<section class="p-card">
-  <h2>{{ $t('contract_title') }}</h2>
-  <div class="p-actions">
-    <a class="p-btn" href="{{ $vm['contract']['final_url'] }}" target="_blank" rel="noopener noreferrer">{{ $t('open_signed') }}</a>
-    <a class="p-btn p-btn-quiet" href="{{ $vm['contract']['final_url'] }}&amp;download=1" download>{{ $t('download_pdf') }}</a>
-  </div>
-</section>
-@endif
+@include('portal._signed-contract')
 @endif
 @if (! ($vm['preview'] ?? false))
 <script>

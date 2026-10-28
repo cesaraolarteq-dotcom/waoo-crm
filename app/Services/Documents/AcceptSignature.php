@@ -46,6 +46,12 @@ final class AcceptSignature
             Audit::recordSystem('contract.client_signed', $contract, ['state' => 'issued'], ['state' => 'signed', 'signature_evidence_id' => $signature->id, 'customer_id' => $client->customerId, 'portal_grant_id' => $client->grantId, 'presented_pdf_sha256' => $contract->presented_pdf_sha256]);
             MutationKey::store($scope, $key, $hash, 'signature_evidence', $signature->id);
             FinalizeSignedContract::dispatch($contract->id)->afterCommit();
+            // Owner 2026-10-28: make the signed PDF right after answering the client (seconds), not at the next queue run (up to a minute).
+            // The queued job stays as the fallback; the job is idempotent, so whichever finishes first wins.
+            $finalize = $contract->id;
+            if (config('waoo.process_after_response')) app()->terminating(function () use ($finalize) {
+                try { (new FinalizeSignedContract($finalize))->handle(); } catch (\Throwable) {}
+            });
             return $signature;
         }, 3);
     }

@@ -13,7 +13,7 @@
                     <small>Total {{ $r->total }} · versión {{ $r->revision }} · válida hasta {{ $r->valid }}</small>
                 </a>
             @empty
-                <p class="wmoney-p">No hay cotizaciones aquí. Crea una desde la ficha de un evento (“Crear cotización”).</p>
+                <p class="wmoney-p">No hay cotizaciones aquí. Usa “Nueva cotización” arriba, o “Crear cotización” en un prospecto o en la ficha de un evento.</p>
             @endforelse
         </x-filament::section>
         @if (($this->pageInfo['last'] ?? 1) > 1)

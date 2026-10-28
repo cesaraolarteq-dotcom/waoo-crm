@@ -102,8 +102,17 @@ class ViewEvent extends Page
     #[\Livewire\Attributes\Locked]
     public string $mailKey = '';
 
+    /** Website lead this event was drafted from ("Crear cotización" on Prospectos): marked quoted once the quote exists. */
+    #[\Livewire\Attributes\Locked]
+    public ?int $quoteLeadId = null;
+
+    #[\Livewire\Attributes\Locked]
+    public ?int $quoteLeadVersion = null;
+
     public function mount(int|string $record): void
     {
+        $this->quoteLeadId = request()->integer('lead') ?: null;
+        $this->quoteLeadVersion = request()->integer('lead_version') ?: null;
         $this->record = $this->resolveRecord($record);
         $this->displayedVersion = $this->record->version;
         $this->quoteKey = (string) \Illuminate\Support\Str::uuid();
@@ -233,6 +242,14 @@ class ViewEvent extends Page
                         $action->halt();
                     }
                     $this->quoteKey = (string) \Illuminate\Support\Str::uuid();
+                    if ($this->quoteLeadId !== null && $this->quoteLeadVersion !== null) {
+                        try {
+                            app(\App\Services\Leads\UpdateLead::class)->execute(\Filament\Facades\Filament::auth()->user(), $this->quoteLeadId, ['expected_version' => $this->quoteLeadVersion, 'status' => 'quoted']);
+                        } catch (\Throwable) {
+                            \Filament\Notifications\Notification::make()->warning()->title('Cotización creada')->body('No se pudo marcar el prospecto como «Cotizado»; cámbialo en Prospectos.')->send();
+                        }
+                        $this->quoteLeadId = null;
+                    }
                     $this->redirect(\App\Filament\Pages\QuoteDetail::getUrl(['quote' => $rev->quote_id]));
                 }),
             $this->staffInstructionsAction(),
