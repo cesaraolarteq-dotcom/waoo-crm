@@ -169,8 +169,8 @@ class ConfirmCapacity extends Page
                 Checkbox::make('cargo_checked')->label('Revisé que el equipo y la gente caben en el vehículo')->accepted()->columnSpanFull(),
                 Textarea::make('origin_return_note')->label('De dónde salen y cómo regresan')->required()->minLength(10)->maxLength(2000)->columnSpanFull()
                     ->placeholder('Ej.: salen de la bodega en Katy a las 2:00 pm en la van y regresan ahí.'),
-                Textarea::make('short_notice_reason')->label('Faltan menos de 14 días: ¿por qué se aprueba?')->minLength(10)->maxLength(2000)->required()->columnSpanFull()
-                    ->visible(fn () => \App\Services\Scheduling\BookingNoticePolicy::requiresOwnerApproval($this->record->starts_at)),
+                Textarea::make('short_notice_reason')->label('Faltan menos de 7 días: ¿por qué se aprueba?')->minLength(10)->maxLength(2000)->required()->columnSpanFull()
+                    ->visible(fn () => \App\Services\Scheduling\BookingNoticePolicy::requiresOwnerConfirmationReason($this->record->starts_at)),
             ]),
             Section::make('4. Traslados con eventos vecinos')->schema([
                 Text::make('Si alguna unidad tiene otra fiesta antes o después, revisa el tráfico de ese día y esa hora. El margen mínimo es manejo + 45 min (o desmontaje + montaje + imprevistos, lo que sea mayor).'),

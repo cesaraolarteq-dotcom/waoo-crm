@@ -87,6 +87,14 @@ class WebsiteAvailabilityTransportTest extends TestCase
         $this->travel(1)->seconds();
         $this->signed('/api/availability?date=2026-11-09')->assertOk()->assertJsonPath('requires_owner_approval',true);
     }
+    public function test_website_keeps_fourteen_days_across_spring_dst_and_does_not_inherit_the_internal_seven_day_rule(): void
+    {
+        $this->travelTo(\Carbon\CarbonImmutable::parse('2027-03-01T08:00:00-06:00'));
+        $this->signed('/api/availability?date=2027-03-15')->assertOk()->assertJsonPath('requires_owner_approval',false);
+        $this->signed('/api/availability?date=2027-03-11')->assertOk()->assertJsonPath('requires_owner_approval',true);
+        $this->travel(1)->seconds();
+        $this->signed('/api/availability?date=2027-03-15')->assertOk()->assertJsonPath('requires_owner_approval',true);
+    }
     public function test_post_is_bounded_authenticated_and_explicitly_unavailable_until_the_full_evaluator(): void
     {
         $this->signed('/api/availability/check','POST','{"candidate_starts":[]}')->assertStatus(503)->assertExactJson(['error'=>'evaluation_unavailable']);

@@ -15,7 +15,7 @@ final class ReadWebsiteDay
         $demand=in_array($input['date'],$weekends,true)?'weekend':'normal';
         return ['schema_version'=>1,'scope'=>'day_signal','date'=>$input['date'],'timezone'=>'America/Chicago',
             'level'=>$demand==='weekend'?'filling':'unknown','capacity_state'=>'unknown','demand'=>$demand,
-            'requires_owner_approval'=>\App\Services\Scheduling\BookingNoticePolicy::requiresOwnerApproval($date->setTime(8,0), $now),
+            'requires_owner_approval'=>\App\Services\Scheduling\BookingNoticePolicy::requiresWebsiteApproval($date->setTime(8,0), $now),
             'slots'=>[],'alts'=>[],'checked_at'=>$now->toIso8601String(),'expires_at'=>$now->toIso8601String(),'reservation_created'=>false];
     }
 }

@@ -1,3 +1,6 @@
+## 2026-10-28 · Codex · Notice rework from César’s #141 decision
+`codex/fix-houston-booking-notice` / #140 now separates website14days from internal owner confirmation7days with named Houston-local policy methods. New tests retain web14days and verify internal7day boundaries across both DST changes plus owner form at6/7/10days. This supersedes the earlier shared14day implementation, never deployed. #141 decision/docs merged after6checks. Newest **docs/CLAUDE-REVIEW-QUEUE.md** entry carries final proof/review scope. Mail remains held; no deployment/provider/real data change. Full capacity/evaluator still pending.
+
 ## 2026-10-28 · Codex · Shared Houston fourteen-day notice prerequisite
 `codex/fix-houston-booking-notice` corrects the operational confirmation and owner form from7 to14 local calendar days and shares the policy with the conservative website signal; equality/DST/idempotency regression evidence and exact files in the newest **docs/CLAUDE-REVIEW-QUEUE.md** entry. The10/day shared admission and full AVAIL evaluator remain separate implementation work. No deployment, provider, real data, client copy or email activation.
 

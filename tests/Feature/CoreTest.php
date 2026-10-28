@@ -132,18 +132,18 @@ class CoreTest extends TestCase
     public static function houstonNoticeBoundaries(): array
     {
         return [
-            'nine days needs approval' => ['2026-10-26T12:00:00-05:00', '2026-11-04T12:00:00-06:00', true],
-            'fall before' => ['2026-10-26T12:00:00-05:00', '2026-11-09T11:59:59-06:00', true],
-            'fall equal' => ['2026-10-26T12:00:00-05:00', '2026-11-09T12:00:00-06:00', false],
-            'fall after' => ['2026-10-26T12:00:00-05:00', '2026-11-09T12:00:01-06:00', false],
-            'spring before' => ['2027-03-01T12:00:00-06:00', '2027-03-15T11:59:59-05:00', true],
-            'spring equal' => ['2027-03-01T12:00:00-06:00', '2027-03-15T12:00:00-05:00', false],
-            'spring after' => ['2027-03-01T12:00:00-06:00', '2027-03-15T12:00:01-05:00', false],
+            'nine days owner confirmation needs no reason' => ['2026-10-26T12:00:00-05:00', '2026-11-04T12:00:00-06:00', false],
+            'fall before' => ['2026-10-26T12:00:00-05:00', '2026-11-02T11:59:59-06:00', true],
+            'fall equal' => ['2026-10-26T12:00:00-05:00', '2026-11-02T12:00:00-06:00', false],
+            'fall after' => ['2026-10-26T12:00:00-05:00', '2026-11-02T12:00:01-06:00', false],
+            'spring before' => ['2027-03-08T12:00:00-06:00', '2027-03-15T11:59:59-05:00', true],
+            'spring equal' => ['2027-03-08T12:00:00-06:00', '2027-03-15T12:00:00-05:00', false],
+            'spring after' => ['2027-03-08T12:00:00-06:00', '2027-03-15T12:00:01-05:00', false],
         ];
     }
 
     #[\PHPUnit\Framework\Attributes\DataProvider('houstonNoticeBoundaries')]
-    public function test_http_confirmation_uses_fourteen_houston_calendar_days_and_audits_owner_exception(string $clock, string $start, bool $needsApproval): void
+    public function test_http_owner_confirmation_uses_seven_houston_calendar_days_and_audits_owner_exception(string $clock, string $start, bool $needsApproval): void
     {
         // The server/event storage is UTC; the owner's notice policy uses Houston's local clock.
         config(['app.timezone' => 'UTC']);
