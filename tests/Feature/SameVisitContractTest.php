@@ -122,6 +122,12 @@ class SameVisitContractTest extends TestCase
         $this->assertSame($consent['text']."\n".$consent['intent'], $evidence->consent_text);
         $this->assertSame($contract->presented_pdf_sha256, $evidence->presented_pdf_sha256);
         Queue::assertPushed(\App\Jobs\FinalizeSignedContract::class, 1);
+        // Owner 2026-10-28: the signed PDF is made right after the response, not at the next queue run.
+        $this->assertNotNull($contract->fresh()->final_pdf_path);
+        $final = $contract->fresh()->final_pdf_path;
+        Contract::whereKey($contract->id)->update(['final_pdf_path' => null]);
+        $this->get('/portal?lang=es')->assertOk()->assertSee('Espera unos segundos para ver tu contrato ya firmado.')->assertDontSee('Ver mi contrato firmado');
+        Contract::whereKey($contract->id)->update(['final_pdf_path' => $final]);
         (new \App\Jobs\FinalizeSignedContract($contract->id))->handle();
         $this->get('/portal/api/contracts/'.$contract->id.'/pdf?artifact=final')->assertOk()->assertHeader('Content-Type', 'application/pdf');
         $this->assertNotNull($contract->fresh()->final_pdf_sha256);
