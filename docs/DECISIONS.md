@@ -98,3 +98,6 @@ Comparación de precios: se incorpora la evidencia de Claude en arch/ARCH-01-esi
 
 ## 2026-10-28 · César · How Claude and Codex split the work from now on
 - César finds progress too slow. From now on **Claude builds whole features** (screens and the backend behind them, with tests), and **Codex reviews** what touches money, signatures or security, and keeps building the availability engine. Codex merges in the priority order below and keeps PRs small and quick to review.
+
+## 2026-10-28 · César · Staff pay schedule
+- Staff are paid **once a week by Zelle, Tuesday–Wednesday**, for the parties of the previous week; work and driving (if the person drove) go together in one payment. STAFFPAY-01 should produce a weekly statement per person for that window. Backups: César offers the Google Drive of txwaooparty@gmail.com for the daily off-Hostinger copy (encrypted before upload).
