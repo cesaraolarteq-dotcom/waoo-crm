@@ -4,6 +4,7 @@ César's audit page (artifact K8VZVBCewNNeUCdKgL7fB2) and "start working on thos
 - i2 Inicio: HoneyBook-linked parties are no longer in the red "sin staff apartado" card; they get an info card "Fiestas de HoneyBook en los próximos 7 días".
 - i3 `App\Filament\Support\AutoReminders::afterConfirm` after "Apartar recursos y confirmar": plans the 3 reminders with the client's newest active link that outlives the party (prefers one that can pay). Mail off → no-op; failure → warning note, never blocks the confirmation. Planned is not sent (owner hold). Test in `MailOutboxTest`.
 - i5 Portal text `prepare_saved` (ES/EN): "¡Listo! Tus datos están guardados. Ahora prepara tu contrato para firmarlo." / "All set! Your details are saved. Now prepare your contract to sign it." (approved by César via the audit list).
+- Travel fee (César 2026-10-29): departure point is now `origin_address` 23645 Katy Fwy, Katy, TX 77494 (a pricing point, not a home) in `config/travel_fees.php` and on the website (`travel-fee-config.php`/`-lib.php`, cache file name now includes the origin); 77447 Hockley is a fixed $50 in both. Rules hash changes, so CRM cached quotes are recomputed. Website deployed with backup `~/backups-website/travelfee-before-origin-*.tgz`; live check 77447 → $50, 77095 → $30, 77494 → $20.
 - m5 `public/robots.txt`: `Disallow: /` (crm-test and the real CRM are never crawled).
 - Tests green locally: DashboardAttention, MailOutbox (32), MailScreens, PrepareClientContract, ConfirmCapacityPage, ReportsPage, ClientPortalPage, PortalPreview.
 
