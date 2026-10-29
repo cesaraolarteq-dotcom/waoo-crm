@@ -3,8 +3,8 @@
     $p = $this->panorama();
     $usd = fn (?int $c) => $c === null ? 'Pendiente' : '$'.number_format(intdiv($c + 50, 100));
     $prevYear = substr($p['previous']['from'], 0, 4) === substr($p['previous']['to'], 0, 4) ? substr($p['previous']['from'], 0, 4) : 'el año anterior';
-    $delta = function (array $k) use ($prevYear) {
-        if ($k['change_pct'] === null) return ['Sin datos de '.$prevYear.' para comparar', ''];
+    $delta = function (array $k) use ($prevYear, $p) {
+        if ($k['change_pct'] === null) return [$p['previous']['comparable'] ? 'Sin datos de '.$prevYear.' para comparar' : 'Tu historial empieza en '.($p['history_since'] ? \Carbon\CarbonImmutable::parse($p['history_since'])->locale('es')->translatedFormat('M Y') : 'este periodo'), ''];
         return [($k['change_pct'] >= 0 ? '+' : '').$k['change_pct'].' % vs '.$prevYear, $k['change_pct'] >= 0 ? 'up' : 'down'];
     };
     $heat = fn (array $w) => $w['count'] === 0 ? 'h0' : ($w['heat'] < 0.5 ? 'c2' : ($w['heat'] < 0.85 ? 'c1' : ($w['heat'] < 1.15 ? 'm' : ($w['heat'] < 1.6 ? 'w1' : 'w2'))));
@@ -258,21 +258,25 @@
             @foreach ([['parties', 'Fiestas en el año', fn ($v) => $v, 'parties_pct', '--purple'], ['sales_cents', 'Ventas en el año', $usd, 'sales_pct', '--gold'], ['received_cents', 'Dinero recibido en el año', $usd, 'received_pct', '--teal']] as [$k, $label, $fmt, $pk, $glow])
                 <div class="wp-kpi" style="--glow:var({{ $glow }})">
                     <div class="l">{{ $label }} · {{ $g['year'] }}</div>
-                    <div class="v">{{ $fmt($g['ytd'][$k]) }}</div>
-                    <div class="d {{ $pctCls($g['ytd'][$pk]) }}">{{ $pct($g['ytd'][$pk]) }} vs {{ $fmt($g['ytd']['ly_'.$k]) }} en {{ $g['previous'] }} a la misma fecha</div>
+                    <div class="v">{{ $fmt($g['ytd']['total_'.$k]) }}</div>
+                    @if ($g['ytd']['months'])
+                        <div class="d {{ $pctCls($g['ytd'][$pk]) }}">{{ $pct($g['ytd'][$pk]) }} en los {{ $g['ytd']['months'] }} {{ $g['ytd']['months'] === 1 ? 'mes' : 'meses' }} con historial: {{ $fmt($g['ytd'][$k]) }} vs {{ $fmt($g['ytd']['ly_'.$k]) }}</div>
+                    @else
+                        <div class="d">Sin historial de {{ $g['previous'] }} para comparar estos meses</div>
+                    @endif
                 </div>
             @endforeach
         </div>
         <div class="wp-stage">
             <div class="wp-card">
                 <h2>Fiestas por mes · {{ $g['year'] }} contra {{ $g['previous'] }}</h2>
-                <p>Barra de color: {{ $g['year'] }}. Barra gris: {{ $g['previous'] }}. El mes en curso se compara hasta el mismo día del año pasado.</p>
+                <p>Barra de color: {{ $g['year'] }}. Barra gris: {{ $g['previous'] }}. El mes en curso se compara hasta el mismo día del año pasado.@if ($p['history_since']) Tu historial empieza en {{ $fecha($p['history_since'], 'F Y') }}.@endif</p>
                 <div class="wp-cmp">
                     @foreach ($g['months'] as $m)
-                        <div class="{{ $m['state'] === 'current' ? 'cur' : '' }}" title="{{ $m['label'] }}: {{ $m['parties'] ?? '—' }} fiestas en {{ $g['year'] }} · {{ $m['ly_parties'] }} en {{ $g['previous'] }}">
+                        <div class="{{ $m['state'] === 'current' ? 'cur' : '' }}" title="{{ $m['label'] }}: {{ $m['parties'] ?? '—' }} fiestas en {{ $g['year'] }} · {{ $m['ly_parties'] ?? 'sin historial' }} en {{ $g['previous'] }}">
                             <span class="pair">
                                 <i class="ty" style="height:{{ round(($m['parties'] ?? 0) * 100 / $g['max_parties']) }}%"></i>
-                                <i class="ly" style="height:{{ round($m['ly_parties'] * 100 / $g['max_parties']) }}%"></i>
+                                <i class="ly" style="height:{{ round(($m['ly_parties'] ?? 0) * 100 / $g['max_parties']) }}%"></i>
                             </span>
                             <small>{{ mb_substr($m['label'], 0, 3) }}</small>
                         </div>
@@ -303,17 +307,17 @@
                         <tr class="{{ $m['state'] === 'ahead' ? 'ahead' : '' }}">
                             <td>{{ $m['label'] }}@if ($m['state'] === 'current') <span class="wp-pill" style="margin-left:4px">hasta el {{ $m['until_day'] }}</span>@endif</td>
                             @if ($m['state'] === 'ahead')
-                                <td>—</td><td>{{ $m['ly_parties'] }}</td><td colspan="2">Meta: superar {{ $m['ly_parties'] }} fiestas</td><td>{{ $usd($m['ly_sales_cents']) }}</td><td></td><td></td>
+                                <td>—</td><td>{{ $m['ly_parties'] ?? 'Sin historial' }}</td><td colspan="2">@if ($m['ly_known'])Meta: superar {{ $m['ly_parties'] }} fiestas @endif</td><td>{{ $m['ly_known'] ? $usd($m['ly_sales_cents']) : '' }}</td><td></td><td></td>
                             @else
-                                <td>{{ $m['parties'] }}</td><td>{{ $m['ly_parties'] }}</td><td class="{{ $pctCls($m['parties_pct']) }}">{{ $pct($m['parties_pct']) }}</td>
-                                <td>{{ $usd($m['sales_cents']) }}</td><td>{{ $usd($m['ly_sales_cents']) }}</td><td class="{{ $pctCls($m['sales_pct']) }}">{{ $pct($m['sales_pct']) }}</td>
+                                <td>{{ $m['parties'] }}</td><td>{{ $m['ly_parties'] ?? 'Sin historial' }}</td><td class="{{ $pctCls($m['parties_pct']) }}">{{ $pct($m['parties_pct']) }}</td>
+                                <td>{{ $usd($m['sales_cents']) }}</td><td>{{ $m['ly_known'] ? $usd($m['ly_sales_cents']) : 'Sin historial' }}</td><td class="{{ $pctCls($m['sales_pct']) }}">{{ $pct($m['sales_pct']) }}</td>
                                 <td>{{ $usd($m['received_cents']) }}</td>
                             @endif
                         </tr>
                     @endforeach
                 </tbody>
             </table>
-            <p>Fiestas y ventas cuentan por la fecha de la fiesta; el dinero recibido, por la fecha del pago. Si {{ $g['previous'] }} tiene pocas fiestas es porque el historial de HoneyBook de ese año está incompleto.</p>
+            <p>Fiestas y ventas cuentan por la fecha de la fiesta; el dinero recibido, por la fecha del pago.</p>
         </div>
     @elseif ($tab === 'pulso')
         <div class="wp-row" role="group" aria-label="Qué pagos">

@@ -91,7 +91,24 @@ class PanoramaTest extends TestCase
         $this->assertSame(['current', 15, 1, 1, 100, 30000, 15000], [$nov['state'], $nov['until_day'], $nov['parties'], $nov['ly_parties'], $nov['sales_pct'], $nov['received_cents'], $nov['ly_received_cents']]);
         // December is ahead: the booked 2026 party is not counted as done; last year is the target.
         $this->assertSame(['ahead', null, 1], [$dec['state'], $dec['parties'], $dec['ly_parties']]);
-        $this->assertSame([2, 2, 110000, 70000], [$g['ytd']['parties'], $g['ytd']['ly_parties'], $g['ytd']['sales_cents'], $g['ytd']['ly_sales_cents']]);
+        $this->assertSame([2, 2, 110000, 70000, 9], [$g['ytd']['parties'], $g['ytd']['ly_parties'], $g['ytd']['sales_cents'], $g['ytd']['ly_sales_cents'], $g['ytd']['months']], 'Records start in March 2025: March–November compared.');
         $this->assertSame('Noviembre', $g['best']['label']);
+    }
+
+    public function test_months_before_the_first_records_are_never_compared(): void
+    {
+        // Records start in November 2025: a 2026 year view compares only November, never Jan–Oct against nothing.
+        $parties = [$this->party('a', '2025-11-08', 30000), $this->party('b', '2026-03-14', 50000), $this->party('c', '2026-11-07', 60000)];
+        $p = (new Panorama)->build($parties, [], [], '2026-01-01', '2026-12-31', '2026-11-20');
+        $this->assertFalse($p['previous']['comparable']);
+        $this->assertNull($p['kpis']['sales']['change_pct']);
+        $this->assertSame('2025-11-01', $p['history_since']);
+        $this->assertNull($p['growth']['months'][2]['ly_parties']);
+        $this->assertNull($p['growth']['months'][2]['sales_pct']);
+        $this->assertSame([1, 1, 100], [$p['growth']['months'][10]['parties'], $p['growth']['months'][10]['ly_parties'], $p['growth']['months'][10]['sales_pct']]);
+        $this->assertSame([1, 2], [$p['growth']['ytd']['months'], $p['growth']['ytd']['total_parties']]);
+        $this->assertEmpty(array_filter($p['insights'], fn ($i) => str_starts_with($i['tag'], 'Ventas vs')));
+        // A November 2026 month view is comparable with November 2025.
+        $this->assertSame(100, (new Panorama)->build($parties, [], [], '2026-11-01', '2026-11-30', '2026-11-20')['kpis']['sales']['change_pct']);
     }
 }

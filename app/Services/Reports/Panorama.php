@@ -54,20 +54,26 @@ final class Panorama
     {
         $prevFrom = self::shiftYear($from, -1);
         $prevTo = self::shiftYear($to, -1);
+        // Owner 2026-10-29: records start in November 2025 (HoneyBook). A year-ago window that starts before the first
+        // month with records is not compared at all: a full year against two months is not growth.
+        $dates = array_column($parties, 'date');
+        $since = $dates ? substr(min($dates), 0, 7).'-01' : null;
+        $comparable = $since !== null && $prevFrom >= $since;
         $in = fn (string $d, string $a, string $b) => $d >= $a && $d <= $b;
         $now = array_values(array_filter($parties, fn ($p) => $in($p['date'], $from, $to)));
         $before = array_values(array_filter($parties, fn ($p) => $in($p['date'], $prevFrom, $prevTo)));
         $paid = array_values(array_filter($payments, fn ($p) => $in($p['date'], $from, $to)));
         $paidBefore = array_values(array_filter($payments, fn ($p) => $in($p['date'], $prevFrom, $prevTo)));
 
+        if (! $comparable) { $before = []; $paidBefore = []; }
         $out = [
-            'from' => $from, 'to' => $to, 'previous' => ['from' => $prevFrom, 'to' => $prevTo], 'today' => $today,
+            'from' => $from, 'to' => $to, 'previous' => ['from' => $prevFrom, 'to' => $prevTo, 'comparable' => $comparable], 'history_since' => $since, 'today' => $today,
             'kpis' => [
                 'parties' => $this->pair(count($now), count($before)),
                 'sales' => $this->pair($this->sum($now), $this->sum($before), $this->unknown($now)),
                 'received' => $this->pair(array_sum(array_column($paid, 'amount_cents')), array_sum(array_column($paidBefore, 'amount_cents'))),
                 'ticket' => $this->pair($this->average($now), $this->average($before)),
-                'leads' => $this->pair(count(array_filter($leads, fn ($l) => $in($l['date'], $from, $to))), count(array_filter($leads, fn ($l) => $in($l['date'], $prevFrom, $prevTo)))),
+                'leads' => $this->pair(count(array_filter($leads, fn ($l) => $in($l['date'], $from, $to))), $comparable ? count(array_filter($leads, fn ($l) => $in($l['date'], $prevFrom, $prevTo))) : 0),
             ],
             'sales' => $this->timeline($now, $from, $to, $before),
             'funnel' => $this->funnel(array_values(array_filter($leads, fn ($l) => $in($l['date'], $from, $to)))),
@@ -78,7 +84,7 @@ final class Panorama
             'channels' => $this->channels($now),
             'zones' => array_slice($this->zones($now), 0, 10),
             'zones_map' => $this->zones($now),
-            'growth' => $this->growth($parties, $payments, (int) substr($to, 0, 4), $today),
+            'growth' => $this->growth($parties, $payments, (int) substr($to, 0, 4), $today, $since),
             'quality' => ['parties' => count($now), 'no_total' => $this->unknown($now),
                 'no_zip' => count(array_filter($now, fn ($p) => ! preg_match('/^\d{5}$/D', (string) ($p['zip'] ?? '')))),
                 'no_source' => count(array_filter($now, fn ($p) => self::source($p['source'] ?? null) === 'unknown'))],
@@ -309,10 +315,11 @@ final class Panorama
      * money received by payment date). The month in progress is compared up to the same day of last year's month, so a
      * half month is never set against a full one; months still ahead show only last year (what to beat).
      */
-    private function growth(array $parties, array $payments, int $year, string $today): array
+    private function growth(array $parties, array $payments, int $year, string $today, ?string $since = null): array
     {
         $months = [];
-        $ytd = ['parties' => 0, 'sales_cents' => 0, 'received_cents' => 0, 'ly_parties' => 0, 'ly_sales_cents' => 0, 'ly_received_cents' => 0];
+        $ytd = ['parties' => 0, 'sales_cents' => 0, 'received_cents' => 0, 'ly_parties' => 0, 'ly_sales_cents' => 0, 'ly_received_cents' => 0, 'months' => 0,
+            'total_parties' => 0, 'total_sales_cents' => 0, 'total_received_cents' => 0];
         for ($m = 1; $m <= 12; $m++) {
             $start = CarbonImmutable::create($year, $m, 1, 0, 0, 0, 'America/Chicago');
             $end = $start->endOfMonth()->toDateString();
@@ -328,9 +335,13 @@ final class Panorama
                 'sales_cents' => $state === 'ahead' ? null : $this->sum($now), 'ly_sales_cents' => $this->sum($ly),
                 'received_cents' => $state === 'ahead' ? null : array_sum(array_column($pick($payments, $start->toDateString(), $cut), 'amount_cents')),
                 'ly_received_cents' => array_sum(array_column($pick($payments, $lyFrom, $state === 'ahead' ? self::shiftYear($end, -1) : $lyTo), 'amount_cents'))];
+            $row['ly_known'] = $since !== null && $lyFrom >= $since;
+            if (! $row['ly_known']) $row['ly_parties'] = $row['ly_sales_cents'] = $row['ly_received_cents'] = null;
             $row['parties_pct'] = $this->pair($row['parties'], $row['ly_parties'])['change_pct'];
             $row['sales_pct'] = $this->pair($row['sales_cents'], $row['ly_sales_cents'])['change_pct'];
-            if ($state !== 'ahead') foreach (['parties', 'sales_cents', 'received_cents'] as $k) { $ytd[$k] += $row[$k]; $ytd['ly_'.$k] += $row['ly_'.$k]; }
+            // Year to date compares only months that have records in both years.
+            if ($state !== 'ahead' && $row['ly_known']) { foreach (['parties', 'sales_cents', 'received_cents'] as $k) { $ytd[$k] += $row[$k]; $ytd['ly_'.$k] += $row['ly_'.$k]; } $ytd['months']++; }
+            if ($state !== 'ahead') foreach (['parties', 'sales_cents', 'received_cents'] as $k) $ytd['total_'.$k] += $row[$k];
             $months[] = $row;
         }
         $ytd['parties_pct'] = $this->pair($ytd['parties'], $ytd['ly_parties'])['change_pct'];
@@ -340,7 +351,7 @@ final class Panorama
         usort($done, fn ($a, $b) => $b['sales_pct'] <=> $a['sales_pct']);
 
         return ['year' => $year, 'previous' => $year - 1, 'months' => $months, 'ytd' => $ytd,
-            'max_parties' => max([1, ...array_map(fn ($r) => max($r['parties'] ?? 0, $r['ly_parties']), $months)]),
+            'max_parties' => max([1, ...array_map(fn ($r) => max($r['parties'] ?? 0, $r['ly_parties'] ?? 0), $months)]),
             'best' => $done[0] ?? null, 'worst' => count($done) > 1 ? end($done) : null];
     }
 
