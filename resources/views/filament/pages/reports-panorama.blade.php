@@ -55,8 +55,13 @@
         .wp-pill{justify-self:start;font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:99px;background:#1b2250;color:var(--gold)}
         .wp-big{font-size:2.2rem;font-weight:800;line-height:1}
         .wp-cols{display:flex;align-items:flex-end;gap:4px;height:180px;padding-top:8px}
-        .wp-cols div{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
-        .wp-cols i{display:block;width:100%;max-width:38px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,var(--gold),var(--pink));min-height:2px}
+        .wp-cols button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;background:none;border:0;padding:0;cursor:pointer;border-radius:6px}
+        .wp-cols .bar{position:relative;width:100%;max-width:38px;flex:1;display:flex;align-items:flex-end;justify-content:center}
+        .wp-cols i{display:block;width:100%;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,var(--gold),var(--pink));min-height:2px;position:relative;z-index:1}
+        .wp-cols s{position:absolute;bottom:0;left:-3px;right:-3px;border:1.5px dashed rgba(238,240,255,.35);border-bottom:0;border-radius:6px 6px 0 0;text-decoration:none}
+        .wp-cols button[aria-pressed=true] i{background:linear-gradient(180deg,var(--teal),var(--navy))}
+        .wp-ins{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+        .wp-ins li{background:linear-gradient(90deg,rgba(249,201,48,.12),transparent);border-left:3px solid var(--gold);border-radius:8px;padding:9px 12px;font-size:.92rem;color:var(--ink)}
         .wp-cols small{font-size:.62rem;color:var(--muted);white-space:nowrap;overflow:hidden;max-width:100%}
         .wp-bars{display:grid;gap:9px}
         .wp-bar{display:grid;grid-template-columns:minmax(70px,120px) minmax(0,1fr) auto;gap:10px;align-items:center;font-size:.86rem}
@@ -124,6 +129,14 @@
         @endforeach
     </div>
 
+    @if ($p['insights'])
+        <ul class="wp-ins" aria-label="Lo más importante">
+            @foreach ($p['insights'] as $line)
+                <li>{{ $line }}</li>
+            @endforeach
+        </ul>
+    @endif
+
     <nav class="wp-tabs" role="tablist" aria-label="Vista">
         @foreach ($tabs as $k => $label)
             <button type="button" role="tab" wire:click="setTab('{{ $k }}')" aria-selected="{{ $tab === $k ? 'true' : 'false' }}">{{ $label }}</button>
@@ -134,15 +147,30 @@
         <div class="wp-stage">
             <div class="wp-card">
                 <h2>Fiestas por {{ ['day' => 'día', 'week' => 'semana', 'month' => 'mes'][$p['sales']['unit']] }}</h2>
-                <p>Por la fecha de cada fiesta. Pasa el dedo o el mouse por una barra para ver el número.</p>
+                <p>Por la fecha de cada fiesta. Toca una barra para ver qué fiestas son.@if ($p['sales']['has_last_year']) La línea punteada es {{ $prevYear }} en las mismas fechas.@endif</p>
                 <div class="wp-cols">
                     @foreach ($p['sales']['buckets'] as $b)
-                        <div title="{{ $b['label'] }}: {{ $b['parties'] }} fiestas · {{ $usd($b['sales_cents']) }}">
-                            <i style="height:{{ round($b['parties'] * 100 / $p['sales']['max']) }}%"></i>
+                        <button type="button" wire:click="setFocus('{{ $b['start'] }}')" aria-pressed="{{ $focus === $b['start'] ? 'true' : 'false' }}"
+                            title="{{ $b['label'] }}: {{ $b['parties'] }} fiestas · {{ $usd($b['sales_cents']) }} · {{ $prevYear }}: {{ $b['last_year'] }}">
+                            <span class="bar">
+                                @if ($b['last_year'])<s style="height:{{ round($b['last_year'] * 100 / $p['sales']['max']) }}%"></s>@endif
+                                <i style="height:{{ round($b['parties'] * 100 / $p['sales']['max']) }}%"></i>
+                            </span>
                             @if (count($p['sales']['buckets']) <= 16)<small>{{ $b['label'] }}</small>@endif
-                        </div>
+                        </button>
                     @endforeach
                 </div>
+                @php $picked = collect($p['sales']['buckets'])->firstWhere('start', $focus); @endphp
+                @if ($picked)
+                    <h2>{{ $picked['label'] }} · {{ $picked['parties'] }} fiestas · {{ $usd($picked['sales_cents']) }}</h2>
+                    <ul class="wp-list">
+                        @forelse ($picked['items'] as $i)
+                            <li>{{ $i['name'] }} <span>{{ $fecha($i['date']) }} · {{ $usd($i['total_cents']) }} · {{ $i['source'] }}</span></li>
+                        @empty
+                            <li>No hubo fiestas.</li>
+                        @endforelse
+                    </ul>
+                @endif
             </div>
             <div class="wp-card">
                 <span class="wp-pill">Más movido</span>
@@ -235,6 +263,16 @@
                     <p>Aún no hay suficientes fiestas por canal (mínimo 3) para comparar.</p>
                 @endif
                 <p>"Sin dato" son fiestas donde no se anotó cómo llegó el cliente.</p>
+                <span class="wp-pill">Prospectos de la web</span>
+                @if ($p['funnel']['count'])
+                    <div class="wp-big">{{ $p['funnel']['conversion_pct'] }} %</div>
+                    <p>{{ $p['funnel']['booked'] }} de {{ $p['funnel']['count'] }} reservaron · {{ $p['funnel']['lost'] }} perdidos · {{ $p['funnel']['open'] }} en proceso.</p>
+                    @foreach ($p['funnel']['reasons'] as $why => $n)
+                        <div class="wp-bar" style="--c1:var(--hot);--c2:var(--pink)"><span>{{ $why }}</span><i style="width:{{ round($n * 100 / max($p['funnel']['reasons'])) }}%"></i><b>{{ $n }}</b></div>
+                    @endforeach
+                @else
+                    <p>No llegaron prospectos de la web en este periodo.</p>
+                @endif
             </div>
         </div>
     @elseif ($tab === 'zonas')

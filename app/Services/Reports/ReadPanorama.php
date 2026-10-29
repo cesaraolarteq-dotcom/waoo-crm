@@ -22,7 +22,9 @@ final class ReadPanorama
         RecordActor::authorize($actor);
         $today ??= now('America/Chicago')->toDateString();
         [$parties, $payments, $skipped] = $this->rows();
-        $leads = Lead::query()->pluck('created_at')->map(fn ($d) => CarbonImmutable::parse($d)->setTimezone('America/Chicago')->toDateString())->all();
+        $reasons = \App\Models\LeadLossReason::query()->pluck('reason', 'lead_id');
+        $leads = Lead::query()->get(['id', 'status', 'created_at'])->map(fn ($l) => ['date' => CarbonImmutable::parse($l->created_at)->setTimezone('America/Chicago')->toDateString(),
+            'status' => $l->status, 'reason' => $reasons[$l->id] ?? null])->all();
 
         return [...app(Panorama::class)->build($parties, $payments, $leads, $from, $to, $today), 'skipped_records' => $skipped];
     }
@@ -64,6 +66,7 @@ final class ReadPanorama
 
         $events = Event::query()->orderBy('id')->get();
         $finances = FinancialRevision::query()->whereIn('event_id', $events->modelKeys())->orderByDesc('revision')->get()->unique('event_id')->keyBy('event_id');
+        $channels = \App\Models\EventChannel::query()->pluck('channel', 'event_id');
         $paid = LedgerEntry::query()->where('environment', 'test')->where('currency', 'USD')->whereIn('event_id', $events->modelKeys())
             ->selectRaw("event_id, SUM(CASE WHEN kind = 'receipt' THEN amount_cents WHEN kind = 'refund' THEN -amount_cents ELSE 0 END) AS net")
             ->groupBy('event_id')->pluck('net', 'event_id');
@@ -90,7 +93,7 @@ final class ReadPanorama
             if (! in_array($event->status, self::CONFIRMED, true)) continue;
             $finance = $finances->get($event->id);
             $total = $finance && $finance->currency === 'USD' ? $finance->total_cents : null;
-            $parties[] = ['key' => 'e'.$event->id, 'date' => $date, 'total_cents' => $total, 'zip' => $event->postal_code, 'city' => null, 'source' => null,
+            $parties[] = ['key' => 'e'.$event->id, 'date' => $date, 'total_cents' => $total, 'zip' => $event->postal_code, 'city' => null, 'source' => $channels[$event->id] ?? null,
                 'booked_on' => $event->created_at?->setTimezone('America/Chicago')->toDateString(), 'customer_id' => $event->customer_id, 'name' => $name($event->customer_id),
                 'balance_cents' => $total === null ? null : max($total - (int) ($paid[$event->id] ?? 0), 0), 'balance_due' => null,
                 'profit' => $finance ? $this->profit($event, $finance) : null];

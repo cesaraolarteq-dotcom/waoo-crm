@@ -82,10 +82,12 @@ class Leads extends Page
         $this->lastPage = $page->lastPage();
         $this->pageInfo = ['current' => $page->currentPage(), 'last' => $page->lastPage(), 'total' => $page->total(), 'from' => $page->firstItem(), 'to' => $page->lastItem()];
 
-        return collect($page->items())->map(function ($l) {
+        $reasons = \App\Models\LeadLossReason::whereIn('lead_id', collect($page->items())->pluck('id'))->pluck('reason', 'lead_id');
+
+        return collect($page->items())->map(function ($l) use ($reasons) {
             $p = $l['submission']['payload'] ?? [];
 
-            return (object) ['id' => $l['id'], 'status' => $l['status'], 'version' => $l['version'], 'note' => $l['owner_note'] ?? null, 'event_id' => $l['booked_event_id'] ?? null,
+            return (object) ['id' => $l['id'], 'status' => $l['status'], 'lost_reason' => $l['status'] === 'lost' ? ($reasons[$l['id']] ?? null) : null, 'version' => $l['version'], 'note' => $l['owner_note'] ?? null, 'event_id' => $l['booked_event_id'] ?? null,
                 'name' => $p['name'] ?? '', 'phone' => $p['phone'] ?? '', 'email' => $p['email'] ?? '', 'date' => $p['event_date'] ?? null, 'time' => $p['start_time'] ?? null,
                 'zip' => $p['zip'] ?? '', 'package' => in_array($p['package'] ?? '', ['', 'unspecified'], true) ? 'Sin elegir' : $p['package'],
                 'type' => self::EVENT_TYPES[$p['event_type'] ?? ''][1] ?? (in_array($p['event_type'] ?? '', ['', 'unspecified'], true) ? 'Sin elegir' : $p['event_type']), 'message' => $p['message'] ?? null,
@@ -107,13 +109,17 @@ class Leads extends Page
                 $lead = Lead::findOrFail((int) ($arguments['id'] ?? 0));
                 $this->editingLeadId = $lead->id;
                 $this->editingLeadVersion = $lead->version;
-                $schema->fill(['status' => $lead->status === 'booked' ? null : $lead->status, 'owner_note' => $lead->owner_note]);
+                $schema->fill(['status' => $lead->status === 'booked' ? null : $lead->status, 'owner_note' => $lead->owner_note,
+                    'lost_reason' => \App\Models\LeadLossReason::where('lead_id', $lead->id)->value('reason')]);
             })
             ->modalHeading('Actualizar prospecto')
             ->schema([
-                Select::make('status')->label('Estado')->native(false)->options(array_diff_key(self::STATUS, ['booked' => 1]))
+                Select::make('status')->label('Estado')->native(false)->options(array_diff_key(self::STATUS, ['booked' => 1]))->live()
                     ->disabled(fn () => Lead::find($this->editingLeadId)?->status === 'booked')
                     ->helperText('“Reservado” se pone solo cuando la reserva rápida se guarda.'),
+                // Owner 2026-10-28: a lost lead says why, so Reportes can show what Waoo is losing.
+                Select::make('lost_reason')->label('¿Por qué se perdió?')->native(false)->options(\App\Models\LeadLossReason::LABELS)
+                    ->visible(fn ($get) => $get('status') === 'lost')->required(fn ($get) => $get('status') === 'lost'),
                 Textarea::make('owner_note')->label('Nota (solo la ves tú)')->maxLength(2000)->rows(3),
             ])
             ->modalSubmitActionLabel('Guardar')
@@ -130,6 +136,7 @@ class Leads extends Page
                     Notification::make()->danger()->title('No se guardó')->body($e->getMessage())->persistent()->send();
                     $action->halt();
                 }
+                if (isset($input['status'])) \App\Models\LeadLossReason::sync((int) $this->editingLeadId, $input['status'], $data['lost_reason'] ?? null, Filament::auth()->id());
                 Notification::make()->success()->title('Prospecto actualizado')->send();
             });
     }

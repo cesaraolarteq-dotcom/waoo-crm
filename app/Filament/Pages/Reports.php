@@ -56,6 +56,9 @@ class Reports extends Page
     #[Url(as: 'pestana')]
     public string $tab = 'pulso';
 
+    /** The bar the owner tapped in "Ventas" (bucket start date); its parties are listed under the chart. */
+    public string $focus = '';
+
     private ?array $panoramaCache = null;
 
     public static function canAccess(): bool
@@ -81,6 +84,12 @@ class Reports extends Page
     {
         $this->window = in_array($window, ['year', 'month', 'week', 'custom'], true) ? $window : 'year';
         $this->panoramaCache = null;
+        $this->focus = '';
+    }
+
+    public function setFocus(string $start): void
+    {
+        $this->focus = $this->focus === $start ? '' : (self::validDate($start) ?? '');
     }
 
     public function setTab(string $tab): void
@@ -92,6 +101,7 @@ class Reports extends Page
     {
         $a = CarbonImmutable::parse($this->anchor, 'America/Chicago');
         $step = $step < 0 ? -1 : 1;
+        $this->focus = '';
         $this->anchor = (match ($this->window) { 'month' => $a->addMonthsNoOverflow($step), 'week' => $a->addWeeks($step), default => $a->addYears($step) })->toDateString();
         $this->panoramaCache = null;
     }

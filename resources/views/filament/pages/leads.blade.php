@@ -17,7 +17,7 @@
             <x-filament::section>
                 <div class="wlead">
                     <div class="wlead-head">
-                        <div><b class="wlead-name">{{ $r->name }}</b> <span class="wlead-st st-{{ $r->status }}">{{ $types[$r->status] ?? $r->status }}</span>
+                        <div><b class="wlead-name">{{ $r->name }}</b> <span class="wlead-st st-{{ $r->status }}">{{ $types[$r->status] ?? $r->status }}{{ $r->lost_reason ? ' · '.(\App\Models\LeadLossReason::LABELS[$r->lost_reason] ?? '') : '' }}</span>
                             @if (isset($demand[$r->demand]))<span class="wlead-st st-hot">{{ $demand[$r->demand] }}</span>@endif</div>
                         <small>Llegó {{ $r->received }}</small>
                     </div>

@@ -12,7 +12,7 @@ use Carbon\CarbonImmutable;
  * parties:  key, date (Y-m-d), total_cents ?int, zip ?string, city ?string, source ?string, booked_on ?Y-m-d,
  *           name string, balance_cents ?int, balance_due ?Y-m-d, profit ?['revenue_cents','cost_cents']
  * payments: date (Y-m-d), amount_cents int, deposit bool (first payment of its party)
- * leads:    created dates (Y-m-d)
+ * leads:    date (Y-m-d created), status (new|contacted|quoted|booked|lost), reason ?string (why it was lost)
  */
 final class Panorama
 {
@@ -60,16 +60,17 @@ final class Panorama
         $paid = array_values(array_filter($payments, fn ($p) => $in($p['date'], $from, $to)));
         $paidBefore = array_values(array_filter($payments, fn ($p) => $in($p['date'], $prevFrom, $prevTo)));
 
-        return [
+        $out = [
             'from' => $from, 'to' => $to, 'previous' => ['from' => $prevFrom, 'to' => $prevTo], 'today' => $today,
             'kpis' => [
                 'parties' => $this->pair(count($now), count($before)),
                 'sales' => $this->pair($this->sum($now), $this->sum($before), $this->unknown($now)),
                 'received' => $this->pair(array_sum(array_column($paid, 'amount_cents')), array_sum(array_column($paidBefore, 'amount_cents'))),
                 'ticket' => $this->pair($this->average($now), $this->average($before)),
-                'leads' => $this->pair(count(array_filter($leads, fn ($d) => $in($d, $from, $to))), count(array_filter($leads, fn ($d) => $in($d, $prevFrom, $prevTo)))),
+                'leads' => $this->pair(count(array_filter($leads, fn ($l) => $in($l['date'], $from, $to))), count(array_filter($leads, fn ($l) => $in($l['date'], $prevFrom, $prevTo)))),
             ],
-            'sales' => $this->timeline($now, $from, $to),
+            'sales' => $this->timeline($now, $from, $to, $before),
+            'funnel' => $this->funnel(array_values(array_filter($leads, fn ($l) => $in($l['date'], $from, $to)))),
             'pulse' => $this->pulse(array_values(array_filter($paid, fn ($p) => $p['deposit'] ?? false)), array_values(array_filter($paidBefore, fn ($p) => $p['deposit'] ?? false)), $from, $to),
             'channels' => $this->channels($now),
             'zones' => $this->zones($now),
@@ -77,6 +78,55 @@ final class Panorama
             'profit' => $this->profit($now),
             'ahead' => $this->ahead($parties, $today),
         ];
+
+        return [...$out, 'insights' => $this->insights($out)];
+    }
+
+    /** Up to five plain sentences with what is worth acting on, built only from the figures above. */
+    private function insights(array $p): array
+    {
+        $usd = fn (int $c) => '$'.number_format(intdiv($c + 50, 100));
+        $days = [1 => 'lunes', 2 => 'martes', 3 => 'miércoles', 4 => 'jueves', 5 => 'viernes', 6 => 'sábado', 7 => 'domingo'];
+        $year = substr($p['previous']['from'], 0, 4);
+        $out = [];
+        $sales = $p['kpis']['sales'];
+        if ($sales['change_pct'] !== null) {
+            $out[] = ($sales['change_pct'] >= 0 ? 'Vas '.$sales['change_pct'].' % arriba' : 'Vas '.abs($sales['change_pct']).' % abajo')
+                .' en ventas contra las mismas fechas de '.$year.' ('.$usd($sales['value']).' contra '.$usd($sales['previous']).').';
+        }
+        if ($p['pulse']['count'] >= 5) {
+            $wd = $p['pulse']['weekday'];
+            arsort($wd);
+            $out[] = 'Los depósitos llegan más los días '.$p['pulse']['strongest_days'].' del mes y los '.$days[array_key_first($wd)].': responde rápido esos días.';
+        }
+        $ch = array_values(array_filter($p['channels'], fn ($c) => $c['known'] >= 3 && $c['key'] !== 'unknown'));
+        usort($ch, fn ($a, $b) => $b['average_cents'] <=> $a['average_cents']);
+        if (count($ch) >= 2) {
+            $out[] = 'Quien llega por '.$ch[0]['label'].' gasta más en promedio ('.$usd($ch[0]['average_cents']).') que por '.end($ch)['label'].' ('.$usd(end($ch)['average_cents']).').';
+        }
+        $f = $p['funnel'];
+        if ($f['count'] > 0) {
+            $out[] = 'De '.$f['count'].' prospectos de la web, '.$f['booked'].' reservaron ('.$f['conversion_pct'].' %)'
+                .($f['reasons'] ? '; el motivo de pérdida más común: '.mb_strtolower(array_key_first($f['reasons'])).'.' : '.');
+        }
+        $sats = $p['ahead']['saturdays'];
+        if ($sats) {
+            $light = array_reduce($sats, fn ($a, $b) => $a === null || $b['parties'] < $a['parties'] ? $b : $a);
+            $out[] = 'El sábado '.CarbonImmutable::parse($light['date'], 'America/Chicago')->locale('es')->translatedFormat('j \d\e F').' lleva '.$light['parties']
+                .($light['parties'] === 1 ? ' fiesta' : ' fiestas').': buen momento para promocionarlo.';
+        }
+        $today = CarbonImmutable::parse($p['today'], 'America/Chicago');
+        foreach ([['verano', $today->month > 8 ? $today->year + 1 : $today->year, 6], ['halloween', $today->month > 10 ? $today->year + 1 : $today->year, 10], ['diciembre', $today->year, 12]] as [$season, $y, $m]) {
+            $w = collect($p['booking_window'])->firstWhere('season', $season);
+            $start = CarbonImmutable::create($y, $m, 1, 0, 0, 0, 'America/Chicago');
+            if (! $w || $w['announce_weeks'] === null || $start <= $today) continue;
+            $announce = $start->subWeeks($w['announce_weeks']);
+            if ($announce->diffInDays($today, true) > 75) continue;
+            $out[] = 'Para '.mb_strtolower(self::SEASONS[$season]).', anuncia desde el '.$announce->locale('es')->translatedFormat('j \d\e F').' ('.$w['announce_weeks'].' semanas antes): así llegas a 3 de cada 4 clientes.';
+            break;
+        }
+
+        return array_slice($out, 0, 5);
     }
 
     private static function shiftYear(string $date, int $years): string
@@ -108,8 +158,8 @@ final class Panorama
         return $known ? (int) round(array_sum($known) / count($known)) : null;
     }
 
-    /** Parties per day (≤ 31 days), per week (≤ 120 days) or per month, with the busiest bucket. */
-    private function timeline(array $rows, string $from, string $to): array
+    /** Parties per day (≤ 31 days), per week (≤ 120 days) or per month, the same dates a year earlier, and who is in each bucket. */
+    private function timeline(array $rows, string $from, string $to, array $lastYear = []): array
     {
         $f = CarbonImmutable::parse($from, 'America/Chicago');
         $t = CarbonImmutable::parse($to, 'America/Chicago');
@@ -118,19 +168,31 @@ final class Panorama
         $buckets = [];
         for ($c = $unit === 'week' ? $f->startOfWeek(CarbonImmutable::MONDAY) : ($unit === 'month' ? $f->startOfMonth() : $f); $c <= $t;
              $c = $unit === 'day' ? $c->addDay() : ($unit === 'week' ? $c->addWeek() : $c->addMonthNoOverflow())) {
-            $buckets[$c->toDateString()] = ['start' => $c->toDateString(), 'label' => $this->bucketLabel($unit, $c), 'parties' => 0, 'sales_cents' => 0];
+            $buckets[$c->toDateString()] = ['start' => $c->toDateString(), 'label' => $this->bucketLabel($unit, $c), 'parties' => 0, 'sales_cents' => 0, 'last_year' => 0, 'items' => []];
         }
+        $key = function (string $date) use ($unit) {
+            $d = CarbonImmutable::parse($date, 'America/Chicago');
+
+            return ($unit === 'week' ? $d->startOfWeek(CarbonImmutable::MONDAY) : ($unit === 'month' ? $d->startOfMonth() : $d))->toDateString();
+        };
         foreach ($rows as $p) {
-            $d = CarbonImmutable::parse($p['date'], 'America/Chicago');
-            $k = ($unit === 'week' ? $d->startOfWeek(CarbonImmutable::MONDAY) : ($unit === 'month' ? $d->startOfMonth() : $d))->toDateString();
+            $k = $key($p['date']);
             if (! isset($buckets[$k])) continue;
             $buckets[$k]['parties']++;
             $buckets[$k]['sales_cents'] += $p['total_cents'] ?? 0;
+            $buckets[$k]['items'][] = ['name' => $p['name'], 'date' => $p['date'], 'total_cents' => $p['total_cents'], 'source' => self::SOURCES[self::source($p['source'] ?? null)]];
         }
+        foreach ($lastYear as $p) {
+            $k = $key(self::shiftYear($p['date'], 1));
+            if (isset($buckets[$k])) $buckets[$k]['last_year']++;
+        }
+        foreach ($buckets as &$b) usort($b['items'], fn ($x, $y) => $x['date'] <=> $y['date']);
+        unset($b);
         $list = array_values($buckets);
         $best = $list ? array_reduce($list, fn ($b, $x) => $b === null || $x['parties'] > $b['parties'] ? $x : $b) : null;
 
-        return ['unit' => $unit, 'buckets' => $list, 'max' => max([1, ...array_column($list, 'parties')]), 'best' => $best && $best['parties'] > 0 ? $best : null];
+        return ['unit' => $unit, 'buckets' => $list, 'max' => max([1, ...array_column($list, 'parties'), ...array_column($list, 'last_year')]),
+            'best' => $best && $best['parties'] > 0 ? $best : null, 'has_last_year' => array_sum(array_column($list, 'last_year')) > 0];
     }
 
     private function bucketLabel(string $unit, CarbonImmutable $c): string
@@ -177,6 +239,22 @@ final class Panorama
             'weeks' => array_values($weeks), 'hottest' => ($sorted[0]['count'] ?? 0) > 0 ? $sorted[0] : null,
             'day_of_month' => $dom, 'day_of_month_per_day' => $perDay, 'strongest_days' => array_key_first($perDay), 'weakest_days' => array_key_last($perDay),
             'weekday' => $weekday, 'last_year_count' => count($paidBefore)];
+    }
+
+    /** Website leads of the window: how many booked, how many were lost and why. */
+    private function funnel(array $leads): array
+    {
+        $by = array_count_values(array_map(fn ($l) => $l['status'], $leads));
+        $reasons = [];
+        foreach ($leads as $l) if ($l['status'] === 'lost') {
+            $label = \App\Models\LeadLossReason::LABELS[$l['reason'] ?? ''] ?? 'Sin motivo';
+            $reasons[$label] = ($reasons[$label] ?? 0) + 1;
+        }
+        arsort($reasons);
+        $closed = ($by['booked'] ?? 0) + ($by['lost'] ?? 0);
+
+        return ['count' => count($leads), 'booked' => $by['booked'] ?? 0, 'lost' => $by['lost'] ?? 0, 'open' => count($leads) - $closed,
+            'conversion_pct' => count($leads) ? (int) round(($by['booked'] ?? 0) * 100 / count($leads)) : null, 'reasons' => $reasons];
     }
 
     private function channels(array $rows): array

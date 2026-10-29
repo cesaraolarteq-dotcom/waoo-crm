@@ -124,9 +124,14 @@ class EventCosts extends Page
                 ? 'Lo que crees que te va a costar esta fiesta. Escribe cada costo directo; si todavía no sabes uno, déjalo vacío y el margen queda pendiente.'
                 : 'Lo que de verdad pagaste por esta fiesta. Se guarda una versión nueva; las anteriores quedan en el historial.')
             ->fillForm(function () use ($kind) {
-                // Start from the latest of this kind; the first "real" starts from the estimate. Amounts are the owner's, never calculated.
+                // Start from the latest of this kind; the first "real" starts from the estimate. Owner 2026-10-28: the very first
+                // estimate starts from the staff rates and $30 of materials per service; the owner reviews before saving.
                 $from = EventCostSnapshot::where('event_id', $this->record->getKey())->where('kind', $kind)->orderByDesc('revision')->first()
                     ?? ($kind === 'actual' ? EventCostSnapshot::where('event_id', $this->record->getKey())->where('kind', 'estimate')->orderByDesc('revision')->first() : null);
+                if (! $from && $kind === 'estimate') {
+                    return ['lines' => \App\Support\StaffPayEstimate::lines($this->record), 'coverage_confirmed' => false,
+                        'note' => 'Calculado con las tarifas del staff y $30 de materiales por servicio.'];
+                }
 
                 return ['lines' => collect($from?->lines_snapshot ?? [])->map(fn ($l) => ['label' => $l['label'], 'category' => $l['category'],
                     'amount' => $l['amount_cents'] === null ? null : rtrim(rtrim(number_format($l['amount_cents'] / 100, 2, '.', ''), '0'), '.'),

@@ -35,7 +35,7 @@ class PanoramaTest extends TestCase
             ['date' => '2026-04-03', 'amount_cents' => 20000, 'deposit' => false],
             ['date' => '2026-04-06', 'amount_cents' => 30000, 'deposit' => true],
         ];
-        $p = (new Panorama)->build($parties, $payments, ['2026-04-02'], '2026-04-01', '2026-04-30', '2026-04-20');
+        $p = (new Panorama)->build($parties, $payments, [['date' => '2026-04-02', 'status' => 'booked', 'reason' => null], ['date' => '2026-04-05', 'status' => 'lost', 'reason' => 'price']], '2026-04-01', '2026-04-30', '2026-04-20');
         $this->assertSame(['value' => 3, 'previous' => 1, 'change_pct' => 200, 'unknown' => 0], $p['kpis']['parties']);
         $this->assertSame(100000, $p['kpis']['sales']['value']);
         $this->assertSame(1, $p['kpis']['sales']['unknown']);
@@ -44,7 +44,12 @@ class PanoramaTest extends TestCase
         $this->assertSame(1, $p['pulse']['count'], 'Only the April deposit counts in the pulse.');
         $this->assertSame(1, $p['pulse']['weekday'][1]);
         $this->assertSame('6–10', $p['pulse']['strongest_days']);
-        $this->assertSame(1, $p['kpis']['leads']['value']);
+        $this->assertSame(2, $p['kpis']['leads']['value']);
+        $this->assertSame(['count' => 2, 'booked' => 1, 'lost' => 1, 'open' => 0, 'conversion_pct' => 50, 'reasons' => ['Precio' => 1]], $p['funnel']);
+        $april4 = collect($p['sales']['buckets'])->firstWhere('start', '2026-04-04');
+        $this->assertSame(1, $april4['parties']);
+        $this->assertSame('María González', $april4['items'][0]['name']);
+        $this->assertSame(1, collect($p['sales']['buckets'])->firstWhere('start', '2026-04-12')['last_year'], 'Last year\'s Apr 12 party sits on this year\'s Apr 12.');
         $this->assertSame('day', $p['sales']['unit']);
         $this->assertSame(['WhatsApp', 2, 60000], [$p['channels'][0]['label'], $p['channels'][0]['parties'], $p['channels'][0]['average_cents']]);
         $this->assertSame(['77494', 3], [$p['zones'][0]['zip'], $p['zones'][0]['parties']]);

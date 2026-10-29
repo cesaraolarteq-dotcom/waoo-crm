@@ -72,6 +72,24 @@ class EventCostsScreenTest extends TestCase
         $this->get("/admin/eventos/{$this->event->id}")->assertSee('Registró costos');
     }
 
+    public function test_first_estimate_starts_from_staff_rates_and_materials(): void
+    {
+        // Owner 2026-10-28 (STAFFPAY-01): animador $35/h, recreador $25/h, $50 minimum per person per service, $30 materials.
+        // A role without a rate stays empty so the margin stays pending; nothing is saved until the owner saves.
+        $variant = ServiceVariant::create(['name' => 'Música y Juegos', 'status' => 'active', 'duration_minutes' => 90,
+            'requirements' => [['kind' => 'staff', 'quantity' => 1, 'skill' => 'entertainer'], ['kind' => 'staff', 'quantity' => 2, 'skill' => 'host'], ['kind' => 'staff', 'quantity' => 1, 'skill' => 'dj']]]);
+        $price = PriceVersion::create(['service_variant_id' => $variant->id, 'amount_cents' => 50000, 'currency' => 'USD', 'created_by' => $this->owner->id]);
+        $start = now()->addDays(25)->startOfHour();
+        $event = app(SaveEventDraft::class)->execute($this->owner, ['customer_id' => Customer::sole()->id, 'title' => 'Fiesta con staff', 'starts_at' => $start->toIso8601String(),
+            'ends_at' => $start->copy()->addMinutes(90)->toIso8601String(), 'timezone' => 'America/Chicago', 'travel_fee_cents' => 4000, 'services' => [['price_version_id' => $price->id]]]);
+        app(CreateFinancialRevision::class)->execute($this->owner, $event->id, ['expected_version' => 1], (string) Str::uuid());
+        $page = Livewire::test(EventCosts::class, ['record' => $event->id])->mountAction('estimate');
+        $lines = array_values($page->instance()->mountedActions[0]['data']['lines']);
+        $this->assertSame([['Animador · Música y Juegos (1.5 h)', '52.5'], ['Recreador · Música y Juegos (1.5 h)', '50'], ['Recreador · Música y Juegos (1.5 h)', '50'],
+            ['DJ · Música y Juegos (1.5 h) · tarifa pendiente', null], ['Materiales · Música y Juegos', '30']], array_map(fn ($l) => [$l['label'], $l['amount']], $lines));
+        $this->assertSame(0, EventCostSnapshot::where('event_id', $event->id)->count());
+    }
+
     public function test_missing_coverage_keeps_margin_pending_and_actual_is_separate(): void
     {
         Livewire::test(EventCosts::class, ['record' => $this->event->id])->callAction('actual', [

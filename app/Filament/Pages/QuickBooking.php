@@ -10,7 +10,7 @@ use App\Models\{Customer, PriceVersion, ServiceVariant};
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
-use Filament\Forms\Components\{Checkbox, DatePicker, Hidden, Radio, Repeater, Select, Textarea, TextInput, TimePicker};
+use Filament\Forms\Components\{Checkbox, DatePicker, Hidden, Radio, Repeater, Select, Textarea, TextInput, TimePicker, ToggleButtons};
 use Filament\Pages\Page;
 use Filament\Schemas\Components\{Actions, Callout, EmbeddedSchema, Form, Grid, Section};
 use Filament\Schemas\Components\Utilities\{Get, Set};
@@ -175,6 +175,10 @@ class QuickBooking extends Page
                 Select::make('locale')->label('Idioma de sus mensajes')->native(false)->options(['es' => 'Español', 'en' => 'Inglés'])->required()
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new'),
             ]),
+            // Owner 2026-10-28: one tap for how the client found Waoo; it feeds "De dónde vienen" in Reportes.
+            Section::make('¿Cómo nos encontró?')->schema([
+                ToggleButtons::make('channel')->hiddenLabel()->options(\App\Models\EventChannel::LABELS)->inline(),
+            ]),
             Section::make('Facturar a empresa')->visible(fn()=>config('waoo.sandbox_company',false))->schema([
                 Checkbox::make('company_enabled')->label('Es para una empresa')->live()->default(false),
                 TextInput::make('company_name')->label('Nombre de la empresa')->required(fn(Get $get)=>(bool)$get('company_enabled'))->visible(fn(Get $get)=>(bool)$get('company_enabled'))->maxLength(255),
@@ -334,6 +338,7 @@ class QuickBooking extends Page
 
             return;
         }
+        \App\Models\EventChannel::record($r->event->id, $s['channel'] ?? null, Filament::auth()->id());
         $this->result = self::presentResult($r, $s);
         $this->key = (string) Str::uuid();
         $this->leadId = null; $this->leadVersion = null; $this->leadSummary = null;
@@ -579,7 +584,7 @@ class QuickBooking extends Page
         $p = $lead['submission']['payload'];
         $this->leadId = $lead['id']; $this->leadVersion = $lead['version'];
         $this->leadSummary = ['name' => $p['name'], 'package' => $p['package'] ?? '', 'type' => $p['event_type'] ?? '', 'travel' => $p['travel_estimate_text'] ?? null, 'message' => $p['message'] ?? null];
-        $state = ['date' => $p['event_date'] ?? null, 'start_time' => $p['start_time'] ?? null, 'postal_code' => $p['zip'] ?? null,
+        $state = ['channel' => 'website', 'date' => $p['event_date'] ?? null, 'start_time' => $p['start_time'] ?? null, 'postal_code' => $p['zip'] ?? null,
             // Website event type (English label) → CRM type; anything unknown stays for the owner to choose.
             'event_type' => \App\Filament\Pages\Leads::EVENT_TYPES[$p['event_type'] ?? ''][0] ?? null];
         $hints = $lead['duplicate_hints'] ?? [];
