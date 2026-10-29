@@ -220,6 +220,10 @@ class ViewEvent extends Page
                 ->url(fn()=>url('/admin/api/events/'.$e->id.'/billing-preview.pdf'))->openUrlInNewTab(),
             Action::make('edit')->label('Editar borrador')->color('gray')->visible(fn () => EventResource::canEdit($e))->url(fn () => EventResource::getUrl('edit', ['record' => $e])),
             Action::make('money')->label('Dinero')->icon('heroicon-o-banknotes')->color('gray')->visible(fn () => FinanceGate::enabled())->url(fn () => EventResource::getUrl('money', ['record' => $e])),
+            // Owner 2026-10-28: record copy of the HoneyBook contract and invoice (imported parties).
+            Action::make('honeybookCopy')->label('Copia de HoneyBook (PDF)')->icon('heroicon-o-document-text')->color('gray')
+                ->visible(fn () => \App\Support\HoneyBookCopies::forEvent($e->id) !== null)
+                ->url(fn () => url('/admin/api/events/'.$e->id.'/honeybook-copy'))->openUrlInNewTab(),
             Action::make('quoteView')->label('Ver cotización')->icon('heroicon-o-document-currency-dollar')->color('gray')
                 ->visible(fn () => \App\Filament\Support\QuoteForm::enabled() && \App\Models\Quote::where('event_id', $e->id)->exists())
                 ->url(fn () => \App\Filament\Pages\QuoteDetail::getUrl(['quote' => \App\Models\Quote::where('event_id', $e->id)->value('id')])),

@@ -14,6 +14,12 @@ final class ZelleNoticeController extends Controller
         $notice = $service->execute($request->attributes->get('portal_context'), $request->all(), (string) $request->header('Idempotency-Key'));
         return response()->json(['notice' => ZelleNoticeView::client($notice)], 201);
     }
+    /** Owner 2026-10-28: optional screenshot for her own pending notice (multipart field "screenshot"). */
+    public function screenshot(Request $request, int $notice, \App\Services\Portal\AttachZelleScreenshot $service)
+    {
+        $service->execute($request->attributes->get('portal_context'), $notice, $request->file('screenshot'));
+        return response()->json(['attached' => true], 201);
+    }
     public function index(Request $request)
     {
         Sandbox::require(); Sandbox::require('sandbox_documents');
