@@ -52,7 +52,7 @@
                         </div>
                         <small>Avisó {{ $n->when }}@if ($n->sent) · dice que lo envió {{ $n->sent }}@endif @if ($n->reference) · su ref. {{ $n->reference }}@endif @if ($n->payer) · a nombre de {{ $n->payer }}@endif @if ($n->note) · “{{ $n->note }}”@endif
                             @if ($n->old_amounts) · lo hizo sobre montos anteriores @endif
-                            @if ($n->reviewed) <br>Revisado {{ $n->reviewed }} · {{ $n->review_note }}@endif</small>
+                            @if ($n->reviewed) <br>Revisado {{ $n->reviewed }} · {{ $n->review_note }}@endif @if ($n->screenshot) · <a href="{{ $n->screenshot }}" target="_blank" rel="noopener">Ver captura</a>@endif</small>
                     </div>
                 @endforeach
             </x-filament::section>

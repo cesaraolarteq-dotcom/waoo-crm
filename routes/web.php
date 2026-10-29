@@ -78,6 +78,8 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-api'])->pre
     Route::post('/events/{event}/cost-snapshots', [\App\Http\Controllers\Admin\EventCostController::class, 'store']);
     Route::get('/zelle-notices', [\App\Http\Controllers\Admin\ZelleNoticeController::class, 'index']);
     Route::post('/events/{event}/zelle-notices/{notice}/review', [\App\Http\Controllers\Admin\ZelleNoticeController::class, 'review'])->whereNumber('notice');
+    Route::get('/zelle-notices/{notice}/screenshot', [\App\Http\Controllers\Admin\ZelleNoticeController::class, 'screenshot'])->whereNumber('notice');
+    Route::get('/events/{event}/honeybook-copy', \App\Http\Controllers\Admin\HoneyBookCopyController::class)->whereNumber('event');
     Route::get('/events/{event}/costume-hold', [\App\Http\Controllers\Admin\QuickCostumeHoldController::class, 'show'])->whereNumber('event');
     Route::post('/events/{event}/costume-hold', [\App\Http\Controllers\Admin\QuickCostumeHoldController::class, 'attempt'])->whereNumber('event');
     Route::post('/events/{event}/costume-hold/release', [\App\Http\Controllers\Admin\QuickCostumeHoldController::class, 'release'])->whereNumber('event');
@@ -152,6 +154,7 @@ Route::middleware([\App\Http\Middleware\AuthenticatePortal::class, 'throttle:60,
     Route::post('/quick-payment/zelle', [\App\Http\Controllers\Portal\QuickPaymentController::class, 'zelle']);
     Route::get('/zelle-notices', [\App\Http\Controllers\Portal\ZelleNoticeController::class, 'index']);
     Route::post('/zelle-notices', [\App\Http\Controllers\Portal\ZelleNoticeController::class, 'store']);
+    Route::post('/zelle-notices/{notice}/screenshot', [\App\Http\Controllers\Portal\ZelleNoticeController::class, 'screenshot'])->whereNumber('notice');
     Route::post('/details', [\App\Http\Controllers\Portal\ClientDetailsController::class, 'store']);
     Route::post('/details/contract', [\App\Http\Controllers\Portal\ClientDetailsController::class, 'prepare']);
     Route::post('/checkout-intents', [\App\Http\Controllers\Portal\CheckoutController::class, 'create']);

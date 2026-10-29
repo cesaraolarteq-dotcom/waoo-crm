@@ -148,7 +148,24 @@
       @foreach ($vm['zelle']['notices'] ?? [] as $n)
         <p class="p-notice p-notice-{{ $n['state'] }}" role="status">{{ $t('zelle_state_'.$n['state'], ['amount' => $n['amount'], 'verified' => $n['verified'] ?? '', 'when' => $n['when']]) }}</p>
       @endforeach
-      {{-- Owner 2026-10-26: no "Ya envié el Zelle" form here; he checks the bank and records the payment. --}}
+      {{-- Owner 2026-10-28 (replaces 2026-10-26): the client can say she sent the Zelle, with an optional screenshot. It never counts as
+           payment: the owner checks the bank and records the exact amount; any difference stays pending. --}}
+      @if ($vm['zelle']['can_notify'] ?? false)
+      @php($hasPending = collect($vm['zelle']['notices'] ?? [])->contains('state', 'pending'))
+      <details class="p-zelle" @if (! $hasPending) open @endif>
+        <summary>{{ $hasPending ? $t('zelle_again') : $t('zelle_sent_btn') }}</summary>
+        <form class="p-form p-zelle-form" method="POST" action="{{ $vm['zelle']['action'] }}" id="zelle-form" data-revision="{{ $vm['pay']['revision_id'] ?? '' }}" novalidate>
+          @csrf
+          <label class="p-field"><span>{{ $t('zelle_amount_sent') }} (USD)</span><input name="amount" inputmode="decimal" value="{{ $vm['zelle']['amount'] }}" required autocomplete="off"></label>
+          <label class="p-field"><span>{{ $t('zelle_payer') }} <em>({{ $t('optional') }})</em></span><input name="payer_name" maxlength="120" autocomplete="name"></label>
+          <label class="p-field"><span>{{ $t('zelle_ref') }} <em>({{ $t('optional') }})</em></span><input name="reference" maxlength="255" autocomplete="off"></label>
+          <label class="p-field"><span>{{ $t('zelle_shot') }} <em>({{ $t('optional') }})</em></span><input type="file" name="screenshot" accept="image/*,application/pdf"></label>
+          <p class="p-hint">{{ $t('zelle_note') }}</p>
+          <p class="p-test" id="zelle-error" role="alert" hidden></p>
+          <button class="p-btn" type="submit">{{ $t('zelle_sent_btn') }}</button>
+        </form>
+      </details>
+      @endif
     </div>
     <form class="p-opt" method="POST" action="{{ $vm['actions']['checkout'] }}" id="pay-form" data-revision="{{ $vm['pay']['revision_id'] ?? '' }}" data-card-quote="{{ !empty($vm['pay']['card']) ? ($vm['pay']['card_quote_sha256'] ?? '') : '' }}" @if ((isset($vm['pay']) && ! $vm['pay']['can_checkout']) || (!empty($vm['pay']['enabled']) && empty($vm['pay']['card']))) hidden @endif>
       @csrf
@@ -228,7 +245,15 @@
     if (zf.reference.value.trim().length >= 3) body.reference = zf.reference.value.trim();
     // One key per attempt: a double tap or retry after a timeout sends one notice. A notice is never a payment.
     post(zf.action, body, key('waoo-zelle-' + zf.dataset.revision))
-      .then(function () { try { sessionStorage.removeItem('waoo-zelle-' + zf.dataset.revision); } catch (e) {} location.reload(); })
+      .then(function (res) {
+        try { sessionStorage.removeItem('waoo-zelle-' + zf.dataset.revision); } catch (e) {}
+        var file = zf.screenshot && zf.screenshot.files[0], id = res && res.notice && res.notice.id;
+        if (!file || !id) return;
+        // Optional screenshot after the notice exists; if it fails the notice is still sent.
+        var fd = new FormData(); fd.append('screenshot', file);
+        return fetch(zf.action + '/' + id + '/screenshot', {method: 'POST', credentials: 'same-origin', headers: {'Accept': 'application/json', 'X-CSRF-TOKEN': csrf}, body: fd}).catch(function () {});
+      })
+      .then(function () { location.reload(); })
       .catch(function (e) { err.textContent = e.message; err.hidden = false; b.disabled = false; });
   });
   var pay = document.getElementById('pay-form');
