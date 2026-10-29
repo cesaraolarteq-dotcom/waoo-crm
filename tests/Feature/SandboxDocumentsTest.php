@@ -194,6 +194,64 @@ class SandboxDocumentsTest extends TestCase
         $this->getJson('/admin/api/contracts/'.$contract->id.'/pdf')->assertUnauthorized();
         $this->getJson('/portal/api/contracts/'.$contract->id.'/pdf')->assertForbidden();
     }
+    public function test_final_contract_shows_signatures_on_the_contract_pages_and_preserves_presented_bytes(): void
+    {
+        $contract = $this->issue(); $this->clientSession();
+        $this->get('/portal/api/contracts/'.$contract->id.'/pdf')->assertOk();
+        $this->postJson('/portal/api/contracts/'.$contract->id.'/sign', $this->signInput(), ['Idempotency-Key' => (string)Str::uuid()])->assertOk();
+        $beforeHtml = Storage::disk('local')->get($contract->presented_html_path);
+        $beforePdf = Storage::disk('local')->get($contract->presented_pdf_path);
+        $real = app(\App\Services\Documents\PrintRenderer::class);
+        $capture = new class($real) {
+            public string $rendered = '';
+            public function __construct(private $real) {}
+            public function html(...$args): string { return $this->real->html(...$args); }
+            public function signedHtml(...$args): string { return $this->real->signedHtml(...$args); }
+            public function pdf(string $html): string { $this->rendered = $html; return $this->real->pdf($html); }
+        };
+        $this->app->instance(\App\Services\Documents\PrintRenderer::class, $capture);
+        (new FinalizeSignedContract($contract->id))->handle();
+        $this->assertStringContainsString('SIGNED / FIRMADO', $capture->rendered);
+        $this->assertStringContainsString('class="line p-typed-signature">Fixture Client</div>', $capture->rendered);
+        $this->assertStringContainsString('Electronic signature record.', $capture->rendered);
+        $this->assertStringContainsString('Electronic Signature Record', $capture->rendered);
+        $consent = SignatureEvidence::sole()->consent_text;
+        $this->assertStringContainsString(htmlspecialchars($consent, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), $capture->rendered);
+        $this->assertStringNotContainsString('My electronic signature is as valid as a handwritten one.', $capture->rendered);
+        $this->assertStringContainsString("Provider acceptance (Waoo Party LLC) recorded at the client&#039;s signature by owner decision of 2026-10-28.", $capture->rendered);
+        $this->assertStringNotContainsString('Provider acceptance pending', $capture->rendered);
+        $this->assertSame($beforeHtml, Storage::disk('local')->get($contract->presented_html_path));
+        $this->assertSame($beforePdf, Storage::disk('local')->get($contract->presented_pdf_path));
+        $final = $contract->fresh(); $bytes = Storage::disk('local')->get($final->final_pdf_path);
+        $this->assertStringStartsWith('%PDF-', $bytes);
+        (new FinalizeSignedContract($contract->id))->handle();
+        $this->assertSame($final->final_pdf_sha256, $contract->fresh()->final_pdf_sha256);
+        $this->assertSame($bytes, Storage::disk('local')->get($final->final_pdf_path));
+    }
+
+    public function test_finalization_refuses_changed_template_or_snapshot_instead_of_rewriting_accepted_terms(): void
+    {
+        $contract = $this->issue(); $this->clientSession();
+        $this->get('/portal/api/contracts/'.$contract->id.'/pdf')->assertOk();
+        $this->postJson('/portal/api/contracts/'.$contract->id.'/sign', $this->signInput(), ['Idempotency-Key' => (string)Str::uuid()])->assertOk();
+        $template = $this->template->fresh();
+        DB::table('contract_template_versions')->where('id', $template->id)->update(['terms_html' => '<p>Altered fixture terms.</p>']);
+        try { (new FinalizeSignedContract($contract->id))->handle(); $this->fail('Altered terms finalized.'); }
+        catch (\RuntimeException $e) { $this->assertSame('Signed template evidence does not match the original presentation.', $e->getMessage()); }
+        DB::table('contract_template_versions')->where('id', $template->id)->update(['terms_html' => $template->terms_html]);
+        $originalSnapshot = $contract->fresh()->commercial_snapshot;
+        $altered = $originalSnapshot; $altered['client']['first_name'] = 'Altered identity';
+        // Simulate out-of-band corruption; the model correctly forbids normal edits after issue.
+        DB::table('contracts')->where('id', $contract->id)->update(['commercial_snapshot' => json_encode($altered, JSON_THROW_ON_ERROR)]);
+        try { (new FinalizeSignedContract($contract->id))->handle(); $this->fail('Altered identity finalized.'); }
+        catch (\RuntimeException $e) { $this->assertSame('Frozen contract cannot reproduce its original presentation.', $e->getMessage()); }
+        $this->assertNull($contract->fresh()->final_pdf_path);
+        DB::table('contracts')->where('id', $contract->id)->update(['commercial_snapshot' => json_encode($originalSnapshot, JSON_THROW_ON_ERROR)]);
+        (new FinalizeSignedContract($contract->id))->handle();
+        $this->assertNotNull($contract->fresh()->final_pdf_path);
+        $this->assertDatabaseCount('signature_evidence', 1);
+    }
+
     public function test_signature_binds_presented_bytes_and_retry_does_not_sign_again(): void
     {
         $contract = $this->issue(); $this->clientSession();
@@ -296,6 +354,7 @@ class SandboxDocumentsTest extends TestCase
         $renderer = app(\App\Services\Documents\PrintRenderer::class);
         $this->app->instance(\App\Services\Documents\PrintRenderer::class, new class($renderer) {
             public function __construct(private object $renderer) {}
+            public function html(...$args): string { return $this->renderer->html(...$args); }
             public function signedHtml(...$args): string { return $this->renderer->signedHtml(...$args); }
             public function pdf(string $html): string { throw new \RuntimeException('Fixture renderer failure'); }
         });

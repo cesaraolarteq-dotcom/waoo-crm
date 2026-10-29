@@ -1,3 +1,8 @@
+## 2026-10-29 · Codex · Signed-contract integration with daily/history main
+Merge main edf0832 (#144) into153 has only2documentation conflicts, both histories preserved; no application conflict. Original153head93967c3 all12checksSUCCESS, local48/583PASS. Final assembly CI required. No deployment/old-final rewrite/sends.
+
+## 2026-10-29 · Codex · Signed contract visual/evidence correction
+Owner2026-10-28 decision implemented: signed line/date/provider acceptance/badge and exact recorded consent, original artifacts/hash/terms preserved and unsigned reproduction required. **48tests/583assertions PASS** plus actual Dompdf3page synthetic PDF visually inspected. See newest queue and docs/CONTRACT-SIGNED-LOOK-API.md. No prior final rewritten, deployment or send. Full CI before merge.
 ## 2026-10-29 · Codex · Consolidated142/144/146 on reviewed152
 PR144 preserves Claude142head7c3e2da and dry-run146heada1fda18 via real merges, on main e5e16ff after149/152 each12green. Only documentation conflicts in these last merges; both histories retained. Daily+fee36/212PASS, existing dry-run43/302PASS; final combined CI required. S2 full evaluator and C3 adapters still pending. Owner reports Twilio active; no credentials inspected, provider send/flag change or operational verification inferred. Sending hold intact.
 
