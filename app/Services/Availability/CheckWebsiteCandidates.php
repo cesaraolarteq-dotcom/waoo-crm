@@ -71,13 +71,12 @@ final class CheckWebsiteCandidates
 
         $google = $this->busy($day->subDay(), $day->addDays(2));
         $capacity = new WebsiteCapacity($day, $google);
-        $needs = WebsiteCapacity::needs($requirements);
         $slots = []; $unresolved = [];
         foreach ($parsed as $i => $start) {
             if (! $capacity->calendarOk()) { $unresolved[] = ['candidate' => $i, 'code' => 'evaluation_unavailable']; continue; }
             $end = $start->addMinutes($variant->duration_minutes);
-            $state = $capacity->check($start->subMinutes($variant->setup_minutes), $end->addMinutes($variant->breakdown_minutes + WebsiteCapacity::GAP_MINUTES), $date, $needs);
-            if ($state === 'unavailable') { $unresolved[] = ['candidate' => $i, 'code' => 'unavailable']; continue; }
+            $state = $capacity->check($start->subMinutes($variant->setup_minutes), $end->addMinutes($variant->breakdown_minutes + WebsiteCapacity::GAP_MINUTES), $date, $requirements);
+            if ($state === 'unavailable' || $state === 'review_required') { $unresolved[] = ['candidate' => $i, 'code' => $state]; continue; }
             if (BookingNoticePolicy::requiresWebsiteApproval($start, $now)) $state = 'owner_approval_required';
             $slots[] = ['starts_at' => $start->setTimezone('America/Chicago')->toIso8601String(), 'ends_at' => $end->setTimezone('America/Chicago')->toIso8601String(),
                 'state' => $state, 'requires_owner_approval' => $state === 'owner_approval_required'];

@@ -37,7 +37,7 @@ class WebsiteCapacityTest extends TestCase
         $e = Event::create(['customer_id' => $c->id, 'title' => 'Fiesta '.$this->n, 'starts_at' => $s, 'ends_at' => $s->addHour(), 'timezone' => 'America/Chicago', 'setup_minutes' => $setup, 'breakdown_minutes' => $setup]);
         $e->status = $status; $e->save();
         EventService::create(['event_id' => $e->id, 'service_variant_id' => $this->magic->id, 'price_version_id' => $this->priceId, 'operational_ready' => true, 'duration_minutes' => 60,
-            'requirements_snapshot' => $elsa ? [['kind' => 'costume', 'character_id' => $this->elsa->id, 'quantity' => 1]] : []]);
+            'requirements_snapshot' => array_merge([['kind' => 'staff', 'quantity' => 1, 'skill' => 'performer']], $elsa ? [['kind' => 'costume', 'character_id' => $this->elsa->id, 'quantity' => 1]] : [])]);
         if ($honeybook) DB::table('imported_project_links')->insert(['event_id' => $e->id, 'customer_id' => $c->id, 'project_key' => hash('sha256', 'hb-'.$this->n), 'current_revision_id' => null,
             'domain_sha256' => str_repeat('0', 64), 'created_at' => now(), 'updated_at' => now()]);
         return $e;
@@ -130,13 +130,22 @@ class WebsiteCapacityTest extends TestCase
         for ($i = 1; $i <= $n; $i++) Resource::create(['code' => 'ONE-'.$i, 'name' => 'Staff '.$i, 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer', 'driver']]);
     }
 
-    public function test_one_multiskilled_person_is_never_counted_for_two_roles(): void
+    public function test_the_driver_is_a_team_member_and_nobody_hands_over_mid_party(): void
     {
-        // Mágico needs a performer and a driver: with one person who can do both, the party still needs two people.
+        // César 2026-10-29: the driver is someone working the party. One performer who drives is enough for Mágico.
         $this->staffOnly(1);
-        $this->assertSame('owner_approval_required', $this->check(['14:00'])['slots'][0]['state']);
-        $this->staffOnly(2);
         $this->assertSame('available', $this->check(['14:00'])['slots'][0]['state']);
+        // A performer who cannot drive: the team has no driver -> owner approval (he may send an extra person).
+        DB::table('resources')->where('kind', 'staff')->update(['skills' => json_encode(['performer'])]);
+        $this->assertSame('owner_approval_required', $this->check(['14:00'])['slots'][0]['state']);
+        // Codex counterexample: A busy 10:00–11:00, B busy 11:00–12:00; nobody is free for a whole 10:30–11:30 party.
+        DB::table('resources')->where('kind', 'staff')->delete();
+        $a = Resource::create(['code' => 'A', 'name' => 'Staff A', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer', 'driver']]);
+        $b = Resource::create(['code' => 'B', 'name' => 'Staff B', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer', 'driver']]);
+        DB::table('resource_blocks')->insert([
+            ['resource_id' => $a->id, 'starts_at' => '2026-11-21 16:00:00', 'ends_at' => '2026-11-21 17:00:00', 'reason' => 'Ocupado', 'created_at' => now(), 'updated_at' => now()],
+            ['resource_id' => $b->id, 'starts_at' => '2026-11-21 17:00:00', 'ends_at' => '2026-11-21 18:00:00', 'reason' => 'Ocupado', 'created_at' => now(), 'updated_at' => now()]]);
+        $this->assertSame('owner_approval_required', $this->check(['10:45'])['slots'][0]['state'], 'No single person covers the whole party.');
     }
 
     public function test_blocked_sole_equipment_and_unit_holds_are_busy(): void
