@@ -1,3 +1,6 @@
+## 2026-10-29 · Codex · Preserve merged Zelle/copy review in daily-admission branch
+Merge e5e16ff (#152) has only2documentation conflicts; preserve both histories. No application conflict/change. Prior daily+card36/212PASS and e7b6571head12green checks. New integration CI required. #152merged after12green; no deployment/send.
+
 ## 2026-10-28 · Codex · Daily cap + card-fee combined regression passes
 36tests/212assertions PASS on the resolved main093797a integration; both fee-pair integrity and paid-overflow preservation retained. Publish to PR144 for fresh full CI. No deployment, fee activation or mail.
 
@@ -9,6 +12,9 @@ Port of Claude f03c2f0: Symfony Mime7.4.19→7.4.22 and Polyfill Mbstring1.43.0�
 
 ## 2026-10-28 · Codex · Shared daily10-party admission prerequisite
 `codex/fix-daily-capacity-admission`: global mutation admission protocol across paid/unpaid/native/imported commitments, overnight/Houston day, actual-money preservation and native moves. **200tests/1514assertions PASS** including real-process last-place race; see newest docs/CLAUDE-REVIEW-QUEUE.md and docs/DAILY-CAPACITY-API.md. #140 internal7/web14 already merged maina54b626 after12green checks. Full AVAIL evaluator/positive slots still pending; separate CARD-FEE, C3 and aggregate-only history CLI work underway. Mail hold intact, no deployment/provider/real cohort action.
+## 2026-10-28 · Codex · Review147/148 plus Zelle evidence hardening
+Preserves both Claude sources on merged149. **53tests/541assertions+8browser layouts/synthetic checkout submissions PASS**. Fixed MIME extension, transaction-bound grant/event/notice authorization, private cleanup and stored-SHA check; no photo treated as money. See newest review queue for exact proof/copy/limits. No deploy or send.
+
 ## 2026-10-28 · Codex · Claude143/145 plus hardened credit-fee integration
 Real merge preserves both source branches and the frozen monetary contract. **146tests/1415assertions and8browser layouts+synthetic acknowledgments PASS**. Proposed copy remains gatedOFF pending approval/account credit-only verification. See newest review queue entry for exact proof and limits. No deployment, sending, actual collection or real-data change.
 
@@ -2307,3 +2313,16 @@ Antes de construir pantallas o migraciones, acordar campos, estados, errores, pe
 - Portal: card option says "Tarjeta de crédito" / "Credit card", shows "$X + $Y (3 %) = $Z" and the button pays $Z. New copy keys `card_credit`, `card_fee_hint` (proposed text, César approves on crm-test); `card`/`card_hint` kept for the tip page.
 - Speed: `StripeWebhookController` now also runs `StripeReceiptRouter` after the response for portal/tip receipts (quick booking already did); the queued job stays as retry. On crm-test the balance confirmation took 45 s.
 - Tests updated: StripeSandboxTest (fee, two lines, ledger split), ClientPortalPageTest (amounts and copy); FakeStripeGateway sums all line items.
+
+## 2026-10-28 Zelle balance notice with optional screenshot (Claude, branch claude/zelle-balance, stacked on claude/card-fee)
+- César: on "Pagar el saldo" the client must be able to say she paid by Zelle and add an optional screenshot; he is notified, checks the bank, records the exact amount, and any difference stays pending; the client sees "esperando confirmación de Waoo Party" and then the paid state. This replaces the 2026-10-26 removal of the form.
+- Portal: the "Ya envié el Zelle" form is back when `zelle.can_notify` (amount prefilled with the balance, payer/reference optional, file optional). The notice is created exactly as before (`SubmitZelleNotice`, unchanged); the screenshot is a second multipart POST `/portal/api/zelle-notices/{id}/screenshot` → `AttachZelleScreenshot`.
+- New immutable table `zelle_notice_screenshots` (one per notice; private `storage/app/zelle-screenshots/<event>/<uuid>.<ext>`; jpg/png/webp/heic/pdf ≤ 8 MB; only the client's own unreviewed notice; admin sessions refused). Owner: `/admin/api/zelle-notices/{id}/screenshot` (owner-only group, `no-store`), "Ver captura" on Dinero, "· con captura" on the Inicio card. Money is still only what the owner verifies (`ReviewZelleNotice`, unchanged).
+- Copy: pending notice now "Esperando confirmación de Waoo Party: …" / "Waiting for Waoo Party to confirm: …"; new label "Captura del Zelle" / "Zelle screenshot".
+- Tests: ZelleNoticeScreensTest (form back, new pending text, screenshot privacy/one-per-notice/type), QuickPaymentsTest (form now present). **Migration** `2026_10_28_100000_create_zelle_notice_screenshots`.
+- **Codex:** please review the upload service (storage path, validation, authorization) before merging.
+
+## 2026-10-28 HoneyBook record copies on the event page (Claude, branch claude/honeybook-copies, stacked on claude/zelle-balance)
+- HoneyBook has no PDF download (only the browser print dialog) and the connector returns data, not files. With César's OK, Claude built **record copies** for the upcoming HoneyBook parties from the connector data: banner "COPY FROM HONEYBOOK / COPIA DE HONEYBOOK", signature status, invoice lines + travel/other charges + discount + total/paid/balance + schedule, then the contract with the client's filled fields. Rendered with Dompdf on crm-test into `storage/app/private/honeybook-copies/<hb_project_id>.pdf` + `manifest.json` (HoneyBook project → event matched by exact title). Never presented as signed originals. No client data in Git.
+- Code: `App\Support\HoneyBookCopies::forEvent()`, owner-only `/admin/api/events/{event}/honeybook-copy` (`no-store`), "Copia de HoneyBook (PDF)" action on the event page. Test: HoneyBookCopiesTest (fictitious data).
+- **Codex, merge request:** after #147, merge when CI is green.

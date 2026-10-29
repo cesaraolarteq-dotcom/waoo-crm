@@ -109,7 +109,7 @@ class Dashboard extends BaseDashboard
             // Client Zelle notices are claims, never money: the owner checks the bank, then verifies or rejects on Dinero.
             $notices = \App\Models\ZelleNotice::query()->whereDoesntHave('review')->orderBy('id')->limit(50)->get();
             $cards[] = ['tone' => 'bad', 'title' => 'Avisos de Zelle por verificar', 'text' => 'El cliente dice que ya envió el Zelle. Revisa tu banco antes de contarlo como pago.',
-                'items' => $notices->map(fn ($n) => ['label' => (Event::whereKey($n->event_id)->value('title') ?? 'Evento').' · dice '.Labels::money($n->amount_cents).' · '.Labels::when($n->submitted_at), 'url' => EventResource::getUrl('money', ['record' => $n->event_id])])->all()];
+                'items' => $notices->map(fn ($n) => ['label' => (Event::whereKey($n->event_id)->value('title') ?? 'Evento').' · dice '.Labels::money($n->amount_cents).' · '.Labels::when($n->submitted_at).(\App\Models\ZelleNoticeScreenshot::where('notice_id', $n->id)->exists() ? ' · con captura' : ''), 'url' => EventResource::getUrl('money', ['record' => $n->event_id])])->all()];
         }
 
         if (\App\Filament\Support\MailUi::enabled()) {
