@@ -20,9 +20,9 @@ final class Labels
     public const VARIANT_STATUS_COLOR = ['draft' => 'warning', 'active' => 'success', 'retired' => 'gray'];
 
     // capacity_reserved means staff/costumes/equipment are held after a verified deposit. It is not "contract signed" or "paid".
-    public const EVENT_STATUS = ['draft' => 'Borrador', 'capacity_reserved' => 'Recursos apartados'];
+    public const EVENT_STATUS = ['draft' => 'Borrador', 'capacity_reserved' => 'Recursos apartados', 'cancelled' => 'Cancelada'];
 
-    public const EVENT_STATUS_COLOR = ['draft' => 'gray', 'capacity_reserved' => 'info'];
+    public const EVENT_STATUS_COLOR = ['draft' => 'gray', 'capacity_reserved' => 'info', 'cancelled' => 'danger'];
 
     public const SKILL = [
         'performer' => 'Personaje', 'entertainer' => 'Animador/a', 'host' => 'Recreador/a', 'dj' => 'DJ',

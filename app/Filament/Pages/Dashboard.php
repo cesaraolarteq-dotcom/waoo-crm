@@ -53,7 +53,7 @@ class Dashboard extends BaseDashboard
     public function attention(): array
     {
         $now = now();
-        $upcoming = Event::query()->where('ends_at', '>=', $now)->with('customer')->orderBy('starts_at');
+        $upcoming = Event::query()->where('ends_at', '>=', $now)->where('status', '!=', 'cancelled')->with('customer')->orderBy('starts_at');
         $cards = [];
         $link = fn (Event $e) => ['label' => $e->title.' · '.Labels::when($e->starts_at), 'url' => $this->eventUrl($e)];
 
@@ -150,7 +150,7 @@ class Dashboard extends BaseDashboard
         $from = $this->now()->startOfDay();
         $to = $this->now()->endOfWeek(CarbonImmutable::SUNDAY);
 
-        return Event::query()->with('customer')->where('starts_at', '>=', $from->utc())->where('starts_at', '<=', $to->utc())->orderBy('starts_at')->get()
+        return Event::query()->with('customer')->where('status', '!=', 'cancelled')->where('starts_at', '>=', $from->utc())->where('starts_at', '<=', $to->utc())->orderBy('starts_at')->get()
             ->map(fn ($e) => (object) ['title' => $e->title, 'client' => $e->customer?->name, 'when' => Labels::when($e->starts_at),
                 'status' => Labels::label(Labels::EVENT_STATUS, $e->status), 'color' => Labels::EVENT_STATUS_COLOR[$e->status] ?? 'gray',
                 'travel' => Labels::money($e->travel_fee_cents), 'url' => $this->eventUrl($e)]);

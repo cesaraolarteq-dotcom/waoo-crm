@@ -32,6 +32,7 @@ class ViewEvent extends Page
         'portal.zelle_notice_submitted' => 'El cliente avisó que envió un Zelle', 'payment.zelle_notice_reviewed' => 'Revisó un aviso de Zelle del cliente',
         'cost.snapshot_recorded' => 'Registró costos',
         'mail.planned' => 'Programó un correo', 'mail.policy_updated' => 'Cambió la pausa de correos',
+        'event.cancelled' => 'Canceló la fiesta', 'payment.refund_requested' => 'Pidió un reembolso con tarjeta', 'payment.refunded' => 'Registró un reembolso',
     ];
 
     /** Zelle notice reviews say which way they went; amounts stay on the Dinero screen. */
@@ -308,7 +309,95 @@ class ViewEvent extends Page
                 }),
             Action::make('contract')->label('Contrato y enlace')->icon('heroicon-o-document-text')->color('gray')->visible(fn () => \App\Filament\Support\DocumentsGate::enabled())->url(fn () => EventResource::getUrl('contract', ['record' => $e])),
             Action::make('confirm')->label('Apartar recursos y confirmar')->visible(fn () => ConfirmCapacity::canAccessFor($e))->url(fn () => EventResource::getUrl('confirm', ['record' => $e])),
+            $this->cancelEventAction(),
+            $this->refundAction(),
         ];
+    }
+
+    #[\Livewire\Attributes\Locked]
+    public string $changeKey = '';
+
+    public static function changesEnabled(): bool
+    {
+        return FinanceGate::enabled() && (bool) config('waoo.sandbox_changes', false);
+    }
+
+    /** Owner 2026-10-29: cancel keeps the deposit; frees staff, costumes and equipment; pauses reminders. */
+    public function cancelEventAction(): Action
+    {
+        $e = $this->record;
+        return Action::make('cancelEvent')->label('Cancelar fiesta')->icon('heroicon-o-x-circle')->color('danger')
+            ->visible(fn () => self::changesEnabled() && in_array($e->status, ['draft', 'capacity_reserved'], true) && ! \App\Models\ImportedProjectLink::where('event_id', $e->id)->exists())
+            ->mountUsing(fn () => $this->changeKey = (string) \Illuminate\Support\Str::uuid())
+            ->modalHeading('Cancelar esta fiesta')
+            ->modalDescription(function () use ($e) {
+                $m = app(FinanceSummary::class)->forEvent($e);
+                return 'Pagado hasta hoy: '.Labels::money($m['net_received_cents'] ?? 0).'. El depósito no es reembolsable y no se devuelve nada automáticamente. '
+                    .'Se libera el staff, los trajes y el equipo de esa fecha, se cierran los enlaces de pago abiertos y se pausan los recordatorios. '
+                    .'El contrato firmado, los pagos y el historial se conservan. No se le avisa a la clienta: avísale tú por WhatsApp.';
+            })
+            ->schema([\Filament\Forms\Components\Textarea::make('reason')->label('¿Por qué se cancela?')->required()->minLength(10)->maxLength(1000)->rows(3)])
+            ->modalSubmitActionLabel('Sí, cancelar la fiesta')
+            ->action(function (array $data, Action $action) use ($e) {
+                try {
+                    app(\App\Services\Changes\CancelEvent::class)->execute(\Filament\Facades\Filament::auth()->user(), $e->id,
+                        ['expected_version' => (int) $this->displayedVersion, 'reason' => (string) $data['reason']], $this->changeKey);
+                } catch (\App\Exceptions\RecordWriteRejected|\Illuminate\Validation\ValidationException|\Illuminate\Auth\Access\AuthorizationException|\App\Exceptions\ResponsibilityRejected $ex) {
+                    \Filament\Notifications\Notification::make()->danger()->title('No se canceló')->body($ex instanceof \Illuminate\Validation\ValidationException ? collect($ex->errors())->flatten()->first() : $ex->getMessage())->persistent()->send();
+                    $action->halt();
+                }
+                \Filament\Notifications\Notification::make()->success()->title('Fiesta cancelada')->body('Se liberaron los recursos de esa fecha. El dinero recibido se queda registrado.')->send();
+                $this->redirect(EventResource::getUrl('view', ['record' => $e]));
+            });
+    }
+
+    /** Card payments go back through Stripe; Zelle is sent back by the owner from the bank and recorded here. */
+    public function refundAction(): Action
+    {
+        $e = $this->record;
+        $receipts = function () use ($e): array {
+            $out = [];
+            foreach (\App\Models\LedgerEntry::where('event_id', $e->id)->where('environment', 'test')->where('kind', 'receipt')->whereIn('method', ['stripe', 'zelle'])->orderBy('received_at')->get() as $r) {
+                $left = $r->amount_cents - (int) \App\Models\RefundRequest::where('receipt_id', $r->id)->whereIn('state', ['requested', 'unknown', 'succeeded'])->sum('amount_cents');
+                if ($left > 0) $out[$r->id] = ($r->method === 'stripe' ? 'Tarjeta' : 'Zelle').' · '.Labels::when($r->received_at).' · queda '.Labels::money($left);
+            }
+            return $out;
+        };
+        $method = fn ($id) => $id ? \App\Models\LedgerEntry::whereKey((int) $id)->where('event_id', $e->id)->value('method') : null;
+        return Action::make('refund')->label('Devolver dinero')->icon('heroicon-o-arrow-uturn-left')->color('gray')
+            ->visible(fn () => self::changesEnabled() && $e->responsible_system === 'crm' && $receipts() !== [])
+            ->mountUsing(fn () => $this->changeKey = (string) \Illuminate\Support\Str::uuid())
+            ->modalHeading('Devolver dinero')
+            ->modalDescription('Según el contrato el depósito no es reembolsable; usa esto solo si tú decides devolver. Con tarjeta, el dinero vuelve a la misma tarjeta por Stripe. Con Zelle, primero mándalo tú desde el banco y luego regístralo aquí.')
+            ->schema([
+                \Filament\Forms\Components\Select::make('receipt_id')->label('Pago que se devuelve')->options($receipts)->required()->native(false)->live(),
+                \Filament\Forms\Components\TextInput::make('amount')->label('Monto a devolver (USD)')->numeric()->minValue(0.01)->step(0.01)->required(),
+                \Filament\Forms\Components\Textarea::make('reason')->label('Motivo')->required()->minLength(10)->maxLength(1000)->rows(2),
+                \Filament\Forms\Components\Checkbox::make('confirm_sent')->label('Ya mandé el Zelle de vuelta desde el banco')
+                    ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get) => $method($get('receipt_id')) === 'zelle')->accepted(fn (\Filament\Schemas\Components\Utilities\Get $get) => $method($get('receipt_id')) === 'zelle'),
+                \Filament\Forms\Components\DatePicker::make('sent_on')->label('Fecha en que lo mandaste')->native(false)->maxDate(now())
+                    ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get) => $method($get('receipt_id')) === 'zelle')->required(fn (\Filament\Schemas\Components\Utilities\Get $get) => $method($get('receipt_id')) === 'zelle'),
+                \Filament\Forms\Components\TextInput::make('reference')->label('Referencia del banco (opcional)')->maxLength(255)
+                    ->visible(fn (\Filament\Schemas\Components\Utilities\Get $get) => $method($get('receipt_id')) === 'zelle'),
+            ])
+            ->modalSubmitActionLabel('Devolver')
+            ->action(function (array $data, Action $action) use ($e) {
+                $zelle = ! empty($data['confirm_sent']);
+                try {
+                    $r = app(\App\Services\Changes\RefundPayment::class)->execute(\Filament\Facades\Filament::auth()->user(), $e->id, [
+                        'receipt_id' => (int) $data['receipt_id'], 'amount_cents' => (int) round(((float) $data['amount']) * 100), 'reason' => (string) $data['reason'],
+                        ...($zelle ? ['confirm_sent' => true, 'sent_on' => \Carbon\CarbonImmutable::parse($data['sent_on'])->format('Y-m-d'), 'reference' => $data['reference'] ?: null] : []),
+                    ], $this->changeKey);
+                } catch (\App\Exceptions\RecordWriteRejected|\Illuminate\Validation\ValidationException|\Illuminate\Auth\Access\AuthorizationException|\App\Exceptions\ResponsibilityRejected $ex) {
+                    // A lost Stripe answer keeps the same key so the retry returns the same refund, never a second one.
+                    if (! ($ex instanceof \App\Exceptions\RecordWriteRejected && $ex->status === 503)) $this->changeKey = (string) \Illuminate\Support\Str::uuid();
+                    \Filament\Notifications\Notification::make()->danger()->title('No se devolvió')->body($ex instanceof \Illuminate\Validation\ValidationException ? collect($ex->errors())->flatten()->first() : $ex->getMessage())->persistent()->send();
+                    $action->halt();
+                }
+                \Filament\Notifications\Notification::make()->success()->title('Reembolso registrado: '.Labels::money($r->amount_cents))
+                    ->body($r->method === 'stripe' ? 'Stripe lo devuelve a la misma tarjeta (tarda de 5 a 10 días en verse).' : 'Quedó registrado el Zelle que mandaste.')->send();
+                $this->redirect(EventResource::getUrl('view', ['record' => $e]));
+            });
     }
 
     /** Real contract state for the header pill (imported events keep their contract in HoneyBook). */
