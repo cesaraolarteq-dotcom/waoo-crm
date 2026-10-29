@@ -98,7 +98,7 @@ class TwilioSmsTest extends TestCase
         $params = ['MessageSid' => 'SM'.str_repeat('3', 32), 'From' => '+13465550100', 'Body' => ' stop '];
         $this->twilio('/webhooks/twilio/inbound', $params, 'forged')->assertStatus(401);
         $this->assertSame(0, SmsMessage::count());
-        $this->twilio('/webhooks/twilio/inbound', $params)->assertOk()->assertHeader('Content-Type', 'text/xml');
+        $this->twilio('/webhooks/twilio/inbound', $params)->assertOk()->assertHeader('Content-Type', 'text/xml; charset=utf-8');
         $this->twilio('/webhooks/twilio/inbound', $params)->assertOk(); // Twilio retry: kept once
         $this->assertSame(1, SmsMessage::where('direction', 'in')->count());
         $this->assertSame($this->client->id, SmsMessage::sole()->customer_id);
