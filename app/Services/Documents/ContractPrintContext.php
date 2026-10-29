@@ -24,13 +24,15 @@ final class ContractPrintContext
         $payments = $snapshot['payments'];
         $context = ['client' => [...$snapshot['client'], 'typed_signature' => $signature?->signer_name ?? '', 'signed_at' => $signature?->accepted_at->setTimezone('America/Chicago')->format('M j, Y g:i a T') ?? ''],
             'event' => [...$snapshot['event'], 'requires_characters' => $characters !== [], 'characters' => implode(', ', $characters)],
-            'provider' => ['signed_at' => null, 'pending' => true], 'services' => $services, 'lines' => $lines,
+            // Owner decision 2026-10-28: provider acceptance is recorded at client acceptance.
+            'provider' => ['signed_at' => $signature?->accepted_at->setTimezone('America/Chicago')->format('M j, Y g:i a T'), 'pending' => $signature === null], 'services' => $services, 'lines' => $lines,
             'total' => self::money($snapshot['total_cents']), 'payments' => $payments,
             'template' => ['version' => $template->version], 'contract_number' => 'WP-'.$contract->event_id.'-'.$contract->revision,
-            'status_label' => $signature ? 'Signed' : 'Awaiting signature', 'signed' => $signature !== null,
+            'status_label' => $signature ? 'SIGNED / FIRMADO' : 'Awaiting signature', 'signed' => $signature !== null,
             'document' => ['sha256' => $contract->presented_pdf_sha256]];
         if(isset($snapshot['billing_company']))$context['billing_company']=[...$snapshot['billing_company'],'person'=>trim($snapshot['client']['first_name'].' '.$snapshot['client']['last_name'])];
         if ($signature) $context['signer'] = ['name' => $signature->signer_name, 'email' => $signature->signer_email,
+            'consent' => $signature->consent_text,
             'access_description' => 'through a scoped personal access link associated with this customer record; email delivery and verification were not asserted.',
             'signed_at_local' => $signature->accepted_at->setTimezone('America/Chicago')->format('Y-m-d H:i:s T'), 'signed_at_utc' => $signature->accepted_at->utc()->format('Y-m-d H:i:s'),
             'ip' => $signature->ip, 'user_agent_short' => mb_substr($signature->user_agent ?? '', 0, 120)];

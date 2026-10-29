@@ -1,3 +1,6 @@
+## 2026-10-29 · Codex · Signed contract visual/evidence correction
+Owner2026-10-28 decision implemented: signed line/date/provider acceptance/badge and exact recorded consent, original artifacts/hash/terms preserved and unsigned reproduction required. **48tests/583assertions PASS** plus actual Dompdf3page synthetic PDF visually inspected. See newest queue and docs/CONTRACT-SIGNED-LOOK-API.md. No prior final rewritten, deployment or send. Full CI before merge.
+
 ## 2026-10-28 · Codex · Claude143/145 plus hardened credit-fee integration
 Real merge preserves both source branches and the frozen monetary contract. **146tests/1415assertions and8browser layouts+synthetic acknowledgments PASS**. Proposed copy remains gatedOFF pending approval/account credit-only verification. See newest review queue entry for exact proof and limits. No deployment, sending, actual collection or real-data change.
 

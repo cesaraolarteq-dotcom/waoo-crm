@@ -34,6 +34,13 @@ final class PrintRenderer
     public function html(string $source, string $terms, array $context): string
     {
         $this->validateTerms($terms);
+        if (!empty($context['signed'])) {
+            // Final-presentation styling only; immutable template and unsigned artifacts stay unchanged.
+            $source = str_replace('<div class="line">{{client.typed_signature}}</div>', '<div class="line p-typed-signature">{{client.typed_signature}}</div>', $source);
+            $source = str_replace('</style>', '.sig .p-typed-signature { font-family: "DejaVu Serif", serif; font-style: italic; font-size: 19pt; height: auto; min-height: 26pt; word-wrap: break-word; }</style>', $source);
+            // The evidence block must quote the exact recorded consent, including its language/version.
+            $source = str_replace('Consent: "I have read and accept the contract. My electronic signature is as valid as a handwritten one."', 'Consent: "{{signer.consent}}"', $source);
+        }
         if(!empty($context['billing_company']))$source=str_replace('<body>', '<body>{{#billing_company}}<section><p><strong>Facturar a / Bill to: {{name}}</strong> · Atención / Attention: {{person}}<br>{{email}}<br>{{address}}</p></section>{{/billing_company}}', $source);
         // Adapt layout-only evidence wording to the access method actually used. Legal clauses are untouched.
         $source = str_replace('through a personal link sent to that email.', '{{signer.access_description}}', $source);
@@ -59,10 +66,13 @@ final class PrintRenderer
         return $html;
     }
 
-    public function signedHtml(string $presentedHtml, \App\Models\SignatureEvidence $signature): string
+    public function signedHtml(string $presentedHtml, \App\Models\SignatureEvidence $signature, bool $signedPresentation = false): string
     {
         $escape = fn ($value) => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $certificate = '<section style="page-break-before:always"><h2>Electronic Signature Record</h2><p>The preceding document is the original presentation. This page records the client acceptance of its exact PDF bytes; the exported final PDF is a separate evidence artifact.</p>';
+        $description = $signedPresentation
+            ? 'The preceding pages show the signed rendering of the same contract snapshot and template. The original presented HTML and PDF remain stored unchanged. This record binds client acceptance to the original presented PDF bytes; this final PDF is a separate evidence artifact.'
+            : 'The preceding document is the original presentation. This page records the client acceptance of its exact PDF bytes; the exported final PDF is a separate evidence artifact.';
+        $certificate = '<section style="page-break-before:always"><h2>Electronic Signature Record</h2><p>'.$escape($description).'</p>';
         foreach (['Typed signature' => $signature->signer_name, 'Recorded email' => $signature->signer_email, 'Accepted at (UTC)' => $signature->accepted_at->utc()->format('Y-m-d H:i:s'),
             'Identity method' => 'Scoped personal access link; email delivery/verification not asserted', 'Consent' => $signature->consent_text,
             'Consent version' => $signature->consent_version, 'Presented PDF SHA-256' => $signature->presented_pdf_sha256,
@@ -70,7 +80,10 @@ final class PrintRenderer
             'Request IP' => $signature->ip, 'Request device' => mb_substr($signature->user_agent ?? '', 0, 120)] as $label => $value) {
             $certificate .= '<p><b>'.$escape($label).':</b> '.$escape($value).'</p>';
         }
-        $certificate .= '<p>Only client acceptance is recorded here. Provider countersignature is not asserted. No email or message delivery is asserted.</p></section>';
+        $acceptance = $signedPresentation
+            ? "Provider acceptance (Waoo Party LLC) recorded at the client's signature by owner decision of 2026-10-28."
+            : 'Only client acceptance is recorded here. Provider countersignature is not asserted.';
+        $certificate .= '<p>'.$escape($acceptance).' No email or message delivery is asserted.</p></section>';
         return str_replace('</body>', $certificate.'</body>', $presentedHtml);
     }
 
