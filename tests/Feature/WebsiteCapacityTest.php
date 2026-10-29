@@ -107,4 +107,18 @@ class WebsiteCapacityTest extends TestCase
         $this->assertSame([], $r['slots']);
         $this->assertSame('evaluation_unavailable', $r['unresolved'][0]['code']);
     }
+
+    public function test_honeybook_calendar_feed_times_are_read_in_houston_and_utc(): void
+    {
+        $ics = "BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nDTSTART:20261122T003000Z\r\nDTEND:20261122T023000Z\r\nSUMMARY:x\r\nEND:VEVENT\r\n"
+            ."BEGIN:VEVENT\r\nDTSTART;TZID=America/Chicago:20261121T140000\r\nDTEND;TZID=America/Chicago:20261121T160000\r\nEND:VEVENT\r\n"
+            ."BEGIN:VEVENT\r\nDTSTART;VALUE=DATE:20261123\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nSTATUS:CANCELLED\r\nDTSTART:20261121T200000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n";
+        $e = \App\Services\Availability\HoneyBookCalendarFeed::events($ics);
+        $this->assertCount(3, $e);
+        $this->assertSame('2026-11-21T18:30:00-06:00', $e[0][0]->setTimezone('America/Chicago')->toIso8601String(), 'A UTC evening party stays on the Houston Saturday.');
+        $this->assertSame('2026-11-21T14:00:00-06:00', $e[1][0]->toIso8601String());
+        $this->assertSame('2026-11-24T00:00:00-06:00', $e[2][1]->toIso8601String(), 'All-day entry lasts the whole day.');
+        $cap = new WebsiteCapacity(CarbonImmutable::parse('2026-11-21T00:00:00-06:00'), array_slice($e, 0, 2));
+        $this->assertSame(2, $cap->partiesOn('2026-11-21'));
+    }
 }

@@ -48,7 +48,8 @@ final class WebsiteCapacity
             // A HoneyBook party already imported shows up in both places: count it once.
             $same = collect($this->commitments)->contains(fn ($c) => abs($c['starts']->diffInMinutes($gFrom, true)) <= 30);
             if ($same) continue;
-            $this->commitments[] = ['from' => $gFrom, 'to' => $gTo->addMinutes(self::GAP_MINUTES), 'starts' => $gFrom,
+            // Calendar entries carry only the party time: assume 30 min setup and 15 min breakdown (conservative).
+            $this->commitments[] = ['from' => $gFrom->subMinutes(30), 'to' => $gTo->addMinutes(15 + self::GAP_MINUTES), 'starts' => $gFrom,
                 'day' => $gFrom->setTimezone('America/Chicago')->toDateString(), 'needs' => ['party' => 1, 'staff:driver' => 1], 'source' => 'google'];
         }
         $resources = Resource::query()->where('status', 'active')->get(['kind', 'equipment_kind', 'character_id', 'skills']);

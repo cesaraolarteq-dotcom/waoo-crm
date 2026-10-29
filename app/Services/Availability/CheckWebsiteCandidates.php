@@ -89,10 +89,12 @@ final class CheckWebsiteCandidates
             'slots' => $slots, 'unresolved' => $unresolved];
     }
 
-    /** Owner's Google busy times (HoneyBook bookings until the switch); tests bind 'waoo.availability.busy' to simulate Google. */
+    /** Busy times outside the CRM (HoneyBook bookings until the switch); tests bind 'waoo.availability.busy' to simulate Google. */
     private function busy(CarbonImmutable $from, CarbonImmutable $to): ?array
     {
-        return app()->bound('waoo.availability.busy') ? app('waoo.availability.busy')($from, $to)
+        if (app()->bound('waoo.availability.busy')) return app('waoo.availability.busy')($from, $to);
+        // The HoneyBook calendar feed is the source until the switch; without it, the owner's primary Google calendar.
+        return HoneyBookCalendarFeed::configured() ? app(HoneyBookCalendarFeed::class)->between($from, $to)
             : app(\App\Services\Google\GoogleCalendar::class)->busyIntervals($from, $to);
     }
 
