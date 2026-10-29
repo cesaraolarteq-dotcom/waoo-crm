@@ -1,3 +1,12 @@
+## 2026-10-29 · Claude · Audit fixes i1/i2/i3/i5/m5 (branch claude/audit-fixes, stacked on claude/e2e-fixes)
+César's audit page (artifact K8VZVBCewNNeUCdKgL7fB2) and "start working on those".
+- i1 Inicio summary: money received and new bookings (deposits) come from Panorama rows for the closed week (HoneyBook included); weekend count likewise. Falls back to the old report if Panorama fails.
+- i2 Inicio: HoneyBook-linked parties are no longer in the red "sin staff apartado" card; they get an info card "Fiestas de HoneyBook en los próximos 7 días".
+- i3 `App\Filament\Support\AutoReminders::afterConfirm` after "Apartar recursos y confirmar": plans the 3 reminders with the client's newest active link that outlives the party (prefers one that can pay). Mail off → no-op; failure → warning note, never blocks the confirmation. Planned is not sent (owner hold). Test in `MailOutboxTest`.
+- i5 Portal text `prepare_saved` (ES/EN): "¡Listo! Tus datos están guardados. Ahora prepara tu contrato para firmarlo." / "All set! Your details are saved. Now prepare your contract to sign it." (approved by César via the audit list).
+- m5 `public/robots.txt`: `Disallow: /` (crm-test and the real CRM are never crawled).
+- Tests green locally: DashboardAttention, MailOutbox (32), MailScreens, PrepareClientContract, ConfirmCapacityPage, ReportsPage, ClientPortalPage, PortalPreview.
+
 ## 2026-10-29 · Claude · End-to-end walkthrough fixes (branch claude/e2e-fixes, stacked on claude/reports-polish)
 Checklist f5-e2e. Walked the whole flow locally in a browser with the crm-test catalog (staff anonymized): Reserva rápida with Zelle deposit and no street address → client link → details → contract → signature → balance Zelle notice → owner verifies → Cancelar fiesta → Devolver dinero (Zelle). Found and fixed:
 1. **Client stuck before the contract** (`ClientContractSource`): a quick booking saved without a street address (the screen says it is optional) made every client submission end in "La dirección o la hora requieren revisión del dueño", even with the same ZIP. Only Stripe-first quick payments accepted it. Now any portal booking without a saved address takes the client's address when the ZIP matches (snapshot already used `$event->address ?: $values['event_address']`). A different ZIP still needs the owner. Test added in `PrepareClientContractTest`. **Codex: please review (contract source).**

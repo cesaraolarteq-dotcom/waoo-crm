@@ -229,6 +229,7 @@ class ConfirmCapacity extends Page
         }
         Notification::make()->success()->title('Recursos apartados')
             ->body('El staff, los trajes y el equipo quedaron asignados con el depósito verificado. Esto no es el contrato firmado.')->send();
+        if ($note = \App\Filament\Support\AutoReminders::afterConfirm(Filament::auth()->user(), $this->record->getKey())) Notification::make()->warning()->title('Recordatorios')->body($note)->send();
         $this->redirect(EventResource::getUrl('index'));
     }
 
