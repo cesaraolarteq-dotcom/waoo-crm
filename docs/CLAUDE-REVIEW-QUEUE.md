@@ -21,6 +21,26 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-10-29 · BACKEND · Reserva físicamente realizable: lógica conjunta y continuidad · PENDING
+- Branch codex/fix-availability-pools; solicitado por César: ayudar a Claude con todos los aspectos de la reserva para no aceptar fiestas físicamente imposibles.
+- Nuevo BOOKING-FEASIBILITY-CONTRACT.md: estados servidor, admisión atómica antes de cobrar, retención de todos los recursos, concurrencia, pago tardío, vencimiento48h/conciliación, cambios y matriz de aceptación. Diseño de integración pendiente, no activación.
+- Revisión actualizada HEAD Claude1fcdadc: reconocer correcciones y preview reportado en HANDOFF; reporte anterior f5b0565 no describe este nuevo HEAD. Reproducción pura ejecutada contra WebsiteCapacity extraído del diff exacto: empleadoA ocupado10–11 yB11–12, ambos únicos capaces del rol continuo10–12; devuelve available aunque nadie cubre la fiesta. PoolCapacitySolver rechaza; prueba también verifica bloqueos duplicados de una unidad.
+- Verificado:16 pruebas unitarias/36 aserciones PASS, PHP8.3.36 (incluye dos casos nuevos);112/838 anterior para solver/transfer/Core/ReservationNeighborhood sigue como evidencia previa, no sumar como pruebas distintas. Reproducción externa en /workspace/setup/waoo-phase1/availability-continuity-proof.php con fuente1fcdadc, sin DB ni datos reales.
+- Solver y política30 son soporte para integrar; factibilidad de pools sola jamás autoriza available/reserva/cobro. ReadPoolInventory preparado localmente queda fuera de esta entrega sin pruebas DB. Ninguna ruta nueva ni cambio de flags.
+- Claude: reutilizar solver por intervalos completos; documentar decisión más reciente sobre conductor integrado vs puesto adicional y piso30 vs30 adicional. Completar admisión compartida y pruebas concurrentes de pago antes de disponibilidad automática. No se modificó tu rama ni se desplegó/enviaron mensajes a clientes/proveedores.
+
+### 2026-10-29 · BACKEND · Revisión actualizada PR159 · PENDING
+- Reporte estático completo del HEAD f5b0565 en reviews/AVAILABILITY-159-REVIEW-2026-10-29.md, enviado como comentario al PR159 por solicitud de César. Respeta reglas nuevas documentadas por Claude; detalla9 riesgos, pruebas faltantes y activación web reportada pero no verificada. Sin pruebas ejecutadas de este HEAD ni cambios en rama Claude/despliegue. Claude: responder con commit corregido y evidencia.
+
+### 2026-10-29 · BACKEND · Resource pools and owner-approved 30-minute transfer floor · PENDING
+- Branch: codex/fix-availability-pools. Work in progress, not deployed or publicly enabled.
+- Existing CRM staff skills/resources are the source of truth; owner explicitly says not to request manual counts again. New pure PoolCapacitySolver prevents overlapping double allocation and checks selected-team drivers/seats. ReadPoolInventory reads existing active resources and blocks; it is NOT a complete commitment/calendar reader.
+- ConfirmBooking now uses Scheduling/TransferBufferPolicy: travel + max(30, previous breakdown + next setup + recorded contingency). Unknown setup/breakdown fails closed. Versioned route, exact departure and transfer blocks remain required. Longer work wins; no double counting. This supersedes the former45 floor per owner chat2026-10-29.
+- Files: Availability/PoolCapacitySolver.php, Availability/ReadPoolInventory.php, Scheduling/TransferBufferPolicy.php, ConfirmBooking.php; Unit pool/transfer tests and Feature/CoreTest; AVAIL-RESOURCE-POOLS-API.md, TRANSFER-BUFFER-30-API.md, AVAIL-WEB-01-API.md.
+- Verification: git diff --check passed. PHP8.3.36/MariaDB local run PASS:112 tests/838 assertions (PoolCapacitySolverTest, TransferBufferPolicyTest, CoreTest, ReservationNeighborhoodTest),05:45.209. No before-test result claimed.
+- Claude review: complete booking/lease/unassigned-commitment snapshot and route/costume/cargo feasibility before any public positive availability. Verify exact58-minute boundary with28 travel and10+10+10 work,57 rejected; larger work and unknown durations. Pool feasibility alone must never authorize a booking.
+- No deployment, live data/provider action, client copy or outgoing email/SMS activation.
+
 ### 2026-10-29 · BACKEND / UI / TEXT · Final contract visibly signed with exact consent, original evidence retained · PENDING
 - Branch codex/fix-contract-signed-look, source owner decision2026-10-28 in Claude142: typed client signature/date on contract pages, provider accepted at that signature, SIGNED / FIRMADO badge, certificate retained. No clauses, frozen client-texts.php, immutable template version or prior final PDFs edited.
 - Finalizer verifies presented artifacts and signature-bound template source/terms hashes, reproduces unsigned HTML from the same frozen snapshot/template and requires its original hash before building the signed view. Changed source/snapshot fails closed. Final PDF has its separate existing private artifact/hash; existing final PDFs return unchanged. No bulk re-finalization command. Signature style uses bundled DejaVu Serif Italic, wrap-safe line; badge uses existing chip. Provider time equals client accepted time under recorded owner decision, not an assertion of a second cryptographic/human signature or email delivery.

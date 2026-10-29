@@ -223,6 +223,12 @@ final class ConfirmBooking
         if (!$route || (int) $route['from_version'] !== $from->version || (int) $route['to_version'] !== $to->version) {
             $this->fail('Falta revisión vigente del traslado con un evento vecino.');
         }
+        $minimumGap = \App\Services\Scheduling\TransferBufferPolicy::minimumGapMinutes(
+            $from->breakdown_minutes, $to->setup_minutes, (int) $route['travel_minutes'], (int) $route['contingency_minutes'],
+        );
+        if ($minimumGap === null) {
+            $this->fail('Completa dirección, montaje y desmontaje.');
+        }
         $departure = $from->ends_at->addMinutes($from->breakdown_minutes);
         if (!CarbonImmutable::parse($route['departure_at'])->equalTo($departure)) {
             $this->fail('La ruta debe corresponder a la salida después de desmontar.');
@@ -231,9 +237,8 @@ final class ConfirmBooking
         if ($arrival->greaterThan($departure) && ResourceBlock::where('resource_id', $resourceId)->whereNull('released_at')->where('starts_at', '<', $arrival)->where('ends_at', '>', $departure)->exists()) {
             $this->fail('Un bloqueo del recurso impide el traslado entre eventos.');
         }
-        // This backend conservatively uses 45 minutes; reduced-buffer exceptions require the later approval workflow.
-        $extra = max(45, $from->breakdown_minutes + $to->setup_minutes + (int) $route['contingency_minutes']);
-        if ($from->ends_at->addMinutes((int) $route['travel_minutes'] + $extra)->greaterThan($to->starts_at)) {
+        // Owner decision 2026-10-29: thirty-minute floor; longer actual work still wins.
+        if ($from->ends_at->addMinutes($minimumGap)->greaterThan($to->starts_at)) {
             $this->fail('No cabe viaje, montaje y margen con el evento vecino.');
         }
     }

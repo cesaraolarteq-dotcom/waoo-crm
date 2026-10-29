@@ -182,19 +182,19 @@ class CoreTest extends TestCase
         $e->services()->update(['operational_ready' => false]);
         $this->confirm($e, $p)->assertUnprocessable();
     }
-    public function test_travel_requires_versioned_evidence_and_45_minutes_above_driving(): void
+    public function test_travel_requires_versioned_evidence_and_30_minutes_above_driving(): void
     {
         $r = $this->resource();
         $a = $this->event();
         $this->confirm($a, $this->payload($a, [$r->id]))->assertOk();
         $a->refresh();
-        $b = $this->event($a->ends_at->addMinutes(60));
+        $b = $this->event($a->ends_at->addMinutes(57));
         $p = $this->payload($b, [$r->id]);
         $this->confirm($b, $p)->assertUnprocessable();
         $p['review']['transfers'] = [['from_event_id' => $a->id, 'to_event_id' => $b->id, 'from_version' => $a->version, 'to_version' => $b->version, 'travel_minutes' => 28, 'contingency_minutes' => 10, 'departure_at' => $a->ends_at->addMinutes(10)->toIso8601String(), 'note' => 'Reviewed traffic for the planned date and departure time.']];
         $this->confirm($b, $p)->assertUnprocessable();
-        // 28 + 45 > 60
-        $b->starts_at = $a->ends_at->addMinutes(75);
+        // 28 + max(30, breakdown10 + setup10 + contingency10) =58.
+        $b->starts_at = $a->ends_at->addMinutes(58);
         $b->ends_at = $b->starts_at->addHour();
         $b->save();
         $this->confirm($b, $p)->assertOk();

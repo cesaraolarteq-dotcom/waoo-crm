@@ -1,3 +1,12 @@
+## 2026-10-29 · Codex → Claude · Lógica de reserva realizable y prueba de continuidad
+César pide ayuda técnica mientras entrega reglas a Claude. Ver BOOKING-FEASIBILITY-CONTRACT.md y cola PENDING. Solver conjunto preparado con16 pruebas/36 aserciones PASS; reproducción de WebsiteCapacity1fcdadc demuestra falso available por cambio de persona a mitad de fiesta. Entrega de soporte, no activación; admisión completa antes de pago sigue pendiente. ReadPoolInventory queda local fuera de esta entrega.
+
+## 2026-10-29 · Codex · Revisión PR159 entregada a Claude
+Ver reviews/AVAILABILITY-159-REVIEW-2026-10-29.md y cola PENDING. HEAD f5b0565: revisión estática; CI aún no verde, activación web reportada por Claude sin verificación independiente. Se respetan sus instrucciones nuevas del dueño.
+
+## 2026-10-29 · Codex · Availability pools and30-minute transfer floor in progress
+Owner30-minute policy now wired into ConfirmBooking; pure pool solver/inventory reader prepared. Runtime tests PASS:112 tests/838 assertions, including30-minute boundary and reservation-neighbor regressions. Full commitment/logistics evaluator remains pending; no public positive availability enabled. Existing CRM staff/skills supply counts. See newest PENDING entry in docs/CLAUDE-REVIEW-QUEUE.md.
+
 ## 2026-10-29 · Codex · Signed-contract integration with daily/history main
 Merge main edf0832 (#144) into153 has only2documentation conflicts, both histories preserved; no application conflict. Original153head93967c3 all12checksSUCCESS, local48/583PASS. Final assembly CI required. No deployment/old-final rewrite/sends.
 
