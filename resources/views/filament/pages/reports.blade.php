@@ -6,6 +6,7 @@
     $imported = $bk['imported_confirmation_count_excluded'] ?? null;
 @endphp
 <x-filament-panels::page>
+    @include('filament.pages.reports-panorama')
     @if ($draft = $this->birthdayDraft())
         <x-filament::section heading="Cumpleaños del próximo año · solo borrador">
             <p>{{ $draft['candidate_count'] }} cumpleaños completados con fecha confiable. Ninguno habilitado para envío: faltan permisos promocionales verificables y aprobación del texto.</p>

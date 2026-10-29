@@ -40,6 +40,24 @@ class Reports extends Page
 
     public ?array $emailPreview = null;
 
+    /** Panorama window (César 2026-10-28): year, month, week or a custom from–to range, around `dia`. */
+    #[Url(as: 'vista')]
+    public string $window = 'year';
+
+    #[Url(as: 'dia')]
+    public string $anchor = '';
+
+    #[Url(as: 'desde')]
+    public string $rangeFrom = '';
+
+    #[Url(as: 'hasta')]
+    public string $rangeTo = '';
+
+    #[Url(as: 'pestana')]
+    public string $tab = 'pulso';
+
+    private ?array $panoramaCache = null;
+
     public static function canAccess(): bool
     {
         return parent::canAccess() && ReportsSource::available();
@@ -52,6 +70,57 @@ class Reports extends Page
         if ($this->analyticsYear < 2000 || $this->analyticsYear > 2100) $this->analyticsYear = (int)now('America/Chicago')->year;
         $today = now('America/Chicago')->toDateString();
         $this->asOf = ($d = self::validDate($this->asOf)) && $d <= $today ? $d : $today;
+        $this->window = in_array($this->window, ['year', 'month', 'week', 'custom'], true) ? $this->window : 'year';
+        $this->anchor = self::validDate($this->anchor) ?? $today;
+        $this->tab = in_array($this->tab, ['ventas', 'pulso', 'canales', 'zonas', 'viene'], true) ? $this->tab : 'pulso';
+        $this->rangeFrom = self::validDate($this->rangeFrom) ?? CarbonImmutable::parse($today)->subMonths(3)->toDateString();
+        $this->rangeTo = self::validDate($this->rangeTo) ?? $today;
+    }
+
+    public function setWindow(string $window): void
+    {
+        $this->window = in_array($window, ['year', 'month', 'week', 'custom'], true) ? $window : 'year';
+        $this->panoramaCache = null;
+    }
+
+    public function setTab(string $tab): void
+    {
+        $this->tab = in_array($tab, ['ventas', 'pulso', 'canales', 'zonas', 'viene'], true) ? $tab : 'pulso';
+    }
+
+    public function moveWindow(int $step): void
+    {
+        $a = CarbonImmutable::parse($this->anchor, 'America/Chicago');
+        $step = $step < 0 ? -1 : 1;
+        $this->anchor = (match ($this->window) { 'month' => $a->addMonthsNoOverflow($step), 'week' => $a->addWeeks($step), default => $a->addYears($step) })->toDateString();
+        $this->panoramaCache = null;
+    }
+
+    public function updated(string $name): void
+    {
+        if (in_array($name, ['rangeFrom', 'rangeTo'], true)) {
+            $this->{$name} = self::validDate($this->{$name}) ?? now('America/Chicago')->toDateString();
+            $this->panoramaCache = null;
+        }
+    }
+
+    public function panorama(): array
+    {
+        [$from, $to] = \App\Services\Reports\Panorama::window($this->window, $this->anchor, $this->rangeFrom, $this->rangeTo);
+
+        return $this->panoramaCache ??= app(\App\Services\Reports\ReadPanorama::class)->execute(Filament::auth()->user(), $from, $to);
+    }
+
+    public function windowLabel(array $p): string
+    {
+        $f = CarbonImmutable::parse($p['from'], 'America/Chicago')->locale('es');
+        $t = CarbonImmutable::parse($p['to'], 'America/Chicago')->locale('es');
+
+        return match ($this->window) {
+            'year' => (string) $f->year,
+            'month' => ucfirst($f->translatedFormat('F Y')),
+            default => $f->translatedFormat('j M Y').' – '.$t->translatedFormat('j M Y'),
+        };
     }
 
     private static function validDate(?string $d): ?string
@@ -64,7 +133,7 @@ class Reports extends Page
 
     public function getSubheading(): ?string
     {
-        return 'La última semana o el último mes ya cerrados. El dinero cuenta por la fecha en que llegó; los saldos y el costo del staff, por la fecha de cada fiesta.';
+        return 'Arriba, el panorama del periodo que elijas. Abajo, la última semana o el último mes ya cerrados. El dinero cuenta por la fecha en que llegó; los saldos y el costo del staff, por la fecha de cada fiesta.';
     }
 
     public function setKind(string $kind): void

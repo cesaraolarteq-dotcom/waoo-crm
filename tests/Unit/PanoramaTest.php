@@ -1,0 +1,73 @@
+<?php
+namespace Tests\Unit;
+
+use App\Services\Reports\Panorama;
+use PHPUnit\Framework\TestCase;
+
+// Panorama (César 2026-10-28): any window compared with the same dates a year earlier; the pulse counts booking
+// deposits only; real profit leaves out travel fee and unpaid owner transport.
+class PanoramaTest extends TestCase
+{
+    private function party(string $key, string $date, ?int $total, array $over = []): array
+    {
+        return ['key' => $key, 'date' => $date, 'total_cents' => $total, 'zip' => '77494', 'city' => 'Katy', 'source' => 'WhatsApp', 'booked_on' => null,
+            'customer_id' => null, 'name' => 'María González', 'balance_cents' => null, 'balance_due' => null, 'profit' => null, ...$over];
+    }
+
+    public function test_windows(): void
+    {
+        $this->assertSame(['2026-01-01', '2026-12-31'], Panorama::window('year', '2026-04-10'));
+        $this->assertSame(['2026-04-01', '2026-04-30'], Panorama::window('month', '2026-04-10'));
+        $this->assertSame(['2026-04-06', '2026-04-12'], Panorama::window('week', '2026-04-10'));
+        $this->assertSame(['2026-03-01', '2026-05-31'], Panorama::window('custom', '2026-04-10', '2026-05-31', '2026-03-01'));
+    }
+
+    public function test_kpis_compare_with_last_year_and_keep_unknown_totals_unknown(): void
+    {
+        $parties = [
+            $this->party('a', '2026-04-04', 40000, ['source' => 'Instagram']),
+            $this->party('b', '2026-04-11', 60000),
+            $this->party('c', '2026-04-18', null),
+            $this->party('d', '2025-04-12', 50000),
+        ];
+        $payments = [
+            ['date' => '2026-03-02', 'amount_cents' => 20000, 'deposit' => true],
+            ['date' => '2026-04-03', 'amount_cents' => 20000, 'deposit' => false],
+            ['date' => '2026-04-06', 'amount_cents' => 30000, 'deposit' => true],
+        ];
+        $p = (new Panorama)->build($parties, $payments, ['2026-04-02'], '2026-04-01', '2026-04-30', '2026-04-20');
+        $this->assertSame(['value' => 3, 'previous' => 1, 'change_pct' => 200, 'unknown' => 0], $p['kpis']['parties']);
+        $this->assertSame(100000, $p['kpis']['sales']['value']);
+        $this->assertSame(1, $p['kpis']['sales']['unknown']);
+        $this->assertSame(50000, $p['kpis']['ticket']['value']);
+        $this->assertSame(50000, $p['kpis']['received']['value'], 'Every payment counts as money received.');
+        $this->assertSame(1, $p['pulse']['count'], 'Only the April deposit counts in the pulse.');
+        $this->assertSame(1, $p['pulse']['weekday'][1]);
+        $this->assertSame('6–10', $p['pulse']['strongest_days']);
+        $this->assertSame(1, $p['kpis']['leads']['value']);
+        $this->assertSame('day', $p['sales']['unit']);
+        $this->assertSame(['WhatsApp', 2, 60000], [$p['channels'][0]['label'], $p['channels'][0]['parties'], $p['channels'][0]['average_cents']]);
+        $this->assertSame(['77494', 3], [$p['zones'][0]['zip'], $p['zones'][0]['parties']]);
+    }
+
+    public function test_booking_window_profit_and_planning_lists(): void
+    {
+        $parties = [
+            $this->party('h1', '2025-10-25', 40000, ['booked_on' => '2025-10-11', 'customer_id' => 1, 'name' => 'Sofía Méndez']),
+            $this->party('h2', '2025-11-15', 40000, ['booked_on' => '2025-10-04', 'customer_id' => 2, 'name' => 'Lucía Ramírez']),
+            $this->party('h3', '2025-11-22', 40000, ['customer_id' => 3, 'name' => 'Ana Torres']),
+            $this->party('n1', '2026-10-31', 50000, ['customer_id' => 3, 'balance_cents' => 25000, 'balance_due' => '2026-10-30',
+                'profit' => ['revenue_cents' => 45000, 'cost_cents' => 21000]]),
+            $this->party('n2', '2026-11-07', 50000, ['balance_cents' => 0]),
+        ];
+        $p = (new Panorama)->build($parties, [], [], '2026-10-01', '2026-10-31', '2026-10-20');
+        $halloween = collect($p['booking_window'])->firstWhere('season', 'halloween');
+        $this->assertSame([1, 2.0], [$halloween['known'], $halloween['median_weeks']]);
+        $this->assertSame(['ready' => 1, 'pending' => 0, 'total_cents' => 24000, 'average_cents' => 24000], $p['profit']);
+        $this->assertSame(25000, $p['ahead']['receivable']['cents']);
+        $this->assertSame([['date' => '2026-10-24', 'parties' => 0], ['date' => '2026-10-31', 'parties' => 1]], array_slice($p['ahead']['saturdays'], 0, 2));
+        $this->assertSame('2026-11', $p['ahead']['anniversary']['month']);
+        $this->assertSame([['name' => 'Lucía Ramírez', 'date' => '2025-11-15', 'rebooked' => false], ['name' => 'Ana Torres', 'date' => '2025-11-22', 'rebooked' => true]],
+            $p['ahead']['anniversary']['items']);
+    }
+}

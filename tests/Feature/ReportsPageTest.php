@@ -43,6 +43,19 @@ class ReportsPageTest extends TestCase
             ->assertSee('no se restan entre sí')->assertDontSee('Enviado');
     }
 
+    public function test_panorama_counts_the_crm_party_by_its_date_and_the_deposit_by_its_payment_date(): void
+    {
+        $page = Livewire::test(Reports::class)->assertSee('Panorama')->assertSee('Pulso del dinero');
+        $p = $page->instance()->panorama();
+        $this->assertSame(1, $p['kpis']['parties']['value']);
+        $this->assertSame(1, $p['pulse']['count'], 'The deposit is the first payment of the party.');
+        $page->call('setWindow', 'custom')->set('rangeFrom', '2026-10-01')->set('rangeTo', '2026-10-31');
+        $october = $page->instance()->panorama();
+        $this->assertSame(0, $october['kpis']['parties']['value'], 'The party is on Nov 3.');
+        $this->assertGreaterThan(0, $october['kpis']['received']['value'], 'The deposit arrived on Oct 14.');
+        $page->call('setTab', 'viene')->assertSee('Dinero por cobrar')->assertSee('Ventana de reserva por temporada')->assertSee('Un año después');
+    }
+
     public function test_navigation_never_goes_past_the_latest_completed_period(): void
     {
         Livewire::test(Reports::class)->call('shift', 1)->assertSee('Semana del lun. 2 nov. al dom. 8 nov. 2026')
