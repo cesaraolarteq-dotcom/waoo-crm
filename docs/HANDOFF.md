@@ -1,3 +1,14 @@
+## 2026-10-29 · Claude · End-to-end walkthrough fixes (branch claude/e2e-fixes, stacked on claude/reports-polish)
+Checklist f5-e2e. Walked the whole flow locally in a browser with the crm-test catalog (staff anonymized): Reserva rápida with Zelle deposit and no street address → client link → details → contract → signature → balance Zelle notice → owner verifies → Cancelar fiesta → Devolver dinero (Zelle). Found and fixed:
+1. **Client stuck before the contract** (`ClientContractSource`): a quick booking saved without a street address (the screen says it is optional) made every client submission end in "La dirección o la hora requieren revisión del dueño", even with the same ZIP. Only Stripe-first quick payments accepted it. Now any portal booking without a saved address takes the client's address when the ZIP matches (snapshot already used `$event->address ?: $values['event_address']`). A different ZIP still needs the owner. Test added in `PrepareClientContractTest`. **Codex: please review (contract source).**
+2. Portal: a reported balance Zelle was shown only inside the closed "Pagar el saldo" box, so the client could report it twice. The pending-notice line (existing approved text) is now shown under the balance.
+3. Unexpected errors in contract preparation are now `report()`ed (the client still sees the retry message).
+4. Event page modals with `mountUsing` (Cancelar fiesta, Devolver dinero, Facturar a empresa) did not initialize their schema → Livewire entangle errors and dependent fields (Zelle refund date/checkbox) never appeared. They now call `$schema->fill()`.
+5. Texts: quick-booking WhatsApp message printed "2:00 p. m.." (double period); Dinero showed "Contrato: signed"; payments without a bank reference showed "ref. ·".
+- Not a bug: verifying a balance Zelle of the same amount on the same day as the deposit is refused without a bank reference (duplicate guard) — correct. Local-only: Filament notifications need a persistent cache (`CACHE_STORE=array` locally hid every toast; crm-test uses database).
+- Open observations for César: the event page header has 13 buttons; "Crear cotización" shows on a booked quick booking.
+- Tests: PrepareClientContractTest (19), QuickBookingWalkthrough, QuickBookingPage, EventMoneyPage, ZelleNoticeScreens, WalkthroughThree, ZelleOptionalReference, QuickPayments, CancelAndRefund — green locally. Card path not walked (no Stripe keys locally).
+
 ## 2026-10-29 · Claude · Reportes polish (branch claude/reports-polish, stacked on claude/cancel-refund)
 César's review of Reportes (2026-10-29): money pulse only showed booking deposits; wanted amount + number of parties, insight cards in the same design, and less text below.
 - `Panorama`: pulse now also for the second half (`pulse_balance`: every payment after the deposit) and for all payments (`pulse_all`), with `weekday_cents` and `day_of_month_cents`. Insights are structured cards `{tone, tag, big, text}` instead of sentences.

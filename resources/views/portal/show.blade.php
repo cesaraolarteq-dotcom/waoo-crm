@@ -131,6 +131,11 @@
   <h2>{{ $t('balance_title') }}</h2>
   <p class="p-balance"><b>{{ $e['balance'] }}</b> · {{ $t('balance_due', ['due' => $e['due']]) }}</p>
   <p class="p-hint">{{ $t('balance_not_now') }}</p>
+  {{-- Owner 2026-10-29: a Zelle the client already reported is shown outside the closed box, so she does not report it twice. --}}
+  @php($openNotices = collect($vm['zelle']['notices'] ?? [])->where('state', 'pending'))
+  @foreach ($openNotices as $n)
+    <p class="p-notice p-notice-pending" role="status">{{ $t('zelle_state_pending', ['amount' => $n['amount'], 'verified' => $n['verified'] ?? '', 'when' => $n['when']]) }}</p>
+  @endforeach
   <details class="p-paybox">
   <summary class="p-btn p-btn-quiet">{{ $t('balance_open') }}</summary>
   @else

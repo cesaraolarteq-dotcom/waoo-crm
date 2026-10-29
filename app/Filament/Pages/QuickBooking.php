@@ -527,13 +527,15 @@ class QuickBooking extends Page
         $due = Labels::when($f['financial_revision']->balance_due_at);
         $link = $r->portal_url;
         $exp = $r->portal_expires_at ? Labels::when(CarbonImmutable::parse($r->portal_expires_at)) : '';
+        // "2:00 p. m." already ends with a period: never print ". ." before the next sentence.
+        $whenEs = rtrim($when, '.');
         $whenEn = CarbonImmutable::instance($r->event->starts_at)->setTimezone(ChicagoTime::TZ)->format('D, M j \a\t g:i a');
 
         return [
             'event_id' => $r->event->id, 'link' => $link, 'expires' => $exp, 'shown_before' => $link === null && !($r->link_issue_pending ?? false),
             'link_pending' => (bool) ($r->link_issue_pending ?? false),
             'summary' => 'Total '.Labels::money($f['financial_revision']->total_cents).' · recibido '.$paid.' · saldo '.$balance.' (vence '.$due.')',
-            'msg_es' => "{$helloEs} Gracias por tu depósito de {$paid}. Registramos tu solicitud para el {$when}. Para terminar tu reserva, completa tus datos y firma tu contrato aquí: {$link} (el enlace vence el {$exp}). Tu saldo es de {$balance}. ¡Estamos emocionados de ser parte de tu celebración!",
+            'msg_es' => "{$helloEs} Gracias por tu depósito de {$paid}. Registramos tu solicitud para el {$whenEs}. Para terminar tu reserva, completa tus datos y firma tu contrato aquí: {$link} (el enlace vence el {$exp}). Tu saldo es de {$balance}. ¡Estamos emocionados de ser parte de tu celebración!",
             'msg_en' => "{$helloEn} Thank you for your deposit of {$paid}. We recorded your booking request for {$whenEn}. To finish your booking, please complete your details and sign your contract here: {$link} (link expires {$exp}). Your remaining balance is {$balance}. We're excited to be part of your celebration!",
             'locale' => $r->customer->locale ?? 'es',
             'phone' => $r->customer->phone ?? null,

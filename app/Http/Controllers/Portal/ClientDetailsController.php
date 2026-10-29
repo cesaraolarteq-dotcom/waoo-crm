@@ -49,7 +49,8 @@ final class ClientDetailsController extends Controller
             throw $error;
         } catch (ModelNotFoundException) {
             throw new RecordWriteRejected(409, 'La reserva requiere revisión del dueño. / The booking needs owner review.');
-        } catch (\Throwable) {
+        } catch (\Throwable $unexpected) {
+            report($unexpected); // the owner's log keeps the cause; the client only sees the retry message
             return response()->json(['message' => 'Tus datos siguen guardados. Intenta preparar el contrato de nuevo. / Your details are saved. Try preparing the contract again.'], 503);
         }
     }

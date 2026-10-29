@@ -196,11 +196,11 @@ class ViewEvent extends Page
 
         return [
             Action::make('billingCompany')->label('Facturar a empresa')->visible(fn()=>config('waoo.sandbox_company',false))
-                ->mountUsing(function(Action $action) use($e) {
+                ->mountUsing(function(?\Filament\Schemas\Schema $schema) use($e) {
                     $current=\App\Models\Event::findOrFail($e->id);
                     $this->billingPins=['expected_event_version'=>$current->version,'expected_billing_version'=>$current->billing_company_version];
                     $this->billingKey=(string)\Illuminate\Support\Str::uuid();
-                    $action->fillForm(['enabled'=>$current->billing_company!==null,...($current->billing_company??[])]);
+                    $schema?->fill(['enabled'=>$current->billing_company!==null,...($current->billing_company??[])]);
                 })
                 ->schema([
                     \Filament\Forms\Components\Checkbox::make('enabled')->label('Facturar a empresa')->live(),
@@ -328,7 +328,7 @@ class ViewEvent extends Page
         $e = $this->record;
         return Action::make('cancelEvent')->label('Cancelar fiesta')->icon('heroicon-o-x-circle')->color('danger')
             ->visible(fn () => self::changesEnabled() && in_array($e->status, ['draft', 'capacity_reserved'], true) && ! \App\Models\ImportedProjectLink::where('event_id', $e->id)->exists())
-            ->mountUsing(fn () => $this->changeKey = (string) \Illuminate\Support\Str::uuid())
+            ->mountUsing(function (?\Filament\Schemas\Schema $schema) { $this->changeKey = (string) \Illuminate\Support\Str::uuid(); $schema?->fill(); })
             ->modalHeading('Cancelar esta fiesta')
             ->modalDescription(function () use ($e) {
                 $m = app(FinanceSummary::class)->forEvent($e);
@@ -366,7 +366,7 @@ class ViewEvent extends Page
         $method = fn ($id) => $id ? \App\Models\LedgerEntry::whereKey((int) $id)->where('event_id', $e->id)->value('method') : null;
         return Action::make('refund')->label('Devolver dinero')->icon('heroicon-o-arrow-uturn-left')->color('gray')
             ->visible(fn () => self::changesEnabled() && $e->responsible_system === 'crm' && $receipts() !== [])
-            ->mountUsing(fn () => $this->changeKey = (string) \Illuminate\Support\Str::uuid())
+            ->mountUsing(function (?\Filament\Schemas\Schema $schema) { $this->changeKey = (string) \Illuminate\Support\Str::uuid(); $schema?->fill(); })
             ->modalHeading('Devolver dinero')
             ->modalDescription('Según el contrato el depósito no es reembolsable; usa esto solo si tú decides devolver. Con tarjeta, el dinero vuelve a la misma tarjeta por Stripe. Con Zelle, primero mándalo tú desde el banco y luego regístralo aquí.')
             ->schema([
