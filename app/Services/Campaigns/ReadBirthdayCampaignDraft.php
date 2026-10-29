@@ -11,8 +11,8 @@ use Illuminate\Support\Facades\DB;
 
 final class ReadBirthdayCampaignDraft
 {
-    /** Owner 2026-10-29: Star, Magic, Music and Games (2.0), Waoo, pool party and foam cannon parties were birthday parties. */
-    public const BIRTHDAY_PACKAGES = '/\\b(star|magic)\\b|music\\s*(and|&|y)\\s*games|m[uú]sica\\s*y\\s*juegos|waoo|pool|piscina|foam|espuma/iu';
+    /** Owner 2026-10-29: Star, Magic, Music and Games (2.0), Waoo, pool party, foam cannon and glam station parties were birthday parties. */
+    public const BIRTHDAY_PACKAGES = '/\\b(star|magic)\\b|music\\s*(and|&|y)\\s*games|m[uú]sica\\s*y\\s*juegos|waoo|pool|piscina|foam|espuma|glam/iu';
 
     /** HoneyBook typed most projects "other"; their packages say which ones were birthdays. */
     public static function eventType(?string $type, mixed $lineItems): ?string
