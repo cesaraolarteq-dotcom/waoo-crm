@@ -1,3 +1,6 @@
+## 2026-10-28 · Codex · Daily cap + card-fee combined regression passes
+36tests/212assertions PASS on the resolved main093797a integration; both fee-pair integrity and paid-overflow preservation retained. Publish to PR144 for fresh full CI. No deployment, fee activation or mail.
+
 ## 2026-10-28 · Codex · Daily cap integration preserves merged card-fee policy
 Merge current main093797a (#149). One application conflict resolved by retaining BOTH principal/fee split and overflow exception recording under the existing global admission lock; all HANDOFF/review entries preserved. Prior144head8427fef has12green checks; combined targeted regression/CI pending. Sending held, no deployment.
 

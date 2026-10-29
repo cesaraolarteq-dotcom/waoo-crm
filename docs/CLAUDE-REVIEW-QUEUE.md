@@ -23,7 +23,7 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ### 2026-10-28 · BACKEND · Integrate daily admission with merged fee policy · PENDING
 - Merge main093797a into PR144. StripeReceiptProcessor conflict retains principal/fee pair plus DailyCapacity overflow exception, with global lock before event. Documentation unions retain both histories. No provider/default flag/send changes.
-- Previous144head8427fef12checksSUCCESS; integration needs focused combined regression and fresh CI. Claude: principal-only balance and paid overflow preserved together. No new feature completion or deployment claim.
+- Previous144head8427fef12checksSUCCESS; combined DailyCapacity/StandardCardFee/StripeSandbox36tests/212assertions PASS,01:46.502. Fresh CI required. Claude: principal-only balance and paid overflow preserved together. No new feature completion or deployment claim.
 
 ### 2026-10-28 · BACKEND · Preserve Claude’s dependency security patch on pending delivery · PENDING
 - Source: Claude commit f03c2f0127a434b7dc561674140f13eca2366c5e, from PR143/145 ancestry. Symfony Mime7.4.19→7.4.22 and Polyfill Mbstring1.43.0→1.43.3, owner-visible audit blocker CVE-2026-45070 identified in Claude HANDOFF. Dependency lock changes identical to his generated patch.
