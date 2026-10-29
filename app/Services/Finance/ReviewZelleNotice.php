@@ -27,6 +27,7 @@ final class ReviewZelleNotice
         }
         $scope = "owner:{$actor->id}:event:{$eventId}:zelle-notice:{$noticeId}"; $hash = MutationKey::hash($data);
         return DB::transaction(function () use ($actor, $eventId, $noticeId, $data, $scope, $hash, $key) {
+            \App\Services\Scheduling\DailyCapacity::lock();
             $event = Event::whereKey($eventId)->lockForUpdate()->firstOrFail();
             $notice = ZelleNotice::whereKey($noticeId)->where('event_id', $eventId)->where('customer_id', $event->customer_id)->lockForUpdate()->firstOrFail();
             if ($saved = MutationKey::find($scope, $key, $hash)) return ZelleNoticeReview::findOrFail($saved->result_id);
