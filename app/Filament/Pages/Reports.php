@@ -78,7 +78,7 @@ class Reports extends Page
         $this->asOf = ($d = self::validDate($this->asOf)) && $d <= $today ? $d : $today;
         $this->window = in_array($this->window, ['year', 'month', 'week', 'custom'], true) ? $this->window : 'year';
         $this->anchor = self::validDate($this->anchor) ?? $today;
-        $this->tab = in_array($this->tab, ['ventas', 'pulso', 'canales', 'zonas', 'viene'], true) ? $this->tab : 'pulso';
+        $this->tab = in_array($this->tab, ['ventas', 'crecimiento', 'pulso', 'canales', 'zonas', 'viene'], true) ? $this->tab : 'pulso';
         $this->rangeFrom = self::validDate($this->rangeFrom) ?? CarbonImmutable::parse($today)->subMonths(3)->toDateString();
         $this->rangeTo = self::validDate($this->rangeTo) ?? $today;
     }
@@ -97,7 +97,7 @@ class Reports extends Page
 
     public function setTab(string $tab): void
     {
-        $this->tab = in_array($tab, ['ventas', 'pulso', 'canales', 'zonas', 'viene'], true) ? $tab : 'pulso';
+        $this->tab = in_array($tab, ['ventas', 'crecimiento', 'pulso', 'canales', 'zonas', 'viene'], true) ? $tab : 'pulso';
     }
 
     public function setPulseMode(string $mode): void

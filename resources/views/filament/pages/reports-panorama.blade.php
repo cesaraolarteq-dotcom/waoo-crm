@@ -24,8 +24,38 @@
     $chMax = max([1, ...array_column($channels, 'parties')]);
     $bestTicket = collect($channels)->where('known', '>=', 3)->where('key', '!=', 'unknown')->sortByDesc('average_cents')->first();
     $zMax = max([1, ...array_column($p['zones'], 'parties')]);
-    $tabs = ['ventas' => 'Ventas', 'pulso' => 'Pulso del dinero', 'canales' => 'De dónde vienen', 'zonas' => 'Zonas', 'viene' => 'Lo que viene'];
+    $g = $p['growth'];
+    $pct = fn (?int $v) => $v === null ? '—' : ($v >= 0 ? '+' : '−').abs($v).' %';
+    $pctCls = fn (?int $v) => $v === null ? '' : ($v >= 0 ? 'up' : 'down');
+    $points = collect($p['zones_map'])->map(fn ($z) => ($c = \App\Support\ZipCentroids::get($z['zip'])) ? ['zip' => $z['zip'], 'lat' => $c[0], 'lng' => $c[1], 'n' => $z['parties'], 'usd' => $usd($z['cents'])] : null)->filter()->values()->all();
+    $q = $p['quality'];
+    $tabs = ['ventas' => 'Ventas', 'crecimiento' => 'Mes a mes', 'pulso' => 'Pulso del dinero', 'canales' => 'De dónde vienen', 'zonas' => 'Zonas', 'viene' => 'Lo que viene'];
 @endphp
+<script>
+    // Zone map (owner 2026-10-29): Leaflet from cdnjs + Esri dark gray tiles; only the map area is requested, never client data.
+    window.waooZoneMap = window.waooZoneMap || function (el, points) {
+        const ready = window.L ? Promise.resolve() : new Promise((ok, fail) => {
+            const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'; document.head.appendChild(css);
+            const js = document.createElement('script'); js.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'; js.onload = ok; js.onerror = fail; document.head.appendChild(js);
+        });
+        ready.then(() => {
+            if (el._map) el._map.remove();
+            const map = el._map = L.map(el, { scrollWheelZoom: false, attributionControl: true });
+            const esri = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/';
+            L.tileLayer(esri + 'World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, attribution: 'Esri, HERE, Garmin, © OpenStreetMap' }).addTo(map);
+            L.tileLayer(esri + 'World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, pane: 'shadowPane' }).addTo(map);
+            if (!points.length) { map.setView([29.76, -95.37], 9); return; }
+            const max = Math.max(...points.map(p => p.n));
+            const color = r => r > .66 ? '#ff5a36' : r > .33 ? '#ff3d97' : r > .15 ? '#9b6bff' : '#4f86d6';
+            points.sort((a, b) => a.n - b.n).forEach(p => {
+                const r = p.n / max;
+                L.circleMarker([p.lat, p.lng], { radius: 6 + 22 * Math.sqrt(r), color: color(r), weight: 1.5, fillColor: color(r), fillOpacity: .45 })
+                    .bindTooltip(`<b>${p.zip}</b><br>${p.n} ${p.n === 1 ? 'fiesta' : 'fiestas'} · ${p.usd}`, { direction: 'top' }).addTo(map);
+            });
+            map.fitBounds(L.latLngBounds(points.map(p => [p.lat, p.lng])).pad(0.15));
+        }).catch(() => { el.innerHTML = '<p style="padding:16px">No se pudo cargar el mapa. Revisa la conexión.</p>'; });
+    };
+</script>
 <div class="wp" wire:loading.class="wp-busy" wire:target="setWindow,moveWindow,rangeFrom,rangeTo">
     <style>
         .wp{--bg:#070a1c;--panel:#0f1430;--line:#1f2750;--ink:#eef0ff;--muted:#8c93c3;--gold:#f9c930;--teal:#15d1c4;--pink:#ff3d97;--purple:#9b6bff;--navy:#3a5bff;--hot:#ff7a59;--cold:#6aa7ff;
@@ -95,6 +125,20 @@
         .wp td,.wp th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
         .wp th{color:var(--muted);font-weight:500;font-size:.76rem}
         .wp button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+        .wp-map{height:440px;border-radius:14px;overflow:hidden;background:#0b0f26;border:1px solid var(--line)}
+        .wp .leaflet-tooltip{background:#0f1430;color:var(--ink);border:1px solid var(--line);border-radius:8px;font:500 .8rem inherit}
+        .wp .leaflet-container a{color:var(--muted)}
+        .wp-chips{display:flex;flex-wrap:wrap;gap:6px}
+        .wp-chips span{font-size:.72rem;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:3px 9px}
+        .wp-cmp{display:flex;align-items:flex-end;gap:6px;height:200px;padding-top:8px}
+        .wp-cmp>div{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
+        .wp-cmp .pair{display:flex;gap:2px;align-items:flex-end;width:100%;max-width:46px;flex:1}
+        .wp-cmp .pair i{flex:1;border-radius:5px 5px 2px 2px;min-height:2px;display:block}
+        .wp-cmp .ty{background:linear-gradient(180deg,var(--gold),var(--pink))}
+        .wp-cmp .ly{background:rgba(140,147,195,.35)}
+        .wp-cmp .cur .ty{background:linear-gradient(180deg,var(--teal),var(--navy))}
+        .wp-cmp small{font-size:.62rem;color:var(--muted)}
+        .wp tr.ahead td{color:var(--muted)}
         @media (max-width:900px){.wp-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.wp-stage,.wp-duo{grid-template-columns:minmax(0,1fr)}}
         @media (prefers-reduced-motion:reduce){.wp{transition:none}}
     </style>
@@ -123,6 +167,13 @@
         </div>
     </div>
     <div class="wp-note">{{ $fecha($p['from'], 'j M Y') }} – {{ $fecha($p['to'], 'j M Y') }} · comparado con las mismas fechas de {{ $prevYear }} · historial HoneyBook + CRM</div>
+    @if ($q['no_total'] || $q['no_zip'] || $q['no_source'])
+        <div class="wp-chips" aria-label="Datos incompletos">
+            @if ($q['no_total'])<span>{{ $q['no_total'] }} de {{ $q['parties'] }} fiestas sin monto (no cuentan en ventas)</span>@endif
+            @if ($q['no_zip'])<span>{{ $q['no_zip'] }} sin código postal</span>@endif
+            @if ($q['no_source'])<span>{{ $q['no_source'] }} sin canal anotado</span>@endif
+        </div>
+    @endif
 
     <div class="wp-kpis">
         @foreach ([
@@ -201,6 +252,68 @@
                 @endif
                 <p>Venta del paquete − pago al staff − transporte pagado a alguien del staff − $30 de materiales. Si el transporte lo hicieron César o Maybeli, no se resta. El costo de transporte cobrado al cliente no cuenta como ganancia.</p>
             </div>
+        </div>
+    @elseif ($tab === 'crecimiento')
+        <div class="wp-kpis" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+            @foreach ([['parties', 'Fiestas en el año', fn ($v) => $v, 'parties_pct', '--purple'], ['sales_cents', 'Ventas en el año', $usd, 'sales_pct', '--gold'], ['received_cents', 'Dinero recibido en el año', $usd, 'received_pct', '--teal']] as [$k, $label, $fmt, $pk, $glow])
+                <div class="wp-kpi" style="--glow:var({{ $glow }})">
+                    <div class="l">{{ $label }} · {{ $g['year'] }}</div>
+                    <div class="v">{{ $fmt($g['ytd'][$k]) }}</div>
+                    <div class="d {{ $pctCls($g['ytd'][$pk]) }}">{{ $pct($g['ytd'][$pk]) }} vs {{ $fmt($g['ytd']['ly_'.$k]) }} en {{ $g['previous'] }} a la misma fecha</div>
+                </div>
+            @endforeach
+        </div>
+        <div class="wp-stage">
+            <div class="wp-card">
+                <h2>Fiestas por mes · {{ $g['year'] }} contra {{ $g['previous'] }}</h2>
+                <p>Barra de color: {{ $g['year'] }}. Barra gris: {{ $g['previous'] }}. El mes en curso se compara hasta el mismo día del año pasado.</p>
+                <div class="wp-cmp">
+                    @foreach ($g['months'] as $m)
+                        <div class="{{ $m['state'] === 'current' ? 'cur' : '' }}" title="{{ $m['label'] }}: {{ $m['parties'] ?? '—' }} fiestas en {{ $g['year'] }} · {{ $m['ly_parties'] }} en {{ $g['previous'] }}">
+                            <span class="pair">
+                                <i class="ty" style="height:{{ round(($m['parties'] ?? 0) * 100 / $g['max_parties']) }}%"></i>
+                                <i class="ly" style="height:{{ round($m['ly_parties'] * 100 / $g['max_parties']) }}%"></i>
+                            </span>
+                            <small>{{ mb_substr($m['label'], 0, 3) }}</small>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+            <div class="wp-card">
+                <span class="wp-pill">Mejor mes</span>
+                @if ($g['best'])
+                    <div class="wp-big up">{{ $g['best']['label'] }}</div>
+                    <p>{{ $pct($g['best']['sales_pct']) }} en ventas: {{ $usd($g['best']['sales_cents']) }} contra {{ $usd($g['best']['ly_sales_cents']) }}.</p>
+                @else
+                    <p>Aún no hay meses para comparar con {{ $g['previous'] }}.</p>
+                @endif
+                @if ($g['worst'])
+                    <span class="wp-pill">Mes más flojo</span>
+                    <div class="wp-big down">{{ $g['worst']['label'] }}</div>
+                    <p>{{ $pct($g['worst']['sales_pct']) }} en ventas: {{ $usd($g['worst']['sales_cents']) }} contra {{ $usd($g['worst']['ly_sales_cents']) }}.</p>
+                @endif
+            </div>
+        </div>
+        <div class="wp-card">
+            <h2>Mes por mes</h2>
+            <table>
+                <thead><tr><th>Mes</th><th>Fiestas {{ $g['year'] }}</th><th>{{ $g['previous'] }}</th><th>Cambio</th><th>Ventas {{ $g['year'] }}</th><th>{{ $g['previous'] }}</th><th>Cambio</th><th>Dinero recibido</th></tr></thead>
+                <tbody>
+                    @foreach ($g['months'] as $m)
+                        <tr class="{{ $m['state'] === 'ahead' ? 'ahead' : '' }}">
+                            <td>{{ $m['label'] }}@if ($m['state'] === 'current') <span class="wp-pill" style="margin-left:4px">hasta el {{ $m['until_day'] }}</span>@endif</td>
+                            @if ($m['state'] === 'ahead')
+                                <td>—</td><td>{{ $m['ly_parties'] }}</td><td colspan="2">Meta: superar {{ $m['ly_parties'] }} fiestas</td><td>{{ $usd($m['ly_sales_cents']) }}</td><td></td><td></td>
+                            @else
+                                <td>{{ $m['parties'] }}</td><td>{{ $m['ly_parties'] }}</td><td class="{{ $pctCls($m['parties_pct']) }}">{{ $pct($m['parties_pct']) }}</td>
+                                <td>{{ $usd($m['sales_cents']) }}</td><td>{{ $usd($m['ly_sales_cents']) }}</td><td class="{{ $pctCls($m['sales_pct']) }}">{{ $pct($m['sales_pct']) }}</td>
+                                <td>{{ $usd($m['received_cents']) }}</td>
+                            @endif
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+            <p>Fiestas y ventas cuentan por la fecha de la fiesta; el dinero recibido, por la fecha del pago. Si {{ $g['previous'] }} tiene pocas fiestas es porque el historial de HoneyBook de ese año está incompleto.</p>
         </div>
     @elseif ($tab === 'pulso')
         <div class="wp-row" role="group" aria-label="Qué pagos">
@@ -299,23 +412,23 @@
     @elseif ($tab === 'zonas')
         <div class="wp-stage">
             <div class="wp-card">
-                <h2>Zonas con más fiestas</h2>
-                <p>Por código postal del evento. Útil para anuncios por zona y para planear rutas del staff.</p>
+                <h2>Mapa de zonas calientes</h2>
+                <p>Cada círculo es un código postal: más grande y más rojo, más fiestas. Toca uno para ver cuántas y cuánto vendiste.</p>
+                <div class="wp-map" wire:ignore wire:key="zonemap-{{ $p['from'] }}-{{ $p['to'] }}" x-data x-init="waooZoneMap($el, @js($points))"></div>
+                @if (count($points) < count($p['zones_map']))<p>{{ count($p['zones_map']) - count($points) }} códigos postales fuera de Texas o sin ubicación no aparecen en el mapa.</p>@endif
+            </div>
+            <div class="wp-card">
+                <span class="wp-pill">Top 10 zonas</span>
                 <div class="wp-bars">
                     @forelse ($p['zones'] as $z)
-                        <div class="wp-bar" style="--c1:var(--purple);--c2:var(--pink)"><span>{{ $z['zip'] }}{{ $z['city'] ? ' · '.$z['city'] : '' }}</span><i style="width:{{ round($z['parties'] * 100 / $zMax) }}%"></i><b>{{ $z['parties'] }} · {{ $usd($z['cents']) }}</b></div>
+                        <div class="wp-bar two" style="--c1:var(--purple);--c2:var(--pink);grid-template-columns:52px minmax(0,1fr) auto"><span>{{ $z['zip'] }}</span><i style="width:{{ round($z['parties'] * 100 / $zMax) }}%"></i><b><span>{{ $usd($z['cents']) }}</span> · {{ $z['parties'] }}</b></div>
                     @empty
                         <p>No hay fiestas con código postal en este periodo.</p>
                     @endforelse
                 </div>
-            </div>
-            <div class="wp-card">
-                <span class="wp-pill">Zona más fuerte</span>
                 @if ($p['zones'])
-                    <div class="wp-big">{{ $p['zones'][0]['zip'] }}</div>
-                    <p>{{ $p['zones'][0]['parties'] }} fiestas · {{ $usd($p['zones'][0]['cents']) }}</p>
-                @else
-                    <p>Sin datos.</p>
+                    @php $top3 = array_sum(array_column(array_slice($p['zones'], 0, 3), 'parties')); $allZ = array_sum(array_column($p['zones_map'], 'parties')); @endphp
+                    <p>Las 3 zonas más fuertes suman {{ $allZ ? round($top3 * 100 / $allZ) : 0 }} % de las fiestas con código postal: ahí rinden más los anuncios por zona.</p>
                 @endif
             </div>
         </div>

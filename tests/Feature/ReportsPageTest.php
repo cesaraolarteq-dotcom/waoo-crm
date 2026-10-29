@@ -53,6 +53,7 @@ class ReportsPageTest extends TestCase
         $october = $page->instance()->panorama();
         $this->assertSame(0, $october['kpis']['parties']['value'], 'The party is on Nov 3.');
         $this->assertGreaterThan(0, $october['kpis']['received']['value'], 'The deposit arrived on Oct 14.');
+        $page->call('setTab', 'crecimiento')->assertSee('Mes por mes')->call('setTab', 'zonas')->assertSee('Mapa de zonas calientes')->call('setPulseMode', 'balance')->call('setTab', 'pulso')->assertSee('Segunda mitad');
         $page->call('setTab', 'viene')->assertSee('Dinero por cobrar')->assertSee('Ventana de reserva por temporada')->assertSee('Un año después');
     }
 

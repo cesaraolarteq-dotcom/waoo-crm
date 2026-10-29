@@ -75,4 +75,23 @@ class PanoramaTest extends TestCase
         $this->assertSame([['name' => 'Lucía Ramírez', 'date' => '2025-11-15', 'rebooked' => false], ['name' => 'Ana Torres', 'date' => '2025-11-22', 'rebooked' => true]],
             $p['ahead']['anniversary']['items']);
     }
+
+    public function test_growth_compares_each_month_with_last_year_and_the_current_month_only_to_the_same_day(): void
+    {
+        $parties = [
+            $this->party('a', '2026-03-14', 50000), $this->party('b', '2025-03-08', 40000),
+            $this->party('c', '2026-11-07', 60000), $this->party('d', '2025-11-08', 30000), $this->party('e', '2025-11-22', 30000),
+            $this->party('f', '2025-12-12', 45000), $this->party('g', '2026-12-05', 45000),
+        ];
+        $payments = [['date' => '2026-11-02', 'amount_cents' => 30000, 'deposit' => true], ['date' => '2025-11-03', 'amount_cents' => 15000, 'deposit' => true]];
+        $g = (new Panorama)->build($parties, $payments, [], '2026-01-01', '2026-12-31', '2026-11-15')['growth'];
+        $mar = $g['months'][2]; $nov = $g['months'][10]; $dec = $g['months'][11];
+        $this->assertSame(['closed', 1, 1, 25], [$mar['state'], $mar['parties'], $mar['ly_parties'], $mar['sales_pct']]);
+        // November 1-15 2026 against November 1-15 2025: the Nov 22, 2025 party is not compared yet.
+        $this->assertSame(['current', 15, 1, 1, 100, 30000, 15000], [$nov['state'], $nov['until_day'], $nov['parties'], $nov['ly_parties'], $nov['sales_pct'], $nov['received_cents'], $nov['ly_received_cents']]);
+        // December is ahead: the booked 2026 party is not counted as done; last year is the target.
+        $this->assertSame(['ahead', null, 1], [$dec['state'], $dec['parties'], $dec['ly_parties']]);
+        $this->assertSame([2, 2, 110000, 70000], [$g['ytd']['parties'], $g['ytd']['ly_parties'], $g['ytd']['sales_cents'], $g['ytd']['ly_sales_cents']]);
+        $this->assertSame('Noviembre', $g['best']['label']);
+    }
 }

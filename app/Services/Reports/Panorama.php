@@ -76,7 +76,12 @@ final class Panorama
             'pulse_balance' => $this->pulse(array_values(array_filter($paid, fn ($p) => ! ($p['deposit'] ?? false))), array_values(array_filter($paidBefore, fn ($p) => ! ($p['deposit'] ?? false))), $from, $to),
             'pulse_all' => $this->pulse($paid, $paidBefore, $from, $to),
             'channels' => $this->channels($now),
-            'zones' => $this->zones($now),
+            'zones' => array_slice($this->zones($now), 0, 10),
+            'zones_map' => $this->zones($now),
+            'growth' => $this->growth($parties, $payments, (int) substr($to, 0, 4), $today),
+            'quality' => ['parties' => count($now), 'no_total' => $this->unknown($now),
+                'no_zip' => count(array_filter($now, fn ($p) => ! preg_match('/^\d{5}$/D', (string) ($p['zip'] ?? '')))),
+                'no_source' => count(array_filter($now, fn ($p) => self::source($p['source'] ?? null) === 'unknown'))],
             'booking_window' => $this->bookingWindow($parties),
             'profit' => $this->profit($now),
             'ahead' => $this->ahead($parties, $today),
@@ -296,7 +301,47 @@ final class Panorama
         }
         usort($out, fn ($a, $b) => [$b['parties'], $b['cents']] <=> [$a['parties'], $a['cents']]);
 
-        return array_slice($out, 0, 10);
+        return array_values($out);
+    }
+
+    /**
+     * Owner 2026-10-29: each month of the year against the same month a year earlier (parties, sales by party date,
+     * money received by payment date). The month in progress is compared up to the same day of last year's month, so a
+     * half month is never set against a full one; months still ahead show only last year (what to beat).
+     */
+    private function growth(array $parties, array $payments, int $year, string $today): array
+    {
+        $months = [];
+        $ytd = ['parties' => 0, 'sales_cents' => 0, 'received_cents' => 0, 'ly_parties' => 0, 'ly_sales_cents' => 0, 'ly_received_cents' => 0];
+        for ($m = 1; $m <= 12; $m++) {
+            $start = CarbonImmutable::create($year, $m, 1, 0, 0, 0, 'America/Chicago');
+            $end = $start->endOfMonth()->toDateString();
+            $state = $start->toDateString() > $today ? 'ahead' : ($end >= $today ? 'current' : 'closed');
+            $cut = $state === 'current' ? $today : $end;
+            $lyFrom = self::shiftYear($start->toDateString(), -1);
+            $lyTo = self::shiftYear($cut, -1);
+            $pick = fn (array $rows, string $a, string $b) => array_values(array_filter($rows, fn ($r) => $r['date'] >= $a && $r['date'] <= $b));
+            $now = $state === 'ahead' ? [] : $pick($parties, $start->toDateString(), $cut);
+            $ly = $pick($parties, $lyFrom, $state === 'ahead' ? self::shiftYear($end, -1) : $lyTo);
+            $row = ['month' => $m, 'label' => ucfirst($start->locale('es')->translatedFormat('F')), 'state' => $state, 'until_day' => $state === 'current' ? (int) substr($today, 8, 2) : null,
+                'parties' => $state === 'ahead' ? null : count($now), 'ly_parties' => count($ly),
+                'sales_cents' => $state === 'ahead' ? null : $this->sum($now), 'ly_sales_cents' => $this->sum($ly),
+                'received_cents' => $state === 'ahead' ? null : array_sum(array_column($pick($payments, $start->toDateString(), $cut), 'amount_cents')),
+                'ly_received_cents' => array_sum(array_column($pick($payments, $lyFrom, $state === 'ahead' ? self::shiftYear($end, -1) : $lyTo), 'amount_cents'))];
+            $row['parties_pct'] = $this->pair($row['parties'], $row['ly_parties'])['change_pct'];
+            $row['sales_pct'] = $this->pair($row['sales_cents'], $row['ly_sales_cents'])['change_pct'];
+            if ($state !== 'ahead') foreach (['parties', 'sales_cents', 'received_cents'] as $k) { $ytd[$k] += $row[$k]; $ytd['ly_'.$k] += $row['ly_'.$k]; }
+            $months[] = $row;
+        }
+        $ytd['parties_pct'] = $this->pair($ytd['parties'], $ytd['ly_parties'])['change_pct'];
+        $ytd['sales_pct'] = $this->pair($ytd['sales_cents'], $ytd['ly_sales_cents'])['change_pct'];
+        $ytd['received_pct'] = $this->pair($ytd['received_cents'], $ytd['ly_received_cents'])['change_pct'];
+        $done = array_values(array_filter($months, fn ($r) => $r['state'] !== 'ahead' && $r['sales_pct'] !== null));
+        usort($done, fn ($a, $b) => $b['sales_pct'] <=> $a['sales_pct']);
+
+        return ['year' => $year, 'previous' => $year - 1, 'months' => $months, 'ytd' => $ytd,
+            'max_parties' => max([1, ...array_map(fn ($r) => max($r['parties'] ?? 0, $r['ly_parties']), $months)]),
+            'best' => $done[0] ?? null, 'worst' => count($done) > 1 ? end($done) : null];
     }
 
     /** How many weeks before the party people book, per season (all known history, not only the window). */
