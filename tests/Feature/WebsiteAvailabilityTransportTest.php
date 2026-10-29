@@ -95,9 +95,10 @@ class WebsiteAvailabilityTransportTest extends TestCase
         $this->travel(1)->seconds();
         $this->signed('/api/availability?date=2027-03-15')->assertOk()->assertJsonPath('requires_owner_approval',true);
     }
-    public function test_post_is_bounded_authenticated_and_explicitly_unavailable_until_the_full_evaluator(): void
+    public function test_post_is_bounded_authenticated_and_rejects_malformed_candidates(): void
     {
-        $this->signed('/api/availability/check','POST','{"candidate_starts":[]}')->assertStatus(503)->assertExactJson(['error'=>'evaluation_unavailable']);
+        // S2 (owner rules 2026-10-29): the evaluator answers; a malformed request is 422, never fabricated slots.
+        $this->signed('/api/availability/check','POST','{"candidate_starts":[]}')->assertStatus(422)->assertExactJson(['error'=>'invalid_request']);
         $this->signed('/api/availability/check','POST','{}',['CONTENT_TYPE'=>'text/plain'])->assertStatus(415);
         $this->signed('/api/availability/check','POST',str_repeat('x',16385))->assertStatus(413);
         $this->signed('/api/availability?date=2026-11-14','GET','{}')->assertUnprocessable();
@@ -110,7 +111,7 @@ class WebsiteAvailabilityTransportTest extends TestCase
     public function test_failed_authentication_and_both_routes_share_the_same_rate_budget(): void
     {
         for($i=0;$i<59;$i++)$this->signed('/api/availability?date=2026-11-14','GET','',['HTTP_X_WAOO_SIGNATURE'=>'bad'])->assertUnauthorized();
-        $this->signed('/api/availability/check','POST','{}')->assertStatus(503);
+        $this->signed('/api/availability/check','POST','{}')->assertStatus(422);
         $this->signed()->assertStatus(429)->assertHeader('Retry-After')->assertExactJson(['error'=>'rate_limited']);
         $this->travel(61)->seconds();$this->signed()->assertOk();
     }

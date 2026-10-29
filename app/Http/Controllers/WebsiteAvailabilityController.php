@@ -36,6 +36,17 @@ final class WebsiteAvailabilityController extends Controller
     {
         if(str_contains($request->getRequestUri(),'?'))return Boundary::error('invalid_request',422);
         if(strtolower(trim(explode(';',(string)$request->header('Content-Type'))[0]))!=='application/json')return Boundary::error('unsupported_media_type',415);
-        return Boundary::error('evaluation_unavailable',503);
+        $raw=$request->getContent();
+        if(strlen($raw)>8192)return Boundary::error('invalid_request',422);
+        try{$input=json_decode($raw,true,8,JSON_THROW_ON_ERROR);}catch(\JsonException){return Boundary::error('invalid_request',422);}
+        if(!is_array($input)||array_is_list($input))return Boundary::error('invalid_request',422);
+        try{
+            return response()->json(app(\App\Services\Availability\CheckWebsiteCandidates::class)->execute($input));
+        }catch(\Illuminate\Validation\ValidationException){
+            return Boundary::error('invalid_request',422);
+        }catch(\Throwable $e){
+            report($e);
+            return Boundary::error('evaluation_unavailable',503);
+        }
     }
 }
