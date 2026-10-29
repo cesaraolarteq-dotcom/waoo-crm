@@ -25,5 +25,7 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Event::listen(\Illuminate\Mail\Events\MessageSending::class,
             fn () => \App\Services\Mail\MailDeliveryGate::enabled() ? null : false);
         \App\Models\Event::observe(\App\Observers\EventGoogleSync::class); // owner 2026-10-21: Google Calendar mirror
+        // Owner 2026-10-28: a website request with the SMS box checked records that number's consent to texts.
+        \App\Models\Lead::created(fn (\App\Models\Lead $lead) => app(\App\Services\Sms\RecordLeadSmsConsent::class)->execute($lead));
     }
 }

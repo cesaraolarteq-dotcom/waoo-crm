@@ -25,6 +25,8 @@ return [
     'mail_from_name' => env('WAOO_MAIL_FROM_NAME'),
     'mail_reply_to' => env('WAOO_MAIL_REPLY_TO'),
     'sandbox_resend_webhooks' => env('WAOO_SANDBOX_RESEND_WEBHOOKS', false),
+    // Owner hold (2026-10-28): no text message leaves until the owner switches this on.
+    'sms_delivery_enabled' => env('TWILIO_SMS_ENABLED', false),
     'resend_webhook_secret' => env('WAOO_RESEND_WEBHOOK_SECRET'),
     // Run signed-contract PDFs and Stripe receipts right after the HTTP response (seconds) instead of waiting for the cron queue.
     // Off in the test suite (phpunit.xml): one PHP process keeps the terminating callbacks between test requests.

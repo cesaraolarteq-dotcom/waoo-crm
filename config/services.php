@@ -22,6 +22,16 @@ return [
         'key' => env('RESEND_API_KEY'),
     ],
 
+    // Owner 2026-10-28: Waoo texts through a Twilio Messaging Service (A2P campaign). Secrets live only in the server .env.
+    'twilio' => [
+        'account_sid' => env('TWILIO_ACCOUNT_SID'),
+        'api_key_sid' => env('TWILIO_API_KEY_SID'),
+        'api_key_secret' => env('TWILIO_API_KEY_SECRET'),
+        'auth_token' => env('TWILIO_AUTH_TOKEN'), // only to verify Twilio's webhook signatures
+        'messaging_service_sid' => env('TWILIO_MESSAGING_SERVICE_SID'),
+        'from_number' => env('TWILIO_FROM_NUMBER'),
+    ],
+
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),

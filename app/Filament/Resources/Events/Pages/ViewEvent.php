@@ -224,6 +224,25 @@ class ViewEvent extends Page
             Action::make('honeybookCopy')->label('Copia de HoneyBook (PDF)')->icon('heroicon-o-document-text')->color('gray')
                 ->visible(fn () => \App\Support\HoneyBookCopies::forEvent($e->id) !== null)
                 ->url(fn () => url('/admin/api/events/'.$e->id.'/honeybook-copy'))->openUrlInNewTab(),
+            // Owner 2026-10-28: text the client through Twilio. Off until the owner turns texting on; only numbers that opted in.
+            Action::make('smsSend')->label('Mandar texto')->icon('heroicon-o-chat-bubble-left-ellipsis')->color('gray')
+                ->visible(fn () => $e->customer_id !== null)
+                ->modalHeading('Mandar texto al cliente')
+                ->modalDescription(fn () => self::smsStatusLine($e))
+                ->schema([\Filament\Forms\Components\Textarea::make('body')->label('Texto')->required()->maxLength(640)->rows(4)
+                    ->helperText('El primer texto a un número lleva al final la línea de HELP/STOP que pide la compañía telefónica.')])
+                ->modalSubmitActionLabel('Mandar')
+                ->action(function (array $data, Action $action) use ($e) {
+                    try {
+                        $m = app(\App\Services\Sms\SendSms::class)->execute(\Filament\Facades\Filament::auth()->user(), (int) $e->customer_id, $e->id, (string) $data['body']);
+                    } catch (\Illuminate\Validation\ValidationException $err) {
+                        \Filament\Notifications\Notification::make()->danger()->title('No se mandó')->body(collect($err->errors())->flatten()->first())->persistent()->send();
+                        $action->halt();
+                    }
+                    $m->status === 'sent'
+                        ? \Filament\Notifications\Notification::make()->success()->title('Texto enviado')->send()
+                        : \Filament\Notifications\Notification::make()->danger()->title('Twilio no lo aceptó')->body('Código: '.$m->error_code.'. Revisa el número o escríbele por WhatsApp.')->persistent()->send();
+                }),
             Action::make('quoteView')->label('Ver cotización')->icon('heroicon-o-document-currency-dollar')->color('gray')
                 ->visible(fn () => \App\Filament\Support\QuoteForm::enabled() && \App\Models\Quote::where('event_id', $e->id)->exists())
                 ->url(fn () => \App\Filament\Pages\QuoteDetail::getUrl(['quote' => \App\Models\Quote::where('event_id', $e->id)->value('id')])),
@@ -586,5 +605,25 @@ class ViewEvent extends Page
             // RESPONSIBLE-SYSTEM C1 (owner decision 2026-10-19): shown only once Codex's column exists; never inferred.
             'responsible' => match ($e->getAttribute('responsible_system')) { 'honeybook' => 'HoneyBook cobra y avisa', 'crm' => 'CRM cobra y avisa', default => null },
         ];
+    }
+
+    /** One line for the "Mandar texto" window: is texting on, did this number opt in, and the last texts. */
+    public static function smsStatusLine(\App\Models\Event $e): string
+    {
+        $phone = \App\Services\Sms\PhoneNumber::e164(\App\Models\Customer::whereKey($e->customer_id)->value('phone'));
+        $consent = $phone ? \App\Models\SmsConsent::where('phone_e164', $phone)->value('status') : null;
+        $line = ! \App\Services\Sms\SmsGate::enabled() ? 'Los textos están apagados hasta que tú los actives. ' : '';
+        $line .= match (true) {
+            ! $phone => 'Este cliente no tiene un celular de EE. UU. válido.',
+            $consent === 'opted_in' => 'Este número aceptó recibir textos.',
+            $consent === 'opted_out' => 'Este número escribió STOP: no se le puede mandar textos.',
+            default => 'Este número no ha aceptado recibir textos: escríbele por WhatsApp.',
+        };
+        $last = $phone ? \App\Models\SmsMessage::where('phone_e164', $phone)->latest('id')->limit(3)->get() : collect();
+        foreach ($last as $m) {
+            $line .= ' · '.($m->direction === 'in' ? 'Recibido' : 'Enviado').' '.\App\Filament\Support\Labels::when($m->created_at).' ('.$m->status.')';
+        }
+
+        return $line;
     }
 }
