@@ -110,6 +110,16 @@ final class WebsiteCapacity
         return count(array_filter($this->parties, fn ($p) => $p['day'] === $day));
     }
 
+    /** 4 parties at the same time (speakers), checked at every start inside the candidate. */
+    public function simultaneousOk(CarbonImmutable $from, CarbonImmutable $to): bool
+    {
+        $overlap = array_values(array_filter($this->parties, fn ($p) => $p['from'] < $to && $p['to'] > $from));
+        foreach (array_merge([$from], array_map(fn ($p) => max($p['from'], $from), $overlap)) as $t) {
+            if (count(array_filter($overlap, fn ($p) => $p['from'] <= $t && $p['to'] > $t)) + 1 > self::MAX_SIMULTANEOUS) return false;
+        }
+        return true;
+    }
+
     /** 'available' | 'owner_approval_required' | 'unavailable' | 'review_required' for one candidate busy interval. */
     public function check(CarbonImmutable $from, CarbonImmutable $to, string $day, array $requirements): string
     {
@@ -150,11 +160,7 @@ final class WebsiteCapacity
 
     private function evaluate(CarbonImmutable $from, CarbonImmutable $to, array $requirements): string
     {
-        // 4 parties at the same time (speakers), checked at every start inside the candidate.
-        $overlap = array_values(array_filter($this->parties, fn ($p) => $p['from'] < $to && $p['to'] > $from));
-        foreach (array_merge([$from], array_map(fn ($p) => max($p['from'], $from), $overlap)) as $t) {
-            if (count(array_filter($overlap, fn ($p) => $p['from'] <= $t && $p['to'] > $t)) + 1 > self::MAX_SIMULTANEOUS) return 'unavailable';
-        }
+        if (! $this->simultaneousOk($from, $to)) return 'unavailable';
         $candidate = ['key' => 'candidate', 'from' => $from, 'to' => $to, 'requirements' => $requirements, 'pinned' => []];
         // Only parties connected to the candidate through overlapping busy time can change the answer.
         $jobs = $this->connected(array_merge($this->parties, [$candidate]), count($this->parties));
