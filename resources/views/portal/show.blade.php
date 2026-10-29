@@ -150,12 +150,14 @@
       @endforeach
       {{-- Owner 2026-10-26: no "Ya envié el Zelle" form here; he checks the bank and records the payment. --}}
     </div>
-    <form class="p-opt" method="POST" action="{{ $vm['actions']['checkout'] }}" id="pay-form" data-revision="{{ $vm['pay']['revision_id'] ?? '' }}" @if (isset($vm['pay']) && ! $vm['pay']['can_checkout']) hidden @endif>
+    <form class="p-opt" method="POST" action="{{ $vm['actions']['checkout'] }}" id="pay-form" data-revision="{{ $vm['pay']['revision_id'] ?? '' }}" data-card-quote="{{ !empty($vm['pay']['card']) ? ($vm['pay']['card_quote_sha256'] ?? '') : '' }}" @if ((isset($vm['pay']) && ! $vm['pay']['can_checkout']) || (!empty($vm['pay']['enabled']) && empty($vm['pay']['card']))) hidden @endif>
       @csrf
-      <h3>{{ $t('card') }}</h3>
-      <p class="p-hint">{{ $t('card_hint') }}</p>
+      {{-- CARD-FEE-01 (owner 2026-10-28): credit cards only, the 3% shown with the amounts before paying, same as quick booking. --}}
+      <h3>{{ $t(!empty($vm['pay']['card']) ? 'card_credit' : 'card') }}</h3>
+      <p class="p-hint">{{ $t(!empty($vm['pay']['card']) ? 'card_fee_hint' : 'card_hint') }}</p>
+      @if (! empty($vm['pay']['card']))<p class="p-card-math">{{ $vm['pay']['card']['principal'] }} + {{ $vm['pay']['card']['fee'] }} (3 %) = <b>{{ $vm['pay']['card']['total'] }}</b></p>@endif
       <p class="p-test" id="pay-error" role="alert" hidden></p>
-      <button class="p-btn" type="submit">{{ $t('card_btn', ['amount' => $e['balance']]) }}</button>
+      <button class="p-btn" type="submit">{{ $t('card_btn', ['amount' => $vm['pay']['card']['total'] ?? $e['balance']]) }}</button>
     </form>
   </div>
   @if ($vm['reserved'] ?? false)</details>@endif
@@ -233,7 +235,9 @@
   if (pay) pay.addEventListener('submit', function (ev) {
     ev.preventDefault(); var err = document.getElementById('pay-error'); err.hidden = true;
     var b = pay.querySelector('button[type=submit]'); b.disabled = true;
-    post(pay.action, {financial_revision_id: Number(pay.dataset.revision), purpose: 'balance'}, key('waoo-pay-' + pay.dataset.revision))
+    var cardBody = {financial_revision_id: Number(pay.dataset.revision), purpose: 'balance'};
+    if (pay.dataset.cardQuote) cardBody.card_quote_sha256 = pay.dataset.cardQuote;
+    post(pay.action, cardBody, key('waoo-pay-' + pay.dataset.revision))
       .then(function (j) { if (j.checkout_url) location.href = j.checkout_url; else throw new Error(@js($t('pay_retry'))); })
       .catch(function (e) { err.textContent = e.message; err.hidden = false; b.disabled = false; });
   });
