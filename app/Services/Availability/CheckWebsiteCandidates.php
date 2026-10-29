@@ -69,8 +69,11 @@ final class CheckWebsiteCandidates
                 'unresolved' => array_map(fn ($i) => ['candidate' => $i, 'code' => $complete ? 'review_required' : 'incomplete_request'], array_keys($parsed))];
         }
 
-        $google = $this->busy($day->subDay(), $day->addDays(2));
+        $google = self::busy($day->subDay(), $day->addDays(2));
         $capacity = new WebsiteCapacity($day, $google);
+        // Real drive between neighbouring parties when the client's ZIP is known (tests bind 'waoo.availability.drive').
+        $capacity->withTravel($input['destination']['postal_code'] ?? null,
+            app()->bound('waoo.availability.drive') ? app('waoo.availability.drive') : [new \App\Services\Routing\DriveMinutes(), 'between']);
         $slots = []; $unresolved = [];
         foreach ($parsed as $i => $start) {
             if (! $capacity->calendarOk()) { $unresolved[] = ['candidate' => $i, 'code' => 'evaluation_unavailable']; continue; }
@@ -91,7 +94,7 @@ final class CheckWebsiteCandidates
     }
 
     /** Busy times outside the CRM (HoneyBook bookings until the switch); tests bind 'waoo.availability.busy' to simulate Google. */
-    private function busy(CarbonImmutable $from, CarbonImmutable $to): ?array
+    public static function busy(CarbonImmutable $from, CarbonImmutable $to): ?array
     {
         if (app()->bound('waoo.availability.busy')) return app('waoo.availability.busy')($from, $to);
         // The HoneyBook calendar feed is the source until the switch; without it, the owner's primary Google calendar.

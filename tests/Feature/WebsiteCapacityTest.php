@@ -64,6 +64,27 @@ class WebsiteCapacityTest extends TestCase
         $this->assertFalse($r['reservation_created']);
     }
 
+    public function test_real_drive_time_replaces_the_fixed_window_when_the_zip_is_known(): void
+    {
+        $e = $this->party('2026-11-21T14:00:00-06:00', elsa: true); $e->postal_code = '77494'; $e->save();
+        $ask = fn (?string $zip) => app(CheckWebsiteCandidates::class)->execute(['date' => '2026-11-21', 'timezone' => 'America/Chicago', 'service_variant_id' => $this->magic->id,
+            'characters' => [['character_id' => $this->elsa->id, 'quantity' => 1, 'outfit' => null]], 'destination' => $zip ? ['postal_code' => $zip] : null,
+            'candidate_starts' => [['local' => '2026-11-21T16:15', 'offset_choice' => null]]])['slots'][0]['state'];
+        // The only Elsa ends 15:15 + 30 = 15:45 and the 16:15 party sets up at 16:00: 15 minutes left for the drive.
+        $calls = [];
+        $this->app->instance('waoo.availability.drive', function ($a, $b, $at) use (&$calls) { $calls[] = [$a, $b]; return 10; });
+        $this->assertSame('available', $ask('77450'));
+        $this->assertSame([['77494', '77450']], $calls, 'from the earlier party to the client');
+        $this->app->instance('waoo.availability.drive', fn () => 25);
+        $this->assertSame('owner_approval_required', $ask('77450'), 'the drive does not fit: the owner decides');
+        $this->app->instance('waoo.availability.drive', fn () => null);
+        $this->assertSame('owner_approval_required', $ask('77450'), 'drive unknown: fixed window');
+        $this->app->instance('waoo.availability.drive', fn () => 10);
+        $this->assertSame('owner_approval_required', $ask(null), 'no ZIP from the client: fixed window');
+        $e->postal_code = null; $e->save();
+        $this->assertSame('owner_approval_required', $ask('77450'), 'neighbour without ZIP: fixed window');
+    }
+
     public function test_four_parties_at_once_is_the_limit_and_people_short_becomes_owner_approval(): void
     {
         // 2 drivers: a 3rd party at the same time is still possible but needs the owner (call someone in).

@@ -43,6 +43,7 @@ final class ConfirmBooking
                     $this->fail('Requiere aprobación por proximidad de fecha.');
                 }
                 $services = $event->services()->get();
+                if ($services->isNotEmpty()) \App\Services\Availability\AdmitEventCapacity::assertFits($event); // day locks before character/resource locks
                 // Match SaveResource's character→unit order. Hints never authorize a changed unit.
                 $characterIds = $services->flatMap(fn ($s) => collect($s->requirements_snapshot)->where('kind', 'costume')->pluck('character_id'))
                     ->merge(Resource::whereIn('id', $ids)->where('kind', 'costume')->pluck('character_id'))->filter()->unique()->sort()->values();

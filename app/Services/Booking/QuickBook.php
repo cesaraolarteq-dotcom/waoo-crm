@@ -76,7 +76,10 @@ final class QuickBook
             $customer = $this->customer($actor, $data);
             if (blank($data['deposit']['reference'] ?? null)) app(GuardUnreferencedQuickBooking::class)->check($customer, $data);
             $eventInput = array_diff_key($data, array_flip(['new_customer','customer_update','deposit','portal','lead_id','lead_expected_version']));
+            // Day locks before SaveEventDraft locks the catalog (AdmitEventCapacity lock order).
+            \App\Services\Availability\AdmitEventCapacity::lockDays(CarbonImmutable::parse($data['starts_at']), CarbonImmutable::parse($data['ends_at']));
             $event = app(SaveEventDraft::class)->execute($actor, [...$eventInput, 'customer_id' => $customer->id]);
+            \App\Services\Availability\AdmitEventCapacity::assertFits($event);
             $finance = app(CreateFinancialRevision::class)->execute($actor, $event->id, ['expected_version' => $event->version], (string) Str::uuid());
             try {
                 $receipt = app(RecordZellePayment::class)->execute($actor, $event->id, [

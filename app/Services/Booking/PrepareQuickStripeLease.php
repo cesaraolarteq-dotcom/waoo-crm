@@ -32,6 +32,7 @@ final class PrepareQuickStripeLease
                 &&(int)FinancialRevision::where('event_id',$eventId)->max('revision')===$revision->revision,409,'Revisa la versión financiera vigente.');
             $compiled=QuickCostumeHolds::slots($event);$slots=$compiled['slots'];
             RecordWriteRejected::unless(!$compiled['missing']&&$event->services()->exists(),422,'Completa los personajes y requisitos antes de ofrecer un apartado sin pago.');
+            \App\Services\Availability\AdmitEventCapacity::assertFits($event); // day locks before character/resource locks
             $characters=Character::whereIn('id',collect($slots)->pluck('character_id')->unique())->orderBy('id')->lockForUpdate()->get()->keyBy('id');
             $units=Resource::where('kind','costume')->where('status','active')->whereIn('character_id',$characters->keys())->orderBy('id')->limit(501)->lockForUpdate()->get();
             RecordWriteRejected::unless($units->count()<=500,409,'El inventario requiere revisión por volumen.');

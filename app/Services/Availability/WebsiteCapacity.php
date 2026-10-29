@@ -28,15 +28,23 @@ final class WebsiteCapacity
     public const TRAVEL_REVIEW_MINUTES = 60;
     /** Conservative busy time around a party whose setup/breakdown is unknown, or a calendar-only entry. */
     public const UNKNOWN_MINUTES = 60;
+    /** Neighbouring parties further than this from the candidate are never reached by a shared person or costume in time anyway. */
+    public const MAX_DRIVE_MINUTES = 120;
 
     /** @var list<array{key:string,from:CarbonImmutable,to:CarbonImmutable,day:?string,uncertain:bool,requirements:array,pinned:array<int,int>}> */
     private array $parties = [];
     private array $resources = [];
     private array $units = [];
     private array $blocks = [];
+    private ?string $zip = null;
+    /** @var (callable(string, string, CarbonImmutable): ?int)|null */
+    private $drive = null;
 
-    /** @param list<array{0: CarbonImmutable, 1: CarbonImmutable}>|null $calendar null = calendar did not answer */
-    public function __construct(private CarbonImmutable $dayStart, private ?array $calendar)
+    /**
+     * @param list<array{0: CarbonImmutable, 1: CarbonImmutable}>|null $calendar null = calendar did not answer
+     * @param int|null $exclude the party being admitted (AdmitEventCapacity): never counted against itself
+     */
+    public function __construct(private CarbonImmutable $dayStart, private ?array $calendar, private ?int $exclude = null)
     {
         $from = $dayStart->subDay(); $to = $dayStart->addDays(2);
         foreach (Resource::query()->where('status', 'active')->get(['id', 'kind', 'equipment_kind', 'character_id', 'skills', 'seats']) as $r) {
@@ -49,6 +57,7 @@ final class WebsiteCapacity
         }
         $imported = [];
         foreach (Event::query()->where('status', '!=', 'cancelled')->where('starts_at', '<', $to->utc())->where('ends_at', '>', $from->utc())->with('services')->get() as $e) {
+            if ($e->id === $this->exclude) continue;
             $isImport = ImportedProjectLink::where('event_id', $e->id)->exists();
             $reserved = ResourceReservation::where('event_id', $e->id)->pluck('resource_id')->all();
             $holds = $e->status === 'capacity_reserved' || $isImport || $reserved || QuickBookingRecord::where('event_id', $e->id)->exists()
@@ -63,7 +72,8 @@ final class WebsiteCapacity
                 'to' => $end->addMinutes(($known ? $e->breakdown_minutes : self::UNKNOWN_MINUTES) + self::GAP_MINUTES),
                 'day' => $start->setTimezone('America/Chicago')->toDateString(), 'uncertain' => ! $known,
                 'requirements' => $e->services->flatMap(fn ($s) => $s->requirements_snapshot ?? [])->all(),
-                'pinned' => array_values(array_filter($reserved, fn ($id) => isset($this->units[$id])))];
+                'pinned' => array_values(array_filter($reserved, fn ($id) => isset($this->units[$id]))),
+                'zip' => preg_match('/^\d{5}$/D', (string) $e->postal_code) ? $e->postal_code : null];
             if ($isImport) $imported[] = count($this->parties) - 1;
         }
         // Active blocks (maintenance, day off): the unit is busy for the whole block. Overlapping blocks on one unit stay one unit.
@@ -82,8 +92,15 @@ final class WebsiteCapacity
             if ($match !== null) { unset($free[$match]); continue; }
             $this->parties[] = ['key' => 'cal'.(++$n), 'start' => $cFrom, 'end' => $cTo, 'from' => $cFrom->subMinutes(self::UNKNOWN_MINUTES),
                 'to' => $cTo->addMinutes(self::UNKNOWN_MINUTES + self::GAP_MINUTES), 'day' => $cFrom->setTimezone('America/Chicago')->toDateString(),
-                'uncertain' => true, 'requirements' => [['kind' => 'staff', 'quantity' => 1, 'skill' => '*']], 'pinned' => []];
+                'uncertain' => true, 'requirements' => [['kind' => 'staff', 'quantity' => 1, 'skill' => '*']], 'pinned' => [], 'zip' => null];
         }
+    }
+
+    /** The candidate's ZIP and a drive-time source: neighbouring parties then get their real drive instead of the fixed review window. */
+    public function withTravel(?string $zip, callable $drive): self
+    {
+        $this->zip = preg_match('/^\d{5}$/D', (string) $zip) ? $zip : null; $this->drive = $drive;
+        return $this;
     }
 
     public function calendarOk(): bool { return $this->calendar !== null; }
@@ -99,11 +116,36 @@ final class WebsiteCapacity
         if ($this->partiesOn($day) >= self::MAX_PER_DAY) return 'unavailable';
         $state = $this->evaluate($from, $to, $requirements);
         if ($state === 'unavailable' || $state === 'review_required') return $state;
-        // The drive to/from a neighbouring party is not proven: if a wider window would change the answer, the owner checks.
-        $wide = $this->evaluate($from->subMinutes(self::TRAVEL_REVIEW_MINUTES), $to->addMinutes(self::TRAVEL_REVIEW_MINUTES), $requirements);
-        if ($wide !== $state) return 'owner_approval_required';
+        if (! $this->travelFits($from, $to, $requirements, $state)) return 'owner_approval_required';
         $near = array_filter($this->parties, fn ($p) => $p['uncertain'] && $p['from'] < $to->addMinutes(self::TRAVEL_REVIEW_MINUTES) && $p['to'] > $from->subMinutes(self::TRAVEL_REVIEW_MINUTES));
         return $near ? 'owner_approval_required' : $state;
+    }
+
+    /**
+     * César: between two parties that share a person, costume or equipment, the real drive + 30 minutes. With the candidate's
+     * ZIP, every known neighbour within MAX_DRIVE_MINUTES keeps its own busy time stretched by the drive toward the candidate;
+     * the answer must not change. Any drive not known (no ZIP, Google slow or failing) falls back to the fixed 60-minute
+     * window on both sides: if that changes the answer, the owner checks.
+     */
+    private function travelFits(CarbonImmutable $from, CarbonImmutable $to, array $requirements, string $state): bool
+    {
+        if ($this->zip !== null && $this->drive !== null) {
+            $saved = $this->parties; $known = true;
+            foreach ($saved as $i => $p) {
+                if ($p['uncertain']) continue; // calendar-only or unknown timing: owner approval below
+                $before = $p['to'] <= $from && $p['to'] > $from->subMinutes(self::MAX_DRIVE_MINUTES);
+                $after = $p['from'] >= $to && $p['from'] < $to->addMinutes(self::MAX_DRIVE_MINUTES);
+                if (! $before && ! $after) continue;
+                $m = $p['zip'] === null ? null : ($this->drive)($before ? $p['zip'] : $this->zip, $before ? $this->zip : $p['zip'], $before ? $p['to'] : $to);
+                if (! is_int($m) || $m < 0 || $m > self::MAX_DRIVE_MINUTES) { $known = false; break; }
+                if ($before) $this->parties[$i]['to'] = $p['to']->addMinutes($m); else $this->parties[$i]['from'] = $p['from']->subMinutes($m);
+            }
+            if ($known) {
+                try { return $this->evaluate($from, $to, $requirements) === $state; } finally { $this->parties = $saved; }
+            }
+            $this->parties = $saved;
+        }
+        return $this->evaluate($from->subMinutes(self::TRAVEL_REVIEW_MINUTES), $to->addMinutes(self::TRAVEL_REVIEW_MINUTES), $requirements) === $state;
     }
 
     private function evaluate(CarbonImmutable $from, CarbonImmutable $to, array $requirements): string

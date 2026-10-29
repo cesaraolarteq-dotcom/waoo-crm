@@ -201,7 +201,7 @@ class ViewEvent extends Page
         return [
             ...$pick(['confirm', 'money', 'contract', 'edit', 'quoteView']),
             \Filament\Actions\ActionGroup::make($pick(['smsSend', 'staffInstructions', 'mailPlan', 'costs', 'honeybookCopy', 'cutoverEvidence',
-                'quoteCreate', 'billingCompany', 'billingPreview', 'refund', 'cancelEvent']))
+                'quoteCreate', 'billingCompany', 'billingPreview', 'rescheduleCheck', 'refund', 'cancelEvent']))
                 ->label('Más')->icon('heroicon-m-chevron-down')->iconPosition(\Filament\Support\Enums\IconPosition::After)->button()->color('gray'),
         ];
     }
@@ -326,6 +326,7 @@ class ViewEvent extends Page
                 }),
             Action::make('contract')->label('Contrato y enlace')->icon('heroicon-o-document-text')->color('gray')->visible(fn () => \App\Filament\Support\DocumentsGate::enabled())->url(fn () => EventResource::getUrl('contract', ['record' => $e])),
             Action::make('confirm')->label('Apartar recursos y confirmar')->icon('heroicon-o-check-badge')->color('primary')->visible(fn () => ConfirmCapacity::canAccessFor($e))->url(fn () => EventResource::getUrl('confirm', ['record' => $e])),
+            $this->rescheduleCheckAction(),
             $this->cancelEventAction(),
             $this->refundAction(),
         ];
@@ -337,6 +338,37 @@ class ViewEvent extends Page
     public static function changesEnabled(): bool
     {
         return FinanceGate::enabled() && (bool) config('waoo.sandbox_changes', false);
+    }
+
+    /** CHANGE-A A2 check only: is another date free for this same party? Nothing is held or changed. */
+    public function rescheduleCheckAction(): Action
+    {
+        $e = $this->record;
+        return Action::make('rescheduleCheck')->label('¿Está libre otra fecha?')->icon('heroicon-o-calendar-days')->color('gray')
+            ->visible(fn () => self::changesEnabled() && in_array($e->status, ['draft', 'capacity_reserved'], true) && $e->services()->exists())
+            ->modalHeading('¿Está libre otra fecha?')
+            ->modalDescription('Revisa la agenda para esta misma fiesta (mismo paquete, personajes, duración y dirección) en otra fecha y hora. Solo revisa: no aparta nada, no cambia la fiesta y no le avisa a nadie.')
+            ->schema([
+                \Filament\Forms\Components\DatePicker::make('date')->label('Nueva fecha')->native(false)->displayFormat('d/m/Y')->minDate(now('America/Chicago')->startOfDay())->required(),
+                \Filament\Forms\Components\TimePicker::make('time')->label('Hora de inicio')->seconds(false)->required()
+                    ->default(fn () => $e->starts_at?->setTimezone('America/Chicago')->format('H:i')),
+            ])
+            ->modalSubmitActionLabel('Revisar')
+            ->action(function (array $data, Action $action) use ($e) {
+                try {
+                    $r = app(\App\Services\Changes\CheckRescheduleDate::class)->execute(\Filament\Facades\Filament::auth()->user(), $e->id,
+                        ['date' => \Carbon\CarbonImmutable::parse($data['date'])->toDateString(), 'time' => substr((string) $data['time'], 0, 5)]);
+                } catch (\Illuminate\Validation\ValidationException|\Illuminate\Auth\Access\AuthorizationException $ex) {
+                    \Filament\Notifications\Notification::make()->danger()->title('No se pudo revisar')->body($ex instanceof \Illuminate\Validation\ValidationException ? collect($ex->errors())->flatten()->first() : $ex->getMessage())->persistent()->send();
+                    $action->halt();
+                }
+                $when = Labels::when(\Carbon\CarbonImmutable::parse($r['starts_at']));
+                $n = \Filament\Notifications\Notification::make()->title(match ($r['state']) {
+                    'available' => 'Libre · '.$when, 'owner_approval_required' => 'Posible, con revisión · '.$when,
+                    'unavailable' => 'Sin cupo · '.$when, default => 'Revisar a mano · '.$when })->body($r['message'])->persistent();
+                match ($r['state']) { 'available' => $n->success(), 'unavailable' => $n->danger(), default => $n->warning() };
+                $n->send();
+            });
     }
 
     /** Owner 2026-10-29: cancel keeps the deposit; frees staff, costumes and equipment; pauses reminders. */
