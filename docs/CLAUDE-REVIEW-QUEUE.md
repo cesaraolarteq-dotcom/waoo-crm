@@ -21,6 +21,12 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-10-29 · BACKEND / DECISION · Consolidate daily admission, history CLI and owner142 on reviewed main152 · PENDING
+- Real merges preserve142head7c3e2da and146heada1fda18 in PR144, with current maine5e16ff after149/152. Only documentation conflicts in last3merges, histories retained. Earlier Stripe conflict resolved with both fee-pair and overflow checks; local36/212PASS. CLI baseline43/302PASS, no actual import/real snapshot run. Final assembly CI required before main.
+- Owner latest: Twilio account active (reported in chat), not independently checked and no SMS activation/test send inferred. Email remains held.
+- Claude: role-pool/staffing/pay/contract decisions retained, CLI aggregate-only/no-write and daily admission remain distinct from full S2 capacity. Pending required counts: available staff by actual skills/time, drivers/vehicles/seats, physical equipment kits/costume stock; collect via your checklist as requested, never invent capacity. No new request to César in this entry.
+- No deploy, provider, real-data/transfer/collection or send; incoming decisions do not approve all project acceptance. All new entriesPENDING.
+
 ### 2026-10-28 · BACKEND · Integrate daily admission with merged fee policy · PENDING
 - Merge main093797a into PR144. StripeReceiptProcessor conflict retains principal/fee pair plus DailyCapacity overflow exception, with global lock before event. Documentation unions retain both histories. No provider/default flag/send changes.
 - Previous144head8427fef12checksSUCCESS; combined DailyCapacity/StandardCardFee/StripeSandbox36tests/212assertions PASS,01:46.502. Fresh CI required. Claude: principal-only balance and paid overflow preserved together. No new feature completion or deployment claim.
@@ -67,6 +73,15 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 - Source f03c2f0 exact composer.lock; Mime7.4.19→7.4.22/Polyfill Mbstring1.43.0→1.43.3. No runtime behavior or new tests for dependency-only port.
 - Before: PR142 head a89ea46 five test shardsSUCCESS/checksFAIL; PR143/145 same dependency patch all6SUCCESS. This updated branch still needs fresh complete CI before merge.
 - Claude check: dependency versions and audit, retain owner decisions and no workflow bypass. No deploy/provider/realdata/flag/send.
+
+
+### 2026-10-28 · BACKEND · Aggregate-only existing-history dry-run CLI (point4) · PENDING
+- Branch: codex/fix-history-dry-run, basea54b626. César assigned points1–4; existing history/importer is reused, never reimported. API docs/HISTORY-DRY-RUN-CLI.md precedes implementation.
+- Command: waoo:history:import --owner=<id> --batch=<existing-id> --dry-run. No file or write mode; explicit dry-run mandatory. Reuses ReadHistoricalImport + VerifyHistoricalImport under one existing import transaction/lock, including encrypted source/staging/destination coverage and current matching. Retains owner2FA/history gate/staging transport; production denied.
+- Closed numeric aggregate JSON only, verdict/dry-run/no-domain-writes/human-review=false. No customer/source names, IDs, contact fields, money, hashes, original documents, filenames or exception chain. Exit0 copied-fields-match/no-review,2 pending/differences/review,1 failure. Nothing auto-approves or transfers responsibility.
+- Proof: actual baseline on old command registry FAIL1/1 (new command absent). Initial new functional assertions passed but4 test-teardown errors hit the existing evidence-protected down migrations; added the same synthetic fixture cleanup used by HistoricalDomainTest, no application workaround. Final **43tests/302assertions PASS**,02:34.847, PHP8.3.36/MariaDB11.8. Tests listen to SQL and assert zero mutation queries inside the command, both pending staging and already imported rows; generic corruption/unauthorized/disabled/production failures, privacy and fake providers. Existing intake/domain regression tests included. Final JUnit /tools/history-dry-run-related.xml; no full local suite claim, complete CI required before merge.
+- Files: app/Console/Commands/HistoricalImportDryRun.php, tests/Feature/HistoricalImportDryRunTest.php, docs/HISTORY-DRY-RUN-CLI.md, queue/HANDOFF. No importer core, existing history, config/flag or UI changes.
+- Claude check: same-lock consistency of plan/verification, exact output allowlist/exit states, immutable source/destination semantics. Only real host verification later via already authorized private process; Codex ran no real history command/import. No mail/probe, deployment/provider, original/data change. StatusPENDING.
 
 ### 2026-10-28 · BACKEND / UI · Website14 / owner7 notice scopes, per César and Claude #141 rework · PENDING
 - Branch / PR: `codex/fix-houston-booking-notice` / #140. Decision source: #141 head47567b8 and Claude’s review the latest Claude review comment on #140. #141 merged after6checks, main ee5ea05. César chose optionb: web14, internal7; no new question needed.

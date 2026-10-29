@@ -1,3 +1,6 @@
+## 2026-10-29 · Codex · Consolidated142/144/146 on reviewed152
+PR144 preserves Claude142head7c3e2da and dry-run146heada1fda18 via real merges, on main e5e16ff after149/152 each12green. Only documentation conflicts in these last merges; both histories retained. Daily+fee36/212PASS, existing dry-run43/302PASS; final combined CI required. S2 full evaluator and C3 adapters still pending. Owner reports Twilio active; no credentials inspected, provider send/flag change or operational verification inferred. Sending hold intact.
+
 ## 2026-10-29 · Codex · Preserve merged Zelle/copy review in daily-admission branch
 Merge e5e16ff (#152) has only2documentation conflicts; preserve both histories. No application conflict/change. Prior daily+card36/212PASS and e7b6571head12green checks. New integration CI required. #152merged after12green; no deployment/send.
 
@@ -22,6 +25,12 @@ Real merge preserves both source branches and the frozen monetary contract. **14
 `codex/fix-standard-card-fee`: frozen3% credit terms, atomic principal/customer_fee ledger split, server quote hash/formatted DTO and funding/account-policy gates. **118tests/1032assertions PASS**. New feature DEFAULT-OFF; no existing client text/template/JS changed or hidden surcharge enabled. Claude can wire approved disclosure/quote acknowledgment; actual external credit-only policy verification for the configured account is still required before activation. See newest queue entry and docs/CARD-FEE-01-API.md. No provider call, deployment, real charge/import, email/probe or flags enabled.
 ## 2026-10-28 · Codex · Repair PR142 dependency audit prerequisite
 Reuse Claude f03c2f0 exact composer.lock (Symfony Mime7.4.22/Polyfill Mbstring1.43.3 for CVE-2026-45070). PR142 latest a89ea46 has5green test shards but auditcheckFAIL; same security patch already passes PR143/145. No audit suppression, workflow, flag, provider, real data or sending change. Fresh complete CI required. See newest queue entry.
+## 2026-10-28 · Codex · Reuse Claude’s security patch for the audit blocker
+Port of Claude f03c2f0: Symfony Mime7.4.19→7.4.22 and Polyfill Mbstring1.43.0→1.43.3 (CVE-2026-45070). Original PR145 has6green checks; this branch still requires its own CI. See newest queue entry. No audit suppression, workflow, provider, email or activation change.
+
+
+## 2026-10-28 · Codex · Existing-history aggregate dry-run CLI (point4)
+`codex/fix-history-dry-run`: waoo:history:import requires --dry-run and existing owner/batch; reuses importer plan and source/destination verification under one lock, aggregate JSON only, zero command SQL mutations. **43tests/302assertions PASS**; see newest docs/CLAUDE-REVIEW-QUEUE.md and docs/HISTORY-DRY-RUN-CLI.md. No reimport, host action, mail or flag change; real independent review is not claimed. Other assigned backend points continue in isolated branches.
 
 ## 2026-10-28 · Codex · Notice rework from César’s #141 decision
 `codex/fix-houston-booking-notice` / #140 now separates website14days from internal owner confirmation7days with named Houston-local policy methods. New tests retain web14days and verify internal7day boundaries across both DST changes plus owner form at6/7/10days. This supersedes the earlier shared14day implementation, never deployed. #141 decision/docs merged after6checks. Newest **docs/CLAUDE-REVIEW-QUEUE.md** entry carries final proof/review scope. Mail remains held; no deployment/provider/real data change. Full capacity/evaluator still pending.
