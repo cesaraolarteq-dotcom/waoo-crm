@@ -18,10 +18,10 @@ final class ReceiveTwilioWebhook
 
     public function inbound(Request $request): void
     {
-        $this->guard($request);
-        $sid = (string) $request->post('MessageSid');
-        $from = PhoneNumber::e164((string) $request->post('From'));
-        $body = mb_substr((string) $request->post('Body'), 0, 1600);
+        $f = $this->guard($request);
+        $sid = (string) ($f['MessageSid'] ?? '');
+        $from = PhoneNumber::e164((string) ($f['From'] ?? ''));
+        $body = mb_substr((string) ($f['Body'] ?? ''), 0, 1600);
         abort_unless(preg_match(self::SID, $sid) && $from, 422);
         DB::transaction(function () use ($sid, $from, $body) {
             if (SmsMessage::where('provider_sid', $sid)->lockForUpdate()->exists()) return; // Twilio retried: already kept.
@@ -36,25 +36,30 @@ final class ReceiveTwilioWebhook
 
     public function status(Request $request): void
     {
-        $this->guard($request);
-        $sid = (string) $request->post('MessageSid');
-        $status = (string) $request->post('MessageStatus');
+        $f = $this->guard($request);
+        $sid = (string) ($f['MessageSid'] ?? '');
+        $status = (string) ($f['MessageStatus'] ?? '');
         abort_unless(preg_match(self::SID, $sid), 422);
         $map = ['sent' => 'sent', 'delivered' => 'delivered', 'undelivered' => 'undelivered', 'failed' => 'failed'];
         if (! isset($map[$status])) return; // queued/sending/accepted add nothing.
-        DB::transaction(function () use ($sid, $map, $status, $request) {
+        DB::transaction(function () use ($sid, $map, $status, $f) {
             $m = SmsMessage::where('provider_sid', $sid)->where('direction', 'out')->lockForUpdate()->first();
             if (! $m || $m->status === 'delivered') return; // never step back from delivered
-            $code = preg_replace('/\D/', '', (string) $request->post('ErrorCode'));
+            $code = preg_replace('/\D/', '', (string) ($f['ErrorCode'] ?? ''));
             $m->fill(['status' => $map[$status], 'error_code' => $code !== '' ? 'twilio_'.substr($code, 0, 20) : $m->error_code])->save();
         });
     }
 
-    private function guard(Request $request): void
+    /** Verifies the signature and returns Twilio's fields from the raw form body (Laravel's trimmed copy would not match). */
+    private function guard(Request $request): array
     {
         abort_unless($request->isSecure(), 403);
-        abort_if(strlen($request->getContent()) > 65536, 413);
-        app(VerifyTwilioSignature::class)->execute($request);
+        $raw = $request->getContent();
+        abort_if(strlen($raw) > 65536, 413);
+        parse_str($raw, $fields);
+        app(VerifyTwilioSignature::class)->execute($request, $fields);
+
+        return $fields;
     }
 
     /** The client whose phone matches, only when exactly one does. */

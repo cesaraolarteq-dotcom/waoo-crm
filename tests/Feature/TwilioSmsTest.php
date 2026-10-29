@@ -37,7 +37,9 @@ class TwilioSmsTest extends TestCase
     {
         $signature ??= VerifyTwilioSignature::sign(self::TOKEN, 'https://crm.example.test'.$path, $params);
 
-        return $this->call('POST', 'https://crm.example.test'.$path, $params, [], [], ['HTTP_X_TWILIO_SIGNATURE' => $signature]);
+        // Twilio posts a raw form body; the signature covers the values exactly as sent (" stop " keeps its spaces).
+        return $this->call('POST', 'https://crm.example.test'.$path, [], [], [], ['HTTP_X_TWILIO_SIGNATURE' => $signature,
+            'CONTENT_TYPE' => 'application/x-www-form-urlencoded'], http_build_query($params));
     }
 
     private function refused(callable $send, string $why): void

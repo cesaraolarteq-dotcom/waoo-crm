@@ -10,13 +10,14 @@ use Illuminate\Http\Request;
  */
 final class VerifyTwilioSignature
 {
-    public function execute(Request $request): void
+    /** @param array $fields the POST fields exactly as Twilio sent them (before Laravel trims or nulls anything) */
+    public function execute(Request $request, array $fields): void
     {
         $token = config('services.twilio.auth_token');
         abort_unless(is_string($token) && preg_match('/^[0-9a-f]{32}$/D', $token), 503);
         $signature = (string) $request->header('X-Twilio-Signature');
         abort_unless($signature !== '' && strlen($signature) <= 256, 401);
-        abort_unless(hash_equals(self::sign($token, rtrim((string) config('app.url'), '/').$request->getPathInfo(), $request->post()), $signature), 401);
+        abort_unless(hash_equals(self::sign($token, rtrim((string) config('app.url'), '/').$request->getPathInfo(), $fields), $signature), 401);
     }
 
     public static function sign(#[\SensitiveParameter] string $token, string $url, array $params): string
