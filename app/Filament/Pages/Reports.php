@@ -59,6 +59,9 @@ class Reports extends Page
     /** The bar the owner tapped in "Ventas" (bucket start date); its parties are listed under the chart. */
     public string $focus = '';
 
+    /** Pulse: deposit (booking), balance (second half) or all payments. */
+    public string $pulseMode = 'deposit';
+
     private ?array $panoramaCache = null;
 
     public static function canAccess(): bool
@@ -95,6 +98,11 @@ class Reports extends Page
     public function setTab(string $tab): void
     {
         $this->tab = in_array($tab, ['ventas', 'pulso', 'canales', 'zonas', 'viene'], true) ? $tab : 'pulso';
+    }
+
+    public function setPulseMode(string $mode): void
+    {
+        $this->pulseMode = in_array($mode, ['deposit', 'balance', 'all'], true) ? $mode : 'deposit';
     }
 
     public function moveWindow(int $step): void
@@ -143,7 +151,7 @@ class Reports extends Page
 
     public function getSubheading(): ?string
     {
-        return 'Arriba, el panorama del periodo que elijas. Abajo, la última semana o el último mes ya cerrados. El dinero cuenta por la fecha en que llegó; los saldos y el costo del staff, por la fecha de cada fiesta.';
+        return null;
     }
 
     public function setKind(string $kind): void
@@ -185,6 +193,24 @@ class Reports extends Page
         if (!config('waoo.sandbox_anniversary', false)) return null;
         return app(\App\Services\Campaigns\ReadBirthdayCampaignDraft::class)->execute(
             Filament::auth()->user(), ['as_of' => now('America/Chicago')->toDateString()]);
+    }
+
+    /** Owner 2026-10-29: the birthday list as names and next birthday dates, soonest first (still a draft: nothing is sent). */
+    public function birthdays(): ?array
+    {
+        if (! ($draft = $this->birthdayDraft())) return null;
+        $today = CarbonImmutable::now('America/Chicago')->startOfDay();
+        $names = \App\Models\Customer::query()->whereIn('id', array_column($draft['items'], 'customer_id'))->pluck('name', 'id');
+        $items = [];
+        foreach ($draft['items'] as $i) {
+            $d = CarbonImmutable::parse($i['source_date'], 'America/Chicago');
+            while ($d < $today) $d = $d->addYearNoOverflow();
+            $items[] = ['name' => $names[$i['customer_id']] ?? 'Cliente sin nombre', 'next' => $d->toDateString(), 'days' => (int) $today->diffInDays($d),
+                'rebooked' => in_array('already_rebooked', $i['reasons'] ?? [], true)];
+        }
+        usort($items, fn ($a, $b) => $a['next'] <=> $b['next']);
+
+        return ['count' => $draft['candidate_count'], 'soon' => array_values(array_filter($items, fn ($i) => $i['days'] <= 60)), 'items' => $items];
     }
 
     public function analytics(): ?array

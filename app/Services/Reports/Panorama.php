@@ -72,6 +72,9 @@ final class Panorama
             'sales' => $this->timeline($now, $from, $to, $before),
             'funnel' => $this->funnel(array_values(array_filter($leads, fn ($l) => $in($l['date'], $from, $to)))),
             'pulse' => $this->pulse(array_values(array_filter($paid, fn ($p) => $p['deposit'] ?? false)), array_values(array_filter($paidBefore, fn ($p) => $p['deposit'] ?? false)), $from, $to),
+            // Owner 2026-10-29: the same view for the second half (balances) and for every payment.
+            'pulse_balance' => $this->pulse(array_values(array_filter($paid, fn ($p) => ! ($p['deposit'] ?? false))), array_values(array_filter($paidBefore, fn ($p) => ! ($p['deposit'] ?? false))), $from, $to),
+            'pulse_all' => $this->pulse($paid, $paidBefore, $from, $to),
             'channels' => $this->channels($now),
             'zones' => $this->zones($now),
             'booking_window' => $this->bookingWindow($parties),
@@ -82,7 +85,10 @@ final class Panorama
         return [...$out, 'insights' => $this->insights($out)];
     }
 
-    /** Up to five plain sentences with what is worth acting on, built only from the figures above. */
+    /**
+     * Up to five things worth acting on, built only from the figures above. Each one is a small card:
+     * tone (up|down|hot|cold|info), a short tag, the headline figure and one sentence.
+     */
     private function insights(array $p): array
     {
         $usd = fn (int $c) => '$'.number_format(intdiv($c + 50, 100));
@@ -91,29 +97,31 @@ final class Panorama
         $out = [];
         $sales = $p['kpis']['sales'];
         if ($sales['change_pct'] !== null) {
-            $out[] = ($sales['change_pct'] >= 0 ? 'Vas '.$sales['change_pct'].' % arriba' : 'Vas '.abs($sales['change_pct']).' % abajo')
-                .' en ventas contra las mismas fechas de '.$year.' ('.$usd($sales['value']).' contra '.$usd($sales['previous']).').';
+            $out[] = ['tone' => $sales['change_pct'] >= 0 ? 'up' : 'down', 'tag' => 'Ventas vs '.$year, 'big' => ($sales['change_pct'] >= 0 ? '+' : '−').abs($sales['change_pct']).' %',
+                'text' => $usd($sales['value']).' ahora contra '.$usd($sales['previous']).' en las mismas fechas de '.$year.'.'];
         }
         if ($p['pulse']['count'] >= 5) {
             $wd = $p['pulse']['weekday'];
             arsort($wd);
-            $out[] = 'Los depósitos llegan más los días '.$p['pulse']['strongest_days'].' del mes y los '.$days[array_key_first($wd)].': responde rápido esos días.';
+            $out[] = ['tone' => 'hot', 'tag' => 'Cuándo reservan', 'big' => ucfirst($days[array_key_first($wd)]),
+                'text' => 'Los depósitos llegan más los '.$days[array_key_first($wd)].' y los días '.$p['pulse']['strongest_days'].' del mes. Responde rápido esos días.'];
         }
         $ch = array_values(array_filter($p['channels'], fn ($c) => $c['known'] >= 3 && $c['key'] !== 'unknown'));
         usort($ch, fn ($a, $b) => $b['average_cents'] <=> $a['average_cents']);
         if (count($ch) >= 2) {
-            $out[] = 'Quien llega por '.$ch[0]['label'].' gasta más en promedio ('.$usd($ch[0]['average_cents']).') que por '.end($ch)['label'].' ('.$usd(end($ch)['average_cents']).').';
+            $out[] = ['tone' => 'info', 'tag' => 'Mejor canal', 'big' => $ch[0]['label'],
+                'text' => 'Gastan '.$usd($ch[0]['average_cents']).' en promedio; por '.end($ch)['label'].', '.$usd(end($ch)['average_cents']).'.'];
         }
         $f = $p['funnel'];
         if ($f['count'] > 0) {
-            $out[] = 'De '.$f['count'].' prospectos de la web, '.$f['booked'].' reservaron ('.$f['conversion_pct'].' %)'
-                .($f['reasons'] ? '; el motivo de pérdida más común: '.mb_strtolower(array_key_first($f['reasons'])).'.' : '.');
+            $out[] = ['tone' => $f['conversion_pct'] >= 30 ? 'up' : 'down', 'tag' => 'Prospectos de la web', 'big' => $f['conversion_pct'].' %',
+                'text' => $f['booked'].' de '.$f['count'].' reservaron'.($f['reasons'] ? '. Motivo de pérdida más común: '.mb_strtolower(array_key_first($f['reasons'])).'.' : '.')];
         }
         $sats = $p['ahead']['saturdays'];
         if ($sats) {
             $light = array_reduce($sats, fn ($a, $b) => $a === null || $b['parties'] < $a['parties'] ? $b : $a);
-            $out[] = 'El sábado '.CarbonImmutable::parse($light['date'], 'America/Chicago')->locale('es')->translatedFormat('j \d\e F').' lleva '.$light['parties']
-                .($light['parties'] === 1 ? ' fiesta' : ' fiestas').': buen momento para promocionarlo.';
+            $out[] = ['tone' => 'cold', 'tag' => 'Sábado para promocionar', 'big' => CarbonImmutable::parse($light['date'], 'America/Chicago')->locale('es')->translatedFormat('j M'),
+                'text' => 'Lleva '.$light['parties'].($light['parties'] === 1 ? ' fiesta' : ' fiestas').'. Buen momento para un anuncio.'];
         }
         $today = CarbonImmutable::parse($p['today'], 'America/Chicago');
         foreach ([['verano', $today->month > 8 ? $today->year + 1 : $today->year, 6], ['halloween', $today->month > 10 ? $today->year + 1 : $today->year, 10], ['diciembre', $today->year, 12]] as [$season, $y, $m]) {
@@ -122,7 +130,8 @@ final class Panorama
             if (! $w || $w['announce_weeks'] === null || $start <= $today) continue;
             $announce = $start->subWeeks($w['announce_weeks']);
             if ($announce->diffInDays($today, true) > 75) continue;
-            $out[] = 'Para '.mb_strtolower(self::SEASONS[$season]).', anuncia desde el '.$announce->locale('es')->translatedFormat('j \d\e F').' ('.$w['announce_weeks'].' semanas antes): así llegas a 3 de cada 4 clientes.';
+            $out[] = ['tone' => 'info', 'tag' => 'Anuncia '.mb_strtolower(self::SEASONS[$season]), 'big' => $announce->locale('es')->translatedFormat('j M'),
+                'text' => $w['announce_weeks'].' semanas antes: así llegas a 3 de cada 4 clientes.'];
             break;
         }
 
@@ -221,12 +230,13 @@ final class Panorama
         foreach ($weeks as &$w) $w['heat'] = $avg > 0 ? round($w['count'] / $avg, 2) : 0.0;
         unset($w);
         $ranges = ['1–5' => [1, 5], '6–10' => [6, 10], '11–15' => [11, 15], '16–20' => [16, 20], '21–25' => [21, 25], '26–31' => [26, 31]];
-        $dom = array_fill_keys(array_keys($ranges), 0);
-        $weekday = array_fill(1, 7, 0);
+        $dom = $domCents = array_fill_keys(array_keys($ranges), 0);
+        $weekday = $weekdayCents = array_fill(1, 7, 0);
         foreach ($paid as $p) {
             $d = (int) substr($p['date'], 8, 2);
-            foreach ($ranges as $label => [$a, $b]) if ($d >= $a && $d <= $b) $dom[$label]++;
-            $weekday[(int) CarbonImmutable::parse($p['date'], 'America/Chicago')->format('N')]++;
+            foreach ($ranges as $label => [$a, $b]) if ($d >= $a && $d <= $b) { $dom[$label]++; $domCents[$label] += $p['amount_cents']; }
+            $n = (int) CarbonImmutable::parse($p['date'], 'America/Chicago')->format('N');
+            $weekday[$n]++; $weekdayCents[$n] += $p['amount_cents'];
         }
         // Per day so the short 26–31 range is compared fairly.
         $perDay = [];
@@ -237,7 +247,7 @@ final class Panorama
 
         return ['count' => count($paid), 'cents' => array_sum(array_column($paid, 'amount_cents')), 'average_per_week' => round($avg, 1),
             'weeks' => array_values($weeks), 'hottest' => ($sorted[0]['count'] ?? 0) > 0 ? $sorted[0] : null,
-            'day_of_month' => $dom, 'day_of_month_per_day' => $perDay, 'strongest_days' => array_key_first($perDay), 'weakest_days' => array_key_last($perDay),
+            'day_of_month' => $dom, 'day_of_month_cents' => $domCents, 'day_of_month_per_day' => $perDay, 'weekday_cents' => $weekdayCents, 'strongest_days' => array_key_first($perDay), 'weakest_days' => array_key_last($perDay),
             'weekday' => $weekday, 'last_year_count' => count($paidBefore)];
     }
 

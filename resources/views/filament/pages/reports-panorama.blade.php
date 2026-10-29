@@ -10,10 +10,16 @@
     $heat = fn (array $w) => $w['count'] === 0 ? 'h0' : ($w['heat'] < 0.5 ? 'c2' : ($w['heat'] < 0.85 ? 'c1' : ($w['heat'] < 1.15 ? 'm' : ($w['heat'] < 1.6 ? 'w1' : 'w2'))));
     $dias = [1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo'];
     $fecha = fn (string $d, string $f = 'D j M') => \Carbon\CarbonImmutable::parse($d, 'America/Chicago')->locale('es')->translatedFormat($f);
-    $pulse = $p['pulse'];
+    $pulseModes = ['deposit' => ['pulse', 'Reservas', 'depósitos', 'Primer pago de cada fiesta: el día en que reservan.'],
+        'balance' => ['pulse_balance', 'Segunda mitad', 'pagos de saldo', 'Pagos después del depósito: el saldo antes de la fiesta.'],
+        'all' => ['pulse_all', 'Todo', 'pagos', 'Cada pago que entró, depósito o saldo.']];
+    [$pulseKey, $pulseTitle, $pulseNoun, $pulseHelp] = $pulseModes[$pulseMode] ?? $pulseModes['deposit'];
+    $pulse = $p[$pulseKey];
+    $countLabel = fn (int $n) => $pulseMode === 'deposit' ? $n.' '.($n === 1 ? 'fiesta' : 'fiestas') : $n.' '.($n === 1 ? 'pago' : 'pagos');
     $wdMax = max([1, ...array_values($pulse['weekday'])]);
     $domMax = max([0.01, ...array_values($pulse['day_of_month_per_day'])]);
     $wdSorted = $pulse['weekday']; arsort($wdSorted);
+    $tone = ['up' => '--teal', 'down' => '--hot', 'hot' => '--hot', 'cold' => '--cold', 'info' => '--gold'];
     $channels = $p['channels'];
     $chMax = max([1, ...array_column($channels, 'parties')]);
     $bestTicket = collect($channels)->where('known', '>=', 3)->where('key', '!=', 'unknown')->sortByDesc('average_cents')->first();
@@ -60,8 +66,14 @@
         .wp-cols i{display:block;width:100%;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,var(--gold),var(--pink));min-height:2px;position:relative;z-index:1}
         .wp-cols s{position:absolute;bottom:0;left:-3px;right:-3px;border:1.5px dashed rgba(238,240,255,.35);border-bottom:0;border-radius:6px 6px 0 0;text-decoration:none}
         .wp-cols button[aria-pressed=true] i{background:linear-gradient(180deg,var(--teal),var(--navy))}
-        .wp-ins{display:grid;gap:8px;margin:0;padding:0;list-style:none}
-        .wp-ins li{background:linear-gradient(90deg,rgba(249,201,48,.12),transparent);border-left:3px solid var(--gold);border-radius:8px;padding:9px 12px;font-size:.92rem;color:var(--ink)}
+        .wp-ins{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:0;padding:0;list-style:none}
+        .wp-ins li{background:linear-gradient(180deg,#121842,#0d1230);border:1px solid var(--line);border-radius:18px;padding:14px 16px;display:grid;gap:4px;align-content:start;position:relative;overflow:hidden}
+        .wp-ins li::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:var(--tone)}
+        .wp-ins .t{font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--tone)}
+        .wp-ins .b{font-size:1.45rem;font-weight:800;letter-spacing:-.02em;line-height:1.1;color:var(--ink)}
+        .wp-ins .x{font-size:.82rem;color:var(--muted);line-height:1.45}
+        .wp-bar.two{grid-template-columns:minmax(70px,110px) minmax(0,1fr) minmax(110px,auto)}
+        .wp-bar.two b span{color:var(--ink);font-weight:700}
         .wp-cols small{font-size:.62rem;color:var(--muted);white-space:nowrap;overflow:hidden;max-width:100%}
         .wp-bars{display:grid;gap:9px}
         .wp-bar{display:grid;grid-template-columns:minmax(70px,120px) minmax(0,1fr) auto;gap:10px;align-items:center;font-size:.86rem}
@@ -131,8 +143,8 @@
 
     @if ($p['insights'])
         <ul class="wp-ins" aria-label="Lo más importante">
-            @foreach ($p['insights'] as $line)
-                <li>{{ $line }}</li>
+            @foreach ($p['insights'] as $i)
+                <li style="--tone:var({{ $tone[$i['tone']] ?? '--gold' }})"><span class="t">{{ $i['tag'] }}</span><span class="b">{{ $i['big'] }}</span><span class="x">{{ $i['text'] }}</span></li>
             @endforeach
         </ul>
     @endif
@@ -191,49 +203,58 @@
             </div>
         </div>
     @elseif ($tab === 'pulso')
+        <div class="wp-row" role="group" aria-label="Qué pagos">
+            <div class="wp-seg">
+                @foreach ($pulseModes as $k => $m)
+                    <button type="button" wire:click="setPulseMode('{{ $k }}')" aria-pressed="{{ $pulseMode === $k ? 'true' : 'false' }}">{{ $m[1] }}</button>
+                @endforeach
+            </div>
+            <p>{{ $pulseHelp }}</p>
+        </div>
         <div class="wp-stage">
             <div class="wp-card">
                 <h2>Semanas calientes y frías</h2>
-                <p>Depósitos de reserva (el primer pago de cada fiesta) recibidos cada semana, comparados con tu promedio del periodo: {{ $pulse['average_per_week'] }} por semana.</p>
+                <p>{{ ucfirst($pulseNoun) }} por semana contra tu promedio del periodo ({{ $pulse['average_per_week'] }} por semana). Pasa el dedo o el mouse por un cuadro para ver la semana.</p>
                 <div class="wp-heat">
                     @foreach ($pulse['weeks'] as $w)
-                        <i class="{{ $heat($w) }}" title="Semana del {{ $fecha($w['start']) }}: {{ $w['count'] }} depósitos · {{ $usd($w['cents']) }} · {{ $prevYear }}: {{ $w['last_year'] }}"></i>
+                        <i class="{{ $heat($w) }}" title="Semana del {{ $fecha($w['start']) }}: {{ $countLabel($w['count']) }} · {{ $usd($w['cents']) }} · {{ $prevYear }}: {{ $w['last_year'] }}"></i>
                     @endforeach
                 </div>
                 <div class="wp-legend"><span>Fría</span><i class="c2"></i><i class="c1"></i><i class="m"></i><i class="w1"></i><i class="w2"></i><span>Caliente</span></div>
             </div>
             <div class="wp-card">
+                <span class="wp-pill">{{ $pulseTitle }} en el periodo</span>
+                <div class="wp-big">{{ $usd($pulse['cents']) }}</div>
+                <p>{{ $countLabel($pulse['count']) }} · {{ $prevYear }}: {{ $countLabel($pulse['last_year_count']) }}.</p>
                 <span class="wp-pill">Semana más caliente</span>
                 @if ($pulse['hottest'])
                     <div class="wp-big hot">{{ $fecha($pulse['hottest']['start'], 'j M') }}</div>
-                    <p>{{ $pulse['hottest']['count'] }} depósitos, {{ $pulse['hottest']['heat'] }}× tu promedio.</p>
+                    <p>{{ $countLabel($pulse['hottest']['count']) }} · {{ $usd($pulse['hottest']['cents']) }} · {{ $pulse['hottest']['heat'] }}× tu promedio.</p>
                 @else
-                    <p>No hubo depósitos en este periodo.</p>
+                    <p>No hubo {{ $pulseNoun }} en este periodo.</p>
                 @endif
-                <span class="wp-pill">Contra {{ $prevYear }}</span>
-                <p><b style="color:var(--ink)">{{ $pulse['count'] }}</b> depósitos ahora; <b style="color:var(--ink)">{{ $pulse['last_year_count'] }}</b> en las mismas fechas de {{ $prevYear }}.</p>
             </div>
         </div>
         <div class="wp-duo">
             <div class="wp-card">
                 <h2>¿En qué días del mes entra el dinero?</h2>
-                <p>Depósitos promedio por día en cada parte del mes.</p>
+                <p>{{ ucfirst($pulseNoun) }} y monto en cada parte del mes. La barra compara por día, porque 26–31 tiene seis días.</p>
                 <div class="wp-bars">
                     @foreach ($pulse['day_of_month_per_day'] as $range => $v)
-                        <div class="wp-bar" style="--c1:var(--gold);--c2:var(--pink)"><span>Días {{ $range }}</span><i style="width:{{ round($v * 100 / $domMax) }}%"></i><b>{{ $v }}</b></div>
+                        <div class="wp-bar two" style="--c1:var(--gold);--c2:var(--pink)"><span>Días {{ $range }}</span><i style="width:{{ round($v * 100 / $domMax) }}%"></i><b><span>{{ $usd($pulse['day_of_month_cents'][$range]) }}</span> · {{ $countLabel($pulse['day_of_month'][$range]) }}</b></div>
                     @endforeach
                 </div>
                 @if ($pulse['count'])<p>Lo más fuerte: <b class="hot">días {{ $pulse['strongest_days'] }}</b>. Lo más flojo: <b class="cold">días {{ $pulse['weakest_days'] }}</b>.</p>@endif
             </div>
             <div class="wp-card">
                 <h2>¿Qué día de la semana pagan?</h2>
-                <p>Depósitos por día.</p>
+                <p>{{ ucfirst($pulseNoun) }} y monto por día de la semana.</p>
                 <div class="wp-bars">
                     @foreach ($pulse['weekday'] as $d => $v)
-                        <div class="wp-bar"><span>{{ $dias[$d] }}</span><i style="width:{{ round($v * 100 / $wdMax) }}%"></i><b>{{ $v }}</b></div>
+                        <div class="wp-bar two"><span>{{ $dias[$d] }}</span><i style="width:{{ round($v * 100 / $wdMax) }}%"></i><b><span>{{ $usd($pulse['weekday_cents'][$d]) }}</span> · {{ $countLabel($v) }}</b></div>
                     @endforeach
                 </div>
-                @if ($pulse['count'])<p>Día más caliente: <b class="hot">{{ $dias[array_key_first($wdSorted)] }}</b>; más frío: <b class="cold">{{ $dias[array_key_last($wdSorted)] }}</b>. Responde rápido los días calientes.</p>@endif
+                @if ($pulse['count'])<p>Día más caliente: <b class="hot">{{ $dias[array_key_first($wdSorted)] }}</b>; más frío: <b class="cold">{{ $dias[array_key_last($wdSorted)] }}</b>.</p>@endif
             </div>
         </div>
     @elseif ($tab === 'canales')

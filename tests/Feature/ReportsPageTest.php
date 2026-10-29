@@ -40,7 +40,7 @@ class ReportsPageTest extends TestCase
             ->assertSee('Semana del lun. 2 nov. al dom. 8 nov. 2026')
             ->assertSee('De 1 fiesta de este periodo')
             ->assertSee('Pendiente')->assertSee('Faltan los costos de 1 fiesta')
-            ->assertSee('no se restan entre sí')->assertDontSee('Enviado');
+            ->assertDontSee('Enviado');
     }
 
     public function test_panorama_counts_the_crm_party_by_its_date_and_the_deposit_by_its_payment_date(): void
@@ -88,7 +88,7 @@ class ReportsPageTest extends TestCase
         $this->assertSame(['crm'=>1], $r['source_counts']);
         $this->assertSame(12501, $r['ticket']['total_cents']);
         $this->assertStringNotContainsString('client@example.test', json_encode($r));
-        Livewire::test(Reports::class)->assertSee('Reservas · CRM e historial HoneyBook')
+        Livewire::test(Reports::class)->assertSee('Análisis del año')
             ->call('exportAnalytics')->assertFileDownloaded('reservas-2026.csv');
         config(['waoo.sandbox_analytics'=>false]);
         try {
