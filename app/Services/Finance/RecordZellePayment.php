@@ -29,6 +29,7 @@ final class RecordZellePayment
             : 'zelle:day:'.hash('sha256', implode(':', [$eventId, $data['amount_cents'], $data['currency'], $dayStart->toIso8601String()]));
         try {
             return DB::transaction(function () use ($actor, $eventId, $data, $scope, $hash, $key, $identity, $hasReference, $dayStart, $dayEnd) {
+            \App\Services\Scheduling\DailyCapacity::lock();
                 $event = Event::whereKey($eventId)->lockForUpdate()->firstOrFail();
                 \App\Services\Responsibility\RequireCrmResponsibility::check($event);
                 \App\Services\Imports\ImportedAgreement::blockCrmLifecycle($eventId);
@@ -66,6 +67,7 @@ final class RecordZellePayment
                     'amount_cents' => $data['amount_cents'], 'currency' => 'USD', 'received_at' => $receivedAt, 'external_reference' => $data['reference'] ?? null,
                     'external_identity_key' => $identity, 'verified_by' => $actor->id, 'source_type' => 'owner_verified', 'note' => $data['note'] ?? null]);
                 if($quick && $quick->quick_booking_id===null) app(\App\Services\Booking\PromoteQuickPayment::class)->execute($quick,$event,$entry,$actor);
+                \App\Services\Scheduling\DailyCapacity::recordPaidOverflow($event,$revision->id,$entry->id);
                 SupersedeCollections::forEvent($eventId, 'external_payment_received', $actor);
                 $summary = app(FinanceSummary::class)->forEvent($event);
                 if ($summary['credit_cents'] > 0) DB::table('payment_exceptions')->insertOrIgnore(['event_id' => $eventId, 'financial_revision_id' => $revision->id, 'kind' => 'overpayment',

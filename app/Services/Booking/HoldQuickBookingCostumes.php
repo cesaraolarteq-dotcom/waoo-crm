@@ -20,6 +20,7 @@ final class HoldQuickBookingCostumes
         $d['characters'] = collect($d['characters'])->map(fn ($c) => ['id' => (int)$c['id'], 'version' => (int)$c['version']])->sortBy('id')->values()->all();
         $hash = MutationKey::hash($d); $scope = 'owner:'.$actor->id.':event:'.$eventId.':costume-hold';
         return DB::transaction(function () use ($actor, $eventId, $d, $hash, $scope, $key) {
+            \App\Services\Scheduling\DailyCapacity::lock();
             User::whereKey($actor->id)->lockForUpdate()->firstOrFail(); QuickCostumeHolds::actor($actor);
             $e = Event::whereKey($eventId)->lockForUpdate()->firstOrFail(); $q = QuickCostumeHolds::record($e);
             RecordWriteRejected::unless($e->status === 'draft' && $e->version === $d['expected_event_version'] && !$e->starts_at->isPast(), 409, 'La fiesta cambió o ya empezó. Recarga antes de apartar.');
@@ -38,6 +39,7 @@ final class HoldQuickBookingCostumes
                 $history = QuickCostumeHoldEvent::where('quick_costume_hold_id', $h->id)->where('version', $h->version)->firstOrFail();
                 MutationKey::store($scope, $key, $hash, 'quick_costume_hold_event', $history->id); return QuickCostumeHolds::view($e);
             }
+            \App\Services\Scheduling\DailyCapacity::assertRoom($e);
             $h ??= QuickCostumeHold::create(['event_id' => $e->id, 'quick_booking_id' => $q->id, 'receipt_id' => $q->receipt_id,
                 'version' => 0, 'state' => 'not_attempted', 'payload' => [], 'payload_sha256' => str_repeat('0', 64)]);
             $rows = []; $issues = []; $state = $compiled['missing'] ? 'needs_character' : ($slots === [] ? 'not_required' : 'held');

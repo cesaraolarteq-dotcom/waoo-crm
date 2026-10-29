@@ -58,6 +58,7 @@ final class QuickBook
         if (isset($data['lead_id'])) \App\Services\Leads\LeadAccess::owner($actor);
         $scope = "owner:{$actor->id}:quick-book"; $hash = MutationKey::hash($data);
         [$record, $created] = DB::transaction(function () use ($actor, $data, $scope, $hash, $key) {
+            \App\Services\Scheduling\DailyCapacity::lock();
             // Serialize this owner's first request and identical concurrent retries before any new customer/event.
             if (blank($data['deposit']['reference'] ?? null)) User::where('role', 'owner_admin')->orderBy('id')->lockForUpdate()->get();
             else User::whereKey($actor->id)->lockForUpdate()->firstOrFail();
@@ -77,6 +78,7 @@ final class QuickBook
             if (blank($data['deposit']['reference'] ?? null)) app(GuardUnreferencedQuickBooking::class)->check($customer, $data);
             $eventInput = array_diff_key($data, array_flip(['new_customer','customer_update','deposit','portal','lead_id','lead_expected_version']));
             $event = app(SaveEventDraft::class)->execute($actor, [...$eventInput, 'customer_id' => $customer->id]);
+            \App\Services\Scheduling\DailyCapacity::assertRoom($event);
             $finance = app(CreateFinancialRevision::class)->execute($actor, $event->id, ['expected_version' => $event->version], (string) Str::uuid());
             try {
                 $receipt = app(RecordZellePayment::class)->execute($actor, $event->id, [

@@ -29,6 +29,7 @@ final class ProcessQuickPaymentReceipt
         }catch(RecordWriteRejected){$this->problem($r,$intent,'session_binding_mismatch');return;}
         if(($s['payment_status']??null)!=='paid'){
             DB::transaction(function()use($r,$intent,$s){
+            \App\Services\Scheduling\DailyCapacity::lock();
                 Event::whereKey($intent->event_id)->lockForUpdate()->firstOrFail();$i=PaymentIntent::whereKey($intent->id)->lockForUpdate()->firstOrFail();
                 if($i->status!=='paid'){
                     $expired=($s['status']??null)==='expired';$failed=$r->event_type==='checkout.session.async_payment_failed'&&in_array($s['payment_intent']['status']??null,['canceled','requires_payment_method'],true);
@@ -48,6 +49,7 @@ final class ProcessQuickPaymentReceipt
             &&(!$intent->stripe_payment_intent_id||$intent->stripe_payment_intent_id===$pi['id']);
         if(!$valid){$this->problem($r,$intent,'unverified_captured_payment');return;}
         DB::transaction(function()use($a,$r,$intent,$request,$s,$pi,$charge,$t){
+            \App\Services\Scheduling\DailyCapacity::lock();
             $e=Event::whereKey($intent->event_id)->lockForUpdate()->firstOrFail();$b=QuickPaymentProtocol::booking($e->id);$i=PaymentIntent::whereKey($intent->id)->lockForUpdate()->firstOrFail();
             $receipt=WebhookReceipt::whereKey($r->id)->lockForUpdate()->firstOrFail();if($receipt->state==='processed')return;
             QuickPaymentCheckout::verify($request);
@@ -65,6 +67,7 @@ final class ProcessQuickPaymentReceipt
                     'principal_cents'=>$t['principal_cents'],'customer_fee_cents'=>$t['customer_fee_cents'],'gross_cents'=>$t['payable_cents'],'captured_at'=>$charge['created']];
                 QuickPaymentReceipt::create(['quick_payment_booking_id'=>$b->id,'request_id'=>$a->id,'ledger_entry_id'=>$entry->id,'fee_entry_id'=>$fee?->id,'external_identity_key'=>$identity,'webhook_id'=>$r->id,
                     'principal_cents'=>$t['principal_cents'],'customer_fee_cents'=>$t['customer_fee_cents'],'gross_cents'=>$t['payable_cents'],'verification'=>$v,'verification_sha256'=>MutationKey::hash($v)]);
+                \App\Services\Scheduling\DailyCapacity::recordPaidOverflow($e,$b->financial_revision_id,$entry->id);
                 app(PromoteQuickPayment::class)->execute($b,$e,$entry);
                 Audit::recordSystem('payment.quick_stripe_received',$entry,[],['request_id'=>$a->id,'webhook_id'=>$r->id,'principal_cents'=>$t['principal_cents'],'customer_fee_cents'=>$t['customer_fee_cents']]);
                 app(QuickPaymentNotifications::class)->paid($b,$entry);
@@ -77,6 +80,7 @@ final class ProcessQuickPaymentReceipt
     private function problem(WebhookReceipt $r,?PaymentIntent $i,string $reason):void
     {
         DB::transaction(function()use($r,$i,$reason){
+            \App\Services\Scheduling\DailyCapacity::lock();
             if($i){Event::whereKey($i->event_id)->lockForUpdate()->firstOrFail();DB::table('payment_exceptions')->insertOrIgnore(['event_id'=>$i->event_id,'financial_revision_id'=>$i->financial_revision_id,'kind'=>'quick_stripe_reconciliation',
                 'exception_key'=>hash('sha256',$r->id.':'.$reason),'state'=>'open','context'=>json_encode(['webhook_id'=>$r->id,'intent_id'=>$i->id,'reason'=>$reason]),'created_at'=>now(),'updated_at'=>now()]);}
             $r->fill(['state'=>'reconciliation_required','last_error'=>$reason,'processed_at'=>now()])->save();

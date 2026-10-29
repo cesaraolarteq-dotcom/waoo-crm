@@ -20,6 +20,7 @@ final class ConfirmBooking
         $data['costume_outfits'] = CostumeOutfits::normalize($data['costume_outfits'] ?? []);
         try {
             return DB::transaction(function () use ($eventId, $data, $actor) {
+            \App\Services\Scheduling\DailyCapacity::lock();
                 $event = Event::query()->lockForUpdate()->findOrFail($eventId);
                 \App\Services\Booking\QuickStripeLeases::assertNoActive($eventId);
                 $ids = collect($data['resource_ids'])->map(fn($id) => (int) $id)->unique()->sort()->values();
@@ -42,6 +43,7 @@ final class ConfirmBooking
                 if (\App\Services\Scheduling\BookingNoticePolicy::requiresOwnerConfirmationReason($event->starts_at) && empty($data['review']['short_notice_reason'])) {
                     $this->fail('Requiere aprobación por proximidad de fecha.');
                 }
+                \App\Services\Scheduling\DailyCapacity::assertRoom($event);
                 $services = $event->services()->get();
                 // Match SaveResource's character→unit order. Hints never authorize a changed unit.
                 $characterIds = $services->flatMap(fn ($s) => collect($s->requirements_snapshot)->where('kind', 'costume')->pluck('character_id'))
