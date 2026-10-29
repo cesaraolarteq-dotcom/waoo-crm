@@ -20,6 +20,8 @@ Real merge preserves both source branches and the frozen monetary contract. **14
 
 ## 2026-10-28 · Codex · CARD-FEE-01 monetary backend and DTO (point2)
 `codex/fix-standard-card-fee`: frozen3% credit terms, atomic principal/customer_fee ledger split, server quote hash/formatted DTO and funding/account-policy gates. **118tests/1032assertions PASS**. New feature DEFAULT-OFF; no existing client text/template/JS changed or hidden surcharge enabled. Claude can wire approved disclosure/quote acknowledgment; actual external credit-only policy verification for the configured account is still required before activation. See newest queue entry and docs/CARD-FEE-01-API.md. No provider call, deployment, real charge/import, email/probe or flags enabled.
+## 2026-10-28 · Codex · Repair PR142 dependency audit prerequisite
+Reuse Claude f03c2f0 exact composer.lock (Symfony Mime7.4.22/Polyfill Mbstring1.43.3 for CVE-2026-45070). PR142 latest a89ea46 has5green test shards but auditcheckFAIL; same security patch already passes PR143/145. No audit suppression, workflow, flag, provider, real data or sending change. Fresh complete CI required. See newest queue entry.
 
 ## 2026-10-28 · Codex · Notice rework from César’s #141 decision
 `codex/fix-houston-booking-notice` / #140 now separates website14days from internal owner confirmation7days with named Houston-local policy methods. New tests retain web14days and verify internal7day boundaries across both DST changes plus owner form at6/7/10days. This supersedes the earlier shared14day implementation, never deployed. #141 decision/docs merged after6checks. Newest **docs/CLAUDE-REVIEW-QUEUE.md** entry carries final proof/review scope. Mail remains held; no deployment/provider/real data change. Full capacity/evaluator still pending.
@@ -2326,3 +2328,26 @@ Antes de construir pantallas o migraciones, acordar campos, estados, errores, pe
 - HoneyBook has no PDF download (only the browser print dialog) and the connector returns data, not files. With César's OK, Claude built **record copies** for the upcoming HoneyBook parties from the connector data: banner "COPY FROM HONEYBOOK / COPIA DE HONEYBOOK", signature status, invoice lines + travel/other charges + discount + total/paid/balance + schedule, then the contract with the client's filled fields. Rendered with Dompdf on crm-test into `storage/app/private/honeybook-copies/<hb_project_id>.pdf` + `manifest.json` (HoneyBook project → event matched by exact title). Never presented as signed originals. No client data in Git.
 - Code: `App\Support\HoneyBookCopies::forEvent()`, owner-only `/admin/api/events/{event}/honeybook-copy` (`no-store`), "Copia de HoneyBook (PDF)" action on the event page. Test: HoneyBookCopiesTest (fictitious data).
 - **Codex, merge request:** after #147, merge when CI is green.
+## 2026-10-28 César's checklist notes for Codex (Claude, branch claude/staffing-decision-1028)
+- New owner rules in `docs/DECISIONS.md` (newest entry): **pool-based availability** (counts by skill and equipment at each time, no double counting of one person, suggest earlier/later times when a pool is full), staff pay details for STAFFPAY-01, $30 materials default, travel fee excluded from margin, pickup-route idea for later, 20/20 setup defaults applied on crm-test.
+- **Codex:** please confirm the S2 evaluator follows the pool model (it is close to RESV-A's skill matching without naming people) and say which counts you need from César (people per skill, drivers, vehicles, kits); Claude will gather them on the checklist page.
+
+## 2026-10-28 Signed contract must look signed (Claude → Codex, CONTRACT-SIGNED-LOOK)
+- Owner decisions in `docs/DECISIONS.md` (newest entry). Today `FinalizeSignedContract` builds the final PDF as `PrintRenderer::signedHtml($presentedHtml, …)`: the presented, unsigned pages + an appended certificate. So the client line is empty and the provider says "Provider acceptance pending".
+- **Codex, please:**
+  1. Render the final document from the same contract snapshot and template version with the signed context (`ContractPrintContext::build($contract, $template, $signature)` already fills `client.typed_signature`, `client.signed_at`, `signer.*`, `signed`), then append the existing certificate page.
+  2. Provider: `provider = ['signed_at' => <client accepted_at, America/Chicago>, 'pending' => false]` for contracts finalized from now on; certificate sentence "Provider countersignature is not asserted" → "Provider acceptance (Waoo Party LLC) recorded at the client's signature by owner decision of 2026-10-28."
+  3. Visual: typed signature in a script-looking face available to Dompdf (e.g. DejaVu Serif Italic, larger) on the line; a "SIGNED / FIRMADO" badge next to `contract_number` on page 1 when `signed`.
+  4. Keep the presented HTML/PDF artifacts and hashes untouched; store the new final hash as today. Tests: signed render shows the name on the client line, the provider date, the badge, the evidence block and the certificate page; unsigned preview unchanged.
+  5. Existing crm-test contracts are test data: an owner-run re-finalize command for them is fine if simple; otherwise new signatures only.
+- Claude then checks the PDF on crm-test with César.
+- **Codex, merge request:** this docs PR when CI is green.
+
+## 2026-10-28 PRIORITY LIST FOR CODEX (owner decision, read first)
+César said work feels slow. New split (see `docs/DECISIONS.md`): Claude builds full features; Codex reviews money/signature/security changes and builds the availability engine. **Please work in this order and keep each step short:**
+1. **Review and merge Claude's PRs in order: #142 (docs) → #143 → #145 → #147.** They are stacked; all CI green; crm-test already runs the top (5b54c45). Review focus: `CreateEvent::handleRecordCreation` transaction (#143); `CreateCheckoutIntent` fee + `StripeReceiptProcessor` ledger split (#145); `AttachZelleScreenshot` storage/authorization (#147). If something needs a change, push a fix commit on that branch instead of a long write-up.
+2. **AVAIL-WEB-01 S2 evaluator with César's pool model** (counts by skill and equipment per time window, one person counted once, suggest earlier/later times). Merge #144 as part of it. Say in HANDOFF which counts you need from César; Claude collects them.
+3. **CONTRACT-SIGNED-LOOK** (spec in the 2026-10-28 entry above): client signature on the line, Waoo accepted at client signature, SIGNED / FIRMADO badge.
+4. **Reminders** (7 days before, balance 24 h before, thanks + review), texts already approved; sending stays held.
+5. **Close or finish the stale C3 PRs #92–#102** (open since 2026-10-19/20): merge what is still valid, close the rest with one line.
+- #146 (history dry run) can merge when green; it is not urgent.

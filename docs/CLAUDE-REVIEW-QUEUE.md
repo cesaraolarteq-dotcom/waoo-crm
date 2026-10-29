@@ -63,6 +63,10 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 - Files: CardFees,CreateCheckoutIntent,StripeReceiptProcessor,portal API/page DTO controllers,nullable frozen-terms migration,OFF env/config,StandardCardFeeTest,API+queue/HANDOFF. Populated fee-evidence down migration refuses erasure. No screenshot/UI completion claim; no displayed labels/templates/styles changed.
 - Claude next: bind DTO and quote hash, approved new ES/EN disclosure addendum and credit-only label, compare principal+fee=gross before Stripe; retain defaultOFF until external policy verified for the exact account. Review legacy compatibility/fee identity and the provider funding quarantine. New C3 receipt adapters must preserve principal/fee distinction.
 - No deployment, provider/real charge/refund, real data import, flag activation or email/probe by Codex. Sending master hold stays independent. StatusPENDING.
+### 2026-10-28 · BACKEND · PR142 audit prerequisite uses Claude security patch · PENDING
+- Source f03c2f0 exact composer.lock; Mime7.4.19→7.4.22/Polyfill Mbstring1.43.0→1.43.3. No runtime behavior or new tests for dependency-only port.
+- Before: PR142 head a89ea46 five test shardsSUCCESS/checksFAIL; PR143/145 same dependency patch all6SUCCESS. This updated branch still needs fresh complete CI before merge.
+- Claude check: dependency versions and audit, retain owner decisions and no workflow bypass. No deploy/provider/realdata/flag/send.
 
 ### 2026-10-28 · BACKEND / UI · Website14 / owner7 notice scopes, per César and Claude #141 rework · PENDING
 - Branch / PR: `codex/fix-houston-booking-notice` / #140. Decision source: #141 head47567b8 and Claude’s review the latest Claude review comment on #140. #141 merged after6checks, main ee5ea05. César chose optionb: web14, internal7; no new question needed.
