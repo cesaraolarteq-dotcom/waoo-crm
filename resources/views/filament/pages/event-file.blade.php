@@ -24,7 +24,8 @@
         <x-filament::section>
             <x-slot name="heading">Lugar y logística</x-slot>
             <dl class="wfile-dl">
-                <div><dt>Dirección</dt><dd>{{ $e->address ?: 'Pendiente (el cliente la completa)' }}</dd></div>
+                @php [$addr, $byClient] = \App\Support\ClientAddress::forEvent($e); @endphp
+                <div><dt>Dirección</dt><dd>{{ $addr ?? 'Pendiente (el cliente la completa)' }}@if ($byClient) <small>(la escribió el cliente)</small>@endif</dd></div>
                 <div><dt>ZIP</dt><dd>{{ $e->postal_code ?: '—' }}</dd></div>
                 @php
                     $tfe = is_array($e->travel_fee_evidence ?? null) ? $e->travel_fee_evidence : null;

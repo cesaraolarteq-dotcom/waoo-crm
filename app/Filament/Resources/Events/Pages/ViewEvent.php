@@ -194,8 +194,23 @@ class ViewEvent extends Page
     {
         $e = $this->record;
 
+        // Owner 2026-10-29: most used first; everything else in "Más", least used (and cancel) last.
+        $all = collect($this->headerActionList($e))->keyBy(fn (Action $a) => $a->getName());
+        $pick = fn (array $names) => collect($names)->map(fn ($n) => $all->get($n))->filter()->values()->all();
+
         return [
-            Action::make('billingCompany')->label('Facturar a empresa')->visible(fn()=>config('waoo.sandbox_company',false))
+            ...$pick(['confirm', 'money', 'contract', 'edit', 'quoteView']),
+            \Filament\Actions\ActionGroup::make($pick(['smsSend', 'staffInstructions', 'mailPlan', 'costs', 'honeybookCopy', 'cutoverEvidence',
+                'quoteCreate', 'billingCompany', 'billingPreview', 'refund', 'cancelEvent']))
+                ->label('Más')->icon('heroicon-m-chevron-down')->iconPosition(\Filament\Support\Enums\IconPosition::After)->button()->color('gray'),
+        ];
+    }
+
+    /** @return list<Action> every header action of the event file, in no particular order */
+    private function headerActionList(\App\Models\Event $e): array
+    {
+        return [
+            Action::make('billingCompany')->label('Facturar a empresa')->icon('heroicon-o-building-office')->visible(fn()=>config('waoo.sandbox_company',false))
                 ->mountUsing(function(?\Filament\Schemas\Schema $schema) use($e) {
                     $current=\App\Models\Event::findOrFail($e->id);
                     $this->billingPins=['expected_event_version'=>$current->version,'expected_billing_version'=>$current->billing_company_version];
@@ -217,7 +232,7 @@ class ViewEvent extends Page
                     }
                     $this->record->refresh();\Filament\Notifications\Notification::make()->success()->title('Datos de empresa guardados')->send();
                 }),
-            Action::make('billingPreview')->label('Factura: vista previa')->visible(fn()=>config('waoo.sandbox_company',false)&&FinanceGate::enabled()&&\App\Models\FinancialRevision::where('event_id',$e->id)->exists())
+            Action::make('billingPreview')->label('Factura: vista previa')->icon('heroicon-o-document-magnifying-glass')->visible(fn()=>config('waoo.sandbox_company',false)&&FinanceGate::enabled()&&\App\Models\FinancialRevision::where('event_id',$e->id)->exists())
                 ->url(fn()=>url('/admin/api/events/'.$e->id.'/billing-preview.pdf'))->openUrlInNewTab(),
             Action::make('edit')->label('Editar borrador')->color('gray')->visible(fn () => EventResource::canEdit($e))->url(fn () => EventResource::getUrl('edit', ['record' => $e])),
             Action::make('money')->label('Dinero')->icon('heroicon-o-banknotes')->color('gray')->visible(fn () => FinanceGate::enabled())->url(fn () => EventResource::getUrl('money', ['record' => $e])),
@@ -248,7 +263,9 @@ class ViewEvent extends Page
                 ->visible(fn () => \App\Filament\Support\QuoteForm::enabled() && \App\Models\Quote::where('event_id', $e->id)->exists())
                 ->url(fn () => \App\Filament\Pages\QuoteDetail::getUrl(['quote' => \App\Models\Quote::where('event_id', $e->id)->value('id')])),
             Action::make('quoteCreate')->label('Crear cotización')->icon('heroicon-o-document-currency-dollar')->color('gray')
-                ->visible(fn () => \App\Filament\Support\QuoteForm::enabled() && $e->status === 'draft' && ! \App\Models\Quote::where('event_id', $e->id)->exists())
+                // Owner 2026-10-29: a booked party (deposit received or quick booking) never offers a quote.
+                ->visible(fn () => \App\Filament\Support\QuoteForm::enabled() && $e->status === 'draft' && ! \App\Models\Quote::where('event_id', $e->id)->exists()
+                    && ! \App\Models\QuickBookingRecord::where('event_id', $e->id)->exists() && ! \App\Models\LedgerEntry::where('event_id', $e->id)->where('kind', 'receipt')->exists())
                 ->modalHeading('Crear cotización')
                 ->modalDescription(fn () => 'Se toma este borrador tal como lo ves (versión '.$this->displayedVersion.'): paquetes, personajes, transporte y fecha. El total y el depósito los calcula el sistema.')
                 ->fillForm(fn () => ['locale' => $e->customer?->locale ?? 'es'])
@@ -308,7 +325,7 @@ class ViewEvent extends Page
                         ->body(($skipped ? 'No se programó: '.$skipped.'. ' : '').'Programado no es enviado.')->send();
                 }),
             Action::make('contract')->label('Contrato y enlace')->icon('heroicon-o-document-text')->color('gray')->visible(fn () => \App\Filament\Support\DocumentsGate::enabled())->url(fn () => EventResource::getUrl('contract', ['record' => $e])),
-            Action::make('confirm')->label('Apartar recursos y confirmar')->visible(fn () => ConfirmCapacity::canAccessFor($e))->url(fn () => EventResource::getUrl('confirm', ['record' => $e])),
+            Action::make('confirm')->label('Apartar recursos y confirmar')->icon('heroicon-o-check-badge')->color('primary')->visible(fn () => ConfirmCapacity::canAccessFor($e))->url(fn () => EventResource::getUrl('confirm', ['record' => $e])),
             $this->cancelEventAction(),
             $this->refundAction(),
         ];

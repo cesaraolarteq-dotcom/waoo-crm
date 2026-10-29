@@ -136,7 +136,7 @@ final class GoogleCalendar
 
         return [
             'summary' => $e->title,
-            'location' => trim(collect([$e->address, $e->postal_code])->filter()->implode(', ')) ?: null,
+            'location' => trim(collect([\App\Support\ClientAddress::forEvent($e)[0], $e->postal_code])->filter()->implode(', ')) ?: null,
             'description' => implode("\n", $lines),
             'start' => ['dateTime' => CarbonImmutable::instance($e->starts_at)->setTimezone(ChicagoTime::TZ)->toIso8601String(), 'timeZone' => ChicagoTime::TZ],
             'end' => ['dateTime' => CarbonImmutable::instance($e->ends_at)->setTimezone(ChicagoTime::TZ)->toIso8601String(), 'timeZone' => ChicagoTime::TZ],
