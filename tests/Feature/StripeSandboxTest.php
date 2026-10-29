@@ -17,7 +17,7 @@ class StripeSandboxTest extends TestCase
     private User $owner; private Event $event; private FinancialRevision $finance; private FakeStripeGateway $stripe;
     protected function setUp(): void
     {
-        parent::setUp(); config(['waoo.sandbox_finance' => true, 'waoo.stripe_test_secret' => 'sk_test_fixture', 'waoo.stripe_test_account' => 'acct_fixture', 'waoo.stripe_test_webhook_secret' => 'whsec_fixture']); Queue::fake();
+        parent::setUp(); config(['waoo.regular_card_fee_enabled'=>true,'waoo.stripe_credit_only_account'=>'acct_fixture','waoo.sandbox_finance' => true, 'waoo.stripe_test_secret' => 'sk_test_fixture', 'waoo.stripe_test_account' => 'acct_fixture', 'waoo.stripe_test_webhook_secret' => 'whsec_fixture']); Queue::fake();
         $this->stripe = new FakeStripeGateway(); $this->app->instance(StripeGateway::class, $this->stripe);
         $this->owner = User::factory()->create(['role' => 'owner_admin', 'active' => true, 'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'), 'two_factor_confirmed_at' => now()]); $this->actingAs($this->owner);
         $customer = Customer::create(['name' => 'Fixture client', 'locale' => 'es']);
@@ -26,6 +26,12 @@ class StripeSandboxTest extends TestCase
         $start = now()->addDays(20)->startOfHour();
         $this->event = app(SaveEventDraft::class)->execute($this->owner, ['customer_id' => $customer->id, 'title' => 'Fixture party', 'starts_at' => $start->toIso8601String(), 'ends_at' => $start->copy()->addHour()->toIso8601String(), 'timezone' => 'America/Chicago', 'travel_fee_cents' => 5500, 'services' => [['price_version_id' => $price->id]]]);
         $this->finance = app(CreateFinancialRevision::class)->execute($this->owner, $this->event->id, ['expected_version' => 1], (string) Str::uuid());
+    }
+    protected function tearDown(): void
+    {
+        // Only disposable test metadata: populated fee evidence deliberately blocks a destructive down migration.
+        if($this->app && \Illuminate\Support\Facades\Schema::hasColumn('payment_intents','card_fee_policy')) \Illuminate\Support\Facades\DB::table('payment_intents')->update(['card_fee_policy'=>null,'card_fee_terms_sha256'=>null]);
+        parent::tearDown();
     }
     private function create(?string $key = null)
     {
@@ -82,7 +88,7 @@ class StripeSandboxTest extends TestCase
         $result=$this->create();if($policy==='crm')$result->assertCreated();else $result->assertConflict();
         $intent=PaymentIntent::sole();$this->assertSame('paid',$intent->status);
         $this->assertSame('pi_fixture_'.$intent->id,$intent->stripe_payment_intent_id);$this->assertNull($intent->collection_slot);
-        $this->assertDatabaseCount('ledger_entries',1);$this->assertSame('processed',WebhookReceipt::sole()->state);
+        $this->assertDatabaseCount('ledger_entries',2);$this->assertSame('processed',WebhookReceipt::sole()->state);
         (new ExpireTestCheckout($intent->id))->handle();$this->assertSame([],$fake->expired);
     }
     public function test_honeybook_late_verified_money_commits_but_skips_mail_and_flags_reconciliation():void
@@ -91,21 +97,22 @@ class StripeSandboxTest extends TestCase
         $this->event->forceFill(['responsible_system'=>'honeybook'])->save();$this->stripe->paid($intent->stripe_checkout_session_id);
         $this->webhook($intent)->assertOk();app(StripeReceiptProcessor::class)->execute('evt_fixture_one');
         $this->webhook($intent,'evt_second_late')->assertOk();app(StripeReceiptProcessor::class)->execute('evt_second_late');
-        $this->assertDatabaseCount('ledger_entries',1);$this->assertSame('paid',$intent->fresh()->status);
+        $this->assertDatabaseCount('ledger_entries',2);$this->assertSame('paid',$intent->fresh()->status);
         $this->assertDatabaseCount('mail_occurrences',0);$this->assertDatabaseCount('outbound_messages',0);
         $this->assertDatabaseHas('payment_exceptions',['event_id'=>$this->event->id,'kind'=>'responsibility_reconciliation','state'=>'open']);
         $this->assertSame(1,\Illuminate\Support\Facades\DB::table('payment_exceptions')->where('kind','responsibility_reconciliation')->count());
     }
-    public function test_checkout_uses_server_amount_card_allowlist_no_affirm_and_no_fee(): void
+    public function test_checkout_uses_server_amount_card_allowlist_no_affirm_and_the_3_percent_fee(): void
     {
         $key = (string) Str::uuid();
-        $response = $this->create($key)->assertCreated()->assertJsonPath('payable_cents', 22750)->assertJsonPath('customer_fee_cents', 0)->assertJsonPath('status', 'open');
+        $response = $this->create($key)->assertCreated()->assertJsonPath('principal_cents', 22750)->assertJsonPath('customer_fee_cents', 683)->assertJsonPath('payable_cents', 23433)->assertJsonPath('status', 'open');
         $this->create($key)->assertCreated()->assertJsonPath('id', $response->json('id'));
         $this->create()->assertConflict();
         $parameters = $this->stripe->calls[0]['parameters'];
         $this->assertSame(['card'], $parameters['payment_method_types']);
         $this->assertArrayNotHasKey('automatic_payment_methods', $parameters);
         $this->assertSame(22750, $parameters['line_items'][0]['price_data']['unit_amount']);
+        $this->assertSame([683, 'Card processing fee (3%)'], [$parameters['line_items'][1]['price_data']['unit_amount'], $parameters['line_items'][1]['price_data']['product_data']['name']]);
         $this->assertCount(1, $this->stripe->calls);
         $this->assertDatabaseCount('ledger_entries', 0);
     }
@@ -117,9 +124,11 @@ class StripeSandboxTest extends TestCase
         $this->assertStringNotContainsString('fake-data-that-must-not-be-stored', Crypt::decryptString(WebhookReceipt::first()->encrypted_payload));
         app(StripeReceiptProcessor::class)->execute('evt_fixture_one');
         $this->webhook($intent, 'evt_fixture_second')->assertOk(); app(StripeReceiptProcessor::class)->execute('evt_fixture_second');
-        $this->assertDatabaseCount('ledger_entries', 1);
-        $this->assertSame(22750, LedgerEntry::first()->amount_cents);
-        $this->assertNull(LedgerEntry::first()->verified_by);
+        // The principal pays the balance; the 3% is its own line and never counts as payment toward it.
+        $this->assertDatabaseCount('ledger_entries', 2);
+        $this->assertSame(22750, LedgerEntry::where('kind', 'receipt')->sole()->amount_cents);
+        $this->assertSame(683, LedgerEntry::where('kind', 'customer_fee')->sole()->amount_cents);
+        $this->assertNull(LedgerEntry::where('kind', 'receipt')->sole()->verified_by);
         $this->assertSame('paid', $intent->fresh()->status);
         $this->assertDatabaseCount('resource_reservations', 0);
         $this->getJson('/admin/api/events/'.$this->event->id.'/finance')->assertOk()->assertJsonPath('balance_cents', 22750);
@@ -132,7 +141,7 @@ class StripeSandboxTest extends TestCase
         $this->stripe->paid($intent->stripe_checkout_session_id);
         $this->webhook($intent)->assertOk(); app(StripeReceiptProcessor::class)->execute('evt_fixture_one');
         $this->webhook($intent, 'evt_fixture_second')->assertOk(); app(StripeReceiptProcessor::class)->execute('evt_fixture_second');
-        $entry = LedgerEntry::sole(); $occurrence = \App\Models\MailOccurrence::sole();
+        $entry = LedgerEntry::where('kind', 'receipt')->sole(); $occurrence = \App\Models\MailOccurrence::sole();
         $this->assertSame('verified_stripe_webhook', $entry->source_type);
         $this->assertSame('payment_received', $occurrence->key);
         $this->assertSame($entry->id, $occurrence->locator['ledger_entry_id']);
@@ -165,7 +174,7 @@ class StripeSandboxTest extends TestCase
         $this->stripe->paid($intent->stripe_checkout_session_id);
         $this->webhook($intent, 'evt_async_success', ['type' => 'checkout.session.async_payment_succeeded'])->assertOk(); app(StripeReceiptProcessor::class)->execute('evt_async_success');
         $this->webhook($intent, 'evt_old_expired', ['type' => 'checkout.session.expired'])->assertOk(); app(StripeReceiptProcessor::class)->execute('evt_old_expired');
-        $this->assertSame('paid', $intent->fresh()->status); $this->assertDatabaseCount('ledger_entries', 1);
+        $this->assertSame('paid', $intent->fresh()->status); $this->assertDatabaseCount('ledger_entries', 2);
     }
     public function test_zelle_supersedes_checkout_but_late_provider_money_is_still_recorded_as_credit(): void
     {
@@ -174,7 +183,7 @@ class StripeSandboxTest extends TestCase
             'financial_revision_id' => $this->finance->id, 'amount_cents' => 45500, 'currency' => 'USD', 'reference' => 'FIXTURE-ZELLE-FULL', 'received_at' => now()->subHour()->toIso8601String(), 'verified_received' => true])->assertCreated();
         $this->assertSame('superseded', $intent->fresh()->status); Queue::assertPushed(ExpireTestCheckout::class);
         $this->stripe->paid($intent->stripe_checkout_session_id); $this->webhook($intent)->assertOk(); app(StripeReceiptProcessor::class)->execute('evt_fixture_one');
-        $this->assertDatabaseCount('ledger_entries', 2);
+        $this->assertDatabaseCount('ledger_entries', 3);
         $this->getJson('/admin/api/events/'.$this->event->id.'/finance')->assertOk()->assertJsonPath('credit_cents', 22750)->assertJsonPath('balance_cents', 0);
         $this->assertDatabaseHas('payment_exceptions', ['kind' => 'overpayment', 'state' => 'open']);
     }
@@ -209,7 +218,7 @@ class StripeSandboxTest extends TestCase
             function () { app(StripeReceiptProcessor::class)->execute('evt_fixture_one'); return 'stripe'; },
         ]);
         $this->assertSame(['zelle','stripe'], $results);
-        $this->assertDatabaseCount('ledger_entries', 2);
+        $this->assertDatabaseCount('ledger_entries', 3);
         $this->getJson('/admin/api/events/'.$eventId.'/finance')->assertOk()->assertJsonPath('credit_cents', 22750);
         $this->assertDatabaseHas('payment_exceptions', ['kind' => 'overpayment', 'state' => 'open']);
     }
@@ -227,7 +236,7 @@ class StripeSandboxTest extends TestCase
         $this->postJson('/admin/api/stripe-webhooks/evt_fixture_one/retry', ['reason' => 'Fixture connection recovered; recheck authoritative provider.'])->assertOk();
         $this->stripe->failRetrieve = false; $job->handle(app(StripeReceiptProcessor::class)); $job->handle(app(StripeReceiptProcessor::class));
         $this->assertSame('processed', WebhookReceipt::first()->state);
-        $this->assertDatabaseCount('ledger_entries', 1);
+        $this->assertDatabaseCount('ledger_entries', 2);
     }
 
 }
