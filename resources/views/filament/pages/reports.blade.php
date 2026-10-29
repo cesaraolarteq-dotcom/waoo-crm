@@ -19,15 +19,15 @@
                     <div class="wp-card">
                         <span class="wp-pill">Cumpleaños · próximos 60 días</span>
                         <div class="wp-big">{{ count($bd['soon']) }}</div>
-                        <p>De {{ $bd['count'] }} clientes con fecha confiable. Es solo una lista: no se envía nada.</p>
+                        <p>De {{ $bd['count'] }} clientes que celebraron un cumpleaños con Waoo. Es solo una lista: no se envía nada.</p>
                         <ul class="wp-list">
-                            @forelse (array_slice($bd['soon'], 0, 8) as $i)
+                            @forelse (array_slice($bd['soon'], 0, 12) as $i)
                                 <li>{{ $i['name'] }} <span>{{ $day($i['next']) }}{{ $i['rebooked'] ? ' · ya reservó otra' : '' }}</span></li>
                             @empty
                                 <li>Nadie cumple en los próximos 60 días.</li>
                             @endforelse
                         </ul>
-                        @if (count($bd['items']) > 8)
+                        @if (count($bd['items']) > 12)
                             <details>
                                 <summary class="wp-note" style="cursor:pointer">Ver los {{ count($bd['items']) }}</summary>
                                 <ul class="wp-list" style="margin-top:8px">
@@ -79,25 +79,31 @@
                 </div>
             </div>
         </div>
-        <div class="wp-kpis" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
-            <div class="wp-kpi" style="--glow:var(--teal)"><div class="l">Dinero que entró</div><div class="v up">{{ $this->money($ops['cash']['net_received_cents']) }}</div>
-                <div class="d">Por la fecha del pago.@if ($ops['cash']['refunded_cents']) Reembolsos: {{ $this->money($ops['cash']['refunded_cents']) }}.@endif</div></div>
-            <div class="wp-kpi" style="--glow:var(--gold)"><div class="l">Saldos por cobrar</div><div class="v">{{ $this->money($sch['pending_balance_cents']) }}</div>
-                <div class="d">De {{ $sch['event_count'] }} {{ $sch['event_count'] === 1 ? 'fiesta' : 'fiestas' }} de este periodo.@if ($sch['pending_balance_unknown_events']) {{ $sch['pending_balance_unknown_events'] }} sin montos.@endif</div></div>
-            <div class="wp-kpi" style="--glow:var(--pink)"><div class="l">Costo del staff</div><div class="v">{{ $this->money($staff($sch['actual'])) }}</div>
-                <div class="d">@if ($sch['actual']['pending_events'])Faltan los costos de {{ $sch['actual']['pending_events'] }} {{ $sch['actual']['pending_events'] === 1 ? 'fiesta' : 'fiestas' }}. @endif Estimado: {{ $this->money($staff($sch['estimate'])) }}.</div></div>
-            <div class="wp-kpi" style="--glow:var(--purple)"><div class="l">Reservas nuevas</div><div class="v">{{ $bk['booking_count'] }}</div>
-                <div class="d">@if ($line = \App\Filament\Support\ReportsSource::packagesLine($bk)){{ $line }}.@else Confirmadas en este periodo.@endif</div></div>
+        @php
+            $cf = $this->closeFigures($ops['period']); $ck = $cf['kpis'];
+            $wf = $wk ? $this->closeFigures(['starts_on' => $wk['window']['starts_on'], 'ends_before' => \Carbon\CarbonImmutable::parse($wk['window']['starts_on'], 'America/Chicago')->addDays(2)->toDateString()]) : null;
+        @endphp
+        <div class="wp-kpis">
+            <div class="wp-kpi" style="--glow:var(--purple)"><div class="l">Fiestas</div><div class="v">{{ $ck['parties']['value'] }}</div>
+                <div class="d">Por la fecha de la fiesta.</div></div>
+            <div class="wp-kpi" style="--glow:var(--gold)"><div class="l">Ventas</div><div class="v">{{ $this->money($ck['sales']['value']) }}</div>
+                <div class="d">@if ($ck['sales']['unknown']){{ $ck['sales']['unknown'] }} sin monto.@else Total de esas fiestas.@endif</div></div>
+            <div class="wp-kpi" style="--glow:var(--teal)"><div class="l">Dinero que entró</div><div class="v up">{{ $this->money($ck['received']['value']) }}</div>
+                <div class="d">{{ $cf['pulse_all']['count'] }} {{ $cf['pulse_all']['count'] === 1 ? 'pago' : 'pagos' }} por la fecha del pago: {{ $cf['pulse']['count'] }} {{ $cf['pulse']['count'] === 1 ? 'depósito nuevo' : 'depósitos nuevos' }}.</div></div>
+            <div class="wp-kpi" style="--glow:var(--pink)"><div class="l">Saldos por cobrar</div><div class="v">{{ $this->money($ck['balance']['value']) }}</div>
+                <div class="d">De las fiestas de este periodo.@if ($ck['balance']['unknown']) {{ $ck['balance']['unknown'] }} sin saldo conocido.@endif</div></div>
+            <div class="wp-kpi" style="--glow:var(--navy)"><div class="l">Costo del staff</div><div class="v">{{ $this->money($staff($sch['actual'])) }}</div>
+                <div class="d">Solo fiestas con costos registrados en el CRM.</div></div>
         </div>
-        @if ($wk)
+        @if ($wf)
             @php($ws = \Carbon\CarbonImmutable::parse($wk['window']['starts_on'], 'America/Chicago')->locale('es'))
             <div class="wp-card">
-                <span class="wp-pill">Este fin de semana · {{ $ws->translatedFormat('D j M') }} y {{ $ws->addDay()->translatedFormat('D j M') }}</span>
+                <span class="wp-pill">Próximo fin de semana · {{ $ws->translatedFormat('D j M') }} y {{ $ws->addDay()->translatedFormat('D j M') }}</span>
                 <div class="wp-sats">
-                    <div class="wp-sat"><b>{{ $wk['event_count'] }}</b>fiestas confirmadas @if ($wk['draft_event_count'])<br>+{{ $wk['draft_event_count'] }} sin confirmar @endif</div>
-                    <div class="wp-sat"><b>{{ $this->money($wk['pending_balance_cents']) }}</b>saldos por cobrar</div>
+                    <div class="wp-sat"><b>{{ $wf['kpis']['parties']['value'] }}</b>fiestas</div>
+                    <div class="wp-sat"><b>{{ $this->money($wf['kpis']['sales']['value']) }}</b>en ventas</div>
+                    <div class="wp-sat"><b>{{ $this->money($wf['kpis']['balance']['value']) }}</b>saldos por cobrar</div>
                     <div class="wp-sat"><b>{{ $this->money($staff($wk['estimate'])) }}</b>staff estimado</div>
-                    <div class="wp-sat"><b>{{ $this->money($staff($wk['actual'])) }}</b>staff real</div>
                 </div>
             </div>
         @endif

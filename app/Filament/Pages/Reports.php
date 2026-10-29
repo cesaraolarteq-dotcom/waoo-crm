@@ -213,6 +213,14 @@ class Reports extends Page
         return ['count' => $draft['candidate_count'], 'soon' => array_values(array_filter($items, fn ($i) => $i['days'] <= 60)), 'items' => $items];
     }
 
+    /** Owner 2026-10-29: the week/month close uses the same rows as Panorama (HoneyBook parties included). */
+    public function closeFigures(array $period): array
+    {
+        $from = $period['starts_on']; $to = CarbonImmutable::parse($period['ends_before'], 'America/Chicago')->subDay()->toDateString();
+
+        return app(\App\Services\Reports\ReadPanorama::class)->execute(Filament::auth()->user(), $from, $to);
+    }
+
     public function analytics(): ?array
     {
         if (!config('waoo.sandbox_analytics', false)) return null;

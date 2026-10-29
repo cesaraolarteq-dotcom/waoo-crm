@@ -11,6 +11,18 @@ use Illuminate\Support\Facades\DB;
 
 final class ReadBirthdayCampaignDraft
 {
+    /** Owner 2026-10-29: Star, Magic, Music and Games (2.0), Waoo, pool party and foam cannon parties were birthday parties. */
+    public const BIRTHDAY_PACKAGES = '/\\b(star|magic)\\b|music\\s*(and|&|y)\\s*games|m[uú]sica\\s*y\\s*juegos|waoo|pool|piscina|foam|espuma/iu';
+
+    /** HoneyBook typed most projects "other"; their packages say which ones were birthdays. */
+    public static function eventType(?string $type, mixed $lineItems): ?string
+    {
+        if ($type !== 'other') return $type;
+        $text = implode(' | ', array_map(fn ($x) => is_scalar($x) ? (string) $x : (string) json_encode($x), (array) $lineItems));
+
+        return preg_match(self::BIRTHDAY_PACKAGES, $text) ? 'birthday' : 'other';
+    }
+
     public function execute(User $actor, array $input): array
     {
         HistoryAccess::actor($actor);
@@ -26,7 +38,7 @@ final class ReadBirthdayCampaignDraft
                 $f = $p['facts'];
                 if (($f['record_kind'] ?? '') === 'prospect') continue;
                 $row = ['key' => 'history:'.$event->id, 'customer_id' => $event->customer_id,
-                    'status' => $f['status'], 'event_type' => $f['event_type'], 'date' => $f['source_date']];
+                    'status' => $f['status'], 'event_type' => self::eventType($f['event_type'], $p['source']['line_items'] ?? []), 'date' => $f['source_date']];
                 $anchors[] = $row; $later[] = $row;
             }
             foreach ($events as $event) {

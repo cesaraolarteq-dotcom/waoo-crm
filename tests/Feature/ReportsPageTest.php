@@ -38,8 +38,8 @@ class ReportsPageTest extends TestCase
         $this->assertTrue(ReportsSource::live());
         Livewire::test(Reports::class)->assertDontSee('Datos de ejemplo')
             ->assertSee('Semana del lun. 2 nov. al dom. 8 nov. 2026')
-            ->assertSee('De 1 fiesta de este periodo')
-            ->assertSee('Pendiente')->assertSee('Faltan los costos de 1 fiesta')
+            ->assertSee('De las fiestas de este periodo')
+            ->assertSee('Pendiente')->assertSee('Solo fiestas con costos registrados')
             ->assertDontSee('Enviado');
     }
 

@@ -73,6 +73,7 @@ final class Panorama
                 'sales' => $this->pair($this->sum($now), $this->sum($before), $this->unknown($now)),
                 'received' => $this->pair(array_sum(array_column($paid, 'amount_cents')), array_sum(array_column($paidBefore, 'amount_cents'))),
                 'ticket' => $this->pair($this->average($now), $this->average($before)),
+                'balance' => ['value' => array_sum(array_map(fn ($p) => $p['balance_cents'] ?? 0, $now)), 'unknown' => count(array_filter($now, fn ($p) => ($p['balance_cents'] ?? null) === null))],
                 'leads' => $this->pair(count(array_filter($leads, fn ($l) => $in($l['date'], $from, $to))), $comparable ? count(array_filter($leads, fn ($l) => $in($l['date'], $prevFrom, $prevTo))) : 0),
             ],
             'sales' => $this->timeline($now, $from, $to, $before),
