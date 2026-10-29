@@ -61,7 +61,7 @@ class LeadScreensTest extends TestCase
 
         $page = Livewire::test(Leads::class)->mountAction('update', ['id' => $lead->id]);
         app(UpdateLead::class)->execute(User::sole(), $lead->id, ['expected_version' => 2, 'owner_note' => 'Maybeli la llamó.']);
-        $page->setActionData(['status' => 'lost', 'owner_note' => 'No contestó.'])->callMountedAction()->assertNotified('No se guardó');
+        $page->setActionData(['status' => 'lost', 'lost_reason' => 'no_reply', 'owner_note' => 'No contestó.'])->callMountedAction()->assertNotified('No se guardó');
         $this->assertSame(['contacted', 'Maybeli la llamó.'], [$lead->fresh()->status, $lead->fresh()->owner_note]);
     }
 
