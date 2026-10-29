@@ -4,8 +4,8 @@ namespace App\Services\Availability;
 use Carbon\CarbonImmutable;
 
 /**
- * Day signal for the website. Demand (the next 8 weekend dates) plus one capacity fact: a day that already has the
- * owner's 10-party maximum is full (owner 2026-10-29). Free times come only from CheckWebsiteCandidates. No writes/cache.
+ * Day signal for the website: demand only (next 8 weekend dates), no database or provider reads (contract S1).
+ * Free times come only from CheckWebsiteCandidates. No writes/cache.
  */
 final class ReadWebsiteDay
 {
@@ -14,10 +14,8 @@ final class ReadWebsiteDay
         $now=CarbonImmutable::instance(now())->setTimezone('America/Chicago');
         $date=CarbonImmutable::createFromFormat('!Y-m-d',$input['date'],'America/Chicago');
         $demand=$this->demand($input['date'],$now);
-        $full=false;
-        try{ $full=(new WebsiteCapacity($date,[]))->partiesOn($input['date'])>=WebsiteCapacity::MAX_PER_DAY; }catch(\Throwable){ $full=false; }
         return ['schema_version'=>1,'scope'=>'day_signal','date'=>$input['date'],'timezone'=>'America/Chicago',
-            'level'=>$full?'full':($demand==='weekend'?'filling':'unknown'),'capacity_state'=>$full?'unavailable':'unknown','demand'=>$demand,
+            'level'=>$demand==='weekend'?'filling':'unknown','capacity_state'=>'unknown','demand'=>$demand,
             'requires_owner_approval'=>\App\Services\Scheduling\BookingNoticePolicy::requiresWebsiteApproval($date->setTime(8,0), $now),
             'slots'=>[],'alts'=>[],'checked_at'=>$now->toIso8601String(),'expires_at'=>$now->toIso8601String(),'reservation_created'=>false];
     }

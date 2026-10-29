@@ -50,6 +50,8 @@ final class CheckWebsiteCandidates
 
         // Requirements of the package + the chosen characters; an incomplete choice is never filled in for the client.
         [$requirements, $complete] = $this->requirements($variant, $input['characters']);
+        // A specific wardrobe/outfit is not matched unit by unit here yet: the owner confirms it (Codex review 2026-10-29).
+        $outfit = collect($input['characters'])->contains(fn ($c) => ($c['outfit'] ?? null) !== null);
         $timing = $variant->duration_minutes && $variant->setup_minutes !== null && $variant->breakdown_minutes !== null;
         $parsed = [];
         foreach (array_values($input['candidate_starts']) as $i => $c) {
@@ -62,7 +64,7 @@ final class CheckWebsiteCandidates
             if ($start <= $now) throw ValidationException::withMessages(['candidate_starts.'.$i.'.local' => 'past']);
             $parsed[$i] = $start;
         }
-        if (! $complete || ! $timing) {
+        if (! $complete || ! $timing || $outfit) {
             return [...$base, 'level' => 'unknown', 'capacity_state' => 'unknown', 'requires_owner_approval' => false, 'slots' => [],
                 'unresolved' => array_map(fn ($i) => ['candidate' => $i, 'code' => $complete ? 'review_required' : 'incomplete_request'], array_keys($parsed))];
         }
@@ -72,7 +74,7 @@ final class CheckWebsiteCandidates
         $needs = WebsiteCapacity::needs($requirements);
         $slots = []; $unresolved = [];
         foreach ($parsed as $i => $start) {
-            if (! $capacity->googleOk()) { $unresolved[] = ['candidate' => $i, 'code' => 'evaluation_unavailable']; continue; }
+            if (! $capacity->calendarOk()) { $unresolved[] = ['candidate' => $i, 'code' => 'evaluation_unavailable']; continue; }
             $end = $start->addMinutes($variant->duration_minutes);
             $state = $capacity->check($start->subMinutes($variant->setup_minutes), $end->addMinutes($variant->breakdown_minutes + WebsiteCapacity::GAP_MINUTES), $date, $needs);
             if ($state === 'unavailable') { $unresolved[] = ['candidate' => $i, 'code' => 'unavailable']; continue; }
