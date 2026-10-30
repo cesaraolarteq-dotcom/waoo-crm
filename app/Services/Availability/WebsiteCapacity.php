@@ -208,12 +208,21 @@ final class WebsiteCapacity
         return array_values(array_keys(array_filter($this->units, fn ($u) => $u->kind === 'staff' && in_array($skill, (array) $u->skills, true))));
     }
 
-    /** Recorded [costume unit, staff] combinations for these costume units. @return list<array{0:int,1:int}> */
+    /** Allowed [costume unit, staff] combinations for these costume units (App\Support\CostumeWearers). @return list<array{0:int,1:int}> */
     private function wearers(array $costumeIds): array
     {
-        $this->compat ??= \Illuminate\Support\Facades\DB::table('costume_compatibilities')->get(['costume_id', 'staff_id'])
-            ->map(fn ($r) => [(int) $r->costume_id, (int) $r->staff_id])->all();
-        return array_values(array_filter($this->compat, fn ($c) => in_array($c[0], $costumeIds, true) && isset($this->units[$c[1]])));
+        $this->compat ??= \Illuminate\Support\Facades\DB::table('costume_compatibilities')->get(['costume_id', 'staff_id'])->all();
+        $chars = \App\Models\Character::whereIn('id', array_map(fn ($id) => (int) $this->units[$id]->character_id, $costumeIds))->get()->keyBy('id');
+        $staff = array_filter($this->units, fn ($u) => $u->kind === 'staff');
+        $pairs = [];
+        foreach ($costumeIds as $cid) {
+            $costume = $this->units[$cid] ?? null;
+            if (! $costume) continue;
+            foreach ($staff as $sid => $person) {
+                if (\App\Support\CostumeWearers::allows($costume, $person, $chars->get((int) $costume->character_id), $this->compat)) $pairs[] = [$cid, $sid];
+            }
+        }
+        return $pairs;
     }
 
     private function solve(array $parties, bool $withPeople): string
@@ -256,8 +265,8 @@ final class WebsiteCapacity
                 foreach ($slots as $ci => $slot) {
                     if ($slot['kind'] !== 'costume') continue;
                     $wi = null;
-                    foreach ($slots as $si => $s2) if ($s2['kind'] === 'staff' && ! isset($used[$si]) && in_array($this->skillOf($p, $s2), ['performer'], true)) { $wi = $si; break; }
-                    if ($wi === null) { $slots[] = ['key' => 'wearer'.$ci, 'kind' => 'staff', 'eligible' => $this->staffWith('performer')]; $wi = array_key_last($slots); }
+                    foreach ($slots as $si => $s2) if ($s2['kind'] === 'staff' && ! isset($used[$si]) && in_array($this->skillOf($p, $s2), ['performer', 'performer_wig'], true)) { $wi = $si; break; }
+                    if ($wi === null) { $slots[] = ['key' => 'wearer'.$ci, 'kind' => 'staff', 'eligible' => array_values(array_unique([...$this->staffWith('performer'), ...$this->staffWith('performer_wig')]))]; $wi = array_key_last($slots); }
                     $used[$wi] = true;
                     $slots[$ci]['pair'] = $slots[$wi]['key'];
                     $slots[$ci]['pairs'] = $this->wearers($slot['eligible']);

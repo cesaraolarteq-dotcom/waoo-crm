@@ -125,8 +125,8 @@ final class ConfirmBooking
                         $slots[$performerSlot]['costume_unit_id'] = $costume->id;
                     }
                 }
-                $assignment=app(MatchEventResources::class)->execute($slots, $resources->all(), function ($slot, $r) use ($compatibilities, $characters, $costumeChoices) {
-                    return $r->kind === $slot['kind'] && ($slot['kind'] !== 'costume' || CostumeOutfits::fits($slot, $r, $characters, $costumeChoices)) && (empty($slot['skill']) || in_array($slot['skill'], $r->skills ?? [], true)) && (empty($slot['character_id']) || (int) $r->character_id === (int) $slot['character_id']) && (empty($slot['equipment_kind']) || $r->equipment_kind === $slot['equipment_kind']) && (empty($slot['costume_unit_id']) || $compatibilities->contains(fn($c) => (int) $c->staff_id === $r->id && (int) $c->costume_id === $slot['costume_unit_id']));
+                $assignment=app(MatchEventResources::class)->execute($slots, $resources->all(), function ($slot, $r) use ($compatibilities, $characters, $costumeChoices, $costumes) {
+                    return $r->kind === $slot['kind'] && ($slot['kind'] !== 'costume' || CostumeOutfits::fits($slot, $r, $characters, $costumeChoices)) && (empty($slot['skill']) || in_array($slot['skill'], $r->skills ?? [], true)) && (empty($slot['character_id']) || (int) $r->character_id === (int) $slot['character_id']) && (empty($slot['equipment_kind']) || $r->equipment_kind === $slot['equipment_kind']) && (empty($slot['costume_unit_id']) || \App\Support\CostumeWearers::allows($costumes->firstWhere('id', $slot['costume_unit_id']), $r, $characters->get((int) $costumes->firstWhere('id', $slot['costume_unit_id'])?->character_id), $compatibilities));
                 });
                 $assignedStaff=collect(array_keys($assignment))->map(fn($i)=>$resources[$i])->where('kind','staff');
                 $driverIds=$assignedStaff->filter(fn($r)=>MatchEventResources::driver($r))->pluck('id')->values()->all();

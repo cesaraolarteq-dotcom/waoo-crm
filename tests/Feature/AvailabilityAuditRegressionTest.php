@@ -93,4 +93,35 @@ class AvailabilityAuditRegressionTest extends TestCase
         $this->assertNotContains('available', array_column($result['slots'], 'state'),
             'A is already assigned to the first party; hypothetical reassignment to B must not free A for the candidate.');
     }
+
+    public function test_head_and_wig_style_decide_who_can_wear_without_a_list_and_a_recorded_list_wins(): void
+    {
+        // César 2026-10-30: head → anyone with Personaje; wig → only Personaje con peluca; a recorded list (sizes) wins.
+        $one = [['character_id' => $this->character->id, 'quantity' => 1, 'outfit' => null]];
+        $this->character->forceFill(['costume_style' => 'head'])->save();
+        $this->assertSame('available', $this->evaluate($this->variant, $one)['slots'][0]['state']);
+        $this->character->forceFill(['costume_style' => 'wig'])->save();
+        $this->assertSame('owner_approval_required', $this->evaluate($this->variant, $one)['slots'][0]['state'], 'nobody has Personaje con peluca');
+        Resource::where('code', 'AUDIT-STAFF-1')->update(['skills' => json_encode(['performer', 'performer_wig', 'driver'])]);
+        $this->assertSame('available', $this->evaluate($this->variant, $one)['slots'][0]['state']);
+        // A recorded list for every unit names only staff 2, who cannot play wig characters: the list wins.
+        foreach (Resource::where('kind', 'costume')->pluck('id') as $cid)
+            DB::table('costume_compatibilities')->insert(['staff_id' => Resource::where('code', 'AUDIT-STAFF-2')->value('id'), 'costume_id' => $cid]);
+        $this->assertSame('available', $this->evaluate($this->variant, $one)['slots'][0]['state'], 'recorded list allows staff 2');
+        $this->character->forceFill(['costume_style' => null])->save();
+        $this->assertSame('available', $this->evaluate($this->variant, $one)['slots'][0]['state'], 'a recorded list needs no style');
+        DB::table('costume_compatibilities')->delete();
+        $this->assertSame('owner_approval_required', $this->evaluate($this->variant, $one)['slots'][0]['state'], 'no list and no style: owner');
+    }
+
+    public function test_character_styles_command_marks_head_and_wig(): void
+    {
+        $elsa = Character::create(['name' => 'Elsa', 'active' => true]);
+        $file = tempnam(sys_get_temp_dir(), 'styles');
+        file_put_contents($file, json_encode(['Elsa' => 'peluca', 'Audit Character' => 'cabeza']));
+        $this->artisan('waoo:character-styles', ['file' => $file])->assertSuccessful();
+        $this->assertSame(['wig', 'head'], [$elsa->fresh()->costume_style, $this->character->fresh()->costume_style]);
+        file_put_contents($file, json_encode(['Nadie' => 'peluca']));
+        $this->artisan('waoo:character-styles', ['file' => $file])->assertFailed();
+    }
 }
