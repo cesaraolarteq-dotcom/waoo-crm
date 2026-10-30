@@ -72,8 +72,12 @@ final class CheckWebsiteCandidates
         $google = self::busy($day->subDay(), $day->addDays(2));
         $capacity = new WebsiteCapacity($day, $google);
         // Real drive between neighbouring parties when the client's ZIP is known (tests bind 'waoo.availability.drive').
+        $routes = new \App\Services\Routing\DriveMinutes();
+        $point = isset($input['destination']['latitude'], $input['destination']['longitude'])
+            ? $input['destination']['latitude'].','.$input['destination']['longitude'] : null;
         $capacity->withTravel($input['destination']['postal_code'] ?? null,
-            app()->bound('waoo.availability.drive') ? app('waoo.availability.drive') : [new \App\Services\Routing\DriveMinutes(), 'between']);
+            app()->bound('waoo.availability.drive') ? app('waoo.availability.drive')
+                : fn ($a, $b, $departure, $fromAddress, $toAddress) => $routes->betweenAddresses($fromAddress, $toAddress, $departure), $point);
         $slots = []; $unresolved = [];
         foreach ($parsed as $i => $start) {
             if (! $capacity->calendarOk()) { $unresolved[] = ['candidate' => $i, 'code' => 'evaluation_unavailable']; continue; }

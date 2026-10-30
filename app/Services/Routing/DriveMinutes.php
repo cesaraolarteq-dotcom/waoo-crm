@@ -39,4 +39,30 @@ final class DriveMinutes
         Cache::put($key, $minutes, now()->addDays(7));
         return $minutes;
     }
+    /** Operational route proof needs the actual locations, not ZIP centroids. No network while DB locks are held. */
+    public function betweenAddresses(?string $from, ?string $to, CarbonImmutable $departAt): ?int
+    {
+        if (blank($from) || blank($to) || strlen($from) > 500 || strlen($to) > 500
+            || \Illuminate\Support\Facades\DB::transactionLevel() > 0 || $departAt <= CarbonImmutable::now()->addMinute()) return null;
+        $departure = $departAt->utc()->format('Y-m-d\TH:i:s\Z');
+        $key = 'waoo.drive.exact.'.hash('sha256', json_encode([$from, $to, $departure]));
+        $cached = Cache::get($key);
+        if (is_int($cached) && $cached >= 0 && $cached <= 1440) return $cached;
+        if ($this->fetches >= $this->maxFetches || blank(config('waoo.google_routes_key'))) return null;
+        $this->fetches++;
+        try {
+            $r = Http::connectTimeout($this->timeout)->timeout($this->timeout)->withoutRedirecting()->withHeaders([
+                'X-Goog-Api-Key' => config('waoo.google_routes_key'), 'X-Goog-FieldMask' => 'routes.duration'])
+                ->post('https://routes.googleapis.com/directions/v2:computeRoutes', [
+                    'origin' => ['address' => $from], 'destination' => ['address' => $to], 'travelMode' => 'DRIVE',
+                    'routingPreference' => 'TRAFFIC_AWARE', 'departureTime' => $departure]);
+            $duration = $r->successful() ? $r->json('routes.0.duration') : null;
+            if (!is_string($duration) || !preg_match('/^(\d+(?:\.\d+)?)s$/D', $duration, $m)) return null;
+            $minutes = (int) ceil((float) $m[1] / 60);
+            if ($minutes > 1440) return null;
+            Cache::put($key, $minutes, now()->addMinutes(10));
+            return $minutes;
+        } catch (\Throwable) { return null; }
+    }
+
 }

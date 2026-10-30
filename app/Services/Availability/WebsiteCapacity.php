@@ -16,8 +16,8 @@ use Carbon\CarbonImmutable;
  * - not proven = owner approval, never instant: unknown setup/breakdown, a calendar entry the CRM cannot identify, a
  *   neighbouring party whose drive is not known (César: real drive + 30 min, until travel evidence is wired), solver budget.
  * Commitments: non-cancelled CRM parties that are booked or hold anything (confirmed, HoneyBook import, quick booking,
- * receipt, unit reservation, active Stripe lease or costume hold) and HoneyBook calendar entries (one-to-one matched with
- * imported parties by start and end; unmatched entries count as an extra party needing one team member who drives).
+ * receipt, unit reservation, active Stripe lease or costume hold) and HoneyBook calendar entries. Matching start/end
+ * times cannot establish identity; unreconciled entries remain uncertain and consume capacity.
  */
 final class WebsiteCapacity
 {
@@ -30,8 +30,6 @@ final class WebsiteCapacity
     public const TRAVEL_REVIEW_MINUTES = 60;
     /** Conservative busy time around a party whose setup/breakdown is unknown, or a calendar-only entry. */
     public const UNKNOWN_MINUTES = 60;
-    /** Neighbouring parties further than this from the candidate are never reached by a shared person or costume in time anyway. */
-    public const MAX_DRIVE_MINUTES = 120;
 
     /** @var list<array{key:string,from:CarbonImmutable,to:CarbonImmutable,day:?string,uncertain:bool,requirements:array,pinned:array<int,int>}> */
     private array $parties = [];
@@ -39,6 +37,7 @@ final class WebsiteCapacity
     private array $units = [];
     private array $blocks = [];
     private ?string $zip = null;
+    private ?string $location = null;
     private ?array $compat = null;
     private bool $unfilled = false;
     /** @var (callable(string, string, CarbonImmutable): ?int)|null */
@@ -82,7 +81,7 @@ final class WebsiteCapacity
                 'day' => $start->setTimezone('America/Chicago')->toDateString(), 'uncertain' => ! $known || $broken,
                 'requirements' => $requirementsOf,
                 'pinned' => array_values(array_filter($reserved, fn ($id) => isset($this->units[$id]))),
-                'zip' => preg_match('/^\d{5}$/D', (string) $e->postal_code) ? $e->postal_code : null];
+                'address' => filled($e->address) ? $e->address : null, 'zip' => preg_match('/^\d{5}$/D', (string) $e->postal_code) ? $e->postal_code : null];
             if ($isImport) $imported[] = count($this->parties) - 1;
         }
         // Active blocks (maintenance, day off): the unit is busy for the whole block. Overlapping blocks on one unit stay one unit.
@@ -90,7 +89,7 @@ final class WebsiteCapacity
             ->where('starts_at', '<', $to->utc())->where('ends_at', '>', $from->utc())->get() as $b) {
             $this->blocks[] = ['resource_id' => $b->resource_id, 'starts_at' => CarbonImmutable::instance($b->starts_at)->getTimestamp(), 'ends_at' => CarbonImmutable::instance($b->ends_at)->getTimestamp()];
         }
-        // HoneyBook calendar: each entry is absorbed by at most one imported party with the same start and end; others stay.
+        // A similar timestamp is only a review hint, never proof that two records describe the same party.
         $free = $imported; $n = 0;
         foreach ($calendar ?? [] as [$cFrom, $cTo]) {
             $match = null;
@@ -98,7 +97,11 @@ final class WebsiteCapacity
                 $p = $this->parties[$idx];
                 if (abs($p['start']->diffInMinutes($cFrom, true)) <= 5 && abs($p['end']->diffInMinutes($cTo, true)) <= 15) { $match = $i; break; }
             }
-            if ($match !== null) { unset($free[$match]); continue; }
+            if ($match !== null) {
+                // Matching times cannot establish identity: retain uncertainty until reconciled by a stable source ID.
+                $this->parties[$free[$match]]['uncertain'] = true;
+                unset($free[$match]);
+            }
             $this->parties[] = ['key' => 'cal'.(++$n), 'start' => $cFrom, 'end' => $cTo, 'from' => $cFrom->subMinutes(self::UNKNOWN_MINUTES),
                 'to' => $cTo->addMinutes(self::UNKNOWN_MINUTES + self::GAP_MINUTES), 'day' => $cFrom->setTimezone('America/Chicago')->toDateString(),
                 'uncertain' => true, 'requirements' => [['kind' => 'staff', 'quantity' => 1, 'skill' => '*']], 'pinned' => [], 'zip' => null];
@@ -106,8 +109,9 @@ final class WebsiteCapacity
     }
 
     /** The candidate's ZIP and a drive-time source: neighbouring parties then get their real drive instead of the fixed review window. */
-    public function withTravel(?string $zip, callable $drive): self
+    public function withTravel(?string $zip, callable $drive, ?string $location = null): self
     {
+        $this->location = $location;
         $this->zip = preg_match('/^\d{5}$/D', (string) $zip) ? $zip : null; $this->drive = $drive;
         return $this;
     }
@@ -138,36 +142,42 @@ final class WebsiteCapacity
         // César 2026-10-29: 5 or more characters always need the owner, whatever the inventory (Codex audit R2).
         $characters = array_sum(array_map(fn ($r) => ($r['kind'] ?? null) === 'costume' ? max(1, (int) ($r['quantity'] ?? 1)) : 0, $requirements));
         if ($characters >= self::OWNER_CHARACTERS) return 'owner_approval_required';
-        if (! $this->travelFits($from, $to, $requirements, $state)) return 'owner_approval_required';
+        if (! $this->travelFits($from, $to, $requirements)) return 'owner_approval_required';
         $near = array_filter($this->parties, fn ($p) => $p['uncertain'] && $p['from'] < $to->addMinutes(self::TRAVEL_REVIEW_MINUTES) && $p['to'] > $from->subMinutes(self::TRAVEL_REVIEW_MINUTES));
         return $near ? 'owner_approval_required' : $state;
     }
 
     /**
-     * César: between two parties that share a person, costume or equipment, the real drive + 30 minutes. With the candidate's
-     * ZIP, every known neighbour within MAX_DRIVE_MINUTES keeps its own busy time stretched by the drive toward the candidate;
-     * the answer must not change. Any drive not known (no ZIP, Google slow or failing) falls back to the fixed 60-minute
-     * window on both sides: if that changes the answer, the owner checks.
+     * A shared resource needs route evidence from breakdown-end to setup-start, with 30 extra minutes. An unknown
+     * or insufficient route prohibits sharing that resource; a separate complete team can still prove feasibility.
+     * No 60/120-minute window, ZIP-centroid estimate or independent role-by-role answer proves a transfer.
      */
-    private function travelFits(CarbonImmutable $from, CarbonImmutable $to, array $requirements, string $state): bool
+    private function travelFits(CarbonImmutable $from, CarbonImmutable $to, array $requirements): bool
     {
-        if ($this->zip !== null && $this->drive !== null) {
-            $saved = $this->parties; $known = true;
-            foreach ($saved as $i => $p) {
-                if ($p['uncertain']) continue; // calendar-only or unknown timing: owner approval below
-                $before = $p['to'] <= $from && $p['to'] > $from->subMinutes(self::MAX_DRIVE_MINUTES);
-                $after = $p['from'] >= $to && $p['from'] < $to->addMinutes(self::MAX_DRIVE_MINUTES);
-                if (! $before && ! $after) continue;
-                $m = $p['zip'] === null ? null : ($this->drive)($before ? $p['zip'] : $this->zip, $before ? $this->zip : $p['zip'], $before ? $p['to'] : $to);
-                if (! is_int($m) || $m < 0 || $m > self::MAX_DRIVE_MINUTES) { $known = false; break; }
-                if ($before) $this->parties[$i]['to'] = $p['to']->addMinutes($m); else $this->parties[$i]['from'] = $p['from']->subMinutes($m);
+        $candidate = ['key' => 'candidate', 'from' => $from, 'to' => $to, 'requirements' => $requirements, 'pinned' => [],
+            'uncertain' => false, 'zip' => $this->zip, 'address' => $this->location];
+        $parties = [...$this->parties, $candidate];
+        $separations = [];
+        foreach ($parties as $i => $a) {
+            foreach (array_slice($parties, $i + 1) as $b) {
+                if ($a['to'] > $b['from'] && $b['to'] > $a['from']) continue;
+                [$before, $after] = $a['to'] <= $b['from'] ? [$a, $b] : [$b, $a];
+                $minutes = null;
+                if (!$before['uncertain'] && !$after['uncertain'] && $this->drive !== null
+                    && (($before['zip'] !== null && $after['zip'] !== null)
+                        || (filled($before['address'] ?? null) && filled($after['address'] ?? null)))) {
+                    $departure = $before['to']->subMinutes(self::GAP_MINUTES);
+                    try { $minutes = ($this->drive)($before['zip'], $after['zip'], $departure, $before['address'] ?? null, $after['address'] ?? null); }
+                    catch (\Throwable) { $minutes = null; }
+                }
+                $fits = is_int($minutes) && $minutes >= 0 && $minutes <= 1440
+                    && $before['to']->addMinutes($minutes) <= $after['from'];
+                if (!$fits) $separations[] = ['first' => $before['key'], 'second' => $after['key'], 'resources' => array_keys($this->units)];
             }
-            if ($known) {
-                try { return $this->evaluate($from, $to, $requirements) === $state; } finally { $this->parties = $saved; }
-            }
-            $this->parties = $saved;
         }
-        return $this->evaluate($from->subMinutes(self::TRAVEL_REVIEW_MINUTES), $to->addMinutes(self::TRAVEL_REVIEW_MINUTES), $requirements) === $state;
+        // One allocation must cover every party and transfer, including the existing unassigned teams.
+        $this->unfilled = false;
+        return $this->solve($parties, true, $separations) === 'feasible' && !$this->unfilled;
     }
 
     private function evaluate(CarbonImmutable $from, CarbonImmutable $to, array $requirements): string
@@ -225,11 +235,11 @@ final class WebsiteCapacity
         return $pairs;
     }
 
-    private function solve(array $parties, bool $withPeople): string
+    private function solve(array $parties, bool $withPeople, array $separations = []): string
     {
         $jobs = []; $blocks = $this->blocks;
         foreach ($parties as $p) {
-            $slots = []; $pinned = $p['pinned']; $k = 0;
+            $slots = []; $pinned = $p['pinned']; $required = []; $k = 0;
             foreach ($p['requirements'] as $req) {
                 $kind = $req['kind'] ?? null;
                 if ($kind === 'staff' && ! $withPeople) continue;
@@ -245,17 +255,14 @@ final class WebsiteCapacity
                 if ($kind === 'vehicle' && $eligible === [] && $p['key'] === 'candidate'
                     && array_filter($this->units, fn ($u) => $u->kind === 'vehicle' && ! $u->seats)) return 'unknown';
                 for ($q = 0; $q < max(1, (int) ($req['quantity'] ?? 1)); $q++) {
-                    // A reserved unit of this pool is pinned to this party: it covers this slot and nothing else.
-                    $pin = null;
-                    foreach ($pinned as $i => $id) if (in_array($id, $eligible, true)) { $pin = $id; unset($pinned[$i]); break; }
-                    if ($eligible === [] && $pin === null) {
+                    if ($eligible === []) {
                         // The candidate needs something nobody has: impossible. An already booked party is a fact: its role is
                         // skipped here, and the party is marked uncertain so nearby starts go to the owner (Codex audit S5).
                         if ($p['key'] === 'candidate') return 'infeasible';
                         $this->unfilled = true;
                         continue;
                     }
-                    $slots[] = ['key' => $kind.($k++), 'kind' => $kind, 'eligible' => $pin !== null ? [$pin] : $eligible, 'skill' => $req['skill'] ?? null];
+                    $slots[] = ['key' => $kind.($k++), 'kind' => $kind, 'eligible' => $eligible, 'skill' => $req['skill'] ?? null];
                 }
             }
             // Who can wear the costume (Codex audit R4, like ConfirmBooking): each costume of the candidate is worn by one of its
@@ -272,15 +279,26 @@ final class WebsiteCapacity
                     $slots[$ci]['pairs'] = $this->wearers($slot['eligible']);
                 }
             }
-            // Reserved units that match no requirement are still busy for this party.
-            foreach ($pinned as $id) $blocks[] = ['resource_id' => $id, 'starts_at' => $p['from']->getTimestamp(), 'ends_at' => $p['to']->getTimestamp()];
+            foreach ($pinned as $i => $id) {
+                foreach ($slots as $slot) {
+                    if (in_array($id, $slot['eligible'], true)) { $required[] = $id; unset($pinned[$i]); break; }
+                }
+            }
+            // A held unit absent from the recipe is still part of the committed team, including its transfer.
+            foreach ($pinned as $id) {
+                $kind = $this->units[$id]->kind;
+                if ($kind === 'staff' && ! $withPeople) continue;
+                $slots[] = ['key' => 'pinned'.$id, 'kind' => $kind, 'eligible' => [$id]];
+            }
             $hasStaff = (bool) array_filter($slots, fn ($s) => $s['kind'] === 'staff');
             if ($slots === []) continue;
             $jobs[] = ['key' => $p['key'], 'starts_at' => $p['from']->getTimestamp(), 'ends_at' => $p['to']->getTimestamp(), 'slots' => $slots,
-                'minimum_drivers' => $withPeople && $hasStaff ? 1 : 0, 'people' => $withPeople];
+                'minimum_drivers' => $withPeople && $hasStaff ? 1 : 0, 'people' => $withPeople, 'required' => $required];
         }
         if ($jobs === []) return 'feasible';
-        $r = (new PoolCapacitySolver())->solve($this->resources, $jobs, $blocks);
+        $jobKeys = array_column($jobs, 'key');
+        $separations = array_values(array_filter($separations, fn ($edge) => in_array($edge['first'], $jobKeys, true) && in_array($edge['second'], $jobKeys, true)));
+        $r = (new PoolCapacitySolver())->solve($this->resources, $jobs, $blocks, $separations);
         return in_array($r['state'], ['feasible', 'infeasible'], true) ? $r['state'] : 'unknown';
     }
 }

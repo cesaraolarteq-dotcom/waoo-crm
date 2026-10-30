@@ -6,11 +6,11 @@ final class PoolCapacitySolver
 {
     public function __construct(private readonly int $maxStates = 50000, private readonly int $maxMilliseconds = 200) {}
 
-    public function solve(array $resources, array $jobs, array $blocks = []): array
+    public function solve(array $resources, array $jobs, array $blocks = [], array $separations = []): array
     {
         $unknown = fn (string $reason) => ['scope' => 'resource_pools', 'state' => 'unknown', 'reason' => $reason, 'witness' => []];
         if ($this->maxStates < 1 || $this->maxStates > 100000 || $this->maxMilliseconds < 1 || $this->maxMilliseconds > 1000
-            || count($resources) > 256 || count($jobs) > 64 || count($blocks) > 4096) return $unknown('input_limit');
+            || count($resources) > 256 || count($jobs) > 64 || count($blocks) > 4096 || count($separations) > 4096) return $unknown('input_limit');
         $deadline = hrtime(true) + $this->maxMilliseconds * 1000000;
         $units = []; $tasks = []; $groups = []; $busy = [];
         foreach ($resources as $r) {
@@ -67,12 +67,30 @@ final class PoolCapacitySolver
             // 'people' => false checks physical units only (vehicles without drivers or seat counts).
             $people = $j['people'] ?? true;
             if (!is_bool($people)) return $unknown('incomplete_job');
-            $groups[$j['key']] = ['indices' => $indices, 'staff' => $staff, 'vehicles' => $people ? $vehicles : 0, 'drivers' => $people ? max($j['minimum_drivers'], $vehicles) : $j['minimum_drivers']];
+            $required = $j['required'] ?? [];
+            if (!is_array($required) || !array_is_list($required) || count($required) > 256) return $unknown('invalid_required');
+            foreach ($required as $id) if (!is_int($id) || !isset($units[$id])) return $unknown('invalid_required');
+            $groups[$j['key']] = ['required' => array_unique($required), 'indices' => $indices, 'staff' => $staff, 'vehicles' => $people ? $vehicles : 0, 'drivers' => $people ? max($j['minimum_drivers'], $vehicles) : $j['minimum_drivers']];
+        }
+        $separate = [];
+        foreach ($separations as $edge) {
+            if (!is_array($edge) || !is_string($edge['first'] ?? null) || !is_string($edge['second'] ?? null)
+                || $edge['first'] === $edge['second'] || !isset($groups[$edge['first']], $groups[$edge['second']])
+                || !is_array($edge['resources'] ?? null) || !array_is_list($edge['resources']) || count($edge['resources']) > 256) return $unknown('invalid_separation');
+            foreach ($edge['resources'] as $id) {
+                if (!is_int($id) || !isset($units[$id])) return $unknown('invalid_separation');
+                $separate[$edge['first']][$edge['second']][$id] = true;
+                $separate[$edge['second']][$edge['first']][$id] = true;
+            }
         }
         if ($tasks === []) return $unknown('empty_demand');
         $chosen = []; $states = 0; $exhausted = false; $checks = 0;
-        $free = static function (array $task, int $id) use (&$busy, &$checks, &$exhausted, $deadline): bool {
+        $free = static function (array $task, int $id) use (&$busy, &$checks, &$exhausted, &$chosen, $tasks, $separate, $deadline): bool {
             if ($exhausted) return false;
+            foreach ($chosen as $index => $otherId) {
+                if (++$checks > 500000 || (($checks & 127) === 0 && hrtime(true) >= $deadline)) { $exhausted = true; return false; }
+                if ($otherId === $id && isset($separate[$task['job']][$tasks[$index]['job']][$id])) return false;
+            }
             foreach ($busy[$id] ?? [] as [$start, $end]) {
                 if (++$checks > 500000 || (($checks & 127) === 0 && hrtime(true) >= $deadline)) { $exhausted = true; return false; }
                 if ($start < $task['end'] && $end > $task['start']) return false;
@@ -106,6 +124,13 @@ final class PoolCapacitySolver
                             if ($r['kind'] === 'vehicle') $remainingVehicles[$id] = $r['seats'];
                         }
                     }
+                }
+                foreach ($group['required'] as $requiredId) {
+                    $possible = false;
+                    foreach ($group['indices'] as $i) {
+                        if (isset($chosen[$i]) ? $chosen[$i] === $requiredId : (in_array($requiredId, $tasks[$i]['eligible'], true) && $free($tasks[$i], $requiredId))) { $possible = true; break; }
+                    }
+                    if (!$possible) return false;
                 }
                 if ($drivers + count($remainingDrivers) < $group['drivers']) return false;
                 rsort($remainingVehicles);
