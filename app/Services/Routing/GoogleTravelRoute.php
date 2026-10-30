@@ -11,7 +11,7 @@ final class GoogleTravelRoute
         try {
             $response = Http::connectTimeout(3)->timeout(10)->withHeaders(['X-Goog-Api-Key' => config('waoo.google_routes_key'),
                 'X-Goog-FieldMask' => 'routes.distanceMeters,routes.duration,routes.travelAdvisory.tollInfo'])->post('https://routes.googleapis.com/directions/v2:computeRoutes', [
-                'origin' => ['address' => $cfg['origin_zip'].', TX, USA'], 'destination' => ['address' => $address], 'travelMode' => 'DRIVE',
+                'origin' => ['address' => !empty($cfg['origin_address']) ? $cfg['origin_address'].', USA' : $cfg['origin_zip'].', TX, USA'], 'destination' => ['address' => $address], 'travelMode' => 'DRIVE',
                 'routingPreference' => 'TRAFFIC_UNAWARE', 'computeAlternativeRoutes' => true, 'extraComputations' => ['TOLLS'],
                 'routeModifiers' => ['avoidTolls' => false, 'tollPasses' => [$cfg['toll_pass']]], 'units' => 'IMPERIAL']);
             if (!$response->successful()) return null;

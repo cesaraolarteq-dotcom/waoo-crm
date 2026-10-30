@@ -128,6 +128,16 @@ class SameVisitContractTest extends TestCase
         $this->get('/portal/api/contracts/'.$contract->id.'/pdf?artifact=final')->assertOk()->assertHeader('Content-Type', 'application/pdf');
         $this->assertNotNull($contract->fresh()->final_pdf_sha256);
         $this->assertSame($contract->presented_pdf_sha256, $contract->fresh()->presented_pdf_sha256);
+        // Owner 2026-10-28: the final copy looks signed (name + date on the client line, Waoo Party accepted, stamp); the record page stays.
+        $presented = app(\App\Services\Documents\ArtifactStore::class)->read($contract->presented_html_path, $contract->presented_html_sha256);
+        $this->assertStringContainsString('Awaiting signature', $presented);
+        $signed = app(\App\Services\Documents\PrintRenderer::class)->signedHtml($presented, $evidence);
+        $this->assertStringContainsString('SIGNED / FIRMADO', $signed);
+        $this->assertStringContainsString('<div class="line">'.e($evidence->signer_name).'</div><span class="muted">Signed ', $signed);
+        $this->assertStringContainsString('accepted when the client signed', $signed);
+        $this->assertStringNotContainsString('Provider acceptance pending', $signed);
+        $this->assertStringNotContainsString('Awaiting signature', $signed);
+        $this->assertStringContainsString('Electronic Signature Record', $signed);
         $this->getJson('/portal/api/event')->assertOk()->assertJsonPath('details.reviewed', false);
         $this->get('/portal?lang=es')->assertOk()->assertSee('Saldo pendiente')->assertSee('Pagar el saldo')->assertSee('Ver mi contrato firmado')->assertSee('Descargar (PDF)')->assertDontSee('id="sign-form"', false);
         $this->submit(extra: ['expected_revision' => 1])->assertConflict();

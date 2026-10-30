@@ -30,6 +30,7 @@ final class CreateUnpaidQuickBooking
             'travel_fee_cents'=>'required|integer|min:0|max:100000000','travel_fee_quote_id'=>'nullable|integer|min:1',
             'travel_fee_override_note'=>'nullable|string|min:10|max:1000','services'=>'required|array|min:1|max:10',
             'portal'=>'sometimes|array:expires_at','lead_id'=>'sometimes|integer|min:1','lead_expected_version'=>'required_with:lead_id|integer|min:1',
+            'promo_code'=>'sometimes|nullable|string|max:20',
         ]);
         if (isset($data['customer_update'])) RecordWriteRejected::unless(isset($data['customer_id']),422,'Selecciona el cliente antes de actualizarlo.');
         $scope = "owner:{$actor->id}:quick-book"; $hash = MutationKey::hash($data);
@@ -51,8 +52,9 @@ final class CreateUnpaidQuickBooking
             $customer = isset($data['customer_id']) ? Customer::whereKey($data['customer_id'])->lockForUpdate()->firstOrFail()
                 : app(SaveQuickBookingCustomer::class)->execute($actor,$data['new_customer']);
             if(isset($data['customer_update'])) $customer=app(SaveQuickBookingCustomer::class)->execute($actor,$data['customer_update'],$customer->id);
-            $eventInput=array_diff_key($data,array_flip(['deposit_received','deposit','new_customer','customer_update','portal','lead_id','lead_expected_version']));
+            $eventInput=array_diff_key($data,array_flip(['deposit_received','deposit','new_customer','customer_update','portal','lead_id','lead_expected_version','promo_code']));
             $e=app(SaveEventDraft::class)->execute($actor,[...$eventInput,'customer_id'=>$customer->id]);
+            if(filled($data['promo_code']??null)) \App\Services\Campaigns\AnniversaryCampaign::redeem($actor,$data['promo_code'],$e);
             $f=app(CreateFinancialRevision::class)->execute($actor,$e->id,['expected_version'=>$e->version],(string)Str::uuid());
             $view=app(PrepareQuickStripeLease::class)->execute($actor,$e->id,['expected_event_version'=>$e->version,'financial_revision_id'=>$f->id],(string)Str::uuid());
             $lease=QuickStripeLease::whereKey($view['lease_id'])->lockForUpdate()->firstOrFail();

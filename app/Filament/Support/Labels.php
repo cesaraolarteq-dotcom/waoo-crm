@@ -20,9 +20,9 @@ final class Labels
     public const VARIANT_STATUS_COLOR = ['draft' => 'warning', 'active' => 'success', 'retired' => 'gray'];
 
     // capacity_reserved means staff/costumes/equipment are held after a verified deposit. It is not "contract signed" or "paid".
-    public const EVENT_STATUS = ['draft' => 'Borrador', 'capacity_reserved' => 'Recursos apartados'];
+    public const EVENT_STATUS = ['draft' => 'Borrador', 'capacity_reserved' => 'Recursos apartados', 'cancelled' => 'Cancelada'];
 
-    public const EVENT_STATUS_COLOR = ['draft' => 'gray', 'capacity_reserved' => 'info'];
+    public const EVENT_STATUS_COLOR = ['draft' => 'gray', 'capacity_reserved' => 'info', 'cancelled' => 'danger'];
 
     public const SKILL = [
         'performer' => 'Personaje', 'entertainer' => 'Animador/a', 'host' => 'Recreador/a', 'dj' => 'DJ',
@@ -58,6 +58,14 @@ final class Labels
         $m = $minutes % 60;
 
         return trim(($h ? "{$h} h " : '').($m ? "{$m} min" : ''));
+    }
+
+    /** US numbers as (346) 555-0118; anything else as typed. */
+    public static function phone(?string $phone): string
+    {
+        $d = preg_replace('/\D/', '', (string) $phone);
+        if (strlen($d) === 11 && $d[0] === '1') $d = substr($d, 1);
+        return strlen($d) === 10 ? sprintf('(%s) %s-%s', substr($d, 0, 3), substr($d, 3, 3), substr($d, 6)) : (string) $phone;
     }
 
     public static function when(?CarbonInterface $at): string

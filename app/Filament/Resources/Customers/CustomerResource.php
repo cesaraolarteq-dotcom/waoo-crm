@@ -70,8 +70,9 @@ class CustomerResource extends Resource
             ->modifyQueryUsing(fn ($query) => $query->select('customers.*')
                 ->selectSub(fn ($s) => $s->from('events')->selectRaw('count(*)')->whereColumn('events.customer_id', 'customers.id'), 'events_total'))
             ->columns([
-                TextColumn::make('name')->label('Nombre')->searchable()->sortable()->weight('bold'),
-                TextColumn::make('phone')->label('Teléfono')->searchable()->placeholder('—'),
+                TextColumn::make('name')->label('Nombre')->searchable()->sortable()->weight('bold')->placeholder('Cliente sin nombre'),
+                TextColumn::make('phone')->label('Teléfono')->searchable()->placeholder('—')
+                    ->formatStateUsing(fn (?string $state) => \App\Filament\Support\Labels::phone($state)),
                 TextColumn::make('email')->label('Correo')->searchable()->placeholder('—')->toggleable(),
                 TextColumn::make('locale')->label('Idioma')->badge()
                     ->formatStateUsing(fn (string $state) => $state === 'en' ? 'Inglés' : 'Español')

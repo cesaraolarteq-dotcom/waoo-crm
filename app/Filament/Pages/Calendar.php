@@ -96,7 +96,7 @@ class Calendar extends Page
     public function eventsByDay(): Collection
     {
         [$from, $to] = $this->range();
-        $events = Event::query()->with(['customer', 'services', 'reservations'])
+        $events = Event::query()->with(['customer', 'services', 'reservations'])->where('status', '!=', 'cancelled')
             ->where('starts_at', '<', $to->addDay()->utc())->where('ends_at', '>', $from->utc())
             ->orderBy('starts_at')->get();
         $names = \App\Models\ServiceVariant::query()->whereIn('id', $events->flatMap(fn ($e) => $e->services->pluck('service_variant_id')))->pluck('name', 'id');

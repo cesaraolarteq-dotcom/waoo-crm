@@ -43,17 +43,29 @@ class Dashboard extends BaseDashboard
             return null; // the report screen shows the reason; Inicio stays usable
         }
 
-        return ['sample' => $r['sample'], 'label' => \App\Filament\Support\ReportsSource::periodLabel($r['operations']['period']),
-            'cash' => Labels::money($r['operations']['cash']['net_received_cents'], 'Pendiente'), 'bookings' => $r['bookings']['booking_count'],
+        // Owner 2026-10-29: money and new bookings come from the same rows as Panorama (HoneyBook parties included).
+        $period = $r['operations']['period'];
+        try {
+            $pan = app(\App\Services\Reports\ReadPanorama::class)->execute(\Filament\Facades\Filament::auth()->user(), $period['starts_on'],
+                \Carbon\CarbonImmutable::parse($period['ends_before'], 'America/Chicago')->subDay()->toDateString());
+            $weekend = $r['upcoming_weekend'] ? app(\App\Services\Reports\ReadPanorama::class)->execute(\Filament\Facades\Filament::auth()->user(), $r['upcoming_weekend']['window']['starts_on'],
+                \Carbon\CarbonImmutable::parse($r['upcoming_weekend']['window']['starts_on'], 'America/Chicago')->addDay()->toDateString())['kpis']['parties']['value'] : null;
+        } catch (\Throwable) {
+            $pan = null; $weekend = $r['upcoming_weekend']['event_count'] ?? null;
+        }
+
+        return ['sample' => $r['sample'], 'label' => \App\Filament\Support\ReportsSource::periodLabel($period),
+            'cash' => Labels::money($pan ? $pan['kpis']['received']['value'] : $r['operations']['cash']['net_received_cents'], 'Pendiente'),
+            'bookings' => $pan ? $pan['pulse']['count'] : $r['bookings']['booking_count'],
             'packages' => \App\Filament\Support\ReportsSource::packagesLine($r['bookings']),
-            'weekend' => $r['upcoming_weekend'] ? $r['upcoming_weekend']['event_count'] : null,
+            'weekend' => $weekend,
             'weekend_staff' => $r['upcoming_weekend'] ? Labels::money($r['upcoming_weekend']['estimate']['staff_cost_cents'], 'Pendiente') : null];
     }
 
     public function attention(): array
     {
         $now = now();
-        $upcoming = Event::query()->where('ends_at', '>=', $now)->with('customer')->orderBy('starts_at');
+        $upcoming = Event::query()->where('ends_at', '>=', $now)->where('status', '!=', 'cancelled')->with('customer')->orderBy('starts_at');
         $cards = [];
         $link = fn (Event $e) => ['label' => $e->title.' · '.Labels::when($e->starts_at), 'url' => $this->eventUrl($e)];
 
@@ -80,9 +92,14 @@ class Dashboard extends BaseDashboard
             $review=\App\Models\QuickPaymentBooking::where('state','review_required')->orderBy('id')->limit(20)->get();
             $cards[]=['tone'=>'bad','title'=>'Apartados vencidos con Zelle pendiente','text'=>'La fecha y el traje siguen apartados. Revisa el aviso antes de liberar.', 'items'=>$review->map(fn($b)=>$link(Event::findOrFail($b->event_id)))->all()];
         }
-        $soon = (clone $upcoming)->where('status', 'draft')->where('starts_at', '<', $now->copy()->addDays(7))->get();
+        // Owner 2026-10-29: HoneyBook parties keep their staff in HoneyBook until the switch; they are listed apart, not as a red alert.
+        $honeybook = \App\Models\ImportedProjectLink::query()->select('event_id');
+        $soon = (clone $upcoming)->where('status', 'draft')->whereNotIn('id', $honeybook)->where('starts_at', '<', $now->copy()->addDays(7))->get();
         $cards[] = ['tone' => 'bad', 'title' => 'Fiestas en menos de 7 días sin staff apartado',
             'text' => 'Asigna staff y trajes; por la fecha necesitan tu aprobación.', 'items' => $soon->map($link)->all()];
+        $hbSoon = (clone $upcoming)->whereIn('id', \App\Models\ImportedProjectLink::query()->select('event_id'))->where('starts_at', '<', $now->copy()->addDays(7))->get();
+        $cards[] = ['tone' => 'info', 'title' => 'Fiestas de HoneyBook en los próximos 7 días',
+            'text' => 'Su staff y sus cobros se manejan en HoneyBook hasta el cambio. Aquí solo para que las tengas presentes.', 'items' => $hbSoon->map($link)->all()];
 
         $noTravel = (clone $upcoming)->whereNull('travel_fee_cents')->get();
         $cards[] = ['tone' => 'warn', 'title' => 'Costo de transporte pendiente',
@@ -150,7 +167,7 @@ class Dashboard extends BaseDashboard
         $from = $this->now()->startOfDay();
         $to = $this->now()->endOfWeek(CarbonImmutable::SUNDAY);
 
-        return Event::query()->with('customer')->where('starts_at', '>=', $from->utc())->where('starts_at', '<=', $to->utc())->orderBy('starts_at')->get()
+        return Event::query()->with('customer')->where('status', '!=', 'cancelled')->where('starts_at', '>=', $from->utc())->where('starts_at', '<=', $to->utc())->orderBy('starts_at')->get()
             ->map(fn ($e) => (object) ['title' => $e->title, 'client' => $e->customer?->name, 'when' => Labels::when($e->starts_at),
                 'status' => Labels::label(Labels::EVENT_STATUS, $e->status), 'color' => Labels::EVENT_STATUS_COLOR[$e->status] ?? 'gray',
                 'travel' => Labels::money($e->travel_fee_cents), 'url' => $this->eventUrl($e)]);

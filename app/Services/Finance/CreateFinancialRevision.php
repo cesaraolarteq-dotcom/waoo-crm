@@ -52,9 +52,12 @@ final class CreateFinancialRevision
                 $lines[] = ['event_service_id' => $service->id, 'service_variant_id' => $service->service_variant_id, 'price_version_id' => $price->id, 'amount_cents' => $amount, 'name' => $variant->name, 'long_description' => $variant->long_description, 'duration_minutes' => $service->duration_minutes, 'requirements_snapshot' => $service->requirements_snapshot, 'characters' => $characterSnapshot, ...\App\Models\EventService::extraSnapshot($service, $price->amount_cents)];
                 $subtotal += $amount;
             }
-            $total = $subtotal + $event->travel_fee_cents;
+            // ANNIV-01: a redeemed anniversary code keeps its 10 % on the package price in every revision of this booking.
+            $promo = \App\Services\Campaigns\AnniversaryCampaign::discount($event, $services);
+            $total = $subtotal + $event->travel_fee_cents - ($promo['cents'] ?? 0);
             $revision = FinancialRevision::create(['event_id' => $event->id, 'revision' => (int) FinancialRevision::where('event_id', $event->id)->max('revision') + 1,
                 'event_version' => $event->version, 'currency' => 'USD', 'lines_snapshot' => $lines, 'subtotal_cents' => $subtotal,
+                ...($promo ? ['discount_cents' => $promo['cents'], 'discounts_snapshot' => $promo['snapshot']] : []),
                 'travel_fee_cents' => $event->travel_fee_cents, 'tax_cents' => 0, 'customer_fee_cents' => 0, 'total_cents' => $total,
                 'deposit_target_cents' => intdiv($total, 2) + ($total % 2), 'balance_due_at' => $event->starts_at->subHours(24), 'created_by' => $actor->id]);
             SupersedeCollections::forEvent($eventId, 'financial_revision_changed', $actor);

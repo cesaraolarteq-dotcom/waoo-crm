@@ -50,6 +50,7 @@ final class ClientDetailsController extends Controller
         } catch (ModelNotFoundException) {
             throw new RecordWriteRejected(409, 'La reserva requiere revisión del dueño. / The booking needs owner review.');
         } catch (\Throwable) {
+            // Deliberately not logged: a failure here may carry the client's submitted details (SameVisitContractTest).
             return response()->json(['message' => 'Tus datos siguen guardados. Intenta preparar el contrato de nuevo. / Your details are saved. Try preparing the contract again.'], 503);
         }
     }

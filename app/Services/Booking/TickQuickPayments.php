@@ -16,7 +16,17 @@ final class TickQuickPayments
             }
         }
         $counts=['reminders'=>0,'expired'=>0,'review_required'=>0];
-        foreach(QuickPaymentBooking::whereIn('state',['awaiting_payment','zelle_pending','processing'])->orderBy('id')->limit($limit)->pluck('id') as $id){
+        // Only rows with something due, soonest first, so a future row never starves a due one (Codex audit P2).
+        $due=QuickPaymentBooking::whereIn('state',['awaiting_payment','zelle_pending','processing'])
+            ->where(fn($q)=>$q->where('expires_at','<=',now())->orWhere('reminder_at','<=',now()))->orderBy('expires_at')->orderBy('id')->limit($limit)->pluck('id');
+        // Codex audit S2: before the deadline releases stock, close the client's open card checkouts outside any lock and
+        // learn their outcome. A checkout still open, paid or unknown keeps the stock (no new payment can start after the deadline).
+        foreach($due as $id){
+            $b=QuickPaymentBooking::find($id);
+            if(!$b||$b->expires_at->isFuture())continue;
+            foreach($this->openCheckouts($b->event_id)->get() as $intent)$this->close($intent);
+        }
+        foreach($due as $id){
             DB::transaction(function()use($id,&$counts){
                 $stub=QuickPaymentBooking::findOrFail($id);$e=Event::whereKey($stub->event_id)->lockForUpdate()->firstOrFail();$b=QuickPaymentProtocol::booking($e->id);
                 QuickPaymentProtocol::verify($b,$e);
@@ -30,6 +40,7 @@ final class TickQuickPayments
                 if(QuickPaymentProtocol::pendingNotice($b)){
                     if($b->state!=='review_required'){QuickPaymentProtocol::transition($b,'review_required','pending_zelle_at_original_deadline');$counts['review_required']++;}return;
                 }
+                if($b->state==='processing'||$this->openCheckouts($e->id)->lockForUpdate()->exists())return; // outcome not known yet: keep the stock
                 $p=QuickStripeLeases::verify($lease,$e,false);QuickStripeLeases::lockInventory($p);$p=QuickStripeLeases::verify($lease,$e);
                 ResourceReservation::whereIn('id',array_column($p['rows'],'reservation_id'))->where('event_id',$e->id)->delete();
                 QuickStripeLeases::append(null,$lease,[...$p,'state'=>'expired','rows'=>[],'reason'=>'original_48h_deadline']);
@@ -37,17 +48,26 @@ final class TickQuickPayments
             },3);
         }
         // Best-effort provider closure outside DB locks; never restore released stock after a late charge.
-        foreach(\App\Models\PaymentIntent::where('purpose','quick_deposit')->where(function($q){$q->whereIn('event_id',QuickPaymentBooking::where('state','expired')->select('event_id'))->orWhere('status','superseded');})->whereIn('status',['open','prepared','processing','superseded'])->whereNotNull('stripe_checkout_session_id')->limit($limit)->get() as $intent){
-            try{
-                $gateway=app(\App\Services\Finance\StripeGateway::class);$gateway->expireCheckout($intent->stripe_checkout_session_id);
-                $remote=$gateway->retrieveCheckout($intent->stripe_checkout_session_id);$attempt=\App\Models\QuickPaymentAttempt::where('payment_intent_id',$intent->id)->firstOrFail();
-                QuickPaymentCheckout::session($remote,\App\Models\QuickStripeCheckoutRequest::findOrFail($attempt->id));
-                if(($remote['status']??null)==='expired' && ($remote['payment_status']??null)!=='paid') DB::transaction(function()use($intent){
-                    Event::whereKey($intent->event_id)->lockForUpdate()->firstOrFail();$i=\App\Models\PaymentIntent::whereKey($intent->id)->lockForUpdate()->firstOrFail();
-                    if($i->status!=='paid')$i->update(['status'=>'expired','collection_slot'=>null,'last_error'=>null]);
-                },3);
-            }catch(\Throwable){\App\Models\PaymentIntent::whereKey($intent->id)->where('status','!=','paid')->update(['last_error'=>'provider_close_pending']);}
-        }
+        foreach(\App\Models\PaymentIntent::where('purpose','quick_deposit')->where(function($q){$q->whereIn('event_id',QuickPaymentBooking::where('state','expired')->select('event_id'))->orWhere('status','superseded');})->whereIn('status',['open','prepared','processing','superseded'])->whereNotNull('stripe_checkout_session_id')->limit($limit)->get() as $intent)$this->close($intent);
         app(DispatchQuickPaymentNotifications::class)->execute($limit);return $counts;
+    }
+
+    private function openCheckouts(int $eventId)
+    {
+        return \App\Models\PaymentIntent::where('event_id',$eventId)->where('purpose','quick_deposit')->whereIn('status',['open','prepared','processing'])->whereNotNull('stripe_checkout_session_id');
+    }
+
+    /** Expire one checkout at Stripe and record a confirmed unpaid expiry; any doubt leaves it open (provider_close_pending). */
+    private function close(\App\Models\PaymentIntent $intent):void
+    {
+        try{
+            $gateway=app(\App\Services\Finance\StripeGateway::class);$gateway->expireCheckout($intent->stripe_checkout_session_id);
+            $remote=$gateway->retrieveCheckout($intent->stripe_checkout_session_id);$attempt=\App\Models\QuickPaymentAttempt::where('payment_intent_id',$intent->id)->firstOrFail();
+            QuickPaymentCheckout::session($remote,\App\Models\QuickStripeCheckoutRequest::findOrFail($attempt->id));
+            if(($remote['status']??null)==='expired' && ($remote['payment_status']??null)!=='paid') DB::transaction(function()use($intent){
+                Event::whereKey($intent->event_id)->lockForUpdate()->firstOrFail();$i=\App\Models\PaymentIntent::whereKey($intent->id)->lockForUpdate()->firstOrFail();
+                if($i->status!=='paid')$i->update(['status'=>'expired','collection_slot'=>null,'last_error'=>null]);
+            },3);
+        }catch(\Throwable){\App\Models\PaymentIntent::whereKey($intent->id)->where('status','!=','paid')->update(['last_error'=>'provider_close_pending']);}
     }
 }

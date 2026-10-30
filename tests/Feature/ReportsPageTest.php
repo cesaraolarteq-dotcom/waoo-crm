@@ -38,9 +38,23 @@ class ReportsPageTest extends TestCase
         $this->assertTrue(ReportsSource::live());
         Livewire::test(Reports::class)->assertDontSee('Datos de ejemplo')
             ->assertSee('Semana del lun. 2 nov. al dom. 8 nov. 2026')
-            ->assertSee('De 1 fiesta de este periodo')
-            ->assertSee('Pendiente')->assertSee('Faltan los costos de 1 fiesta')
-            ->assertSee('no se restan entre sí')->assertDontSee('Enviado');
+            ->assertSee('De las fiestas de este periodo')
+            ->assertSee('Pendiente')->assertSee('Solo fiestas con costos registrados')
+            ->assertDontSee('Enviado');
+    }
+
+    public function test_panorama_counts_the_crm_party_by_its_date_and_the_deposit_by_its_payment_date(): void
+    {
+        $page = Livewire::test(Reports::class)->assertSee('Panorama')->assertSee('Pulso del dinero');
+        $p = $page->instance()->panorama();
+        $this->assertSame(1, $p['kpis']['parties']['value']);
+        $this->assertSame(1, $p['pulse']['count'], 'The deposit is the first payment of the party.');
+        $page->call('setWindow', 'custom')->set('rangeFrom', '2026-10-01')->set('rangeTo', '2026-10-31');
+        $october = $page->instance()->panorama();
+        $this->assertSame(0, $october['kpis']['parties']['value'], 'The party is on Nov 3.');
+        $this->assertGreaterThan(0, $october['kpis']['received']['value'], 'The deposit arrived on Oct 14.');
+        $page->call('setTab', 'crecimiento')->assertSee('Mes por mes')->call('setTab', 'zonas')->assertSee('Mapa de zonas calientes')->call('setPulseMode', 'balance')->call('setTab', 'pulso')->assertSee('Segunda mitad');
+        $page->call('setTab', 'viene')->assertSee('Dinero por cobrar')->assertSee('Ventana de reserva por temporada')->assertSee('Un año después');
     }
 
     public function test_navigation_never_goes_past_the_latest_completed_period(): void
@@ -75,7 +89,7 @@ class ReportsPageTest extends TestCase
         $this->assertSame(['crm'=>1], $r['source_counts']);
         $this->assertSame(12501, $r['ticket']['total_cents']);
         $this->assertStringNotContainsString('client@example.test', json_encode($r));
-        Livewire::test(Reports::class)->assertSee('Reservas · CRM e historial HoneyBook')
+        Livewire::test(Reports::class)->assertSee('Análisis del año')
             ->call('exportAnalytics')->assertFileDownloaded('reservas-2026.csv');
         config(['waoo.sandbox_analytics'=>false]);
         try {

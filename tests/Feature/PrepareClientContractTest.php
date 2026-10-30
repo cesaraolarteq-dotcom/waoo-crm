@@ -90,6 +90,20 @@ class PrepareClientContractTest extends TestCase
         ClientDetailsState::assertApproved($this->event->id, $contract->financial_revision_id);
     }
 
+    public function test_quick_booking_without_street_address_takes_the_clients_address_when_the_zip_matches(): void
+    {
+        // Owner 2026-10-29: Quick booking leaves the street optional; the client's address must not send the contract to owner review.
+        DB::table('events')->where('id', $this->event->id)->update(['address' => null]);
+        $contract = $this->prepare();
+        $this->assertSame('issued', $contract->state);
+        $this->assertSame('123 Example Lane', $contract->commercial_snapshot['event']['address']);
+        // A different ZIP (travel fee basis) still needs the owner.
+        $row = ClientDetailsSubmission::sole(); $data = $row->data; $data['event_postal_code'] = '77002';
+        DB::table('client_details_submissions')->where('id', $row->id)->update(['data' => json_encode($data)]);
+        $this->expectException(RecordWriteRejected::class);
+        $this->prepare();
+    }
+
     public function test_replays_and_new_uuid_share_one_immutable_document_without_new_audit(): void
     {
         $key = (string) Str::uuid(); $first = $this->prepare($key);

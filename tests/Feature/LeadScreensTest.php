@@ -61,7 +61,7 @@ class LeadScreensTest extends TestCase
 
         $page = Livewire::test(Leads::class)->mountAction('update', ['id' => $lead->id]);
         app(UpdateLead::class)->execute(User::sole(), $lead->id, ['expected_version' => 2, 'owner_note' => 'Maybeli la llamó.']);
-        $page->setActionData(['status' => 'lost', 'owner_note' => 'No contestó.'])->callMountedAction()->assertNotified('No se guardó');
+        $page->setActionData(['status' => 'lost', 'lost_reason' => 'no_reply', 'owner_note' => 'No contestó.'])->callMountedAction()->assertNotified('No se guardó');
         $this->assertSame(['contacted', 'Maybeli la llamó.'], [$lead->fresh()->status, $lead->fresh()->owner_note]);
     }
 
@@ -78,7 +78,20 @@ class LeadScreensTest extends TestCase
             ->call('save')->assertHasNoFormErrors();
         $this->assertSame('booked', $lead->fresh()->status);
         $this->assertSame(Event::sole()->id, $lead->fresh()->booked_event_id);
+        $this->assertSame('website', \App\Models\EventChannel::where('event_id', Event::sole()->id)->value('channel'), 'A website lead came through the website (owner 2026-10-28).');
         $this->get('/admin/prospectos?status=booked')->assertSee('Ver la reserva');
+    }
+
+    public function test_a_lost_lead_keeps_why_and_forgets_it_when_reopened(): void
+    {
+        // Owner 2026-10-28: lost leads say why, for Reportes.
+        $lead = $this->lead();
+        Livewire::test(Leads::class)->callAction('update', ['status' => 'lost', 'owner_note' => null], ['id' => $lead->id])->assertHasActionErrors(['lost_reason' => 'required']);
+        Livewire::test(Leads::class)->callAction('update', ['status' => 'lost', 'lost_reason' => 'date_full', 'owner_note' => null], ['id' => $lead->id])->assertNotified('Prospecto actualizado');
+        $this->assertSame('date_full', \App\Models\LeadLossReason::where('lead_id', $lead->id)->value('reason'));
+        $this->get('/admin/prospectos?status=lost')->assertSee('Perdido · Fecha llena');
+        Livewire::test(Leads::class)->callAction('update', ['status' => 'contacted', 'owner_note' => null], ['id' => $lead->id])->assertNotified('Prospecto actualizado');
+        $this->assertSame(0, \App\Models\LeadLossReason::count());
     }
 
     public function test_hidden_without_the_lead_sandbox(): void

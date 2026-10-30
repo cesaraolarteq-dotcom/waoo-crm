@@ -110,7 +110,11 @@ class CreateEvent extends CreateRecord
                 $data['customer_id'] = $this->runRecordService(\App\Services\Records\SaveCustomer::class, [array_filter($this->leadClient, fn ($v) => $v !== null)])->id;
             }
 
-            return $this->runRecordService(\App\Services\Records\SaveEventDraft::class, [EventResource::toServiceInput($data)]);
+            $event = $this->runRecordService(\App\Services\Records\SaveEventDraft::class, [EventResource::toServiceInput($data)]);
+            // A party created from a website lead came through the website (Reportes, "De dónde vienen").
+            if ($this->leadId !== null) \App\Models\EventChannel::record($event->id, 'website', \Filament\Facades\Filament::auth()->id());
+
+            return $event;
         });
     }
 

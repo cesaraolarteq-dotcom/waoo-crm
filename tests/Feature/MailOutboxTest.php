@@ -40,6 +40,15 @@ class MailOutboxTest extends TestCase
     private function input(array $templates=['balance_reminder','week_before','thank_you_review']):array{return ['expected_event_version'=>2,'expected_customer_version'=>1,'portal_grant_id'=>$this->grantId,'templates'=>$templates];}
     private function plan(array $templates=['balance_reminder'],?string $key=null):array{return app(PlanEventMail::class)->execute($this->owner,$this->event->id,$this->input($templates),$key??(string)Str::uuid());}
     private function due(OutboundMessage $m):void{$this->travelTo($m->due_at);}
+    public function test_confirming_a_party_plans_its_reminders_without_sending_anything():void
+    {
+        // Owner 2026-10-29: reminders are planned as soon as the party is confirmed; planned is not sent.
+        $this->assertNull(\App\Filament\Support\AutoReminders::afterConfirm($this->owner,$this->event->id));
+        $this->assertGreaterThan(0,OutboundMessage::where('event_id',$this->event->id)->count());
+        $this->assertSame([],$this->transport->sent ?? []);
+        config(['waoo.sandbox_mail'=>false]);
+        $this->assertNull(\App\Filament\Support\AutoReminders::afterConfirm($this->owner,$this->event->id),'Mail off: nothing to plan, no note.');
+    }
     public function test_honeybook_blocks_planning_even_on_replay_and_never_dispatches_scheduled_mail():void
     {
         $key=(string)Str::uuid();$this->plan(key:$key);$m=OutboundMessage::sole();

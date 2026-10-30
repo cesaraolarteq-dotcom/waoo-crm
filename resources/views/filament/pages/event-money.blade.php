@@ -11,7 +11,7 @@
         <div class="wmoney-states" aria-label="Estados por separado">
             <span>Pago: <b>{{ $paid > 0 ? ($rev && $f['balance_cents'] === 0 ? 'Pagado completo' : 'Pago recibido') : 'Sin pagos' }}</b></span>
             <span>Recursos: <b>{{ \App\Filament\Support\Labels::label(\App\Filament\Support\Labels::EVENT_STATUS, $f['capacity_status']) }}</b></span>
-            <span>Contrato: <b>{{ $f['contract_status'] === 'not_issued' ? 'Sin emitir' : $f['contract_status'] }}</b></span>
+            <span>Contrato: <b>{{ ['not_issued' => 'Sin emitir', 'issued' => 'Enviado, sin firmar', 'signed' => 'Firmado'][$f['contract_status']] ?? $f['contract_status'] }}</b></span>
         </div>
 
         @if (($f['customer_fee_received_cents'] ?? 0)>0)<p>Procesamiento de Stripe recibido: {{ $money($f['customer_fee_received_cents']) }} · Total cobrado: {{ $money($f['gross_received_cents']) }}</p>@endif
@@ -63,7 +63,7 @@
             @forelse ($this->payments() as $p)
                 <div class="wmoney-row">
                     <div><b>{{ $p->amount }}</b> · {{ $p->method }} · {{ $p->kind }}</div>
-                    <small>{{ $p->when }} · ref. {{ $p->reference }} · verificó {{ $p->by }}@if ($p->note) · {{ $p->note }}@endif</small>
+                    <small>{{ $p->when }}@if ($p->reference) · ref. {{ $p->reference }}@endif · verificó {{ $p->by }}@if ($p->note) · {{ $p->note }}@endif</small>
                 </div>
             @empty
                 <p class="wmoney-p">Todavía no hay pagos. Usa “Registrar Zelle verificado” cuando lo veas en el banco.</p>

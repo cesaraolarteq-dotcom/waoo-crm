@@ -33,8 +33,8 @@ class OwnerAnalyticsHistoryTest extends TestCase
         $this->assertSame(1,$draft['candidate_count']); $this->assertFalse($draft['delivery_enabled']);
         config(['waoo.sandbox_finance'=>true]);
         \Livewire\Livewire::test(\App\Filament\Pages\Reports::class)->set('analyticsYear',2025)
-            ->assertSee('Cumpleaños del próximo año · solo borrador')->assertSee('2026-11-10')
-            ->assertSee('faltan permisos promocionales verificables');
+            ->assertSee('Cumpleaños · próximos 60 días')->assertSee('10 dic')
+            ->assertSee('no se envía nada');
         $this->assertDatabaseCount('outbound_messages',0); $this->assertDatabaseCount('events',0); $this->assertDatabaseCount('ledger_entries',0);
         config(['waoo.sandbox_anniversary'=>false]);
         $this->expectException(\Illuminate\Auth\Access\AuthorizationException::class);

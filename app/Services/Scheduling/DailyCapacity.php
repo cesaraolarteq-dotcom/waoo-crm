@@ -20,8 +20,9 @@ final class DailyCapacity
     public static function bounds(CarbonInterface $start): array
     {
         $local=CarbonImmutable::instance($start)->setTimezone('America/Chicago');
-        if($local->hour<8)$local=$local->subDay();
-        $from=$local->setTime(8,0,0,0);
+        // César 2026-10-29: ten parties per Houston calendar day, at any hour.
+        // Keep website previews, day-lock admission and every money path on the same boundary.
+        $from=$local->startOfDay();
         return [$from->utc(),$from->addDay()->utc()];
     }
 

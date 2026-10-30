@@ -40,6 +40,30 @@ class Reports extends Page
 
     public ?array $emailPreview = null;
 
+    /** Panorama window (César 2026-10-28): year, month, week or a custom from–to range, around `dia`. */
+    #[Url(as: 'vista')]
+    public string $window = 'year';
+
+    #[Url(as: 'dia')]
+    public string $anchor = '';
+
+    #[Url(as: 'desde')]
+    public string $rangeFrom = '';
+
+    #[Url(as: 'hasta')]
+    public string $rangeTo = '';
+
+    #[Url(as: 'pestana')]
+    public string $tab = 'pulso';
+
+    /** The bar the owner tapped in "Ventas" (bucket start date); its parties are listed under the chart. */
+    public string $focus = '';
+
+    /** Pulse: deposit (booking), balance (second half) or all payments. */
+    public string $pulseMode = 'deposit';
+
+    private ?array $panoramaCache = null;
+
     public static function canAccess(): bool
     {
         return parent::canAccess() && ReportsSource::available();
@@ -52,6 +76,69 @@ class Reports extends Page
         if ($this->analyticsYear < 2000 || $this->analyticsYear > 2100) $this->analyticsYear = (int)now('America/Chicago')->year;
         $today = now('America/Chicago')->toDateString();
         $this->asOf = ($d = self::validDate($this->asOf)) && $d <= $today ? $d : $today;
+        $this->window = in_array($this->window, ['year', 'month', 'week', 'custom'], true) ? $this->window : 'year';
+        $this->anchor = self::validDate($this->anchor) ?? $today;
+        $this->tab = in_array($this->tab, ['ventas', 'crecimiento', 'pulso', 'canales', 'zonas', 'viene'], true) ? $this->tab : 'pulso';
+        $this->rangeFrom = self::validDate($this->rangeFrom) ?? CarbonImmutable::parse($today)->subMonths(3)->toDateString();
+        $this->rangeTo = self::validDate($this->rangeTo) ?? $today;
+    }
+
+    public function setWindow(string $window): void
+    {
+        $this->window = in_array($window, ['year', 'month', 'week', 'custom'], true) ? $window : 'year';
+        $this->panoramaCache = null;
+        $this->focus = '';
+    }
+
+    public function setFocus(string $start): void
+    {
+        $this->focus = $this->focus === $start ? '' : (self::validDate($start) ?? '');
+    }
+
+    public function setTab(string $tab): void
+    {
+        $this->tab = in_array($tab, ['ventas', 'crecimiento', 'pulso', 'canales', 'zonas', 'viene'], true) ? $tab : 'pulso';
+    }
+
+    public function setPulseMode(string $mode): void
+    {
+        $this->pulseMode = in_array($mode, ['deposit', 'balance', 'all'], true) ? $mode : 'deposit';
+    }
+
+    public function moveWindow(int $step): void
+    {
+        $a = CarbonImmutable::parse($this->anchor, 'America/Chicago');
+        $step = $step < 0 ? -1 : 1;
+        $this->focus = '';
+        $this->anchor = (match ($this->window) { 'month' => $a->addMonthsNoOverflow($step), 'week' => $a->addWeeks($step), default => $a->addYears($step) })->toDateString();
+        $this->panoramaCache = null;
+    }
+
+    public function updated(string $name): void
+    {
+        if (in_array($name, ['rangeFrom', 'rangeTo'], true)) {
+            $this->{$name} = self::validDate($this->{$name}) ?? now('America/Chicago')->toDateString();
+            $this->panoramaCache = null;
+        }
+    }
+
+    public function panorama(): array
+    {
+        [$from, $to] = \App\Services\Reports\Panorama::window($this->window, $this->anchor, $this->rangeFrom, $this->rangeTo);
+
+        return $this->panoramaCache ??= app(\App\Services\Reports\ReadPanorama::class)->execute(Filament::auth()->user(), $from, $to);
+    }
+
+    public function windowLabel(array $p): string
+    {
+        $f = CarbonImmutable::parse($p['from'], 'America/Chicago')->locale('es');
+        $t = CarbonImmutable::parse($p['to'], 'America/Chicago')->locale('es');
+
+        return match ($this->window) {
+            'year' => (string) $f->year,
+            'month' => ucfirst($f->translatedFormat('F Y')),
+            default => $f->translatedFormat('j M Y').' – '.$t->translatedFormat('j M Y'),
+        };
     }
 
     private static function validDate(?string $d): ?string
@@ -64,7 +151,7 @@ class Reports extends Page
 
     public function getSubheading(): ?string
     {
-        return 'La última semana o el último mes ya cerrados. El dinero cuenta por la fecha en que llegó; los saldos y el costo del staff, por la fecha de cada fiesta.';
+        return null;
     }
 
     public function setKind(string $kind): void
@@ -106,6 +193,40 @@ class Reports extends Page
         if (!config('waoo.sandbox_anniversary', false)) return null;
         return app(\App\Services\Campaigns\ReadBirthdayCampaignDraft::class)->execute(
             Filament::auth()->user(), ['as_of' => now('America/Chicago')->toDateString()]);
+    }
+
+    /** ANNIV-01 effectiveness (César 2026-10-29: "enviamos 10 correos y contrataron 2"). */
+    public function anniversary(): ?array
+    {
+        if (! config('waoo.sandbox_anniversary', false)) return null;
+        $s = \App\Services\Campaigns\AnniversaryCampaign::stats();
+        return $s['issued'] || $s['skipped'] ? $s : null;
+    }
+
+    /** Owner 2026-10-29: the birthday list as names and next birthday dates, soonest first (still a draft: nothing is sent). */
+    public function birthdays(): ?array
+    {
+        if (! ($draft = $this->birthdayDraft())) return null;
+        $today = CarbonImmutable::now('America/Chicago')->startOfDay();
+        $names = \App\Models\Customer::query()->whereIn('id', array_column($draft['items'], 'customer_id'))->pluck('name', 'id');
+        $items = [];
+        foreach ($draft['items'] as $i) {
+            $d = CarbonImmutable::parse($i['source_date'], 'America/Chicago');
+            while ($d < $today) $d = $d->addYearNoOverflow();
+            $items[] = ['name' => $names[$i['customer_id']] ?? 'Cliente sin nombre', 'next' => $d->toDateString(), 'days' => (int) $today->diffInDays($d),
+                'rebooked' => in_array('already_rebooked', $i['reasons'] ?? [], true)];
+        }
+        usort($items, fn ($a, $b) => $a['next'] <=> $b['next']);
+
+        return ['count' => $draft['candidate_count'], 'soon' => array_values(array_filter($items, fn ($i) => $i['days'] <= 60)), 'items' => $items];
+    }
+
+    /** Owner 2026-10-29: the week/month close uses the same rows as Panorama (HoneyBook parties included). */
+    public function closeFigures(array $period): array
+    {
+        $from = $period['starts_on']; $to = CarbonImmutable::parse($period['ends_before'], 'America/Chicago')->subDay()->toDateString();
+
+        return app(\App\Services\Reports\ReadPanorama::class)->execute(Filament::auth()->user(), $from, $to);
     }
 
     public function analytics(): ?array

@@ -43,7 +43,9 @@ final class ClientContractSource
         RecordWriteRejected::unless(MutationKey::hash($customer->only(['name','email','phone','locale'])) === MutationKey::hash($submission->base_customer_snapshot),
             409, 'La ficha del cliente cambió. Envía nuevamente sus datos.');
         $values = $submission->data;
-        RecordWriteRejected::unless((($booking && blank($event->address) && filled($values['event_address'] ?? null)) || (filled($event->address) && $event->address === ($values['event_address'] ?? null)))
+        // Owner 2026-10-29: Quick booking leaves the street address optional ("el cliente la confirma en su enlace"); the client's
+        // address is the agreed one when none was saved and the ZIP (travel fee basis) is the same.
+        RecordWriteRejected::unless(((blank($event->address) && filled($values['event_address'] ?? null)) || (filled($event->address) && $event->address === ($values['event_address'] ?? null)))
             && $event->postal_code === ($values['event_postal_code'] ?? null) && ($values['start_time_confirmed'] ?? false) === true
             && empty($values['requested_start_at']), 409, 'La dirección o la hora requieren revisión del dueño. Tus datos siguen guardados.');
         $services = $event->services()->with('characters')->get();

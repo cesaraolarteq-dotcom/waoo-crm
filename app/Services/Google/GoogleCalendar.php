@@ -136,7 +136,7 @@ final class GoogleCalendar
 
         return [
             'summary' => $e->title,
-            'location' => trim(collect([$e->address, $e->postal_code])->filter()->implode(', ')) ?: null,
+            'location' => trim(collect([\App\Support\ClientAddress::forEvent($e)[0], $e->postal_code])->filter()->implode(', ')) ?: null,
             'description' => implode("\n", $lines),
             'start' => ['dateTime' => CarbonImmutable::instance($e->starts_at)->setTimezone(ChicagoTime::TZ)->toIso8601String(), 'timeZone' => ChicagoTime::TZ],
             'end' => ['dateTime' => CarbonImmutable::instance($e->ends_at)->setTimezone(ChicagoTime::TZ)->toIso8601String(), 'timeZone' => ChicagoTime::TZ],
@@ -182,6 +182,33 @@ final class GoogleCalendar
      * Busy blocks from the owner's primary calendar, Houston day => [['from' => 'g:i A', 'to' => 'g:i A']], cached 5 minutes.
      * Free/busy only: Google never tells the CRM what the appointment is.
      */
+    /**
+     * Website availability (owner 2026-10-29): exact busy intervals of the owner's primary calendar, where HoneyBook writes.
+     * [] when Google is not connected; null when Google did not answer (the caller must not treat that as free).
+     * @return list<array{0: CarbonImmutable, 1: CarbonImmutable}>|null
+     */
+    /** Exact busy intervals; null when not connected, failing or the answer is incomplete (never "free", Codex audit S4). */
+    public function busyIntervals(CarbonImmutable $from, CarbonImmutable $to): ?array
+    {
+        $c = self::connection();
+        if (! $c) return null;
+        $key = 'waoo.google.busy-raw.'.$c->id.'.'.$from->utc()->format('YmdHi').'.'.$to->utc()->format('YmdHi');
+        $raw = Cache::get($key);
+        if ($raw === null) {
+            try {
+                $r = $this->api($c)->post(self::API.'/freeBusy', ['timeMin' => $from->utc()->toIso8601String(), 'timeMax' => $to->utc()->toIso8601String(),
+                    'timeZone' => ChicagoTime::TZ, 'items' => [['id' => 'primary']]]);
+            } catch (\Throwable) {
+                return null;
+            }
+            if (! $r->successful() || $r->json('calendars.primary.errors') || ! is_array($r->json('calendars.primary.busy'))) return null;
+            $raw = $r->json('calendars.primary.busy');
+            foreach ($raw as $b) if (! is_array($b) || ! is_string($b['start'] ?? null) || ! is_string($b['end'] ?? null)) return null;
+            Cache::put($key, $raw, 120);
+        }
+        return array_map(fn ($b) => [CarbonImmutable::parse($b['start']), CarbonImmutable::parse($b['end'])], $raw);
+    }
+
     public function busy(CarbonImmutable $from, CarbonImmutable $to): array
     {
         $c = self::connection();

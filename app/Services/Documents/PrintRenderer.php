@@ -69,6 +69,11 @@ final class PrintRenderer
     public function signedHtml(string $presentedHtml, \App\Models\SignatureEvidence $signature, bool $signedPresentation = false): string
     {
         $escape = fn ($value) => htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        if (! $signedPresentation) {
+            $decorated = $this->fillSignatureSlots($presentedHtml, $signature, $escape);
+            $signedPresentation = $decorated !== $presentedHtml;
+            $presentedHtml = $decorated;
+        }
         $description = $signedPresentation
             ? 'The preceding pages show the signed rendering of the same contract snapshot and template. The original presented HTML and PDF remain stored unchanged. This record binds client acceptance to the original presented PDF bytes; this final PDF is a separate evidence artifact.'
             : 'The preceding document is the original presentation. This page records the client acceptance of its exact PDF bytes; the exported final PDF is a separate evidence artifact.';
@@ -85,6 +90,29 @@ final class PrintRenderer
             : 'Only client acceptance is recorded here. Provider countersignature is not asserted.';
         $certificate .= '<p>'.$escape($acceptance).' No email or message delivery is asserted.</p></section>';
         return str_replace('</body>', $certificate.'</body>', $presentedHtml);
+    }
+
+    /**
+     * Owner 2026-10-28: the final copy must look signed. Only the empty signature slots and the status chip of the exact
+     * presented HTML are filled; every other byte stays what the client saw. A layout without these slots is left as is.
+     */
+    private function fillSignatureSlots(string $html, \App\Models\SignatureEvidence $signature, \Closure $escape): string
+    {
+        $local = $signature->accepted_at->setTimezone('America/Chicago');
+        $when = $escape($local->format('M j, Y g:i a T'));
+        $day = $escape($local->format('M j, Y'));
+        $client = '<div class="line">'.$escape($signature->signer_name).'</div><span class="muted">Signed '.$when.'</span>';
+        $provider = '<div class="line">Waoo Party</div><span class="muted">Signed '.$when.' · accepted when the client signed</span>';
+        $filled = false;
+        $decorated = preg_replace_callback('/<table class="sig">.*?<\/table>/s', function ($sig) use ($client, $provider, &$filled) {
+            $out = str_replace('<div class="line"></div><span class="muted">Signed </span>', $client, $sig[0], $c);
+            $out = str_replace('<div class="line">Waoo Party</div><span class="muted">Provider acceptance pending</span>', $provider, $out, $p);
+            $filled = $c === 1 && $p === 1;
+            return $filled ? $out : $sig[0];
+        }, $html, 1);
+        if (! $filled) return $html;
+        return preg_replace('/<div class="chip">Awaiting signature<\/div>/',
+            '<div class="chip" style="background:#E7F6EE;color:#0B6B3A;border:1.2pt solid #0B6B3A;font-weight:bold;letter-spacing:0.6pt">SIGNED / FIRMADO · '.$day.'</div>', $decorated, 1);
     }
 
     public function pdf(string $html): string
