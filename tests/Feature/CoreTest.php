@@ -182,7 +182,7 @@ class CoreTest extends TestCase
         $e->services()->update(['operational_ready' => false]);
         $this->confirm($e, $p)->assertUnprocessable();
     }
-    public function test_travel_requires_versioned_evidence_and_45_minutes_above_driving(): void
+    public function test_travel_requires_versioned_evidence_and_30_extra_after_setup_and_breakdown(): void
     {
         $r = $this->resource();
         $a = $this->event();
@@ -193,8 +193,12 @@ class CoreTest extends TestCase
         $this->confirm($b, $p)->assertUnprocessable();
         $p['review']['transfers'] = [['from_event_id' => $a->id, 'to_event_id' => $b->id, 'from_version' => $a->version, 'to_version' => $b->version, 'travel_minutes' => 28, 'contingency_minutes' => 10, 'departure_at' => $a->ends_at->addMinutes(10)->toIso8601String(), 'note' => 'Reviewed traffic for the planned date and departure time.']];
         $this->confirm($b, $p)->assertUnprocessable();
-        // 28 + 45 > 60
-        $b->starts_at = $a->ends_at->addMinutes(75);
+        // 10 breakdown + 28 route + 30 EXTRA + 10 setup = 78 minutes.
+        $b->starts_at = $a->ends_at->addMinutes(77);
+        $b->ends_at = $b->starts_at->addHour();
+        $b->save();
+        $this->confirm($b, $p)->assertUnprocessable();
+        $b->starts_at = $a->ends_at->addMinutes(78);
         $b->ends_at = $b->starts_at->addHour();
         $b->save();
         $this->confirm($b, $p)->assertOk();
@@ -334,7 +338,7 @@ class CoreTest extends TestCase
         $a = $this->event();
         $this->confirm($a, $this->payload($a, [$r->id]))->assertOk();
         $a->refresh();
-        $b = $this->event($a->ends_at->addMinutes(75));
+        $b = $this->event($a->ends_at->addMinutes(78));
         $p = $this->payload($b, [$r->id]);
         $this->postJson('/admin/api/resources/' . $r->id . '/blocks', ['starts_at' => $a->ends_at->addMinutes(20)->toIso8601String(), 'ends_at' => $a->ends_at->addMinutes(25)->toIso8601String(), 'reason' => 'Unavailable during planned driving'])->assertCreated();
         $p['review']['transfers'] = [['from_event_id' => $a->id, 'to_event_id' => $b->id, 'from_version' => $a->version, 'to_version' => $b->version, 'travel_minutes' => 28, 'contingency_minutes' => 10, 'departure_at' => $a->ends_at->addMinutes(10)->toIso8601String(), 'note' => 'Reviewed traffic for this date and departure.']];
@@ -350,7 +354,7 @@ class CoreTest extends TestCase
         $a = $this->event();
         $this->confirm($a, $this->payload($a, [$r->id]))->assertOk();
         $a->refresh();
-        $b = $this->event($a->ends_at->addMinutes(75));
+        $b = $this->event($a->ends_at->addMinutes(78));
         $p = $this->payload($b, [$r->id]);
         $p['review']['transfers'] = [['from_event_id' => $a->id, 'to_event_id' => $b->id, 'from_version' => $a->version, 'to_version' => $b->version, 'travel_minutes' => 28, 'contingency_minutes' => 10, 'departure_at' => $a->ends_at->addMinutes(10)->toIso8601String(), 'note' => 'Reviewed traffic for this date and departure.']];
         $this->confirm($b, $p)->assertOk();

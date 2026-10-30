@@ -126,4 +126,32 @@ final class PoolCapacitySolverTest extends TestCase
         $this->assertSame(2, $r['witness']['candidate']['speaker']);
     }
 
+    public function test_required_team_is_matched_jointly_instead_of_binding_pins_to_role_order(): void
+    {
+        $job = $this->job('party', [$this->slot('host', [1, 2, 3]), $this->slot('painter', [1])]);
+        $job['required'] = [1, 2];
+        $r = (new PoolCapacitySolver)->solve([$this->staff(1, true), $this->staff(2), $this->staff(3)], [$job]);
+        $this->assertSame('feasible', $r['state']);
+        $this->assertSame(2, $r['witness']['party']['host']);
+        $this->assertSame(1, $r['witness']['party']['painter']);
+        $job['required'] = [1, 2, 3];
+        $this->assertSame('infeasible', (new PoolCapacitySolver)->solve([$this->staff(1), $this->staff(2), $this->staff(3)], [$job])['state']);
+    }
+
+    public function test_unproven_transfer_cannot_reuse_a_unit_even_when_party_times_do_not_overlap(): void
+    {
+        $a = $this->job('a', [$this->slot('host', [1, 2])], 1000, 2000);
+        $b = $this->job('b', [$this->slot('host', [1, 2])], 9000, 10000);
+        $edges = [['first' => 'a', 'second' => 'b', 'resources' => [1, 2]]];
+        $solver = new PoolCapacitySolver;
+        $r = $solver->solve([$this->staff(1), $this->staff(2)], [$a, $b], [], $edges);
+        $this->assertSame('feasible', $r['state']);
+        $this->assertNotSame($r['witness']['a']['host'], $r['witness']['b']['host']);
+        $a['required'] = $b['required'] = [1];
+        $this->assertSame('infeasible', $solver->solve([$this->staff(1), $this->staff(2)], [$a, $b], [], $edges)['state']);
+        $this->assertSame('feasible', $solver->solve([$this->staff(1), $this->staff(2)], [$a, $b])['state']);
+        $edges[0]['second'] = 'missing';
+        $this->assertSame('unknown', $solver->solve([$this->staff(1), $this->staff(2)], [$a, $b], [], $edges)['state']);
+    }
+
 }

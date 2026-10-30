@@ -224,6 +224,7 @@ final class ConfirmBooking
         if (!$route || (int) $route['from_version'] !== $from->version || (int) $route['to_version'] !== $to->version) {
             $this->fail('Falta revisión vigente del traslado con un evento vecino.');
         }
+        if ($from->breakdown_minutes === null || $to->setup_minutes === null) $this->fail('Completa dirección, montaje y desmontaje.');
         $departure = $from->ends_at->addMinutes($from->breakdown_minutes);
         if (!CarbonImmutable::parse($route['departure_at'])->equalTo($departure)) {
             $this->fail('La ruta debe corresponder a la salida después de desmontar.');
@@ -232,8 +233,8 @@ final class ConfirmBooking
         if ($arrival->greaterThan($departure) && ResourceBlock::where('resource_id', $resourceId)->whereNull('released_at')->where('starts_at', '<', $arrival)->where('ends_at', '>', $departure)->exists()) {
             $this->fail('Un bloqueo del recurso impide el traslado entre eventos.');
         }
-        // This backend conservatively uses 45 minutes; reduced-buffer exceptions require the later approval workflow.
-        $extra = max(45, $from->breakdown_minutes + $to->setup_minutes + (int) $route['contingency_minutes']);
+        // Owner clarification: after breakdown, actual drive plus at least30 extra minutes before next setup.
+        $extra = $from->breakdown_minutes + $to->setup_minutes + max(30, (int) $route['contingency_minutes']);
         if ($from->ends_at->addMinutes((int) $route['travel_minutes'] + $extra)->greaterThan($to->starts_at)) {
             $this->fail('No cabe viaje, montaje y margen con el evento vecino.');
         }

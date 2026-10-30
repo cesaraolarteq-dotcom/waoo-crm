@@ -33,4 +33,37 @@ class DriveMinutesTest extends TestCase
         config(['waoo.google_routes_key' => null]);
         $this->assertNull((new DriveMinutes())->between('77494', '77085', $at));
     }
+    public function test_exact_locations_departure_and_fractional_duration_are_used_without_zip_shortcuts(): void
+    {
+        config(['waoo.google_routes_key' => 'test-key', 'cache.default' => 'array']);
+        Http::fake(['routes.googleapis.com/*' => Http::sequence()
+            ->push(['routes' => [['duration' => '60.1s']]])->push(['routes' => [['duration' => '121s']]])]);
+        $at = CarbonImmutable::now()->addDays(3)->startOfHour();
+        $d = new DriveMinutes();
+        $this->assertSame(2, $d->betweenAddresses('100 Example Lane, Katy TX', '200 Example Lane, Katy TX', $at));
+        $this->assertSame(2, $d->betweenAddresses('100 Example Lane, Katy TX', '200 Example Lane, Katy TX', $at));
+        $this->assertNull($d->betweenAddresses('100 Example Lane, Katy TX', '200 Example Lane, Katy TX', $at->addMinute()));
+        $this->assertSame(3, (new DriveMinutes())->betweenAddresses('100 Example Lane, Katy TX', '200 Example Lane, Katy TX', $at->addMinute()));
+        Http::assertSentCount(2);
+        Http::assertSent(fn ($r) => $r['origin']['address'] === '100 Example Lane, Katy TX'
+            && $r['destination']['address'] === '200 Example Lane, Katy TX'
+            && $r['departureTime'] === $at->utc()->format('Y-m-d\TH:i:s\Z') && $r['routingPreference'] === 'TRAFFIC_AWARE');
+    }
+
+    public function test_no_exact_route_is_assumed_for_missing_location_failure_or_database_locks(): void
+    {
+        config(['waoo.google_routes_key' => 'test-key', 'cache.default' => 'array']);
+        Http::fake(['routes.googleapis.com/*' => Http::response(['routes' => []])]);
+        $at = CarbonImmutable::now()->addDays(3);
+        $d = new DriveMinutes();
+        $this->assertNull($d->betweenAddresses(null, '200 Example Lane', $at));
+        $this->assertNull($d->betweenAddresses('100 Example Lane', '200 Example Lane', $at));
+        Http::assertSentCount(1);
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            $this->assertNull((new DriveMinutes())->betweenAddresses('100 Example Lane', '200 Example Lane', $at));
+        } finally { \Illuminate\Support\Facades\DB::rollBack(); }
+        Http::assertSentCount(1);
+    }
+
 }

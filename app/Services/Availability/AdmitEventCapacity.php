@@ -60,7 +60,7 @@ final class AdmitEventCapacity
         $known = $event->setup_minutes !== null && $event->breakdown_minutes !== null;
         $local = $start->setTimezone('America/Chicago');
         $capacity = new WebsiteCapacity($local->startOfDay(), $calendar, $event->id);
-        if ($drive !== null) $capacity->withTravel($event->postal_code, $drive);
+        if ($drive !== null) $capacity->withTravel($event->postal_code, $drive, $event->address);
         $state = $capacity->check($start->subMinutes($known ? $event->setup_minutes : WebsiteCapacity::UNKNOWN_MINUTES),
             $end->addMinutes(($known ? $event->breakdown_minutes : WebsiteCapacity::UNKNOWN_MINUTES) + WebsiteCapacity::GAP_MINUTES),
             $local->toDateString(), $requirements);

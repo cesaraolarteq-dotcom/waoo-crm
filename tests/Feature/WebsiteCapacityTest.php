@@ -61,9 +61,9 @@ class WebsiteCapacityTest extends TestCase
         $this->party('2026-11-21T14:00:00-06:00', elsa: true);
         $r = $this->check(['14:00', '15:30', '16:15', '17:30']);
         // 14:00 same time; 15:30 inside 14:00 party + 15 breakdown + 30 gap; 16:15 fits but the drive from the 14:00 party
-        // is not proven, so the owner confirms it; 17:30 is clear of it.
+        // is not proven, so both later starts need owner review despite the larger gap.
         $this->assertSame([['candidate' => 0, 'code' => 'unavailable'], ['candidate' => 1, 'code' => 'unavailable']], $r['unresolved']);
-        $this->assertSame(['owner_approval_required', 'available'], array_column($r['slots'], 'state'));
+        $this->assertSame(['owner_approval_required', 'owner_approval_required'], array_column($r['slots'], 'state'));
         $this->assertSame('available', $r['capacity_state']);
         $this->assertFalse($r['reservation_created']);
     }
@@ -82,11 +82,11 @@ class WebsiteCapacityTest extends TestCase
         $this->app->instance('waoo.availability.drive', fn () => 25);
         $this->assertSame('owner_approval_required', $ask('77450'), 'the drive does not fit: the owner decides');
         $this->app->instance('waoo.availability.drive', fn () => null);
-        $this->assertSame('owner_approval_required', $ask('77450'), 'drive unknown: fixed window');
+        $this->assertSame('owner_approval_required', $ask('77450'), 'unknown route cannot prove reuse');
         $this->app->instance('waoo.availability.drive', fn () => 10);
-        $this->assertSame('owner_approval_required', $ask(null), 'no ZIP from the client: fixed window');
+        $this->assertSame('owner_approval_required', $ask(null), 'no ZIP: no route proof');
         $e->postal_code = null; $e->save();
-        $this->assertSame('owner_approval_required', $ask('77450'), 'neighbour without ZIP: fixed window');
+        $this->assertSame('owner_approval_required', $ask('77450'), 'neighbour without ZIP: no route proof');
     }
 
     public function test_no_outside_calendar_answering_is_unknown_unless_the_crm_is_the_only_agenda(): void
@@ -131,14 +131,14 @@ class WebsiteCapacityTest extends TestCase
         $this->check(['14:00', '14:00']);
     }
 
-    public function test_google_busy_counts_once_and_a_google_failure_is_never_free(): void
+    public function test_coincident_times_do_not_prove_calendar_identity_and_failure_is_never_free(): void
     {
         $this->party('2026-11-21T10:00:00-06:00', honeybook: true, status: 'draft');
         $busy = [[CarbonImmutable::parse('2026-11-21T10:00:00-06:00'), CarbonImmutable::parse('2026-11-21T11:00:00-06:00')],
             [CarbonImmutable::parse('2026-11-21T10:05:00-06:00'), CarbonImmutable::parse('2026-11-21T11:00:00-06:00')]];
         $day = CarbonImmutable::parse('2026-11-21T00:00:00-06:00');
-        $this->assertSame(1, (new WebsiteCapacity($day, [$busy[0]]))->partiesOn('2026-11-21'), 'The calendar entry of an imported party counts once.');
-        $this->assertSame(2, (new WebsiteCapacity($day, $busy))->partiesOn('2026-11-21'), 'Two entries starting together are two parties: one is absorbed, one stays.');
+        $this->assertSame(2, (new WebsiteCapacity($day, [$busy[0]]))->partiesOn('2026-11-21'), 'Matching times alone cannot prove the calendar entry is the imported party.');
+        $this->assertSame(3, (new WebsiteCapacity($day, $busy))->partiesOn('2026-11-21'), 'No source identity means no silent absorption.');
         $this->app->instance('waoo.availability.busy', fn () => null);
         $r = $this->check(['14:00']);
         $this->assertSame([], $r['slots']);
@@ -236,4 +236,46 @@ class WebsiteCapacityTest extends TestCase
             'state' => 'active', 'expires_at' => now()->addMinutes(30), 'payload' => '{}', 'payload_sha256' => str_repeat('0', 64), 'created_at' => now(), 'updated_at' => now()]);
         $this->assertSame('unavailable', $this->check(['14:00'])['unresolved'][0]['code'], 'While the client is paying, the costume is held.');
     }
+    public function test_a_large_gap_without_route_proof_never_proves_reuse_of_the_only_costume(): void
+    {
+        $this->party('2026-11-21T10:00:00-06:00', elsa: true);
+        $this->assertSame('owner_approval_required', $this->check(['18:00'])['slots'][0]['state']);
+    }
+
+    public function test_independent_teams_do_not_need_to_share_an_unproven_route(): void
+    {
+        $this->party('2026-11-21T10:00:00-06:00');
+        $this->assertSame('available', $this->check(['18:00'])['slots'][0]['state']);
+    }
+
+    public function test_pinned_multiskilled_team_is_not_greedily_bound_to_the_first_role(): void
+    {
+        $a = Resource::create(['code' => 'FLEX', 'name' => 'Sofía Méndez', 'kind' => 'staff', 'status' => 'active', 'skills' => ['host', 'face_painter', 'driver']]);
+        $b = Resource::create(['code' => 'HOST', 'name' => 'Elena Martínez', 'kind' => 'staff', 'status' => 'active', 'skills' => ['host', 'driver']]);
+        $e = $this->party('2026-11-21T10:00:00-06:00');
+        $e->services()->update(['requirements_snapshot' => [
+            ['kind' => 'staff', 'skill' => 'host', 'quantity' => 1], ['kind' => 'staff', 'skill' => 'face_painter', 'quantity' => 1]]]);
+        foreach ([$a, $b] as $r) \App\Models\ResourceReservation::create(['event_id' => $e->id, 'resource_id' => $r->id,
+            'starts_at' => $e->starts_at, 'ends_at' => $e->ends_at]);
+        $this->assertSame('available', $this->check(['10:00'])['slots'][0]['state']);
+    }
+
+    public function test_a_costume_pin_missing_from_the_recipe_still_needs_a_proven_transfer(): void
+    {
+        $e = $this->party('2026-11-21T10:00:00-06:00');
+        \App\Models\ResourceReservation::create(['event_id' => $e->id,
+            'resource_id' => Resource::where('code', 'ELSA-1')->value('id'), 'starts_at' => $e->starts_at, 'ends_at' => $e->ends_at]);
+        $this->assertSame('owner_approval_required', $this->check(['18:00'])['slots'][0]['state']);
+    }
+
+    public function test_existing_unassigned_teams_cannot_share_an_unproven_route_to_free_a_candidate_team(): void
+    {
+        Resource::where('code', 'DRV-1')->firstOrFail()->update(['skills' => ['host', 'driver']]);
+        foreach (['10:00', '13:00'] as $time) {
+            $e = $this->party('2026-11-21T'.$time.':00-06:00');
+            $e->services()->update(['requirements_snapshot' => [['kind' => 'staff', 'skill' => 'host', 'quantity' => 1]]]);
+        }
+        $this->assertSame('owner_approval_required', $this->check(['18:00'])['slots'][0]['state']);
+    }
+
 }

@@ -43,8 +43,10 @@ final class CheckRescheduleDate
         if ($start <= $now) throw ValidationException::withMessages(['time' => 'Esa hora ya pasó.']);
         $calendar = CheckWebsiteCandidates::busy($start->subDay(), $start->addDays(2));
         // The owner waits a little longer than the website: up to 3 uncached drives, 2 s each.
+        $routes = new DriveMinutes(3, 2.0);
         $state = AdmitEventCapacity::preview($event, $start, $calendar,
-            app()->bound('waoo.availability.drive') ? app('waoo.availability.drive') : [new DriveMinutes(3, 2.0), 'between']);
+            app()->bound('waoo.availability.drive') ? app('waoo.availability.drive')
+                : fn ($a, $b, $departure, $fromAddress, $toAddress) => $routes->betweenAddresses($fromAddress, $toAddress, $departure));
         $end = $start->addSeconds(CarbonImmutable::instance($event->starts_at)->diffInSeconds(CarbonImmutable::instance($event->ends_at)));
         return ['state' => $state, 'message' => self::MESSAGES[$state], 'starts_at' => $start->toIso8601String(), 'ends_at' => $end->toIso8601String()];
     }
