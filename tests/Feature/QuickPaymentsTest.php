@@ -367,4 +367,31 @@ class QuickPaymentsTest extends TestCase
         $this->input['deposit']=['amount_cents'=>15001,'verified_received'=>true];
         $this->expectException(\Illuminate\Validation\ValidationException::class);$this->create();
     }
+    public function test_audit_late_payment_and_signature_never_display_a_reserved_party_without_stock(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+        $r = $this->create();
+        $t = app(\App\Services\Documents\CreateTemplateVersion::class)->execute($this->owner,
+            ['terms_html'=>'<p>Synthetic audit terms.</p>', 'change_note'=>'Synthetic availability audit template.'], (string) Str::uuid());
+        app(\App\Services\Documents\ActivateTemplateVersion::class)->execute($this->owner, $t->id,
+            ['expected_source_sha256'=>$t->source_sha256, 'approval_note'=>'Synthetic audit approval only.']);
+        $this->client($r); $this->details(); $g = $this->gateway(); $this->checkout(100);
+        $sid = \App\Models\PaymentIntent::sole()->stripe_checkout_session_id;
+        $this->travel(49)->hours();
+        app(\App\Services\Booking\TickQuickPayments::class)->execute();
+        $g->pay($sid); $this->webhook($g, $sid);
+        $this->assertSame('paid_needs_review', QuickPaymentBooking::sole()->state);
+        $this->assertDatabaseCount('resource_reservations', 0);
+        $this->withHeader('Idempotency-Key', (string) Str::uuid())->postJson('/portal/api/details/contract',
+            ['expected_event_version'=>1, 'expected_revision'=>1])->assertOk();
+        $c = \App\Models\Contract::sole();
+        $this->get('/portal/api/contracts/'.$c->id.'/pdf')->assertOk();
+        $this->withHeader('Idempotency-Key', (string) Str::uuid())->postJson('/portal/api/contracts/'.$c->id.'/sign',
+            ['expected_version'=>$c->version, 'presented_pdf_sha256'=>$c->presented_pdf_sha256,
+             'signer_name'=>'Elena Martínez', 'consent'=>true, 'intent_to_sign'=>true,
+             'consent_version'=>'esign-consent-v2-2026-10-20-es'])->assertOk();
+        $this->assertDatabaseCount('resource_reservations', 0);
+        $this->get('/portal')->assertOk()->assertViewHas('vm', fn ($vm) => $vm['reserved'] === false);
+    }
+
 }

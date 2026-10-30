@@ -38,13 +38,36 @@ final class PoolCapacitySolver
                     if (!is_int($id) || !isset($units[$id]) || $units[$id]['kind'] !== $slot['kind'] || isset($ids[$id])) return $unknown('invalid_eligibility');
                     $ids[$id] = true;
                 }
+                // Optional pairing (who can wear which costume): 'pair' names another slot of this job, 'pairs' lists the allowed
+                // [this unit, partner unit] combinations. Both slots then hold one allowed combination for the whole job.
+                $pairs = null;
+                if (array_key_exists('pair', $slot)) {
+                    if (!is_string($slot['pair']) || $slot['pair'] === $slot['key'] || !is_array($slot['pairs'] ?? null) || count($slot['pairs']) > 4096) return $unknown('invalid_pairing');
+                    $pairs = [];
+                    foreach ($slot['pairs'] as $pr) {
+                        if (!is_array($pr) || count($pr) !== 2 || !is_int($pr[0] ?? null) || !is_int($pr[1] ?? null)) return $unknown('invalid_pairing');
+                        $pairs[$pr[0].':'.$pr[1]] = true;
+                    }
+                }
                 $keys[$slot['key']] = true; $indices[] = count($tasks);
                 $staff += (int)($slot['kind'] === 'staff'); $vehicles += (int)($slot['kind'] === 'vehicle');
                 $tasks[] = ['job' => $j['key'], 'key' => $slot['key'], 'kind' => $slot['kind'], 'eligible' => array_keys($ids),
-                    'start' => $j['starts_at'], 'end' => $j['ends_at']];
+                    'start' => $j['starts_at'], 'end' => $j['ends_at'], 'pair' => $pairs === null ? null : $slot['pair'], 'pairs' => $pairs];
                 if (count($tasks) > 512) return $unknown('input_limit');
             }
-            $groups[$j['key']] = ['indices' => $indices, 'staff' => $staff, 'vehicles' => $vehicles, 'drivers' => max($j['minimum_drivers'], $vehicles)];
+            // Resolve each pairing to its partner task, both ways; a partner outside this job is invalid.
+            foreach ($indices as $i) {
+                if ($tasks[$i]['pair'] === null) continue;
+                $partner = null;
+                foreach ($indices as $k) if ($tasks[$k]['key'] === $tasks[$i]['pair']) $partner = $k;
+                if ($partner === null || isset($tasks[$partner]['partner']) || $tasks[$partner]['pair'] !== null) return $unknown('invalid_pairing');
+                $tasks[$i]['partner'] = $partner; $tasks[$i]['own'] = true;
+                $tasks[$partner]['partner'] = $i; $tasks[$partner]['own'] = false; $tasks[$partner]['pairs'] = $tasks[$i]['pairs'];
+            }
+            // 'people' => false checks physical units only (vehicles without drivers or seat counts).
+            $people = $j['people'] ?? true;
+            if (!is_bool($people)) return $unknown('incomplete_job');
+            $groups[$j['key']] = ['indices' => $indices, 'staff' => $staff, 'vehicles' => $people ? $vehicles : 0, 'drivers' => $people ? max($j['minimum_drivers'], $vehicles) : $j['minimum_drivers']];
         }
         if ($tasks === []) return $unknown('empty_demand');
         $chosen = []; $states = 0; $exhausted = false; $checks = 0;
@@ -56,7 +79,14 @@ final class PoolCapacitySolver
             }
             return true;
         };
-        $search = function () use (&$search, &$chosen, &$busy, &$states, &$exhausted, $tasks, $groups, $units, $free, $deadline): bool {
+        // A paired task may only take a unit that forms an allowed combination with its partner's chosen unit.
+        $paired = static function (int $i, int $id) use (&$chosen, $tasks): bool {
+            $t = $tasks[$i];
+            if (!isset($t['partner']) || !isset($chosen[$t['partner']])) return true;
+            $other = $chosen[$t['partner']];
+            return isset($t['pairs'][$t['own'] ? $id.':'.$other : $other.':'.$id]);
+        };
+        $search = function () use (&$search, &$chosen, &$busy, &$states, &$exhausted, $tasks, $groups, $units, $free, $paired, $deadline): bool {
             if (++$states > $this->maxStates || hrtime(true) >= $deadline) { $exhausted = true; return false; }
             // Bound driver/seat feasibility using distinct still-eligible units, never independent positive role counts.
             foreach ($groups as $group) {
@@ -85,7 +115,7 @@ final class PoolCapacitySolver
             $selected = null; $domain = [];
             foreach ($tasks as $i => $task) {
                 if (isset($chosen[$i])) continue;
-                $available = array_values(array_filter($task['eligible'], fn ($id) => $free($task, $id)));
+                $available = array_values(array_filter($task['eligible'], fn ($id) => $free($task, $id) && $paired($i, $id)));
                 if ($exhausted) return false;
                 if ($available === []) return false;
                 if ($selected === null || count($available) < count($domain)) { $selected = $i; $domain = $available; }

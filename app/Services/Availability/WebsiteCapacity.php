@@ -23,6 +23,8 @@ final class WebsiteCapacity
 {
     public const MAX_SIMULTANEOUS = 4;
     public const MAX_PER_DAY = 10;
+    /** From this many characters in one party the owner always approves. */
+    public const OWNER_CHARACTERS = 5;
     public const GAP_MINUTES = 30;
     /** A neighbouring party closer than this (beyond the 30-minute gap) needs the drive checked by the owner. */
     public const TRAVEL_REVIEW_MINUTES = 60;
@@ -37,6 +39,7 @@ final class WebsiteCapacity
     private array $units = [];
     private array $blocks = [];
     private ?string $zip = null;
+    private ?array $compat = null;
     /** @var (callable(string, string, CarbonImmutable): ?int)|null */
     private $drive = null;
 
@@ -51,6 +54,7 @@ final class WebsiteCapacity
             $this->units[$r->id] = $r;
             $this->resources[] = match ($r->kind) {
                 'staff' => ['id' => $r->id, 'kind' => 'staff', 'driver' => in_array('driver', (array) $r->skills, true)],
+                // Unknown seats are never assumed (Codex audit R3): such a vehicle can't prove a requirement (review instead).
                 'vehicle' => ['id' => $r->id, 'kind' => 'vehicle', 'seats' => max(1, (int) $r->seats)],
                 default => ['id' => $r->id, 'kind' => in_array($r->kind, ['equipment', 'costume'], true) ? $r->kind : 'equipment'],
             };
@@ -126,6 +130,9 @@ final class WebsiteCapacity
         if ($this->partiesOn($day) >= self::MAX_PER_DAY) return 'unavailable';
         $state = $this->evaluate($from, $to, $requirements);
         if ($state === 'unavailable' || $state === 'review_required') return $state;
+        // César 2026-10-29: 5 or more characters always need the owner, whatever the inventory (Codex audit R2).
+        $characters = array_sum(array_map(fn ($r) => ($r['kind'] ?? null) === 'costume' ? max(1, (int) ($r['quantity'] ?? 1)) : 0, $requirements));
+        if ($characters >= self::OWNER_CHARACTERS) return 'owner_approval_required';
         if (! $this->travelFits($from, $to, $requirements, $state)) return 'owner_approval_required';
         $near = array_filter($this->parties, fn ($p) => $p['uncertain'] && $p['from'] < $to->addMinutes(self::TRAVEL_REVIEW_MINUTES) && $p['to'] > $from->subMinutes(self::TRAVEL_REVIEW_MINUTES));
         return $near ? 'owner_approval_required' : $state;
@@ -183,6 +190,25 @@ final class WebsiteCapacity
     }
 
     /** 'feasible' | 'infeasible' | 'unknown'. Without people, only costumes and equipment are checked. */
+    private function skillOf(array $party, array $slot): ?string
+    {
+        return $slot['skill'] ?? null;
+    }
+
+    /** Active staff with this skill. @return list<int> */
+    private function staffWith(string $skill): array
+    {
+        return array_values(array_keys(array_filter($this->units, fn ($u) => $u->kind === 'staff' && in_array($skill, (array) $u->skills, true))));
+    }
+
+    /** Recorded [costume unit, staff] combinations for these costume units. @return list<array{0:int,1:int}> */
+    private function wearers(array $costumeIds): array
+    {
+        $this->compat ??= \Illuminate\Support\Facades\DB::table('costume_compatibilities')->get(['costume_id', 'staff_id'])
+            ->map(fn ($r) => [(int) $r->costume_id, (int) $r->staff_id])->all();
+        return array_values(array_filter($this->compat, fn ($c) => in_array($c[0], $costumeIds, true) && isset($this->units[$c[1]])));
+    }
+
     private function solve(array $parties, bool $withPeople): string
     {
         $jobs = []; $blocks = $this->blocks;
@@ -195,9 +221,13 @@ final class WebsiteCapacity
                     'costume' => $u->kind === 'costume' && (int) $u->character_id === (int) ($req['character_id'] ?? 0),
                     'equipment' => $u->kind === 'equipment' && $u->equipment_kind === ($req['equipment_kind'] ?? null),
                     'staff' => $u->kind === 'staff' && (($req['skill'] ?? null) === '*' || in_array($req['skill'] ?? null, (array) $u->skills, true)),
+                    'vehicle' => $u->kind === 'vehicle' && (int) $u->seats >= max(1, (int) ($req['seats'] ?? 1)),
                     default => false,
                 }));
-                if (! in_array($kind, ['costume', 'equipment', 'staff'], true)) continue;
+                if (! in_array($kind, ['costume', 'equipment', 'staff', 'vehicle'], true)) continue;
+                // A vehicle whose seats are not recorded proves nothing: the candidate is reviewed, never instant or refused.
+                if ($kind === 'vehicle' && $eligible === [] && $p['key'] === 'candidate'
+                    && array_filter($this->units, fn ($u) => $u->kind === 'vehicle' && ! $u->seats)) return 'unknown';
                 for ($q = 0; $q < max(1, (int) ($req['quantity'] ?? 1)); $q++) {
                     // A reserved unit of this pool is pinned to this party: it covers this slot and nothing else.
                     $pin = null;
@@ -207,7 +237,21 @@ final class WebsiteCapacity
                         if ($p['key'] === 'candidate') return 'infeasible';
                         continue;
                     }
-                    $slots[] = ['key' => $kind.($k++), 'kind' => $kind, 'eligible' => $pin !== null ? [$pin] : $eligible];
+                    $slots[] = ['key' => $kind.($k++), 'kind' => $kind, 'eligible' => $pin !== null ? [$pin] : $eligible, 'skill' => $req['skill'] ?? null];
+                }
+            }
+            // Who can wear the costume (Codex audit R4, like ConfirmBooking): each costume of the candidate is worn by one of its
+            // performers, paired by the recorded "Quién puede usarlo" list. No recorded wearer = nobody can (people pass fails).
+            if ($withPeople && $p['key'] === 'candidate') {
+                $used = [];
+                foreach ($slots as $ci => $slot) {
+                    if ($slot['kind'] !== 'costume') continue;
+                    $wi = null;
+                    foreach ($slots as $si => $s2) if ($s2['kind'] === 'staff' && ! isset($used[$si]) && in_array($this->skillOf($p, $s2), ['performer'], true)) { $wi = $si; break; }
+                    if ($wi === null) { $slots[] = ['key' => 'wearer'.$ci, 'kind' => 'staff', 'eligible' => $this->staffWith('performer')]; $wi = array_key_last($slots); }
+                    $used[$wi] = true;
+                    $slots[$ci]['pair'] = $slots[$wi]['key'];
+                    $slots[$ci]['pairs'] = $this->wearers($slot['eligible']);
                 }
             }
             // Reserved units that match no requirement are still busy for this party.
@@ -215,7 +259,7 @@ final class WebsiteCapacity
             $hasStaff = (bool) array_filter($slots, fn ($s) => $s['kind'] === 'staff');
             if ($slots === []) continue;
             $jobs[] = ['key' => $p['key'], 'starts_at' => $p['from']->getTimestamp(), 'ends_at' => $p['to']->getTimestamp(), 'slots' => $slots,
-                'minimum_drivers' => $withPeople && $hasStaff ? 1 : 0];
+                'minimum_drivers' => $withPeople && $hasStaff ? 1 : 0, 'people' => $withPeople];
         }
         if ($jobs === []) return 'feasible';
         $r = (new PoolCapacitySolver())->solve($this->resources, $jobs, $blocks);
