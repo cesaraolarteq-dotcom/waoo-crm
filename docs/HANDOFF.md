@@ -1,3 +1,10 @@
+## 2026-10-30 · Claude · ANNIV-01 slice 2: "One year later" email, day-6 reminder, unsubscribe (branch claude/availability-audit-fixes)
+- `resources/views/mail/anniversary.blade.php`: email-safe version of César's design B (English only, no child name, team signature, P.S., visible "regular prices only · can't be combined", CAN-SPAM footer with `waoo.postal_address`, hosted JPGs from waooparty.com/wall-photos). Reminder variant "Your Waoo gift ends tomorrow".
+- `App\Services\Campaigns\AnniversaryMail`: `render()`, `sendDue()` → main email for `ready` codes, reminder from the Houston day before expiry; row claimed under lock before sending (never twice; claim undone on transport failure). Sends only when `waoo.mail_delivery_enabled` AND new `waoo.anniversary_mail_enabled` (env `WAOO_ANNIVERSARY_MAIL_ENABLED`, off). `php artisan waoo:anniversary-send`.
+- Unsubscribe: `customers.promo_opt_out_at`; signed never-expiring `/u/promo/{customer}` — GET shows a page (scanners), POST unsubscribes; `issue()` skips `unsubscribed`. Owner preview `/admin/anniversary/preview[?kind=reminder]` (fictitious client) linked from the Reportes card.
+- Not scheduled yet: both commands need a cron on Hostinger when César turns the campaign on. Website `contact?promo=` param is not read by the form yet.
+- Tests: `AnniversaryCampaignTest` 8/62 green (gates off → held, one email + one reminder, unsubscribe flow, preview).
+
 ## 2026-10-30 · Claude · Visual review of CRM screens + website (branch claude/availability-audit-fixes)
 César: "evalúa todas las pantallas del CRM y la web y mejora". Walked locally (fictitious bookings, desktop 1440 and phone 390) and the live website on a phone width.
 - Eventos list: a draft with money no longer says "Borrador": `EventResource::listStatus()` → "Depósito recibido" (receipt), "HoneyBook" (imported), "Esperando pago" (open quick payment), else "Borrador".

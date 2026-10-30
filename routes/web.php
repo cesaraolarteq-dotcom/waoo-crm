@@ -10,6 +10,19 @@ require __DIR__.'/tips.php';
 Route::redirect('/', '/admin')->name('home');
 // GET /login, /two-factor-challenge and /user/confirm-password are Fortify views (FortifyServiceProvider).
 Route::middleware(['auth', 'password.confirm'])->get('/seguridad/dos-pasos', TwoFactorEnrollmentController::class)->name('security.two-factor');
+// CAN-SPAM unsubscribe from promotional emails (ANNIV-01): signed per client, never expires.
+Route::middleware(['signed', 'throttle:30,1'])->group(function () {
+    Route::get('/u/promo/{customer}', [\App\Http\Controllers\Promo\UnsubscribeController::class, 'show'])->whereNumber('customer')->name('promo.unsubscribe');
+    Route::post('/u/promo/{customer}', [\App\Http\Controllers\Promo\UnsubscribeController::class, 'store'])->whereNumber('customer');
+});
+// Owner preview of the anniversary email with a fictitious client (never sends).
+Route::middleware(['auth', RequireOwnerAdmin::class])->get('/admin/anniversary/preview', function (Request $request) {
+    $kind = $request->query('kind') === 'reminder' ? 'reminder' : 'main';
+    $customer = new \App\Models\Customer(['name' => 'María González', 'email' => 'maria@example.test']); $customer->id = 0;
+    $row = new \App\Models\AnniversaryCode(['code' => 'WAOO-7KX9Q', 'state' => 'ready']); $row->customer_id = 0;
+    $row->expires_at = now('America/Chicago')->addDays(7)->endOfDay();
+    return response(\App\Services\Campaigns\AnniversaryMail::renderFor($row, $customer, $kind)['html'])->header('Cache-Control', 'no-store');
+});
 Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'));
 // Owner 2026-10-21: Google Calendar OAuth (owner with confirmed 2FA only).
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:20,1'])->prefix('admin/google')->group(function () {
