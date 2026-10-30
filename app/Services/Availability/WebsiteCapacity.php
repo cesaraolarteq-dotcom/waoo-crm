@@ -40,6 +40,7 @@ final class WebsiteCapacity
     private array $blocks = [];
     private ?string $zip = null;
     private ?array $compat = null;
+    private bool $unfilled = false;
     /** @var (callable(string, string, CarbonImmutable): ?int)|null */
     private $drive = null;
 
@@ -70,12 +71,16 @@ final class WebsiteCapacity
                 || QuickCostumeHold::where('event_id', $e->id)->whereIn('state', ['held', 'review_required', 'consumed'])->exists();
             if (! $holds) continue;
             $known = $e->setup_minutes !== null && $e->breakdown_minutes !== null;
+            // Codex audit S5: a committed party whose recipe is empty, or that holds a unit no longer active, is not proof
+            // that its people/equipment are free: it stays uncertain (the owner checks nearby starts), never demand 0.
+            $requirementsOf = $e->services->flatMap(fn ($s) => $s->requirements_snapshot ?? [])->all();
+            $broken = $requirementsOf === [] || array_diff($reserved, array_keys($this->units)) !== [];
             $start = CarbonImmutable::instance($e->starts_at); $end = CarbonImmutable::instance($e->ends_at);
             $this->parties[] = ['key' => 'e'.$e->id, 'start' => $start, 'end' => $end,
                 'from' => $start->subMinutes($known ? $e->setup_minutes : self::UNKNOWN_MINUTES),
                 'to' => $end->addMinutes(($known ? $e->breakdown_minutes : self::UNKNOWN_MINUTES) + self::GAP_MINUTES),
-                'day' => $start->setTimezone('America/Chicago')->toDateString(), 'uncertain' => ! $known,
-                'requirements' => $e->services->flatMap(fn ($s) => $s->requirements_snapshot ?? [])->all(),
+                'day' => $start->setTimezone('America/Chicago')->toDateString(), 'uncertain' => ! $known || $broken,
+                'requirements' => $requirementsOf,
                 'pinned' => array_values(array_filter($reserved, fn ($id) => isset($this->units[$id]))),
                 'zip' => preg_match('/^\d{5}$/D', (string) $e->postal_code) ? $e->postal_code : null];
             if ($isImport) $imported[] = count($this->parties) - 1;
@@ -174,7 +179,9 @@ final class WebsiteCapacity
         $physical = $this->solve($jobs, false);
         if ($physical === 'unknown') return 'review_required';
         if ($physical === 'infeasible') return 'unavailable';
+        $this->unfilled = false;
         $full = $this->solve($jobs, true);
+        if ($full === 'feasible' && $this->unfilled) return 'owner_approval_required';
         return $full === 'feasible' ? 'available' : ($full === 'unknown' ? 'review_required' : 'owner_approval_required');
     }
 
@@ -233,8 +240,10 @@ final class WebsiteCapacity
                     $pin = null;
                     foreach ($pinned as $i => $id) if (in_array($id, $eligible, true)) { $pin = $id; unset($pinned[$i]); break; }
                     if ($eligible === [] && $pin === null) {
-                        // The candidate needs something nobody has: impossible. An already booked party is a fact: skip that role.
+                        // The candidate needs something nobody has: impossible. An already booked party is a fact: its role is
+                        // skipped here, and the party is marked uncertain so nearby starts go to the owner (Codex audit S5).
                         if ($p['key'] === 'candidate') return 'infeasible';
+                        $this->unfilled = true;
                         continue;
                     }
                     $slots[] = ['key' => $kind.($k++), 'kind' => $kind, 'eligible' => $pin !== null ? [$pin] : $eligible, 'skill' => $req['skill'] ?? null];

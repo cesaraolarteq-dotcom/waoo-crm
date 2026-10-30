@@ -394,4 +394,21 @@ class QuickPaymentsTest extends TestCase
         $this->get('/portal')->assertOk()->assertViewHas('vm', fn ($vm) => $vm['reserved'] === false);
     }
 
+    public function test_deadline_keeps_the_stock_while_the_card_checkout_cannot_be_closed_and_releases_it_once_closed(): void
+    {
+        // Codex audit S2: never free the costume while the client's card checkout is still open or its outcome unknown.
+        $r = $this->create(); $this->client($r); $this->details(); $g = $this->gateway(); $this->checkout(50);
+        $held = \App\Models\ResourceReservation::count();
+        $this->assertGreaterThan(0, $held);
+        $this->travel(49)->hours();
+        $g->failExpire = true;
+        app(\App\Services\Booking\TickQuickPayments::class)->execute();
+        $this->assertSame($held, \App\Models\ResourceReservation::count(), 'stock kept while the checkout is not closed');
+        $this->assertNotSame('expired', QuickPaymentBooking::sole()->state);
+        $this->assertSame('provider_close_pending', \App\Models\PaymentIntent::sole()->last_error);
+        $g->failExpire = false;
+        app(\App\Services\Booking\TickQuickPayments::class)->execute();
+        $this->assertSame('expired', QuickPaymentBooking::sole()->state);
+        $this->assertSame(0, \App\Models\ResourceReservation::count(), 'released once Stripe confirmed the unpaid expiry');
+    }
 }

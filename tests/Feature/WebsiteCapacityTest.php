@@ -20,6 +20,8 @@ class WebsiteCapacityTest extends TestCase
     {
         parent::setUp();
         $this->travelTo(CarbonImmutable::parse('2026-11-01T09:00:00-06:00'));
+        // An outside calendar that answered with nothing (no Google connection would be unknown, Codex audit S4).
+        $this->app->instance('waoo.availability.busy', fn () => []);
         $owner = User::factory()->create(['role' => 'owner_admin', 'active' => true]);
         $this->elsa = Character::create(['name' => 'Elsa', 'active' => true]);
         Resource::create(['code' => 'ELSA-1', 'name' => 'Elsa 1', 'kind' => 'costume', 'status' => 'active', 'character_id' => $this->elsa->id, 'skills' => []]);
@@ -85,6 +87,16 @@ class WebsiteCapacityTest extends TestCase
         $this->assertSame('owner_approval_required', $ask(null), 'no ZIP from the client: fixed window');
         $e->postal_code = null; $e->save();
         $this->assertSame('owner_approval_required', $ask('77450'), 'neighbour without ZIP: fixed window');
+    }
+
+    public function test_no_outside_calendar_answering_is_unknown_unless_the_crm_is_the_only_agenda(): void
+    {
+        // Codex audit S4: Google not connected (no HoneyBook feed configured) is not an empty agenda.
+        $this->app->forgetInstance('waoo.availability.busy'); unset($this->app['waoo.availability.busy']);
+        config(['waoo.honeybook_ical_url' => null]);
+        $this->assertSame('evaluation_unavailable', $this->check(['14:00'])['unresolved'][0]['code']);
+        config(['waoo.availability_crm_only' => true]);
+        $this->assertSame('available', $this->check(['14:00'])['slots'][0]['state'], 'after the switch the CRM is the only agenda');
     }
 
     public function test_four_parties_at_once_is_the_limit_and_people_short_becomes_owner_approval(): void

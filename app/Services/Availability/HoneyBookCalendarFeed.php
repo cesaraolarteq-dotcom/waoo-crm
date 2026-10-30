@@ -28,12 +28,15 @@ final class HoneyBookCalendarFeed
         $ics = Cache::get($key);
         if (! is_string($ics)) {
             try {
-                $r = Http::connectTimeout(1)->timeout(2)->withoutRedirecting()->get($url);
+                // Read at most MAX_BYTES + 1 from the network, so the size limit also bounds memory (Codex audit P2).
+                $r = Http::connectTimeout(1)->timeout(2)->withoutRedirecting()->withOptions(['stream' => true])->get($url);
+                if (! $r->successful()) return null;
+                $stream = $r->toPsrResponse()->getBody(); $body = '';
+                while (! $stream->eof() && strlen($body) <= self::MAX_BYTES) $body .= $stream->read(65536);
             } catch (\Throwable) {
                 return null;
             }
-            $body = $r->body();
-            if (! $r->successful() || strlen($body) > self::MAX_BYTES) return null;
+            if (strlen($body) > self::MAX_BYTES) return null;
             $ics = $body;
             Cache::put($key, $ics, 120);
         }

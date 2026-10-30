@@ -13,7 +13,8 @@ final class QuickPaymentGateway implements \App\Services\Finance\QuickStripeGate
         if($this->onCreate)($this->onCreate)($sid);return $this->sessions[$sid];
     }
     public function retrieveCheckout(string $id):array{return $this->sessions[$id];}
-    public function expireCheckout(string $id):void{$this->sessions[$id]['status']='expired';}
+    public bool $failExpire=false;
+    public function expireCheckout(string $id):void{if($this->failExpire)throw new \RuntimeException('Stripe timeout');$this->sessions[$id]['status']='expired';}
     public function pay(string $id):void
     {
         $s=&$this->sessions[$id];$pi='pi_'.substr(hash('sha256',$id),0,24);$s['status']='complete';$s['payment_status']='paid';
