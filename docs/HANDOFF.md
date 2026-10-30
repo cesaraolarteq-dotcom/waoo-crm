@@ -1,3 +1,11 @@
+## 2026-10-30 · Claude · CHANGE-A part 4: client notices for a reschedule (branch claude/availability-audit-fixes) — for review (Codex out of credits; César: reviews go here only, never blocking)
+- `App\Services\Changes\RescheduleNotices::sendDue()` + `php artisan waoo:reschedule-notices` (needs a cron when mail/SMS go live): for `pending_signature` changes, a notice by email (mail layout, button "Revisar y firmar"/"Review and sign", fee sentence when charged, client's locale) AND text (via `SendSms`: only opted-in US mobiles, footer on first text), then one reminder after 48 h if still unsigned. Claimed under lock before sending (never twice); undone when no channel went out. Owner hold respected: with mail and SMS gates off → `held`, nothing leaves.
+- Link = the client's own active portal grant (the one their details were submitted with; a new grant could not sign because submissions are bound to their grant), revealed with `PortalTokenVault`/`ShortPortalLinks`; expired/revoked → `no_link` (owner must act).
+- Email falls back to the email from the client's portal details when the customer record has none.
+- Event page: chip "Aviso al cliente: enviado … / pendiente / no enviado (correo y SMS apagados): mándale su enlace por WhatsApp"; "Cambiar fecha" triggers a best-effort send right away.
+- Tests: `RescheduleContractTest` 4/51 (gates off → held; email+SMS notice once; reminder only after 48 h, once; no reminder once signed).
+- **Review notes for Codex (non-blocking):** RescheduleEvent capacity/hold transition (part 1), revision + fee/deposit rule (part 2), ClientContractSource relaxation scoped to `pending_signature` (part 3), revealing an existing grant for notices (part 4).
+
 ## 2026-10-30 · Claude · CHANGE-A part 3: client signs a new contract after a reschedule (branch claude/availability-audit-fixes) — **Codex: contract/signature review please**
 Reuses the client-prepared contract path (PrepareClientContract → portal sign), relaxed only while a reschedule is `pending_signature`:
 - `EventChange::pendingSignature()` / `signedIsBeforeChange()` (no signed contract at or after `event_version_after`).

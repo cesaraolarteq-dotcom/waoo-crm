@@ -398,6 +398,8 @@ class ViewEvent extends Page
                     \Filament\Notifications\Notification::make()->danger()->title('No se cambió la fecha')->body($ex instanceof \Illuminate\Validation\ValidationException ? collect($ex->errors())->flatten()->first() : $ex->getMessage())->persistent()->send();
                     $action->halt();
                 }
+                // Part 4: tell the client right away when mail/SMS are on (best effort; the scheduled command retries).
+                if ($c->state === 'pending_signature') { try { app(\App\Services\Changes\RescheduleNotices::class)->sendDue(); } catch (\Throwable) {} }
                 \Filament\Notifications\Notification::make()->success()->title('Fecha cambiada · '.Labels::when($c->new_starts_at))
                     ->body(($c->moved_reservations ? 'Se movieron '.$c->moved_reservations.' recursos apartados. ' : '').($c->state === 'pending_signature' ? 'Queda pendiente de firma del contrato nuevo.' : '').($c->fee_cents ? ' Cargo de $100 anotado.' : ' Sin cargo.'))->persistent()->send();
                 $this->redirect(EventResource::getUrl('view', ['record' => $e]));

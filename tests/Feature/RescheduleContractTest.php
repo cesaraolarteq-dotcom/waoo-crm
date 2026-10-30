@@ -108,4 +108,52 @@ class RescheduleContractTest extends TestCase
         $this->sign($c)->assertOk();
         $this->retry()->assertStatus(409);
     }
+
+    private function signedThenRescheduled(): \App\Models\EventChange
+    {
+        $this->submit()->assertCreated(); $this->retry()->assertOk();
+        $c = Contract::where('state', 'issued')->sole();
+        $this->get('/portal/api/contracts/'.$c->id.'/pdf')->assertOk(); $this->sign($c)->assertOk();
+        return app(\App\Services\Changes\RescheduleEvent::class)->execute($this->owner, $this->event->id, ['expected_version' => $this->event->fresh()->version,
+            'date' => now('America/Chicago')->addDays(40)->toDateString(), 'time' => '16:00', 'fee_decision' => 'charge', 'fee_reason' => 'La clienta pidió otra fecha.'], (string) Str::uuid());
+    }
+
+    public function test_notice_by_email_and_text_then_one_reminder_after_48_hours_and_nothing_while_off(): void
+    {
+        $change = $this->signedThenRescheduled();
+        $notices = app(\App\Services\Changes\RescheduleNotices::class);
+        $this->assertSame(1, $notices->sendDue()['held'], 'mail and SMS off: nothing leaves');
+        $this->assertNull($change->fresh()->notified_at);
+        $mail = new class implements \App\Services\Mail\MailTransport { public array $sent = [];
+            public function configured(): bool { return true; }
+            public function send(#[\SensitiveParameter] \App\Services\Mail\OutboundEnvelope $m): \App\Services\Mail\TransportReceipt { $this->sent[] = $m; return new \App\Services\Mail\TransportReceipt('fake', 'x'); } };
+        $this->app->instance(\App\Services\Mail\MailTransport::class, $mail);
+        config(['waoo.mail_delivery_enabled' => true, 'waoo.sms_delivery_enabled' => true, 'services.twilio' => ['account_sid' => 'AC'.str_repeat('a', 32),
+            'api_key_sid' => 'SK'.str_repeat('b', 32), 'api_key_secret' => str_repeat('c', 32), 'messaging_service_sid' => 'MG'.str_repeat('d', 32)]]);
+        \Illuminate\Support\Facades\Http::fake(['api.twilio.com/*' => \Illuminate\Support\Facades\Http::response(['sid' => 'SM'.str_repeat('e', 32)], 201)]);
+        DB::table('sms_consents')->insert(['phone_e164' => '+17135550126', 'status' => 'opted_in', 'source' => 'website_form', 'changed_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+        $this->assertSame(1, $notices->sendDue()['notices']);
+        $this->assertSame(0, $notices->sendDue()['notices'], 'never twice');
+        $this->assertSame('maria@example.test', $mail->sent[0]->recipient);
+        $this->assertStringContainsString('firma tu contrato', $mail->sent[0]->subject);
+        $this->assertStringContainsString('cargo por cambio de fecha de $100', $mail->sent[0]->html);
+        $this->assertStringContainsString('/portal', $mail->sent[0]->html);
+        $this->assertSame(1, \App\Models\SmsMessage::where('direction', 'out')->where('status', 'sent')->count());
+        $this->travel(47)->hours();
+        $this->assertSame(0, $notices->sendDue()['reminders']);
+        $this->travel(2)->hours();
+        $this->assertSame(1, $notices->sendDue()['reminders']);
+        $this->assertSame(0, $notices->sendDue()['reminders']);
+        $this->assertStringContainsString('Recordatorio', $mail->sent[1]->subject);
+    }
+
+    public function test_once_signed_no_reminder_goes_out(): void
+    {
+        $change = $this->signedThenRescheduled();
+        $this->event->refresh(); $this->retry()->assertOk();
+        $c = Contract::where('state', 'issued')->sole();
+        $this->get('/portal/api/contracts/'.$c->id.'/pdf')->assertOk(); $this->sign($c)->assertOk();
+        config(['waoo.mail_delivery_enabled' => true]);
+        $this->assertSame(['notices' => 0, 'reminders' => 0, 'held' => 0, 'no_link' => 0], app(\App\Services\Changes\RescheduleNotices::class)->sendDue());
+    }
 }
