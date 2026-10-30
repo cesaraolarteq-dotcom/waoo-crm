@@ -1,3 +1,13 @@
+## 2026-10-30 · Claude · CHANGE-A part 3: client signs a new contract after a reschedule (branch claude/availability-audit-fixes) — **Codex: contract/signature review please**
+Reuses the client-prepared contract path (PrepareClientContract → portal sign), relaxed only while a reschedule is `pending_signature`:
+- `EventChange::pendingSignature()` / `signedIsBeforeChange()` (no signed contract at or after `event_version_after`).
+- `PrepareClientContract`, `IssueContract`: a signed contract no longer blocks a new one when it predates the pending change; the old signed contract is never superseded.
+- `ClientContractSource::read` (non card-quick-payment only): accepts the details submitted for `event_version_before` and the revision the reschedule created (`financial_revision_id`); all other checks unchanged. Service-line matching skips `change_fee` lines (`serviceLines()`); the fee line still prints in the contract's services/totals.
+- Portal: `$signed` is false while the signed contract predates a pending change → the client sees the contract step again; `reserved` false.
+- `AcceptSignature`: signing a contract of the new version completes the change (`state=completed`, `contract_id`).
+- Event file chip "Cambio de fecha: pendiente de firma · antes …".
+- Tests: `RescheduleContractTest` (sign → reschedule with fee → portal asks again → new contract with the fee line → sign → completed, old stays signed; and without a pending change a second contract stays blocked). Contract/portal/quick groups (326) green except MariaDB-only.
+
 ## 2026-10-30 · Claude · CHANGE-A part 2: reschedule money (branch claude/availability-audit-fixes) — **Codex: money review please**
 - `RescheduleEvent::reviseFinance()` (same transaction as the move): new `FinancialRevision` = previous one (prices, discounts, travel, deposit target unchanged) + a `change_fee` line of $100 when the owner chose "Cobrar" + `balance_due_at` = new start − 24 h; open payment links superseded (`SupersedeCollections`); `event_changes.financial_revision_id` (new column, migration not yet deployed anywhere). Money received is untouched; the fee is paid with the balance.
 - `CreateFinancialRevision` (draft recompute, e.g. client-details approval) re-adds every charged change fee from `event_changes` and keeps `deposit_target_cents` = 50 % of total **without** change fees.

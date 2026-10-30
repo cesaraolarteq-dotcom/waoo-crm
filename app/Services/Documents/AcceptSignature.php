@@ -41,6 +41,11 @@ final class AcceptSignature
             }
             $signature = app(SignatureProvider::class)->capture($contract, $client, $data, $request);
             $contract->fill(['state' => 'signed', 'signed_at' => $signature->accepted_at, 'version' => $contract->version + 1])->save();
+            // CHANGE-A part 3: signing the contract of the new date completes the pending reschedule.
+            if (($pending = \App\Models\EventChange::pendingSignature($contract->event_id)) && $contract->event_version >= $pending->event_version_after) {
+                $pending->forceFill(['state' => 'completed', 'contract_id' => $contract->id])->save();
+                Audit::recordSystem('event.reschedule_signed', $pending, ['state' => 'pending_signature'], ['state' => 'completed', 'contract_id' => $contract->id]);
+            }
             if(($contract->commercial_snapshot['client_details']['schema_version']??1)===2)\App\Services\Billing\BillingCompany::apply($event,$contract->commercial_snapshot['billing_company']??null,null);
             // Client evidence is not a users-table owner; retain grant/customer provenance in the client audit payload.
             Audit::recordSystem('contract.client_signed', $contract, ['state' => 'issued'], ['state' => 'signed', 'signature_evidence_id' => $signature->id, 'customer_id' => $client->customerId, 'portal_grant_id' => $client->grantId, 'presented_pdf_sha256' => $contract->presented_pdf_sha256]);
