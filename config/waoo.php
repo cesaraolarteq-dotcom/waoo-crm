@@ -63,6 +63,8 @@ return [
         'es' => ['accepted' => $clientTexts['texts']['quote_accept']['es'], 'rejected' => $clientTexts['texts']['quote_reject']['es']],
         'en' => ['accepted' => $clientTexts['texts']['quote_accept']['en'], 'rejected' => $clientTexts['texts']['quote_reject']['en']],
     ],
+    // César 2026-10-29: postal address in promotional email footers (CAN-SPAM); his registered agent's address.
+    'postal_address' => env('WAOO_POSTAL_ADDRESS', 'Waoo Party LLC · 17350 State Hwy 249, Ste 220 · Houston, TX 77064'),
     'extra_character_cents' => 15000, // César 2026-10-21: each character beyond the package's included ones adds $150, any package.
     // Owner 2026-10-21: two-way Google Calendar (OAuth client from the owner's Google Cloud project; never in Git).
     'google_calendar' => ['client_id' => env('GOOGLE_CALENDAR_CLIENT_ID'), 'client_secret' => env('GOOGLE_CALENDAR_CLIENT_SECRET'), 'calendar_name' => 'Waoo Party fiestas'],
