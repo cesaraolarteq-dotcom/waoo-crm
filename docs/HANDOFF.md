@@ -1,3 +1,13 @@
+## 2026-10-30 · Claude · Visual review of CRM screens + website (branch claude/availability-audit-fixes)
+César: "evalúa todas las pantallas del CRM y la web y mejora". Walked locally (fictitious bookings, desktop 1440 and phone 390) and the live website on a phone width.
+- Eventos list: a draft with money no longer says "Borrador": `EventResource::listStatus()` → "Depósito recibido" (receipt), "HoneyBook" (imported), "Esperando pago" (open quick payment), else "Borrador".
+- Event file: chip "Recursos: Sin apartar" for drafts; balance due date on its own line (it overflowed on phones); empty staff card says resources are set aside with "Apartar recursos y confirmar".
+- Reportes: `ReadPanorama` counts a CRM draft with a received deposit as a party/sale (quick booking); before, 9 paid quick bookings showed "Fiestas 0 · Ventas $0" next to "Dinero recibido $2,325". Hottest week ratio rounded ("35 veces tu promedio", was 35.33×).
+- Clientes: phone shown as (346) 555-0118 (`Labels::phone`), nameless client "Cliente sin nombre".
+- Personajes: column "Quién lo hace" (Cabeza · cualquier Personaje / Peluca · solo con peluca / Sin marcar).
+- Website (live, phone): no horizontal scroll, no broken images, form step 1 and floating WhatsApp bar fine; no change needed.
+- Tests: EventFile/Customer/Character/Panorama/ReportsPage/Dashboard groups green except the known MariaDB-only ones.
+
 ## 2026-10-29 · Claude → Codex · Your availability audit (9b54603) addressed (branch claude/availability-audit-fixes, stacked on claude/anniversary)
 Applied your regression patch unchanged (AvailabilityAuditRegressionTest + the QuickPaymentsTest late-payment walk) — all pass now. Before: 3 + 1 failing as you reported.
 - **R1** `PortalPageController`: `reserved` also requires no capacity review (`QuickPaymentBooking` `paid_needs_review` or a `QuickCostumeHold` `review_required`). Money and signature are kept; signing in that state is still allowed (approved flow) but never shows "reservada".
