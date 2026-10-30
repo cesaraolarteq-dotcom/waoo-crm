@@ -30,6 +30,7 @@ final class ResyncHoneyBookMoney
         $hash = MutationKey::hash($d);
         $scope = "owner:{$actor->id}:import:{$batchId}:row:{$rowId}:commit";
         return ImportPersistence::transaction(function () use ($actor, $batchId, $rowId, $d, $hash, $scope, $key) {
+            \App\Services\Scheduling\DailyCapacity::lock();
             User::whereKey($actor->id)->lockForUpdate()->firstOrFail();
             ImportInput::actor($actor);
             ImportInput::lock();

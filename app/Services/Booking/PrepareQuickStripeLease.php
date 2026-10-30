@@ -16,6 +16,7 @@ final class PrepareQuickStripeLease
             'deposit_percent'=>'sometimes|required|integer|in:50,100']);$data['deposit_percent']??=50;
         $scope="owner:{$actor->id}:event:{$eventId}:quick-stripe-prepare";$hash=MutationKey::hash($data);
         return DB::transaction(function()use($actor,$eventId,$data,$scope,$hash,$key){
+            \App\Services\Scheduling\DailyCapacity::lock();
             User::whereKey($actor->id)->lockForUpdate()->firstOrFail();QuickStripeLeases::actor($actor);
             $event=Event::whereKey($eventId)->lockForUpdate()->firstOrFail();
             $lease=QuickStripeLease::where('event_id',$eventId)->lockForUpdate()->first();
@@ -30,6 +31,7 @@ final class PrepareQuickStripeLease
             $revision=FinancialRevision::whereKey($data['financial_revision_id'])->where('event_id',$eventId)->firstOrFail();
             RecordWriteRejected::unless($revision->event_version===$event->version&&$revision->currency==='USD'
                 &&(int)FinancialRevision::where('event_id',$eventId)->max('revision')===$revision->revision,409,'Revisa la versión financiera vigente.');
+            \App\Services\Scheduling\DailyCapacity::assertRoom($event);
             $compiled=QuickCostumeHolds::slots($event);$slots=$compiled['slots'];
             RecordWriteRejected::unless(!$compiled['missing']&&$event->services()->exists(),422,'Completa los personajes y requisitos antes de ofrecer un apartado sin pago.');
             \App\Services\Availability\AdmitEventCapacity::assertFits($event); // day locks before character/resource locks

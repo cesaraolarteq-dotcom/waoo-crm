@@ -15,6 +15,7 @@ final class ZelleNoticeController extends Controller
         Sandbox::require(); Sandbox::require('sandbox_documents');
         $shot = \App\Models\ZelleNoticeScreenshot::where('notice_id', $notice)->firstOrFail();
         abort_unless(\Illuminate\Support\Facades\Storage::disk('local')->exists($shot->path), 404);
+        abort_unless(hash_equals($shot->sha256, hash_file('sha256', \Illuminate\Support\Facades\Storage::disk('local')->path($shot->path))), 404);
         return response()->file(\Illuminate\Support\Facades\Storage::disk('local')->path($shot->path), ['Content-Type' => $shot->mime,
             'Content-Disposition' => 'inline; filename="zelle-'.$notice.'"', 'Cache-Control' => 'no-store, private', 'X-Robots-Tag' => 'noindex', 'X-Content-Type-Options' => 'nosniff']);
     }

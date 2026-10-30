@@ -23,6 +23,9 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (\Illuminate\Support\Facades\DB::table('zelle_notice_screenshots')->exists()) {
+            throw new \RuntimeException('Screenshot evidence exists; use a forward migration.');
+        }
         Schema::dropIfExists('zelle_notice_screenshots');
     }
 };

@@ -35,6 +35,7 @@ final class CreateUnpaidQuickBooking
         if (isset($data['customer_update'])) RecordWriteRejected::unless(isset($data['customer_id']),422,'Selecciona el cliente antes de actualizarlo.');
         $scope = "owner:{$actor->id}:quick-book"; $hash = MutationKey::hash($data);
         return DB::transaction(function()use($actor,$data,$scope,$hash,$key) {
+            \App\Services\Scheduling\DailyCapacity::lock();
             User::whereKey($actor->id)->lockForUpdate()->firstOrFail(); RecordActor::authorize($actor);
             // The owner row already serializes this owner-scoped key, before the first snapshot read.
             // Locking a missing receipt also locks an index gap shared by unrelated owners and can deadlock nested writes.

@@ -16,6 +16,7 @@ final class ConfirmPaidCapacity
         $data = CapacityPaymentInput::validate($input);
         try {
             return DB::transaction(function () use ($actor, $eventId, $data) {
+            \App\Services\Scheduling\DailyCapacity::lock();
                 $event = Event::whereKey($eventId)->lockForUpdate()->firstOrFail();
                 $revision = FinancialRevision::where('event_id', $eventId)->whereKey($data['financial_revision_id'])->firstOrFail();
                 $link = DB::table('capacity_payment_links')->where('event_id', $eventId)->first();

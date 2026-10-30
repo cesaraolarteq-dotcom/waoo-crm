@@ -17,7 +17,7 @@ class StripeSandboxTest extends TestCase
     private User $owner; private Event $event; private FinancialRevision $finance; private FakeStripeGateway $stripe;
     protected function setUp(): void
     {
-        parent::setUp(); config(['waoo.sandbox_finance' => true, 'waoo.stripe_test_secret' => 'sk_test_fixture', 'waoo.stripe_test_account' => 'acct_fixture', 'waoo.stripe_test_webhook_secret' => 'whsec_fixture']); Queue::fake();
+        parent::setUp(); config(['waoo.regular_card_fee_enabled'=>true,'waoo.stripe_credit_only_account'=>'acct_fixture','waoo.sandbox_finance' => true, 'waoo.stripe_test_secret' => 'sk_test_fixture', 'waoo.stripe_test_account' => 'acct_fixture', 'waoo.stripe_test_webhook_secret' => 'whsec_fixture']); Queue::fake();
         $this->stripe = new FakeStripeGateway(); $this->app->instance(StripeGateway::class, $this->stripe);
         $this->owner = User::factory()->create(['role' => 'owner_admin', 'active' => true, 'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'), 'two_factor_confirmed_at' => now()]); $this->actingAs($this->owner);
         $customer = Customer::create(['name' => 'Fixture client', 'locale' => 'es']);
@@ -26,6 +26,12 @@ class StripeSandboxTest extends TestCase
         $start = now()->addDays(20)->startOfHour();
         $this->event = app(SaveEventDraft::class)->execute($this->owner, ['customer_id' => $customer->id, 'title' => 'Fixture party', 'starts_at' => $start->toIso8601String(), 'ends_at' => $start->copy()->addHour()->toIso8601String(), 'timezone' => 'America/Chicago', 'travel_fee_cents' => 5500, 'services' => [['price_version_id' => $price->id]]]);
         $this->finance = app(CreateFinancialRevision::class)->execute($this->owner, $this->event->id, ['expected_version' => 1], (string) Str::uuid());
+    }
+    protected function tearDown(): void
+    {
+        // Only disposable test metadata: populated fee evidence deliberately blocks a destructive down migration.
+        if($this->app && \Illuminate\Support\Facades\Schema::hasColumn('payment_intents','card_fee_policy')) \Illuminate\Support\Facades\DB::table('payment_intents')->update(['card_fee_policy'=>null,'card_fee_terms_sha256'=>null]);
+        parent::tearDown();
     }
     private function create(?string $key = null)
     {

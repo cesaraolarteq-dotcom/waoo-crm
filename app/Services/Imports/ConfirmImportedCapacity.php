@@ -13,6 +13,7 @@ final class ConfirmImportedCapacity
         $d=ImportInput::input($input,$rules);$d['expected_version']=(int)$d['expected_version'];$d['imported_revision_id']=(int)$d['imported_revision_id'];$d['resource_ids']=array_map('intval',$d['resource_ids']);sort($d['resource_ids']);
         $hash=MutationKey::hash($d);$scope="owner:{$actor->id}:import:event:{$eventId}:capacity";
         return ImportPersistence::transaction(function()use($actor,$eventId,$d,$hash,$scope,$key){
+            \App\Services\Scheduling\DailyCapacity::lock();
             $event=Event::whereKey($eventId)->lockForUpdate()->firstOrFail();ImportInput::actor($actor);
             if(MutationKey::find($scope,$key,$hash))return $event;
             $link=ImportedProjectLink::where('event_id',$eventId)->lockForUpdate()->firstOrFail();

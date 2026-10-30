@@ -25,6 +25,6 @@ final class FakeStripeGateway implements StripeGateway
     {
         $session = &$this->sessions[$id]; $session['status'] = 'complete'; $session['payment_status'] = 'paid';
         $session['payment_intent'] = ['id' => 'pi_fixture_'.($session['metadata']['local_intent_id'] ?? str_replace('-', '', $session['metadata']['local_tip_intent_id'])), 'livemode' => false, 'status' => 'succeeded', 'currency' => 'usd',
-            'amount_received' => $session['amount_total'], 'latest_charge' => ['paid' => true, 'captured' => true, 'created' => time() - 5]];
+            'amount_received' => $session['amount_total'], 'latest_charge' => ['paid' => true, 'captured' => true, 'created' => time() - 5, 'payment_method_details'=>['card'=>['funding'=>'credit']]]];
     }
 }

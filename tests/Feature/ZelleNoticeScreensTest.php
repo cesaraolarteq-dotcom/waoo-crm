@@ -136,6 +136,44 @@ class ZelleNoticeScreensTest extends TestCase
         $this->get('/portal')->assertSee('No pudimos verificar tu aviso de $62.50')->assertDontSee('No aparece en el banco')->assertSee('id="zelle-form"', false);
     }
 
+    public function test_screenshot_uses_detected_type_not_the_untrusted_filename_extension(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+        $id = $this->clientNotice(6250);
+        $jpeg = \Illuminate\Http\UploadedFile::fake()->image('image.jpg');
+        $disguised = new \Illuminate\Http\UploadedFile($jpeg->getPathname(), 'bank-note.html', null, null, true);
+        $this->post('/portal/api/zelle-notices/'.$id.'/screenshot', ['screenshot' => $disguised], ['Accept' => 'application/json'])->assertCreated();
+        $shot = \App\Models\ZelleNoticeScreenshot::sole();
+        $this->assertContains(pathinfo($shot->path, PATHINFO_EXTENSION), ['jpg', 'jpeg']);
+        $this->assertSame('image/jpeg', $shot->mime);
+        $this->assertStringNotContainsString('bank-note', $shot->path);
+    }
+
+    public function test_screenshot_of_reviewed_or_other_booking_notice_is_refused_without_storing_files(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+        $id = $this->clientNotice(6250);
+        $other = Event::create(['customer_id' => $this->event->customer_id, 'title' => 'Otra fiesta', 'starts_at' => now()->addDays(30),
+            'ends_at' => now()->addDays(30)->addHour(), 'timezone' => 'America/Chicago', 'travel_fee_cents' => 0]);
+        $otherNotice = ZelleNotice::findOrFail($id)->replicate(); $otherNotice->event_id = $other->id; $otherNotice->save();
+        $this->post('/portal/api/zelle-notices/'.$otherNotice->id.'/screenshot', ['screenshot' => \Illuminate\Http\UploadedFile::fake()->image('other.jpg')], ['Accept' => 'application/json'])->assertNotFound();
+        app(\App\Services\Finance\ReviewZelleNotice::class)->execute($this->owner, $this->event->id, $id,
+            ['decision' => 'rejected', 'review_note' => 'No payment found in synthetic bank.'], (string)Str::uuid());
+        $this->post('/portal/api/zelle-notices/'.$id.'/screenshot', ['screenshot' => \Illuminate\Http\UploadedFile::fake()->image('late.jpg')], ['Accept' => 'application/json'])->assertNotFound();
+        $this->assertDatabaseCount('zelle_notice_screenshots', 0);
+        $this->assertSame([], \Illuminate\Support\Facades\Storage::disk('local')->allFiles());
+    }
+
+    public function test_owner_cannot_receive_a_corrupted_screenshot_as_valid_evidence(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local'); $id = $this->clientNotice(6250);
+        $this->post('/portal/api/zelle-notices/'.$id.'/screenshot', ['screenshot' => \Illuminate\Http\UploadedFile::fake()->image('bank.jpg')], ['Accept' => 'application/json'])->assertCreated();
+        $shot = \App\Models\ZelleNoticeScreenshot::sole();
+        \Illuminate\Support\Facades\Storage::disk('local')->put($shot->path, 'Synthetic altered evidence bytes');
+        $this->asOwner(); $this->get('/admin/api/zelle-notices/'.$id.'/screenshot')->assertNotFound();
+        $this->assertSame(6250, app(FinanceSummary::class)->forEvent($this->event->fresh())['balance_cents']);
+    }
+
     public function test_notices_from_another_event_are_not_reachable_from_this_dinero_page(): void
     {
         $id = $this->clientNotice(6250);
