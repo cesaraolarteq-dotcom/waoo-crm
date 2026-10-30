@@ -1,3 +1,5 @@
+> SUPERSEDED by César’s later clarification recorded in Claude08e638d HANDOFF: actual drive +30extra from end of breakdown to next setup start. The max30 implementation below records the earlier interpretation and must be aligned before merge; see reviews/AVAILABILITY-FULL-AUDIT-2026-10-29.md.
+
 # Transfer margin30, owner decision2026-10-29
 
 César asked to use30minutes instead of45, accounting for setup, breakdown and

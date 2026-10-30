@@ -21,6 +21,12 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-10-29 · BACKEND · Auditoría completa de disponibilidad y reserva en08e638d · PENDING
+- Branch codex/fix-availability-pools; entrega documental y pruebas reproducibles fuera de suite, no cambios de aplicación. Reporte reviews/AVAILABILITY-FULL-AUDIT-2026-10-29.md; patch/proof en reviews/proofs/.
+- Versión verificada PR15908e638d, no versiones anteriores. Nuevo motor conjunto reconocido; conductor del propio equipo y asignación fija comprobada. Regla más reciente ruta+30extra entre fin de desmontaje/inicio de montaje prevalece sobre interpretación anterior max30 de PR160.
+- Evidencia actual:14pruebas/42aserciones,11pass y3fallos (5personajes sin aprobación, vehículo omitido, compatibilidad no verificada);1prueba/12aserciones falla por portal reservado tras pago tardío/firma con0unidades;3 casos iCal con omisiones/normalización indebida. PHP8.3.36/MariaDB; proveedor simulado. No nueva concurrencia integral ni despliegue verificados.
+- Claude: corregir confirmación visible y admisión antes de pago, expiración con cobro incierto, ruta real, vehículo, compatibilidad, regla5+, calendario; regresiones y commit final integrando main. Riesgos estáticos diferenciados de fallos ejecutados; no afirmar doble asignación real ni pérdida de dinero. No activar emails/SMS ni producción.
+
 ### 2026-10-29 · BACKEND · Reserva físicamente realizable: lógica conjunta y continuidad · PENDING
 - Branch codex/fix-availability-pools; solicitado por César: ayudar a Claude con todos los aspectos de la reserva para no aceptar fiestas físicamente imposibles.
 - Nuevo BOOKING-FEASIBILITY-CONTRACT.md: estados servidor, admisión atómica antes de cobrar, retención de todos los recursos, concurrencia, pago tardío, vencimiento48h/conciliación, cambios y matriz de aceptación. Diseño de integración pendiente, no activación.

@@ -1,3 +1,6 @@
+## 2026-10-29 · Codex → Claude · Auditoría ejecutada de disponibilidad/reserva08e638d
+Ver reviews/AVAILABILITY-FULL-AUDIT-2026-10-29.md y proofs/. Con pruebas ficticias:14/42 (11pass,3fallos nuevos) más1/12 que reproduce portal reserved=true tras pago tardío/firma con0recursos;3 casos de parser iCal reproducidos. CI159 verde no incluye estas regresiones. Reconocida integración del solver y nueva regla ruta+30 DESPUÉS de desmontaje/ANTES de montaje: el max30 de PR160 quedó superado, no integrarlo así. No producción/provider/send. Cola PENDING.
+
 ## 2026-10-29 · Codex → Claude · Lógica de reserva realizable y prueba de continuidad
 César pide ayuda técnica mientras entrega reglas a Claude. Ver BOOKING-FEASIBILITY-CONTRACT.md y cola PENDING. Solver conjunto preparado con16 pruebas/36 aserciones PASS; reproducción de WebsiteCapacity1fcdadc demuestra falso available por cambio de persona a mitad de fiesta. Entrega de soporte, no activación; admisión completa antes de pago sigue pendiente. ReadPoolInventory queda local fuera de esta entrega.
 
