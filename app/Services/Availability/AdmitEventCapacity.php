@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\DB;
  * docs/BOOKING-FEASIBILITY-CONTRACT.md "Admisión atómica antes de pago", steps 2–3): unpaid Stripe hold (a Zelle quick
  * booking is not gated: the deposit is already in the bank and its costume hold goes to review instead) and
  * "Apartar recursos y confirmar".
- * Lock order (never reversed): user → event → lease → capacity days (Houston dates, ascending) → characters → resources.
+ * Lock order (never reversed): global DailyCapacity mutex → user (when applicable) → event → lease
+ * → capacity days (Houston dates, ascending) → characters → resources.
  * Two requests for the last place serialize on the shared day rows, re-read every commitment and exactly one fits.
  * Owner paths refuse only the party limits (4 at once, 10 per day); costumes/equipment/people keep each path's own unit
  * checks, and unproven travel or calendar-only entries stay the owner's call (he is the approver).

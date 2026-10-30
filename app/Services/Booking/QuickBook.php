@@ -80,3 +80,81 @@ final class QuickBook
             $eventInput = array_diff_key($data, array_flip(['new_customer','customer_update','deposit','portal','lead_id','lead_expected_version','promo_code']));
             $event = app(SaveEventDraft::class)->execute($actor, [...$eventInput, 'customer_id' => $customer->id]);
             \App\Services\Scheduling\DailyCapacity::assertRoom($event);
+            if (filled($data['promo_code'] ?? null)) \App\Services\Campaigns\AnniversaryCampaign::redeem($actor, $data['promo_code'], $event);
+            $finance = app(CreateFinancialRevision::class)->execute($actor, $event->id, ['expected_version' => $event->version], (string) Str::uuid());
+            try {
+                $receipt = app(RecordZellePayment::class)->execute($actor, $event->id, [
+                    ...array_diff_key($data['deposit'], ['method' => true]), 'financial_revision_id' => $finance->id, 'currency' => 'USD',
+                ], (string) Str::uuid());
+            } catch (ValidationException $e) {
+                throw ValidationException::withMessages(collect($e->errors())->mapWithKeys(fn ($messages, $field) => ['deposit.'.$field => $messages])->all());
+            }
+            $record = QuickBookingRecord::create(['event_id' => $event->id, 'customer_id' => $customer->id,
+                'initial_financial_revision_id' => $finance->id, 'receipt_id' => $receipt->id,
+                'portal_expires_at' => isset($data['portal']['expires_at']) ? CarbonImmutable::parse($data['portal']['expires_at'])->utc() : now()->addDays(14), 'created_by' => $actor->id]);
+            if ($lead) {
+                $before = $lead->only(['status','version']);
+                $lead->forceFill(['status' => 'booked', 'booked_event_id' => $event->id, 'quick_booking_id' => $record->id, 'version' => $lead->version + 1])->save();
+                Audit::recordFor($actor, 'lead.booked', $lead, $before, $lead->only(['status','version','booked_event_id','quick_booking_id']));
+            }
+            Audit::recordFor($actor, 'quick_booking.created', $record, [], ['event_id' => $event->id, 'receipt_id' => $receipt->id]);
+            MutationKey::store($scope, $key, $hash, 'quick_booking', $record->id);
+            return [$record, true];
+        }, 3);
+
+        $hold = ['event_id' => $record->event_id, 'event_version' => Event::findOrFail($record->event_id)->version,
+            'version' => 0, 'state' => 'review_required', 'issues' => ['hold_unavailable'], 'rows' => [], 'characters' => [], 'staff_confirmed' => false];
+        try {
+            $read = app(ReadQuickBookingCostumeHold::class)->execute($actor, $record->event_id);
+            $hold = $created ? app(HoldQuickBookingCostumes::class)->execute($actor, $record->event_id, [
+                'expected_event_version' => $read['event_version'], 'expected_hold_version' => $read['version'], 'characters' => $read['characters'],
+            ], (string) Str::uuid()) : $read;
+        } catch (\Throwable) {
+            // Already recorded actual money survives any inventory/storage failure; never claim a successful hold.
+        }
+
+        $url = null;
+        if ($created) {
+            try {
+                $grant = app(IssuePortalGrant::class)->execute($actor, $record->event_id, [
+                    'customer_id' => $record->customer_id, 'expires_at' => $record->portal_expires_at->toIso8601String(),
+                    'scopes' => ['details.submit','contract.read','contract.sign','payments.read','checkout.create'],
+                ]);
+                $url = $grant->short_url ?? $grant->url;
+            } catch (\Throwable $e) {
+                // The receipt and the idempotent core result already committed. Do not claim the booking was rolled back.
+                DB::table('payment_exceptions')->insertOrIgnore(['event_id' => $record->event_id, 'financial_revision_id' => $record->initial_financial_revision_id,
+                    'kind' => 'portal_link_pending', 'exception_key' => hash('sha256', 'quick:'.$record->id.':link'), 'state' => 'open',
+                    'context' => json_encode(['quick_booking_id' => $record->id, 'reason' => 'grant_issue_failed'], JSON_THROW_ON_ERROR), 'created_at' => now(), 'updated_at' => now()]);
+            }
+        }
+        $record->refresh();
+        $grantRow = $record->portal_grant_id ? \App\Models\PortalGrant::find($record->portal_grant_id) : null;
+        $event = Event::findOrFail($record->event_id);
+        return new QuickBooking($record->id, $event, Customer::findOrFail($record->customer_id), FinancialRevision::findOrFail($record->initial_financial_revision_id),
+            LedgerEntry::findOrFail($record->receipt_id), app(FinanceSummary::class)->forEvent($event), $url, $record->portal_expires_at->toIso8601String(),
+            !$created && $grantRow !== null, !$grantRow || $grantRow->revoked_at !== null || !$grantRow->expires_at->isFuture(), $hold);
+    }
+
+    private function customer(User $actor, array $data): Customer
+    {
+        if (!isset($data['customer_id'])) {
+            try { return app(SaveQuickBookingCustomer::class)->execute($actor, $data['new_customer']); }
+            catch (ValidationException $e) { throw ValidationException::withMessages(collect($e->errors())->mapWithKeys(fn ($messages, $field) => ['new_customer.'.$field => $messages])->all()); }
+        }
+        if (!isset($data['customer_update'])) return Customer::findOrFail($data['customer_id']);
+
+        $customer = Customer::whereKey($data['customer_id'])->lockForUpdate()->firstOrFail();
+        $update = $data['customer_update'];
+        \App\Exceptions\RecordWriteRejected::unless($customer->version === (int) $update['expected_version'], 409, 'La ficha del cliente cambió. Recarga antes de guardar la reserva.');
+        $contact = array_diff_key($update, ['expected_version' => true]);
+        if (collect($contact)->every(fn ($value, $field) => $customer->{$field} === $value)) return $customer;
+
+        try {
+            return app(SaveQuickBookingCustomer::class)->execute($actor, $update, $customer->id);
+        } catch (ValidationException $e) {
+            throw ValidationException::withMessages(collect($e->errors())->mapWithKeys(fn ($messages, $field) => ['customer_update.'.$field => $messages])->all());
+        }
+    }
+
+}

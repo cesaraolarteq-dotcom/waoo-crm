@@ -96,7 +96,8 @@ final class ReadPanorama
             $total = $finance && $finance->currency === 'USD' ? $finance->total_cents : null;
             $parties[] = ['key' => 'e'.$event->id, 'date' => $date, 'total_cents' => $total, 'zip' => $event->postal_code, 'city' => null, 'source' => $channels[$event->id] ?? null,
                 'booked_on' => $event->created_at?->setTimezone('America/Chicago')->toDateString(), 'customer_id' => $event->customer_id, 'name' => $name($event->customer_id),
-                'balance_cents' => $total === null ? null : max($total - (int) ($paid[$event->id] ?? 0), 0), 'balance_due' => null,
+                'balance_cents' => $total === null ? null : max($total - (int) ($paid[$event->id] ?? 0), 0),
+                'balance_due' => $finance?->balance_due_at?->setTimezone('America/Chicago')->toDateString(),
                 'profit' => $finance ? $this->profit($event, $finance) : null];
         }
 
@@ -117,7 +118,7 @@ final class ReadPanorama
             $lines = collect($s->lines_snapshot)->reject(fn ($l) => $l['category'] === 'card_processing');
             $cost = (int) $lines->sum('amount_cents') + ($lines->contains('category', 'materials') ? 0 : Panorama::MATERIALS_CENTS);
 
-            return ['revenue_cents' => (int) $finance->subtotal_cents, 'cost_cents' => $cost];
+            return ['revenue_cents' => (int) $finance->subtotal_cents - (int) $finance->discount_cents, 'cost_cents' => $cost];
         }
 
         return null;

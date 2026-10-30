@@ -34,11 +34,12 @@ class SignedContractLookTest extends TestCase
 
     public function test_a_layout_without_the_expected_slots_keeps_the_presented_signature_area(): void
     {
-        $presented = '<html><body><table class="sig"><tr><td>Custom provider block</td><td><div class="line"></div><span class="muted">Signed </span></td></tr></table></body></html>';
+        $presented = '<html><body><div class="chip">Awaiting signature</div><table class="sig"><tr><td>Custom provider block</td><td><div class="line"></div><span class="muted">Signed </span></td></tr></table></body></html>';
         $signed = (new PrintRenderer())->signedHtml($presented, $this->evidence());
 
         $this->assertStringContainsString('<td>Custom provider block</td><td><div class="line"></div><span class="muted">Signed </span></td>', $signed);
         $this->assertStringNotContainsString('SIGNED / FIRMADO', $signed);
+        $this->assertStringContainsString('Awaiting signature', $signed);
         $this->assertStringContainsString('Electronic Signature Record', $signed);
     }
 }

@@ -54,7 +54,7 @@ class DailyCapacityTest extends TestCase
 
     public function test_an_eleventh_party_is_rejected_even_with_its_own_free_equipment(): void
     {
-        for($i=0;$i<10;$i++)$this->event(committed:true);
+        for($i=0;$i<10;$i++)$this->event(sprintf('2026-12-12T%02d:00:00-06:00', $i * 2), true);
         $event=$this->event();$input=$this->input($event);
         try { app(ConfirmBooking::class)->execute($event->id,$input,$this->owner);$this->fail('Eleventh party accepted.'); }
         catch(ValidationException $e){$this->assertArrayHasKey('booking',$e->errors());}
@@ -64,7 +64,7 @@ class DailyCapacityTest extends TestCase
 
     public function test_tenth_party_and_exact_retry_count_only_one_event(): void
     {
-        for($i=0;$i<9;$i++)$this->event(committed:true);
+        for($i=0;$i<9;$i++)$this->event(sprintf('2026-12-12T%02d:00:00-06:00', $i * 2), true);
         $event=$this->event();$input=$this->input($event);
         $saved=app(ConfirmBooking::class)->execute($event->id,$input,$this->owner);
         $this->assertSame('capacity_reserved',$saved->status);
@@ -75,7 +75,7 @@ class DailyCapacityTest extends TestCase
 
     public function test_two_processes_with_distinct_resources_cannot_both_take_the_last_daily_place(): void
     {
-        for($i=0;$i<9;$i++)$this->event(committed:true);
+        for($i=0;$i<9;$i++)$this->event(sprintf('2026-12-12T%02d:00:00-06:00', $i * 2), true);
         $a=$this->event();$b=$this->event();$pa=$this->input($a);$pb=$this->input($b);
         $ownerId=$this->owner->id;
         $worker=static function(int $id,array $payload)use($ownerId){
@@ -96,23 +96,24 @@ class DailyCapacityTest extends TestCase
         $this->assertSame('capacity_reserved',app(ConfirmBooking::class)->execute($event->id,$this->input($event),$this->owner)->status);
     }
 
-    public function test_overnight_operating_day_is_anchored_at_eight_houston_and_not_counted_twice(): void
+    public function test_houston_midnight_starts_a_new_daily_quota_including_dst_days(): void
     {
-        for($i=0;$i<10;$i++)$this->event('2026-12-12T12:00:00-06:00',true);
-        $night=$this->event('2026-12-13T00:30:00-06:00');
-        try{app(ConfirmBooking::class)->execute($night->id,$this->input($night),$this->owner);$this->fail('Overnight quota bypassed.');}
-        catch(ValidationException){$this->assertSame('draft',$night->fresh()->status);}
-        $next=$this->event('2026-12-13T08:00:00-06:00');
-        $this->assertSame('capacity_reserved',app(ConfirmBooking::class)->execute($next->id,$this->input($next),$this->owner)->status);
-        foreach(['2027-03-13T12:00:00-06:00'=>23,'2026-10-31T12:00:00-05:00'=>25] as $start=>$hours){
-            [$from,$until]=\App\Services\Scheduling\DailyCapacity::bounds(CarbonImmutable::parse($start));
-            $this->assertSame($hours,(int)$from->diffInHours($until));
+        for ($i = 0; $i < 10; $i++) $this->event(sprintf('2026-12-12T%02d:00:00-06:00', $i * 2), true);
+        $night = $this->event('2026-12-13T00:30:00-06:00');
+        $this->assertSame('capacity_reserved', app(ConfirmBooking::class)->execute($night->id, $this->input($night), $this->owner)->status);
+        $next = $this->event('2026-12-13T08:00:00-06:00');
+        $this->assertSame('capacity_reserved', app(ConfirmBooking::class)->execute($next->id, $this->input($next), $this->owner)->status);
+        foreach (['2027-03-14T12:00:00-05:00' => 23, '2026-11-01T12:00:00-06:00' => 25] as $start => $hours) {
+            [$from, $until] = \App\Services\Scheduling\DailyCapacity::bounds(CarbonImmutable::parse($start));
+            $this->assertSame($hours, (int) $from->diffInHours($until));
+            $this->assertSame('00:00:00', $from->setTimezone('America/Chicago')->format('H:i:s'));
+            $this->assertSame('00:00:00', $until->setTimezone('America/Chicago')->format('H:i:s'));
         }
     }
 
     public function test_unpaid_lease_without_costumes_occupies_a_place_until_actual_expiry_not_just_its_clock_deadline(): void
     {
-        for($i=0;$i<9;$i++)$this->event(committed:true);
+        for($i=0;$i<9;$i++)$this->event(sprintf('2026-12-12T%02d:00:00-06:00', $i * 2), true);
         $event=$this->event();
         $finance=app(\App\Services\Finance\CreateFinancialRevision::class)->execute($this->owner,$event->id,['expected_version'=>1],(string)\Illuminate\Support\Str::uuid());
         $lease=app(\App\Services\Booking\PrepareQuickStripeLease::class)->execute($this->owner,$event->id,
@@ -141,7 +142,7 @@ class DailyCapacityTest extends TestCase
 
     public function test_external_money_remains_durable_when_the_day_is_already_full(): void
     {
-        for($i=0;$i<10;$i++)$this->event(committed:true);
+        for($i=0;$i<10;$i++)$this->event(sprintf('2026-12-12T%02d:00:00-06:00', $i * 2), true);
         $event=$this->event();
         $finance=app(\App\Services\Finance\CreateFinancialRevision::class)->execute($this->owner,$event->id,['expected_version'=>1],(string)\Illuminate\Support\Str::uuid());
         $key=(string)\Illuminate\Support\Str::uuid();
@@ -158,7 +159,7 @@ class DailyCapacityTest extends TestCase
 
     public function test_a_paid_event_with_several_resource_rows_still_occupies_only_one_place(): void
     {
-        for($i=0;$i<8;$i++)$this->event(committed:true);
+        for($i=0;$i<8;$i++)$this->event(sprintf('2026-12-12T%02d:00:00-06:00', $i * 2), true);
         $paid=$this->event();$this->payment($paid);
         $paid->forceFill(['status'=>'capacity_reserved'])->save();
         foreach([1,2] as $index){
@@ -172,7 +173,7 @@ class DailyCapacityTest extends TestCase
 
     public function test_new_unpaid_lease_at_a_full_day_does_not_create_stock_or_a_dummy_receipt(): void
     {
-        for($i=0;$i<10;$i++)$this->event(committed:true);
+        for($i=0;$i<10;$i++)$this->event(sprintf('2026-12-12T%02d:00:00-06:00', $i * 2), true);
         $event=$this->event();
         $finance=app(\App\Services\Finance\CreateFinancialRevision::class)->execute($this->owner,$event->id,['expected_version'=>1],(string)\Illuminate\Support\Str::uuid());
         try{
@@ -186,7 +187,7 @@ class DailyCapacityTest extends TestCase
 
     public function test_moving_a_paid_native_draft_cannot_bypass_the_full_day_guard(): void
     {
-        for($i=0;$i<10;$i++)$this->event(committed:true);
+        for($i=0;$i<10;$i++)$this->event(sprintf('2026-12-12T%02d:00:00-06:00', $i * 2), true);
         $event=$this->event('2026-12-14T12:00:00-06:00');$this->payment($event);
         $original=$event->starts_at;
         try{

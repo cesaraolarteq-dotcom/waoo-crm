@@ -1,6 +1,6 @@
 # Daily capacity admission · 2026-10-28
 
-Owner rule: at most10 parties per Houston operating day, anchored at08:00 local. Overnight starts before08:00 belong to the preceding operating day. Count distinct events, never resource rows or paid/unpaid promotion twice. Archived historical events, uncommitted drafts and cancelled events do not consume this operational quota.
+Owner rule (updated 2026-10-29): at most10 parties per Houston calendar day, midnight to midnight. This supersedes the former08:00 boundary; website, unpaid holds and confirmations use the same date, including23/25hour DST days. Count distinct events, never resource rows or paid/unpaid promotion twice. Archived historical events, uncommitted drafts and cancelled events do not consume this operational quota.
 
 Internal seam `Scheduling\DailyCapacity::lock()` requires an existing transaction and acquires a seeded singleton row **before** owner/event/resource locks. A global admission mutex is acceptable at this volume; it is never acquired by a public availability read. Every reservation writer and paid/imported commitment writer participates, including parent transactions that call other services. Do not set transaction isolation or rely on an earlier repeatable-read snapshot: the admission query is a current locking read.
 
@@ -9,3 +9,5 @@ Internal seam `Scheduling\DailyCapacity::lock()` requires an existing transactio
 New native confirmations/leases/quick bookings and moves of already committed native drafts must pass admission. Exact retries retain their existing idempotent branches. Importing/resyncing an existing HoneyBook commitment records external truth even if it reveals an overfull day; serialize it, never discard source truth to make capacity look available. Similarly, verified money received outside admission remains durable; mark its event with a payment/capacity exception if10 other commitments exist. Do not throw away a receipt or issue an automatic refund.
 
 This is shared admission, not the full web evaluator. A count below10 proves no resources, transport or available slot. Future web reads need the complete feasibility and privacy/snapshot rules in AVAIL-WEB-01; no new route, public slot, flag, mail, external call, import or deployment is activated here.
+
+Integration order: the global admission mutex remains first, before user/event/lease locks, then the Houston capacity_day_locks in ascending order, followed by character/resource locks. The day-lock gate adds the4simultaneous ceiling; it does not replace the global guard on receipts, imports and draft moves.

@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
-// ANNIV-01 (docs/plans/ANNIVERSARY-REBOOK.md, César 2026-10-29): one code per client, 10 % on the package only, 7 days, single use.
+// ANNIV-01: one code per client, 10 % on packages + extras (never travel), 7 days, single use.
 class AnniversaryCampaignTest extends TestCase
 {
     use DatabaseMigrations;
@@ -132,6 +132,42 @@ class AnniversaryCampaignTest extends TestCase
         try { $this->book($maria, $code); $this->fail('expired'); } catch (ValidationException $ex) { $this->assertStringContainsString('venció', $ex->errors()['promo_code'][0]); }
         $e = $this->book($maria, null);
         $this->assertSame(0, (int) FinancialRevision::where('event_id', $e->id)->value('discount_cents'));
+    }
+
+    public function test_old_or_quoted_booking_cannot_redeem_and_concurrent_new_bookings_use_a_code_once(): void
+    {
+        $client = $this->client('María González');
+        $this->pastParty($client, 330);
+        app(AnniversaryCampaign::class)->issue(CarbonImmutable::now('America/Chicago'));
+        $code = AnniversaryCode::where('customer_id', $client->id)->firstOrFail();
+        $old = $this->pastParty($client, -40, status: 'draft');
+        $old->forceFill(['created_at' => $code->issued_at->copy()->subSecond()])->save();
+        $quoted = $this->pastParty($client, -50, status: 'draft');
+        \App\Models\Quote::create(['event_id' => $quoted->id, 'customer_id' => $client->id,
+            'locale' => 'es', 'created_by' => $this->owner->id, 'valid_until' => now()->addDays(2)]);
+        foreach ([$old, $quoted] as $event) {
+            try {
+                DB::transaction(fn () => AnniversaryCampaign::redeem($this->owner, $code->code, $event));
+                $this->fail('An ineligible booking redeemed the code.');
+            } catch (ValidationException $e) {
+                $this->assertArrayHasKey('promo_code', $e->errors());
+            }
+            $this->assertSame('ready', $code->fresh()->state);
+        }
+        $ownerId = $this->owner->id; $value = $code->code;
+        $a = $this->pastParty($client, -60, status: 'draft');
+        $b = $this->pastParty($client, -70, status: 'draft');
+        $worker = static function (int $id) use ($ownerId, $value) {
+            try {
+                DB::transaction(fn () => AnniversaryCampaign::redeem(User::findOrFail($ownerId), $value, Event::findOrFail($id)), 3);
+                return 'redeemed';
+            } catch (ValidationException) { return 'blocked'; }
+        };
+        $results = \Tests\Support\ConcurrentWorkers::run([fn () => $worker($a->id), fn () => $worker($b->id)]);
+        sort($results);
+        $this->assertSame(['blocked', 'redeemed'], $results);
+        $this->assertContains($code->fresh()->redeemed_event_id, [$a->id, $b->id]);
+        $this->assertDatabaseCount('ledger_entries', 0);
     }
 
     public function test_quick_booking_screen_previews_the_code_and_reports_show_the_effectiveness(): void
