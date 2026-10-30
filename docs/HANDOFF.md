@@ -1,3 +1,9 @@
+## 2026-10-30 · Claude · CHANGE-A part 2: reschedule money (branch claude/availability-audit-fixes) — **Codex: money review please**
+- `RescheduleEvent::reviseFinance()` (same transaction as the move): new `FinancialRevision` = previous one (prices, discounts, travel, deposit target unchanged) + a `change_fee` line of $100 when the owner chose "Cobrar" + `balance_due_at` = new start − 24 h; open payment links superseded (`SupersedeCollections`); `event_changes.financial_revision_id` (new column, migration not yet deployed anywhere). Money received is untouched; the fee is paid with the balance.
+- `CreateFinancialRevision` (draft recompute, e.g. client-details approval) re-adds every charged change fee from `event_changes` and keeps `deposit_target_cents` = 50 % of total **without** change fees.
+- Guard: a party with a card quick-payment booking (`QuickPaymentBooking` not expired/cancelled) is refused — its evidence freezes the original date and max revision (`QuickPaymentProtocol::verify`). Zelle quick bookings, confirmed parties and drafts are supported.
+- Tests: `RescheduleEventTest` 6/30; finance/portal/quick groups (302) green except MariaDB-only.
+
 ## 2026-10-30 · Claude · CHANGE-A part 1: "Cambiar fecha" (branch claude/availability-audit-fixes)
 César 2026-10-30 approved the flow (memory/plan): move the party; $100 charge/waive with a note; new contract to re-sign; party "pendiente de firma" until signed; email+SMS to sign and a 48 h reminder (behind the mail/SMS gates). **Codex: please review (capacity + quick-hold evidence).**
 - `event_changes` table + `App\Models\EventChange` (old/new times, versions, fee decision/reason/cents, moved reservations, contract_id, notified/reminded).

@@ -109,4 +109,35 @@ class RescheduleEventTest extends TestCase
             ->assertHasNoActionErrors()->assertNotified();
         $this->assertSame('13:00', $e->fresh()->starts_at->setTimezone('America/Chicago')->format('H:i'));
     }
+
+    public function test_money_adds_the_charged_fee_moves_the_balance_due_and_keeps_payments_and_deposit(): void
+    {
+        $e = $this->book(20, 12);
+        $before = \App\Models\FinancialRevision::where('event_id', $e->id)->orderByDesc('revision')->first();
+        $paid = app(\App\Services\Finance\FinanceSummary::class)->forEvent($e->fresh())['net_received_cents'];
+        $c = $this->move($e, 30, '15:00', fee: 'charge');
+        $rev = \App\Models\FinancialRevision::findOrFail($c->financial_revision_id);
+        $this->assertSame($before->revision + 1, $rev->revision);
+        $this->assertSame($before->total_cents + 10000, $rev->total_cents);
+        $this->assertSame($before->deposit_target_cents, $rev->deposit_target_cents, 'the deposit does not grow with the fee');
+        $this->assertSame('change_fee', collect($rev->lines_snapshot)->last()['kind']);
+        $this->assertTrue($rev->balance_due_at->equalTo($e->fresh()->starts_at->subHours(24)));
+        $sum = app(\App\Services\Finance\FinanceSummary::class)->forEvent($e->fresh());
+        $this->assertSame($paid, $sum['net_received_cents'], 'money received is untouched');
+        $this->assertSame($rev->total_cents - $paid, $sum['balance_cents']);
+        // A later recompute (e.g. client details approval) keeps the fee and the 50 % deposit of package + travel.
+        $e->refresh(); $e->status = 'draft'; $e->save();
+        $again = app(\App\Services\Finance\CreateFinancialRevision::class)->execute($this->owner, $e->id, ['expected_version' => $e->version], (string) Str::uuid());
+        $this->assertSame($rev->total_cents, $again->total_cents);
+        $this->assertSame($rev->deposit_target_cents, $again->deposit_target_cents);
+    }
+
+    public function test_waived_fee_only_moves_the_balance_due_date(): void
+    {
+        $e = $this->book(20, 12);
+        $before = \App\Models\FinancialRevision::where('event_id', $e->id)->orderByDesc('revision')->first();
+        $rev = \App\Models\FinancialRevision::findOrFail($this->move($e, 25, '10:00')->financial_revision_id);
+        $this->assertSame([$before->total_cents, count($before->lines_snapshot)], [$rev->total_cents, count($rev->lines_snapshot)]);
+        $this->assertTrue($rev->balance_due_at->equalTo($e->fresh()->starts_at->subHours(24)));
+    }
 }

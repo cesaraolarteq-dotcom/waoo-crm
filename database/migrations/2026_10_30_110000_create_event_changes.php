@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('fee_reason', 1000);
             $table->unsignedInteger('fee_cents')->default(0);
             $table->unsignedInteger('moved_reservations')->default(0);
+            $table->foreignId('financial_revision_id')->nullable()->constrained()->restrictOnDelete();
             $table->uuid('contract_id')->nullable();
             $table->timestamp('notified_at')->nullable(); $table->timestamp('reminded_at')->nullable();
             $table->foreignId('created_by')->constrained('users')->restrictOnDelete();
