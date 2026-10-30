@@ -187,10 +187,11 @@ final class GoogleCalendar
      * [] when Google is not connected; null when Google did not answer (the caller must not treat that as free).
      * @return list<array{0: CarbonImmutable, 1: CarbonImmutable}>|null
      */
+    /** Exact busy intervals; null when not connected, failing or the answer is incomplete (never "free", Codex audit S4). */
     public function busyIntervals(CarbonImmutable $from, CarbonImmutable $to): ?array
     {
         $c = self::connection();
-        if (! $c) return [];
+        if (! $c) return null;
         $key = 'waoo.google.busy-raw.'.$c->id.'.'.$from->utc()->format('YmdHi').'.'.$to->utc()->format('YmdHi');
         $raw = Cache::get($key);
         if ($raw === null) {
@@ -200,8 +201,9 @@ final class GoogleCalendar
             } catch (\Throwable) {
                 return null;
             }
-            if (! $r->successful() || $r->json('calendars.primary.errors')) return null;
-            $raw = (array) $r->json('calendars.primary.busy', []);
+            if (! $r->successful() || $r->json('calendars.primary.errors') || ! is_array($r->json('calendars.primary.busy'))) return null;
+            $raw = $r->json('calendars.primary.busy');
+            foreach ($raw as $b) if (! is_array($b) || ! is_string($b['start'] ?? null) || ! is_string($b['end'] ?? null)) return null;
             Cache::put($key, $raw, 120);
         }
         return array_map(fn ($b) => [CarbonImmutable::parse($b['start']), CarbonImmutable::parse($b['end'])], $raw);

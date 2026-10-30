@@ -435,6 +435,16 @@ class EventResource extends Resource
         ];
     }
 
+    /** @return array{0:string,1:string} label and color for the events list (owner 2026-10-30 visual review). */
+    public static function listStatus(\App\Models\Event $e): array
+    {
+        if ($e->status !== 'draft') return [Labels::label(Labels::EVENT_STATUS, $e->status), Labels::EVENT_STATUS_COLOR[$e->status] ?? 'gray'];
+        if (\App\Models\ImportedProjectLink::where('event_id', $e->id)->exists()) return ['HoneyBook', 'info'];
+        if (\App\Models\LedgerEntry::where('event_id', $e->id)->where('kind', 'receipt')->exists()) return ['Depósito recibido', 'success'];
+        if (\App\Models\QuickPaymentBooking::where('event_id', $e->id)->whereIn('state', ['awaiting_payment', 'zelle_pending', 'processing'])->exists()) return ['Esperando pago', 'warning'];
+        return ['Borrador', 'gray'];
+    }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -455,9 +465,10 @@ class EventResource extends Resource
                     ->formatStateUsing(fn ($state) => Labels::money($state))
                     ->placeholder(fn ($record) => $record->services_cents === null ? 'Sin servicios' : 'Falta transporte')
                     ->alignEnd(),
+                // A draft that already has money or comes from HoneyBook is not a forgotten draft: say what it is.
                 TextColumn::make('status')->label('Estado')->badge()
-                    ->formatStateUsing(fn ($state) => Labels::label(Labels::EVENT_STATUS, $state))
-                    ->color(fn ($state) => Labels::EVENT_STATUS_COLOR[$state] ?? 'gray'),
+                    ->formatStateUsing(fn ($state, $record) => self::listStatus($record)[0])
+                    ->color(fn ($state, $record) => self::listStatus($record)[1]),
             ])
             ->filters([
                 SelectFilter::make('status')->label('Estado')->options(Labels::EVENT_STATUS),

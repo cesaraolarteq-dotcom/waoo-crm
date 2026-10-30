@@ -13,6 +13,10 @@
     @include('filament.pages.partials.quick-payment-state',['event'=>$e])
     <div class="wmoney-states">
         <span>Recursos: <b>{{ $f['status'] }}</b></span>
+        @if ($pendingChange = \App\Models\EventChange::pendingSignature($e->id))
+            <span>Cambio de fecha: <b>pendiente de firma</b> · antes {{ \App\Filament\Support\Labels::when($pendingChange->old_starts_at) }}</span>
+            <span>Aviso al cliente: <b>{{ $pendingChange->notified_at ? 'enviado '.\App\Filament\Support\Labels::when($pendingChange->notified_at).($pendingChange->reminded_at ? ' · recordatorio enviado' : '') : (\App\Services\Mail\MailDeliveryGate::enabled() || \App\Services\Sms\SmsGate::enabled() ? 'pendiente' : 'no enviado (correo y SMS apagados): mándale su enlace por WhatsApp') }}</b></span>
+        @endif
         @if ($f['finance'])
             <span>Pago: <b>{{ $f['finance']['net_received_cents'] > 0 ? ($f['finance']['financial_revision'] && $f['finance']['balance_cents'] === 0 ? 'Pagado completo' : 'Pago recibido') : 'Sin pagos' }}</b></span>
         @endif
@@ -70,7 +74,7 @@
             @forelse ($f['units'] as $u)
                 <div class="wmoney-row"><div><b>{{ $u->name }}</b> · {{ $u->kind }}</div></div>
             @empty
-                <p class="wmoney-p">Nada apartado todavía. Un borrador no aparta staff ni trajes.</p>
+                <p class="wmoney-p">Nada apartado todavía. El staff y los trajes se apartan con «Apartar recursos y confirmar».</p>
             @endforelse
         </x-filament::section>
         @if ($f['finance'] && $f['finance']['financial_revision'])
@@ -79,7 +83,7 @@
                 <dl class="wfile-dl">
                     <div><dt>Total</dt><dd>{{ $money($f['finance']['financial_revision']->total_cents) }}</dd></div>
                     <div><dt>Recibido</dt><dd class="ok">{{ $money($f['finance']['net_received_cents']) }}</dd></div>
-                    <div><dt>Saldo</dt><dd>{{ $money($f['finance']['balance_cents']) }} · vence {{ \App\Filament\Support\Labels::when($f['finance']['financial_revision']->balance_due_at) }}</dd></div>
+                    <div><dt>Saldo</dt><dd>{{ $money($f['finance']['balance_cents']) }} <small style="display:block;font-weight:500">vence {{ \App\Filament\Support\Labels::when($f['finance']['financial_revision']->balance_due_at) }}</small></dd></div>
                 </dl>
             </x-filament::section>
         @endif

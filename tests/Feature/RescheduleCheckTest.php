@@ -27,6 +27,7 @@ class RescheduleCheckTest extends TestCase
         Resource::create(['code' => 'MICKEY-1', 'name' => 'Cabeza de Mickey', 'kind' => 'costume', 'status' => 'active', 'character_id' => $this->character->id, 'skills' => []]);
         Resource::create(['code' => 'STAFF-1', 'name' => 'Staff 1', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer', 'driver']]);
         Resource::create(['code' => 'STAFF-2', 'name' => 'Staff 2', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer', 'driver']]);
+        foreach (Resource::where('kind', 'staff')->pluck('id') as $sid) DB::table('costume_compatibilities')->insert(['staff_id' => $sid, 'costume_id' => Resource::where('code', 'MICKEY-1')->value('id')]);
         $v = ServiceVariant::create(['name' => 'Música y juegos', 'status' => 'active', 'duration_minutes' => 120, 'character_quantity' => 1, 'requirements' => [],
             'character_options' => [['character_id' => $this->character->id, 'requirements' => [
                 ['kind' => 'costume', 'character_id' => $this->character->id, 'quantity' => 1], ['kind' => 'staff', 'quantity' => 1, 'skill' => 'performer']]]]]);

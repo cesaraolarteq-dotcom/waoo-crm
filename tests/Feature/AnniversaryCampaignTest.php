@@ -150,4 +150,70 @@ class AnniversaryCampaignTest extends TestCase
         \Livewire\Livewire::test(\App\Filament\Pages\Reports::class)->assertSee('Un año después · efectividad')->assertSee('100 %')
             ->assertSee('1 cliente recibió su código y 1 reservó con él.');
     }
+
+    private function fakeTransport(): object
+    {
+        $t = new class implements \App\Services\Mail\MailTransport {
+            public array $sent = [];
+            public function configured(): bool { return true; }
+            public function send(#[\SensitiveParameter] \App\Services\Mail\OutboundEnvelope $m): \App\Services\Mail\TransportReceipt { $this->sent[] = $m; return new \App\Services\Mail\TransportReceipt('fake', 'm'.count($this->sent)); }
+        };
+        $this->app->instance(\App\Services\Mail\MailTransport::class, $t);
+        return $t;
+    }
+
+    public function test_nothing_leaves_while_mail_or_the_campaign_switch_is_off_then_one_email_and_one_reminder(): void
+    {
+        $maria = $this->client('María González');
+        $this->pastParty($maria, 330);
+        app(AnniversaryCampaign::class)->issue(CarbonImmutable::now('America/Chicago'));
+        $t = $this->fakeTransport();
+        $mail = app(\App\Services\Campaigns\AnniversaryMail::class);
+        $this->assertSame(['sent' => 0, 'reminders' => 0, 'held' => 1], $mail->sendDue(), 'mail gate off');
+        config(['waoo.mail_delivery_enabled' => true]);
+        $this->assertSame(0, $mail->sendDue()['sent'], 'campaign switch off');
+        config(['waoo.anniversary_mail_enabled' => true]);
+        $this->assertSame(1, $mail->sendDue()['sent']);
+        $this->assertSame(0, $mail->sendDue()['sent'], 'never twice');
+        $m = $t->sent[0];
+        $this->assertSame('maria@example.com', $m->recipient);
+        $this->assertStringContainsString('We’d love to', $m->html);
+        $this->assertStringContainsString(AnniversaryCode::sole()->code, $m->html);
+        $this->assertStringContainsString('17350 State Hwy 249', $m->html, 'CAN-SPAM postal address');
+        $this->assertStringContainsString('/u/promo/'.$maria->id, $m->html, 'unsubscribe link');
+        $this->assertStringNotContainsString('Valentina', $m->html);
+        $this->travel(6)->days();
+        $this->assertSame(1, $mail->sendDue()['reminders']);
+        $this->assertSame(0, $mail->sendDue()['reminders']);
+        $this->assertStringContainsString('ends tomorrow', $t->sent[1]->html);
+    }
+
+    public function test_unsubscribe_link_shows_a_page_then_stops_every_promotional_email(): void
+    {
+        $maria = $this->client('María González');
+        $this->pastParty($maria, 330);
+        app(AnniversaryCampaign::class)->issue(CarbonImmutable::now('America/Chicago'));
+        $url = \Illuminate\Support\Facades\URL::signedRoute('promo.unsubscribe', ['customer' => $maria->id]);
+        auth()->logout();
+        $this->get($url)->assertOk()->assertSee('Unsubscribe from promotions?');
+        $this->assertNull($maria->fresh()->promo_opt_out_at, 'opening the link (mail scanners) changes nothing');
+        $this->get('/u/promo/'.$maria->id)->assertForbidden();
+        $this->post($url)->assertOk()->assertSee('You’re unsubscribed');
+        $this->assertNotNull($maria->fresh()->promo_opt_out_at);
+        config(['waoo.mail_delivery_enabled' => true, 'waoo.anniversary_mail_enabled' => true]);
+        $t = $this->fakeTransport();
+        $this->assertSame(0, app(\App\Services\Campaigns\AnniversaryMail::class)->sendDue()['sent']);
+        $this->assertSame([], $t->sent);
+        // Next year's anchor for this client is skipped as unsubscribed.
+        $this->pastParty($maria, 10);
+        $this->travel(330)->days();
+        app(AnniversaryCampaign::class)->issue(CarbonImmutable::now('America/Chicago'));
+        $this->assertSame('unsubscribed', AnniversaryCode::where('customer_id', $maria->id)->latest('id')->value('skip_reason'));
+    }
+
+    public function test_owner_preview_renders_a_fictitious_client(): void
+    {
+        $this->get('/admin/anniversary/preview')->assertOk()->assertSee('WAOO-7KX9Q')->assertSee('María');
+        $this->get('/admin/anniversary/preview?kind=reminder')->assertOk()->assertSee('ends tomorrow');
+    }
 }

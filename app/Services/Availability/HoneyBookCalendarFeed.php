@@ -28,12 +28,15 @@ final class HoneyBookCalendarFeed
         $ics = Cache::get($key);
         if (! is_string($ics)) {
             try {
-                $r = Http::connectTimeout(1)->timeout(2)->withoutRedirecting()->get($url);
+                // Read at most MAX_BYTES + 1 from the network, so the size limit also bounds memory (Codex audit P2).
+                $r = Http::connectTimeout(1)->timeout(2)->withoutRedirecting()->withOptions(['stream' => true])->get($url);
+                if (! $r->successful()) return null;
+                $stream = $r->toPsrResponse()->getBody(); $body = '';
+                while (! $stream->eof() && strlen($body) <= self::MAX_BYTES) $body .= $stream->read(65536);
             } catch (\Throwable) {
                 return null;
             }
-            $body = $r->body();
-            if (! $r->successful() || strlen($body) > self::MAX_BYTES) return null;
+            if (strlen($body) > self::MAX_BYTES) return null;
             $ics = $body;
             Cache::put($key, $ics, 120);
         }
@@ -45,8 +48,14 @@ final class HoneyBookCalendarFeed
     /** @return list<array{0: CarbonImmutable, 1: CarbonImmutable}>|null null when anything is unsupported or malformed */
     public static function events(string $ics): ?array
     {
-        if (strlen($ics) > self::MAX_BYTES || ! preg_match('/^BEGIN:VCALENDAR\r?$/m', $ics) || ! preg_match('/^END:VCALENDAR\r?$/m', $ics)) return null;
+        // Property names and BEGIN/END values are case-insensitive in iCalendar (RFC 5545 3.1): normalize them, never skip a line.
+        if (strlen($ics) > self::MAX_BYTES || ! preg_match('/^BEGIN:VCALENDAR\r?$/mi', $ics) || ! preg_match('/^END:VCALENDAR\r?$/mi', $ics)) return null;
         $lines = preg_split('/\r?\n/', preg_replace('/\r?\n[ \t]/', '', $ics)); // unfold
+        $lines = array_map(function (string $l) {
+            if (! preg_match('/^([A-Za-z0-9-]+)([;:].*)?$/s', $l, $m)) return $l;
+            $l = strtoupper($m[1]).($m[2] ?? '');
+            return preg_match('/^(BEGIN|END):/', $l) ? strtoupper(rtrim($l)) : $l;
+        }, $lines);
         $events = []; $cur = null;
         foreach ($lines as $line) {
             if ($line === 'BEGIN:VEVENT') { if ($cur !== null) return null; $cur = []; continue; }
@@ -75,10 +84,11 @@ final class HoneyBookCalendarFeed
             }
             $tz = preg_match('/TZID=([^;:]+)/', $params, $t) ? trim($t[1], '"') : 'America/Chicago';
             if (! in_array($tz, timezone_identifiers_list(), true)) return null;
-            if (preg_match('/^\d{8}T\d{6}Z$/', $value)) $at = CarbonImmutable::createFromFormat('Ymd\THis\Z', $value, 'UTC');
-            elseif (preg_match('/^\d{8}T\d{6}$/', $value)) $at = CarbonImmutable::createFromFormat('Ymd\THis', $value, $tz);
+            if (preg_match('/^\d{8}T\d{6}Z$/', $value)) $at = CarbonImmutable::createFromFormat('!Ymd\THis\Z', $value, 'UTC');
+            elseif (preg_match('/^\d{8}T\d{6}$/', $value)) $at = CarbonImmutable::createFromFormat('!Ymd\THis', $value, $tz);
             else return null;
-            if (! $at) return null;
+            // A date that does not exist (Nov 31) must not roll over to another day: the calendar is unknown.
+            if (! $at || $at->format('Ymd\THis') !== substr($value, 0, 15)) return null;
             $cur[$m[1]] = $at;
         }
         return $cur === null ? $events : null; // an unclosed VEVENT means a truncated calendar

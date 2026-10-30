@@ -201,7 +201,7 @@ class ViewEvent extends Page
         return [
             ...$pick(['confirm', 'money', 'contract', 'edit', 'quoteView']),
             \Filament\Actions\ActionGroup::make($pick(['smsSend', 'staffInstructions', 'mailPlan', 'costs', 'honeybookCopy', 'cutoverEvidence',
-                'quoteCreate', 'billingCompany', 'billingPreview', 'rescheduleCheck', 'refund', 'cancelEvent']))
+                'quoteCreate', 'billingCompany', 'billingPreview', 'rescheduleCheck', 'reschedule', 'refund', 'cancelEvent']))
                 ->label('Más')->icon('heroicon-m-chevron-down')->iconPosition(\Filament\Support\Enums\IconPosition::After)->button()->color('gray'),
         ];
     }
@@ -327,6 +327,7 @@ class ViewEvent extends Page
             Action::make('contract')->label('Contrato y enlace')->icon('heroicon-o-document-text')->color('gray')->visible(fn () => \App\Filament\Support\DocumentsGate::enabled())->url(fn () => EventResource::getUrl('contract', ['record' => $e])),
             Action::make('confirm')->label('Apartar recursos y confirmar')->icon('heroicon-o-check-badge')->color('primary')->visible(fn () => ConfirmCapacity::canAccessFor($e))->url(fn () => EventResource::getUrl('confirm', ['record' => $e])),
             $this->rescheduleCheckAction(),
+            $this->rescheduleAction(),
             $this->cancelEventAction(),
             $this->refundAction(),
         ];
@@ -368,6 +369,40 @@ class ViewEvent extends Page
                     'unavailable' => 'Sin cupo · '.$when, default => 'Revisar a mano · '.$when })->body($r['message'])->persistent();
                 match ($r['state']) { 'available' => $n->success(), 'unavailable' => $n->danger(), default => $n->warning() };
                 $n->send();
+            });
+    }
+
+    /** CHANGE-A part 1 (César 2026-10-30): move the party; everything it holds moves with it or nothing changes. */
+    public function rescheduleAction(): Action
+    {
+        $e = $this->record;
+        return Action::make('reschedule')->label('Cambiar fecha')->icon('heroicon-o-arrow-path')->color('gray')
+            ->visible(fn () => self::changesEnabled() && in_array($e->status, ['draft', 'capacity_reserved'], true) && $e->services()->exists()
+                && ! \App\Models\ImportedProjectLink::where('event_id', $e->id)->exists())
+            ->mountUsing(function (?\Filament\Schemas\Schema $schema) use ($e) { $this->changeKey = (string) \Illuminate\Support\Str::uuid(); $schema?->fill(['time' => $e->starts_at?->setTimezone('America/Chicago')->format('H:i')]); })
+            ->modalHeading('Cambiar la fecha de esta fiesta')
+            ->modalDescription('Se mueve la misma fiesta (paquete, personajes, duración y dirección). El staff, los trajes y el equipo ya apartados se mueven con ella solo si están libres a la nueva hora; si algo choca, no se cambia nada. Si ya hay contrato firmado, queda "pendiente de firma" hasta que el cliente firme el nuevo. No se le avisa a nadie todavía.')
+            ->schema([
+                \Filament\Forms\Components\DatePicker::make('date')->label('Nueva fecha')->native(false)->displayFormat('d/m/Y')->minDate(now('America/Chicago')->startOfDay())->required(),
+                \Filament\Forms\Components\TimePicker::make('time')->label('Hora de inicio')->seconds(false)->required(),
+                \Filament\Forms\Components\Radio::make('fee_decision')->label('Cargo por cambio de fecha ($100)')->options(['charge' => 'Cobrar $100', 'waive' => 'No cobrar'])->required()->inline(),
+                \Filament\Forms\Components\Textarea::make('fee_reason')->label('Nota (por qué)')->required()->minLength(5)->maxLength(1000)->rows(2),
+            ])
+            ->modalSubmitActionLabel('Cambiar fecha')
+            ->action(function (array $data, Action $action) use ($e) {
+                try {
+                    $c = app(\App\Services\Changes\RescheduleEvent::class)->execute(\Filament\Facades\Filament::auth()->user(), $e->id, ['expected_version' => (int) $this->displayedVersion,
+                        'date' => \Carbon\CarbonImmutable::parse($data['date'])->toDateString(), 'time' => substr((string) $data['time'], 0, 5),
+                        'fee_decision' => $data['fee_decision'], 'fee_reason' => (string) $data['fee_reason']], $this->changeKey);
+                } catch (\App\Exceptions\RecordWriteRejected|\Illuminate\Validation\ValidationException|\Illuminate\Auth\Access\AuthorizationException|\App\Exceptions\ResponsibilityRejected $ex) {
+                    \Filament\Notifications\Notification::make()->danger()->title('No se cambió la fecha')->body($ex instanceof \Illuminate\Validation\ValidationException ? collect($ex->errors())->flatten()->first() : $ex->getMessage())->persistent()->send();
+                    $action->halt();
+                }
+                // Part 4: tell the client right away when mail/SMS are on (best effort; the scheduled command retries).
+                if ($c->state === 'pending_signature') { try { app(\App\Services\Changes\RescheduleNotices::class)->sendDue(); } catch (\Throwable) {} }
+                \Filament\Notifications\Notification::make()->success()->title('Fecha cambiada · '.Labels::when($c->new_starts_at))
+                    ->body(($c->moved_reservations ? 'Se movieron '.$c->moved_reservations.' recursos apartados. ' : '').($c->state === 'pending_signature' ? 'Queda pendiente de firma del contrato nuevo.' : '').($c->fee_cents ? ' Cargo de $100 anotado.' : ' Sin cargo.'))->persistent()->send();
+                $this->redirect(EventResource::getUrl('view', ['record' => $e]));
             });
     }
 
@@ -737,7 +772,8 @@ class ViewEvent extends Page
         return [
             'event' => $e, 'services' => $services, 'units' => $units, 'history' => $history,
             'type' => $e->event_type ? (EventResource::EVENT_TYPES[$e->event_type] ?? $e->event_type) : 'Sin clasificar',
-            'status' => Labels::label(Labels::EVENT_STATUS, $e->status), 'status_color' => Labels::EVENT_STATUS_COLOR[$e->status] ?? 'gray',
+            // A draft only means nothing is set aside yet (owner visual review 2026-10-30).
+            'status' => $e->status === 'draft' ? 'Sin apartar' : Labels::label(Labels::EVENT_STATUS, $e->status), 'status_color' => Labels::EVENT_STATUS_COLOR[$e->status] ?? 'gray',
             'finance' => FinanceGate::enabled() ? app(FinanceSummary::class)->forEvent($e) : null,
             'contract' => $this->contractLabel($e),
             // RESPONSIBLE-SYSTEM C1 (owner decision 2026-10-19): shown only once Codex's column exists; never inferred.

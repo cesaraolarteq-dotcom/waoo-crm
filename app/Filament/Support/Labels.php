@@ -60,6 +60,14 @@ final class Labels
         return trim(($h ? "{$h} h " : '').($m ? "{$m} min" : ''));
     }
 
+    /** US numbers as (346) 555-0118; anything else as typed. */
+    public static function phone(?string $phone): string
+    {
+        $d = preg_replace('/\D/', '', (string) $phone);
+        if (strlen($d) === 11 && $d[0] === '1') $d = substr($d, 1);
+        return strlen($d) === 10 ? sprintf('(%s) %s-%s', substr($d, 0, 3), substr($d, 3, 3), substr($d, 6)) : (string) $phone;
+    }
+
     public static function when(?CarbonInterface $at): string
     {
         return $at ? $at->setTimezone(self::TZ)->locale('es')->translatedFormat('D j M Y, g:i a') : '—';

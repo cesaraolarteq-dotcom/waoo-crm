@@ -85,7 +85,8 @@ final class PortalPageController extends Controller
         $contract = in_array('contract.read', $grant->scopes, true)
             ? Contract::where('event_id', $event->id)->where('signer_customer_id', $client->customerId)->whereIn('state', ['issued', 'signed'])->orderByDesc('revision')->first()
             : null;
-        $signed = $contract?->state === 'signed';
+        // CHANGE-A part 3: a contract signed before a reschedule is replaced by a new one the client signs.
+        $signed = $contract?->state === 'signed' && ! \App\Models\EventChange::signedIsBeforeChange($event->id);
         $balance = $f['balance_cents'];
         // A read validates an already prepared document; it never issues one.
         $prepared = false;
@@ -133,7 +134,7 @@ final class PortalPageController extends Controller
         if(config('waoo.sandbox_company',false)&&!array_key_exists('billing_company',$prefill))$prefill['billing_company']=$event->billing_company;
 
         return [
-            'lang' => $lang, 'step' => $step, 'reserved' => $signed && ($f['deposit_shortfall_cents'] ?? 1) === 0, 'admin_view' => $client->adminAuthenticated, 'quick_payment'=>$quickPayment, 'steps' => $quickPayment ? ['details','pay','contract'] : ($canDetails ? ['details', 'contract', 'pay'] : ['contract', 'pay']), 'test_mode' => true,
+            'lang' => $lang, 'step' => $step, 'reserved' => $signed && ($f['deposit_shortfall_cents'] ?? 1) === 0 && ! self::underReview($event->id), 'admin_view' => $client->adminAuthenticated, 'quick_payment'=>$quickPayment, 'steps' => $quickPayment ? ['details','pay','contract'] : ($canDetails ? ['details', 'contract', 'pay'] : ['contract', 'pay']), 'test_mode' => true,
             'details' => $details ? ['expected_event_version' => $details['expected_event_version'], 'expected_revision' => $details['expected_revision'],
                 'action' => url('/portal/api/details'),
                 'prepare_action' => (config('waoo.sandbox_immediate_contracts') || ($quickPayment['can_sign'] ?? false)) && $details['submission'] && !$signed && !$details['reviewed'] ? url('/portal/api/details/contract') : null,
@@ -187,5 +188,15 @@ final class PortalPageController extends Controller
     private function respond($view)
     {
         return response($view)->header('Cache-Control', 'no-store, private')->header('Referrer-Policy', 'no-referrer')->header('X-Content-Type-Options', 'nosniff');
+    }
+
+    /**
+     * Codex audit R1 (2026-10-29): money and a signature never make a party look reserved while its capacity is under
+     * review — a late card payment after the hold expired (paid_needs_review) or a costume hold the owner must resolve.
+     */
+    private static function underReview(int $eventId): bool
+    {
+        return \App\Models\QuickPaymentBooking::where('event_id', $eventId)->where('state', 'paid_needs_review')->exists()
+            || \App\Models\QuickCostumeHold::where('event_id', $eventId)->where('state', 'review_required')->exists();
     }
 }

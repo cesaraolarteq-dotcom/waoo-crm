@@ -20,10 +20,14 @@ class WebsiteCapacityTest extends TestCase
     {
         parent::setUp();
         $this->travelTo(CarbonImmutable::parse('2026-11-01T09:00:00-06:00'));
+        // An outside calendar that answered with nothing (no Google connection would be unknown, Codex audit S4).
+        $this->app->instance('waoo.availability.busy', fn () => []);
         $owner = User::factory()->create(['role' => 'owner_admin', 'active' => true]);
         $this->elsa = Character::create(['name' => 'Elsa', 'active' => true]);
         Resource::create(['code' => 'ELSA-1', 'name' => 'Elsa 1', 'kind' => 'costume', 'status' => 'active', 'character_id' => $this->elsa->id, 'skills' => []]);
         for ($i = 1; $i <= 2; $i++) Resource::create(['code' => 'DRV-'.$i, 'name' => 'Staff '.$i, 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer', 'driver']]);
+        // Both can wear the Elsa costume ("Quién puede usarlo"; Codex audit R4).
+        foreach (Resource::where('kind', 'staff')->pluck('id') as $sid) DB::table('costume_compatibilities')->insert(['staff_id' => $sid, 'costume_id' => Resource::where('code', 'ELSA-1')->value('id')]);
         $this->magic = ServiceVariant::create(['name' => 'Mágico', 'status' => 'active', 'duration_minutes' => 60, 'setup_minutes' => 15, 'breakdown_minutes' => 15,
             'character_quantity' => 1, 'requirements' => [], 'character_options' => [['character_id' => $this->elsa->id, 'requirements' => [
                 ['kind' => 'costume', 'character_id' => $this->elsa->id, 'quantity' => 1], ['kind' => 'staff', 'quantity' => 1, 'skill' => 'performer']]]]]);
@@ -85,6 +89,16 @@ class WebsiteCapacityTest extends TestCase
         $this->assertSame('owner_approval_required', $ask('77450'), 'neighbour without ZIP: fixed window');
     }
 
+    public function test_no_outside_calendar_answering_is_unknown_unless_the_crm_is_the_only_agenda(): void
+    {
+        // Codex audit S4: Google not connected (no HoneyBook feed configured) is not an empty agenda.
+        $this->app->forgetInstance('waoo.availability.busy'); unset($this->app['waoo.availability.busy']);
+        config(['waoo.honeybook_ical_url' => null]);
+        $this->assertSame('evaluation_unavailable', $this->check(['14:00'])['unresolved'][0]['code']);
+        config(['waoo.availability_crm_only' => true]);
+        $this->assertSame('available', $this->check(['14:00'])['slots'][0]['state'], 'after the switch the CRM is the only agenda');
+    }
+
     public function test_four_parties_at_once_is_the_limit_and_people_short_becomes_owner_approval(): void
     {
         // 2 drivers: a 3rd party at the same time is still possible but needs the owner (call someone in).
@@ -141,14 +155,23 @@ class WebsiteCapacityTest extends TestCase
         $this->assertSame('2026-11-21T18:30:00-06:00', $e[0][0]->setTimezone('America/Chicago')->toIso8601String(), 'A UTC evening party stays on the Houston Saturday.');
         $this->assertSame('2026-11-21T14:00:00-06:00', $e[1][0]->toIso8601String());
         $this->assertSame('2026-11-24T00:00:00-06:00', $e[2][1]->toIso8601String(), 'All-day entry lasts the whole day.');
+        // Names are case-insensitive (RFC 5545): a lower-case event is read, not skipped.
+        $lower = \App\Services\Availability\HoneyBookCalendarFeed::events("BEGIN:VCALENDAR\nbegin:vevent\ndtstart:20261121T140000Z\ndtend:20261121T150000Z\nend:vevent\nEND:VCALENDAR\n");
+        $this->assertSame('2026-11-21T14:00:00+00:00', $lower[0][0]->toIso8601String());
         $cap = new WebsiteCapacity(CarbonImmutable::parse('2026-11-21T00:00:00-06:00'), array_slice($e, 0, 2));
         $this->assertSame(2, $cap->partiesOn('2026-11-21'));
     }
 
     private function staffOnly(int $n): void
     {
-        DB::table('resources')->where('kind', 'staff')->delete();
-        for ($i = 1; $i <= $n; $i++) Resource::create(['code' => 'ONE-'.$i, 'name' => 'Staff '.$i, 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer', 'driver']]);
+        DB::table('costume_compatibilities')->delete(); DB::table('resources')->where('kind', 'staff')->delete();
+        for ($i = 1; $i <= $n; $i++) $this->wearer(Resource::create(['code' => 'ONE-'.$i, 'name' => 'Staff '.$i, 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer', 'driver']]));
+    }
+
+    private function wearer(Resource $staff): Resource
+    {
+        DB::table('costume_compatibilities')->insert(['staff_id' => $staff->id, 'costume_id' => Resource::where('code', 'ELSA-1')->value('id')]);
+        return $staff;
     }
 
     public function test_the_driver_is_a_team_member_and_nobody_hands_over_mid_party(): void
@@ -160,9 +183,9 @@ class WebsiteCapacityTest extends TestCase
         DB::table('resources')->where('kind', 'staff')->update(['skills' => json_encode(['performer'])]);
         $this->assertSame('owner_approval_required', $this->check(['14:00'])['slots'][0]['state']);
         // Codex counterexample: A busy 10:00–11:00, B busy 11:00–12:00; nobody is free for a whole 10:30–11:30 party.
-        DB::table('resources')->where('kind', 'staff')->delete();
-        $a = Resource::create(['code' => 'A', 'name' => 'Staff A', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer', 'driver']]);
-        $b = Resource::create(['code' => 'B', 'name' => 'Staff B', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer', 'driver']]);
+        DB::table('costume_compatibilities')->delete(); DB::table('resources')->where('kind', 'staff')->delete();
+        $a = $this->wearer(Resource::create(['code' => 'A', 'name' => 'Staff A', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer', 'driver']]));
+        $b = $this->wearer(Resource::create(['code' => 'B', 'name' => 'Staff B', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer', 'driver']]));
         DB::table('resource_blocks')->insert([
             ['resource_id' => $a->id, 'starts_at' => '2026-11-21 16:00:00', 'ends_at' => '2026-11-21 17:00:00', 'reason' => 'Ocupado', 'created_at' => now(), 'updated_at' => now()],
             ['resource_id' => $b->id, 'starts_at' => '2026-11-21 17:00:00', 'ends_at' => '2026-11-21 18:00:00', 'reason' => 'Ocupado', 'created_at' => now(), 'updated_at' => now()]]);
@@ -194,7 +217,10 @@ class WebsiteCapacityTest extends TestCase
         foreach (["BEGIN:VCALENDAR\nBEGIN:VEVENT\nDTSTART:20261121T200000Z\nRRULE:FREQ=WEEKLY\nDTEND:20261121T210000Z\nEND:VEVENT\nEND:VCALENDAR\n",
             "BEGIN:VCALENDAR\nBEGIN:VEVENT\nDTSTART:20261121T200000Z\nEND:VEVENT\nEND:VCALENDAR\n",
             "BEGIN:VCALENDAR\nBEGIN:VEVENT\nDTSTART:2026-11-21\nDTEND:20261121T210000Z\nEND:VEVENT\nEND:VCALENDAR\n",
-            "BEGIN:VCALENDAR\nBEGIN:VEVENT\nDTSTART:20261121T200000Z\nDTEND:20261121T210000Z\n"] as $bad)
+            "BEGIN:VCALENDAR\nBEGIN:VEVENT\nDTSTART:20261121T200000Z\nDTEND:20261121T210000Z\n",
+            // Codex audit R5: a date that does not exist never rolls over; a lower-case recurrence is still a recurrence.
+            "BEGIN:VCALENDAR\nBEGIN:VEVENT\nDTSTART:20261131T140000Z\nDTEND:20261131T150000Z\nEND:VEVENT\nEND:VCALENDAR\n",
+            "BEGIN:VCALENDAR\nBEGIN:VEVENT\nDTSTART:20261121T140000Z\nDTEND:20261121T150000Z\nrrule:FREQ=WEEKLY;COUNT=3\nEND:VEVENT\nEND:VCALENDAR\n"] as $bad)
             $this->assertNull(\App\Services\Availability\HoneyBookCalendarFeed::events($bad));
     }
 
