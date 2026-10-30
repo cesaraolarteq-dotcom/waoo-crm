@@ -1,3 +1,11 @@
+## 2026-10-30 · Claude · CHANGE-A part 1: "Cambiar fecha" (branch claude/availability-audit-fixes)
+César 2026-10-30 approved the flow (memory/plan): move the party; $100 charge/waive with a note; new contract to re-sign; party "pendiente de firma" until signed; email+SMS to sign and a 48 h reminder (behind the mail/SMS gates). **Codex: please review (capacity + quick-hold evidence).**
+- `event_changes` table + `App\Models\EventChange` (old/new times, versions, fee decision/reason/cents, moved reservations, contract_id, notified/reminded).
+- `App\Services\Changes\RescheduleEvent`: one transaction — event lock, `AdmitEventCapacity::lockWindows()` (new: old and new days ascending), quick costume hold verified against the old window, every reserved unit must be free at the new window (`QuickCostumeHolds::available`, own reservations excluded) or 409 and nothing changes; event times/version updated, reservations moved, 4-at-once/10-per-day re-checked, hold transitioned with the new window (evidence chain intact). Signed contract → `pending_signature`, else `completed`. HoneyBook-managed parties, active Stripe lease, a pending change, stale version refused. Idempotent key.
+- Event page "Más → Cambiar fecha" (flag `waoo.sandbox_changes`).
+- Not yet (parts 2–4): financial revision with the $100 line and moved balance due date (today the old revision keeps its balance_due_at), new contract, client email/SMS + 48 h reminder, Google Calendar mirror update.
+- Tests: `RescheduleEventTest` (4) + related groups green except MariaDB-only ones.
+
 ## 2026-10-30 · Claude · Uptime monitor (audit i9)
 - `docs/ops/uptime-workflow.yml` (to copy to `.github/workflows/uptime.yml`: the PAT Claude uses lacks the `workflow` scope, so **Codex or César must add it**): every 15 min (and on demand) checks waooparty.com, /es/contact, availability.php probe and crm-test login; a failed scheduled run emails the repo owner (GitHub default). Scheduled workflows run only from the default branch: active once this reaches main. Add the real CRM URL when crm.waooparty.com exists.
 
