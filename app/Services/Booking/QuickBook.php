@@ -53,6 +53,7 @@ final class QuickBook
             'deposit.verified_received' => 'required|accepted', 'deposit.note' => 'nullable|string|max:2000',
             'portal' => 'sometimes|array:expires_at',
             'portal.expires_at' => ['required_with:portal','date', new ExplicitOffset],
+            'promo_code' => 'sometimes|nullable|string|max:20',
         ]);
         $data['deposit']['reference'] = $data['deposit']['reference'] ?? null;
         if (isset($data['lead_id'])) \App\Services\Leads\LeadAccess::owner($actor);
@@ -75,8 +76,9 @@ final class QuickBook
             if (isset($data['portal']['expires_at'])) RecordInput::validate($data, ['portal.expires_at' => ['date','after:now','before_or_equal:'.now()->addDays(30)->toIso8601String()]]);
             $customer = $this->customer($actor, $data);
             if (blank($data['deposit']['reference'] ?? null)) app(GuardUnreferencedQuickBooking::class)->check($customer, $data);
-            $eventInput = array_diff_key($data, array_flip(['new_customer','customer_update','deposit','portal','lead_id','lead_expected_version']));
+            $eventInput = array_diff_key($data, array_flip(['new_customer','customer_update','deposit','portal','lead_id','lead_expected_version','promo_code']));
             $event = app(SaveEventDraft::class)->execute($actor, [...$eventInput, 'customer_id' => $customer->id]);
+            if (filled($data['promo_code'] ?? null)) \App\Services\Campaigns\AnniversaryCampaign::redeem($actor, $data['promo_code'], $event);
             $finance = app(CreateFinancialRevision::class)->execute($actor, $event->id, ['expected_version' => $event->version], (string) Str::uuid());
             try {
                 $receipt = app(RecordZellePayment::class)->execute($actor, $event->id, [

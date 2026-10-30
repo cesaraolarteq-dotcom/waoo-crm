@@ -10,10 +10,29 @@
     @php
         $bd = $this->birthdays();
         $analytics = $this->analytics();
+        $anniv = $this->anniversary();
+        $skipLabels = ['already_rebooked' => 'ya habían reservado otra vez', 'no_email' => 'sin correo'];
         $day = fn (string $d, string $f = 'D j M') => \Carbon\CarbonImmutable::parse($d, 'America/Chicago')->locale('es')->translatedFormat($f);
     @endphp
     @if ($bd || $analytics)
         <div class="wp">
+            @if ($anniv)
+                <div class="wp-card" style="margin-bottom:16px">
+                    <span class="wp-pill">Un año después · efectividad</span>
+                    <div class="wp-big">{{ $anniv['rate'] === null ? '—' : rtrim(rtrim(number_format($anniv['rate'], 1), '0'), '.').' %' }}</div>
+                    <p>{{ $anniv['issued'] }} {{ $anniv['issued'] === 1 ? 'cliente recibió' : 'clientes recibieron' }} su código y {{ $anniv['redeemed'] }} {{ $anniv['redeemed'] === 1 ? 'reservó' : 'reservaron' }} con él.
+                        @if ($anniv['sent'] < $anniv['issued']) {{ $anniv['issued'] - $anniv['sent'] }} códigos están listos pero el correo sigue apagado: todavía no se envían. @endif</p>
+                    <ul class="wp-list">
+                        <li>Dinero de esas reservas <span>{{ $this->money($anniv['revenue_cents']) }}</span></li>
+                        <li>Descuento que diste <span>{{ $this->money($anniv['discount_cents']) }}</span></li>
+                        <li>Códigos vencidos sin usar <span>{{ $anniv['expired'] }}</span></li>
+                        @if ($anniv['cancelled'])<li>Reservas con código que se cancelaron <span>{{ $anniv['cancelled'] }}</span></li>@endif
+                        @foreach ($anniv['skipped'] as $reason => $n)
+                            <li>No se les manda: {{ $skipLabels[$reason] ?? $reason }} <span>{{ $n }}</span></li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
             <div class="wp-duo">
                 @if ($bd)
                     <div class="wp-card">

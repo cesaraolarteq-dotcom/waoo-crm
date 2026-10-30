@@ -195,6 +195,14 @@ class Reports extends Page
             Filament::auth()->user(), ['as_of' => now('America/Chicago')->toDateString()]);
     }
 
+    /** ANNIV-01 effectiveness (César 2026-10-29: "enviamos 10 correos y contrataron 2"). */
+    public function anniversary(): ?array
+    {
+        if (! config('waoo.sandbox_anniversary', false)) return null;
+        $s = \App\Services\Campaigns\AnniversaryCampaign::stats();
+        return $s['issued'] || $s['skipped'] ? $s : null;
+    }
+
     /** Owner 2026-10-29: the birthday list as names and next birthday dates, soonest first (still a draft: nothing is sent). */
     public function birthdays(): ?array
     {
