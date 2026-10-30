@@ -50,13 +50,13 @@ class AnniversaryCampaignTest extends TestCase
         return $e;
     }
 
-    private function book(Customer $c, ?string $code, int $days = 40): Event
+    private function book(Customer $c, ?string $code, int $days = 40, int $mickeys = 1): Event
     {
         $start = now('America/Chicago')->addDays($days)->setTime(12, 0)->utc();
         $b = app(QuickBook::class)->execute($this->owner, ['customer_id' => $c->id,
             'title' => 'Cumpleaños', 'event_type' => 'birthday', 'starts_at' => $start->toIso8601String(), 'ends_at' => $start->addHours(2)->toIso8601String(),
             'timezone' => 'America/Chicago', 'address' => '123 Avenida del Parque', 'postal_code' => '77433', 'travel_fee_cents' => 4000, 'setup_minutes' => 30, 'breakdown_minutes' => 20,
-            'services' => [['price_version_id' => $this->price->id, 'characters' => [['character_id' => $this->character->id, 'quantity' => 1, 'outfit' => '0']]]],
+            'services' => [['price_version_id' => $this->price->id, 'characters' => [['character_id' => $this->character->id, 'quantity' => $mickeys, 'outfit' => '0']]]],
             'deposit' => ['method' => 'zelle', 'amount_cents' => 15000, 'reference' => 'DEP-'.Str::random(8), 'received_at' => now()->subMinute()->toIso8601String(), 'verified_received' => true],
             ...($code !== null ? ['promo_code' => $code] : [])], (string) Str::uuid());
         return Event::findOrFail($b->event->id);
@@ -109,6 +109,18 @@ class AnniversaryCampaignTest extends TestCase
         $this->assertSame([2, 1, 50.0, 31000, 3000], [$s['issued'], $s['redeemed'], $s['rate'], $s['revenue_cents'], $s['discount_cents']]);
     }
 
+    public function test_extra_characters_get_the_discount_and_the_travel_fee_never_does(): void
+    {
+        $maria = $this->client('María González');
+        $this->pastParty($maria, 330);
+        app(AnniversaryCampaign::class)->issue(CarbonImmutable::now('America/Chicago'));
+        $e = $this->book($maria, AnniversaryCode::where('customer_id', $maria->id)->value('code'), mickeys: 2);
+        $rev = FinancialRevision::where('event_id', $e->id)->orderByDesc('revision')->firstOrFail();
+        $this->assertSame(30000 + 15000, $rev->subtotal_cents, 'package + one extra character');
+        $this->assertSame(4500, $rev->discount_cents, '10 % of package and extra character');
+        $this->assertSame(45000 + 4000 - 4500, $rev->total_cents, 'travel fee in full');
+    }
+
     public function test_an_expired_or_unknown_code_is_refused_and_no_code_books_normally(): void
     {
         $maria = $this->client('María González');
@@ -131,7 +143,7 @@ class AnniversaryCampaignTest extends TestCase
         \Livewire\Livewire::test(\App\Filament\Pages\QuickBooking::class)
             ->fillForm(['customer_mode' => 'existing', 'customer_id' => $maria->id])->fillForm(['price_version_ids' => [$this->price->id], 'travel_fee' => '40'])
             ->fillForm(['promo_code' => $code])
-            ->assertSee('Código válido: 10 % menos en el paquete')->assertSee("con código −\$30)")
+            ->assertSee('Código válido: 10 % menos en el paquete y los adicionales')->assertSee("con código −\$30)")
             ->assertSchemaStateSet(['deposit.amount' => '155.00']);
         \Livewire\Livewire::test(\App\Filament\Pages\QuickBooking::class)->fillForm(['promo_code' => 'WAOO-ZZZZZ'])->assertSee('Ese código no existe');
         $this->book($maria, $code);

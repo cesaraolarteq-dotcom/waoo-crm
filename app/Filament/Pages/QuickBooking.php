@@ -187,7 +187,7 @@ class QuickBooking extends Page
                 TextInput::make('promo_code')->label('Código de promoción (opcional)')->placeholder('WAOO-7KX9Q')->maxLength(20)->columnSpanFull()
                     ->visible(fn () => (bool) config('waoo.sandbox_anniversary', false))->live(onBlur: true)
                     ->helperText(fn (Get $get) => filled($get('promo_code')) ? \App\Services\Campaigns\AnniversaryCampaign::check($get('promo_code'), self::customerIdFor($get))['message']
-                        : 'El código del correo "Un año después": 10 % sobre el paquete, una sola vez y solo para quien lo recibió.')
+                        : 'El código del correo "Un año después": 10 % sobre el paquete y los adicionales (no el transporte), una sola vez y solo para quien lo recibió.')
                     ->afterStateUpdated(fn (Get $get, Set $set) => self::refreshDeposit($get, $set)),
                 Select::make('deposit_received')->label('¿Ya recibiste el depósito?')->options([1 => 'Sí', 0 => 'Todavía no'])->default(1)->required()->live()->columnSpanFull()
                     ->visible(fn () => \App\Services\Booking\QuickPaymentProtocol::enabled()),
@@ -294,14 +294,15 @@ class QuickBooking extends Page
     /** Preview of the anniversary discount for the suggested deposit and the summary; the backend recomputes it on save. */
     public static function promoCents(Get $get): int
     {
-        return self::promoCentsFor($get('promo_code'), self::customerIdFor($get), $get('price_version_ids') ?? []);
+        return self::promoCentsFor($get('promo_code'), self::customerIdFor($get), $get('price_version_ids') ?? [], self::extraCents($get));
     }
 
-    public static function promoCentsFor(?string $code, ?int $customerId, array $priceIds): int
+    /** Packages and add-ons (extra characters), never the travel fee (César 2026-10-29). */
+    public static function promoCentsFor(?string $code, ?int $customerId, array $priceIds, int $extraCents = 0): int
     {
         if (! config('waoo.sandbox_anniversary', false) || blank($code)) return 0;
         if (! \App\Services\Campaigns\AnniversaryCampaign::check($code, $customerId)['ok']) return 0;
-        $base = (int) PriceVersion::whereIn('id', array_map('intval', $priceIds))->sum('amount_cents');
+        $base = (int) PriceVersion::whereIn('id', array_map('intval', $priceIds))->sum('amount_cents') + $extraCents;
         return intdiv($base * \App\Services\Campaigns\AnniversaryCampaign::PERCENT + 50, 100);
     }
 
@@ -312,7 +313,8 @@ class QuickBooking extends Page
         if ($this->data['deposit']['amount_custom'] ?? false) return;
         $extra = EventResource::extraCharacters(['price_version_ids' => $this->data['price_version_ids'] ?? [], 'characters' => $this->data['characters'] ?? []]);
         $this->data['deposit']['amount'] = self::depositDefault($this->data['price_version_ids'] ?? [], $this->data['travel_fee'] ?? null, $extra * (int) config('waoo.extra_character_cents'),
-            self::promoCentsFor($this->data['promo_code'] ?? null, ($this->data['customer_mode'] ?? null) === 'existing' && filled($this->data['customer_id'] ?? null) ? (int) $this->data['customer_id'] : null, $this->data['price_version_ids'] ?? []));
+            self::promoCentsFor($this->data['promo_code'] ?? null, ($this->data['customer_mode'] ?? null) === 'existing' && filled($this->data['customer_id'] ?? null) ? (int) $this->data['customer_id'] : null,
+                $this->data['price_version_ids'] ?? [], $extra * (int) config('waoo.extra_character_cents')));
     }
 
     /** Extra characters × the per-character amount, from the live form (the backend recounts and snapshots it on save). */

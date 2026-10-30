@@ -12,8 +12,9 @@ use Illuminate\Validation\ValidationException;
  * ANNIV-01 "Un año después" (owner spec docs/plans/ANNIVERSARY-REBOOK.md, design 2026-10-29):
  * - one unique code per client and anchor (the client's latest birthday party that happened), issued 46 weeks after it,
  *   only when the client has not booked again and has an email; skipped clients are recorded with the reason;
- * - 10 % off the regular package price only (no extra characters, never the travel fee), single use, 7 days, only on a
- *   new booking of that same client created after the code, never with another discount (an accepted quote);
+ * - 10 % off the packages and add-ons such as extra characters, never the travel fee (César 2026-10-29), single use,
+ *   7 days, only on a new booking of that same client created after the code, never with another promotion or discount
+ *   (an accepted quote carries its own discounts; a future month promotion must refuse it too);
  * - issuing never sends anything: delivery is a separate step behind the mail gate (owner hold: no email yet).
  */
 final class AnniversaryCampaign
@@ -76,7 +77,7 @@ final class AnniversaryCampaign
         if ($customerId === null) return $no('Elige primero al cliente que recibió el código.');
         if ($row->customer_id !== $customerId) return $no('Ese código es de otro cliente. Solo lo puede usar quien lo recibió.');
         if (now()->greaterThan($row->expires_at)) return $no('Ese código venció el '.$row->expires_at->setTimezone('America/Chicago')->translatedFormat('j \d\e F').'.');
-        return ['ok' => true, 'message' => 'Código válido: 10 % menos en el paquete (el transporte se cobra completo). Vence el '.$row->expires_at->setTimezone('America/Chicago')->translatedFormat('j \d\e F').'.'];
+        return ['ok' => true, 'message' => 'Código válido: 10 % menos en el paquete y los adicionales (el transporte se cobra completo). Vence el '.$row->expires_at->setTimezone('America/Chicago')->translatedFormat('j \d\e F').'.'];
     }
 
     /**
@@ -101,8 +102,8 @@ final class AnniversaryCampaign
     }
 
     /**
-     * The discount a financial revision of this event carries: 10 % of the regular package prices (price versions only, so
-     * extra characters and the travel fee are charged in full). Null when the event redeemed no code.
+     * The discount a financial revision of this event carries. César 2026-10-29: 10 % on every package and add-on (extra
+     * characters included), never on the travel fee. Null when the event redeemed no code.
      * @param iterable<\App\Models\EventService> $services
      */
     public static function discount(Event $event, iterable $services): ?array
@@ -110,10 +111,10 @@ final class AnniversaryCampaign
         $row = AnniversaryCode::where('redeemed_event_id', $event->id)->first();
         if (! $row) return null;
         $base = 0;
-        foreach ($services as $s) $base += (int) PriceVersion::whereKey($s->price_version_id)->value('amount_cents');
+        foreach ($services as $s) $base += (int) PriceVersion::whereKey($s->price_version_id)->value('amount_cents') + \App\Models\EventService::extraCents($s);
         $cents = intdiv($base * self::PERCENT + 50, 100); // rounded to the cent
         return ['cents' => $cents, 'snapshot' => [['kind' => 'anniversary', 'code' => $row->code, 'percent' => self::PERCENT,
-            'applies_to' => 'package_price', 'base_cents' => $base, 'amount_cents' => $cents, 'anniversary_code_id' => $row->id]]];
+            'applies_to' => 'services_not_travel', 'base_cents' => $base, 'amount_cents' => $cents, 'anniversary_code_id' => $row->id]]];
     }
 
     /** Effectiveness for Reportes: issued (ready or sent), booked with the code, money and discount. */
