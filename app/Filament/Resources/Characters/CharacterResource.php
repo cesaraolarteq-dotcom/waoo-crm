@@ -87,6 +87,10 @@ class CharacterResource extends Resource
                     ->description(fn ($record) => collect([$record->category, $record->group])->filter()->implode(' · ') ?: null),
                 TextColumn::make('audience')->label('Para')->badge()->formatStateUsing(fn ($state) => self::AUDIENCES[$state ?? 'all'] ?? 'Todos')
                     ->color(fn ($state) => match ($state) { 'girls' => 'danger', 'boys' => 'info', default => 'gray' }),
+                // César 2026-10-30: head = anyone with Personaje; wig = only Personaje con peluca (App\Support\CostumeWearers).
+                TextColumn::make('costume_style')->label('Quién lo hace')->badge()
+                    ->formatStateUsing(fn ($state) => ['head' => 'Cabeza · cualquier Personaje', 'wig' => 'Peluca · solo con peluca'][$state] ?? 'Sin marcar')
+                    ->color(fn ($state) => ['head' => 'info', 'wig' => 'primary'][$state] ?? 'warning')->placeholder('Sin marcar')->default('none'),
                 TextColumn::make('costumes')->label('Trajes disponibles')
                     ->state(fn ($record) => "{$record->costumes_ready} de {$record->costumes_total}")
                     ->color(fn ($record) => (int) $record->costumes_ready === 0 ? 'danger' : null),

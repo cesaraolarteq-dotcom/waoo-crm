@@ -346,7 +346,7 @@
                 <span class="wp-pill">Semana más caliente</span>
                 @if ($pulse['hottest'])
                     <div class="wp-big hot">{{ $fecha($pulse['hottest']['start'], 'j M') }}</div>
-                    <p>{{ $countLabel($pulse['hottest']['count']) }} · {{ $usd($pulse['hottest']['cents']) }} · {{ $pulse['hottest']['heat'] }}× tu promedio.</p>
+                    <p>{{ $countLabel($pulse['hottest']['count']) }} · {{ $usd($pulse['hottest']['cents']) }} · {{ rtrim(rtrim(number_format((float) $pulse['hottest']['heat'], 1), '0'), '.') }} veces tu promedio.</p>
                 @else
                     <p>No hubo {{ $pulseNoun }} en este periodo.</p>
                 @endif

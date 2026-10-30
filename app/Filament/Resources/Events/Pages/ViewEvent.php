@@ -737,7 +737,8 @@ class ViewEvent extends Page
         return [
             'event' => $e, 'services' => $services, 'units' => $units, 'history' => $history,
             'type' => $e->event_type ? (EventResource::EVENT_TYPES[$e->event_type] ?? $e->event_type) : 'Sin clasificar',
-            'status' => Labels::label(Labels::EVENT_STATUS, $e->status), 'status_color' => Labels::EVENT_STATUS_COLOR[$e->status] ?? 'gray',
+            // A draft only means nothing is set aside yet (owner visual review 2026-10-30).
+            'status' => $e->status === 'draft' ? 'Sin apartar' : Labels::label(Labels::EVENT_STATUS, $e->status), 'status_color' => Labels::EVENT_STATUS_COLOR[$e->status] ?? 'gray',
             'finance' => FinanceGate::enabled() ? app(FinanceSummary::class)->forEvent($e) : null,
             'contract' => $this->contractLabel($e),
             // RESPONSIBLE-SYSTEM C1 (owner decision 2026-10-19): shown only once Codex's column exists; never inferred.

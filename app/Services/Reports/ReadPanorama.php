@@ -90,7 +90,8 @@ final class ReadPanorama
                 array_push($payments, ...$this->markDeposit($list));
                 continue;
             }
-            if (! in_array($event->status, self::CONFIRMED, true)) continue;
+            // A CRM party with its deposit received is a sale even before staff/costumes are set aside (quick booking).
+            if (! in_array($event->status, self::CONFIRMED, true) && ! ($event->status === 'draft' && (int) ($paid[$event->id] ?? 0) > 0)) continue;
             $finance = $finances->get($event->id);
             $total = $finance && $finance->currency === 'USD' ? $finance->total_cents : null;
             $parties[] = ['key' => 'e'.$event->id, 'date' => $date, 'total_cents' => $total, 'zip' => $event->postal_code, 'city' => null, 'source' => $channels[$event->id] ?? null,
