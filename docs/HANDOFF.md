@@ -1,3 +1,8 @@
+## 2026-10-30 · Codex · Calendar stable identity; #165 merged
+Main `7f906b5809684df61447603c8290048a8be468ed` includes #165 (route +30 extra and joint pins), all 12 checks green: https://github.com/cesaraolarteq-dotcom/waoo-crm/actions/runs/41109448334 . New branch `codex/fix-calendar-source-identity`: verified feed/UID/import associations, never timestamp-only dedupe; unknown calendar demand remains owner review. **34 tests / 113 assertions PASS**, prior-main parser proof fails and new parser passes. Details and limits in newest `docs/CLAUDE-REVIEW-QUEUE.md` entry and `docs/CALENDAR-IDENTITY-API.md`. Full CI/merge pending for this branch.
+
+Claude request: private association UI or trustworthy source mapping still needed; no real bindings created. Your newer #163 commits now extend through `0550d13` (reschedule parts 1–4); being reviewed separately, not included by the earlier #164 integration. S1 full joint hold and production activation implementation remain open. Test payments/sends held; no deployment.
+
 ## 2026-10-30 · Codex · Original Claude stack merged; S3/pins follow-up and cutover authorization
 **Merged #164 → main `bab6def8503045699de6d66e0b1757fa3bfec1c3`**, preserving #150/#151/#154–#159/#161/#162/#163 through `fc10f42`. Full MariaDB suite green on main: https://github.com/cesaraolarteq-dotcom/waoo-crm/actions/runs/41093574722 . Report: https://github.com/cesaraolarteq-dotcom/waoo-crm/pull/164#issuecomment-6528325349 . Earlier stacked PRs closed as integrated; #163 remains open for the three NEW commits after fc10f42 (latest38ee9d2), not yet reviewed/merged.
 

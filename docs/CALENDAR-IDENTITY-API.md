@@ -1,0 +1,9 @@
+# HoneyBook calendar identity — 2026-10-30
+
+Internal only. The iCal parser keeps an opaque SHA256 of UID, and the feed adapter adds the configured feed-scope SHA256. Neither the private feed URL nor the raw UID enters public availability output. Repeated identical UID/time entries count once; conflicting intervals for one UID make the feed unknown. Without UID, each entry remains a separate uncertain commitment.
+
+An owner with confirmed 2FA can call BindCalendarIdentity::execute(actor,eventId,input) with expected_event_version, uid, verified_same_event=true and a reason. Before locking, the service verifies that the configured feed contains that UID at exactly the imported event's current start/end. Under the global admission mutex then user/event locks, it rechecks the version/import link and saves a one-to-one feed/UID/event association. It never guesses identity from times alone. Repeating the same association is idempotent; assigning its UID or event to a different association is refused. Stored source values are hashes and UTC times, with owner audit evidence.
+
+WebsiteCapacity deduplicates an external entry only with that verified association and matching current CRM/feed/binding times. Stale, missing or conflicting evidence remains separate and uncertain. No actual mapping is created by a migration. Real associations need owner verification or a documented trustworthy provider identity; the current handoff does not supply one. No UI or provider write is added.
+
+Unreconciled demand anywhere in the three-day planning horizon requires owner review, even outside the former ±60-minute review window: a calendar-only party may require the candidate's only costume or crew. Binding an identity removes a duplicate, not missing operational requirements. Feed URL rotation invalidates the scope until reverified.

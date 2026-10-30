@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\{Cache, Http};
 /**
  * Owner 2026-10-29: until the switch, new HoneyBook bookings reach the CRM only through the private iCal calendar HoneyBook
  * writes to (the same feed the website uses today). Its events count as busy for website availability.
- * The URL is a secret (env WAOO_HONEYBOOK_ICAL_URL): never logged or shown. Only start/end times are read.
+ * The URL is a secret (env WAOO_HONEYBOOK_ICAL_URL): never logged or shown. Identity is an opaque hash of UID.
  * Anything the parser cannot prove (recurrence, DURATION, a timed start without end, a bad date, a truncated or oversized
  * calendar) makes the whole answer unknown (null), never free time (Codex review 2026-10-29).
  */
@@ -20,7 +20,17 @@ final class HoneyBookCalendarFeed
         return filled(config('waoo.honeybook_ical_url'));
     }
 
-    /** @return list<array{0: CarbonImmutable, 1: CarbonImmutable}>|null null when the feed did not answer or cannot be trusted */
+    public static function scope(): ?string
+    {
+        return self::configured() ? hash('sha256', (string) config('waoo.honeybook_ical_url')) : null;
+    }
+
+    public static function uidHash(string $uid): ?string
+    {
+        return $uid === '' || $uid !== trim($uid) || strlen($uid) > 1024 || preg_match('/[\x00-\x1F\x7F]/', $uid) ? null : hash('sha256', $uid);
+    }
+
+    /** @return list<array{0: CarbonImmutable, 1: CarbonImmutable, 2?: array{uid_sha256: string, scope_sha256?: string}}>|null null when the feed did not answer or cannot be trusted */
     public function between(CarbonImmutable $from, CarbonImmutable $to): ?array
     {
         $url = (string) config('waoo.honeybook_ical_url');
@@ -42,10 +52,13 @@ final class HoneyBookCalendarFeed
         }
         $events = self::events($ics);
         if ($events === null) return null;
-        return array_values(array_filter($events, fn ($e) => $e[0] < $to && $e[1] > $from));
+        return array_values(array_map(function ($e) {
+            if (isset($e[2]['uid_sha256'])) $e[2]['scope_sha256'] = self::scope();
+            return $e;
+        }, array_filter($events, fn ($e) => $e[0] < $to && $e[1] > $from)));
     }
 
-    /** @return list<array{0: CarbonImmutable, 1: CarbonImmutable}>|null null when anything is unsupported or malformed */
+    /** @return list<array{0: CarbonImmutable, 1: CarbonImmutable, 2?: array{uid_sha256: string, scope_sha256?: string}}>|null null when anything is unsupported or malformed */
     public static function events(string $ics): ?array
     {
         // Property names and BEGIN/END values are case-insensitive in iCalendar (RFC 5545 3.1): normalize them, never skip a line.
@@ -56,7 +69,7 @@ final class HoneyBookCalendarFeed
             $l = strtoupper($m[1]).($m[2] ?? '');
             return preg_match('/^(BEGIN|END):/', $l) ? strtoupper(rtrim($l)) : $l;
         }, $lines);
-        $events = []; $cur = null;
+        $events = []; $cur = null; $identities = [];
         foreach ($lines as $line) {
             if ($line === 'BEGIN:VEVENT') { if ($cur !== null) return null; $cur = []; continue; }
             if ($line === 'END:VEVENT') {
@@ -66,11 +79,22 @@ final class HoneyBookCalendarFeed
                     if (! isset($cur['DTEND']) && empty($cur['ALLDAY'])) return null; // a timed entry must say when it ends
                     $end = $cur['DTEND'] ?? $start->addDay();
                     if ($end <= $start) return null;
-                    $events[] = [$start, $end];
+                    $uid = $cur['UID_HASH'] ?? null;
+                    if ($uid !== null && isset($identities[$uid])) {
+                        [$seenStart, $seenEnd] = $identities[$uid];
+                        if (!$seenStart->equalTo($start) || !$seenEnd->equalTo($end)) return null;
+                    } else {
+                        $events[] = $uid === null ? [$start, $end] : [$start, $end, ['uid_sha256' => $uid]];
+                        if ($uid !== null) $identities[$uid] = [$start, $end];
+                    }
                 }
                 $cur = null; continue;
             }
             if ($cur === null) continue;
+            if (preg_match('/^UID(?:;[^:]*)?:(.*)$/', $line, $uid)) {
+                if (isset($cur['UID_HASH']) || ($cur['UID_HASH'] = self::uidHash($uid[1])) === null) return null;
+                continue;
+            }
             if (preg_match('/^(RRULE|RDATE|EXRULE|DURATION)[;:]/', $line)) return null; // recurrence/duration not supported
             if (! preg_match('/^(DTSTART|DTEND|STATUS)((?:;[^:]*)?):(.*)$/', $line, $m)) continue;
             if ($m[1] === 'STATUS') { $cur['STATUS'] = strtoupper(trim($m[3])); continue; }

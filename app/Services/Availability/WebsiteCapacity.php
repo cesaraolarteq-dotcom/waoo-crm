@@ -91,7 +91,18 @@ final class WebsiteCapacity
         }
         // A similar timestamp is only a review hint, never proof that two records describe the same party.
         $free = $imported; $n = 0;
-        foreach ($calendar ?? [] as [$cFrom, $cTo]) {
+        $scope = HoneyBookCalendarFeed::scope();
+        $identities = $scope === null ? collect() : \Illuminate\Support\Facades\DB::table('calendar_identity_links as identity')
+            ->join('events as e', 'e.id', '=', 'identity.event_id')
+            ->join('imported_project_links as imported', 'imported.event_id', '=', 'e.id')
+            ->where('identity.scope_sha256', $scope)->where('e.status', '!=', 'cancelled')
+            ->whereColumn('e.starts_at', 'identity.starts_at')->whereColumn('e.ends_at', 'identity.ends_at')
+            ->get(['identity.uid_sha256', 'identity.event_id', 'identity.starts_at', 'identity.ends_at'])->keyBy('uid_sha256');
+        foreach ($calendar ?? [] as $entry) {
+            [$cFrom, $cTo] = $entry;
+            $identity = ($entry[2]['scope_sha256'] ?? null) === $scope ? $identities->get($entry[2]['uid_sha256'] ?? '') : null;
+            if ($identity && CarbonImmutable::parse($identity->starts_at, 'UTC')->equalTo($cFrom)
+                && CarbonImmutable::parse($identity->ends_at, 'UTC')->equalTo($cTo)) continue;
             $match = null;
             foreach ($free as $i => $idx) {
                 $p = $this->parties[$idx];
@@ -143,8 +154,9 @@ final class WebsiteCapacity
         $characters = array_sum(array_map(fn ($r) => ($r['kind'] ?? null) === 'costume' ? max(1, (int) ($r['quantity'] ?? 1)) : 0, $requirements));
         if ($characters >= self::OWNER_CHARACTERS) return 'owner_approval_required';
         if (! $this->travelFits($from, $to, $requirements)) return 'owner_approval_required';
-        $near = array_filter($this->parties, fn ($p) => $p['uncertain'] && $p['from'] < $to->addMinutes(self::TRAVEL_REVIEW_MINUTES) && $p['to'] > $from->subMinutes(self::TRAVEL_REVIEW_MINUTES));
-        return $near ? 'owner_approval_required' : $state;
+        // Unknown demand can hide the very costume/crew needed by this candidate. A time window cannot prove it free.
+        $uncertain = array_filter($this->parties, fn ($p) => $p['uncertain']);
+        return $uncertain ? 'owner_approval_required' : $state;
     }
 
     /**
