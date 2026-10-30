@@ -26,7 +26,9 @@ final class PrepareClientContract
         $hash = MutationKey::hash($data);
         return DB::transaction(function () use ($client, $data, $key, $scope, $hash) {
             [$event, $customer, $finance, $submission, $values, $provenance] = ClientContractSource::read($client, $data);
-            RecordWriteRejected::when(Contract::where('event_id', $event->id)->where('state', 'signed')->exists(), 409, 'Un contrato firmado requiere el flujo de cambios.');
+            // CHANGE-A part 3: after a reschedule the old signed contract stays on file and the client signs a new one.
+            $rescheduled = \App\Models\EventChange::signedIsBeforeChange($event->id);
+            RecordWriteRejected::when(! $rescheduled && Contract::where('event_id', $event->id)->where('state', 'signed')->exists(), 409, 'Un contrato firmado requiere el flujo de cambios.');
             $saved = MutationKey::find($scope, $key, $hash);
             $existing = $saved ? Contract::whereKey($saved->result_id)->firstOrFail()
                 : Contract::where('event_id', $event->id)->where('state', 'issued')->orderByDesc('revision')->first();
@@ -40,7 +42,7 @@ final class PrepareClientContract
                 if (!$saved) MutationKey::store($scope, $key, $hash, 'contract', $existing->id);
                 return $existing;
             }
-            RecordWriteRejected::when($saved !== null || Contract::where('event_id', $event->id)->where('state', 'signed')->exists(), 409, 'Un contrato firmado o cambiado requiere revisión del dueño.');
+            RecordWriteRejected::when($saved !== null || (! $rescheduled && Contract::where('event_id', $event->id)->where('state', 'signed')->exists()), 409, 'Un contrato firmado o cambiado requiere revisión del dueño.');
             $registry = DB::table('contract_template_registry')->where('id', 1)->lockForUpdate()->first();
             $template = $registry?->active_version_id ? ContractTemplateVersion::whereKey($registry->active_version_id)->lockForUpdate()->first() : null;
             RecordWriteRejected::unless($template && $template->state === 'active' && $template->approved_at && $template->approved_by,

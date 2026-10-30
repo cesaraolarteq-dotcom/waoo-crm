@@ -11,7 +11,7 @@
         $bd = $this->birthdays();
         $analytics = $this->analytics();
         $anniv = $this->anniversary();
-        $skipLabels = ['already_rebooked' => 'ya habían reservado otra vez', 'no_email' => 'sin correo'];
+        $skipLabels = ['already_rebooked' => 'ya habían reservado otra vez', 'no_email' => 'sin correo', 'unsubscribed' => 'se dieron de baja de promociones'];
         $day = fn (string $d, string $f = 'D j M') => \Carbon\CarbonImmutable::parse($d, 'America/Chicago')->locale('es')->translatedFormat($f);
     @endphp
     @if ($bd || $analytics)
@@ -22,6 +22,7 @@
                     <div class="wp-big">{{ $anniv['rate'] === null ? '—' : rtrim(rtrim(number_format($anniv['rate'], 1), '0'), '.').' %' }}</div>
                     <p>{{ $anniv['issued'] }} {{ $anniv['issued'] === 1 ? 'cliente recibió' : 'clientes recibieron' }} su código y {{ $anniv['redeemed'] }} {{ $anniv['redeemed'] === 1 ? 'reservó' : 'reservaron' }} con él.
                         @if ($anniv['sent'] < $anniv['issued']) {{ $anniv['issued'] - $anniv['sent'] }} códigos están listos pero el correo sigue apagado: todavía no se envían. @endif</p>
+                    <p class="wp-note"><a href="{{ url('/admin/anniversary/preview') }}" target="_blank" rel="noopener" style="text-decoration:underline">Ver el correo</a> · <a href="{{ url('/admin/anniversary/preview?kind=reminder') }}" target="_blank" rel="noopener" style="text-decoration:underline">Ver el recordatorio del día 6</a> (ejemplo con datos ficticios)</p>
                     <ul class="wp-list">
                         <li>Dinero de esas reservas <span>{{ $this->money($anniv['revenue_cents']) }}</span></li>
                         <li>Descuento que diste <span>{{ $this->money($anniv['discount_cents']) }}</span></li>

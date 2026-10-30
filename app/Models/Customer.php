@@ -7,5 +7,5 @@ use Illuminate\Database\Eloquent\Model;
 class Customer extends Model
 {
     protected $fillable = ['name', 'email', 'phone', 'locale'];
-    protected function casts(): array { return ['version' => 'integer']; }
+    protected function casts(): array { return ['version' => 'integer', 'promo_opt_out_at' => 'datetime']; }
 }
