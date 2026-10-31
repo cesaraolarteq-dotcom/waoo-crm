@@ -411,4 +411,72 @@ class QuickPaymentsTest extends TestCase
         $this->assertSame('expired', QuickPaymentBooking::sole()->state);
         $this->assertSame(0, \App\Models\ResourceReservation::count(), 'released once Stripe confirmed the unpaid expiry');
     }
+    public function test_the_deadline_during_checkout_creation_does_not_release_stock_before_the_session_is_known(): void
+    {
+        $r = $this->create(); $this->client($r); $this->details(); $g = $this->gateway();
+        $counts = null;
+        $g->onCreate = function () use (&$counts) {
+            $this->travel(49)->hours();
+            $counts = app(\App\Services\Booking\TickQuickPayments::class)->execute();
+        };
+        $q = $this->claim(); unset($q['amount_cents'], $q['reference']); $q['deposit_percent'] = 50;
+        $this->withHeader('Idempotency-Key', (string) Str::uuid())->postJson('/portal/api/quick-payment/checkout', $q)->assertStatus(409);
+        $this->assertSame(0, $counts['expired']);
+        $this->assertDatabaseCount('resource_reservations', 1);
+        $this->assertNotSame('expired', QuickPaymentBooking::sole()->state);
+        $this->assertDatabaseCount('ledger_entries', 0);
+        // The late response has now supplied its binding; a subsequent tick can prove closure before release.
+        $g->onCreate = null;
+        $this->assertSame(1, app(\App\Services\Booking\TickQuickPayments::class)->execute()['expired']);
+        $this->assertDatabaseCount('resource_reservations', 0);
+    }
+
+    public static function manualLeaseClosures(): array { return [[false], [true]]; }
+    #[\PHPUnit\Framework\Attributes\DataProvider('manualLeaseClosures')]
+    public function test_manual_release_or_expiry_cannot_bypass_an_outstanding_checkout(bool $expiry): void
+    {
+        $r = $this->create(); $this->client($r); $this->details(); $this->gateway(); $this->checkout();
+        if ($expiry) $this->travel(49)->hours();
+        $lease = \App\Models\QuickStripeLease::sole();
+        $input = ['expected_lease_version' => $lease->version];
+        if (!$expiry) $input += ['expected_event_version' => $r->event->fresh()->version, 'reason' => 'Synthetic owner requested release.'];
+        try {
+            app($expiry ? \App\Services\Booking\ExpireQuickStripeLease::class : \App\Services\Booking\ReleaseQuickStripeLease::class)
+                ->execute($this->owner, $r->event->id, $input, (string) Str::uuid());
+            $this->fail('An outstanding Stripe checkout lost its stock.');
+        } catch (\App\Exceptions\RecordWriteRejected $e) { $this->assertSame(409, $e->status); }
+        $this->assertSame('active', $lease->fresh()->state);
+        $this->assertDatabaseCount('resource_reservations', 1);
+        $this->assertDatabaseCount('ledger_entries', 0);
+    }
+
+    public function test_a_checkout_timeout_without_a_session_id_keeps_stock_at_the_deadline(): void
+    {
+        $r = $this->create(); $this->client($r); $this->details(); $g = $this->gateway();
+        $g->onCreate = fn () => throw new \RuntimeException('Synthetic provider accepted but response lost.');
+        $q = $this->claim(); unset($q['amount_cents'], $q['reference']); $q['deposit_percent'] = 50;
+        $this->withHeader('Idempotency-Key', (string) Str::uuid())->postJson('/portal/api/quick-payment/checkout', $q)->assertStatus(503);
+        $this->assertNull(\App\Models\PaymentIntent::sole()->stripe_checkout_session_id);
+        $this->travel(49)->hours();
+        $tick = app(\App\Services\Booking\TickQuickPayments::class);
+        $this->assertSame(0, $tick->execute()['expired']);
+        $this->assertSame(0, $tick->execute()['expired']);
+        $this->assertDatabaseCount('resource_reservations', 1);
+        $this->assertDatabaseCount('ledger_entries', 0);
+    }
+
+    public function test_an_expired_session_with_processing_intent_does_not_prove_unpaid_closure(): void
+    {
+        $r = $this->create(); $this->client($r); $this->details(); $g = $this->gateway(); $this->checkout();
+        $sid = \App\Models\PaymentIntent::sole()->stripe_checkout_session_id;
+        $g->sessions[$sid]['payment_intent'] = ['status' => 'processing'];
+        $this->travel(49)->hours();
+        $tick = app(\App\Services\Booking\TickQuickPayments::class);
+        $this->assertSame(0, $tick->execute()['expired']);
+        $this->assertDatabaseCount('resource_reservations', 1);
+        $g->sessions[$sid]['payment_intent']['status'] = 'requires_payment_method';
+        $this->assertSame(1, $tick->execute()['expired']);
+        $this->assertDatabaseCount('resource_reservations', 0);
+    }
+
 }
