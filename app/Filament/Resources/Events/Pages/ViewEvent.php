@@ -255,9 +255,10 @@ class ViewEvent extends Page
                         \Filament\Notifications\Notification::make()->danger()->title('No se mandó')->body(collect($err->errors())->flatten()->first())->persistent()->send();
                         $action->halt();
                     }
-                    $m->status === 'sent'
-                        ? \Filament\Notifications\Notification::make()->success()->title('Texto enviado')->send()
-                        : \Filament\Notifications\Notification::make()->danger()->title('Twilio no lo aceptó')->body('Código: '.$m->error_code.'. Revisa el número o escríbele por WhatsApp.')->persistent()->send();
+                    if ($m->status === 'sent') \Filament\Notifications\Notification::make()->success()->title('Texto enviado')->send();
+                    elseif ($m->status === 'unknown') \Filament\Notifications\Notification::make()->warning()->title('Envío sin confirmar')
+                        ->body('Twilio pudo haber recibido el texto. Revisa su estado antes de intentar enviarlo de nuevo.')->persistent()->send();
+                    else \Filament\Notifications\Notification::make()->danger()->title('Twilio no lo aceptó')->body('Código: '.$m->error_code.'. Revisa el número o escríbele por WhatsApp.')->persistent()->send();
                 }),
             Action::make('quoteView')->label('Ver cotización')->icon('heroicon-o-document-currency-dollar')->color('gray')
                 ->visible(fn () => \App\Filament\Support\QuoteForm::enabled() && \App\Models\Quote::where('event_id', $e->id)->exists())
