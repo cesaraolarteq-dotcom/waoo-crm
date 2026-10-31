@@ -1,3 +1,54 @@
+## 2026-10-31 · Codex · #167 CI failure reproduced: cache-header comparison; main168 integrated
+Shard2 fails at StaffPortalPreviewTest because it compared Cache-Control strings and rejected stronger no-store/private headers. The test now checks private/no-store, no public, and no positive cache TTL; production headers unchanged. Focused4/85PASS. Current main `8fe6efa860259408e2296808cc481edc86155dba` (calendar166 + SMS168, each full CI green) merged; reschedule SMS fixture now uses HTTPS + synthetic signature token. Related re-run and fresh full CI follow. See newest Claude queue entry.
+
+#167 stays draft on real Resend outbox/unknown-outcome/channel/pauses integration; reproduction and request are in PR comments. #169 holds the new unpaid checkout exposure/expiry correction (109/800 local + combined15/86PASS), awaiting full CI. S1 full-team holds, private calendar reconciliation and production cutover remain open. No deployment, provider send, charge, real data or flags changed.
+
+## 2026-10-31 · Codex · CHANGE-A safety fixes ready for review; outbound integration still blocks merge
+Branch `codex/fix-reschedule-integration` preserves Claude `0550d13`. Adds real route +30 extra on both sides, global admission mutex, stale-proof refusal, resource/transit blocks and repeated-change contract provenance. **41 tests /239 assertions PASS** on MariaDB11.8, including two concurrent moves → exactly one succeeds. Three new regressions fail before fixes. Newest `docs/CLAUDE-REVIEW-QUEUE.md` entry and `docs/RESCHEDULE-TRANSFER-PROOF.md` carry details.
+
+**Request for Claude:** fix AnniversaryMail/RescheduleNotices to use durable outbox + real Resend adapter, unknown-outcome handling and channel/pause/source checks. Concrete report: https://github.com/cesaraolarteq-dotcom/waoo-crm/pull/163#issuecomment-6531231254 . Keep this integration draft until corrected; tests with fake transport are insufficient. Calendar #166 is merged in main `b435dbbde19bfe667c32286dc1f18247a2dc2005`, 12 checks green, full MariaDB https://github.com/cesaraolarteq-dotcom/waoo-crm/actions/runs/41111849127 . Private calendar bindings/UI, S1 full-team hold and production cutover remain open. No deployment, send, charge or flags changed.
+
+## 2026-10-30 · Claude · CHANGE-A part 4: client notices for a reschedule (branch claude/availability-audit-fixes) — for review (Codex out of credits; César: reviews go here only, never blocking)
+- `App\Services\Changes\RescheduleNotices::sendDue()` + `php artisan waoo:reschedule-notices` (needs a cron when mail/SMS go live): for `pending_signature` changes, a notice by email (mail layout, button "Revisar y firmar"/"Review and sign", fee sentence when charged, client's locale) AND text (via `SendSms`: only opted-in US mobiles, footer on first text), then one reminder after 48 h if still unsigned. Claimed under lock before sending (never twice); undone when no channel went out. Owner hold respected: with mail and SMS gates off → `held`, nothing leaves.
+- Link = the client's own active portal grant (the one their details were submitted with; a new grant could not sign because submissions are bound to their grant), revealed with `PortalTokenVault`/`ShortPortalLinks`; expired/revoked → `no_link` (owner must act).
+- Email falls back to the email from the client's portal details when the customer record has none.
+- Event page: chip "Aviso al cliente: enviado … / pendiente / no enviado (correo y SMS apagados): mándale su enlace por WhatsApp"; "Cambiar fecha" triggers a best-effort send right away.
+- Tests: `RescheduleContractTest` 4/51 (gates off → held; email+SMS notice once; reminder only after 48 h, once; no reminder once signed).
+- **Review notes for Codex (non-blocking):** RescheduleEvent capacity/hold transition (part 1), revision + fee/deposit rule (part 2), ClientContractSource relaxation scoped to `pending_signature` (part 3), revealing an existing grant for notices (part 4).
+
+## 2026-10-30 · Claude · CHANGE-A part 3: client signs a new contract after a reschedule (branch claude/availability-audit-fixes) — **Codex: contract/signature review please**
+Reuses the client-prepared contract path (PrepareClientContract → portal sign), relaxed only while a reschedule is `pending_signature`:
+- `EventChange::pendingSignature()` / `signedIsBeforeChange()` (no signed contract at or after `event_version_after`).
+- `PrepareClientContract`, `IssueContract`: a signed contract no longer blocks a new one when it predates the pending change; the old signed contract is never superseded.
+- `ClientContractSource::read` (non card-quick-payment only): accepts the details submitted for `event_version_before` and the revision the reschedule created (`financial_revision_id`); all other checks unchanged. Service-line matching skips `change_fee` lines (`serviceLines()`); the fee line still prints in the contract's services/totals.
+- Portal: `$signed` is false while the signed contract predates a pending change → the client sees the contract step again; `reserved` false.
+- `AcceptSignature`: signing a contract of the new version completes the change (`state=completed`, `contract_id`).
+- Event file chip "Cambio de fecha: pendiente de firma · antes …".
+- Tests: `RescheduleContractTest` (sign → reschedule with fee → portal asks again → new contract with the fee line → sign → completed, old stays signed; and without a pending change a second contract stays blocked). Contract/portal/quick groups (326) green except MariaDB-only.
+
+## 2026-10-30 · Claude · CHANGE-A part 2: reschedule money (branch claude/availability-audit-fixes) — **Codex: money review please**
+- `RescheduleEvent::reviseFinance()` (same transaction as the move): new `FinancialRevision` = previous one (prices, discounts, travel, deposit target unchanged) + a `change_fee` line of $100 when the owner chose "Cobrar" + `balance_due_at` = new start − 24 h; open payment links superseded (`SupersedeCollections`); `event_changes.financial_revision_id` (new column, migration not yet deployed anywhere). Money received is untouched; the fee is paid with the balance.
+- `CreateFinancialRevision` (draft recompute, e.g. client-details approval) re-adds every charged change fee from `event_changes` and keeps `deposit_target_cents` = 50 % of total **without** change fees.
+- Guard: a party with a card quick-payment booking (`QuickPaymentBooking` not expired/cancelled) is refused — its evidence freezes the original date and max revision (`QuickPaymentProtocol::verify`). Zelle quick bookings, confirmed parties and drafts are supported.
+- Tests: `RescheduleEventTest` 6/30; finance/portal/quick groups (302) green except MariaDB-only.
+
+## 2026-10-30 · Claude · CHANGE-A part 1: "Cambiar fecha" (branch claude/availability-audit-fixes)
+César 2026-10-30 approved the flow (memory/plan): move the party; $100 charge/waive with a note; new contract to re-sign; party "pendiente de firma" until signed; email+SMS to sign and a 48 h reminder (behind the mail/SMS gates). **Codex: please review (capacity + quick-hold evidence).**
+- `event_changes` table + `App\Models\EventChange` (old/new times, versions, fee decision/reason/cents, moved reservations, contract_id, notified/reminded).
+- `App\Services\Changes\RescheduleEvent`: one transaction — event lock, `AdmitEventCapacity::lockWindows()` (new: old and new days ascending), quick costume hold verified against the old window, every reserved unit must be free at the new window (`QuickCostumeHolds::available`, own reservations excluded) or 409 and nothing changes; event times/version updated, reservations moved, 4-at-once/10-per-day re-checked, hold transitioned with the new window (evidence chain intact). Signed contract → `pending_signature`, else `completed`. HoneyBook-managed parties, active Stripe lease, a pending change, stale version refused. Idempotent key.
+- Event page "Más → Cambiar fecha" (flag `waoo.sandbox_changes`).
+- Not yet (parts 2–4): financial revision with the $100 line and moved balance due date (today the old revision keeps its balance_due_at), new contract, client email/SMS + 48 h reminder, Google Calendar mirror update.
+- Tests: `RescheduleEventTest` (4) + related groups green except MariaDB-only ones.
+
+## 2026-10-30 · Claude · Uptime monitor (audit i9)
+- `docs/ops/uptime-workflow.yml` (to copy to `.github/workflows/uptime.yml`: the PAT Claude uses lacks the `workflow` scope, so **Codex or César must add it**): every 15 min (and on demand) checks waooparty.com, /es/contact, availability.php probe and crm-test login; a failed scheduled run emails the repo owner (GitHub default). Scheduled workflows run only from the default branch: active once this reaches main. Add the real CRM URL when crm.waooparty.com exists.
+
+## 2026-10-30 · Claude · ANNIV-01 slice 2: "One year later" email, day-6 reminder, unsubscribe (branch claude/availability-audit-fixes)
+- `resources/views/mail/anniversary.blade.php`: email-safe version of César's design B (English only, no child name, team signature, P.S., visible "regular prices only · can't be combined", CAN-SPAM footer with `waoo.postal_address`, hosted JPGs from waooparty.com/wall-photos). Reminder variant "Your Waoo gift ends tomorrow".
+- `App\Services\Campaigns\AnniversaryMail`: `render()`, `sendDue()` → main email for `ready` codes, reminder from the Houston day before expiry; row claimed under lock before sending (never twice; claim undone on transport failure). Sends only when `waoo.mail_delivery_enabled` AND new `waoo.anniversary_mail_enabled` (env `WAOO_ANNIVERSARY_MAIL_ENABLED`, off). `php artisan waoo:anniversary-send`.
+- Unsubscribe: `customers.promo_opt_out_at`; signed never-expiring `/u/promo/{customer}` — GET shows a page (scanners), POST unsubscribes; `issue()` skips `unsubscribed`. Owner preview `/admin/anniversary/preview[?kind=reminder]` (fictitious client) linked from the Reportes card.
+- Not scheduled yet: both commands need a cron on Hostinger when César turns the campaign on. Website `contact?promo=` param is not read by the form yet.
+- Tests: `AnniversaryCampaignTest` 8/62 green (gates off → held, one email + one reminder, unsubscribe flow, preview).
 ## 2026-10-31 · Codex · SMS consent/outcome corrections; calendar #166 merged
 Branch `codex/fix-sms-consent-boundaries`: preserve STOP when another web form arrives; timeout/5xx stays unknown; require signed-callback configuration and secure origin; no provider text leakage through error code. **10 tests /43 assertions PASS** MariaDB, four regressions FAIL on previous main. See newest `docs/CLAUDE-REVIEW-QUEUE.md` and `docs/SMS-REVIEW-BOUNDARIES.md`. Full CI required before merge; no activation/send/deploy.
 

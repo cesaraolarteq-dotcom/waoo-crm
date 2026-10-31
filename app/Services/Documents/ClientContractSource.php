@@ -36,10 +36,16 @@ final class ClientContractSource
         if(!$booking) CreateContract::assertCurrent($event, $finance);
         else RecordWriteRejected::unless(in_array($event->status,['draft','capacity_reserved'],true) && $finance->id===$booking->financial_revision_id && ($event->status!=='draft'||$event->version===$finance->event_version),409,'El acuerdo cambió.');
         $submission = ClientDetailsSubmission::where('event_id', $event->id)->orderByDesc('revision')->first();
+        // CHANGE-A part 3: after an owner reschedule (no card quick-payment booking) the client signs again with the details
+        // already given for the previous version and the revision the reschedule created; nothing else is relaxed.
+        $change = $booking ? null : \App\Models\EventChange::pendingSignature($event->id);
+        $change = $change && $change->event_version_after === $event->version && $change->financial_revision_id === $finance->id ? $change : null;
         RecordWriteRejected::unless($submission && $submission->customer_id === $customer->id
             && $submission->portal_grant_id === $client->grantId && $submission->revision === $data['expected_revision']
-            && $submission->event_version === $event->version && $event->version === $data['expected_event_version']
-            && $finance->id === ($booking?->financial_revision_id ?? $quick->initial_financial_revision_id) && $finance->currency === 'USD' && $finance->quote_revision_id === null, 409, 'La reserva o los datos cambiaron. Recarga antes de preparar el contrato.');
+            && ($submission->event_version === $event->version || ($change && \App\Models\EventChange::preservesDetailsVersion(
+                $event->id, $submission->event_version, $change->event_version_before)))
+            && $event->version === $data['expected_event_version']
+            && ($finance->id === ($booking?->financial_revision_id ?? $quick->initial_financial_revision_id) || $change !== null) && $finance->currency === 'USD' && $finance->quote_revision_id === null, 409, 'La reserva o los datos cambiaron. Recarga antes de preparar el contrato.');
         RecordWriteRejected::unless(MutationKey::hash($customer->only(['name','email','phone','locale'])) === MutationKey::hash($submission->base_customer_snapshot),
             409, 'La ficha del cliente cambió. Envía nuevamente sus datos.');
         $values = $submission->data;
@@ -50,8 +56,8 @@ final class ClientContractSource
             && empty($values['requested_start_at']), 409, 'La dirección o la hora requieren revisión del dueño. Tus datos siguen guardados.');
         $services = $event->services()->with('characters')->get();
         RecordWriteRejected::unless($services->isNotEmpty() && !$services->contains(fn ($s) => !$s->operational_ready)
-            && count($finance->lines_snapshot) === $services->count(), 409, 'Revisa los servicios acordados antes de preparar el contrato.');
-        foreach ($finance->lines_snapshot as $line) {
+            && count(self::serviceLines($finance)) === $services->count(), 409, 'Revisa los servicios acordados antes de preparar el contrato.');
+        foreach (self::serviceLines($finance) as $line) {
             $service = $services->firstWhere('id', $line['event_service_id'] ?? null);
             $characters = $service?->characters->map(fn ($row) => ['character_id' => $row->character_id, 'quantity' => $row->quantity,
                 'name' => $row->character_name_snapshot, ...($row->outfit !== null ? ['outfit' => $row->outfit] : [])])->all();
@@ -63,6 +69,12 @@ final class ClientContractSource
         }
         $provenance = ClientSubmissionFingerprint::capture($submission);
         return [$event, $customer, $finance, $submission, $values, $provenance];
+    }
+
+    /** Lines that come from a booked service; a reschedule fee line (CHANGE-A) is money, not a service. */
+    private static function serviceLines(FinancialRevision $finance): array
+    {
+        return array_values(array_filter((array) $finance->lines_snapshot, fn ($l) => ($l['kind'] ?? null) !== 'change_fee'));
     }
 
     public static function snapshot(Event $event, FinancialRevision $finance, array $values, array $provenance): array
