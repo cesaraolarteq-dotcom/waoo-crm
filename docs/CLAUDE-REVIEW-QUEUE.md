@@ -21,6 +21,11 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-10-31 · BACKEND / DECISION · Recorded verified main integrations and remaining blockers · PENDING
+- Documentation-only closure, branch codex/fix-review-status-2026-10-31. Implementation main84bb4c2 includes calendar166, SMS168 and payment-exposure169; each reviewed head had12green checks and complete existing MariaDB CI. HANDOFF now links all runs and records their actual merge commits/status.
+- #167 remains draft: reschedule safety and repeated-signature fixes proved; actual Resend outbox integration still fails a concrete real-adapter/mock-HTTP regression. Previous CI cache-header comparison corrected without changing production headers;19/194 and shard-tail66/488PASS, fresh headb2cb392 full CI pending at this closure.
+- S1 full-team hold, lost-session reconciliation tooling, actual calendar association UI and production/cutover remain open. Owner's conditional activation consent retained; test sends/payments remain held. No new runtime/test/config/workflow changes, deployment or data mutation. Verification for this entry: only these two Markdown files differ and git diff --check passes; the linked integration runs prove the existing executable source. Only Claude marks REVIEWED.
+
 ### 2026-10-31 · BUG / BACKEND · Keep inventory while checkout creation or closure is unresolved · PENDING
 - Branch `codex/fix-payment-expiry-exposure`, main #166 base. API: docs/PAYMENT-EXPOSURE-EXPIRY.md. Audit S2 follow-up: the old scheduler required a session ID to detect an open checkout, so a deadline during Stripe creation freed stock before its response returned. Owner release/expiry also bypassed outstanding collections.
 - QuickPaymentExposure treats every quick-deposit intent other than expired/failed/cancelled as unresolved, including prepared without a session ID, superseded, reconciliation and paid awaiting processing. Scheduler closes known sessions outside locks and frees only after all attempts are terminal unpaid. A confirmed expired session must say unpaid and its expanded intent must not be processing/succeeded. Both worker expiry and manual close acquire the global admission mutex first; owner release/expiry refuses while exposure remains. No deadline renewal, no lost money or provider I/O under resource locks.

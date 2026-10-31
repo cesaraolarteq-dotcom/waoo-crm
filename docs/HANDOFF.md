@@ -1,3 +1,25 @@
+## 2026-10-31 · Codex → Claude · Cierre de integraciones verificadas; pendientes reales
+**Main de implementación: `84bb4c2c9c7cf4648a6674489c26bd7e0f561319`.** Sin deploy ni activación; crm-test no se actualizó desde esta sesión. Esta entrada documenta el código ya integrado, no declara que el CRM entero esté listo para producción.
+
+| Entrega | Estado | Prueba completa MariaDB |
+| --- | --- | --- |
+| #164, pila original de Claude hasta fc10f42; #165, rutas +30 extra/pins conjuntos | Fusionados previamente | Enlaces en entradas anteriores |
+| [#166](https://github.com/cesaraolarteq-dotcom/waoo-crm/pull/166), identidad estable de calendario | Main b435dbb;12checks verdes | https://github.com/cesaraolarteq-dotcom/waoo-crm/actions/runs/41111849127 |
+| [#168](https://github.com/cesaraolarteq-dotcom/waoo-crm/pull/168), STOP y envío SMS incierto | Main8fe6efa;12checks verdes | https://github.com/cesaraolarteq-dotcom/waoo-crm/actions/runs/41217100770 |
+| [#169](https://github.com/cesaraolarteq-dotcom/waoo-crm/pull/169), conservar inventario mientras Stripe no resuelve | Main84bb4c2;12checks verdes | https://github.com/cesaraolarteq-dotcom/waoo-crm/actions/runs/41218593148 |
+
+**Reprogramación:** [#167](https://github.com/cesaraolarteq-dotcom/waoo-crm/pull/167), draft, preserva Claude0550d13 y main168. Rutas anterior/siguiente +30 extra, mutex común, rollback de recursos/dinero y segundo cambio/firma corregidos.41/239 y41/198 locales PASS (grupos solapados); tras integrar SMS y corregir la prueba de encabezados,19/194PASS y66/488PASS de la cola del shard. CI anterior fallaba solo por comparar la cadena exacta de Cache-Control; no se debilitó la privacidad. Nueva punta b2cb392 requiere su CI completa. No declarar toda la entrega lista por los fakes de correo.
+
+**Request for Claude — avisos/campaña:** AnniversaryMail y RescheduleNotices deben usar el outbox duradero que exige ResendMailTransport. Prueba con el adaptador real +HTTP falso reproduce0envíos donde esperaba1; fixture completa en comentarios de #167. Identidad separada por aviso/recordatorio/canal, resultado desconocido sin reset/reenvío, éxito parcial por canal, pausa por evento, responsabilidad CRM, opt-out/supresiones y exclusión de pendientes de test/históricos en producción. Conservar diseños/textos aprobados. Trabajar sobre #167 o dejar SHA; no reescribir commits ni asumir que un transporte fake prueba la conexión real.
+
+**Pendientes de Codex / integración:**
+1. **S1 sigue abierto:** retener conjuntamente staff + trajes + equipo antes de un cobro automático web, con versiones/locks/idempotencia y promoción/vencimiento probados. El motor de lectura, los trajes apartados y los límites diarios NO completan esa retención. Horarios web siguen en preview y pagos online apagados.
+2. Conciliación operativa de un checkout cuya respuesta y session ID se perdieron: #169 conserva inventario con seguridad, pero no añade una pantalla/búsqueda de recuperación. No renovar el plazo ni liberar por suponer que no hubo pago.
+3. Asociaciones reales/UI privada de calendario. #166 permite verificar UID/feed/importación; no inventó asociaciones por horario ni modificó datos reales.
+4. Adaptadores live y migración/cutover completos. Finance\Sandbox y proveedores test todavía impiden declarar pagos de producción listos. César autorizó activar envíos/pagos automáticamente AL TERMINAR la migración real; mantener STOP/opt-outs/pausas y no reproducir mensajes de test. Deploy solo con “súbelo”, cuando el resultado esté listo para revisar.
+
+Cola `docs/CLAUDE-REVIEW-QUEUE.md` actualizada, entradasPENDING; solo Claude cambia aREVIEWED. No credenciales, datos reales, cobros, correos/SMS, importaciones ni cambios de banderas en estas entregas.
+
 ## 2026-10-31 · Codex · S2 follow-up: unknown checkout creation cannot release inventory
 Branch `codex/fix-payment-expiry-exposure`: retain prepared/no-session-ID and other unresolved payment attempts at48h, protect manual lease release/expiry, global admission before close, confirmed unpaid provider closure only. **109 tests /800 assertions PASS**, MariaDB11.8; three regressions FAIL before fix. See newest `docs/CLAUDE-REVIEW-QUEUE.md` and `docs/PAYMENT-EXPOSURE-EXPIRY.md`; full CI required before merge.
 
