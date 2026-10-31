@@ -11,7 +11,7 @@ use Illuminate\Validation\ValidationException;
 /**
  * Sends one owner-written text to a client through the Twilio Messaging Service. Refused while texting is off, when the
  * client has no valid US mobile, or when that number never opted in or said STOP. The first text to a number carries the
- * HELP/STOP/rates line registered with the A2P campaign. No retries: an uncertain provider outcome stays "failed" for review.
+ * HELP/STOP/rates line registered with the A2P campaign. No retries: uncertain provider outcomes stay "unknown" for review.
  */
 final class SendSms
 {
@@ -43,9 +43,12 @@ final class SendSms
                 ]);
             $sid = $response->json('sid');
             $ok = $response->successful() && is_string($sid) && preg_match('/^(SM|MM)[0-9a-f]{32}$/D', $sid);
-            $message->fill($ok ? ['status' => 'sent', 'provider_sid' => $sid] : ['status' => 'failed', 'error_code' => 'twilio_'.substr((string) ($response->json('code') ?? $response->status()), 0, 20)])->save();
+            $rejected = $response->status() >= 400 && $response->status() < 500 && $response->status() !== 408;
+            $code = $response->json('code');
+            $code = is_int($code) && $code > 0 && $code <= 99999999 ? $code : $response->status();
+            $message->fill($ok ? ['status' => 'sent', 'provider_sid' => $sid] : ['status' => $rejected ? 'failed' : 'unknown', 'error_code' => 'twilio_'.$code])->save();
         } catch (\Throwable) {
-            $message->fill(['status' => 'failed', 'error_code' => 'twilio_unreachable'])->save();
+            $message->fill(['status' => 'unknown', 'error_code' => 'twilio_unreachable'])->save();
         }
         Audit::recordFor($actor, 'sms.sent', $message, [], ['status' => $message->status]);
 

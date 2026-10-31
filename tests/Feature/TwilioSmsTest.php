@@ -114,4 +114,59 @@ class TwilioSmsTest extends TestCase
         $this->twilio('/webhooks/twilio/status', ['MessageSid' => $m->provider_sid, 'MessageStatus' => 'failed', 'ErrorCode' => '30003'])->assertOk();
         $this->assertSame('delivered', $m->fresh()->status);
     }
+
+    public function test_a_later_website_submission_does_not_erase_an_existing_stop(): void
+    {
+        $this->consent('opted_out');
+        $submission = LeadSubmission::create(['request_key' => (string)\Illuminate\Support\Str::uuid(),
+            'payload_sha256' => hash('sha256', 'fixture-stop'), 'payload' => ['phone' => $this->client->phone,
+                'consent' => ['version' => 'contact-2026-10-28', 'text' => 'SMS opt-in: YES']],
+            'submitted_at' => now(), 'received_at' => now()]);
+        app(RecordLeadSmsConsent::class)->execute(new Lead(['lead_submission_id' => $submission->id]));
+        $this->assertSame('opted_out', SmsConsent::sole()->status);
+        config(['waoo.sms_delivery_enabled' => true]); Http::fake();
+        $this->refused(fn () => app(SendSms::class)->execute($this->owner, $this->client->id, null, 'Hola'), 'STOP');
+        Http::assertNothingSent();
+    }
+
+    public function test_uncertain_provider_failure_is_not_reported_as_a_confirmed_rejection(): void
+    {
+        config(['waoo.sms_delivery_enabled' => true]); $this->consent();
+        $calls = 0;
+        Http::fake(function () use (&$calls) { $calls++; throw new \Illuminate\Http\Client\ConnectionException('Synthetic timeout after dispatch'); });
+        $m = app(SendSms::class)->execute($this->owner, $this->client->id, null, 'Hola');
+        $this->assertSame('unknown', $m->status);
+        $this->assertSame(1, $calls);
+    }
+
+    public function test_inbound_verification_and_secure_callback_configuration_are_required_before_sending(): void
+    {
+        config(['waoo.sms_delivery_enabled' => true]); $this->consent(); Http::fake();
+        $send = fn () => app(SendSms::class)->execute($this->owner, $this->client->id, null, 'Hola');
+        config(['services.twilio.auth_token' => null]); $this->refused($send, 'apagados');
+        config(['services.twilio.auth_token' => self::TOKEN, 'app.url' => 'http://crm.example.test']); $this->refused($send, 'apagados');
+        Http::assertNothingSent(); $this->assertDatabaseCount('sms_messages', 0);
+    }
+
+    public function test_owner_action_reports_unknown_dispatch_without_claiming_twilio_rejected_it(): void
+    {
+        $this->actingAs($this->owner);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('admin'));
+        config(['waoo.sms_delivery_enabled' => true]); $this->consent();
+        $event = \App\Models\Event::create(['customer_id' => $this->client->id, 'title' => 'Fiesta de María',
+            'starts_at' => now()->addDays(20), 'ends_at' => now()->addDays(20)->addHour(), 'timezone' => 'America/Chicago', 'travel_fee_cents' => 3000]);
+        Http::fake(fn () => throw new \Illuminate\Http\Client\ConnectionException('Synthetic unknown outcome'));
+        \Livewire\Livewire::test(\App\Filament\Resources\Events\Pages\ViewEvent::class, ['record' => $event->id])
+            ->callAction('smsSend', ['body' => 'Hola'])->assertNotified('Envío sin confirmar');
+        $this->assertSame('unknown', SmsMessage::sole()->status);
+    }
+    public function test_server_failure_never_echoes_provider_text_and_is_not_retried(): void
+    {
+        config(['waoo.sms_delivery_enabled' => true]); $this->consent();
+        Http::fake(['api.twilio.com/*' => Http::response(['code' => 'PRIVATE_PROVIDER_VALUE', 'message' => 'PRIVATE_PROVIDER_TEXT'], 503)]);
+        $message = app(SendSms::class)->execute($this->owner, $this->client->id, null, 'Hola');
+        $this->assertSame(['unknown', 'twilio_503'], [$message->status, $message->error_code]);
+        Http::assertSentCount(1);
+    }
+
 }
