@@ -242,6 +242,13 @@ class WebsiteCapacityTest extends TestCase
         $this->assertSame('owner_approval_required', $this->check(['18:00'])['slots'][0]['state']);
     }
 
+    public function test_an_unidentified_calendar_party_cannot_hide_unknown_demand_outside_a_fixed_window(): void
+    {
+        $this->app->instance('waoo.availability.busy', fn () => [[
+            CarbonImmutable::parse('2026-11-21T10:00:00-06:00'), CarbonImmutable::parse('2026-11-21T11:00:00-06:00')]]);
+        $this->assertSame('owner_approval_required', $this->check(['18:00'])['slots'][0]['state']);
+    }
+
     public function test_independent_teams_do_not_need_to_share_an_unproven_route(): void
     {
         $this->party('2026-11-21T10:00:00-06:00');
