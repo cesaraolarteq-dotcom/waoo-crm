@@ -140,4 +140,80 @@ class RescheduleEventTest extends TestCase
         $this->assertSame([$before->total_cents, count($before->lines_snapshot)], [$rev->total_cents, count($rev->lines_snapshot)]);
         $this->assertTrue($rev->balance_due_at->equalTo($e->fresh()->starts_at->subHours(24)));
     }
+    public function test_reschedule_cannot_skip_route_and_thirty_extra_minutes_between_held_costumes(): void
+    {
+        $e = $this->book(20, 12);
+        $this->book(30, 8, 'Lucía Hernández'); // ends 10:00; breakdown20 + drive15 + extra30 + setup30 = 95 minutes
+        $before = [$e->starts_at->toIso8601String(), $e->version];
+        try { $this->move($e, 30, '11:34'); $this->fail('Moved without enough transfer time.'); }
+        catch (RecordWriteRejected $ex) { $this->assertSame(409, $ex->status); }
+        $this->assertSame($before, [$e->fresh()->starts_at->toIso8601String(), $e->fresh()->version]);
+        $this->assertDatabaseCount('event_changes', 0);
+        $this->assertSame('completed', $this->move($e, 30, '11:35')->state);
+    }
+
+    public function test_missing_route_proof_cannot_move_a_reserved_unit_even_with_a_large_time_gap(): void
+    {
+        $e = $this->book(20, 12);
+        $this->book(30, 8, 'Lucía Hernández');
+        $this->app->instance('waoo.availability.drive', fn () => null);
+        try { $this->move($e, 30, '18:00'); $this->fail('An unknown route became a confirmed move.'); }
+        catch (RecordWriteRejected $ex) { $this->assertSame(409, $ex->status); }
+        $this->assertDatabaseCount('event_changes', 0);
+        $this->assertTrue($e->fresh()->starts_at->equalTo($e->starts_at));
+    }
+
+    public function test_route_lookup_runs_outside_locks_and_a_changed_neighbor_invalidates_it(): void
+    {
+        $e = $this->book(20, 12);
+        $other = $this->book(30, 8, 'Lucía Hernández');
+        $this->app->instance('waoo.availability.drive', function () use ($other) {
+            $this->assertSame(0, DB::transactionLevel(), 'no network under admission locks');
+            Event::whereKey($other->id)->update(['version' => $other->version + 1, 'address' => '456 Different Example Lane']);
+            return 15;
+        });
+        try { $this->move($e, 30, '18:00'); $this->fail('Stale route proof accepted.'); }
+        catch (RecordWriteRejected $ex) { $this->assertSame(409, $ex->status); }
+        $this->assertDatabaseCount('event_changes', 0);
+        $this->assertTrue($e->fresh()->starts_at->equalTo($e->starts_at));
+    }
+
+    public function test_the_route_to_the_following_party_must_fit_too(): void
+    {
+        $e = $this->book(20, 12);
+        $this->book(30, 18, 'Lucía Hernández');
+        try { $this->move($e, 30, '14:26'); $this->fail('Following-party transfer was ignored.'); }
+        catch (RecordWriteRejected $ex) { $this->assertSame(409, $ex->status); }
+        $this->assertDatabaseCount('event_changes', 0);
+        $this->assertSame('completed', $this->move($e, 30, '14:25')->state);
+    }
+
+    public function test_a_resource_block_during_driving_preserves_the_original_party(): void
+    {
+        $e = $this->book(20, 12);
+        $other = $this->book(30, 8, 'Lucía Hernández');
+        \App\Models\ResourceBlock::create(['resource_id' => Resource::where('code', 'MICKEY-1')->value('id'),
+            'starts_at' => $other->ends_at->addMinutes(22), 'ends_at' => $other->ends_at->addMinutes(24), 'reason' => 'Synthetic transport conflict']);
+        try { $this->move($e, 30, '11:35'); $this->fail('Resource block during driving ignored.'); }
+        catch (RecordWriteRejected $ex) { $this->assertSame(409, $ex->status); }
+        $this->assertDatabaseCount('event_changes', 0);
+        $this->assertTrue($e->fresh()->starts_at->equalTo($e->starts_at));
+    }
+
+    public function test_two_concurrent_moves_competing_for_the_same_costume_accept_exactly_one(): void
+    {
+        if (DB::connection()->getDriverName() !== 'mysql' || !function_exists('pcntl_fork')) $this->markTestSkipped('MariaDB + pcntl required.');
+        $first = $this->book(20, 12);
+        $second = $this->book(25, 12, 'Lucía Hernández');
+        $worker = function (Event $event) {
+            try { $this->move($event, 30, '15:00'); return 'moved'; }
+            catch (RecordWriteRejected) { return 'blocked'; }
+        };
+        $results = \Tests\Support\ConcurrentWorkers::run([fn () => $worker($first), fn () => $worker($second)]);
+        sort($results);
+        $this->assertSame(['blocked', 'moved'], $results);
+        $this->assertDatabaseCount('event_changes', 1);
+        $this->assertSame(1, Event::whereDate('starts_at', now('America/Chicago')->addDays(30)->toDateString())->count());
+    }
+
 }

@@ -42,7 +42,8 @@ final class ClientContractSource
         $change = $change && $change->event_version_after === $event->version && $change->financial_revision_id === $finance->id ? $change : null;
         RecordWriteRejected::unless($submission && $submission->customer_id === $customer->id
             && $submission->portal_grant_id === $client->grantId && $submission->revision === $data['expected_revision']
-            && ($submission->event_version === $event->version || ($change && $submission->event_version === $change->event_version_before))
+            && ($submission->event_version === $event->version || ($change && \App\Models\EventChange::preservesDetailsVersion(
+                $event->id, $submission->event_version, $change->event_version_before)))
             && $event->version === $data['expected_event_version']
             && ($finance->id === ($booking?->financial_revision_id ?? $quick->initial_financial_revision_id) || $change !== null) && $finance->currency === 'USD' && $finance->quote_revision_id === null, 409, 'La reserva o los datos cambiaron. Recarga antes de preparar el contrato.');
         RecordWriteRejected::unless(MutationKey::hash($customer->only(['name','email','phone','locale'])) === MutationKey::hash($submission->base_customer_snapshot),

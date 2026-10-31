@@ -156,4 +156,22 @@ class RescheduleContractTest extends TestCase
         config(['waoo.mail_delivery_enabled' => true]);
         $this->assertSame(['notices' => 0, 'reminders' => 0, 'held' => 0, 'no_link' => 0], app(\App\Services\Changes\RescheduleNotices::class)->sendDue());
     }
+    public function test_a_second_completed_reschedule_keeps_details_and_each_signed_contract(): void
+    {
+        $firstChange = $this->signedThenRescheduled();
+        $this->event->refresh(); $this->retry()->assertOk();
+        $contract = Contract::where('state', 'issued')->sole();
+        $this->get('/portal/api/contracts/'.$contract->id.'/pdf')->assertOk(); $this->sign($contract)->assertOk();
+        $this->assertSame('completed', $firstChange->fresh()->state);
+        $secondChange = app(\App\Services\Changes\RescheduleEvent::class)->execute($this->owner, $this->event->id,
+            ['expected_version' => $this->event->fresh()->version, 'date' => now('America/Chicago')->addDays(45)->toDateString(),
+                'time' => '17:00', 'fee_decision' => 'waive', 'fee_reason' => 'Segunda fecha solicitada.'], (string) Str::uuid());
+        $this->event->refresh(); $this->retry()->assertOk();
+        $new = Contract::where('state', 'issued')->sole();
+        $this->get('/portal/api/contracts/'.$new->id.'/pdf')->assertOk(); $this->sign($new)->assertOk();
+        $this->assertSame('completed', $secondChange->fresh()->state);
+        $this->assertSame(3, Contract::where('state', 'signed')->count());
+        $this->assertSame(1, ClientDetailsSubmission::where('event_id', $this->event->id)->count(), 'original submission is not rewritten');
+    }
+
 }

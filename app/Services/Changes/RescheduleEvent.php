@@ -37,7 +37,13 @@ final class RescheduleEvent
         if ($start <= now()) throw ValidationException::withMessages(['time' => 'Elige una fecha y hora futuras.']);
         $scope = "owner:{$actor->id}:event:{$eventId}:reschedule"; $hash = MutationKey::hash($data);
 
-        return DB::transaction(function () use ($actor, $eventId, $data, $start, $scope, $hash, $key) {
+        if ($saved = MutationKey::find($scope, $key, $hash)) return EventChange::findOrFail($saved->result_id);
+        $hint = Event::findOrFail($eventId);
+        RecordWriteRejected::unless($hint->version === $data['expected_version'], 409, 'La fiesta cambió. Recarga la página antes de cambiar la fecha.');
+        $proof = app(RescheduleTransfers::class)->prepare($hint, $start);
+        return DB::transaction(function () use ($actor, $eventId, $data, $start, $scope, $hash, $key, $proof) {
+            \App\Services\Scheduling\DailyCapacity::lock();
+            User::whereKey($actor->id)->lockForUpdate()->firstOrFail(); RecordActor::authorize($actor);
             $event = Event::whereKey($eventId)->lockForUpdate()->firstOrFail();
             if ($saved = MutationKey::find($scope, $key, $hash)) return EventChange::findOrFail($saved->result_id);
             \App\Services\Responsibility\RequireCrmResponsibility::check($event);
@@ -54,12 +60,18 @@ final class RescheduleEvent
             $end = $start->addSeconds($oldStart->diffInSeconds($oldEnd));
             RecordWriteRejected::unless(! $start->equalTo($oldStart), 422, 'Esa es la misma fecha y hora de ahora.');
 
+            $hold = QuickCostumeHold::where('event_id', $eventId)->whereIn('state', ['held', 'review_required', 'consumed'])->lockForUpdate()->first();
             // Day locks for both the old and the new days, ascending, before any unit lock (AdmitEventCapacity order).
             AdmitEventCapacity::lockWindows([[$oldStart, $oldEnd], [$start, $end]]);
-            $hold = QuickCostumeHold::where('event_id', $eventId)->whereIn('state', ['held', 'review_required', 'consumed'])->lockForUpdate()->first();
-            $p = $hold ? QuickCostumeHolds::verify($hold, $event) : null;
+            $ids = ResourceReservation::where('event_id', $eventId)->orderBy('resource_id')->pluck('resource_id');
+            $characterIds = Resource::whereIn('id', $ids)->whereNotNull('character_id')->pluck('character_id')->unique()->sort();
+            \App\Models\Character::whereIn('id', $characterIds)->orderBy('id')->lockForUpdate()->get();
+            $units = Resource::whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
             $reservations = ResourceReservation::where('event_id', $eventId)->orderBy('resource_id')->lockForUpdate()->get();
-            $units = Resource::whereIn('id', $reservations->pluck('resource_id'))->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+            $p = $hold ? QuickCostumeHolds::verify($hold, $event) : null;
+            if ($reservations->isNotEmpty()) RecordWriteRejected::unless($event->setup_minutes !== null && $event->breakdown_minutes !== null,
+                409, 'Completa montaje y desmontaje antes de mover recursos apartados.');
+            app(RescheduleTransfers::class)->assertFits($event, $start, $proof);
 
             $event->starts_at = $start; $event->ends_at = $end; $event->version = $before + 1; $event->save();
             foreach ($reservations as $r) {
@@ -82,7 +94,8 @@ final class RescheduleEvent
                 'moved_reservations' => $reservations->count(), 'financial_revision_id' => $finance?->id, 'created_by' => $actor->id]);
             Audit::recordFor($actor, 'event.rescheduled', $event, ['starts_at' => $oldStart->toIso8601String(), 'ends_at' => $oldEnd->toIso8601String(), 'version' => $before],
                 ['starts_at' => $start->toIso8601String(), 'ends_at' => $end->toIso8601String(), 'version' => $event->version, 'event_change_id' => $change->id,
-                 'fee_decision' => $data['fee_decision'], 'moved_reservations' => $reservations->count()]);
+                 'fee_decision' => $data['fee_decision'], 'moved_reservations' => $reservations->count(),
+                 'transfer_proof' => $proof]);
             MutationKey::store($scope, $key, $hash, 'event_change', $change->id);
             return $change;
         }, 3);

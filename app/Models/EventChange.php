@@ -26,4 +26,20 @@ class EventChange extends Model
         if (! $pending) return false;
         return ! Contract::where('event_id', $eventId)->where('state', 'signed')->where('event_version', '>=', $pending->event_version_after)->exists();
     }
+
+    /** Only completed, signed date changes may bridge an older, unchanged client submission. */
+    public static function preservesDetailsVersion(int $eventId, int $submissionVersion, int $beforeVersion): bool
+    {
+        for ($i = 0; $i < 100 && $beforeVersion > $submissionVersion; $i++) {
+            $rows = self::where('event_id', $eventId)->where('kind', 'reschedule')->where('state', 'completed')
+                ->where('event_version_after', $beforeVersion)->limit(2)->get();
+            if ($rows->count() !== 1) return false;
+            $change = $rows->first();
+            if ($change->event_version_before >= $beforeVersion || ! Contract::whereKey($change->contract_id)
+                ->where('event_id', $eventId)->where('state', 'signed')->where('event_version', $beforeVersion)
+                ->where('financial_revision_id', $change->financial_revision_id)->exists()) return false;
+            $beforeVersion = $change->event_version_before;
+        }
+        return $beforeVersion === $submissionVersion;
+    }
 }
