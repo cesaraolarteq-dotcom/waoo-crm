@@ -22,7 +22,7 @@ class RescheduleContractTest extends TestCase
     {
         parent::setUp();
         config(['waoo.sandbox_finance' => true, 'waoo.sandbox_documents' => true,
-            'waoo.sandbox_immediate_contracts' => true, 'waoo.sandbox_changes' => true, 'app.url' => 'http://localhost']);
+            'waoo.sandbox_immediate_contracts' => true, 'waoo.sandbox_changes' => true, 'app.url' => 'https://localhost']);
         Queue::fake(); Storage::fake('local');
         $this->owner = User::factory()->create(['role' => 'owner_admin', 'active' => true,
             'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'), 'two_factor_confirmed_at' => now()]);
@@ -129,7 +129,7 @@ class RescheduleContractTest extends TestCase
             public function send(#[\SensitiveParameter] \App\Services\Mail\OutboundEnvelope $m): \App\Services\Mail\TransportReceipt { $this->sent[] = $m; return new \App\Services\Mail\TransportReceipt('fake', 'x'); } };
         $this->app->instance(\App\Services\Mail\MailTransport::class, $mail);
         config(['waoo.mail_delivery_enabled' => true, 'waoo.sms_delivery_enabled' => true, 'services.twilio' => ['account_sid' => 'AC'.str_repeat('a', 32),
-            'api_key_sid' => 'SK'.str_repeat('b', 32), 'api_key_secret' => str_repeat('c', 32), 'messaging_service_sid' => 'MG'.str_repeat('d', 32)]]);
+            'api_key_sid' => 'SK'.str_repeat('b', 32), 'api_key_secret' => str_repeat('c', 32), 'auth_token' => str_repeat('f', 32), 'messaging_service_sid' => 'MG'.str_repeat('d', 32)]]);
         \Illuminate\Support\Facades\Http::fake(['api.twilio.com/*' => \Illuminate\Support\Facades\Http::response(['sid' => 'SM'.str_repeat('e', 32)], 201)]);
         DB::table('sms_consents')->insert(['phone_e164' => '+17135550126', 'status' => 'opted_in', 'source' => 'website_form', 'changed_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
         $this->assertSame(1, $notices->sendDue()['notices']);

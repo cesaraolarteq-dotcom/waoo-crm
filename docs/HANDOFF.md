@@ -1,3 +1,8 @@
+## 2026-10-31 · Codex · #167 CI failure reproduced: cache-header comparison; main168 integrated
+Shard2 fails at StaffPortalPreviewTest because it compared Cache-Control strings and rejected stronger no-store/private headers. The test now checks private/no-store, no public, and no positive cache TTL; production headers unchanged. Focused4/85PASS. Current main `8fe6efa860259408e2296808cc481edc86155dba` (calendar166 + SMS168, each full CI green) merged; reschedule SMS fixture now uses HTTPS + synthetic signature token. Related re-run and fresh full CI follow. See newest Claude queue entry.
+
+#167 stays draft on real Resend outbox/unknown-outcome/channel/pauses integration; reproduction and request are in PR comments. #169 holds the new unpaid checkout exposure/expiry correction (109/800 local + combined15/86PASS), awaiting full CI. S1 full-team holds, private calendar reconciliation and production cutover remain open. No deployment, provider send, charge, real data or flags changed.
+
 ## 2026-10-31 · Codex · CHANGE-A safety fixes ready for review; outbound integration still blocks merge
 Branch `codex/fix-reschedule-integration` preserves Claude `0550d13`. Adds real route +30 extra on both sides, global admission mutex, stale-proof refusal, resource/transit blocks and repeated-change contract provenance. **41 tests /239 assertions PASS** on MariaDB11.8, including two concurrent moves → exactly one succeeds. Three new regressions fail before fixes. Newest `docs/CLAUDE-REVIEW-QUEUE.md` entry and `docs/RESCHEDULE-TRANSFER-PROOF.md` carry details.
 
@@ -44,6 +49,11 @@ César 2026-10-30 approved the flow (memory/plan): move the party; $100 charge/w
 - Unsubscribe: `customers.promo_opt_out_at`; signed never-expiring `/u/promo/{customer}` — GET shows a page (scanners), POST unsubscribes; `issue()` skips `unsubscribed`. Owner preview `/admin/anniversary/preview[?kind=reminder]` (fictitious client) linked from the Reportes card.
 - Not scheduled yet: both commands need a cron on Hostinger when César turns the campaign on. Website `contact?promo=` param is not read by the form yet.
 - Tests: `AnniversaryCampaignTest` 8/62 green (gates off → held, one email + one reminder, unsubscribe flow, preview).
+## 2026-10-31 · Codex · SMS consent/outcome corrections; calendar #166 merged
+Branch `codex/fix-sms-consent-boundaries`: preserve STOP when another web form arrives; timeout/5xx stays unknown; require signed-callback configuration and secure origin; no provider text leakage through error code. **10 tests /43 assertions PASS** MariaDB, four regressions FAIL on previous main. See newest `docs/CLAUDE-REVIEW-QUEUE.md` and `docs/SMS-REVIEW-BOUNDARIES.md`. Full CI required before merge; no activation/send/deploy.
+
+Main calendar merge `b435dbbde19bfe667c32286dc1f18247a2dc2005` (#166), all12checks SUCCESS: https://github.com/cesaraolarteq-dotcom/waoo-crm/actions/runs/41111849127 . CHANGE-A integration `codex/fix-reschedule-integration` has41tests/239assertions PASS including concurrent moves and repeated signing, but awaits actual outbox integration from Claude; real-adapter campaign reproduction confirms0sends against expected1 despite valid configuration (fake provider only). S1 full joint hold, source-association UI and production cutover remain open. No deployment.
+
 ## 2026-10-30 · Codex · Calendar stable identity; #165 merged
 Main `7f906b5809684df61447603c8290048a8be468ed` includes #165 (route +30 extra and joint pins), all 12 checks green: https://github.com/cesaraolarteq-dotcom/waoo-crm/actions/runs/41109448334 . New branch `codex/fix-calendar-source-identity`: verified feed/UID/import associations, never timestamp-only dedupe; unknown calendar demand remains owner review. **34 tests / 113 assertions PASS**, prior-main parser proof fails and new parser passes. Details and limits in newest `docs/CLAUDE-REVIEW-QUEUE.md` entry and `docs/CALENDAR-IDENTITY-API.md`. Full CI/merge pending for this branch.
 
