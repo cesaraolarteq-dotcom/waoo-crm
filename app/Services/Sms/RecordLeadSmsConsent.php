@@ -16,7 +16,8 @@ final class RecordLeadSmsConsent
         $text = $p['consent']['text'] ?? null;
         $phone = PhoneNumber::e164($p['phone'] ?? null);
         if (! $phone || ! is_string($text) || ! str_contains($text, 'SMS opt-in: YES') && ! str_contains($text, 'SMS opt-in: SÍ')) return;
-        SmsConsent::updateOrCreate(['phone_e164' => $phone], ['status' => 'opted_in', 'source' => 'website_form',
+        // A later website request/replay cannot erase STOP. Signed inbound START handles re-subscription.
+        SmsConsent::firstOrCreate(['phone_e164' => $phone], ['status' => 'opted_in', 'source' => 'website_form',
             'evidence' => mb_substr(($p['consent']['version'] ?? '').' · '.$text, 0, 4000), 'changed_at' => $lead->created_at ?? now(),
             'customer_id' => ReceiveTwilioWebhook::customerFor($phone)]);
     }
