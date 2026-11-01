@@ -23,6 +23,7 @@ Route::middleware(['auth', RequireOwnerAdmin::class])->get('/admin/anniversary/p
     $row->expires_at = now('America/Chicago')->addDays(7)->endOfDay();
     return response(\App\Services\Campaigns\AnniversaryMail::renderFor($row, $customer, $kind)['html'])->header('Cache-Control', 'no-store');
 });
+Route::middleware(['auth', 'password.confirm'])->get('/seguridad', [TwoFactorEnrollmentController::class, 'security'])->name('security');
 Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'));
 // Owner 2026-10-21: Google Calendar OAuth (owner with confirmed 2FA only).
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:20,1'])->prefix('admin/google')->group(function () {

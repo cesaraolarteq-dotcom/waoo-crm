@@ -127,6 +127,22 @@ class Calendar extends Page
         })->groupBy('day');
     }
 
+    /**
+     * Owner 2026-10-29: people and equipment counter for the open day (CRM parties only), labelled for the screen.
+     * @return array{parties:int,peak_parties:int,peak_at:?string,uncertain:int,rows:list<array{label:string,need:int,have:int,free:int,at:?string}>}
+     */
+    public function dayLoad(): array
+    {
+        $day = $this->anchor();
+        $load = (new \App\Services\Availability\WebsiteCapacity($day, []))->dayLoad($day->format('Y-m-d'));
+        $time = fn ($t) => $t?->setTimezone(ChicagoTime::TZ)->locale('es')->translatedFormat('g:i a');
+
+        return [...$load, 'peak_at' => $time($load['peak_at']), 'rows' => array_map(fn ($r) => [
+            'label' => $r['kind'] === 'staff' ? Labels::label(Labels::SKILL, $r['key']) : Labels::label(Labels::EQUIPMENT, $r['key']),
+            'kind' => $r['kind'], 'need' => $r['need'], 'have' => $r['have'], 'free' => $r['have'] - $r['need'], 'at' => $time($r['at']),
+        ], $load['rows'])];
+    }
+
     /** Google Calendar status for the bar above the calendar (null when the OAuth client is not configured). */
     public function google(): ?array
     {
