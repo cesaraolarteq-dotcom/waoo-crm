@@ -12,7 +12,7 @@ class SendAnniversaryMail extends Command
     {
         if (! config('waoo.sandbox_anniversary', false)) { $this->error('WAOO_SANDBOX_ANNIVERSARY is off.'); return self::FAILURE; }
         $r = $mail->sendDue();
-        $this->info("Sent: {$r['sent']} · reminders: {$r['reminders']} · held (mail off): {$r['held']}");
+        $this->info("Sent: {$r['sent']} · reminders: {$r['reminders']} · held (mail off or not allowed): {$r['held']} · outcome unknown (not resent): {$r['unknown']} · blocked: {$r['blocked']}");
         return self::SUCCESS;
     }
 }
