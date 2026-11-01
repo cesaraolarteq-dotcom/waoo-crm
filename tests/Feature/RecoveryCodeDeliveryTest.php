@@ -94,6 +94,28 @@ class RecoveryCodeDeliveryTest extends TestCase
         $this->getJson('/user/two-factor-recovery-codes')->assertStatus(410);
     }
 
+    // Owner 2026-10-29: "Seguridad" page in the user menu regenerates codes and shows the new set once.
+    public function test_security_page_regenerates_and_shows_the_new_set_once(): void
+    {
+        $owner = $this->enrolled(['two_factor_recovery_codes_delivered_at' => now()->subDay()]);
+        $this->confirmedSession($owner);
+        $this->assertNoStore($this->get('/seguridad')->assertOk()->assertSee('Generar códigos nuevos')->assertDontSee('old-code-one'));
+        $this->from('/seguridad')->post('/user/two-factor-recovery-codes')->assertRedirect('/seguridad');
+        $fresh = $owner->fresh()->recoveryCodes();
+        $this->get('/seguridad')->assertOk()->assertSee($fresh[0])->assertDontSee('old-code-one');
+        $this->get('/seguridad')->assertOk()->assertSee('Generar códigos nuevos')->assertDontSee($fresh[0]);
+        $this->getJson('/user/two-factor-recovery-codes')->assertStatus(410);
+    }
+
+    public function test_security_page_needs_password_and_enrollment(): void
+    {
+        $owner = $this->enrolled();
+        $this->actingAs($owner)->get('/seguridad')->assertRedirect('/user/confirm-password');
+        $unenrolled = $this->enrolled(['two_factor_confirmed_at' => null]);
+        $this->confirmedSession($unenrolled);
+        $this->get('/seguridad')->assertRedirect(route('security.two-factor'));
+    }
+
     public function test_disabling_and_enabling_again_starts_a_new_generation(): void
     {
         $owner = $this->enrolled(['two_factor_recovery_codes_delivered_at' => now()->subDay()]);

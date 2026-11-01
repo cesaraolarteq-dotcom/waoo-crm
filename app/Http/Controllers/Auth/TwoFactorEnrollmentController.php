@@ -31,6 +31,19 @@ final class TwoFactorEnrollmentController extends Controller
         return $this->view('start');
     }
 
+    /** Owner 2026-10-29: "Seguridad" in the user menu: a page to get a new set of recovery codes (shown once). */
+    public function security(Request $request)
+    {
+        $user = $request->user();
+        abort_unless($user->active && $user->role === 'owner_admin', 403, 'Acceso exclusivo de administración.');
+        if (! $user->two_factor_confirmed_at) {
+            return redirect()->route('security.two-factor');
+        }
+        $codes = session('status') === 'recovery-codes-generated' ? RecoveryCodeDelivery::claim($user) : null;
+
+        return $codes === null ? $this->view('manage') : $this->view('codes', ['codes' => $codes]);
+    }
+
     private function view(string $step, array $data = [])
     {
         return response()->view('auth.two-factor-enroll', ['step' => $step, 'qr' => null, 'setupKey' => null, 'codes' => [], ...$data])
