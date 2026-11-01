@@ -67,6 +67,8 @@ return [
     ],
     // César 2026-10-29: postal address in promotional email footers (CAN-SPAM); his registered agent's address.
     // After the HoneyBook switch only: the CRM is the only agenda (no outside calendar is read). Off = an outside calendar must answer.
+    // ANNIV-01 campaign switch (off): with the general mail gate also on, "One year later" emails and day-6 reminders go out.
+    'anniversary_mail_enabled' => (bool) env('WAOO_ANNIVERSARY_MAIL_ENABLED', false),
     'availability_crm_only' => (bool) env('WAOO_AVAILABILITY_CRM_ONLY', false),
     'postal_address' => env('WAOO_POSTAL_ADDRESS', 'Waoo Party LLC · 17350 State Hwy 249, Ste 220 · Houston, TX 77064'),
     'extra_character_cents' => 15000, // César 2026-10-21: each character beyond the package's included ones adds $150, any package.

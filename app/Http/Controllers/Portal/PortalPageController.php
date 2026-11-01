@@ -85,7 +85,8 @@ final class PortalPageController extends Controller
         $contract = in_array('contract.read', $grant->scopes, true)
             ? Contract::where('event_id', $event->id)->where('signer_customer_id', $client->customerId)->whereIn('state', ['issued', 'signed'])->orderByDesc('revision')->first()
             : null;
-        $signed = $contract?->state === 'signed';
+        // CHANGE-A part 3: a contract signed before a reschedule is replaced by a new one the client signs.
+        $signed = $contract?->state === 'signed' && ! \App\Models\EventChange::signedIsBeforeChange($event->id);
         $balance = $f['balance_cents'];
         // A read validates an already prepared document; it never issues one.
         $prepared = false;
