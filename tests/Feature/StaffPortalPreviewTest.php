@@ -11,8 +11,16 @@ class StaffPortalPreviewTest extends TestCase
     {
         foreach (['semana', 'vacia'] as $screen) {
             foreach (['es', 'en'] as $lang) {
-                $html = $this->get("/dev/staff/{$screen}?lang={$lang}")->assertOk()->assertHeader('Referrer-Policy', 'no-referrer')
-                    ->assertHeader('Cache-Control', 'no-store, private')->getContent();
+                $response = $this->get("/dev/staff/{$screen}?lang={$lang}")->assertOk()->assertHeader('Referrer-Policy', 'no-referrer');
+                $headers = $response->headers;
+                $this->assertTrue($headers->hasCacheControlDirective('no-store'));
+                $this->assertTrue($headers->hasCacheControlDirective('private'));
+                $this->assertFalse($headers->hasCacheControlDirective('public'));
+                foreach (['max-age', 's-maxage'] as $directive) {
+                    $age = $headers->getCacheControlDirective($directive);
+                    $this->assertTrue($age === null || (is_numeric($age) && (float) $age <= 0), 'no positive cache lifetime');
+                }
+                $html = $response->getContent();
                 $this->assertDoesNotMatchRegularExpression('/\$\s?\d/', $html, "money on {$screen}/{$lang}");
                 preg_match_all('/(?:src|href)="(https?:[^" ]+)"/', $html, $urls);
                 $origin = parse_url(config('app.url'));
