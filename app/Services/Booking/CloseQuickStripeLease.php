@@ -11,6 +11,7 @@ final class CloseQuickStripeLease
     {
         $actor=QuickStripeLeases::actor($actor);$action=$expiry?'expire':'release';$scope="owner:{$actor->id}:event:{$eventId}:quick-stripe-{$action}";$hash=MutationKey::hash($data);
         return DB::transaction(function()use($actor,$eventId,$data,$key,$expiry,$scope,$hash){
+            \App\Services\Scheduling\DailyCapacity::lock();
             User::whereKey($actor->id)->lockForUpdate()->firstOrFail();QuickStripeLeases::actor($actor);
             $event=Event::whereKey($eventId)->lockForUpdate()->firstOrFail();$lease=QuickStripeLease::where('event_id',$eventId)->lockForUpdate()->firstOrFail();
             if($saved=MutationKey::find($scope,$key,$hash,true)){
@@ -19,6 +20,7 @@ final class CloseQuickStripeLease
             RecordWriteRejected::unless($lease->state==='active'&&$lease->version===$data['expected_lease_version']
                 &&($expiry||$event->version===$data['expected_event_version']),409,'El apartado cambió. Revisa la versión mostrada.');
             if($booking=QuickPaymentProtocol::booking($eventId)) \App\Exceptions\RecordWriteRejected::unless(!QuickPaymentProtocol::pendingNotice($booking),409,'Hay un aviso de Zelle pendiente. Revísalo antes de liberar la fecha.');
+            QuickPaymentExposure::assertNone($eventId);
             $p=QuickStripeLeases::verify($lease,$event,false);
             QuickStripeLeases::lockInventory($p);
             $p=QuickStripeLeases::verify($lease,$event);
