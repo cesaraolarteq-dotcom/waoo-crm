@@ -49,6 +49,11 @@ class AdminPanelProvider extends PanelProvider
             // Record services own their transactions (docs/RECORD-SERVICES.md); Filament must not wrap them.
             ->databaseTransactions(false)
             ->sidebarCollapsibleOnDesktop()
+            // Owner 2026-10-29: a place to get new 2-step recovery codes.
+            ->userMenuItems([
+                'security' => \Filament\Actions\Action::make('security')->label('Seguridad')
+                    ->icon('heroicon-o-shield-check')->url(fn () => route('security')),
+            ])
             ->navigationGroups([
                 NavigationGroup::make('Día a día'),
                 NavigationGroup::make('Vender'),

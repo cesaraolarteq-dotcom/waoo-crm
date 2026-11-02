@@ -87,7 +87,31 @@
         @else
             @php
                 $list = $byDay[$this->anchor()->format('Y-m-d')] ?? collect();
+                $load = $this->dayLoad();
             @endphp
+            @if ($load['parties'] > 0)
+                <section class="wcal-load" aria-label="Personal y equipo del día">
+                    <header class="wcal-load-head">
+                        <h3>Personal y equipo del día</h3>
+                        <p>{{ $load['parties'] }} {{ $load['parties'] === 1 ? 'fiesta' : 'fiestas' }} · la hora más llena: {{ $load['peak_parties'] }} al mismo tiempo{{ $load['peak_at'] ? ' ('.$load['peak_at'].')' : '' }}</p>
+                    </header>
+                    <table class="wcal-load-table">
+                        <thead><tr><th scope="col">Rol o equipo</th><th scope="col">Se usan a la vez</th><th scope="col">Tienes</th><th scope="col">Quedan</th></tr></thead>
+                        <tbody>
+                            @foreach ($load['rows'] as $r)
+                                <tr @class(['is-full' => $r['free'] <= 0, 'is-short' => $r['free'] < 0])>
+                                    <th scope="row">{{ $r['label'] }}</th>
+                                    <td>{{ $r['need'] }} @if ($r['at'])<span class="wcal-load-at">· {{ $r['at'] }}</span>@endif</td>
+                                    <td>{{ $r['have'] }}</td>
+                                    <td>{{ $r['free'] < 0 ? 'Faltan '.(-$r['free']) : ($r['free'] === 0 ? 'Lleno' : $r['free']) }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                    <p class="wcal-load-note">Cuenta lo que piden los paquetes de las fiestas que están en el CRM, con montaje, desmontaje y 30 min de traslado. Una persona que hace varias cosas aparece en cada una.
+                        @if ($load['uncertain'])<strong>{{ $load['uncertain'] }} {{ $load['uncertain'] === 1 ? 'fiesta no tiene' : 'fiestas no tienen' }} todos sus datos</strong>: revísalas.@endif</p>
+                </section>
+            @endif
             <div class="wcal-day">
                 <div class="wcal-grid" style="height: {{ ($endHour - $startHour) * 60 * $pxPerMin }}px">
                     @for ($h = $startHour; $h < $endHour; $h++)

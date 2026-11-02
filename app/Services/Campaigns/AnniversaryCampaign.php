@@ -46,7 +46,9 @@ final class AnniversaryCampaign
                 foreach ($later as $e) {
                     if ($e['customer_id'] === $customerId && $e['key'] !== $a['key'] && is_string($e['date']) && $e['date'] > $a['date'] && $e['status'] !== 'cancelled') { $reason = 'already_rebooked'; break; }
                 }
-                if ($reason === null && blank(Customer::whereKey($customerId)->value('email'))) $reason = 'no_email';
+                $client = Customer::find($customerId);
+                if ($reason === null && blank($client?->email)) $reason = 'no_email';
+                if ($reason === null && $client?->promo_opt_out_at !== null) $reason = 'unsubscribed';
                 $base = ['customer_id' => $customerId, 'anchor_key' => $a['key'], 'anchor_date' => $a['date'], 'issued_at' => now()];
                 if ($reason !== null) {
                     AnniversaryCode::create([...$base, 'state' => 'skipped', 'skip_reason' => $reason]); $skipped++; continue;

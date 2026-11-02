@@ -76,6 +76,19 @@ final class StripeTestGateway implements QuickStripeGateway, StripeRefundGateway
             'payment' => ['id' => $p['id'] ?? null, 'amount_received' => $p['amount_received'] ?? null,
                 'currency' => $p['currency'] ?? null, 'livemode' => $p['livemode'] ?? null, 'status' => $p['status'] ?? null]];
     }
+    public function findCheckout(string $clientReferenceId, int $createdFrom, int $createdTo): ?array
+    {
+        $this->account();
+        $found = null;
+        // Stripe cannot filter sessions by client_reference_id: page through the bounded creation window (newest first).
+        foreach ($this->client->checkout->sessions->all(['created' => ['gte' => $createdFrom, 'lte' => $createdTo], 'limit' => 100])->autoPagingIterator() as $session) {
+            if ($session->livemode !== false) throw new \RuntimeException('stripe_mode_mismatch');
+            if ($session->client_reference_id !== $clientReferenceId) continue;
+            if ($found !== null) throw new \RuntimeException('stripe_duplicate_checkout');
+            $found = $session->id;
+        }
+        return $found === null ? null : $this->retrieveCheckout($found);
+    }
     public function expireCheckout(string $id): void
     {
         $this->account();
