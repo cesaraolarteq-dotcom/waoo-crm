@@ -77,6 +77,7 @@ final class Sections
     /** Tab rows for the current page: the parent row first (with the child tab active), then the child row. */
     public static function rows(): array
     {
+        if ($event = self::eventTabs()) return [$event];
         $key = self::current();
         if ($key === null) return [];
         $parent = self::all()[$key]['parent'] ?? null;
@@ -96,6 +97,30 @@ final class Sections
             $out[] = ['label' => $tab['label'], 'url' => $url, 'active' => $activeTarget !== null ? $tab['target'] === $activeTarget : self::isActive($tab['target'])];
         }
         return $out;
+    }
+
+    /**
+     * One party's file: Resumen · Dinero · Contrato · Equipo (owner 2026-11-02), on each of those pages. Each tab shows only when
+     * its page is available for this party (same gates as the old buttons).
+     */
+    public static function eventTabs(): ?array
+    {
+        $route = request()->route();
+        $base = \App\Filament\Resources\Events\EventResource::getRouteBaseName().'.';
+        $name = $route?->getName();
+        if (! $name || ! str_starts_with($name, $base)) return null;
+        $page = substr($name, strlen($base));
+        if (! in_array($page, ['view', 'money', 'contract', 'confirm', 'costs'], true)) return null;
+        $record = $route->parameter('record');
+        $event = $record instanceof \App\Models\Event ? $record : \App\Models\Event::find($record);
+        if (! $event) return null;
+        $url = fn (string $p) => \App\Filament\Resources\Events\EventResource::getUrl($p, ['record' => $event]);
+        $tabs = [['label' => 'Resumen', 'url' => $url('view'), 'active' => $page === 'view']];
+        if (FinanceGate::enabled()) $tabs[] = ['label' => 'Dinero', 'url' => $url('money'), 'active' => $page === 'money'];
+        if (DocumentsGate::enabled()) $tabs[] = ['label' => 'Contrato', 'url' => $url('contract'), 'active' => $page === 'contract'];
+        if (\App\Filament\Resources\Events\Pages\ConfirmCapacity::canAccessFor($event) || $page === 'confirm') $tabs[] = ['label' => 'Equipo', 'url' => $url('confirm'), 'active' => $page === 'confirm'];
+        if ($page === 'costs') $tabs[] = ['label' => 'Costos', 'url' => $url('costs'), 'active' => true];
+        return count($tabs) > 1 ? $tabs : null;
     }
 
     private static function childrenOf(string $key): array
