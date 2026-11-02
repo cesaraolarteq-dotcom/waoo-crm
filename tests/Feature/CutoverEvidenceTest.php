@@ -265,6 +265,8 @@ class CutoverEvidenceTest extends TestCase
         $opening = require database_path('migrations/2026_10_19_460000_create_cutover_opening_agreements.php');
         $receipts = require database_path('migrations/2026_10_19_470000_create_opening_receipt_bridge.php');
         $sourcePortal = require database_path('migrations/2026_10_19_480000_bind_original_agreement_portal_grants.php');
+        $reversals = require database_path('migrations/2026_11_02_110000_create_cutover_reversals.php'); // C3 B4 depends on cutover_transfers
+        $reversals->down();
         $sourcePortal->down();
         $receipts->down();
         $opening->down();
@@ -272,6 +274,7 @@ class CutoverEvidenceTest extends TestCase
         $opening->up();
         $receipts->up();
         $sourcePortal->up();
+        $reversals->up();
         $this->assertSame('honeybook', Event::find($link->event_id)->responsible_system);
         $this->assertDatabaseCount('resource_reservations', 2); $this->assertDatabaseCount('imported_project_revisions', 1);
         $this->assertDatabaseCount('cutover_original_documents', 0);

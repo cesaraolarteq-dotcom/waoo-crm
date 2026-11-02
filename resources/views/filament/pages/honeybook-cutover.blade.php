@@ -94,8 +94,24 @@
 
         <x-filament::section>
             <x-slot name="heading">Pasar al CRM</x-slot>
-            <x-slot name="description">{{ \App\Filament\Support\CutoverUi::label('financial_bridge_not_implemented') }} {{ \App\Filament\Support\CutoverUi::label('transfer_not_implemented') }}</x-slot>
-            <div class="wrep-actions"><button type="button" class="wcal-btn" disabled>Pasar {{ $r['counts']['events'] }} fiestas al CRM</button></div>
+            @if (\App\Filament\Pages\HoneyBookCutover::transferEnabled())
+                @php($t = $this->transfer())
+                @php($set = \App\Models\CutoverOpeningSet::query()->latest('id')->first())
+                <x-slot name="description">Todas las fiestas pasan juntas: desde ese momento el CRM es quien cobra y avisa. No se envía ni se cobra nada al hacerlo. Antes, apaga las automatizaciones y enlaces de cobro de HoneyBook de esas fiestas.</x-slot>
+                @if ($t && ! $t['reversed'])
+                    <p>Pasadas al CRM: {{ $t['event_count'] }} fiestas · desde {{ \App\Filament\Pages\HoneyBookCutover::when($t['effective_at']) }}</p>
+                    <div class="wrep-actions"><button type="button" class="wcal-btn" wire:click="reverseTransfer({{ $t['transfer_id'] }}, '{{ $t['sha'] }}')"
+                        wire:confirm="¿Regresar estas fiestas a HoneyBook? Solo se puede si el CRM todavía no cobró, envió ni creó enlaces para ninguna.">Deshacer el cambio</button></div>
+                @elseif ($o && ! isset($o['error']) && $o['current'] && $set)
+                    <div class="wrep-actions"><button type="button" class="wcal-btn on" wire:loading.attr="disabled" wire:click="activateTransfer({{ $set->id }}, '{{ $set->payload_sha256 }}')"
+                        wire:confirm="¿Pasar {{ $o['event_count'] }} fiestas al CRM ahora? Confirma que ya apagaste las automatizaciones y enlaces de cobro de HoneyBook de esas fiestas.">Pasar {{ $o['event_count'] }} fiestas al CRM</button></div>
+                @else
+                    <p class="wqb-hint">Primero prepara los acuerdos de apertura (arriba) y hazlo antes de que pasen 4 horas desde la revisión de pagos.</p>
+                @endif
+            @else
+                <x-slot name="description">{{ \App\Filament\Support\CutoverUi::label('financial_bridge_not_implemented') }} {{ \App\Filament\Support\CutoverUi::label('transfer_not_implemented') }}</x-slot>
+                <div class="wrep-actions"><button type="button" class="wcal-btn" disabled>Pasar {{ $r['counts']['events'] }} fiestas al CRM</button></div>
+            @endif
         </x-filament::section>
     @endif
 </x-filament-panels::page>

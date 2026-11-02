@@ -222,11 +222,14 @@ class CutoverOpeningTest extends TestCase
         DB::table('cutover_opening_agreements')->delete(); DB::table('cutover_opening_sets')->delete();
         $receipts = require database_path('migrations/2026_10_19_470000_create_opening_receipt_bridge.php');
         $sourcePortal = require database_path('migrations/2026_10_19_480000_bind_original_agreement_portal_grants.php');
+        $reversals = require database_path('migrations/2026_11_02_110000_create_cutover_reversals.php'); // C3 B4 depends on cutover_transfers
+        $reversals->down();
         $sourcePortal->down();
         $receipts->down();
         $migration->down(); $migration->up(); $this->assertTrue(Schema::hasTable('cutover_opening_agreements'));
         $receipts->up();
         $sourcePortal->up();
+        $reversals->up();
     }
     public function test_source_amount_outside_declared_technical_bound_is_safe_and_not_repriced(): void
     {

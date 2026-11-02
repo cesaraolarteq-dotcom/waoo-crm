@@ -220,4 +220,51 @@ class HoneyBookCutover extends Page
 
         return $set;
     }
+
+    // ── C3 B4: whole-group switch and its reversal (sandbox, own flag) ─────────
+    #[Locked]
+    public string $transferKey = '';
+
+    public static function transferEnabled(): bool
+    {
+        return self::bridgeEnabled() && config('waoo.sandbox_cutover_transfer') === true && class_exists(\App\Services\Imports\ActivateCutoverTransfer::class);
+    }
+
+    /** The latest switch, if any, with whether it was undone. */
+    public function transfer(): ?array
+    {
+        if (! self::transferEnabled() || ! ($t = \App\Models\CutoverTransfer::query()->latest('id')->first())) return null;
+
+        return [...\App\Services\Imports\ActivateCutoverTransfer::result($t), 'sha' => $t->payload_sha256];
+    }
+
+    public function activateTransfer(int $setId, string $setSha): void
+    {
+        if (! self::transferEnabled()) return;
+        $this->transferKey = $this->transferKey ?: (string) Str::uuid();
+        try {
+            $r = app(\App\Services\Imports\ActivateCutoverTransfer::class)->execute(Filament::auth()->user(),
+                ['opening_set_id' => $setId, 'expected_opening_set_sha256' => $setSha, 'owner_confirms_switch' => true], $this->transferKey);
+        } catch (RecordWriteRejected|AuthorizationException|HttpExceptionInterface|\Illuminate\Validation\ValidationException $e) {
+            $this->transferKey = (string) Str::uuid();
+            Notification::make()->danger()->title('No se pasó ninguna fiesta')->body($e->getMessage())->persistent()->send();
+            return;
+        }
+        $this->transferKey = (string) Str::uuid();
+        Notification::make()->success()->title($r['event_count'].' fiestas ahora están a cargo del CRM')
+            ->body('No se envió ni se cobró nada. Los recordatorios y enlaces de cobro se programan aparte.')->persistent()->send();
+    }
+
+    public function reverseTransfer(int $transferId, string $transferSha): void
+    {
+        if (! self::transferEnabled()) return;
+        try {
+            app(\App\Services\Imports\ReverseCutoverTransfer::class)->execute(Filament::auth()->user(),
+                ['transfer_id' => $transferId, 'expected_transfer_sha256' => $transferSha, 'reason' => 'Deshecho por el dueño desde Cambio final.'], (string) Str::uuid());
+        } catch (RecordWriteRejected|AuthorizationException|HttpExceptionInterface|\Illuminate\Validation\ValidationException $e) {
+            Notification::make()->danger()->title('No se deshizo')->body($e->getMessage())->persistent()->send();
+            return;
+        }
+        Notification::make()->success()->title('Las fiestas volvieron a HoneyBook')->body('Vuelve a prender las automatizaciones de HoneyBook para esas fiestas.')->persistent()->send();
+    }
 }
