@@ -10,6 +10,7 @@ require __DIR__.'/tips.php';
 Route::redirect('/', '/admin')->name('home');
 // GET /login, /two-factor-challenge and /user/confirm-password are Fortify views (FortifyServiceProvider).
 Route::middleware(['auth', 'password.confirm'])->get('/seguridad/dos-pasos', TwoFactorEnrollmentController::class)->name('security.two-factor');
+Route::middleware(['auth', 'password.confirm'])->get('/seguridad', [TwoFactorEnrollmentController::class, 'security'])->name('security');
 Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])->header('Cache-Control', 'no-store'));
 // Owner 2026-10-21: Google Calendar OAuth (owner with confirmed 2FA only).
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:20,1'])->prefix('admin/google')->group(function () {
