@@ -33,7 +33,7 @@ final class CaptureOpeningChargeNotice
                 $p = LedgerEntry::whereKey($hint->id)->lockForUpdate()->first();
                 if ($p && $p->external_identity_key === $identity && $p->kind === 'receipt' && $p->method === 'stripe'
                     && $p->verified_by === null && $p->source_type === 'verified_stripe_webhook' && $p->environment === 'test' && $p->currency === 'USD'
-                    && $p->amount_cents === $provider['charge']['amount'] && $p->external_reference === $provider['payment']['id']
+                    && OpeningStripeProof::grossOf($p) === $provider['charge']['amount'] && $p->external_reference === $provider['payment']['id']
                     && $p->received_at?->timestamp === $provider['charge']['created']
                     && ImportedProjectLink::where('event_id', $p->event_id)->sharedLock()->first()) $parent = $p;
             }

@@ -16,7 +16,7 @@ final class EvidenceV1
             'json' => 'lines_snapshot discounts_snapshot', 'text' => 'currency', 'date' => 'balance_due_at created_at updated_at'],
         'ledger' => ['table' => 'ledger_entries', 'int' => 'id event_id financial_revision_id amount_cents verified_by',
             'text' => 'environment kind method currency external_reference external_identity_key source_type source_id note', 'date' => 'received_at created_at updated_at'],
-        'service' => ['table' => 'event_services', 'int' => 'id event_id service_variant_id price_version_id duration_minutes',
+        'service' => ['table' => 'event_services', 'int' => 'id event_id service_variant_id price_version_id duration_minutes extra_characters extra_character_cents', // extras: main df42a25, before any V1 evidence was deployed
             'bool' => 'operational_ready', 'json' => 'requirements_snapshot', 'date' => 'created_at updated_at'],
         'character_selection' => ['table' => 'event_service_characters', 'int' => 'id event_service_id character_id quantity',
             'text' => 'character_name_snapshot outfit note', 'date' => 'created_at updated_at'],

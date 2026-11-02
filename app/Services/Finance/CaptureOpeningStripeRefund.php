@@ -60,7 +60,8 @@ final class CaptureOpeningStripeRefund
                         'external_identity_key' => $refundIdentity, 'verified_by' => null, 'source_type' => 'verified_stripe_refund', 'source_id' => $locked->id]);
                     $previousGross = (int) DB::table('opening_refund_evidence')->join('ledger_entries', 'ledger_entries.id', '=', 'opening_refund_evidence.ledger_entry_id')
                         ->where('opening_refund_evidence.parent_ledger_entry_id', $parent->id)->sum('ledger_entries.amount_cents');
-                    $reason = $previousGross + $newEntry->amount_cents > $parent->amount_cents ? 'refund_total_exceeds_parent' : 'refund_allocation_pending';
+                    $parentGross = OpeningStripeProof::grossOf($parent); // principal + its 3% fee row (CARD-FEE-01)
+                    $reason = ($parentGross === null || $previousGross + $newEntry->amount_cents > $parentGross) ? 'refund_total_exceeds_parent' : 'refund_allocation_pending';
                 }
             }
             $facts = ['schema_version' => 1, 'reason' => $reason, 'provider' => $provider,
@@ -93,7 +94,7 @@ final class CaptureOpeningStripeRefund
     {
         return $parent->kind === 'receipt' && $parent->method === 'stripe' && $parent->source_type === 'verified_stripe_webhook'
             && $parent->environment === 'test' && $parent->currency === 'USD' && $parent->verified_by === null
-            && $parent->amount_cents === $p['charge']['amount'] && $parent->external_reference === $p['payment']['id']
+            && OpeningStripeProof::grossOf($parent) === $p['charge']['amount'] && $parent->external_reference === $p['payment']['id']
             && $parent->received_at && $parent->received_at->timestamp === $p['charge']['created'];
     }
     private static function sameRefund(LedgerEntry $entry, LedgerEntry $parent, array $p, ?OpeningRefundEvidence $row): bool

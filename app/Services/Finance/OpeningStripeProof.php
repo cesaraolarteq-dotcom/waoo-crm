@@ -43,7 +43,8 @@ final class OpeningStripeProof
                 && $intent['environment'] === 'test' && $intent['currency'] === 'USD' && in_array($intent['purpose'], ['deposit', 'balance', 'installment'], true)
                 && $intent['principal_cents'] > 0 && $intent['customer_fee_cents'] >= 0 && $intent['payable_cents'] <= 100000000
                 && $intent['payable_cents'] === $intent['principal_cents'] + $intent['customer_fee_cents']
-                && $intent['payable_cents'] === $entry->amount_cents && $provider['gross_cents'] === $entry->amount_cents
+                // main CARD-FEE-01: the receipt row is the principal; the 3% fee is its own customer_fee row (same transaction).
+                && $intent['principal_cents'] === $entry->amount_cents && $provider['gross_cents'] === $intent['payable_cents'] && self::feeRowMatches($entry, $intent)
                 && is_string($provider['account']) && $provider['account'] !== '' && $provider['account'] === config('waoo.stripe_test_account')
                 && ($webhook['stripe_account_id'] === null || $webhook['stripe_account_id'] === $provider['account'])
                 && in_array($webhook['event_type'], ['checkout.session.completed', 'checkout.session.async_payment_succeeded', 'payment_intent.succeeded'], true)
@@ -57,6 +58,36 @@ final class OpeningStripeProof
                 'customer_fee_cents' => $intent['customer_fee_cents'], 'stripe_evidence_sha256' => $row->payload_sha256];
         } catch (\Illuminate\Database\QueryException $e) { throw $e; }
         catch (\Throwable) { return $failed; }
+    }
+
+    /** Fee identity StripeReceiptProcessor gives the fee row of this receipt's transaction. */
+    public static function feeIdentity(LedgerEntry $receipt): string
+    {
+        return 'stripe:fee:'.hash('sha256', (string) $receipt->external_identity_key);
+    }
+
+    /**
+     * Provider gross of a Stripe receipt under main's split rows: principal + its single matching customer_fee row.
+     * Null when the fee rows are ambiguous (never guess a gross).
+     */
+    public static function grossOf(LedgerEntry $receipt): ?int
+    {
+        $rows = LedgerEntry::where('external_identity_key', self::feeIdentity($receipt))->limit(2)->sharedLock()->get();
+        if ($rows->isEmpty()) return $receipt->amount_cents;
+        $f = $rows->first();
+        if ($rows->count() !== 1 || $f->kind !== 'customer_fee' || $f->event_id !== $receipt->event_id || $f->financial_revision_id !== $receipt->financial_revision_id
+            || $f->source_id !== $receipt->source_id || $f->amount_cents < 0) return null;
+        return $receipt->amount_cents + $f->amount_cents;
+    }
+
+    private static function feeRowMatches(LedgerEntry $entry, array $intent): bool
+    {
+        $rows = LedgerEntry::where('external_identity_key', self::feeIdentity($entry))->limit(2)->sharedLock()->get();
+        if ($intent['customer_fee_cents'] === 0) return $rows->isEmpty();
+        $f = $rows->first();
+        return $rows->count() === 1 && $f->kind === 'customer_fee' && $f->method === 'stripe' && $f->event_id === $entry->event_id
+            && $f->financial_revision_id === $entry->financial_revision_id && $f->amount_cents === $intent['customer_fee_cents']
+            && $f->source_id === $entry->source_id && $f->environment === 'test' && $f->currency === 'USD';
     }
 
     private static function intent(PaymentIntent $intent): array

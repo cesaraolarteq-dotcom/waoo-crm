@@ -42,7 +42,7 @@ final class OpeningRefundProof
                 || $entry->received_at?->timestamp !== $provider['refund']['created']
                 || $parent->kind !== 'receipt' || $parent->method !== 'stripe' || $parent->source_type !== 'verified_stripe_webhook'
                 || $parent->environment !== 'test' || $parent->currency !== 'USD' || $parent->verified_by !== null
-                || $parent->amount_cents !== $provider['charge']['amount'] || $parent->external_reference !== $provider['payment']['id']
+                || OpeningStripeProof::grossOf($parent) !== $provider['charge']['amount'] || $parent->external_reference !== $provider['payment']['id']
                 || $parent->external_identity_key !== 'stripe:test:'.$provider['account'].':'.$provider['payment']['id']
                 || $parent->received_at?->timestamp !== $provider['charge']['created']) return $failed;
             $issues = [];
@@ -112,7 +112,8 @@ final class OpeningRefundProof
         }
         $gross = DB::table('opening_refund_evidence')->join('ledger_entries', 'ledger_entries.id', '=', 'opening_refund_evidence.ledger_entry_id')
             ->where('opening_refund_evidence.parent_ledger_entry_id', $parent->id)->sum('ledger_entries.amount_cents');
-        if ($gross > $parent->amount_cents) $issues[] = 'refund_parent_gross_exceeded';
+        $parentGross = OpeningStripeProof::grossOf($parent);
+        if ($parentGross === null || $gross > $parentGross) $issues[] = 'refund_parent_gross_exceeded';
         if (DB::table('payment_exceptions')->where('event_id', $parent->event_id)->where('state', 'open')->where('kind', 'opening_provider_review')->sharedLock()->first())
             $issues[] = 'refund_parent_provider_review_required';
         return ['issues' => array_values(array_unique($issues)), 'observations' => $observations];

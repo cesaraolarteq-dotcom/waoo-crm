@@ -49,13 +49,17 @@ class OpeningRefundCaptureTest extends TestCase
         $i = PaymentIntent::create(['id' => (string)Str::uuid(), 'event_id' => $this->eventId, 'financial_revision_id' => $c['finance']->id,
             'environment' => 'test', 'purpose' => 'balance', 'currency' => 'USD', 'principal_cents' => 2000, 'customer_fee_cents' => 60,
             'payable_cents' => 2060, 'status' => 'open', 'expires_at' => now()->addHour()]);
+        if (60 > 0) { // main's CARD-FEE-01 (#149): a card fee is valid only with frozen credit-3pct terms
+            $i->forceFill(['card_fee_policy' => \App\Services\Finance\CardFees::POLICY])->save();
+            $i->forceFill(['card_fee_terms_sha256' => \App\Services\Finance\CardFees::fingerprint($i)])->save();
+        }
         $metadata = ['local_intent_id' => $i->id, 'event_id' => (string)$this->eventId, 'financial_revision_id' => (string)$c['finance']->id];
         $s = $fake->createCheckout(['client_reference_id' => $i->id, 'metadata' => $metadata, 'line_items' => [['price_data' => ['unit_amount' => 2060]]]], 'daniela-parent');
         $i->forceFill(['stripe_checkout_session_id' => $s['id']])->save(); $fake->paid($s['id']);
         $fake->sessions[$s['id']]['payment_intent']['id'] = 'pi_daniela_parent';
         $fake->sessions[$s['id']]['payment_intent']['latest_charge']['created'] = now()->timestamp;
         $this->signedEvent('evt_parent_daniela', ['id' => $s['id'], 'object' => 'checkout.session', 'metadata' => $metadata], 'checkout.session.completed')->assertOk();
-        app(StripeReceiptProcessor::class)->execute('evt_parent_daniela'); $entry = LedgerEntry::sole();
+        app(StripeReceiptProcessor::class)->execute('evt_parent_daniela'); $entry = LedgerEntry::where('kind', 'receipt')->sole();
         $v = app(ReadOpeningReceiptCandidates::class)->execute($this->owner, $this->eventId);
         app(AllocateOpeningReceipt::class)->execute($this->owner, $this->eventId, $entry->id, ['opening_id' => $v['opening_id'],
             'expected_collection_sha256' => $v['expected_collection_sha256'], 'expected_receipt_sha256' => $v['rows'][0]['receipt_sha256'], 'post_cutover_received' => true], (string)Str::uuid());
@@ -109,7 +113,7 @@ class OpeningRefundCaptureTest extends TestCase
     {
         $this->deliver(); $this->deliver(); $this->deliver('evt_refund_again');
         $this->assertDatabaseCount('opening_refund_evidence', 1); $this->assertDatabaseCount('opening_refund_observations', 2);
-        $this->assertDatabaseCount('ledger_entries', 2); $this->assertSame('refund_duplicate', OpeningRefundObservation::latest('id')->first()->payload['reason']);
+        $this->assertSame(2, LedgerEntry::where('kind', '!=', 'customer_fee')->count()); $this->assertSame('refund_duplicate', OpeningRefundObservation::latest('id')->first()->payload['reason']);
         $this->assertSame(1, DB::table('payment_exceptions')->where('kind', 'opening_refund_review')->count());
     }
     public static function providerFailures(): array
@@ -124,7 +128,7 @@ class OpeningRefundCaptureTest extends TestCase
     public function test_invalid_provider_evidence_never_creates_a_financial_refund(string $field, mixed $value): void
     {
         data_set($this->refunds->responses['re_daniela_1'], $field, $value); $this->deliver();
-        $this->assertDatabaseCount('opening_refund_evidence', 0); $this->assertDatabaseCount('ledger_entries', 1);
+        $this->assertDatabaseCount('opening_refund_evidence', 0); $this->assertSame(1, LedgerEntry::where('kind', '!=', 'customer_fee')->count());
         $this->assertSame('refund_provider_binding_invalid', OpeningRefundObservation::sole()->payload['reason']);
         if (OpeningRefundObservation::sole()->parent_ledger_entry_id) {
             $this->assertNull($this->summary()['balance_cents']);
@@ -136,7 +140,7 @@ class OpeningRefundCaptureTest extends TestCase
     public function test_unresolved_status_stays_observation_only_with_owner_review(string $status): void
     {
         $this->refunds->responses['re_daniela_1']['refund']['status'] = $status; $this->deliver();
-        $this->assertDatabaseCount('opening_refund_evidence', 0); $this->assertDatabaseCount('ledger_entries', 1);
+        $this->assertDatabaseCount('opening_refund_evidence', 0); $this->assertSame(1, LedgerEntry::where('kind', '!=', 'customer_fee')->count());
         $this->assertSame('refund_'.$status, OpeningRefundObservation::sole()->payload['reason']);
         $this->assertSame(4000, $this->summary()['balance_cents']); $this->assertTrue($this->summary()['collection_blocked']);
     }
@@ -159,7 +163,7 @@ class OpeningRefundCaptureTest extends TestCase
         DB::table('cutover_transfers')->update(['payload' => 'damaged transfer']); DB::table('opening_stripe_evidence')->delete();
         $this->deliver(); $this->assertDatabaseCount('opening_refund_evidence', 1);
         $this->assertNull(OpeningRefundEvidence::sole()->payload['parent_stripe_evidence_sha256']);
-        $this->assertDatabaseCount('ledger_entries', 2); $this->assertNull($this->summary()['balance_cents']);
+        $this->assertSame(2, LedgerEntry::where('kind', '!=', 'customer_fee')->count()); $this->assertNull($this->summary()['balance_cents']);
     }
     public function test_unlinked_provider_payment_keeps_observation_without_inventing_source_parent(): void
     {
@@ -167,7 +171,7 @@ class OpeningRefundCaptureTest extends TestCase
         $p['refund']['payment_id'] = $p['charge']['payment_id'] = $p['payment']['id'] = 'pi_unlinked_maria';
         $this->signedEvent('evt_unlinked', ['id' => 're_daniela_1', 'object' => 'refund', 'payment_intent' => 'pi_unlinked_maria', 'charge' => 'ch_daniela_1'])->assertOk(); $this->process('evt_unlinked');
         $this->assertSame('refund_source_parent_required', OpeningRefundObservation::sole()->payload['reason']);
-        $this->assertDatabaseCount('ledger_entries', 1); $this->assertDatabaseCount('opening_refund_evidence', 0);
+        $this->assertSame(1, LedgerEntry::where('kind', '!=', 'customer_fee')->count()); $this->assertDatabaseCount('opening_refund_evidence', 0);
     }
     public static function nativeParents(): array { return [[false], [true]]; }
     #[DataProvider('nativeParents')]
@@ -184,7 +188,7 @@ class OpeningRefundCaptureTest extends TestCase
         }
         $this->refunds->responses['re_daniela_1'] = $this->provider();
         $before = app(FinanceSummary::class)->forEvent($native); $this->deliver();
-        $this->assertDatabaseCount('ledger_entries', 2); $this->assertDatabaseCount('opening_refund_evidence', 0);
+        $this->assertSame(2, LedgerEntry::where('kind', '!=', 'customer_fee')->count()); $this->assertDatabaseCount('opening_refund_evidence', 0);
         if ($knownIntent) {
             $this->assertDatabaseCount('opening_refund_observations', 0);
             $this->assertDatabaseHas('payment_exceptions', ['event_id' => $native->id, 'kind' => 'stripe_reconciliation']);
@@ -211,7 +215,7 @@ class OpeningRefundCaptureTest extends TestCase
             $this->deliver(process: false);
             try { $this->process('evt_refund_daniela'); $this->fail('Expected storage failure'); }
             catch (\RuntimeException $e) { $this->assertSame('Synthetic storage failure', $e->getMessage()); }
-            $this->assertDatabaseCount('ledger_entries', 1); $this->assertDatabaseCount('opening_refund_observations', 0);
+            $this->assertSame(1, LedgerEntry::where('kind', '!=', 'customer_fee')->count()); $this->assertDatabaseCount('opening_refund_observations', 0);
             $this->assertSame('queued', WebhookReceipt::find('evt_refund_daniela')->state); $fail = false;
             $this->process('evt_refund_daniela'); $this->assertDatabaseCount('opening_refund_evidence', 1);
         } finally { $fail = false; }
@@ -222,7 +226,7 @@ class OpeningRefundCaptureTest extends TestCase
         $this->deliver(process: false); $this->deliver('evt_refund_second', process: false);
         $r = ConcurrentWorkers::run([function () { $this->process('evt_refund_daniela'); return 'captured'; }, function () { $this->process('evt_refund_second'); return 'captured'; }]);
         $this->assertSame(['captured','captured'], $r); $this->assertDatabaseCount('opening_refund_evidence', 1);
-        $this->assertDatabaseCount('opening_refund_observations', 2); $this->assertDatabaseCount('ledger_entries', 2);
+        $this->assertDatabaseCount('opening_refund_observations', 2); $this->assertSame(2, LedgerEntry::where('kind', '!=', 'customer_fee')->count());
     }
     public function test_multiple_actual_partial_refunds_over_gross_are_retained_but_not_credited(): void
     {
@@ -252,7 +256,7 @@ class OpeningRefundCaptureTest extends TestCase
         $p = $this->provider(); unset($p['refund']); $this->refunds->charges['ch_daniela_1'] = $p;
         $o = $type === 'charge.refunded' ? ['id' => 'ch_daniela_1', 'object' => 'charge'] : ['id' => 'dp_daniela_1', 'object' => 'dispute', 'charge' => 'ch_daniela_1'];
         $o['payment_intent'] = $this->parent->external_reference; $this->signedEvent('evt_charge_notice', $o, $type)->assertOk(); $this->process('evt_charge_notice');
-        $this->assertDatabaseCount('ledger_entries', 1); $this->assertDatabaseCount('opening_refund_evidence', 0);
+        $this->assertSame(1, LedgerEntry::where('kind', '!=', 'customer_fee')->count()); $this->assertDatabaseCount('opening_refund_evidence', 0);
         $this->assertSame($type === 'charge.refunded' ? 'charge_refund_details_pending' : 'charge_dispute_review_required', OpeningRefundObservation::sole()->payload['reason']);
         $s = $this->summary(); $this->assertNull($s['balance_cents']); $this->assertNull($s['net_received_cents']); $this->assertTrue($s['collection_blocked']);
         $this->assertSame(8000, $s['known_net_received_cents']); $this->assertSame(60, $s['crm_customer_fee_cents']);
