@@ -8,6 +8,10 @@ use Illuminate\Http\Request;
 final class HoneyBookCutoverController extends Controller
 {
     public function index(Request $r, ReadHoneyBookCutoverReadiness $read) { return $read->execute($r->user()); }
+    public function members(Request $r, \App\Services\Imports\ReadHoneyBookCutoverMembers $read)
+    {
+        return response()->json($read->execute($r->user(), $r->query()))->header('Cache-Control', 'no-store, private');
+    }
     public function show(Request $r, int $event, ReadHoneyBookCutoverReview $read) { return $read->execute($r->user(), $event); }
     public function review(Request $r, int $event, SaveHoneyBookCutoverReview $save)
     {

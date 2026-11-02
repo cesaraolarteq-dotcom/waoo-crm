@@ -19,8 +19,10 @@ final class PlanEventMail
             if($r=MutationKey::find($scope,$key,$hash))return ['message_ids'=>($r->result_id===''?[]:array_map('intval',explode(',',$r->result_id))),'replayed'=>true];
             $source=EventMailSource::lock($eventId,$d['portal_grant_id']);[$e,$c,$f,$g,$net]=$source;
             RecordWriteRejected::unless($e->version===$d['expected_event_version']&&$c->version===$d['expected_customer_version'],409,'mail_source_changed');$ids=[];$skipped=[];
-            foreach($d['templates'] as $template){$due=EventMailSource::due($template,$e,$f);
-                if(!$due->isFuture()||($template==='balance_reminder'&&$net>=$f->total_cents)){$skipped[]=['template'=>$template,'reason'=>!$due->isFuture()?'past_due':'no_balance'];continue;}
+            foreach($d['templates'] as $template){
+                if($template==='balance_reminder'&&$net>=$f->total_cents){$skipped[]=['template'=>$template,'reason'=>'no_balance'];continue;}
+                $due=EventMailSource::due($template,$e,$f);
+                if(!$due->isFuture()){$skipped[]=['template'=>$template,'reason'=>'past_due'];continue;}
                 RecordWriteRejected::unless($g->expires_at->greaterThan($due),409,'mail_link_expires_before_reminder');
                 $rendered=EventMailSource::compose($template,$source);$intent=MutationKey::hash(['event'=>$e->id,'template'=>$template,'source'=>$rendered['source_sha256'],'due'=>$due->toIso8601String()]);
                 if($existing=OutboundMessage::where('intent_sha256',$intent)->lockForUpdate()->first()){$ids[]=$existing->id;continue;}

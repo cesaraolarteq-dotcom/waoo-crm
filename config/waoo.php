@@ -58,6 +58,7 @@ return [
     'sandbox_honeybook_supplement' => env('WAOO_SANDBOX_HONEYBOOK_SUPPLEMENT', false),
     'sandbox_imports' => env('WAOO_SANDBOX_IMPORTS', false),
     'sandbox_cutover' => env('WAOO_SANDBOX_CUTOVER', false), // Evidence preparation only; no transfer endpoint.
+    'sandbox_cutover_bridge' => env('WAOO_SANDBOX_CUTOVER_BRIDGE', false), // Prepared source openings only; no authority to collect.
     'cutover_reconciliation_max_age_minutes' => 240, // César approved 2026-10-19; not automatic polling.
     'sandbox_quotes' => env('WAOO_SANDBOX_QUOTES', false),
     // Owner-approved outcome-specific wording; old presentations retain their frozen text.

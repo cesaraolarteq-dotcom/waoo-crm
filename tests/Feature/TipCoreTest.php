@@ -133,7 +133,17 @@ class TipCoreTest extends TestCase {
     public function test_tips_ui_off_does_not_drop_a_verified_late_receipt_or_unsupported_refund_evidence():void {
         $cookie=$this->enter();$this->checkout($cookie)->assertCreated();$i=TipCheckoutIntent::sole();$this->stripe->paid($i->provider_session_id);config(['waoo.sandbox_tips'=>false]);
         $this->webhook($i)->assertOk();$this->process();$this->assertDatabaseCount('tip_receipts',1);
-        $this->webhook($i,'evt_tip_refund',extra:['type'=>'charge.refunded'])->assertOk();$this->process('evt_tip_refund');$this->assertDatabaseHas('tip_reconciliations',['reason'=>'tip_refund_or_unsupported_event']);$this->assertDatabaseCount('tip_refunds',0);$this->assertSame('paid',$i->fresh()->status);
+        $this->webhook($i,'evt_tip_refund',extra:['type'=>'charge.refunded','data'=>['object'=>['id'=>'ch_lucia_tip','object'=>'charge','payment_intent'=>$i->fresh()->provider_payment_id]]])->assertOk();$this->process('evt_tip_refund');$this->assertDatabaseHas('tip_reconciliations',['reason'=>'tip_refund_or_unsupported_event']);$this->assertDatabaseCount('tip_refunds',0);$this->assertSame('paid',$i->fresh()->status);
+    }
+    public function test_known_tip_refund_created_keeps_existing_reconciliation_and_no_principal_refund():void {
+        $cookie=$this->enter();$this->checkout($cookie)->assertCreated();$i=TipCheckoutIntent::sole();$this->stripe->paid($i->provider_session_id);
+        $this->webhook($i)->assertOk();$this->process();$i=$i->fresh();
+        $this->webhook($i,'evt_tip_refund_created',extra:['type'=>'refund.created','data'=>['object'=>[
+            'id'=>'re_lucia_tip','object'=>'refund','payment_intent'=>$i->provider_payment_id,'charge'=>'ch_lucia_tip']]])->assertOk();
+        $this->process('evt_tip_refund_created');
+        $this->assertDatabaseHas('tip_reconciliations',['webhook_receipt_id'=>'evt_tip_refund_created','reason'=>'tip_refund_or_unsupported_event']);
+        $this->assertDatabaseCount('opening_refund_evidence',0);$this->assertDatabaseCount('opening_refund_observations',0);
+        $this->assertDatabaseCount('tip_refunds',0);$this->assertDatabaseCount('tip_receipts',1);$this->assertSame('paid',$i->fresh()->status);
     }
     public function test_integrity_checks_session_expiry_and_source_change_never_charge_from_a_stale_page():void {
         $cookie=$this->enter();$this->assertSame(86400,(int)CarbonImmutable::parse(DB::table('tip_portal_sessions')->sole()->expires_at,'UTC')->diffInSeconds(CarbonImmutable::now('UTC'),true));
@@ -171,7 +181,7 @@ class TipCoreTest extends TestCase {
     }
     public function test_owner_does_not_treat_pending_refund_or_collection_as_known_net_staff_money():void {
         $cookie=$this->enter();$this->checkout($cookie)->assertCreated();$i=TipCheckoutIntent::sole();$this->stripe->paid($i->provider_session_id);$this->webhook($i)->assertOk();$this->process();
-        $this->webhook($i,'evt_tip_pending_refund',extra:['type'=>'charge.refunded'])->assertOk();$this->process('evt_tip_pending_refund');
+        $this->webhook($i,'evt_tip_pending_refund',extra:['type'=>'charge.refunded','data'=>['object'=>['id'=>'ch_lucia_tip','object'=>'charge','payment_intent'=>$i->fresh()->provider_payment_id]]])->assertOk();$this->process('evt_tip_pending_refund');
         $this->actingAs($this->owner)->getJson('/admin/api/events/'.$this->event->id.'/tips')->assertOk()->assertJsonPath('gross_cents',1300)->assertJsonPath('reconciliation_required',true)->assertJsonPath('reconciliation_count',1)->assertJsonPath('net_staff_cents',null);
     }
     public function test_locally_expired_checkout_is_not_revealed_and_slots_wait_for_verified_expiry():void {
@@ -190,4 +200,20 @@ class TipCoreTest extends TestCase {
         config(['waoo.stripe_test_account'=>'acct_other_fixture']);$this->checkout($cookie,$input,$key)->assertConflict();$this->assertCount(1,$this->stripe->calls);$this->assertDatabaseCount('tip_checkout_intents',1);
     }
     protected function tearDown():void {if($this->app)$this->app->detectEnvironment(fn()=>'testing');parent::tearDown();}
+    public function test_common_native_agreement_keeps_the_legacy_tip_snapshot_and_recopy_contract():void {
+        $e=$this->event->fresh();$f=$this->finance->fresh();
+        $legacy=\App\Services\Finance\MutationKey::hash(['event_id'=>$e->id,'event_version'=>$e->version,'customer_id'=>$e->customer_id,'start'=>$e->starts_at->toIso8601String(),'end'=>$e->ends_at->toIso8601String(),'finance'=>$f->getAttributes()]);
+        $this->getJson('/admin/api/events/'.$e->id.'/confirmed-agreement')->assertOk()->assertJsonPath('origin','crm')->assertJsonPath('snapshot_sha256',$legacy)->assertJsonPath('original_document',null);
+        $g=$this->issue();$this->assertSame($legacy,TipGrant::sole()->snapshot_sha256);$key=(string)Str::uuid();$input=['expected_version'=>1,'expected_snapshot_sha256'=>$legacy];
+        $this->postJson('/admin/api/tip-grants/'.$g['id'].'/reveal',$input,['Idempotency-Key'=>$key])->assertOk()->assertJsonPath('link',$g['link'])->assertHeader('Cache-Control','no-store, private');
+        $this->postJson('/admin/api/tip-grants/'.$g['id'].'/reveal',$input,['Idempotency-Key'=>$key])->assertOk()->assertJsonPath('link',$g['link']);
+        $this->assertSame(1,DB::table('audit_entries')->where('action','tip.grant_link_revealed')->count());$this->assertDatabaseCount('tip_grants',1);
+    }
+    public function test_common_native_agreement_does_not_relax_capacity_or_finance_binding():void {
+        DB::table('capacity_payment_links')->where('event_id',$this->event->id)->delete();
+        $this->getJson('/admin/api/events/'.$this->event->id.'/confirmed-agreement')->assertConflict();
+        $this->postJson('/admin/api/events/'.$this->event->id.'/tip-grants',['expected_event_version'=>$this->event->version,'financial_revision_id'=>$this->finance->id,'locale'=>'es'],['Idempotency-Key'=>(string)Str::uuid()])->assertConflict();
+        $this->assertDatabaseCount('tip_grants',0);
+    }
+
 }

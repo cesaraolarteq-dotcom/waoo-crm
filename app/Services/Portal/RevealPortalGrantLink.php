@@ -17,6 +17,7 @@ final class RevealPortalGrantLink
         PortalContext::requireTransport(request());
         try {
             return DB::transaction(function () use ($actor, $eventId, $grantId) {
+                RecordActor::authorize($actor, true);
                 // Same grant-first protocol as revoke/signature; never trust an earlier snapshot.
                 $grant = PortalGrant::whereKey($grantId)->lockForUpdate()->first();
                 if (!$grant || (int) $grant->event_id !== $eventId) throw new PortalLinkRejected(404, 'grant_not_found', 'No se encontró este enlace para el evento.');
@@ -33,6 +34,7 @@ final class RevealPortalGrantLink
                     \App\Services\Responsibility\RequireCrmResponsibility::check($event);
                     \App\Services\Imports\ImportedAgreement::blockCrmLifecycle($eventId);
                 }
+                if (OpeningPortalAccess::knownSource($grant)) OpeningPortalAccess::current($grant);
                 $token = PortalTokenVault::open($grant);
                 $origin = $this->origin();
                 Audit::recordFor($actor, 'portal.link_revealed', $grant, [], ['event_id' => $eventId, 'grant_id' => $grantId]);
