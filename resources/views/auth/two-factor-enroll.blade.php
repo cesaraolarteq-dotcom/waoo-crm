@@ -1,13 +1,25 @@
 @extends('auth.layout')
 @section('title', 'Verificación en dos pasos')
 @section('content')
+@if ($step !== 'manage')
 <ol class="steps" aria-label="Pasos">
   <li @class(['on' => $step === 'start', 'done' => $step !== 'start'])>Activar</li>
   <li @class(['on' => $step === 'scan', 'done' => $step === 'codes'])>Escanear</li>
   <li @class(['on' => $step === 'codes'])>Guardar códigos</li>
 </ol>
+@endif
 
-@if ($step === 'start')
+@if ($step === 'manage')
+  <h1 class="auth-title">Tus códigos de <em>recuperación</em></h1>
+  <p class="auth-sub">Por seguridad, los códigos solo se muestran una vez. Si no los guardaste o ya usaste alguno, genera un juego nuevo: los anteriores dejan de servir.</p>
+  <div class="note">Tu verificación en dos pasos está activa. Esto no cambia la app de tu teléfono.</div>
+  <form method="POST" action="{{ url('/user/two-factor-recovery-codes') }}" class="auth-form">
+    @csrf
+    <button type="submit" class="btn btn-primary">Generar códigos nuevos</button>
+  </form>
+  <a class="btn btn-quiet" href="{{ url('/admin') }}">Volver al CRM</a>
+
+@elseif ($step === 'start')
   <h1 class="auth-title">Protege tu <em>cuenta</em></h1>
   <p class="auth-sub">El CRM guarda datos de clientes y pagos. Para entrar vas a necesitar tu contraseña y un código de 6 dígitos que cambia cada 30 segundos en tu teléfono.</p>
   <div class="note">Necesitas una app de autenticación en tu teléfono: Google Authenticator, Microsoft Authenticator o 1Password.</div>

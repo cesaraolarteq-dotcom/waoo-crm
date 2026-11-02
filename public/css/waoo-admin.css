@@ -286,3 +286,17 @@ a.wdash-item:hover{border-color:#122F94;background:#F5F7FF}
 .dark .waoo-cal-day.is-one::after{background:#93A7FF}
 .dark .waoo-cal-picked{color:#E8EBF7}
 @media (prefers-reduced-motion:reduce){.waoo-cal-day{transition:none}}
+
+/* Owner 2026-10-29: people and equipment counter on the calendar day view */
+.wcal-load{margin:0 0 14px;padding:14px 16px;border:1px solid rgba(15,39,120,.12);border-radius:12px;background:#fff}
+.dark .wcal-load{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.1)}
+.wcal-load-head h3{font-weight:700;font-size:1rem;margin:0}
+.wcal-load-head p{font-size:.85rem;opacity:.75;margin:2px 0 10px}
+.wcal-load-table{width:100%;border-collapse:collapse;font-size:.88rem}
+.wcal-load-table th,.wcal-load-table td{padding:6px 8px;text-align:left;border-top:1px solid rgba(15,39,120,.08)}
+.wcal-load-table thead th{font-size:.75rem;text-transform:uppercase;letter-spacing:.03em;opacity:.65;border-top:0}
+.wcal-load-table td:nth-child(n+2),.wcal-load-table thead th:nth-child(n+2){text-align:right}
+.wcal-load-table tr.is-full td:last-child{color:#8a5a00;font-weight:600}
+.wcal-load-table tr.is-short td:last-child{color:#B4233A;font-weight:700}
+.wcal-load-at{opacity:.6;font-size:.8rem}
+.wcal-load-note{font-size:.78rem;opacity:.7;margin:10px 0 0}

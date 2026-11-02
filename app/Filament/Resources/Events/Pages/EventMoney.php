@@ -265,6 +265,39 @@ class EventMoney extends Page
             });
     }
 
+    /** Card attempts whose Stripe answer never came back (no session saved): the owner can look for them at Stripe. */
+    public function lostCheckouts(): array
+    {
+        if (! class_exists(\App\Services\Booking\RecoverQuickCheckout::class) || ! \App\Services\Booking\QuickPaymentProtocol::enabled()) return [];
+
+        return \App\Services\Booking\RecoverQuickCheckout::lostFor($this->record->id)->get()
+            ->map(fn ($i) => (object) ['id' => $i->id, 'amount' => Labels::money($i->payable_cents), 'when' => rtrim(Labels::when($i->created_at), '.')])->all();
+    }
+
+    public function recoverCheckoutAction(): Action
+    {
+        return Action::make('recoverCheckout')->label('Buscar en Stripe')->icon('heroicon-o-magnifying-glass')->color('gray')->size('sm')
+            ->requiresConfirmation()
+            ->modalHeading('Buscar este pago en Stripe')
+            ->modalDescription('El CRM busca en Stripe la página de pago de este intento y, si existe, la conecta. No cobra, no devuelve dinero, no cambia el plazo y no libera el personal ni los trajes.')
+            ->modalSubmitActionLabel('Buscar')
+            ->action(function (array $arguments, Action $action) {
+                try {
+                    $r = app(\App\Services\Booking\RecoverQuickCheckout::class)->execute(Filament::auth()->user(), (string) ($arguments['id'] ?? ''));
+                } catch (RecordWriteRejected|AuthorizationException $e) {
+                    Notification::make()->danger()->title('No se pudo buscar')->body($e->getMessage())->persistent()->send();
+                    $action->halt();
+                }
+                [$tone, $title, $body] = match ($r['state']) {
+                    'found_paid' => ['success', 'Stripe dice que se pagó', 'Quedó conectado. El pago aparecerá aquí cuando llegue el aviso de Stripe; si no aparece en unos minutos, revísalo en Stripe.'],
+                    'found_expired' => ['success', 'Se encontró y no se pagó', 'La página de pago venció sin cobro. El sistema cierra el apartado según su plazo original.'],
+                    'found_open' => ['success', 'Se encontró y sigue abierta', 'El cliente todavía puede pagar ahí. Al vencer el plazo original el sistema la cierra solo.'],
+                    default => ['warning', 'No se encontró en Stripe', 'No hay una página de pago para este intento en Stripe. Por seguridad el personal y los trajes siguen apartados: revisa Stripe y, si tienes dudas, consúltame.'],
+                };
+                Notification::make()->{$tone}()->title($title)->body($body)->persistent()->send();
+            });
+    }
+
     public function zelleAction(): Action
     {
         return Action::make('zelle')->label('Registrar Zelle verificado')->icon('heroicon-o-banknotes')
