@@ -49,13 +49,17 @@ class OpeningRefundCaptureTest extends TestCase
         $i = PaymentIntent::create(['id' => (string)Str::uuid(), 'event_id' => $this->eventId, 'financial_revision_id' => $c['finance']->id,
             'environment' => 'test', 'purpose' => 'balance', 'currency' => 'USD', 'principal_cents' => 2000, 'customer_fee_cents' => 60,
             'payable_cents' => 2060, 'status' => 'open', 'expires_at' => now()->addHour()]);
+        if (60 > 0) { // main's CARD-FEE-01 (#149): a card fee is valid only with frozen credit-3pct terms
+            $i->forceFill(['card_fee_policy' => \App\Services\Finance\CardFees::POLICY])->save();
+            $i->forceFill(['card_fee_terms_sha256' => \App\Services\Finance\CardFees::fingerprint($i)])->save();
+        }
         $metadata = ['local_intent_id' => $i->id, 'event_id' => (string)$this->eventId, 'financial_revision_id' => (string)$c['finance']->id];
         $s = $fake->createCheckout(['client_reference_id' => $i->id, 'metadata' => $metadata, 'line_items' => [['price_data' => ['unit_amount' => 2060]]]], 'daniela-parent');
         $i->forceFill(['stripe_checkout_session_id' => $s['id']])->save(); $fake->paid($s['id']);
         $fake->sessions[$s['id']]['payment_intent']['id'] = 'pi_daniela_parent';
         $fake->sessions[$s['id']]['payment_intent']['latest_charge']['created'] = now()->timestamp;
         $this->signedEvent('evt_parent_daniela', ['id' => $s['id'], 'object' => 'checkout.session', 'metadata' => $metadata], 'checkout.session.completed')->assertOk();
-        app(StripeReceiptProcessor::class)->execute('evt_parent_daniela'); $entry = LedgerEntry::sole();
+        app(StripeReceiptProcessor::class)->execute('evt_parent_daniela'); $entry = LedgerEntry::where('kind', 'receipt')->sole();
         $v = app(ReadOpeningReceiptCandidates::class)->execute($this->owner, $this->eventId);
         app(AllocateOpeningReceipt::class)->execute($this->owner, $this->eventId, $entry->id, ['opening_id' => $v['opening_id'],
             'expected_collection_sha256' => $v['expected_collection_sha256'], 'expected_receipt_sha256' => $v['rows'][0]['receipt_sha256'], 'post_cutover_received' => true], (string)Str::uuid());

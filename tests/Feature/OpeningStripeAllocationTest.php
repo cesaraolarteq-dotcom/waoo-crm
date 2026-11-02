@@ -46,6 +46,10 @@ class OpeningStripeAllocationTest extends TestCase
         $intent = PaymentIntent::create(['id' => (string)Str::uuid(), 'event_id' => $this->eventId, 'financial_revision_id' => $c['finance']->id,
             'environment' => 'test', 'purpose' => $purpose, 'currency' => 'USD', 'principal_cents' => $principal, 'customer_fee_cents' => $fee,
             'payable_cents' => $principal + $fee, 'status' => 'open', 'expires_at' => now()->addHour()]);
+        if ($fee > 0) { // main's CARD-FEE-01 (#149): a card fee is valid only with frozen credit-3pct terms
+            $intent->forceFill(['card_fee_policy' => \App\Services\Finance\CardFees::POLICY])->save();
+            $intent->forceFill(['card_fee_terms_sha256' => \App\Services\Finance\CardFees::fingerprint($intent)])->save();
+        }
         $metadata = ['local_intent_id' => $intent->id, 'event_id' => (string)$this->eventId, 'financial_revision_id' => (string)$c['finance']->id];
         $session = $this->stripe->createCheckout(['client_reference_id' => $intent->id, 'metadata' => $metadata,
             'line_items' => [['price_data' => ['unit_amount' => $principal + $fee]]]], 'fixture-'.$intent->id);
@@ -76,7 +80,7 @@ class OpeningStripeAllocationTest extends TestCase
 
     public function test_signed_provider_receipt_is_retained_then_explicitly_allocated_once_without_source_replay(): void
     {
-        $intent = $this->paid(); $entry = LedgerEntry::sole(); $v = $this->candidates();
+        $intent = $this->paid(); $entry = LedgerEntry::where('kind', 'receipt')->sole(); $v = $this->candidates();
         $this->assertTrue($v['rows'][0]['eligible']); $this->assertSame(2000, $v['rows'][0]['principal_cents']);
         $this->assertNull($this->summary()['balance_cents']); $this->assertDatabaseCount('opening_stripe_evidence', 1);
         $input = $this->input($entry->id); $key = (string)Str::uuid(); $first = $this->allocate($entry, $input, $key);
@@ -96,7 +100,7 @@ class OpeningStripeAllocationTest extends TestCase
     }
     public function test_explicit_fee_is_not_principal_balance_credit_and_no_new_surcharge_is_configured(): void
     {
-        $this->paid(2000, 60); $entry = LedgerEntry::sole(); $result = $this->allocate($entry); $s = $this->summary();
+        $this->paid(2000, 60); $entry = LedgerEntry::where('kind', 'receipt')->sole(); $result = $this->allocate($entry); $s = $this->summary();
         $this->assertSame(2060, $result['amount_cents']); $this->assertSame(2000, $result['principal_cents']); $this->assertSame(60, $result['customer_fee_cents']);
         $this->assertSame(2060, $entry->amount_cents); $this->assertSame(2000, $s['crm_received_cents']);
         $this->assertSame(60, $s['crm_customer_fee_cents']); $this->assertSame(4000, $s['balance_cents']);
@@ -110,7 +114,7 @@ class OpeningStripeAllocationTest extends TestCase
     #[DataProvider('evidenceMutations')]
     public function test_changed_evidence_never_becomes_balance_credit_and_keeps_real_money(string $what): void
     {
-        $this->paid(); $entry = LedgerEntry::sole(); $this->allocate($entry);
+        $this->paid(); $entry = LedgerEntry::where('kind', 'receipt')->sole(); $this->allocate($entry);
         match ($what) {
             'envelope' => DB::table('opening_stripe_evidence')->update(['payload' => 'damaged encrypted evidence']),
             'ledger' => DB::table('ledger_entries')->where('id', $entry->id)->increment('amount_cents'),
@@ -144,7 +148,7 @@ class OpeningStripeAllocationTest extends TestCase
         $i = $this->paid(); DB::table('opening_stripe_evidence')->delete(); $this->deliver($i, 'evt_legacy_duplicate');
         $r = $this->candidates()['rows'][0]; $this->assertFalse($r['eligible']); $this->assertContains('stripe_evidence_required', $r['issue_codes']);
         $this->assertDatabaseCount('opening_stripe_evidence', 0); $this->assertDatabaseCount('ledger_entries', 1);
-        $this->expectException(RecordWriteRejected::class); $this->allocate(LedgerEntry::sole());
+        $this->expectException(RecordWriteRejected::class); $this->allocate(LedgerEntry::where('kind', 'receipt')->sole());
     }
     public function test_pre_cutover_provider_receipt_remains_real_but_cannot_be_allocated(): void
     {
@@ -154,7 +158,7 @@ class OpeningStripeAllocationTest extends TestCase
     }
     public function test_new_columns_do_not_invalidate_proof_and_mutable_processing_state_is_not_hashed(): void
     {
-        $i = $this->paid(); $entry = LedgerEntry::sole(); $this->allocate($entry);
+        $i = $this->paid(); $entry = LedgerEntry::where('kind', 'receipt')->sole(); $this->allocate($entry);
         try {
             foreach (['payment_intents', 'webhook_receipts', 'opening_stripe_evidence'] as $t)
                 Schema::table($t, fn ($b) => $b->string('future_display_column')->default('new'));
@@ -179,14 +183,14 @@ class OpeningStripeAllocationTest extends TestCase
     public function test_independent_concurrent_owner_assignments_credit_the_same_provider_receipt_once(): void
     {
         if (DB::getDriverName() !== 'mysql' || !function_exists('pcntl_fork')) $this->markTestSkipped('Requires MariaDB and pcntl.');
-        $this->paid(); $entry = LedgerEntry::sole(); $input = $this->input($entry->id);
+        $this->paid(); $entry = LedgerEntry::where('kind', 'receipt')->sole(); $input = $this->input($entry->id);
         $results = ConcurrentWorkers::run([fn () => $this->allocate($entry, $input), fn () => $this->allocate($entry, $input)]);
         $this->assertSame($results[0], $results[1]); $this->assertIsArray($results[0]);
         $this->assertDatabaseCount('opening_receipt_allocations', 1); $this->assertSame(4000, $this->summary()['balance_cents']);
     }
     public function test_existing_installment_purpose_can_be_explicitly_allocated_without_a_second_deposit(): void
     {
-        $this->paid(purpose: 'installment'); $this->allocate(LedgerEntry::sole());
+        $this->paid(purpose: 'installment'); $this->allocate(LedgerEntry::where('kind', 'receipt')->sole());
         $s = $this->summary(); $this->assertSame(4000, $s['balance_cents']); $this->assertSame(0, $s['deposit_shortfall_cents']);
     }
     public function test_encrypted_evidence_from_another_receipt_cannot_be_transplanted(): void
@@ -219,7 +223,7 @@ class OpeningStripeAllocationTest extends TestCase
     }
     public function test_refund_without_a_verified_attribution_keeps_combined_balance_unknown(): void
     {
-        $this->paid(2000, 60); $entry = LedgerEntry::sole(); $this->allocate($entry);
+        $this->paid(2000, 60); $entry = LedgerEntry::where('kind', 'receipt')->sole(); $this->allocate($entry);
         LedgerEntry::create(['event_id' => $this->eventId, 'financial_revision_id' => $entry->financial_revision_id,
             'environment' => 'test', 'currency' => 'USD', 'kind' => 'refund', 'method' => 'stripe', 'amount_cents' => 100,
             'received_at' => now(), 'external_reference' => 're_unverified_daniela', 'external_identity_key' => 'unverified:test:refund:daniela', 'source_type' => 'unverified_fixture']);
@@ -230,7 +234,7 @@ class OpeningStripeAllocationTest extends TestCase
     }
     public function test_changed_displayed_receipt_or_request_body_cannot_be_retried_as_a_new_decision(): void
     {
-        $this->paid(); $entry = LedgerEntry::sole(); $input = $this->input($entry->id); $key = (string)Str::uuid();
+        $this->paid(); $entry = LedgerEntry::where('kind', 'receipt')->sole(); $input = $this->input($entry->id); $key = (string)Str::uuid();
         $first = $this->allocate($entry, $input, $key); $input['expected_receipt_sha256'] = str_repeat('0', 64);
         try { $this->allocate($entry, $input, $key); $this->fail('Stale receipt accepted'); }
         catch (RecordWriteRejected $e) { $this->assertSame(409, $e->status); }

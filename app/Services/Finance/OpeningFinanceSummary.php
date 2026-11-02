@@ -32,7 +32,10 @@ final class OpeningFinanceSummary
             if ($ledger->count() > 10000) return [...$base, 'opening_missing' => ['receipt_volume_exceeded']];
             $allocations = OpeningReceiptAllocation::query()->forceIndex('opening_receipts_binding_index')->where('cutover_financial_binding_id', $c['binding']->id)->orderBy('id')->limit(10001)->sharedLock()->get()->keyBy('ledger_entry_id');
             if ($allocations->count() > 10000) return [...$base, 'opening_missing' => ['receipt_volume_exceeded']];
+            // The verified 3% fee row of an allocated Stripe receipt is counted through that receipt's proof (customer_fee_cents).
+            $allocatedFees = $ledger->filter(fn ($e) => $allocations->has($e->id) && $e->method === 'stripe')->map(fn ($e) => OpeningStripeProof::feeIdentity($e))->flip();
             foreach ($ledger as $entry) {
+                if ($entry->kind === 'customer_fee' && $allocatedFees->has($entry->external_identity_key)) continue;
                 $a = $allocations->get($entry->id);
                 if (!$a) { $missing[] = 'unallocated_receipt_or_refund'; continue; }
                 try { $p = OpeningReceiptLink::verify($a, $entry, $c);
