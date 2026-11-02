@@ -7,9 +7,11 @@
 - **The extra is added to the balance** (no separate payment at that moment). The deposit already paid is not recalculated; the balance and its 24 h-before due date follow the new total.
 - **The client signs an annex** (same in-house e-signature as the contract: name, email, time, IP, user agent, SHA-256 of the exact annex PDF). EN + ES.
 
+- **Offered extras (confirmed 2026-11-02):** "Pintacaritas agregado a un paquete", "Cañón de espuma", "Photo Booth", "Glitter Mobile", "Estación de slime", "2 chisperos"/"4 chisperos", "Personajes inflables y bolas disco". Stored as `service_variants.offered_as_extra` (owner-editable in Catálogo).
+- **Extras run at the same time as the booked service; they never extend the party.** The extra's busy window is the party's own window (its setup/breakdown inside the party's), and capacity is checked for that overlap. The portal, the annex and the email must say it, e.g. ES "El extra se realiza al mismo tiempo que tu servicio; no extiende la hora de la fiesta." / EN "The add-on runs at the same time as your service; it does not extend the party time." An extra longer than the party is not offered.
+
 ## Pending owner input
-1. Which catalog services are offered as extras (proposal: "Pintacaritas agregado a un paquete", "Cañón de espuma", "Photo Booth", "Glitter Mobile", "Estación de slime", "2 chisperos"/"4 chisperos", "Personajes inflables y bolas disco"; César confirms). Proposed storage: `service_variants.offered_as_extra` boolean, owner-editable in Catálogo.
-2. Annex text (EN/ES) — César approves; lawyer optional (the main contract already passed lawyer review).
+1. Annex text (EN/ES) — Claude drafts, César approves.
 
 ## Flow (proposed)
 1. Portal "Agregar extras" (only `responsible_system=crm`, status `capacity_reserved`, start ≥ 7 Houston days away, no pending reschedule/cancel, no open payment exception, contract signed).
