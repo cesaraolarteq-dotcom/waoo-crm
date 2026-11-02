@@ -8,6 +8,8 @@
 - **The client signs an annex** (same in-house e-signature as the contract: name, email, time, IP, user agent, SHA-256 of the exact annex PDF). EN + ES.
 
 - **Offered extras (confirmed 2026-11-02):** "Pintacaritas agregado a un paquete", "Cañón de espuma", "Photo Booth", "Glitter Mobile", "Estación de slime", "2 chisperos"/"4 chisperos", "Personajes inflables y bolas disco". Stored as `service_variants.offered_as_extra` (owner-editable in Catálogo).
+- **Additional characters are also an extra (2026-11-02):** the client may add characters to the booked package (existing `event_services.extra_characters` / `extra_character_cents`, current catalog extra-character price), with costume + wearer capacity checked like any extra.
+- **Final, non-cancellable (2026-11-02):** once the annex is signed the extra belongs to the event; the client cannot cancel or get a refund for it later, because it blocks that service/costume for other clients. Event cancellation rules for the original package are unchanged; the extra amount follows the deposit rule of non-refundable. The annex and the portal must say this before signature.
 - **Extras run at the same time as the booked service; they never extend the party.** The extra's busy window is the party's own window (its setup/breakdown inside the party's), and capacity is checked for that overlap. The portal, the annex and the email must say it, e.g. ES "El extra se realiza al mismo tiempo que tu servicio; no extiende la hora de la fiesta." / EN "The add-on runs at the same time as your service; it does not extend the party time." An extra longer than the party is not offered.
 
 ## Pending owner input
