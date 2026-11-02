@@ -100,9 +100,10 @@ class OpeningStripeAllocationTest extends TestCase
     }
     public function test_explicit_fee_is_not_principal_balance_credit_and_no_new_surcharge_is_configured(): void
     {
+        // main CARD-FEE-01: the receipt row is the principal (2000); the 60 is its own customer_fee row.
         $this->paid(2000, 60); $entry = LedgerEntry::where('kind', 'receipt')->sole(); $result = $this->allocate($entry); $s = $this->summary();
-        $this->assertSame(2060, $result['amount_cents']); $this->assertSame(2000, $result['principal_cents']); $this->assertSame(60, $result['customer_fee_cents']);
-        $this->assertSame(2060, $entry->amount_cents); $this->assertSame(2000, $s['crm_received_cents']);
+        $this->assertSame(2000, $result['amount_cents']); $this->assertSame(2000, $result['principal_cents']); $this->assertSame(60, $result['customer_fee_cents']);
+        $this->assertSame(2000, $entry->amount_cents); $this->assertSame(60, LedgerEntry::where('kind', 'customer_fee')->sole()->amount_cents); $this->assertSame(2000, $s['crm_received_cents']);
         $this->assertSame(60, $s['crm_customer_fee_cents']); $this->assertSame(4000, $s['balance_cents']);
         $this->assertSame(8000, $s['net_received_cents']); $this->assertSame(2, OpeningReceiptAllocation::sole()->payload['schema_version']);
     }
