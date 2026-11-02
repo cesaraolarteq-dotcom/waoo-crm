@@ -58,6 +58,18 @@
             </x-filament::section>
         @endif
 
+        @if (($lost = $this->lostCheckouts()) !== [])
+            <x-filament::section>
+                <x-slot name="heading">Pago con tarjeta sin respuesta de Stripe</x-slot>
+                <p class="wmoney-p">El cliente empezó a pagar con tarjeta pero Stripe no nos contestó. Puede que haya pagado o no: el personal y los trajes siguen apartados hasta saberlo.</p>
+                @foreach ($lost as $l)
+                    <div class="wmoney-row">
+                        <div><b>{{ $l->amount }}</b> · empezó {{ $l->when }} · {{ ($this->recoverCheckoutAction)(['id' => $l->id]) }}</div>
+                    </div>
+                @endforeach
+            </x-filament::section>
+        @endif
+
         <x-filament::section>
             <x-slot name="heading">Pagos registrados</x-slot>
             @forelse ($this->payments() as $p)
