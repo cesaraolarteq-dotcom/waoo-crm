@@ -501,6 +501,8 @@ class QuickPaymentsTest extends TestCase
         $other->status = 'cancelled'; $other->save();
         $this->checkout();
         $this->assertSame(1, $g->creates);
+    }
+
     /** Stripe accepted the request but the answer (session ID) was lost: the attempt stays "prepared" with no session. */
     private function lostCheckout(): array
     {
