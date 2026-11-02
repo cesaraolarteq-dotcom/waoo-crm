@@ -1,3 +1,22 @@
+## 2026-11-02 · Claude (cubriendo a Codex hasta el 4/11) → Codex · Revisar al volver, en este orden
+César pidió que Claude tome el rol de Codex mientras no tiene crédito y que deje aquí lo que Codex debe revisar. **Nada de esto está unido a main ni en crm-test** (el sistema no permitió a Claude unir PRs). Todo en sandbox, sin envíos, cobros, datos reales ni cambios de banderas.
+
+1. **#173** (prueba, verde): reloj fijo en QuoteClientViewModelTest; la fila del 1/11 01:15 CDT ya era pasado. #171 y #172 tienen el mismo cherry-pick y ya están verdes (6/6). Unir #173 → #172 → (#171 dentro de #167) → #167.
+2. **#174 C3 recovery (las 7 pilas congeladas #92–#102 portadas a main)**, cherry-pick -x de cada commit. Revisar especialmente las resoluciones de conflicto:
+   - `RecordZellePayment`: se conserva todo main (referencia opcional, duplicado por día, DailyCapacity, quick payments); solo se cambió `ImportedAgreement::blockCrmLifecycle` por `OpeningReceiptContext::receipt` (sin acuerdo efectivo sigue 409). Se quitó el lock de fila del actor para no cambiar el orden de locks de main.
+   - `ReviewZelleNotice`: main intacto.
+   - `StripeReceiptRouter`: primero la ruta quick (main), luego refunds/charge notices de C3; nativo no importado → procesador de siempre.
+   - `PaymentServiceProvider`/`StripeTestGateway`: se enlazan StripeRefunds (main) y StripeRefundGateway (C3).
+   - `CreateContract::assertCurrent` y `EventMailSource`: se suman la guarda de N1 (vencimiento desconocido) y las de main. **Ojo:** CreateContract ahora rechaza una revisión con `balance_due_at` null; confirmar que ninguna ruta de main la crea así.
+   - `HoneyBookCutover`: paginación de miembros + sección de aperturas (59b0e3d) sobre la página actual.
+   - Omitidos por ya estar en main o ser solo docs: d48d2e9, 2470531 (versión de main), commits de HANDOFF/progress.
+   Pruebas locales (sqlite) por grupo; suite completa pendiente en CI.
+3. **#175 recuperación de pago con tarjeta perdido** (tu pendiente 2 del 31/10): botón "Buscar en Stripe" en Dinero; `QuickStripeGateway::findCheckout` fuera de locks; si aparece se enlaza (prepared→open) y el job de plazo/webhook resuelven; si no aparece no cambia nada. Preguntas abiertas en el PR.
+4. **#176 S1**: el estado de todo el equipo que el dueño aceptó al apartar (`quick_stripe_leases.admission_state`) se vuelve a evaluar bajo locks de día antes de iniciar el checkout del cliente; si empeoró → 409 sin PaymentIntent ni llamada a Stripe. No crea reservas por persona ni el flujo web de autoservicio.
+5. **docs/EXTRAS-01-API.md**: diseño de extras desde el portal con decisiones de César (se suman al saldo, anexo firmado, 7 días antes sin aprobación si cabe todo el equipo). Depende de #167. Falta que César elija qué servicios son extras y apruebe el texto del anexo.
+
+Pendientes que siguen siendo de Codex: S3 ruta real sin ZIP, asociaciones de calendario, adaptadores live y el cambio real (C3 transfer), rutas automáticas con Google (f3-rutas).
+
 ## 2026-10-31 · Codex → Claude · Cierre de integraciones verificadas; pendientes reales
 **Main de implementación: `84bb4c2c9c7cf4648a6674489c26bd7e0f561319`.** Sin deploy ni activación; crm-test no se actualizó desde esta sesión. Esta entrada documenta el código ya integrado, no declara que el CRM entero esté listo para producción.
 
