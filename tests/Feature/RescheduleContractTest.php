@@ -126,8 +126,9 @@ class RescheduleContractTest extends TestCase
         $this->assertNull($change->fresh()->notified_at);
         $mail = new class implements \App\Services\Mail\MailTransport { public array $sent = [];
             public function configured(): bool { return true; }
-            public function send(#[\SensitiveParameter] \App\Services\Mail\OutboundEnvelope $m): \App\Services\Mail\TransportReceipt { $this->sent[] = $m; return new \App\Services\Mail\TransportReceipt('fake', 'x'); } };
+            public function send(#[\SensitiveParameter] \App\Services\Mail\OutboundEnvelope $m): \App\Services\Mail\TransportReceipt { $this->sent[] = $m; return new \App\Services\Mail\TransportReceipt('fake', 'x'.count($this->sent)); } };
         $this->app->instance(\App\Services\Mail\MailTransport::class, $mail);
+        $this->allowClient();
         config(['waoo.mail_delivery_enabled' => true, 'waoo.sms_delivery_enabled' => true, 'services.twilio' => ['account_sid' => 'AC'.str_repeat('a', 32),
             'api_key_sid' => 'SK'.str_repeat('b', 32), 'api_key_secret' => str_repeat('c', 32), 'auth_token' => str_repeat('f', 32), 'messaging_service_sid' => 'MG'.str_repeat('d', 32)]]);
         \Illuminate\Support\Facades\Http::fake(['api.twilio.com/*' => \Illuminate\Support\Facades\Http::response(['sid' => 'SM'.str_repeat('e', 32)], 201)]);
@@ -154,7 +155,7 @@ class RescheduleContractTest extends TestCase
         $c = Contract::where('state', 'issued')->sole();
         $this->get('/portal/api/contracts/'.$c->id.'/pdf')->assertOk(); $this->sign($c)->assertOk();
         config(['waoo.mail_delivery_enabled' => true]);
-        $this->assertSame(['notices' => 0, 'reminders' => 0, 'held' => 0, 'no_link' => 0], app(\App\Services\Changes\RescheduleNotices::class)->sendDue());
+        $this->assertSame(['notices' => 0, 'reminders' => 0, 'held' => 0, 'no_link' => 0, 'unknown' => 0], app(\App\Services\Changes\RescheduleNotices::class)->sendDue());
     }
     public function test_a_second_completed_reschedule_keeps_details_and_each_signed_contract(): void
     {
@@ -174,4 +175,58 @@ class RescheduleContractTest extends TestCase
         $this->assertSame(1, ClientDetailsSubmission::where('event_id', $this->event->id)->count(), 'original submission is not rewritten');
     }
 
+
+    /** Real Resend adapter (HTTP simulated) and Twilio (HTTP simulated) for the outbox regressions (Codex review #163). */
+    private function realAdapters(int $twilioStatus = 201): void
+    {
+        $this->allowClient();
+        config(['waoo.mail_delivery_enabled' => true, 'waoo.sandbox_mail' => true, 'waoo.mail_provider' => 'resend', 'services.resend.key' => str_repeat('synthetic-key-', 4),
+            'waoo.mail_from_address' => 'sender@example.test', 'waoo.mail_from_name' => 'Waoo Party', 'waoo.mail_reply_to' => 'reply@example.test',
+            'waoo.sms_delivery_enabled' => true, 'services.twilio' => ['account_sid' => 'AC'.str_repeat('a', 32), 'api_key_sid' => 'SK'.str_repeat('b', 32),
+                'api_key_secret' => str_repeat('c', 32), 'auth_token' => str_repeat('f', 32), 'messaging_service_sid' => 'MG'.str_repeat('d', 32)]]);
+        $this->app->forgetInstance(\App\Services\Mail\MailTransport::class);
+        \Illuminate\Support\Facades\Http::preventStrayRequests();
+        \Illuminate\Support\Facades\Http::fake(['https://api.resend.com/emails' => \Illuminate\Support\Facades\Http::response(['id' => (string) Str::uuid()], 200),
+            'api.twilio.com/*' => \Illuminate\Support\Facades\Http::response($twilioStatus < 300 ? ['sid' => 'SM'.str_repeat('e', 32)] : ['code' => 20500], $twilioStatus)]);
+        DB::table('sms_consents')->insert(['phone_e164' => '+17135550126', 'status' => 'opted_in', 'source' => 'website_form', 'changed_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+    }
+
+    public function test_notice_reaches_the_actual_resend_adapter_and_a_failed_text_is_never_resent(): void
+    {
+        $change = $this->signedThenRescheduled();
+        $this->realAdapters(500);
+        $this->assertInstanceOf(\App\Services\Mail\ResendMailTransport::class, app(\App\Services\Mail\MailTransport::class));
+        $r = app(\App\Services\Changes\RescheduleNotices::class)->sendDue();
+        $this->assertSame(1, $r['notices'], 'email went out through the outbox');
+        $this->assertSame(1, $r['unknown'], 'the text outcome is unknown (provider 5xx)');
+        $this->assertSame('sent', \App\Models\OutboundMessageState::sole()->status);
+        $this->assertSame(['email' => 'sent', 'sms' => 'unknown'], \App\Models\NoticeDelivery::orderBy('channel')->pluck('status', 'channel')->all());
+        $before = count(\Illuminate\Support\Facades\Http::recorded());
+        app(\App\Services\Changes\RescheduleNotices::class)->sendDue();
+        $this->assertCount($before, \Illuminate\Support\Facades\Http::recorded(), 'nothing is resent');
+        $this->assertNotNull($change->fresh()->notified_at);
+    }
+
+    public function test_a_paused_or_honeybook_party_gets_no_notice_and_stays_pending(): void
+    {
+        $change = $this->signedThenRescheduled();
+        $this->realAdapters();
+        \App\Models\EventMessagePolicy::create(['event_id' => $this->event->id, 'paused' => true]);
+        $this->assertSame(0, array_sum(app(\App\Services\Changes\RescheduleNotices::class)->sendDue()), 'paused by the owner');
+        \App\Models\EventMessagePolicy::where('event_id', $this->event->id)->update(['paused' => false]);
+        DB::table('events')->where('id', $this->event->id)->update(['responsible_system' => 'honeybook']);
+        $this->assertSame(0, array_sum(app(\App\Services\Changes\RescheduleNotices::class)->sendDue()), 'HoneyBook still manages it');
+        \Illuminate\Support\Facades\Http::assertNothingSent();
+        $this->assertNull($change->fresh()->notified_at);
+        $this->assertSame(0, \App\Models\OutboundMessage::count());
+        DB::table('events')->where('id', $this->event->id)->update(['responsible_system' => 'crm']);
+        $this->assertSame(1, app(\App\Services\Changes\RescheduleNotices::class)->sendDue()['notices'], 'goes out once unpaused');
+    }
+
+    /** Sandbox protection: the outbox only sends to enrolled owner addresses on the allowlist; the fictitious client becomes one. */
+    private function allowClient(): void
+    {
+        User::factory()->create(['email' => 'maria@example.test', 'role' => 'owner_admin', 'active' => true, 'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'), 'two_factor_confirmed_at' => now()]);
+        config(['waoo.mail_allowlist' => ['maria@example.test']]);
+    }
 }

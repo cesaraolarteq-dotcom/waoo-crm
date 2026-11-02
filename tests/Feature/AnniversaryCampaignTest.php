@@ -195,7 +195,17 @@ class AnniversaryCampaignTest extends TestCase
             public function send(#[\SensitiveParameter] \App\Services\Mail\OutboundEnvelope $m): \App\Services\Mail\TransportReceipt { $this->sent[] = $m; return new \App\Services\Mail\TransportReceipt('fake', 'm'.count($this->sent)); }
         };
         $this->app->instance(\App\Services\Mail\MailTransport::class, $t);
+        $this->allowClients();
         return $t;
+    }
+
+    /** Sandbox protection: the outbox only sends to enrolled owner addresses on the allowlist. Fictitious clients become such. */
+    private function allowClients(): void
+    {
+        $emails = \App\Models\Customer::whereNotNull('email')->pluck('email')->map(fn ($e) => mb_strtolower($e))->all();
+        foreach ($emails as $email) if (! \App\Models\User::where('email', $email)->exists())
+            \App\Models\User::factory()->create(['email' => $email, 'role' => 'owner_admin', 'active' => true, 'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'), 'two_factor_confirmed_at' => now()]);
+        config(['waoo.mail_allowlist' => $emails]);
     }
 
     public function test_nothing_leaves_while_mail_or_the_campaign_switch_is_off_then_one_email_and_one_reminder(): void
@@ -205,7 +215,7 @@ class AnniversaryCampaignTest extends TestCase
         app(AnniversaryCampaign::class)->issue(CarbonImmutable::now('America/Chicago'));
         $t = $this->fakeTransport();
         $mail = app(\App\Services\Campaigns\AnniversaryMail::class);
-        $this->assertSame(['sent' => 0, 'reminders' => 0, 'held' => 1], $mail->sendDue(), 'mail gate off');
+        $this->assertSame(['sent' => 0, 'reminders' => 0, 'held' => 1, 'unknown' => 0, 'blocked' => 0], $mail->sendDue(), 'mail gate off');
         config(['waoo.mail_delivery_enabled' => true]);
         $this->assertSame(0, $mail->sendDue()['sent'], 'campaign switch off');
         config(['waoo.anniversary_mail_enabled' => true]);

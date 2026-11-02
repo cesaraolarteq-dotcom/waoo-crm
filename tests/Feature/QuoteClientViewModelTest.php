@@ -9,7 +9,8 @@ use Tests\TestCase;
 class QuoteClientViewModelTest extends TestCase
 {
     use RefreshDatabase,QuoteScenario;
-    protected function setUp():void{parent::setUp();$this->scenario();}
+    // The windows below are fixed 2026 dates (incl. the Nov 1 repeated hour): freeze the clock before them so they stay future.
+    protected function setUp():void{parent::setUp();$this->travelTo(\Carbon\CarbonImmutable::parse('2026-10-15T12:00:00Z'));$this->scenario();}
     public function test_http_vm_exact_schema_locale_formatting_whitelist_and_frozen_consent():void
     {
         $p=$this->prepare();auth()->guard('web')->logout();
