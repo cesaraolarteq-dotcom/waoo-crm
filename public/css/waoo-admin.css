@@ -300,3 +300,12 @@ a.wdash-item:hover{border-color:#122F94;background:#F5F7FF}
 .wcal-load-table tr.is-short td:last-child{color:#B4233A;font-weight:700}
 .wcal-load-at{opacity:.6;font-size:.8rem}
 .wcal-load-note{font-size:.78rem;opacity:.7;margin:10px 0 0}
+/* Section tabs (owner 2026-11-02): one row per section, a smaller second row for HoneyBook inside Ajustes. */
+.wsec-tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid #E3E6F2;margin:-4px 0 16px;padding-bottom:0}
+.wsec-tab{padding:8px 14px;border-radius:10px 10px 0 0;font-weight:600;font-size:14px;color:#4A5282;text-decoration:none;border-bottom:3px solid transparent;margin-bottom:-1px}
+.wsec-tab:hover{background:#F2F4FB;color:#0E1B52}
+.wsec-tab.on{color:#0E1B52;border-bottom-color:#E8317B}
+.wsec-sub{border-bottom:none;margin-top:-10px}
+.wsec-sub .wsec-tab{font-size:13px;padding:5px 12px;border-radius:999px;border:1px solid #E3E6F2;margin:0}
+.wsec-sub .wsec-tab.on{background:#0E1B52;color:#fff;border-color:#0E1B52}
+.dark .wsec-tabs{border-color:rgba(255,255,255,.12)} .dark .wsec-tab{color:#C3CAEC} .dark .wsec-tab.on{color:#fff} .dark .wsec-tab:hover{background:rgba(255,255,255,.06)}

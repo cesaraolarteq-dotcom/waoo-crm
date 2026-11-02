@@ -206,12 +206,30 @@ class ViewEvent extends Page
         $all = collect($this->headerActionList($e))->keyBy(fn (Action $a) => $a->getName());
         $pick = fn (array $names) => collect($names)->map(fn ($n) => $all->get($n))->filter()->values()->all();
 
+        // Owner 2026-11-02: one big "next step" button; Dinero, Contrato and Equipo are tabs; everything else in "Más".
+        $next = $this->nextStep($e, $all);
+        $rest = array_values(array_diff(['quoteView', 'quoteCreate', 'edit', 'smsSend', 'staffInstructions', 'mailPlan', 'rescheduleCheck', 'reschedule', 'billingCompany', 'billingPreview',
+            'honeybookCopy', 'cutoverEvidence', 'costs', 'refund', 'cancelEvent'], [$next]));
         return [
-            ...$pick(['confirm', 'money', 'contract', 'edit', 'quoteView']),
-            \Filament\Actions\ActionGroup::make($pick(['smsSend', 'staffInstructions', 'mailPlan', 'costs', 'honeybookCopy', 'cutoverEvidence',
-                'quoteCreate', 'billingCompany', 'billingPreview', 'rescheduleCheck', 'reschedule', 'refund', 'cancelEvent']))
+            ...($next ? [$all->get($next)->color('primary')->button()] : []),
+            \Filament\Actions\ActionGroup::make($pick($rest))
                 ->label('Más')->icon('heroicon-m-chevron-down')->iconPosition(\Filament\Support\Enums\IconPosition::After)->button()->color('gray'),
         ];
+    }
+
+    /** The one action that moves this party forward now (null when nothing is pending here). */
+    private function nextStep(\App\Models\Event $e, \Illuminate\Support\Collection $all): ?string
+    {
+        $visible = fn (string $n) => ($a = $all->get($n)) && $a->isVisible();
+        $quote = \App\Models\Quote::where('event_id', $e->id)->exists();
+        if ($visible('confirm')) return 'confirm'; // money is in: reserve the team
+        if ($e->status === 'capacity_reserved' && $visible('contract')
+            && ! \App\Models\Contract::where('event_id', $e->id)->where('state', 'signed')->exists()) return 'contract';
+        if ($e->status === 'draft' && ! $quote && $visible('quoteCreate')) return 'quoteCreate';
+        if ($e->status === 'draft' && $quote && $visible('quoteView')) return 'quoteView';
+        if ($e->status === 'draft' && $visible('edit')) return 'edit';
+        if ($e->status === 'capacity_reserved' && $e->starts_at->isFuture() && $visible('staffInstructions')) return 'staffInstructions';
+        return null;
     }
 
     /** @return list<Action> every header action of the event file, in no particular order */

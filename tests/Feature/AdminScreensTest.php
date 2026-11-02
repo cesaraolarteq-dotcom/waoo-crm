@@ -35,7 +35,12 @@ class AdminScreensTest extends TestCase
         $this->fixtures($owner);
         $this->actingAs($owner);
 
-        $this->get('/admin')->assertOk()->assertSee('Clientes')->assertSee('Catálogo')->assertSee('Staff y trajes')->assertSee('Personajes')->assertSee('Eventos');
+        // Owner 2026-11-02: six sections in the menu; the pages of each section are tabs.
+        $menu = $this->get('/admin')->assertOk()->getContent(); $menu = substr($menu, strpos($menu, 'fi-sidebar-nav'));
+        preg_match_all('/fi-sidebar-item-label[^>]*>\\s*([^<]+?)\\s*</', $menu, $m);
+        $this->assertSame(['Inicio', 'Agenda', 'Ventas', 'Equipo', 'Ajustes'], array_slice($m[1], 0, 5)); // Reserva rápida/Reportes follow their own flags
+        $this->get('/admin/personajes')->assertOk()->assertSeeInOrder(['Staff y trajes', 'Personajes', 'Enlaces del staff']);
+        $this->get('/admin/catalogo')->assertOk()->assertSeeInOrder(['Catálogo', 'Seguridad']); // the other Ajustes tabs follow their own flags
         $this->get('/admin/clientas')->assertOk()->assertSee('Fictitious Client')->assertSee('Inglés');
         $this->get('/admin/catalogo')->assertOk()->assertSee('Fictitious Package')->assertSee('$123')->assertDontSee('$111')
             ->assertSee('1 h 30 min')->assertSee('1 personaje · 1 bocina')->assertSee('+ costo de transporte');
