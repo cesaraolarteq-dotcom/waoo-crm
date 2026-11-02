@@ -66,6 +66,20 @@ final class OpeningStripeProof
         return 'stripe:fee:'.hash('sha256', (string) $receipt->external_identity_key);
     }
 
+    /**
+     * Provider gross of a Stripe receipt under main's split rows: principal + its single matching customer_fee row.
+     * Null when the fee rows are ambiguous (never guess a gross).
+     */
+    public static function grossOf(LedgerEntry $receipt): ?int
+    {
+        $rows = LedgerEntry::where('external_identity_key', self::feeIdentity($receipt))->limit(2)->sharedLock()->get();
+        if ($rows->isEmpty()) return $receipt->amount_cents;
+        $f = $rows->first();
+        if ($rows->count() !== 1 || $f->kind !== 'customer_fee' || $f->event_id !== $receipt->event_id || $f->financial_revision_id !== $receipt->financial_revision_id
+            || $f->source_id !== $receipt->source_id || $f->amount_cents < 0) return null;
+        return $receipt->amount_cents + $f->amount_cents;
+    }
+
     private static function feeRowMatches(LedgerEntry $entry, array $intent): bool
     {
         $rows = LedgerEntry::where('external_identity_key', self::feeIdentity($entry))->limit(2)->sharedLock()->get();
