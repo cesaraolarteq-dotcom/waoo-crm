@@ -134,6 +134,56 @@ final class WebsiteCapacity
         return count(array_filter($this->parties, fn ($p) => $p['day'] === $day));
     }
 
+    /**
+     * Owner 2026-10-29: a counter of people and equipment for one Houston day (read-only, for the calendar).
+     * For every role and equipment kind: the most that the day's parties need at the same moment (busy time includes
+     * setup, breakdown and the 30-minute gap) against how many active people/units can do it. A multiskilled person
+     * counts under each of their skills, so this is a guide; booking decisions still go through check().
+     * @return array{parties:int,peak_parties:int,peak_at:?CarbonImmutable,uncertain:int,rows:list<array{kind:string,key:string,need:int,have:int,at:?CarbonImmutable}>}
+     */
+    public function dayLoad(string $day): array
+    {
+        $today = array_values(array_filter($this->parties, fn ($p) => $p['day'] === $day));
+        $ticks = array_map(fn ($p) => $p['from'], $today);
+        $active = fn (CarbonImmutable $t) => array_filter($today, fn ($p) => $p['from'] <= $t && $p['to'] > $t);
+        $need = [];
+        $peak = 0; $peakAt = null;
+        foreach ($ticks as $t) {
+            $now = $active($t);
+            if (count($now) > $peak) { $peak = count($now); $peakAt = $t; }
+            $sum = [];
+            foreach ($now as $p) {
+                $withStaff = false;
+                foreach ($p['requirements'] as $req) {
+                    $kind = $req['kind'] ?? null;
+                    $key = match ($kind) {
+                        'staff' => ($req['skill'] ?? '*') === '*' ? null : 'staff:'.$req['skill'],
+                        'equipment' => isset($req['equipment_kind']) ? 'equipment:'.$req['equipment_kind'] : null,
+                        default => null,
+                    };
+                    if ($kind === 'staff') $withStaff = true;
+                    if ($key !== null) $sum[$key] = ($sum[$key] ?? 0) + max(1, (int) ($req['quantity'] ?? 1));
+                }
+                // César: the driver is one of the party's own team, so every party with people needs one driver.
+                if ($withStaff) $sum['staff:driver'] = ($sum['staff:driver'] ?? 0) + 1;
+            }
+            foreach ($sum as $key => $n) if ($n > ($need[$key]['need'] ?? 0)) $need[$key] = ['need' => $n, 'at' => $t];
+        }
+        $rows = [];
+        foreach ($need as $key => $v) {
+            [$kind, $what] = explode(':', $key, 2);
+            $have = count(array_filter($this->units, fn ($u) => $kind === 'staff'
+                ? $u->kind === 'staff' && in_array($what, (array) $u->skills, true)
+                : $u->kind === 'equipment' && $u->equipment_kind === $what));
+            $rows[] = ['kind' => $kind, 'key' => $what, 'need' => $v['need'], 'have' => $have, 'at' => $v['at']];
+        }
+        // People first, then the tightest (fewest left) on top.
+        usort($rows, fn ($a, $b) => [$a['kind'] !== 'staff', $a['have'] - $a['need']] <=> [$b['kind'] !== 'staff', $b['have'] - $b['need']]);
+
+        return ['parties' => count($today), 'peak_parties' => $peak, 'peak_at' => $peakAt,
+            'uncertain' => count(array_filter($today, fn ($p) => $p['uncertain'])), 'rows' => $rows];
+    }
+
     /** 4 parties at the same time (speakers), checked at every start inside the candidate. */
     public function simultaneousOk(CarbonImmutable $from, CarbonImmutable $to): bool
     {
