@@ -25,12 +25,22 @@ final class AdmitEventCapacity
     /** Locks every Houston day a party between $start and $end can touch. Must run inside the caller's transaction. */
     public static function lockDays(CarbonImmutable $start, CarbonImmutable $end): void
     {
+        self::lockWindows([[$start, $end]]);
+    }
+
+    /** Several parties' windows at once (a reschedule locks the old and the new days), all days ascending in one go. */
+    public static function lockWindows(array $windows): void
+    {
         RecordWriteRejected::unless(DB::transactionLevel() > 0, 409, 'No se pudo revisar la agenda.');
-        $first = $start->subMinutes(self::MARGIN_MINUTES)->setTimezone('America/Chicago')->startOfDay();
-        $last = $end->addMinutes(self::MARGIN_MINUTES)->setTimezone('America/Chicago')->startOfDay();
         $days = [];
-        for ($d = $first; $d <= $last && count($days) < 4; $d = $d->addDay()) $days[] = $d->toDateString();
-        RecordWriteRejected::unless($d > $last, 422, 'La fiesta es demasiado larga para revisarla automáticamente.');
+        foreach ($windows as [$start, $end]) {
+            $first = $start->subMinutes(self::MARGIN_MINUTES)->setTimezone('America/Chicago')->startOfDay();
+            $last = $end->addMinutes(self::MARGIN_MINUTES)->setTimezone('America/Chicago')->startOfDay();
+            $n = 0;
+            for ($d = $first; $d <= $last && $n < 4; $d = $d->addDay(), $n++) $days[$d->toDateString()] = true;
+            RecordWriteRejected::unless($d > $last, 422, 'La fiesta es demasiado larga para revisarla automáticamente.');
+        }
+        $days = array_keys($days); sort($days);
         DB::table('capacity_day_locks')->insertOrIgnore(array_map(fn ($day) => ['day' => $day], $days));
         DB::table('capacity_day_locks')->whereIn('day', $days)->orderBy('day')->lockForUpdate()->get();
     }
@@ -84,5 +94,22 @@ final class AdmitEventCapacity
         RecordWriteRejected::unless($capacity->simultaneousOk($start->subMinutes($known ? $event->setup_minutes : WebsiteCapacity::UNKNOWN_MINUTES),
             $end->addMinutes(($known ? $event->breakdown_minutes : WebsiteCapacity::UNKNOWN_MINUTES) + WebsiteCapacity::GAP_MINUTES)), 422,
             'A esa hora ya hay 4 fiestas al mismo tiempo (los 4 speakers), contando montaje, desmontaje y 30 minutos. Cambia la hora.');
+    }
+
+    /** Worse is higher. Unknown states rank as the worst. */
+    private const RANK = ['available' => 0, 'owner_approval_required' => 1, 'review_required' => 2, 'unavailable' => 3];
+
+    /**
+     * S1 (before an unattended card charge): the whole team (people, costumes, equipment, drivers) for this party is re-checked
+     * against every CRM commitment under the day locks. The checkout may start only if the state is no worse than the one the
+     * owner accepted when preparing the hold; a hold from before this check (null) only refuses a team that no longer fits.
+     * CRM agenda only: no outside calendar call while locks are held.
+     */
+    public static function assertTeamStillHeld(Event $event, ?string $accepted): void
+    {
+        $now = self::state($event, []);
+        $limit = $accepted === null ? self::RANK['review_required'] : (self::RANK[$accepted] ?? self::RANK['unavailable']);
+        RecordWriteRejected::unless((self::RANK[$now] ?? self::RANK['unavailable']) <= $limit, 409,
+            'El equipo para esa hora ya no está completo. No se cobró nada: Waoo te contactará. / The team for that time is no longer complete. Nothing was charged: Waoo will contact you.');
     }
 }

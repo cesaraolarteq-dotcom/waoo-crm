@@ -24,6 +24,15 @@ final class PortalPageController extends Controller
             if (\App\Models\PortalGrant::whereKey($client->grantId)->value('quote_revision_id') !== null) {
                 return redirect('/portal/quote');
             }
+            if ($client->openingBindingId !== null) {
+                try {
+                    $vm=app(\App\Services\Portal\ReadOpeningPortalViewModel::class)->read($client,$lang);
+                    $vm['lang_url']=['es'=>url('/portal?lang=es'),'en'=>url('/portal?lang=en')];
+                    return $this->respond(view('portal.original-agreement',['vm'=>$vm]));
+                } catch (\App\Exceptions\RecordWriteRejected|\App\Exceptions\PortalLinkRejected|AuthorizationException) {
+                    return $this->respond(view('portal.original-unavailable',['lang'=>$lang]));
+                }
+            }
             $client->authorize($client->eventId, 'payments.read');
         } catch (AuthorizationException) {
             // No session yet: the landing script exchanges the #token for a session (or explains an expired link).
@@ -85,7 +94,8 @@ final class PortalPageController extends Controller
         $contract = in_array('contract.read', $grant->scopes, true)
             ? Contract::where('event_id', $event->id)->where('signer_customer_id', $client->customerId)->whereIn('state', ['issued', 'signed'])->orderByDesc('revision')->first()
             : null;
-        $signed = $contract?->state === 'signed';
+        // CHANGE-A part 3: a contract signed before a reschedule is replaced by a new one the client signs.
+        $signed = $contract?->state === 'signed' && ! \App\Models\EventChange::signedIsBeforeChange($event->id);
         $balance = $f['balance_cents'];
         // A read validates an already prepared document; it never issues one.
         $prepared = false;

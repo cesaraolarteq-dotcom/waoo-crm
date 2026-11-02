@@ -14,6 +14,7 @@ final class RevokePortalGrant
         Sandbox::require('sandbox_documents');
         $actor = RecordActor::authorize($actor);
         return DB::transaction(function () use ($actor, $grantId) {
+            RecordActor::authorize($actor, true);
             // Signature acceptance locks this same row before the event/contract.
             $grant = PortalGrant::whereKey($grantId)->lockForUpdate()->firstOrFail();
             if ($grant->revoked_at) {

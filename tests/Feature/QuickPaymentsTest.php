@@ -479,4 +479,86 @@ class QuickPaymentsTest extends TestCase
         $this->assertDatabaseCount('resource_reservations', 0);
     }
 
+
+    public function test_s1_card_checkout_does_not_start_when_the_team_was_taken_after_the_hold(): void
+    {
+        $r = $this->create(); $this->client($r); $this->details(); $g = $this->gateway();
+        $lease = \App\Models\QuickStripeLease::sole();
+        $this->assertNotNull($lease->admission_state);
+        // After the hold, another booked party at the same time needs the only Mickey head.
+        $e = $r->event->fresh(); $c = \App\Models\Customer::create(['name' => 'Ana Rodríguez', 'locale' => 'es']);
+        $other = Event::create(['customer_id' => $c->id, 'title' => 'Otra fiesta', 'starts_at' => $e->starts_at, 'ends_at' => $e->ends_at, 'timezone' => 'America/Chicago', 'setup_minutes' => 15, 'breakdown_minutes' => 15]);
+        $other->status = 'capacity_reserved'; $other->save();
+        $service = $e->services()->firstOrFail();
+        \App\Models\EventService::create(['event_id' => $other->id, 'service_variant_id' => $service->service_variant_id, 'price_version_id' => $service->price_version_id,
+            'operational_ready' => true, 'duration_minutes' => 120, 'requirements_snapshot' => $service->requirements_snapshot]);
+        $q = $this->claim(); unset($q['amount_cents'], $q['reference']); $q['deposit_percent'] = 50;
+        $this->withHeader('Idempotency-Key', (string) Str::uuid())->postJson('/portal/api/quick-payment/checkout', $q)
+            ->assertStatus(409)->assertSee('ya no est', false);
+        $this->assertSame(0, $g->creates);
+        $this->assertDatabaseCount('payment_intents', 0);
+        // The other party is cancelled: the same client can now pay.
+        $other->status = 'cancelled'; $other->save();
+        $this->checkout();
+        $this->assertSame(1, $g->creates);
+    }
+
+    /** Stripe accepted the request but the answer (session ID) was lost: the attempt stays "prepared" with no session. */
+    private function lostCheckout(): array
+    {
+        $r = $this->create(); $this->client($r); $this->details(); $g = $this->gateway();
+        $g->onCreate = fn () => throw new \RuntimeException('Synthetic provider accepted but response lost.');
+        $q = $this->claim(); unset($q['amount_cents'], $q['reference']); $q['deposit_percent'] = 50;
+        $this->withHeader('Idempotency-Key', (string) Str::uuid())->postJson('/portal/api/quick-payment/checkout', $q)->assertStatus(503);
+        $g->onCreate = null; $this->actingAs($this->owner);
+        return [$r, $g, \App\Models\PaymentIntent::sole()];
+    }
+
+    public function test_owner_finds_a_lost_checkout_and_the_deadline_job_can_then_close_it(): void
+    {
+        [$r, $g, $intent] = $this->lostCheckout();
+        $this->travel(3)->minutes();
+        $this->get(\App\Filament\Resources\Events\EventResource::getUrl('money', ['record' => $r->event->id]))->assertOk()->assertSee('Pago con tarjeta sin respuesta de Stripe')->assertSee('Buscar en Stripe');
+        $this->assertSame(['state' => 'found_open'], app(\App\Services\Booking\RecoverQuickCheckout::class)->execute($this->owner, $intent->id));
+        $intent->refresh();
+        $this->assertSame('open', $intent->status);
+        $this->assertSame(array_key_first($g->sessions), $intent->stripe_checkout_session_id);
+        [$ref, $from, $to] = $g->finds[0];
+        $this->assertSame(\App\Models\QuickPaymentAttempt::sole()->id, $ref);
+        $this->assertLessThan($to, $from);
+        $this->get(\App\Filament\Resources\Events\EventResource::getUrl('money', ['record' => $r->event->id]))->assertOk()->assertDontSee('Pago con tarjeta sin respuesta de Stripe');
+        $this->assertDatabaseCount('ledger_entries', 0);
+        // Same original deadline: the known session is closed at Stripe and only then the stock is released.
+        $this->travel(49)->hours();
+        $this->assertSame(1, app(\App\Services\Booking\TickQuickPayments::class)->execute()['expired']);
+        $this->assertDatabaseCount('resource_reservations', 0);
+        $this->assertSame('expired', $intent->fresh()->status);
+    }
+
+    public function test_a_lost_checkout_paid_at_stripe_is_bound_but_never_credited_or_released_here(): void
+    {
+        [$r, $g, $intent] = $this->lostCheckout();
+        $g->pay(array_key_first($g->sessions));
+        $this->assertSame(['state' => 'found_paid'], app(\App\Services\Booking\RecoverQuickCheckout::class)->execute($this->owner, $intent->id));
+        $this->assertDatabaseCount('ledger_entries', 0); // money is credited only by the signed webhook path
+        $this->travel(49)->hours();
+        $this->assertSame(0, app(\App\Services\Booking\TickQuickPayments::class)->execute()['expired']);
+        $this->assertDatabaseCount('resource_reservations', 1);
+    }
+
+    public function test_not_found_at_stripe_changes_nothing_and_keeps_the_stock(): void
+    {
+        [$r, $g, $intent] = $this->lostCheckout();
+        $g->sessions = [];
+        $this->assertSame(['state' => 'not_found'], app(\App\Services\Booking\RecoverQuickCheckout::class)->execute($this->owner, $intent->id));
+        $this->assertSame('prepared', $intent->fresh()->status);
+        $this->assertNull($intent->fresh()->stripe_checkout_session_id);
+        $this->travel(49)->hours();
+        $this->assertSame(0, app(\App\Services\Booking\TickQuickPayments::class)->execute()['expired']);
+        $this->assertDatabaseCount('resource_reservations', 1);
+        // A second search after a bound session is refused instead of rebinding.
+        $g->sessions = []; $intent->forceFill(['stripe_checkout_session_id' => 'cs_test_other', 'status' => 'open'])->save();
+        $this->expectException(\App\Exceptions\RecordWriteRejected::class);
+        app(\App\Services\Booking\RecoverQuickCheckout::class)->execute($this->owner, $intent->id);
+    }
 }

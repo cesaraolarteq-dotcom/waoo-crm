@@ -58,6 +58,18 @@
             </x-filament::section>
         @endif
 
+        @if (($lost = $this->lostCheckouts()) !== [])
+            <x-filament::section>
+                <x-slot name="heading">Pago con tarjeta sin respuesta de Stripe</x-slot>
+                <p class="wmoney-p">El cliente empezó a pagar con tarjeta pero Stripe no nos contestó. Puede que haya pagado o no: el personal y los trajes siguen apartados hasta saberlo.</p>
+                @foreach ($lost as $l)
+                    <div class="wmoney-row">
+                        <div><b>{{ $l->amount }}</b> · empezó {{ $l->when }} · {{ ($this->recoverCheckoutAction)(['id' => $l->id]) }}</div>
+                    </div>
+                @endforeach
+            </x-filament::section>
+        @endif
+
         <x-filament::section>
             <x-slot name="heading">Pagos registrados</x-slot>
             @forelse ($this->payments() as $p)
@@ -69,6 +81,32 @@
                 <p class="wmoney-p">Todavía no hay pagos. Usa “Registrar Zelle verificado” cuando lo veas en el banco.</p>
             @endforelse
         </x-filament::section>
+
+        @if ($r = $this->openingRefunds())
+            <x-filament::section>
+                <x-slot name="heading">Devoluciones de Stripe (fiesta importada)</x-slot>
+                <x-slot name="description">Solo lectura. Stripe avisó estas devoluciones del pago original; todavía no se descuentan del saldo ni se reparten entre principal y cargo.</x-slot>
+                @if ($r['error'] ?? null)
+                    <p class="wmoney-p">{{ $r['error'] }}</p>
+                @else
+                    @forelse ($r['rows'] as $row)
+                        <div class="wmoney-row">
+                            <div><b>{{ $row['title'] }}</b>@if ($row['amount']) · {{ $row['amount'] }}@endif <span class="wmoney-pending">Pendiente de conciliación</span>
+                                <small>@if ($row['when']){{ $row['when'] }}@endif @foreach ($row['issues'] as $issue) · {{ $issue }}@endforeach</small></div>
+                        </div>
+                    @empty
+                        <p class="wmoney-p">Stripe no ha avisado devoluciones de esta fiesta.</p>
+                    @endforelse
+                    @if ($r['page']['last'] > 1)
+                        <div class="wrep-actions">
+                            <button type="button" class="wcal-btn" wire:click="refundPageTo({{ $r['page']['number'] - 1 }})" @disabled($r['page']['number'] <= 1)>Anteriores</button>
+                            <span>Página {{ $r['page']['number'] }} de {{ $r['page']['last'] }} · {{ $r['page']['total'] }} devoluciones</span>
+                            <button type="button" class="wcal-btn" wire:click="refundPageTo({{ $r['page']['number'] + 1 }})" @disabled($r['page']['number'] >= $r['page']['last'])>Siguientes</button>
+                        </div>
+                    @endif
+                @endif
+            </x-filament::section>
+        @endif
 
         @if ($t = $this->tips())
             <x-filament::section>
@@ -85,6 +123,7 @@
                 <div class="wrep-actions" style="margin-top:8px">
                     @if ($t['grant'])
                         <span>Enlace activo · vence el {{ $t['grant']['expires'] }}</span>
+                        @if (! $tipLink){{ ($this->tipCopyAction)(['grant' => $t['grant']['id'], 'version' => $t['grant']['version'], 'snapshot' => $t['grant']['snapshot']]) }}@endif
                         {{ ($this->tipRevokeAction)(['grant' => $t['grant']['id'], 'version' => $t['grant']['version']]) }}
                     @elseif ($t['can_issue'])
                         {{ $this->tipIssueAction }}

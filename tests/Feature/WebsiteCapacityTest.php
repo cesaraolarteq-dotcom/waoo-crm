@@ -285,4 +285,25 @@ class WebsiteCapacityTest extends TestCase
         $this->assertSame('owner_approval_required', $this->check(['18:00'])['slots'][0]['state']);
     }
 
+
+    // Owner 2026-10-29: the calendar day counter shows, per role and equipment, the most used at once vs what he has.
+    public function test_day_counter_counts_roles_drivers_and_equipment_at_the_busiest_moment(): void
+    {
+        Resource::create(['code' => 'KIT-1', 'name' => 'Maleta 1', 'kind' => 'equipment', 'status' => 'active', 'equipment_kind' => 'face_kit', 'skills' => []]);
+        $a = $this->party('2026-11-07T14:00:00-06:00'); $b = $this->party('2026-11-07T14:30:00-06:00');
+        $this->party('2026-11-07T19:00:00-06:00');
+        $this->party('2026-11-08T14:00:00-06:00'); // another day
+        $this->party('2026-11-07T14:15:00-06:00', status: 'draft'); // unbooked draft never counts
+        foreach ([$a, $b] as $e) $e->services()->update(['requirements_snapshot' => [['kind' => 'staff', 'quantity' => 1, 'skill' => 'performer'], ['kind' => 'equipment', 'quantity' => 1, 'equipment_kind' => 'face_kit']]]);
+
+        $load = (new \App\Services\Availability\WebsiteCapacity(CarbonImmutable::parse('2026-11-07T00:00:00-06:00'), []))->dayLoad('2026-11-07');
+
+        $this->assertSame(3, $load['parties']);
+        $this->assertSame(2, $load['peak_parties']);
+        $rows = collect($load['rows'])->keyBy(fn ($r) => $r['kind'].':'.$r['key']);
+        $this->assertSame(['need' => 2, 'have' => 2], array_intersect_key($rows['staff:performer'], ['need' => 1, 'have' => 1]));
+        $this->assertSame(['need' => 2, 'have' => 2], array_intersect_key($rows['staff:driver'], ['need' => 1, 'have' => 1]));
+        $this->assertSame(['need' => 2, 'have' => 1], array_intersect_key($rows['equipment:face_kit'], ['need' => 1, 'have' => 1]));
+        $this->assertSame('equipment:face_kit', $rows->keys()->last(), 'people first, equipment after');
+    }
 }

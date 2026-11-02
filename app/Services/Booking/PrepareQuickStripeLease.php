@@ -35,6 +35,7 @@ final class PrepareQuickStripeLease
             $compiled=QuickCostumeHolds::slots($event);$slots=$compiled['slots'];
             RecordWriteRejected::unless(!$compiled['missing']&&$event->services()->exists(),422,'Completa los personajes y requisitos antes de ofrecer un apartado sin pago.');
             \App\Services\Availability\AdmitEventCapacity::assertFits($event); // day locks before character/resource locks
+            $admission=\App\Services\Availability\AdmitEventCapacity::state($event,[]); // S1: whole-team state the owner accepts with this hold
             $characters=Character::whereIn('id',collect($slots)->pluck('character_id')->unique())->orderBy('id')->lockForUpdate()->get()->keyBy('id');
             $units=Resource::where('kind','costume')->where('status','active')->whereIn('character_id',$characters->keys())->orderBy('id')->limit(501)->lockForUpdate()->get();
             RecordWriteRejected::unless($units->count()<=500,409,'El inventario requiere revisión por volumen.');
@@ -42,7 +43,7 @@ final class PrepareQuickStripeLease
             $assignment=app(MatchEventResources::class)->execute($slots,$available->all(),fn($slot,$unit)=>$characters->get($unit->character_id)?->active&&CostumeOutfits::fits($slot,$unit,$characters,[]));
             try{$terms=QuickStripeTerms::freeze($revision->total_cents,\Carbon\CarbonImmutable::now(),$data['deposit_percent'])->snapshot();}
             catch(\InvalidArgumentException){throw new RecordWriteRejected(422,'Este importe requiere revisión antes de preparar un cobro de Stripe.');}
-            $lease=QuickStripeLease::create(['event_id'=>$eventId,'customer_id'=>$event->customer_id,'financial_revision_id'=>$revision->id,'version'=>0,'state'=>'active',
+            $lease=QuickStripeLease::create(['event_id'=>$eventId,'customer_id'=>$event->customer_id,'financial_revision_id'=>$revision->id,'version'=>0,'state'=>'active','admission_state'=>$admission,
                 'expires_at'=>\Carbon\CarbonImmutable::createFromTimestampUTC($terms['expires_at']),'payload'=>[],'payload_sha256'=>str_repeat('0',64)]);
             $rows=[];
             foreach($assignment as $resourceIndex=>$slotIndex){

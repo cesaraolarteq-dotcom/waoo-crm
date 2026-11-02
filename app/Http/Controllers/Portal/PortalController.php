@@ -18,7 +18,12 @@ final class PortalController extends Controller
         $data = $request->validate(['token' => 'required|string|size:43']);
         $grant = PortalGrant::where('token_hash', hash('sha256', $data['token']))->first();
         abort_unless($grant && ! $grant->revoked_at && $grant->expires_at->isFuture(), 403, 'Este enlace venció o no es válido.');
+        if (\App\Services\Portal\OpeningPortalAccess::knownSource($grant)) \App\Services\Imports\ImportPersistence::transaction(function () use ($grant,$data) {
+            $locked=PortalGrant::whereKey($grant->id)->lockForUpdate()->firstOrFail();abort_unless(hash_equals($locked->token_hash,hash('sha256',$data['token'])),403);\App\Services\Portal\OpeningPortalAccess::current($locked);
+        });
         $request->session()->regenerate(true); $request->session()->put('portal_grant_id', $grant->id); $request->session()->regenerateToken();
+        $request->session()->forget(['portal_opening_binding_id','portal_opening_snapshot_sha256']);
+        if($grant->cutover_financial_binding_id!==null)$request->session()->put(['portal_opening_binding_id'=>(int)$grant->cutover_financial_binding_id,'portal_opening_snapshot_sha256'=>$grant->opening_snapshot_sha256]);
         return response()->json(['csrf_token' => csrf_token(), 'expires_at' => $grant->expires_at, 'scopes' => $grant->scopes])->header('Cache-Control', 'no-store, private')->header('Referrer-Policy', 'no-referrer');
     }
     private function scopedContract(Request $request, string $id, string $scope = 'contract.read'): Contract

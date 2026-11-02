@@ -7,7 +7,10 @@ final class FinanceSummary
 {
     public function forEvent(Event $event): array
     {
-        if($imported=\App\Services\Imports\ImportedAgreement::summary($event->id))return [...$imported,'responsible_system'=>$event->responsible_system];
+        if (\App\Models\ImportedProjectLink::where('event_id', $event->id)->exists()) {
+            if ($opening = OpeningFinanceSummary::forEvent($event)) return $opening;
+            return [...\App\Services\Imports\ImportedAgreement::summary($event->id), 'responsible_system' => $event->responsible_system];
+        }
         $revision = FinancialRevision::where('event_id', $event->id)->orderByDesc('revision')->first();
         $received = (int) LedgerEntry::where('event_id', $event->id)->where('environment', 'test')->where('kind', 'receipt')->sum('amount_cents');
         $refunded = (int) LedgerEntry::where('event_id', $event->id)->where('environment', 'test')->where('kind', 'refund')->sum('amount_cents');

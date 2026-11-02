@@ -58,6 +58,19 @@ class CalendarPageTest extends TestCase
             ->assertSee('Fictitious Performer: solo 10 min entre fiestas')->assertSee('Recursos apartados');
     }
 
+    // Owner 2026-10-29: day view counts people and equipment at the busiest moment against what he has.
+    public function test_day_view_shows_the_people_and_equipment_counter(): void
+    {
+        $face = Resource::create(['code' => 'STF-2', 'name' => 'Sofía Méndez', 'kind' => 'staff', 'status' => 'active', 'skills' => ['face_painter', 'driver']]);
+        $a = $this->party('Primera', '2026-12-19 12:00', 60, 'Waoo', [$face->id]);
+        $b = $this->party('Segunda', '2026-12-19 12:30', 60, 'Música y Juegos');
+        $b->forceFill(['status' => 'capacity_reserved'])->save();
+        foreach ([$a, $b] as $e) $e->services()->update(['requirements_snapshot' => [['kind' => 'staff', 'quantity' => 1, 'skill' => 'face_painter']]]);
+        Livewire::test(Calendar::class)->set('date', '2026-12-19')->call('setMode', 'day')
+            ->assertSee('Personal y equipo del día')->assertSee('2 fiestas')->assertSee('Pintacaritas')->assertSee('Faltan 1')->assertSee('Conductor/a');
+        Livewire::test(Calendar::class)->set('date', '2026-12-20')->call('setMode', 'day')->assertDontSee('Personal y equipo del día');
+    }
+
     public function test_navigation_month_and_day(): void
     {
         $this->party('Fiesta', '2026-12-19 15:00', 60, 'Estrella');
