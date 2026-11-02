@@ -35,6 +35,7 @@ final class QuickPaymentCheckout
             QuickPaymentProtocol::pin($b,$d);
             RecordWriteRejected::unless($b->state==='awaiting_payment'&&$b->expires_at->isFuture()&&!QuickPaymentProtocol::pendingNotice($b),409,'El apartado cambió o venció.');
             $lease=QuickStripeLease::whereKey($b->quick_stripe_lease_id)->lockForUpdate()->firstOrFail();$source=QuickStripeLeases::verify($lease,$e,false);
+            \App\Services\Availability\AdmitEventCapacity::assertTeamStillHeld($e,$lease->admission_state); // S1: event → lease → days → inventory
             QuickStripeLeases::lockInventory($source);$source=QuickStripeLeases::verify($lease,$e);
             RecordWriteRejected::unless(!PaymentIntent::where('event_id',$e->id)->whereNotIn('status',['expired','failed','cancelled'])->lockForUpdate()->first(),409,'Ya existe un intento de pago. Revisa el original antes de abrir otro.');
             RecordWriteRejected::unless(!QuickStripeCheckoutRequest::where('quick_stripe_lease_id',$lease->id)->whereNotIn('id',QuickPaymentAttempt::select('id'))->exists(),409,'El apartado tiene una solicitud anterior que requiere revisión.');
