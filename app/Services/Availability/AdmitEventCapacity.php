@@ -85,4 +85,21 @@ final class AdmitEventCapacity
             $end->addMinutes(($known ? $event->breakdown_minutes : WebsiteCapacity::UNKNOWN_MINUTES) + WebsiteCapacity::GAP_MINUTES)), 422,
             'A esa hora ya hay 4 fiestas al mismo tiempo (los 4 speakers), contando montaje, desmontaje y 30 minutos. Cambia la hora.');
     }
+
+    /** Worse is higher. Unknown states rank as the worst. */
+    private const RANK = ['available' => 0, 'owner_approval_required' => 1, 'review_required' => 2, 'unavailable' => 3];
+
+    /**
+     * S1 (before an unattended card charge): the whole team (people, costumes, equipment, drivers) for this party is re-checked
+     * against every CRM commitment under the day locks. The checkout may start only if the state is no worse than the one the
+     * owner accepted when preparing the hold; a hold from before this check (null) only refuses a team that no longer fits.
+     * CRM agenda only: no outside calendar call while locks are held.
+     */
+    public static function assertTeamStillHeld(Event $event, ?string $accepted): void
+    {
+        $now = self::state($event, []);
+        $limit = $accepted === null ? self::RANK['review_required'] : (self::RANK[$accepted] ?? self::RANK['unavailable']);
+        RecordWriteRejected::unless((self::RANK[$now] ?? self::RANK['unavailable']) <= $limit, 409,
+            'El equipo para esa hora ya no está completo. No se cobró nada: Waoo te contactará. / The team for that time is no longer complete. Nothing was charged: Waoo will contact you.');
+    }
 }

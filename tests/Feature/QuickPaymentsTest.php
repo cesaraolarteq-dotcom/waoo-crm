@@ -479,4 +479,27 @@ class QuickPaymentsTest extends TestCase
         $this->assertDatabaseCount('resource_reservations', 0);
     }
 
+
+    public function test_s1_card_checkout_does_not_start_when_the_team_was_taken_after_the_hold(): void
+    {
+        $r = $this->create(); $this->client($r); $this->details(); $g = $this->gateway();
+        $lease = \App\Models\QuickStripeLease::sole();
+        $this->assertNotNull($lease->admission_state);
+        // After the hold, another booked party at the same time needs the only Mickey head.
+        $e = $r->event->fresh(); $c = \App\Models\Customer::create(['name' => 'Ana Rodríguez', 'locale' => 'es']);
+        $other = Event::create(['customer_id' => $c->id, 'title' => 'Otra fiesta', 'starts_at' => $e->starts_at, 'ends_at' => $e->ends_at, 'timezone' => 'America/Chicago', 'setup_minutes' => 15, 'breakdown_minutes' => 15]);
+        $other->status = 'capacity_reserved'; $other->save();
+        $service = $e->services()->firstOrFail();
+        \App\Models\EventService::create(['event_id' => $other->id, 'service_variant_id' => $service->service_variant_id, 'price_version_id' => $service->price_version_id,
+            'operational_ready' => true, 'duration_minutes' => 120, 'requirements_snapshot' => $service->requirements_snapshot]);
+        $q = $this->claim(); unset($q['amount_cents'], $q['reference']); $q['deposit_percent'] = 50;
+        $this->withHeader('Idempotency-Key', (string) Str::uuid())->postJson('/portal/api/quick-payment/checkout', $q)
+            ->assertStatus(409)->assertSee('ya no est', false);
+        $this->assertSame(0, $g->creates);
+        $this->assertDatabaseCount('payment_intents', 0);
+        // The other party is cancelled: the same client can now pay.
+        $other->status = 'cancelled'; $other->save();
+        $this->checkout();
+        $this->assertSame(1, $g->creates);
+    }
 }
