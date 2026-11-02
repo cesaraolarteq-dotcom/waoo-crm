@@ -1,0 +1,13 @@
+# N3/N4 — unknown deadlines and nullable receipt references
+
+2026-10-20 · Codex · Contract before code, after N1 focused verification (57 existing tests plus7 new compatibility tests pass; overlapping development evidence, not a combined/full-suite result).
+
+No new public route/input, sending/checkout/source enablement or original legal-template text change. Imported paid-full unknown deadline remains null. Do not parse null as now, fabricate a date/zero balance or use null-safe formatting to bypass a required commercial decision.
+
+- Owner Dashboard: known positive balances with an unknown deadline are shown separately as requiring owner review. They do not enter the dated “due this week” list and do not schedule a reminder. Nullable/missing financial row cannot be dereferenced.
+- ContractPrintContext::paymentSnapshot: unknown money refuses409 instead of inventing0; known paid/unpaid money can return nullable balance_due_date without dereferencing null. CreateContract::assertCurrent requires the native contract's deadline before issuing a new native legal document; source original agreements continue on their separate protected PDF path. No template text edit or source re-signing.
+- ApproveClientDetails compares nullable instants explicitly; null equals null only. If an address update would replace an unknown original deadline with a newly calculated one, refuse409 and roll back instead of crashing or silently accepting the new deadline.
+- MAIL: a balance reminder requires an exact non-null deadline. Paid-full reminders are skipped as no_balance before calculating due time. Compose may leave due variables empty only for known paid-full money; positive balance without a date refuses. Date formatting helpers reject null/empty, never interpret it as now. Original-source MAIL guard and transport remain unchanged/off.
+- OpeningReceiptProof normalizes a nullable external_reference to an empty string solely before case-folding for identity validation. It remains ineligible without matching identity/verification; no warning, fabricated reference or loss of authenticated incoming money. Existing incomplete summaries keep net/balance/credit unknown; numeric overpayment exceptions are only produced when the summary is complete. Reconciliation is needed to determine a possible hidden overpayment.
+
+Verification: realistic fictional party fixtures, positive/paid-full missing due, unknown principal money, native issuance refusal, owner review visibility, MAIL date/refusal and no_balance behavior, null receipt without PHP deprecation, plus normal contract/booking/mail/TIP/source-portal regressions. No real provider, file/account/import, new terms, send, charge, deployment or activation.

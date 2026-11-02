@@ -1,0 +1,26 @@
+# Uptime monitor (audit i9, César 2026-10-30): every 15 minutes check that the website, the CRM and the availability
+# endpoint answer. A failed run makes GitHub email the repository owner. Public URLs only; no secrets, no client data.
+name: uptime
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check public pages
+        run: |
+          fail=0
+          check() { # url expected_code must_contain
+            body=$(curl -sS -L --max-time 20 -o /tmp/body -w '%{http_code}' "$1" || echo 000)
+            if [ "$body" != "$2" ] || ! grep -q "$3" /tmp/body; then echo "::error::$1 answered $body (expected $2 with '$3')"; fail=1; else echo "OK $1"; fi
+          }
+          check https://waooparty.com/ 200 'Waoo Party'
+          check https://waooparty.com/es/contact 200 'Waoo Party'
+          check 'https://waooparty.com/availability.php?times=1&probe=1' 200 'status'
+          check https://crm-test.waooparty.com/login 200 'Waoo CRM'
+          exit $fail

@@ -17,6 +17,7 @@ final class MailDates
     }
     private static function local($at,string $locale):CarbonImmutable
     {
+        if($at===null||$at==='')ApprovedMail::fail('date_required');
         if(!in_array($locale,['es','en'],true))ApprovedMail::fail('missing_recipient_locale');
         return CarbonImmutable::parse($at)->setTimezone('America/Chicago')->locale($locale);
     }

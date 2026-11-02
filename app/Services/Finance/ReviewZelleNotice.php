@@ -30,8 +30,8 @@ final class ReviewZelleNotice
             \App\Services\Scheduling\DailyCapacity::lock();
             $event = Event::whereKey($eventId)->lockForUpdate()->firstOrFail();
             $notice = ZelleNotice::whereKey($noticeId)->where('event_id', $eventId)->where('customer_id', $event->customer_id)->lockForUpdate()->firstOrFail();
-            if ($saved = MutationKey::find($scope, $key, $hash)) return ZelleNoticeReview::findOrFail($saved->result_id);
-            RecordWriteRejected::when($notice->review()->exists(), 409, 'Este aviso ya fue revisado. Actualiza el historial.');
+            if ($saved = MutationKey::find($scope, $key, $hash, true)) return ZelleNoticeReview::findOrFail($saved->result_id);
+            RecordWriteRejected::when($notice->review()->lockForUpdate()->first() !== null, 409, 'Este aviso ya fue revisado. Actualiza el historial.');
             $entry = $data['decision'] === 'verified' ? app(RecordZellePayment::class)->execute($actor, $eventId, $data['payment'], $key) : null;
             $quick=\App\Services\Booking\QuickPaymentProtocol::booking($eventId);
             if($quick && $data['decision']==='rejected' && $quick->receipt_id===null) {\App\Services\Booking\QuickPaymentProtocol::gate();\App\Services\Booking\QuickPaymentProtocol::verify($quick,$event);\App\Services\Booking\QuickPaymentProtocol::transition($quick,'awaiting_payment','owner_rejected_zelle_claim',$actor);}

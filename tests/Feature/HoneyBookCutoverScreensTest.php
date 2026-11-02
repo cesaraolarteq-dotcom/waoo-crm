@@ -83,7 +83,17 @@ class HoneyBookCutoverScreensTest extends TestCase
         $page = Livewire::test(HoneyBookCutover::class)->set('scopeReviewed', true);
         $batch = $this->stageFuture(['honeybook_project_id' => 'CUT-UI-3']); $row = ImportRow::where('import_batch_id', $batch->id)->sole();
         app(CommitHoneyBookEvent::class)->execute($this->owner, $batch->id, $row->id, $this->commitInput($batch, $row), (string) Str::uuid());
-        $page->call('$refresh')->assertSet('scopeReviewed', false)->assertSet('reviewedCohort', null);
+        $page->call('$refresh')->assertSet('scopeReviewed', false)->assertSet('reviewedCohort', null)
+            ->assertNotified('El grupo de fiestas cambió')->assertSet('memberPage', 1)->assertSee('Falta tu revisión de esta fiesta');
+    }
+
+    public function test_members_come_from_one_bounded_read_and_paging_never_selects_parties(): void
+    {
+        $this->confirmed();
+        $page = Livewire::test(HoneyBookCutover::class)->assertSee('Fiestas que hoy cobra HoneyBook')->assertDontSee('Siguientes →');
+        // Asking for a page beyond the last one is clamped by the server: still the whole group, page 1.
+        $page->call('goMemberPage', 5)->assertSet('memberPage', 1)->assertSee('Abrir la fiesta')->assertNotNotified('El grupo de fiestas cambió');
+        $this->assertSame(1, app(\App\Services\Imports\ReadHoneyBookCutoverMembers::class)->execute($this->owner, ['page' => 5])['page']['total']);
     }
 
     public function test_event_evidence_action_saves_a_pinned_review_reusing_the_original_and_nothing_is_prechecked(): void
