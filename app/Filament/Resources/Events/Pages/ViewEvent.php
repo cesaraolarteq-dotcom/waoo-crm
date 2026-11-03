@@ -27,7 +27,7 @@ class ViewEvent extends Page
         return app(\App\Services\History\ReadHoneyBookEventFacts::class)->execute(\Filament\Facades\Filament::auth()->user(),$this->record->id);
     }
 
-    public const ACTIONS = [
+    public const ACTIONS = ['event.extra_added' => 'El cliente agregó un extra', 'event.team_assigned' => 'Armó el equipo', 
         'event.created' => 'Creó el borrador', 'event.draft_updated' => 'Editó el borrador', 'booking.capacity_reserved' => 'Apartó staff y trajes',
         'finance.revision_created' => 'Fijó los montos', 'payment.zelle_received' => 'Registró un Zelle', 'payment.capacity_linked' => 'Vinculó el pago con los recursos',
         'portal.zelle_notice_submitted' => 'El cliente avisó que envió un Zelle', 'payment.zelle_notice_reviewed' => 'Revisó un aviso de Zelle del cliente',

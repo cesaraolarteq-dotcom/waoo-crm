@@ -104,3 +104,9 @@ dt{color:var(--muted);font-size:14px}dd{margin:0;font-weight:700;overflow-wrap:a
 .p-paybox>summary{list-style:none}
 .p-paybox>summary::-webkit-details-marker{display:none}
 .p-paybox[open]>summary{margin-bottom:12px}
+/* EXTRAS-01: add-ons from the client link. */
+.p-extras{display:grid;gap:10px}
+.p-extra{border:1px solid var(--line);border-radius:12px;padding:0 12px;background:var(--surface)}
+.p-extra summary{display:flex;justify-content:space-between;gap:10px;align-items:center;min-height:52px;cursor:pointer;font-weight:700}
+.p-extra[open]{padding-bottom:12px}
+.p-annex{margin:0;font-size:14px;line-height:1.5;background:var(--surface-2);border-radius:10px;padding:10px 12px}
