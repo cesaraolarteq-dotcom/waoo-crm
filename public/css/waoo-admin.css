@@ -391,12 +391,12 @@ a.wdash-item:hover{border-color:#122F94;background:#F5F7FF}
 @media (max-width:640px){.wtp-ans{grid-column:1}}
 /* Trajes especiales (owner 2026-11-03) */
 .wce-intro{max-width:720px;line-height:1.5}
-.wce-field{display:grid;gap:6px;font-size:14px;color:#4A5282;max-width:480px}
-.wce-field select{border:1px solid #D7DBEA;border-radius:9px;padding:8px 10px;font-size:15px;background:#fff;color:#0E1B52}
-.wce-people{border:0;padding:0;margin:4px 0 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px}
+.wce-field{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;font-size:14px;color:#4A5282;max-width:480px}
+.wce-field select{width:100%;min-width:0;border:1px solid #D7DBEA;border-radius:9px;padding:8px 10px;font-size:15px;background:#fff;color:#0E1B52}
+.wce-people{border:0;padding:0;margin:4px 0 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px}
 .wce-people legend{font-size:14px;color:#4A5282;margin-bottom:6px}
 .wce-person{display:flex;gap:8px;align-items:center;padding:8px 10px;border:1px solid #E3E6F2;border-radius:10px;font-size:14px;color:#0E1B52;cursor:pointer}
-.wce-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.wce-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;position:sticky;bottom:76px;background:inherit;padding:8px 0}
 .wce-h{font-weight:700;color:#0E1B52;margin-top:8px}
 .wce-row{text-align:left;cursor:pointer;margin-bottom:8px;width:100%}
 .dark .wce-field select{background:#0E1B52;border-color:rgba(255,255,255,.15);color:#fff} .dark .wce-person{border-color:rgba(255,255,255,.12);color:#fff} .dark .wce-h{color:#fff}
