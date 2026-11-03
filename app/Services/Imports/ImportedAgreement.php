@@ -27,7 +27,9 @@ final class ImportedAgreement
         $evidence=($current?$e->sharedLock():$e)->first();if(!$evidence)return false;
         $q=$event->reservations()->orderBy('id');$reservations=($current?$q->sharedLock():$q)->get();
         if(array_diff(array_column($evidence->staff_assignment_snapshot['assignments']??[],'resource_id'),$reservations->pluck('resource_id')->all())!==[])return false;
-        return $reservations->isNotEmpty()&&$reservations->every(fn($r)=>$r->starts_at->equalTo($event->starts_at)&&$r->ends_at->equalTo($event->ends_at));
+        // Owner 2026-11-02: a party confirmed with "people later" may have no unit yet; units added by the team plan must match its window.
+        $later=($evidence->staff_assignment_snapshot['staff_mode']??null)==='later';
+        return ($later||$reservations->isNotEmpty())&&$reservations->every(fn($r)=>$r->starts_at->equalTo($event->starts_at)&&$r->ends_at->equalTo($event->ends_at));
     }
     public static function payment(ImportedProjectLink $link,ImportedProjectRevision $r):array
     {
