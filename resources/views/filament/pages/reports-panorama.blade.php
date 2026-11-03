@@ -4,7 +4,8 @@
     $usd = fn (?int $c) => $c === null ? 'Pendiente' : '$'.number_format(intdiv($c + 50, 100));
     $prevYear = substr($p['previous']['from'], 0, 4) === substr($p['previous']['to'], 0, 4) ? substr($p['previous']['from'], 0, 4) : 'el año anterior';
     $delta = function (array $k) use ($prevYear, $p) {
-        if ($k['change_pct'] === null) return [$p['previous']['comparable'] ? 'Sin datos de '.$prevYear.' para comparar' : 'Tu historial empieza en '.($p['history_since'] ? \Carbon\CarbonImmutable::parse($p['history_since'])->locale('es')->translatedFormat('M Y') : 'este periodo'), ''];
+        // Audit 2026-11-02: "Tu historial empieza…" is said once under the dates, not on every card.
+        if ($k['change_pct'] === null) return [$p['previous']['comparable'] ? 'Sin datos de '.$prevYear.' para comparar' : '', ''];
         return [($k['change_pct'] >= 0 ? '+' : '').$k['change_pct'].' % vs '.$prevYear, $k['change_pct'] >= 0 ? 'up' : 'down'];
     };
     $heat = fn (array $w) => $w['count'] === 0 ? 'h0' : ($w['heat'] < 0.5 ? 'c2' : ($w['heat'] < 0.85 ? 'c1' : ($w['heat'] < 1.15 ? 'm' : ($w['heat'] < 1.6 ? 'w1' : 'w2'))));
@@ -61,6 +62,7 @@
         .wp{--bg:#070a1c;--panel:#0f1430;--line:#1f2750;--ink:#eef0ff;--muted:#8c93c3;--gold:#f9c930;--teal:#15d1c4;--pink:#ff3d97;--purple:#9b6bff;--navy:#3a5bff;--hot:#ff7a59;--cold:#6aa7ff;
             color-scheme:dark;background:radial-gradient(900px 420px at 85% -10%,#1a1f55 0%,transparent 60%),var(--bg);color:var(--ink);border-radius:24px;padding:22px;display:grid;gap:18px;font-variant-numeric:tabular-nums;transition:opacity .15s}
         .wp-busy{opacity:.55}
+        .wp-kpi .s{font-size:.74rem;color:var(--muted);margin-top:2px}
         .wp *{box-sizing:border-box}
         .wp h2{margin:0;font-size:1.05rem;font-weight:700;color:var(--ink)}
         .wp p{margin:0;color:var(--muted);font-size:.88rem;line-height:1.5}
@@ -166,7 +168,7 @@
             @endif
         </div>
     </div>
-    <div class="wp-note">{{ $fecha($p['from'], 'j M Y') }} – {{ $fecha($p['to'], 'j M Y') }} · comparado con las mismas fechas de {{ $prevYear }} · historial HoneyBook + CRM</div>
+    <div class="wp-note">{{ $fecha($p['from'], 'j M Y') }} – {{ $fecha($p['to'], 'j M Y') }} · comparado con las mismas fechas de {{ $prevYear }} · historial HoneyBook + CRM{{ ! $p['previous']['comparable'] && $p['history_since'] ? ' · tu historial empieza en '.$fecha($p['history_since'], 'M Y').', todavía no hay año anterior para comparar' : '' }}</div>
     @if ($q['no_total'] || $q['no_zip'] || $q['no_source'])
         <div class="wp-chips" aria-label="Datos incompletos">
             @if ($q['no_total'])<span>{{ $q['no_total'] }} de {{ $q['parties'] }} fiestas sin monto (no cuentan en ventas)</span>@endif
@@ -177,17 +179,18 @@
 
     <div class="wp-kpis">
         @foreach ([
-            ['parties', 'Fiestas', fn ($v) => $v, '--purple'],
-            ['sales', 'Ventas', $usd, '--gold'],
-            ['received', 'Dinero recibido', $usd, '--teal'],
-            ['ticket', 'Ticket promedio', $usd, '--pink'],
-            ['leads', 'Prospectos de la web', fn ($v) => $v, '--navy'],
-        ] as [$key, $label, $fmt, $glow])
+            ['parties', 'Fiestas', fn ($v) => $v, '--purple', 'por fecha de la fiesta'],
+            ['sales', 'Ventas', $usd, '--gold', 'total de esas fiestas'],
+            ['received', 'Dinero recibido', $usd, '--teal', 'por fecha del pago'],
+            ['ticket', 'Ticket promedio', $usd, '--pink', 'por fiesta'],
+            ['leads', 'Prospectos de la web', fn ($v) => $v, '--navy', 'formularios recibidos'],
+        ] as [$key, $label, $fmt, $glow, $what])
             @php [$text, $cls] = $delta($p['kpis'][$key]); @endphp
             <div class="wp-kpi" style="--glow:var({{ $glow }})">
                 <div class="l">{{ $label }}</div>
                 <div class="v">{{ $fmt($p['kpis'][$key]['value']) }}</div>
-                <div class="d {{ $cls }}">{{ $text }}</div>
+                <div class="s">{{ $what }}</div>
+                @if ($text !== '')<div class="d {{ $cls }}">{{ $text }}</div>@endif
             </div>
         @endforeach
     </div>

@@ -15,16 +15,21 @@ class ListResourceUnits extends ListRecords
 
     protected static ?string $breadcrumb = 'Lista';
 
-    protected ?string $subheading = 'Personas, trajes, equipo y vehículos. Cada traje o bocina cuenta por separado.';
-
     public function getTabs(): array
     {
-        $tabs = ['all' => Tab::make('Todo')];
+        // Audit 2026-11-02: opens on the people; costumes and equipment one tap away; "Todo" last.
+        $tabs = [];
         foreach (['staff' => 'Personas', 'costume' => 'Trajes', 'equipment' => 'Equipo', 'vehicle' => 'Vehículos'] as $kind => $label) {
             $tabs[$kind] = Tab::make($label)->modifyQueryUsing(fn ($query) => $query->where('kind', $kind));
         }
+        $tabs['all'] = Tab::make('Todo');
 
         return $tabs;
+    }
+
+    public function getDefaultActiveTab(): string|int|null
+    {
+        return 'staff';
     }
 
     // Shown only when the audited service exists (Resource::canCreate()).

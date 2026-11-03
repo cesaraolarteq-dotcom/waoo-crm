@@ -46,7 +46,7 @@
                 </div>
             </x-filament::section>
         @empty
-            <x-filament::section><p class="wmoney-p">No hay prospectos en este estado.</p></x-filament::section>
+            <x-filament::section><p class="wmoney-p">No hay prospectos en este estado. Aquí llegan las solicitudes de cotización de la página web; los de WhatsApp se reservan directo con «Reserva rápida».</p></x-filament::section>
         @endforelse
         @if (($this->pageInfo['last'] ?? 1) > 1)
             <nav class="wlead-pages" aria-label="Páginas de prospectos">

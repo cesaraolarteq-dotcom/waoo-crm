@@ -26,7 +26,7 @@
                     <small>@if ($f['deposit_shortfall_cents'] > 0) Faltan {{ $money($f['deposit_shortfall_cents']) }} para el depósito @else Depósito cubierto ✓ @endif</small></div>
                 <div><span>Recibido</span><b class="ok">{{ $money($paid) }}</b><small>{{ $f['refunded_cents'] ? 'Devuelto '.$money($f['refunded_cents']) : 'Solo pagos verificados' }}</small></div>
                 <div><span>Saldo pendiente</span><b>{{ $money($f['balance_cents']) }}</b>
-                    <small>Vence {{ \App\Filament\Support\Labels::when($rev->balance_due_at) }} · en el contrato: “{{ $f['balance_label'] }}”</small></div>
+                    <small>Vence {{ \App\Filament\Support\Labels::when($rev->balance_due_at) }}, como dice el contrato</small></div>
             </div>
             @if ($f['credit_cents'] > 0)
                 <div class="wmoney-warn" role="alert">Pagó {{ $money($f['credit_cents']) }} de más. Decide con el cliente si se aplica a otro servicio o se le devuelve; el sistema no devuelve nada solo.</div>

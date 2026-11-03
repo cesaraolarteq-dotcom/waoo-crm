@@ -366,3 +366,5 @@ a.wdash-item:hover{border-color:#122F94;background:#F5F7FF}
 .wqb-savebar .fi-btn{width:100%;max-width:420px;min-height:48px}
 @media (max-width:1023px){.wqb-savebar{bottom:calc(64px + env(safe-area-inset-bottom,0px))}}
 .dark .wqb-savebar{background:linear-gradient(to top,#0B1240 70%,rgba(11,18,64,0))}
+.wdash-row .wparty-chips{justify-content:flex-end;flex:0 1 auto} .wdash-row .wparty-chip{font-size:12px;padding:3px 9px}
+@media (max-width:640px){.wdash-row{flex-direction:column;align-items:flex-start}.wdash-row .wparty-chips{justify-content:flex-start}}
