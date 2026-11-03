@@ -368,3 +368,18 @@ a.wdash-item:hover{border-color:#122F94;background:#F5F7FF}
 .dark .wqb-savebar{background:linear-gradient(to top,#0B1240 70%,rgba(11,18,64,0))}
 .wdash-row .wparty-chips{justify-content:flex-end;flex:0 1 auto} .wdash-row .wparty-chip{font-size:12px;padding:3px 9px}
 @media (max-width:640px){.wdash-row{flex-direction:column;align-items:flex-start}.wdash-row .wparty-chips{justify-content:flex-start}}
+/* Pago del staff (owner 2026-11-03): suggestion + why, editable, mark paid. */
+.wpay-rates{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.wpay-rate{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;font-size:14px;color:#4A5282}
+.wpay-in{display:inline-flex;align-items:center;gap:4px;border:1px solid #D7DBEA;border-radius:9px;padding:0 8px;background:#fff}
+.wpay-in input{width:72px;border:0;padding:6px 0;font-size:14px;background:transparent;color:#0E1B52}
+.wpay-rate select,.wpay-edit>input{border:1px solid #D7DBEA;border-radius:9px;padding:6px 8px;font-size:14px;background:#fff;color:#0E1B52}
+.wpay-person{margin-bottom:12px}
+.wpay-total{display:flex;gap:10px;align-items:center} .wpay-total b{font-size:18px;color:#0E1B52}
+.wpay-line{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border-top:1px solid #EEF0F6;padding-top:10px}
+.wpay-why{margin:4px 0 0;padding-left:16px;font-size:12.5px;color:#6B7398;display:grid;gap:2px}
+.wpay-amt{display:flex;gap:8px;align-items:center;flex:none} .wpay-amt b{color:#0E1B52}
+.wpay-change{border-color:#C7CDE3;color:#4A5282}
+.wpay-edit{display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex:none}
+@media (max-width:640px){.wpay-line{flex-direction:column}.wpay-rate{grid-template-columns:1fr auto}.wpay-rate select{grid-column:1 / -1}}
+.dark .wpay-in,.dark .wpay-rate select{background:#0E1B52;border-color:rgba(255,255,255,.15)} .dark .wpay-in input{color:#fff} .dark .wpay-total b,.dark .wpay-amt b{color:#fff}

@@ -1,3 +1,8 @@
+## 2026-11-03 · Claude → Codex · Pago del staff sugerido (rama `claude/staff-pay`)
+César: "un sugerido y un detalle de por qué, modificable para más o menos". **Equipo → Pago del staff**: tarifas por puesto (por hora o por fiesta) + «Manejar» (encima del puesto) en `staff_pay_rates`; por semana (abre en la semana pasada) cada persona del plan con cada fiesta: sugerido = tarifa × (montaje + fiesta + desmontaje) [+ manejo], con la explicación en texto; «Cambiar» guarda el monto decidido + nota en `staff_pay_lines` (guarda también el sugerido de ese momento); «Marcar pagado» (pide todas las tarifas o montos). No paga a nadie ni lo ve el staff. Sin tarifas cargadas: muestra «Falta tarifa» (no se inventan montos; César las pone).
+- Verificado: StaffPayTest (sugerido, explicación, cambio con nota, pagado). Sin captura todavía.
+- **Revisar:** redondeo por minuto; quién cuenta (solo `event_team_plans` de fiestas confirmadas).
+
 ## 2026-11-03 · Claude → Codex · Prospectos «Ya lo contacté» + Reportes claro (rama `claude/leads-reports`)
 - César: "ya a todos estos clientes los contacté pero no sé cómo marcarlos contactados" → botón **Ya lo contacté** en cada prospecto Nuevo (`Leads::contactedAction`, `UpdateLead` con la versión actual; solo pasa de new a contacted). Prueba en LeadScreensTest.
 - César: "creí que cambiaría el diseño de reportes" → el panorama usa los colores claros del CRM; en modo oscuro vuelve el estilo oscuro (tokens en `.wp` / `.dark .wp`). Sin cambios de datos.
