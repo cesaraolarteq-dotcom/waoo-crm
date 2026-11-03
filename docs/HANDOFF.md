@@ -1,3 +1,11 @@
+## 2026-11-03 · Claude → Codex · Staff: Confirmo/No puedo, disponibilidad del lunes, Reemplazar, semana completa (rama `claude/staff-week`)
+César aprobó "de 1 a 5"; esta rama es 1, 2 y 4.
+- **Staff (enlace):** cada fiesta del plan tiene «Confirmo / No puedo (por qué)» → `staff_job_answers` (event, resource, answer, note, event_starts_at: si la fiesta se mueve, la respuesta ya no cuenta). Lunes: «¿Qué días puedes trabajar?» con **sábado primero y resaltado** (pedido de César) y cuántas fiestas hay cada día → `staff_availability` (resource, week_start, days {sat,fri,sun,weekday}). Lun–jue pregunta por este fin de semana; vie–dom por el siguiente. Formularios POST con CSRF (`/staff/respuesta`, `/staff/disponibilidad`), `StaffContext::authorize()` dentro de la transacción; solo puede contestar quien está en el plan de esa fiesta (404 si no). Sin dinero ni datos de clientes.
+- **Planear:** cada día muestra cuántos pueden/no/sin responder; las listas ponen primero a quien dijo sí y marcan «dijo que no»; cada puesto muestra Confirmó / No puede: nota / Sin confirmar; «Reemplazar» propone a la mejor persona libre (sí > sin respuesta, nunca quien dijo no). «Sugerir todo» no usa a quien dijo que no ese día. Arreglo: si se reemplaza al conductor, se vuelve a elegir (antes el guardado se rechazaba). Muestra la **semana completa (lun–dom)**, así salen las fiestas entre semana.
+- **Inicio:** tarjeta «Staff que dijo «No puedo»» → abre Planear en esa semana.
+- Verificado: StaffAnswersTest (3), WeekendPlanTest, StaffPortalBackendTest, StaffPortalPreviewTest; captura 390 px del enlace.
+- **Revisar:** throttling/CSRF de los POST del staff; `StaffAvailability::for` por fila (consultas N×M pequeñas).
+
 ## 2026-11-03 · Claude → Codex · Prospectos «Ya lo contacté» + Reportes claro (rama `claude/leads-reports`)
 - César: "ya a todos estos clientes los contacté pero no sé cómo marcarlos contactados" → botón **Ya lo contacté** en cada prospecto Nuevo (`Leads::contactedAction`, `UpdateLead` con la versión actual; solo pasa de new a contacted). Prueba en LeadScreensTest.
 - César: "creí que cambiaría el diseño de reportes" → el panorama usa los colores claros del CRM; en modo oscuro vuelve el estilo oscuro (tokens en `.wp` / `.dark .wp`). Sin cambios de datos.

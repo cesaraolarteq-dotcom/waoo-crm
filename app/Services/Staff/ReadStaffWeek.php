@@ -24,7 +24,7 @@ final class ReadStaffWeek
                 'week'=>['starts_at'=>$start->utc()->toIso8601String(),'ends_at'=>$end->utc()->toIso8601String(),
                     'from'=>$this->label($start,$staff->locale,'ddd D MMM'),'to'=>$this->label($end->subDay(),$staff->locale,'ddd D MMM')],
                 'updated_at'=>$this->label($now,$staff->locale,'ddd D MMM, h:mm a'),'generated_at'=>$now->utc()->toIso8601String(),
-                'lang_url'=>['es'=>url('/staff?lang=es'),'en'=>url('/staff?lang=en')],'jobs'=>$jobs];
+                'lang_url'=>['es'=>url('/staff?lang=es'),'en'=>url('/staff?lang=en')],'jobs'=>$jobs,'ask'=>$this->ask($person,$staff->locale)];
         },3);
     }
     private function firstName(string $name): string { return preg_split('/[\s\p{Z}]+/u',$name,-1,PREG_SPLIT_NO_EMPTY)[0]??''; }
@@ -53,7 +53,8 @@ final class ReadStaffWeek
         $skill=$slot['skill']??null;
         $roles=['performer'=>['Intérprete','Performer'],'entertainer'=>['Animador/a','Entertainer'],'host'=>['Recreador/a','Host'],'face_painter'=>['Pintacaritas','Face painter'],'driver'=>['Conductor','Driver']];
         $role=$roles[$skill][$lang==='es'?0:1]??($lang==='es'?'Personal':'Staff');
-        return ['date'=>$this->label($starts,$lang,$lang==='es'?'dddd D [de] MMMM':'dddd, MMMM D'),
+        $answer=\App\Models\StaffJobAnswer::current($event,$person->id);
+        return ['event_id'=>$event->id,'answer'=>$answer?->answer,'answer_note'=>$answer?->note,'date'=>$this->label($starts,$lang,$lang==='es'?'dddd D [de] MMMM':'dddd, MMMM D'),
             'hours'=>$this->label($starts,$lang,'h:mm a').' '.$starts->format('T').' – '.$this->label($ends,$lang,'h:mm a').' '.$ends->format('T'),
             'arrival'=>$event->setup_minutes!==null?$this->label($starts->subMinutes($event->setup_minutes),$lang,'h:mm a').' '.$starts->subMinutes($event->setup_minutes)->format('T'):$unknown,
             'setup_minutes'=>$event->setup_minutes,'address'=>($address=\App\Support\ClientAddress::forEvent($event)[0])??$unknown,
@@ -69,6 +70,24 @@ final class ReadStaffWeek
             'day_contact'=>$starts->isSameDay($now) && !empty($payload['contact_name']) && !empty($payload['contact_phone'])
                 ?['name'=>$payload['contact_name'],'phone'=>$payload['contact_phone']]:null];
     }
+    /**
+     * Owner 2026-11-03: the weekend asked about, how many parties each day has (Saturday first: it is the busiest day) and
+     * this person's answer so far. Counts only; never clients, prices or other people.
+     */
+    private function ask(Resource $person,string $lang): array
+    {
+        $monday=SaveStaffAnswers::askedWeek();
+        $row=\App\Models\StaffAvailability::where('resource_id',$person->id)->whereDate('week_start',$monday->toDateString())->first();
+        $count=fn(CarbonImmutable $from,CarbonImmutable $to)=>Event::where('status','!=','cancelled')->where('starts_at','>=',$from->utc())->where('starts_at','<',$to->utc())->count();
+        $fri=$monday->addDays(4);
+        $days=['sat'=>[$fri->addDay(),$fri->addDays(2)],'fri'=>[$fri,$fri->addDay()],'sun'=>[$fri->addDays(2),$fri->addDays(3)],'weekday'=>[$monday,$fri]];
+        $out=[];
+        foreach ($days as $k=>[$from,$to]) $out[$k]=['label'=>$k==='weekday'?($lang==='es'?'Entre semana (lun–jue)':'Weekdays (Mon–Thu)'):$this->label($from,$lang,$lang==='es'?'dddd D [de] MMMM':'dddd, MMMM D'),
+            'parties'=>$count($from,$to),'answer'=>$row?->days[$k]??null];
+        return ['week'=>$monday->toDateString(),'days'=>$out,'answered'=>$row!==null,'note'=>$row?->note,
+            'answered_at'=>$row?$this->label($row->answered_at->setTimezone('America/Chicago'),$lang,'ddd D MMM, h:mm a'):null];
+    }
+
     /** Same shape as the booking snapshot, built from the weekend plan (seats, costume wearers, the driver). */
     private static function fromPlan(\App\Models\EventTeamPlan $plan,array $snapshot): array
     {

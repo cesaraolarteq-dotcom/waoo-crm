@@ -35,10 +35,13 @@ final class SuggestWeekendTeams
                     if ($unit) { $busy[$unit->id][] = TeamSlots::window($e); $slots[] = ['kind' => 'staff', 'skill' => 'performer', 'costume_unit' => $unit, 'event' => $e, 'key' => $c['key']]; }
                 }
             }
-            $candidates = $staff->filter(fn ($p) => collect($group)->contains(fn ($e) => TeamSlots::free($p, $e, $busy[$p->id] ?? [])))->values()->all();
+            // Owner 2026-11-03: never suggest someone who said they can't that day; those who said yes go first.
+            $says = fn ($p, $e) => \App\Models\StaffAvailability::for($p->id, $e->starts_at);
+            $candidates = $staff->filter(fn ($p) => collect($group)->contains(fn ($e) => TeamSlots::free($p, $e, $busy[$p->id] ?? []) && $says($p, $e) !== 'no'))
+                ->sortBy(fn ($p) => [collect($group)->contains(fn ($e) => $says($p, $e) === 'yes') ? 0 : 1, $p->id])->values()->all();
             try {
-                $assigned = app(MatchEventResources::class)->execute($slots, $candidates, function ($slot, $p) use ($busy, $compat) {
-                    if (! TeamSlots::free($p, $slot['event'], $busy[$p->id] ?? [])) return false;
+                $assigned = app(MatchEventResources::class)->execute($slots, $candidates, function ($slot, $p) use ($busy, $compat, $says) {
+                    if (! TeamSlots::free($p, $slot['event'], $busy[$p->id] ?? []) || $says($p, $slot['event']) === 'no') return false;
                     if (! in_array($slot['skill'], $p->skills ?? [], true)) return false;
                     if (isset($slot['costume_unit'])) return CostumeWearers::allows($slot['costume_unit'], $p, Character::find($slot['costume_unit']->character_id), $compat);
                     return true;
@@ -81,7 +84,8 @@ final class SuggestWeekendTeams
         $used = []; $out = [];
         foreach ($slots as $si => $slot) {
             foreach ($candidates as $ci => $p) {
-                if (isset($used[$ci]) || ! in_array($slot['skill'], $p->skills ?? [], true) || ! TeamSlots::free($p, $slot['event'], $busy[$p->id] ?? [])) continue;
+                if (isset($used[$ci]) || ! in_array($slot['skill'], $p->skills ?? [], true) || ! TeamSlots::free($p, $slot['event'], $busy[$p->id] ?? [])
+                    || \App\Models\StaffAvailability::for($p->id, $slot['event']->starts_at) === 'no') continue;
                 if (isset($slot['costume_unit']) && ! CostumeWearers::allows($slot['costume_unit'], $p, Character::find($slot['costume_unit']->character_id), $compat)) continue;
                 $used[$ci] = true; $out[$ci] = $si; break;
             }

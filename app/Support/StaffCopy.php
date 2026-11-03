@@ -2,7 +2,7 @@
 
 namespace App\Support;
 
-// STAFF-01 staff phone page copy (ES/EN). Read-only "my week": short and friendly; never money, prices or other people's pay.
+// STAFF-01 staff phone page copy (ES/EN). "My week" + confirm a party + Monday availability: short and friendly; never money, prices or other people's pay.
 final class StaffCopy
 {
     private const COPY = [
@@ -18,6 +18,15 @@ final class StaffCopy
             'bring' => 'Lleva', 'notes' => 'Indicaciones de Waoo Party',
             'contact' => 'Contacto del día', 'contact_later' => 'Aparece el día de la fiesta.',
             'help' => '¿Dudas o no puedes ir? Escríbele a César o a Maybeli por WhatsApp lo antes posible.',
+            'confirm_q' => '¿Confirmas esta fiesta?', 'confirm_yes' => 'Confirmo', 'confirm_no' => 'No puedo',
+            'confirmed' => 'Confirmaste esta fiesta. ¡Gracias!', 'declined' => 'Dijiste que no puedes. César o Maybeli buscarán a alguien más.',
+            'change' => 'Cambiar respuesta', 'why_not' => '¿Por qué? (opcional)',
+            'avail_h' => '¿Qué días puedes trabajar?', 'avail_sub' => 'Fin de semana del :from. Contesta hoy, así armamos los equipos el martes.',
+            'avail_sat' => 'El sábado es el día con más fiestas: es cuando más te necesitamos.',
+            'avail_parties' => ':n fiestas', 'avail_party' => '1 fiesta', 'avail_none' => 'sin fiestas aún',
+            'yes' => 'Sí puedo', 'no' => 'No puedo', 'avail_note' => 'Algo que debamos saber (opcional)',
+            'avail_send' => 'Enviar mis días', 'avail_done' => 'Gracias, ya tenemos tus días. Puedes cambiarlos hasta el martes.',
+            'avail_need_sat' => 'Dinos primero si puedes el sábado.', 'saved' => 'Guardado.',
         ],
         'en' => [
             'hello' => 'Hi :name!', 'test' => 'Preview with sample data.',
@@ -31,6 +40,15 @@ final class StaffCopy
             'bring' => 'Bring', 'notes' => 'Notes from Waoo Party',
             'contact' => 'Contact on the day', 'contact_later' => 'Shows on the party day.',
             'help' => "Questions or can't make it? Message César or Maybeli on WhatsApp as soon as possible.",
+            'confirm_q' => 'Can you confirm this party?', 'confirm_yes' => 'I confirm', 'confirm_no' => "I can't",
+            'confirmed' => 'You confirmed this party. Thank you!', 'declined' => "You said you can't make it. César or Maybeli will find someone else.",
+            'change' => 'Change answer', 'why_not' => 'Why? (optional)',
+            'avail_h' => 'Which days can you work?', 'avail_sub' => 'Weekend of :from. Please answer today so we can build the teams on Tuesday.',
+            'avail_sat' => 'Saturday has the most parties: it is when we need you most.',
+            'avail_parties' => ':n parties', 'avail_party' => '1 party', 'avail_none' => 'no parties yet',
+            'yes' => 'I can', 'no' => "I can't", 'avail_note' => 'Anything we should know (optional)',
+            'avail_send' => 'Send my days', 'avail_done' => 'Thanks, we have your days. You can change them until Tuesday.',
+            'avail_need_sat' => 'Tell us first whether you can work Saturday.', 'saved' => 'Saved.',
         ],
     ];
 

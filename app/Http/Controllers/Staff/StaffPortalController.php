@@ -24,6 +24,18 @@ final class StaffPortalController
     {
         return response()->json($service->execute(StaffContext::fromRequest($request)));
     }
+    public function answer(Request $request,\App\Services\Staff\SaveStaffAnswers $service)
+    {
+        $data=$request->validate(['event_id'=>'required|integer','answer'=>'required|in:yes,no','note'=>'nullable|string|max:300']);
+        $service->job(StaffContext::fromRequest($request),(int)$data['event_id'],$data['answer'],$data['note']??null);
+        return redirect('/staff')->with('staff_saved','answer');
+    }
+    public function availability(Request $request,\App\Services\Staff\SaveStaffAnswers $service)
+    {
+        $data=$request->validate(['week'=>'required|date_format:Y-m-d','days'=>'array','days.*'=>'in:yes,no','note'=>'nullable|string|max:300']);
+        $service->availability(StaffContext::fromRequest($request),$data['week'],$data['days']??[],$data['note']??null);
+        return redirect('/staff')->with('staff_saved','availability');
+    }
     public function session(Request $request)
     {
         StaffGuard::transport($request);
