@@ -51,10 +51,11 @@ class C1AndInstructionsScreensTest extends TestCase
     {
         config(['waoo.sandbox_finance' => true]);
         DB::table('events')->where('id', $this->event->id)->update(['responsible_system' => 'honeybook']);
-        $this->get(\App\Filament\Resources\Events\EventResource::getUrl('view', ['record' => $this->event->id]))->assertOk()->assertSee('Cobro y avisos:')->assertSee('HoneyBook cobra y avisa');
+        $this->get(\App\Filament\Resources\Events\EventResource::getUrl('view', ['record' => $this->event->id]))->assertOk()->assertSee('HoneyBook cobra y avisa');
         $this->get(\App\Filament\Resources\Events\EventResource::getUrl('money', ['record' => $this->event->id]))->assertOk()->assertSee('HoneyBook cobra y avisa esta fiesta');
         DB::table('events')->where('id', $this->event->id)->update(['responsible_system' => 'crm']);
-        $this->get(\App\Filament\Resources\Events\EventResource::getUrl('view', ['record' => $this->event->id]))->assertSee('CRM cobra y avisa');
+        // Audit 2026-11-02: only the exception (HoneyBook charges) is shown; the CRM default needs no chip.
+        $this->get(\App\Filament\Resources\Events\EventResource::getUrl('view', ['record' => $this->event->id]))->assertDontSee('HoneyBook cobra y avisa');
         $this->get(\App\Filament\Resources\Events\EventResource::getUrl('money', ['record' => $this->event->id]))->assertDontSee('HoneyBook cobra y avisa esta fiesta');
     }
 }

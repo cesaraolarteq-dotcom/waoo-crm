@@ -117,10 +117,10 @@ class Calendar extends Page
                 'services' => $services->implode(' + ') ?: 'Sin servicios',
                 'pkg' => self::packageColor($services->first()),
                 'units' => $e->reservations->map(fn ($r) => $units[$r->resource_id] ?? '?')->implode(', '),
-                'status' => Labels::label(Labels::EVENT_STATUS, $e->status),
+                'status' => Labels::label(Labels::EVENT_STATUS, $e->status), 'status_key' => $e->status,
                 'status_color' => Labels::EVENT_STATUS_COLOR[$e->status] ?? 'gray',
                 'zip' => $e->postal_code,
-                'travel' => Labels::money($e->travel_fee_cents),
+                'travel_missing' => $e->travel_fee_cents === null,
                 'warnings' => $gaps[$e->id] ?? [],
                 'url' => \App\Filament\Resources\Events\EventResource::getUrl('view', ['record' => $e]),
             ];

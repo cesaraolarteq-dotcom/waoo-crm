@@ -26,6 +26,7 @@ use Livewire\Attributes\Locked;
 // Writes only through Codex's Documents/Portal services; a signature can only come from the client's own link.
 class EventContract extends Page
 {
+    use \App\Filament\Resources\Events\Pages\Concerns\PartyPage { \App\Filament\Resources\Events\Pages\Concerns\PartyPage::getBreadcrumbs insteadof InteractsWithRecord; }
     use InteractsWithRecord;
 
     protected static string $resource = EventResource::class;
@@ -60,10 +61,6 @@ class EventContract extends Page
         $this->displayedSubmission = $submission ? $submission->only(['id', 'event_version', 'revision']) : null;
     }
 
-    public function getSubheading(): ?string
-    {
-        return $this->record->title.' · '.Labels::when($this->record->starts_at).' · Modo prueba: no se envía nada al cliente.';
-    }
 
     public function state(): array
     {

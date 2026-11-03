@@ -60,6 +60,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->renderHook(PanelsRenderHook::HEAD_END, fn () => view('filament.head'))
             ->renderHook(PanelsRenderHook::PAGE_START, fn () => view('filament.section-tabs', ['rows' => \App\Filament\Support\Sections::rows()]))
+            ->renderHook(PanelsRenderHook::PAGE_HEADER_WIDGETS_BEFORE, fn () => ($e = \App\Filament\Support\Sections::eventPage()) ? view('filament.party-bar', ['chips' => \App\Filament\Support\PartyHeader::chips($e), 'tabs' => \App\Filament\Support\Sections::eventTabs() ?? []]) : '')
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

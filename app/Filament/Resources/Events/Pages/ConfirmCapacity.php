@@ -27,6 +27,7 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 // it calls App\Services\Records\ConfirmCapacity (proposed in HANDOFF) and is off until that service exists.
 class ConfirmCapacity extends Page
 {
+    use \App\Filament\Resources\Events\Pages\Concerns\PartyPage { \App\Filament\Resources\Events\Pages\Concerns\PartyPage::getBreadcrumbs insteadof InteractsWithRecord; }
     use InteractsWithRecord;
 
     protected static string $resource = EventResource::class;
@@ -98,12 +99,6 @@ class ConfirmCapacity extends Page
                     .\App\Services\Imports\HoneyBookPaymentLabels::current($l->method, $revision->mapping['payment_label_map_version'] ?? null)['display_method'])->all()];
     }
 
-    public function getSubheading(): ?string
-    {
-        $e = $this->record;
-
-        return $e->title.' · '.Labels::when($e->starts_at).' · '.($e->customer?->name ?? '');
-    }
 
     public function form(Schema $schema): Schema
     {

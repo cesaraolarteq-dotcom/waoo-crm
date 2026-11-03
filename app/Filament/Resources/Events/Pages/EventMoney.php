@@ -25,6 +25,7 @@ use Livewire\Attributes\Locked;
 // Writes only through Codex's Finance services with an Idempotency-Key per attempt; payment, resources and contract stay separate.
 class EventMoney extends Page
 {
+    use \App\Filament\Resources\Events\Pages\Concerns\PartyPage { \App\Filament\Resources\Events\Pages\Concerns\PartyPage::getBreadcrumbs insteadof InteractsWithRecord; }
     use InteractsWithRecord;
 
     protected static string $resource = EventResource::class;
@@ -206,10 +207,6 @@ class EventMoney extends Page
         $this->refundPage = max(1, $page);
     }
 
-    public function getSubheading(): ?string
-    {
-        return $this->record->title.' · '.Labels::when($this->record->starts_at).' · Modo prueba: no se cobra nada real.';
-    }
 
     public function summary(): array
     {

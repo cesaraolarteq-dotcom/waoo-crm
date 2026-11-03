@@ -34,6 +34,8 @@ class WeekendPlan extends Page
     public function mount(): void
     {
         $now = CarbonImmutable::now('America/Chicago');
+        // From a party's "Equipo" tab: open the weekend of that party.
+        if ($party = Event::find((int) request()->query('fiesta'))) $now = CarbonImmutable::instance($party->starts_at)->setTimezone('America/Chicago');
         $this->friday = ($now->isFriday() || $now->isWeekend() ? $now->startOfWeek(CarbonImmutable::MONDAY)->addDays(4) : $now->next(CarbonImmutable::FRIDAY))->toDateString();
         $this->load();
     }

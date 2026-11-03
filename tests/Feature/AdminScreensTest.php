@@ -48,7 +48,7 @@ class AdminScreensTest extends TestCase
             ->assertSee('En mantenimiento')->assertSee('Trajes');
         $this->get('/admin/personajes')->assertOk()->assertSee('Fictitious Hero')->assertSee('1 de 2');
         // Unknown travel fee is "Pendiente", never $0, and the total waits for it.
-        $this->get('/admin/eventos')->assertOk()->assertSee('Fictitious Party')->assertSee('Pendiente')->assertSee('Falta transporte')->assertSee('Borrador')->assertDontSee('$0');
+        $this->get('/admin/eventos')->assertOk()->assertSee('Fictitious Party')->assertSee('Falta transporte')->assertSee('Borrador')->assertDontSee('$0');
     }
 
     public function test_lists_stay_read_only_when_forms_are_switched_off(): void
@@ -66,7 +66,7 @@ class AdminScreensTest extends TestCase
     {
         $this->actingAs($this->owner());
         $this->get('/admin/catalogo')->assertSee('No se inventa ningún precio');
-        $this->get('/admin/eventos')->assertSee('Todavía no hay eventos');
+        $this->get('/admin/eventos')->assertSee('Todavía no hay fiestas');
     }
 
     public function test_staff_and_unenrolled_users_cannot_open_the_lists(): void

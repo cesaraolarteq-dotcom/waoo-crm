@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 // money and the audit history. Changes happen in their own screens (edit draft, Confirmar reserva, Dinero).
 class ViewEvent extends Page
 {
+    use \App\Filament\Resources\Events\Pages\Concerns\PartyPage { \App\Filament\Resources\Events\Pages\Concerns\PartyPage::getBreadcrumbs insteadof InteractsWithRecord; }
     use InteractsWithRecord;
 
     protected static string $resource = EventResource::class;
@@ -188,10 +189,6 @@ class ViewEvent extends Page
         return $this->record->title;
     }
 
-    public function getSubheading(): ?string
-    {
-        return ($this->record->customer?->name ?? '').' · '.Labels::when($this->record->starts_at).' – '.$this->record->ends_at->setTimezone(Labels::TZ)->locale('es')->translatedFormat('g:i a');
-    }
 
     #[\Livewire\Attributes\Locked]
     public array $billingPins=[];
@@ -848,7 +845,19 @@ class ViewEvent extends Page
             'characters' => $s->characters->map(fn ($c) => $c->quantity.' × '.$c->character_name_snapshot.(filled($c->outfit) ? ' ('.$c->outfit.')' : '').(filled($c->note) ? ' — nota: '.$c->note : ''))->implode(', '),
             'ready' => $s->operational_ready,
         ]);
-        $units = Unit::query()->whereIn('id', $e->reservations->pluck('resource_id'))->orderBy('kind')->orderBy('name')->get()
+        // Team chosen in "Planear el fin de semana": one line per seat. Units shown there, or in the costume-hold card, are not repeated.
+        $plan = \App\Models\EventTeamPlan::where('event_id', $e->id)->first();
+        $team = collect();
+        if ($plan) {
+            $names = Unit::whereIn('id', collect($plan->slots ?? [])->pluck('resource_id')->merge(collect($plan->costumes ?? [])->pluck('wearer_id'))->merge(collect($plan->costumes ?? [])->pluck('unit_id'))->push($plan->driver_resource_id)->filter())->pluck('name', 'id');
+            foreach ($plan->slots ?? [] as $slot) $team->push((object) ['seat' => $slot['label'] ?? 'Puesto', 'who' => $names[$slot['resource_id'] ?? 0] ?? 'Falta']);
+            foreach ($plan->costumes ?? [] as $c) $team->push((object) ['seat' => \App\Models\Character::whereKey($c['character_id'] ?? 0)->value('name') ?? 'Personaje',
+                'who' => ($names[$c['wearer_id'] ?? 0] ?? 'Falta quién').(($c['unit_id'] ?? null) ? ' · '.($names[$c['unit_id']] ?? '') : '')]);
+            $team->push((object) ['seat' => 'Conductor', 'who' => $plan->external_driver ? 'Conductor externo' : ($names[$plan->driver_resource_id ?? 0] ?? 'Falta')]);
+        }
+        $shown = $plan ? collect($plan->reservation_ids ?? [])->map(fn ($id) => \App\Models\ResourceReservation::whereKey($id)->value('resource_id'))->filter() : collect();
+        $held = collect($this->costumeHold()['rows'] ?? [])->pluck('resource_id')->filter();
+        $units = Unit::query()->whereIn('id', $e->reservations->pluck('resource_id')->diff($shown)->diff($held))->orderBy('kind')->orderBy('name')->get()
             ->map(fn ($u) => (object) ['name' => $u->name, 'kind' => Labels::label(Labels::KIND, $u->kind)]);
         $history = DB::table('audit_entries')->where(function ($q) use ($e) {
             $q->where(fn ($w) => $w->where('subject_type', 'events')->where('subject_id', $e->id));
@@ -863,7 +872,7 @@ class ViewEvent extends Page
         ]);
 
         return [
-            'event' => $e, 'services' => $services, 'units' => $units, 'history' => $history,
+            'event' => $e, 'services' => $services, 'units' => $units, 'team' => $team->all(), 'history' => $history,
             'type' => $e->event_type ? (EventResource::EVENT_TYPES[$e->event_type] ?? $e->event_type) : 'Sin clasificar',
             // A draft only means nothing is set aside yet (owner visual review 2026-10-30).
             'status' => $e->status === 'draft' ? 'Borrador' : Labels::label(Labels::EVENT_STATUS, $e->status), 'status_color' => Labels::EVENT_STATUS_COLOR[$e->status] ?? 'gray',

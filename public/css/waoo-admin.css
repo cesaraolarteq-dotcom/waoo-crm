@@ -323,7 +323,7 @@ a.wdash-item:hover{border-color:#122F94;background:#F5F7FF}
 .wtp-chip.ok{background:#E3F4EC;color:#11734A}
 .wtp-seat{display:grid;grid-template-columns:110px 1fr;align-items:center;gap:8px;font-size:13px;color:#4A5282}
 .wtp-costume{grid-template-columns:110px 1fr}
-.wtp-costume select+select{grid-column:2}
+@media (min-width:641px){.wtp-costume select+select{grid-column:2}}
 .wtp-missing{font-size:12.5px;color:#8A5A00}
 .wtp-seat select{width:100%;border:1px solid #D7DBEA;border-radius:9px;padding:6px 8px;font-size:14px;background:#fff;color:#0E1B52}
 .wtp-driver b{color:#0E1B52;font-weight:600}
@@ -331,3 +331,20 @@ a.wdash-item:hover{border-color:#122F94;background:#F5F7FF}
 @media (max-width:640px){.wtp-seat,.wtp-costume{grid-template-columns:1fr}.wtp-actions{width:100%}.wtp-actions .wcal-btn{flex:1}}
 .dark .wtp-card{background:#111a44;border-color:rgba(255,255,255,.1)} .dark .wtp-title,.dark .wtp-day,.dark .wtp-driver b{color:#fff}
 .dark .wtp-seat select{background:#0E1B52;color:#fff;border-color:rgba(255,255,255,.15)}
+/* Party header (audit 2026-11-02): state chips + tabs under the party's name, same on every tab. */
+.wparty{display:grid;gap:14px;margin-bottom:8px}
+.wparty-chips{display:flex;flex-wrap:wrap;gap:8px}
+.wparty-chip{font-size:13px;font-weight:600;padding:5px 11px;border-radius:999px;background:#EEF1F9;color:#3B4470}
+.wparty-chip.ok{background:#E3F4EC;color:#11734A} .wparty-chip.warn{background:#FDF1D6;color:#8A5A00} .wparty-chip.bad{background:#FDE4E7;color:#B4233A}
+.wparty-tabs{margin:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none} .wparty-tabs .wsec-tab{white-space:nowrap}
+.dark .wparty-chip{background:rgba(255,255,255,.07);color:#C3CAEC} .dark .wparty-chip.ok{background:rgba(17,115,74,.25);color:#7FD8AE}
+.dark .wparty-chip.warn{background:rgba(138,90,0,.3);color:#F5C66A} .dark .wparty-chip.bad{background:rgba(180,35,58,.3);color:#FF9AAA}
+/* Section tabs never break into two lines on a phone: they slide sideways. */
+@media (max-width:640px){.wsec-tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.wsec-tab{white-space:nowrap}}
+.wfile-k{display:inline-block;min-width:110px;font-size:13px;color:#6B7398}
+.wfile-history{margin-top:16px;background:#fff;border:1px solid #E3E6F2;border-radius:14px;padding:12px 16px}
+.wfile-history summary{cursor:pointer;font-weight:600;color:#0E1B52} .wfile-history summary small{font-weight:400;color:#6B7398;margin-left:6px}
+.wfile-history[open] summary{margin-bottom:8px}
+.dark .wfile-history{background:#111a44;border-color:rgba(255,255,255,.1)} .dark .wfile-history summary{color:#fff}
+.wcal-dot{width:9px;height:9px;border-radius:50%;background:#1F9D63;flex:none;margin-top:5px}
+.wsr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}

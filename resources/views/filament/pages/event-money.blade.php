@@ -8,11 +8,6 @@
     @include('filament.pages.partials.quick-payment-state',['event'=>$this->record])
     @include('filament.pages.partials.honeybook-responsible', ['event' => $this->record])
     <div class="wmoney">
-        <div class="wmoney-states" aria-label="Estados por separado">
-            <span>Pago: <b>{{ $paid > 0 ? ($rev && $f['balance_cents'] === 0 ? 'Pagado completo' : 'Pago recibido') : 'Sin pagos' }}</b></span>
-            <span>Reserva: <b>{{ \App\Filament\Support\Labels::label(\App\Filament\Support\Labels::EVENT_STATUS, $f['capacity_status']) }}</b></span>
-            <span>Contrato: <b>{{ ['not_issued' => 'Sin emitir', 'issued' => 'Enviado, sin firmar', 'signed' => 'Firmado'][$f['contract_status']] ?? $f['contract_status'] }}</b></span>
-        </div>
 
         @if (($f['customer_fee_received_cents'] ?? 0)>0)<p>Procesamiento de Stripe recibido: {{ $money($f['customer_fee_received_cents']) }} · Total cobrado: {{ $money($f['gross_received_cents']) }}</p>@endif
         @if (! $rev)

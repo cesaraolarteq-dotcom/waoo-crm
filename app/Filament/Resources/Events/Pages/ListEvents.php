@@ -11,23 +11,27 @@ class ListEvents extends ListRecords
 {
     protected static string $resource = EventResource::class;
 
-    protected static ?string $title = 'Eventos';
+    protected static ?string $title = 'Fiestas';
 
     protected static ?string $breadcrumb = 'Lista';
 
-    protected ?string $subheading = 'Horas de Houston.';
+    public function getBreadcrumbs(): array
+    {
+        return []; // already under Agenda → Lista de fiestas
+    }
 
     public function getTabs(): array
     {
         return [
-            'upcoming' => Tab::make('Próximos')->modifyQueryUsing(fn ($query) => $query->where('ends_at', '>=', now())),
-            'past' => Tab::make('Pasados')->modifyQueryUsing(fn ($query) => $query->where('ends_at', '<', now())->reorder('starts_at', 'desc')),
-            'all' => Tab::make('Todos'),
+            // Audit 2026-11-02: cancelled parties only under "Todas".
+            'upcoming' => Tab::make('Próximas')->modifyQueryUsing(fn ($query) => $query->where('ends_at', '>=', now())->where('status', '!=', 'cancelled')),
+            'past' => Tab::make('Pasadas')->modifyQueryUsing(fn ($query) => $query->where('ends_at', '<', now())->where('status', '!=', 'cancelled')->reorder('starts_at', 'desc')),
+            'all' => Tab::make('Todas'),
         ];
     }
 
     protected function getHeaderActions(): array
     {
-        return [CreateAction::make()->visible(fn () => static::getResource()::canCreate())->label('Nuevo evento')];
+        return [CreateAction::make()->visible(fn () => static::getResource()::canCreate())->label('Nueva fiesta')];
     }
 }

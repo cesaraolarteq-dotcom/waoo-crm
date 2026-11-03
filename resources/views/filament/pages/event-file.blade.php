@@ -11,19 +11,6 @@
         </x-filament::section>
     @endif
     @include('filament.pages.partials.quick-payment-state',['event'=>$e])
-    <div class="wmoney-states">
-        <span>Reserva: <b>{{ $f['status'] }}</b></span>
-        @if ($pendingChange = \App\Models\EventChange::pendingSignature($e->id))
-            <span>Cambio de fecha: <b>pendiente de firma</b> · antes {{ \App\Filament\Support\Labels::when($pendingChange->old_starts_at) }}</span>
-            <span>Aviso al cliente: <b>{{ $pendingChange->notified_at ? 'enviado '.\App\Filament\Support\Labels::when($pendingChange->notified_at).($pendingChange->reminded_at ? ' · recordatorio enviado' : '') : (\App\Services\Mail\MailDeliveryGate::enabled() || \App\Services\Sms\SmsGate::enabled() ? 'pendiente' : 'no enviado (correo y SMS apagados): mándale su enlace por WhatsApp') }}</b></span>
-        @endif
-        @if ($f['finance'])
-            <span>Pago: <b>{{ $f['finance']['net_received_cents'] > 0 ? ($f['finance']['financial_revision'] && $f['finance']['balance_cents'] === 0 ? 'Pagado completo' : 'Pago recibido') : 'Sin pagos' }}</b></span>
-        @endif
-        <span>Contrato: <b>{{ $f['contract'] }}</b></span>
-        <span>Tipo: <b>{{ $f['type'] }}</b></span>
-        @if ($f['responsible'])<span title="Solo un sistema cobra y manda avisos por fiesta">Cobro y avisos: <b>{{ $f['responsible'] }}</b></span>@endif
-    </div>
     <div class="wfile">
         <x-filament::section>
             <x-slot name="heading">Lugar y logística</x-slot>
@@ -40,6 +27,7 @@
                         .(! empty($tfe['accepted_at']) ? ' el '.\App\Filament\Support\Labels::when(\Carbon\CarbonImmutable::parse($tfe['accepted_at'])) : '')
                         .(! empty($tfe['note']) ? ' · “'.$tfe['note'].'”' : ''))
                     <small>· {{ $tfeText }}</small>@endif</dd></div>
+                <div><dt>Tipo</dt><dd>{{ $f['type'] }}</dd></div>
                 <div><dt>Montaje / desmontaje</dt><dd>{{ $e->setup_minutes !== null ? $e->setup_minutes.' min antes' : '—' }} · {{ $e->breakdown_minutes !== null ? $e->breakdown_minutes.' min después' : '—' }}</dd></div>
             </dl>
         </x-filament::section>
@@ -69,23 +57,19 @@
                 </div>
             </x-filament::section>
         @endif
+        @if ($f['team'] || $f['units']->isNotEmpty() || ! $hold || $e->status === 'capacity_reserved')
         <x-filament::section>
-            <x-slot name="heading">Staff, trajes y equipo</x-slot>
-            @forelse ($f['units'] as $u)
+            <x-slot name="heading">Equipo</x-slot>
+            @foreach ($f['team'] as $t)
+                <div class="wmoney-row"><div><span class="wfile-k">{{ $t->seat }}</span> <b>{{ $t->who }}</b></div></div>
+            @endforeach
+            @foreach ($f['units'] as $u)
                 <div class="wmoney-row"><div><b>{{ $u->name }}</b> · {{ $u->kind }}</div></div>
-            @empty
-                <p class="wmoney-p">Nada apartado todavía. El staff y los trajes se apartan con «Confirmar reserva».</p>
-            @endforelse
+            @endforeach
+            @if (! $f['team'] && $f['units']->isEmpty())
+                <p class="wmoney-p">{{ $e->status === 'capacity_reserved' ? 'Se arma la semana de la fiesta en «Planear el fin de semana».' : 'Nada apartado todavía. El staff y los trajes se apartan con «Confirmar reserva».' }}</p>
+            @endif
         </x-filament::section>
-        @if ($f['finance'] && $f['finance']['financial_revision'])
-            <x-filament::section>
-                <x-slot name="heading">Dinero</x-slot>
-                <dl class="wfile-dl">
-                    <div><dt>Total</dt><dd>{{ $money($f['finance']['financial_revision']->total_cents) }}</dd></div>
-                    <div><dt>Recibido</dt><dd class="ok">{{ $money($f['finance']['net_received_cents']) }}</dd></div>
-                    <div><dt>Saldo</dt><dd>{{ $money($f['finance']['balance_cents']) }} <small style="display:block;font-weight:500">vence {{ \App\Filament\Support\Labels::when($f['finance']['financial_revision']->balance_due_at) }}</small></dd></div>
-                </dl>
-            </x-filament::section>
         @endif
     </div>
     @if ($mail = $this->mail())
@@ -104,15 +88,15 @@
             @endforelse
         </x-filament::section>
     @endif
-    <x-filament::section>
-        <x-slot name="heading">Historial</x-slot>
-        <x-slot name="description">Quién hizo cada cambio. No se puede editar.</x-slot>
+    {{-- Audit 2026-11-02: the history is kept but folded; it is reference, not something to act on. --}}
+    <details class="wfile-history">
+        <summary>Historial · {{ $f['history']->count() }} {{ $f['history']->count() === 1 ? 'cambio' : 'cambios' }} <small>Quién hizo cada cambio. No se puede editar.</small></summary>
         @forelse ($f['history'] as $h)
             <div class="wmoney-row"><div><b>{{ $h->what }}</b> · {{ $h->who }}</div><small>{{ $h->when }}</small></div>
         @empty
             <p class="wmoney-p">Sin cambios registrados.</p>
         @endforelse
-    </x-filament::section>
+    </details>
     @if($sourceFacts=$this->honeyBookFacts())
         @foreach($sourceFacts['originals'] as $original)<p><a href="{{ url('/admin/api/history/originals/'.$original['id']) }}">Original HoneyBook: {{ $original['kind'] }} (PDF)</a></p>@endforeach
         @if($sourceFacts['fields'])<x-filament::section><x-slot name="heading">Datos de la fiesta — fuente HoneyBook</x-slot>
