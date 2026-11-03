@@ -97,6 +97,15 @@ class Dashboard extends BaseDashboard
         $soon = (clone $upcoming)->where('status', 'draft')->whereNotIn('id', $honeybook)->where('starts_at', '<', $now->copy()->addDays(7))->get();
         $cards[] = ['tone' => 'bad', 'title' => 'Fiestas en menos de 7 días sin staff apartado',
             'text' => 'Asigna staff y trajes; por la fecha necesitan tu aprobación.', 'items' => $soon->map($link)->all()];
+        // Owner 2026-11-02: confirmed parties of the next 7 days whose team still has empty seats (planned Tue–Wed).
+        $teamless = (clone $upcoming)->where('status', 'capacity_reserved')->where('starts_at', '<', $now->copy()->addDays(7))->get()->filter(function ($e) {
+            $need = \App\Services\Team\TeamSlots::for($e); if ($need['people'] === [] && $need['costumes'] === []) return false;
+            $plan = \App\Models\EventTeamPlan::where('event_id', $e->id)->first();
+            if (! $plan) return ! \App\Models\ResourceReservation::where('event_id', $e->id)->whereIn('resource_id', \App\Models\Resource::where('kind', 'staff')->select('id'))->exists();
+            return collect($plan->slots)->contains(fn ($s) => ! $s['resource_id']) || collect($plan->costumes)->contains(fn ($c) => ! $c['wearer_id']);
+        });
+        if ($teamless->isNotEmpty()) $cards[] = ['tone' => 'warn', 'title' => 'Fiestas de esta semana sin equipo completo',
+            'text' => 'Ármalo en Agenda → Planear el fin de semana.', 'items' => $teamless->map($link)->values()->all()];
         $hbSoon = (clone $upcoming)->whereIn('id', \App\Models\ImportedProjectLink::query()->select('event_id'))->where('starts_at', '<', $now->copy()->addDays(7))->get();
         $cards[] = ['tone' => 'info', 'title' => 'Fiestas de HoneyBook en los próximos 7 días',
             'text' => 'Su staff y sus cobros se manejan en HoneyBook hasta el cambio. Aquí solo para que las tengas presentes.', 'items' => $hbSoon->map($link)->all()];

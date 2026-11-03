@@ -24,6 +24,9 @@ final class ConfirmBooking
                 $event = Event::query()->lockForUpdate()->findOrFail($eventId);
                 \App\Services\Booking\QuickStripeLeases::assertNoActive($eventId);
                 $ids = collect($data['resource_ids'])->map(fn($id) => (int) $id)->unique()->sort()->values();
+                // Owner 2026-11-02: confirm when the deposit arrives without naming people; the team is assigned the week of the party.
+                $staffLater = in_array($data['staff_later'] ?? false, [true, 1, '1'], true);
+                if (! $staffLater && $ids->isEmpty()) $this->fail('Selecciona el personal y los recursos de la fiesta.');
                 $hold = \App\Services\Booking\QuickCostumeHolds::confirmation($event, $ids->all(), $data['costume_outfits']);
                 $data['costume_outfits'] = $hold['choices'];
                 if ($event->status === 'capacity_reserved') {
@@ -40,12 +43,18 @@ final class ConfirmBooking
                     $this->fail('No se puede reservar un evento pasado.');
                 }
                 // Internal owner confirmation keeps7days; the website has its separate14day approval path.
-                if (\App\Services\Scheduling\BookingNoticePolicy::requiresOwnerConfirmationReason($event->starts_at) && empty($data['review']['short_notice_reason'])) {
+                if (\App\Services\Scheduling\BookingNoticePolicy::requiresOwnerConfirmationReason($event->starts_at) && empty($data['review']['short_notice_reason'])
+                    && ! \App\Models\ImportedProjectLink::where('event_id', $eventId)->exists()) { // a HoneyBook party is already booked
                     $this->fail('Requiere aprobación por proximidad de fecha.');
                 }
                 \App\Services\Scheduling\DailyCapacity::assertRoom($event);
                 $services = $event->services()->get();
                 if ($services->isNotEmpty()) \App\Services\Availability\AdmitEventCapacity::assertFits($event); // day locks before character/resource locks
+                if ($staffLater) {
+                    // Whole-team pool check instead of named people: people, costumes, equipment and drivers must fit at that time.
+                    \App\Exceptions\RecordWriteRejected::unless(\App\Services\Availability\AdmitEventCapacity::state($event, []) !== 'unavailable', 409,
+                        'A esa hora no alcanzan las personas, los trajes o el equipo del paquete. Revisa el contador del día o cambia la hora.');
+                }
                 // Match SaveResource's character→unit order. Hints never authorize a changed unit.
                 $characterIds = $services->flatMap(fn ($s) => collect($s->requirements_snapshot)->where('kind', 'costume')->pluck('character_id'))
                     ->merge(Resource::whereIn('id', $ids)->where('kind', 'costume')->pluck('character_id'))->filter()->unique()->sort()->values();
@@ -55,6 +64,7 @@ final class ConfirmBooking
                     $this->fail('Hay recursos inexistentes o no disponibles.');
                 }
                 \App\Exceptions\RecordWriteRejected::unless(!$resources->contains(fn ($r) => $r->kind === 'costume' && !$characters->has((int) $r->character_id)), 409, 'Cambió el personaje de una unidad. Recarga los recursos.');
+                if ($staffLater && $resources->contains(fn ($r) => in_array($r->kind, ['staff', 'vehicle'], true))) $this->fail('Las personas se asignan después, en «Planear el fin de semana».');
                 $costumeChoices = collect($data['costume_outfits'])->keyBy('resource_id')->all();
                 CostumeOutfits::validate($costumeChoices, $resources, $characters);
                 if ($services->isEmpty()) {
@@ -95,6 +105,7 @@ final class ConfirmBooking
                         $this->fail('La duración del evento no cubre el servicio.');
                     }
                     foreach ($service->requirements_snapshot as $requirementIndex => $req) {
+                        if ($staffLater && ($req['kind'] !== 'costume' || $resources->where('kind', 'costume')->isEmpty())) continue; // counted by the pool check
                         for ($i = 0; $i < $req['quantity']; $i++) {
                             $slots[] = [...$req, 'event_service_id'=>$service->id, 'requirement_index'=>$requirementIndex, 'occurrence'=>$i];
                         }
@@ -113,7 +124,7 @@ final class ConfirmBooking
                 // a face painter first and rejecting an otherwise valid crew pairing.
                 $costumes = $resources->where('kind', 'costume')->values();
                 $compatibilities = DB::table('costume_compatibilities')->whereIn('costume_id', $costumes->pluck('id'))->sharedLock()->get();
-                foreach ($costumes as $costume) {
+                foreach ($staffLater ? [] : $costumes as $costume) {
                     $performerSlot = null;
                     foreach ($slots as $index => $slot) {
                         if ($slot['kind'] === 'staff' && ($slot['skill'] ?? null) === 'performer' && !isset($slot['costume_unit_id'])) {
@@ -181,7 +192,7 @@ final class ConfirmBooking
                     $slotIndex = $assignment[$resources->search(fn ($r) => $r->id === $unit->id)] ?? null;
                     $costumeAssignments[$unit->id] = CostumeOutfits::snapshot($unit, $slotIndex === null ? null : $slots[$slotIndex], $characters, $costumeChoices);
                 }
-                $staffSnapshot=['policy_version'=>'event-driver-v1','minimum_drivers'=>max($assignedStaff->isNotEmpty()?1:0,$vehicles->count()),'assigned_driver_ids'=>$driverIds,
+                $staffSnapshot=[...($staffLater?['staff_mode'=>'later']:[]),'policy_version'=>'event-driver-v1','minimum_drivers'=>max($assignedStaff->isNotEmpty()?1:0,$vehicles->count()),'assigned_driver_ids'=>$driverIds,
                     'costume_policy_version'=>'costume-outfit-v2', 'costume_choices'=>$data['costume_outfits'], 'costume_assignments'=>array_values($costumeAssignments),
                     'assignments'=>collect($assignment)->map(function ($slot, $resource) use ($resources, $slots, $costumeAssignments) {
                         $chosenSlot = $slots[$slot];

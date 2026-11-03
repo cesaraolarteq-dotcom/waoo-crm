@@ -35,6 +35,8 @@ final class ReadStaffWeek
         $resources=Resource::whereIn('id',$reservations->pluck('resource_id'))->where('status','active')->get()->keyBy('id');
         $evidence=BookingEvidence::where('event_id',$event->id)->latest('id')->first();
         $snapshot=$evidence?->staff_assignment_snapshot??[];
+        // Owner 2026-11-02: a team chosen in "Planear el fin de semana" is the source of who works and in which seat.
+        if ($plan=\App\Models\EventTeamPlan::where('event_id',$event->id)->first()) $snapshot=self::fromPlan($plan,$snapshot);
         $assigned=collect($snapshot['assignments']??[])->first(fn($r)=>(int)($r['resource_id']??0)===$person->id && ($r['kind']??null)==='staff');
         if ($snapshot !== [] && $assigned === null) return null;
         $actualStaffIds=collect($snapshot['assignments']??[])->where('kind','staff')->pluck('resource_id')->map(fn($id)=>(int)$id)->all();
@@ -49,7 +51,7 @@ final class ReadStaffWeek
         $starts=$event->starts_at->setTimezone('America/Chicago'); $ends=$event->ends_at->setTimezone('America/Chicago');
         $unknown=$lang==='es'?'Pendiente':'Not provided';
         $skill=$slot['skill']??null;
-        $roles=['performer'=>['Intérprete','Performer'],'host'=>['Animación','Host'],'face_painter'=>['Pintacaritas','Face painter'],'driver'=>['Conductor','Driver']];
+        $roles=['performer'=>['Intérprete','Performer'],'entertainer'=>['Animador/a','Entertainer'],'host'=>['Recreador/a','Host'],'face_painter'=>['Pintacaritas','Face painter'],'driver'=>['Conductor','Driver']];
         $role=$roles[$skill][$lang==='es'?0:1]??($lang==='es'?'Personal':'Staff');
         return ['date'=>$this->label($starts,$lang,$lang==='es'?'dddd D [de] MMMM':'dddd, MMMM D'),
             'hours'=>$this->label($starts,$lang,'h:mm a').' '.$starts->format('T').' – '.$this->label($ends,$lang,'h:mm a').' '.$ends->format('T'),
@@ -66,5 +68,14 @@ final class ReadStaffWeek
             'bring'=>$payload['bring']??[],'instructions'=>$payload['instructions']??null,
             'day_contact'=>$starts->isSameDay($now) && !empty($payload['contact_name']) && !empty($payload['contact_phone'])
                 ?['name'=>$payload['contact_name'],'phone'=>$payload['contact_phone']]:null];
+    }
+    /** Same shape as the booking snapshot, built from the weekend plan (seats, costume wearers, the driver). */
+    private static function fromPlan(\App\Models\EventTeamPlan $plan,array $snapshot): array
+    {
+        $rows=[];
+        foreach ($plan->slots as $seat) if ($seat['resource_id']) $rows[]=['resource_id'=>(int)$seat['resource_id'],'kind'=>'staff','slot'=>['skill'=>$seat['skill']]];
+        foreach ($plan->costumes as $c) if ($c['wearer_id']) $rows[]=['resource_id'=>(int)$c['wearer_id'],'kind'=>'staff',
+            'slot'=>['skill'=>'performer','costume_unit_id'=>$c['unit_id'],'character_name'=>Character::whereKey($c['character_id'])->value('name')]];
+        return [...$snapshot,'costume_policy_version'=>'costume-outfit-v2','assignments'=>$rows,'assigned_driver_ids'=>$plan->driver_resource_id?[(int)$plan->driver_resource_id]:[]];
     }
 }
