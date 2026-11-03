@@ -90,6 +90,9 @@ class EventExtrasTest extends TestCase
         $this->postJson('/portal/api/extras', ['offer' => $offer['key'], 'annex_sha256' => $sha, 'accept' => true, 'lang' => 'es'])->assertStatus(409)->assertJsonPath('message', fn ($m) => str_contains($m, 'ya no cabe'));
         $this->assertSame(1, $this->event->services()->count(), 'nothing was added');
         $this->assertSame(0, EventExtra::count());
+        // The link no longer shows what does not fit, so the client never reads an annex for it.
+        $this->assertNull(collect(EventExtras::fitting($this->event))->firstWhere('key', 'v'.$this->slime->id));
+        $this->get('/portal?lang=es')->assertDontSee($this->slime->name);
         $this->travelTo($this->event->starts_at->subDays(6));
         $this->assertSame('too_late', EventExtras::blocked($this->event->fresh()));
         $this->get('/portal?lang=es')->assertDontSee('Agrega algo a tu fiesta');
