@@ -34,6 +34,7 @@ final class Sections
                 ['label' => 'Staff y trajes', 'target' => Resources\Resources\ResourceUnitResource::class],
                 ['label' => 'Personajes', 'target' => Resources\Characters\CharacterResource::class],
                 ['label' => 'Enlaces del staff', 'target' => Pages\StaffLinks::class],
+                ['label' => 'Pago del staff', 'target' => Pages\StaffPay::class],
             ]],
             'settings' => ['label' => 'Ajustes', 'icon' => Heroicon::OutlinedCog6Tooth, 'tabs' => [
                 ['label' => 'Catálogo', 'target' => Resources\Variants\ServiceVariantResource::class],
