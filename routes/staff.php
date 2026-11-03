@@ -19,4 +19,7 @@ Route::middleware('throttle:60,1')->prefix('staff')->group(function () {
     Route::post('/session',[StaffPortalController::class,'session'])->middleware('throttle:15,1');
     Route::delete('/session',[StaffPortalController::class,'logout']);
     Route::get('/api/week',[StaffPortalController::class,'week']);
+    // Owner 2026-11-03: "Confirmo / No puedo" per party and Monday availability, as plain forms from the staff page.
+    Route::post('/respuesta',[StaffPortalController::class,'answer'])->middleware('throttle:30,1');
+    Route::post('/disponibilidad',[StaffPortalController::class,'availability'])->middleware('throttle:30,1');
 });

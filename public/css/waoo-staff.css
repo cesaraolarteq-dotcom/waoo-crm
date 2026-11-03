@@ -8,3 +8,22 @@ body.staff{padding-bottom:env(safe-area-inset-bottom,0px)}
 .s-list{margin:0;padding-left:18px;display:grid;gap:6px}
 .s-badge{display:inline-block;background:var(--ok);color:#fff;border-radius:999px;padding:1px 8px;font-size:12px;font-weight:700}
 .s-block{display:grid;gap:8px;padding-top:10px;border-top:1px solid var(--line)}
+/* Confirm a party + Monday availability (owner 2026-11-03). Saturday is first and stands out. */
+.s-yn{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.s-yn label{display:block}
+.s-yn input[type=radio]{position:absolute;opacity:0;width:1px;height:1px}
+.s-yn label span{display:flex;align-items:center;justify-content:center;min-height:48px;border:2px solid var(--line);border-radius:12px;font-weight:700;cursor:pointer;background:var(--surface)}
+.s-yn input:checked+span{border-color:var(--navy);background:var(--navy);color:var(--navy-ink)}
+.s-yn input[value=no]:checked+span{border-color:var(--ink);background:var(--surface-2);color:var(--ink)}
+.s-yn input:focus-visible+span{box-shadow:var(--focus)}
+.s-avail{gap:14px}
+.s-day{border:1px solid var(--line);border-radius:14px;padding:12px;margin:0;display:grid;gap:10px}
+.s-day legend{padding:0 4px;font-size:15px}
+.s-day legend span{color:var(--muted);font-weight:600}
+.s-day-main{border:2px solid var(--pink);background:var(--surface-2)}
+.s-day-main legend{font-size:17px}
+.s-sat{margin:0;font-weight:700;color:var(--pink)}
+.s-note{display:grid;gap:6px}
+.s-note input{min-height:44px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit;background:var(--surface);color:var(--ink)}
+.s-link{background:none;border:0;padding:4px 0;color:var(--muted);font:inherit;text-decoration:underline;cursor:pointer;justify-self:start}
+.s-avail-done{gap:10px}

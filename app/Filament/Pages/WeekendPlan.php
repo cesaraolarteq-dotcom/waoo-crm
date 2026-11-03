@@ -17,6 +17,7 @@ use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 
 // Owner 2026-11-02: plan the whole weekend's teams at once (Tue–Wed), seats from each package, "Sugerir todo", one save.
+// 2026-11-03: the whole week, what each person answered on Monday, who confirmed, and "Reemplazar" for who can't.
 class WeekendPlan extends Page
 {
     protected static ?string $slug = 'planear-fin-de-semana';
@@ -49,9 +50,10 @@ class WeekendPlan extends Page
     /** @return \Illuminate\Support\Collection<int, Event> confirmed parties Fri–Sun of the weekend on screen */
     public function events()
     {
-        $from = CarbonImmutable::parse($this->friday, 'America/Chicago')->startOfDay()->utc();
-        return Event::where('status', 'capacity_reserved')->where('starts_at', '>=', $from)->where('starts_at', '<', $from->addDays(3))
-            ->orderBy('starts_at')->with('services')->get();
+        // Owner 2026-11-03: the whole week (Mon–Sun) so a party on a weekday is planned here too; past ones drop off.
+        $from = CarbonImmutable::parse($this->friday, 'America/Chicago')->subDays(4)->startOfDay()->utc();
+        return Event::where('status', 'capacity_reserved')->where('starts_at', '>=', $from)->where('starts_at', '<', $from->addDays(7))
+            ->where('ends_at', '>', now())->orderBy('starts_at')->with('services')->get();
     }
 
     private function load(): void
@@ -86,8 +88,13 @@ class WeekendPlan extends Page
         foreach ($this->events() as $e) {
             if (! isset($this->picks[$e->id])) continue;
             try {
+                $pk = $this->picks[$e->id];
+                // A driver who is no longer on the team (replaced or changed) is dropped; the team's only driver is then chosen again.
+                $team = array_map('intval', array_filter([...array_values($pk['people']), ...array_column($pk['costumes'], 'wearer_id')]));
+                $driver = $pk['driver'] ?: null;
+                if (is_numeric($driver) && ! in_array((int) $driver, $team, true)) $driver = null;
                 app(AssignEventTeam::class)->execute(Filament::auth()->user(), $e->id, ['expected_plan_version' => $this->versions[$e->id] ?? 0,
-                    'people' => $this->picks[$e->id]['people'], 'costumes' => $this->picks[$e->id]['costumes'], 'driver' => $this->picks[$e->id]['driver'] ?: null], $this->keys[$e->id]);
+                    'people' => $pk['people'], 'costumes' => $pk['costumes'], 'driver' => $driver], $this->keys[$e->id]);
                 $ok++;
             } catch (RecordWriteRejected|ValidationException|AuthorizationException $x) {
                 $errors[] = $e->title.': '.($x instanceof ValidationException ? collect($x->errors())->flatten()->first() : $x->getMessage());
@@ -98,18 +105,51 @@ class WeekendPlan extends Page
         else Notification::make()->success()->title('Equipo guardado')->body($ok.' fiestas. Cada persona ya lo ve en su enlace del staff.')->send();
     }
 
+    /** "Reemplazar": the best free person for that seat who is not already on the team (said yes first). The owner still saves. */
+    public function replace(int $eventId, string $seat, bool $costume = false): void
+    {
+        $e = $this->events()->firstWhere('id', $eventId);
+        if (! $e || ! isset($this->picks[$eventId])) return;
+        $p = $this->picks[$eventId];
+        $current = (int) ($costume ? ($p['costumes'][$seat]['wearer_id'] ?? 0) : ($p['people'][$seat] ?? 0));
+        $team = array_map('intval', array_filter([...array_values($p['people']), ...array_column($p['costumes'], 'wearer_id')]));
+        $skill = $costume ? 'performer' : (collect(TeamSlots::for($e)['people'])->firstWhere('key', $seat)['skill'] ?? null);
+        if (! $skill) return;
+        $unit = $costume && ($p['costumes'][$seat]['unit_id'] ?? null) ? Resource::find($p['costumes'][$seat]['unit_id']) : null;
+        $compat = \Illuminate\Support\Facades\DB::table('costume_compatibilities')->get();
+        $pick = Resource::where('kind', 'staff')->where('status', 'active')->orderBy('name')->get()
+            ->filter(fn ($r) => $r->id !== $current && ! in_array($r->id, $team, true) && in_array($skill, $r->skills ?? [], true) && TeamSlots::free($r, $e)
+                && \App\Models\StaffAvailability::for($r->id, $e->starts_at) !== 'no'
+                && (! $unit || \App\Support\CostumeWearers::allows($unit, $r, \App\Models\Character::find($unit->character_id), $compat)))
+            ->sortBy(fn ($r) => [\App\Models\StaffAvailability::for($r->id, $e->starts_at) === 'yes' ? 0 : 1, $r->name])->first();
+        if (! $pick) { Notification::make()->warning()->title('No hay a quién poner')->body('Nadie más con esa habilidad está libre ese día.')->send(); return; }
+        if ($costume) $this->picks[$eventId]['costumes'][$seat]['wearer_id'] = $pick->id; else $this->picks[$eventId]['people'][$seat] = $pick->id;
+        if ((int) ($p['driver'] ?? 0) === $current) $this->picks[$eventId]['driver'] = null;
+        Notification::make()->success()->title('Propuesto: '.$pick->name)->body('Toca «Guardar» para confirmarlo. Le aparece en su enlace.')->send();
+    }
+
     /** View model: day groups → parties → seats with only the people who fit that seat and are free then. */
     public function board(): array
     {
         $staff = Resource::where('kind', 'staff')->where('status', 'active')->orderBy('name')->get();
+        $avail = \App\Models\StaffAvailability::whereDate('week_start', CarbonImmutable::parse($this->friday)->subDays(4)->toDateString())->get()->keyBy('resource_id');
+        $answerOf = fn (int $id, Event $e) => $avail[$id]->days[\App\Models\StaffAvailability::dayKey($e->starts_at->setTimezone('America/Chicago'))] ?? null;
+        // Who said yes first, then no answer, then who said no (still choosable: the owner decides).
+        $label = fn (Resource $r, Event $e) => $r->name.match ($answerOf($r->id, $e)) { 'yes' => ' · puede', 'no' => ' · dijo que no', default => '' };
+        $rank = fn (Resource $r, Event $e) => match ($answerOf($r->id, $e)) { 'yes' => 0, 'no' => 2, default => 1 };
         $costumes = Resource::where('kind', 'costume')->where('status', 'active')->orderBy('name')->get();
         $days = [];
         foreach ($this->events() as $e) {
             $need = TeamSlots::for($e); $p = $this->picks[$e->id] ?? ['people' => [], 'costumes' => [], 'driver' => null];
             $free = $staff->filter(fn ($s) => TeamSlots::free($s, $e))->values();
-            $seats = collect($need['people'])->map(fn ($s) => [...$s, 'options' => $free->filter(fn ($r) => in_array($s['skill'], $r->skills ?? [], true))->pluck('name', 'id')->all()])->all();
+            $sorted = $free->sortBy(fn ($r) => [$rank($r, $e), $r->name])->values();
+            $answers = \App\Models\StaffJobAnswer::where('event_id', $e->id)->get()->filter(fn ($a) => $a->event_starts_at->equalTo($e->starts_at))->keyBy('resource_id');
+            $status = fn ($id) => $id ? (['yes' => ['ok', 'Confirmó'], 'no' => ['bad', 'No puede'.(($n = $answers[(int) $id]->note ?? null) ? ': '.$n : '')]][$answers[(int) $id]->answer ?? ''] ?? ['wait', 'Sin confirmar']) : null;
+            $seats = collect($need['people'])->map(fn ($s) => [...$s, 'options' => $sorted->filter(fn ($r) => in_array($s['skill'], $r->skills ?? [], true))->mapWithKeys(fn ($r) => [$r->id => $label($r, $e)])->all(),
+                'status' => $status($p['people'][$s['key']] ?? null)])->all();
             $cos = collect($need['costumes'])->map(fn ($s) => [...$s, 'units' => $costumes->filter(fn ($u) => (int) $u->character_id === $s['character_id'] && TeamSlots::free($u, $e))->pluck('name', 'id')->all(),
-                'wearers' => $free->filter(fn ($r) => in_array('performer', $r->skills ?? [], true))->pluck('name', 'id')->all()])->all();
+                'wearers' => $sorted->filter(fn ($r) => in_array('performer', $r->skills ?? [], true))->mapWithKeys(fn ($r) => [$r->id => $label($r, $e)])->all(),
+                'status' => $status($p['costumes'][$s['key']]['wearer_id'] ?? null)])->all();
             $team = array_filter([...array_values($p['people']), ...array_column($p['costumes'], 'wearer_id')]);
             $drivers = $staff->whereIn('id', $team)->filter(fn ($r) => MatchEventResources::driver($r))->pluck('name', 'id')->all();
             // Says what is missing, not just how many ("Recreador/a 1, Kuromi").
@@ -120,6 +160,8 @@ class WeekendPlan extends Page
             $missing = count($gaps);
             $local = $e->starts_at->setTimezone('America/Chicago');
             $days[$local->toDateString()]['label'] ??= ucfirst($local->locale('es')->translatedFormat('l j \d\e F'));
+            $days[$local->toDateString()]['avail'] ??= ['yes' => $staff->filter(fn ($r) => $answerOf($r->id, $e) === 'yes')->count(),
+                'no' => $staff->filter(fn ($r) => $answerOf($r->id, $e) === 'no')->count(), 'none' => $staff->filter(fn ($r) => $answerOf($r->id, $e) === null)->count()];
             $days[$local->toDateString()]['parties'][] = ['id' => $e->id, 'title' => $e->title, 'time' => $local->locale('es')->translatedFormat('g:i a').' – '.$e->ends_at->setTimezone('America/Chicago')->locale('es')->translatedFormat('g:i a'),
                 'place' => Str::limit((string) $e->address, 48), 'packages' => $e->services->map(fn ($s) => \App\Models\ServiceVariant::whereKey($s->service_variant_id)->value('name'))->filter()->implode(' + '),
                 'seats' => $seats, 'costumes' => $cos, 'drivers' => $drivers, 'auto_driver' => count($drivers) === 1 ? reset($drivers) : null, 'missing' => $missing, 'gaps' => $gaps, 'team_empty' => $team === [],
@@ -127,7 +169,7 @@ class WeekendPlan extends Page
         }
         ksort($days);
         $f = CarbonImmutable::parse($this->friday);
-        return ['days' => array_values($days), 'range' => $f->locale('es')->translatedFormat('j M').' – '.$f->addDays(2)->locale('es')->translatedFormat('j M'),
+        return ['days' => array_values($days), 'range' => $f->subDays(4)->locale('es')->translatedFormat('j M').' – '.$f->addDays(2)->locale('es')->translatedFormat('j M'),
             'count' => array_sum(array_map(fn ($d) => count($d['parties']), $days))];
     }
 }
