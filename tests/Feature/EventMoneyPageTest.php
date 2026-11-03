@@ -54,7 +54,7 @@ class EventMoneyPageTest extends TestCase
         $this->assertSame(6250, $revision->deposit_target_cents);
 
         Livewire::test(EventMoney::class, ['record' => $this->event->id])->callAction('zelle', $this->zelle('62'))->assertNotified('Pago registrado')
-            ->assertSee('Faltan $0.50 para el depósito')->assertSee('$63')->assertSee('Remaining balance due')->assertSee('ZELLE-FIXTURE-1');
+            ->assertSee('Faltan $0.50 para el depósito')->assertSee('$63')->assertSee('como dice el contrato')->assertSee('ZELLE-FIXTURE-1');
         $this->assertSame(6200, LedgerEntry::sole()->amount_cents);
         $this->assertSame($this->owner->id, (int) LedgerEntry::sole()->verified_by);
     }
