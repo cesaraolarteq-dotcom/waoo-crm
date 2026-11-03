@@ -66,6 +66,9 @@ class ServiceVariantResource extends Resource
                 ->schema(self::requirementFields()),
             TextInput::make('character_quantity')->label('Personajes incluidos')->integer()->minValue(0)->maxValue(20)->default(0)->live()
                 ->helperText('0 si el paquete no deja elegir personaje. Si incluye, al crear el evento se eligen cuáles.'),
+            TextInput::make('extra_character_price')->label('Precio de cada personaje adicional (USD)')->prefix('$')->placeholder((string) intdiv((int) config('waoo.extra_character_cents'), 100))
+                ->visible(fn (Get $get) => (int) $get('character_quantity') > 0)->rule('nullable')->rule('regex:/^\d{1,5}(\.\d{1,2})?$/')
+                ->helperText('Vacío = el general ('.Labels::money((int) config('waoo.extra_character_cents')).'). Ej.: Personajes sin show $200.'),
             Repeater::make('character_options')->label('Personajes que se pueden elegir')->columnSpanFull()->defaultItems(0)
                 ->visible(fn (Get $get) => (int) $get('character_quantity') > 0)->addActionLabel('Agregar personaje permitido')
                 ->itemLabel(fn (array $state) => filled($state['character_id'] ?? null) ? \App\Models\Character::whereKey($state['character_id'])->value('name') : null)
@@ -108,6 +111,7 @@ class ServiceVariantResource extends Resource
         return ['name' => trim((string) ($data['name'] ?? '')), 'long_description' => $long === '' ? null : $long, 'status' => $data['status'] ?? 'draft',
             'duration_minutes' => (int) ($data['duration_minutes'] ?? 0), 'requirements' => self::normalizeRequirements($data['requirements'] ?? []),
             'character_quantity' => $quantity, 'character_options' => $options,
+            'extra_character_cents' => $quantity > 0 && filled($data['extra_character_price'] ?? null) ? (int) round(((float) $data['extra_character_price']) * 100) : null,
             // PACKAGE-TIMING: blank = unknown (null), 0 is a real zero.
             'setup_minutes' => self::minutesOrNull($data['setup_minutes'] ?? null), 'breakdown_minutes' => self::minutesOrNull($data['breakdown_minutes'] ?? null)];
     }

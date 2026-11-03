@@ -34,6 +34,13 @@ class EditServiceVariant extends EditRecord
     }
 
     // No delete (the API has none). Prices are append-only: "Nuevo precio" adds a version, never edits one.
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $data['extra_character_price'] = $this->record->extra_character_cents !== null ? number_format($this->record->extra_character_cents / 100, 2, '.', '') : null;
+
+        return $data;
+    }
+
     protected function getHeaderActions(): array
     {
         return [

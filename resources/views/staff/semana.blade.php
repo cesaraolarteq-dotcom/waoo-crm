@@ -16,7 +16,8 @@
     <p class="p-hint">{{ $t('avail_sub', ['from' => $ask['days']['fri']['label']]) }}</p>
     @foreach ($ask['days'] as $key => $d)
       <fieldset @class(['s-day', 's-day-main' => $key === 'sat'])>
-        <legend><b>{{ ucfirst($d['label']) }}</b> · <span>{{ $d['parties'] === 0 ? $t('avail_none') : ($d['parties'] === 1 ? $t('avail_party') : $t('avail_parties', ['n' => $d['parties']])) }}</span></legend>
+        {{-- Owner 2026-11-03: only Saturday says how many parties there are (staff should not pick days by how busy they look). --}}
+        <legend><b>{{ ucfirst($d['label']) }}</b>@if ($key === 'sat') · <span>{{ $d['parties'] === 0 ? $t('avail_none') : ($d['parties'] === 1 ? $t('avail_party') : $t('avail_parties', ['n' => $d['parties']])) }}</span>@endif</legend>
         @if ($key === 'sat')<p class="s-sat">{{ $t('avail_sat') }}</p>@endif
         <div class="s-yn">
           <label><input type="radio" name="days[{{ $key }}]" value="yes" @checked($d['answer'] === 'yes') @if ($key === 'sat') required @endif><span>{{ $t('yes') }}</span></label>

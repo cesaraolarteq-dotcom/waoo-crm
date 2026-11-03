@@ -346,8 +346,8 @@ class EventResource extends Resource
         return collect(self::configurablePrices($priceIds))->keys()->map(function ($id) {
             $v = ServiceVariant::find(PriceVersion::whereKey($id)->value('service_variant_id'));
 
-            return $v->name.': incluye '.$v->character_quantity.' '.($v->character_quantity === 1 ? 'personaje' : 'personajes');
-        })->implode(' · ').'. Cada personaje adicional suma '.Labels::money((int) config('waoo.extra_character_cents')).'. Si faltan, el evento queda incompleto y no se puede confirmar.';
+            return $v->name.': incluye '.$v->character_quantity.' '.($v->character_quantity === 1 ? 'personaje' : 'personajes').'; cada adicional '.Labels::money(ServiceVariant::extraCharacterPrice($v));
+        })->implode(' · ').'. Si faltan, el evento queda incompleto y no se puede confirmar.';
     }
 
     /** Form state -> SaveEventDraft input (explicit offsets, cents, null travel fee when unknown). */
@@ -397,6 +397,18 @@ class EventResource extends Resource
     }
 
     /** Extra characters (beyond each package's included ones) chosen in the form, as the backend will count them. */
+    /** Extra characters × each package's price per additional character (the backend recounts and snapshots it on save). */
+    public static function extraCharacterCents(array $data): int
+    {
+        $cents = 0;
+        foreach (self::servicesInput($data) as $service) {
+            if (! isset($service['characters'])) continue;
+            $v = ServiceVariant::find(PriceVersion::whereKey($service['price_version_id'])->value('service_variant_id'));
+            $cents += max(0, (int) collect($service['characters'])->sum('quantity') - (int) $v?->character_quantity) * ServiceVariant::extraCharacterPrice($v);
+        }
+        return $cents;
+    }
+
     public static function extraCharacters(array $data): int
     {
         $extra = 0;
