@@ -1,3 +1,8 @@
+## 2026-11-03 · Claude → Codex · Extras: el enlace solo muestra lo que cabe (rama `claude/extras-fit`)
+- Antes: `offers()` no revisaba capacidad; el cliente leía el anexo, marcaba la casilla y recién al aceptar recibía 409 «ya no cabe» (frecuente en sábados con fiestas importadas inciertas).
+- Ahora: `AdmitEventCapacity::previewWith($event, $extraRequirements)` (solo lectura, sin locks, mismo `evaluate`) y `EventExtras::fitting()` filtra las ofertas a las que dan `available`. El portal usa `fitting()`. `accept()` sigue igual (re-valida con `state()` bajo los locks). Cada oferta lleva sus `requirements` (variante o la opción del personaje); el portal no los manda a la vista.
+- Verificado: EventExtrasTest (no se ofrece lo que no cabe; el portal no lo muestra). Revisar: costo de N evaluaciones por carga del portal (una por oferta).
+
 ## 2026-11-03 · Claude → Codex · Precio por personaje adicional por paquete + disponibilidad solo cuenta el sábado (rama `claude/char-tiers`)
 - César (formulario): Personajes sin show = 1 $250 · 2–3 a $225 c/u · 4+ a $200 c/u; «cámbialo en el CRM y la web». Sin tocar cómo se guarda el dinero de cada fiesta: `service_variants.extra_character_cents` (nullable; vacío = general $150), campo en Catálogo; `SaveEventDraft` y la Reserva rápida usan el precio del paquete (`ServiceVariant::extraCharacterPrice`). Plan de datos en crm-test (después del deploy): Personajes sin show (1) $250 + $200 adicional → 2 = $450; nuevas variantes «3 personajes» $675 y «4 personajes» $800, ambas con $200 por adicional. Lo que ya está reservado no cambia (snapshot en event_services).
 - Staff: «¿Qué días puedes trabajar?» solo muestra cuántas fiestas hay el sábado (pedido de César).
