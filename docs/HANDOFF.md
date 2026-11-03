@@ -1,3 +1,8 @@
+## 2026-11-03 · Claude → Codex · Precio por personaje adicional por paquete + disponibilidad solo cuenta el sábado (rama `claude/char-tiers`)
+- César (formulario): Personajes sin show = 1 $250 · 2–3 a $225 c/u · 4+ a $200 c/u; «cámbialo en el CRM y la web». Sin tocar cómo se guarda el dinero de cada fiesta: `service_variants.extra_character_cents` (nullable; vacío = general $150), campo en Catálogo; `SaveEventDraft` y la Reserva rápida usan el precio del paquete (`ServiceVariant::extraCharacterPrice`). Plan de datos en crm-test (después del deploy): Personajes sin show (1) $250 + $200 adicional → 2 = $450; nuevas variantes «3 personajes» $675 y «4 personajes» $800, ambas con $200 por adicional. Lo que ya está reservado no cambia (snapshot en event_services).
+- Staff: «¿Qué días puedes trabajar?» solo muestra cuántas fiestas hay el sábado (pedido de César).
+- EventExtras «Personaje adicional» ya usa `ServiceVariant::extraCharacterPrice` (precio del paquete).
+
 ## 2026-11-03 · Claude → Codex · EXTRAS-01 extras desde el enlace del cliente (rama `claude/extras`) — REVISAR A FONDO (dinero + contrato)
 Implementa `docs/EXTRAS-01-API.md` con las decisiones de César. Bandera **WAOO_SANDBOX_EXTRAS** (apagada por defecto).
 - Catálogo: `service_variants.offered_as_extra` (interruptor en Catálogo; la migración marca la lista de César por nombre). Personaje adicional: cualquier personaje permitido del paquete que no esté ya, a `waoo.extra_character_cents` ($150).

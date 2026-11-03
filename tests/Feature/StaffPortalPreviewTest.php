@@ -43,7 +43,7 @@ class StaffPortalPreviewTest extends TestCase
             ->assertSee('Tú manejas en esta fiesta')->assertSee('Carlos (maneja)')->assertSee('Personaje de ejemplo (Gala)')
             ->assertSee('Aparece el día de la fiesta')->assertSee('guárdalo en tu celular')
             // Owner 2026-11-03: confirm each party and answer the Monday days, Saturday first; still no money anywhere.
-            ->assertSee('¿Confirmas esta fiesta?')->assertSee('Confirmaste esta fiesta')->assertSeeInOrder(['¿Qué días puedes trabajar?', 'Sábado 31 de octubre', 'Viernes 30 de octubre'])
+            ->assertSee('¿Confirmas esta fiesta?')->assertSee('Confirmaste esta fiesta')->assertSeeInOrder(['¿Qué días puedes trabajar?', 'Sábado 31 de octubre', '9 fiestas', 'Viernes 30 de octubre'])->assertDontSee('2 fiestas')
             ->assertDontSee('$')->assertDontSee('type="checkbox"', false);
         $this->get('/dev/staff/vacia?lang=en')->assertSee('You have no parties assigned this week');
     }

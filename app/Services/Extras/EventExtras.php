@@ -53,7 +53,7 @@ final class EventExtras
             $taken = $s->characters->pluck('character_id')->all();
             foreach (collect($v->character_options)->pluck('character_id')->diff($taken) as $cid) {
                 $c = Character::whereKey($cid)->where('active', true)->first();
-                if ($c) $out[] = ['key' => 'c'.$s->id.'-'.$c->id, 'name' => 'Personaje adicional: '.$c->name, 'amount_cents' => (int) config('waoo.extra_character_cents'), 'description' => null];
+                if ($c) $out[] = ['key' => 'c'.$s->id.'-'.$c->id, 'name' => 'Personaje adicional: '.$c->name, 'amount_cents' => ServiceVariant::extraCharacterPrice($v), 'description' => null];
             }
         }
 

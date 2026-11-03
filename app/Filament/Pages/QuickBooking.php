@@ -311,16 +311,16 @@ class QuickBooking extends Page
     {
         if (! str_starts_with($key, 'characters') && $key !== 'character_count') return;
         if ($this->data['deposit']['amount_custom'] ?? false) return;
-        $extra = EventResource::extraCharacters(['price_version_ids' => $this->data['price_version_ids'] ?? [], 'characters' => $this->data['characters'] ?? []]);
-        $this->data['deposit']['amount'] = self::depositDefault($this->data['price_version_ids'] ?? [], $this->data['travel_fee'] ?? null, $extra * (int) config('waoo.extra_character_cents'),
+        $extra = EventResource::extraCharacterCents(['price_version_ids' => $this->data['price_version_ids'] ?? [], 'characters' => $this->data['characters'] ?? []]);
+        $this->data['deposit']['amount'] = self::depositDefault($this->data['price_version_ids'] ?? [], $this->data['travel_fee'] ?? null, $extra,
             self::promoCentsFor($this->data['promo_code'] ?? null, ($this->data['customer_mode'] ?? null) === 'existing' && filled($this->data['customer_id'] ?? null) ? (int) $this->data['customer_id'] : null,
-                $this->data['price_version_ids'] ?? [], $extra * (int) config('waoo.extra_character_cents')));
+                $this->data['price_version_ids'] ?? [], $extra));
     }
 
     /** Extra characters × the per-character amount, from the live form (the backend recounts and snapshots it on save). */
     public static function extraCents(Get $get): int
     {
-        return EventResource::extraCharacters(['price_version_ids' => $get('price_version_ids') ?? [], 'characters' => $get('characters') ?? []]) * (int) config('waoo.extra_character_cents');
+        return EventResource::extraCharacterCents(['price_version_ids' => $get('price_version_ids') ?? [], 'characters' => $get('characters') ?? []]);
     }
 
     /** Live money line: total, 50 %, received, balance and due date, before saving. Unknown pieces say so; never $0. */
