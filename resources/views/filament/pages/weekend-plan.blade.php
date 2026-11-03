@@ -21,7 +21,8 @@
                 <section class="wtp-card" wire:key="party-{{ $p['id'] }}">
                     <header>
                         <div><a href="{{ $p['url'] }}" class="wtp-title">{{ $p['title'] }}</a>
-                            <div class="wtp-muted">{{ $p['time'] }} · {{ $p['packages'] }}</div></div>
+                            <div class="wtp-muted">{{ $p['time'] }} · {{ $p['packages'] }}</div>
+                            @if ($p['gaps'])<div class="wtp-missing">Falta: {{ implode(', ', $p['gaps']) }}</div>@endif</div>
                         <span @class(['wtp-chip', 'ok' => $p['missing'] === 0])>{{ $p['missing'] === 0 ? 'Completo' : 'Faltan '.$p['missing'] }}</span>
                     </header>
                     @foreach ($p['seats'] as $s)
@@ -47,7 +48,7 @@
                             <b>{{ $p['auto_driver'] }}</b>
                         @else
                             <select wire:model.live="picks.{{ $p['id'] }}.driver">
-                                <option value="">{{ $p['drivers'] ? '— Elegir —' : 'Nadie del equipo maneja' }}</option>
+                                <option value="">{{ $p['drivers'] ? '— Elegir —' : ($p['team_empty'] ? 'Se elige al armar el equipo' : 'Nadie del equipo maneja') }}</option>
                                 @foreach ($p['drivers'] as $id => $name)<option value="{{ $id }}">{{ $name }}</option>@endforeach
                                 <option value="external">Conductor externo</option>
                             </select>

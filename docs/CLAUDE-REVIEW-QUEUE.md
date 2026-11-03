@@ -21,6 +21,13 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-02 · UI · Auditoría UX entregas 1–2 (palabras, encabezado de la fiesta, lista, calendario) · PENDING
+- Branch / commits: claude/ux-words · PR #181
+- Reported by César: aprobó la auditoría ("okay me gusta tu propuesta hagamoslo").
+- What changed and why: ver HANDOFF 2026-11-02 (noche). Menos texto repetido, estados con palabras de César, botón principal según lo que ya pasó.
+- How verified: pruebas de pantalla locales + capturas 1440/390 (fiesta, dinero, contrato, lista, calendario, plan del fin de semana).
+- What Codex must check: chips en fiestas HoneyBook (solo "HoneyBook cobra y avisa", sin saldo) y en canceladas (solo "Cancelada").
+
 ### 2026-10-31 · BACKEND · Staff preview cache privacy regression, current SMS integration · PENDING
 - In `codex/fix-reschedule-integration`, reproduce shard2 failure from47fa299 locally: StaffPortalPreviewTest compared exact Cache-Control text. Session middleware can legitimately add max-age=0/must-revalidate/no-cache to no-store/private. A later-shard replay stops at29tests/264assertions with this failure.
 - Test now requires no-store and private, rejects public and any positive max-age/s-maxage, and retains referrer/privacy/assets/money assertions. It accepts stronger cache prevention without weakening privacy. No production controller/header/UI/CSS change. Focused4tests/85assertions PASS. Entire shard replay and fresh full CI remain required after integration.

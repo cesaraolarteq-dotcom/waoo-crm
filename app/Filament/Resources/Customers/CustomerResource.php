@@ -77,7 +77,7 @@ class CustomerResource extends Resource
                 TextColumn::make('locale')->label('Idioma')->badge()
                     ->formatStateUsing(fn (string $state) => $state === 'en' ? 'Inglés' : 'Español')
                     ->color(fn (string $state) => $state === 'en' ? 'info' : 'gray'),
-                TextColumn::make('events_total')->label('Eventos')->sortable()->alignEnd(),
+                TextColumn::make('events_total')->label('Fiestas')->sortable()->alignEnd(),
                 TextColumn::make('created_at')->label('Desde')->date('j M Y', 'America/Chicago')->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([

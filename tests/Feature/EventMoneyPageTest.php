@@ -54,7 +54,7 @@ class EventMoneyPageTest extends TestCase
         $this->assertSame(6250, $revision->deposit_target_cents);
 
         Livewire::test(EventMoney::class, ['record' => $this->event->id])->callAction('zelle', $this->zelle('62'))->assertNotified('Pago registrado')
-            ->assertSee('Faltan $0.50 para el depósito')->assertSee('$63')->assertSee('Remaining balance due')->assertSee('ZELLE-FIXTURE-1');
+            ->assertSee('Faltan $0.50 para el depósito')->assertSee('$63')->assertSee('como dice el contrato')->assertSee('ZELLE-FIXTURE-1');
         $this->assertSame(6200, LedgerEntry::sole()->amount_cents);
         $this->assertSame($this->owner->id, (int) LedgerEntry::sole()->verified_by);
     }
@@ -90,7 +90,7 @@ class EventMoneyPageTest extends TestCase
 
         Livewire::test(ConfirmCapacity::class, ['record' => $this->event->id])->assertSee('Depósito ya registrado')->assertDontSee('Cómo pagó')
             ->fillForm(['units' => ['staff' => [$performer->id]], 'staff_confirmed' => true, 'cargo_checked' => true, 'origin_return_note' => 'Salen y regresan a la bodega ficticia.'])
-            ->call('confirm')->assertHasNoFormErrors()->assertNotified('Recursos apartados');
+            ->call('confirm')->assertHasNoFormErrors()->assertNotified('Reserva confirmada');
         $this->assertSame('capacity_reserved', $this->event->fresh()->status);
         $this->assertSame(1, DB::table('capacity_payment_links')->where('event_id', $this->event->id)->count());
         $this->assertSame(1, LedgerEntry::count(), 'Booking evidence is not a second payment.');

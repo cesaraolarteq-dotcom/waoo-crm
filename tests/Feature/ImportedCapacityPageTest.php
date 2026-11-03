@@ -11,7 +11,7 @@ use Livewire\Livewire;
 use Tests\Support\HoneyBookFutureScenario;
 use Tests\TestCase;
 
-// Imported HoneyBook event → "Apartar recursos y confirmar" over Codex's ConfirmImportedCapacity (fictitious data only).
+// Imported HoneyBook event → "Confirmar reserva" over Codex's ConfirmImportedCapacity (fictitious data only).
 class ImportedCapacityPageTest extends TestCase
 {
     use DatabaseMigrations, HoneyBookFutureScenario;

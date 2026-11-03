@@ -180,9 +180,16 @@ class Dashboard extends BaseDashboard
         $to = $this->now()->endOfWeek(CarbonImmutable::SUNDAY);
 
         return Event::query()->with('customer')->where('status', '!=', 'cancelled')->where('starts_at', '>=', $from->utc())->where('starts_at', '<=', $to->utc())->orderBy('starts_at')->get()
-            ->map(fn ($e) => (object) ['title' => $e->title, 'client' => $e->customer?->name, 'when' => Labels::when($e->starts_at),
-                'status' => Labels::label(Labels::EVENT_STATUS, $e->status), 'color' => Labels::EVENT_STATUS_COLOR[$e->status] ?? 'gray',
-                'travel' => Labels::money($e->travel_fee_cents), 'url' => $this->eventUrl($e)]);
+            // Audit 2026-11-02: each party shows only what is still missing (same chips as its header); nothing when all is done.
+            ->map(fn ($e) => (object) ['title' => $e->title, 'client' => filled($e->customer?->name) && ! str_contains(mb_strtolower($e->title), mb_strtolower($e->customer->name)) ? $e->customer->name : null,
+                'when' => Labels::when($e->starts_at),
+                'chips' => array_values(array_filter(\App\Filament\Support\PartyHeader::chips($e), fn ($c) => $c['tone'] !== 'ok')),
+                'url' => $this->eventUrl($e)]);
+    }
+
+    public function getHeading(): string
+    {
+        return ''; // the greeting is the heading
     }
 
     private function eventUrl(Event $e): ?string

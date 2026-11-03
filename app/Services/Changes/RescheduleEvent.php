@@ -70,9 +70,10 @@ final class RescheduleEvent
             $reservations = ResourceReservation::where('event_id', $eventId)->orderBy('resource_id')->lockForUpdate()->get();
             $p = $hold ? QuickCostumeHolds::verify($hold, $event) : null;
             if ($reservations->isNotEmpty()) RecordWriteRejected::unless($event->setup_minutes !== null && $event->breakdown_minutes !== null,
-                409, 'Completa montaje y desmontaje antes de mover recursos apartados.');
+                409, 'Completa montaje y desmontaje antes de mover la fiesta.');
             app(RescheduleTransfers::class)->assertFits($event, $start, $proof);
 
+            $event->title = self::retitle((string) $event->title, $oldStart, $start);
             $event->starts_at = $start; $event->ends_at = $end; $event->version = $before + 1; $event->save();
             foreach ($reservations as $r) {
                 $unit = $units->get($r->resource_id);
@@ -116,5 +117,14 @@ final class RescheduleEvent
         \App\Services\Finance\SupersedeCollections::forEvent($event->id, 'financial_revision_changed', $actor);
         Audit::recordFor($actor, 'finance.revision_created', $revision, [], ['event_id' => $event->id, 'reason' => 'reschedule', 'change_fee_cents' => $fee ? self::FEE_CENTS : 0, 'total_cents' => $revision->total_cents]);
         return $revision;
+    }
+
+    /** Older names (and HoneyBook's) carry the date as MM/DD or MM/DD/YY; it follows the party so the name never shows the old day. */
+    public static function retitle(string $title, \DateTimeInterface $old, \DateTimeInterface $new): string
+    {
+        $o = \Carbon\CarbonImmutable::instance($old)->setTimezone('America/Chicago'); $n = \Carbon\CarbonImmutable::instance($new)->setTimezone('America/Chicago');
+        $pattern = '~(?<![\d/])0?'.$o->month.'/0?'.$o->day.'(/(\d{2}|\d{4}))?(?![\d/])~';
+
+        return preg_replace_callback($pattern, fn ($m) => $n->format('m/d').(isset($m[1]) && $m[1] !== '' ? '/'.$n->format(strlen($m[2]) === 4 ? 'Y' : 'y') : ($n->year !== $o->year ? $n->format('/y') : '')), $title, 1) ?? $title;
     }
 }

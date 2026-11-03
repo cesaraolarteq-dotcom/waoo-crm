@@ -27,11 +27,12 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 // it calls App\Services\Records\ConfirmCapacity (proposed in HANDOFF) and is off until that service exists.
 class ConfirmCapacity extends Page
 {
+    use \App\Filament\Resources\Events\Pages\Concerns\PartyPage { \App\Filament\Resources\Events\Pages\Concerns\PartyPage::getBreadcrumbs insteadof InteractsWithRecord; }
     use InteractsWithRecord;
 
     protected static string $resource = EventResource::class;
 
-    protected static ?string $title = 'Apartar recursos y confirmar';
+    protected static ?string $title = 'Confirmar reserva';
 
     public ?array $data = [];
 
@@ -98,12 +99,6 @@ class ConfirmCapacity extends Page
                     .\App\Services\Imports\HoneyBookPaymentLabels::current($l->method, $revision->mapping['payment_label_map_version'] ?? null)['display_method'])->all()];
     }
 
-    public function getSubheading(): ?string
-    {
-        $e = $this->record;
-
-        return $e->title.' · '.Labels::when($e->starts_at).' · '.($e->customer?->name ?? '');
-    }
 
     public function form(Schema $schema): Schema
     {
@@ -232,7 +227,7 @@ class ConfirmCapacity extends Page
 
             return;
         }
-        Notification::make()->success()->title('Recursos apartados')
+        Notification::make()->success()->title('Reserva confirmada')
             ->body(($state['staff_later'] ?? false) ? 'Reserva confirmada con el depósito verificado. El equipo lo asignas en «Planear el fin de semana».' : 'El staff, los trajes y el equipo quedaron asignados con el depósito verificado. Esto no es el contrato firmado.')->send();
         if ($note = \App\Filament\Support\AutoReminders::afterConfirm(Filament::auth()->user(), $this->record->getKey())) Notification::make()->warning()->title('Recordatorios')->body($note)->send();
         $this->redirect(EventResource::getUrl('index'));
@@ -254,7 +249,7 @@ class ConfirmCapacity extends Page
 
             return;
         }
-        Notification::make()->success()->title('Recursos apartados')
+        Notification::make()->success()->title('Reserva confirmada')
             ->body(($state['staff_later'] ?? false) ? 'Reserva confirmada con lo pagado en HoneyBook. El equipo lo asignas en «Planear el fin de semana».' : 'El staff, los trajes y el equipo quedaron asignados con lo pagado en HoneyBook. El contrato sigue en HoneyBook.')->send();
         $this->redirect(EventResource::getUrl('view', ['record' => $this->record]));
     }

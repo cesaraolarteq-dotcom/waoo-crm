@@ -96,8 +96,8 @@ class ResourceUnitResource extends Resource
                 ->selectSub(fn ($s) => $s->from('characters')->select('name')->whereColumn('characters.id', 'resources.character_id')->limit(1), 'character_name')
                 ->selectSub(fn ($s) => $s->from('resource_reservations')->selectRaw('count(*)')->whereColumn('resource_reservations.resource_id', 'resources.id')->where('ends_at', '>', now()), 'upcoming_total'))
             ->columns([
-                TextColumn::make('name')->label('Nombre')->searchable()->sortable()->weight('bold')
-                    ->description(fn ($record) => $record->code),
+                // The internal code is searchable but only shown when editing (audit 2026-11-02).
+                TextColumn::make('name')->label('Nombre')->searchable(['name', 'code'])->sortable()->weight('bold'),
                 TextColumn::make('kind')->label('Tipo')->badge()->color('gray')
                     ->formatStateUsing(fn ($state) => Labels::label(Labels::KIND, $state)),
                 TextColumn::make('detail')->label('Detalle')
@@ -109,7 +109,7 @@ class ResourceUnitResource extends Resource
                         default => null,
                     })->placeholder('—')->wrap(),
                 TextColumn::make('location')->label('Dónde está')->placeholder('—')->toggleable()->visibleFrom('lg'),
-                TextColumn::make('upcoming_total')->label('Próximos eventos')->alignEnd()->visibleFrom('md'),
+                TextColumn::make('upcoming_total')->label('Fiestas próximas')->alignEnd()->visibleFrom('md'),
                 TextColumn::make('status')->label('Estado')->badge()
                     ->formatStateUsing(fn ($state) => Labels::label(Labels::RESOURCE_STATUS, $state))
                     ->color(fn ($state) => Labels::RESOURCE_STATUS_COLOR[$state] ?? 'gray'),

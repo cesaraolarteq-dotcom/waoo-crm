@@ -47,7 +47,7 @@ class EventAndBlockFormsTest extends TestCase
         $this->assertSame('draft', $event->status);
         $this->assertSame([$this->price->id], $event->services()->pluck('price_version_id')->all());
         $this->assertSame($this->owner->id, (int) DB::table('audit_entries')->where('action', 'event.created')->value('actor_id'));
-        $this->get('/admin/eventos')->assertSee('Pendiente')->assertSee('Nuevo evento');
+        $this->get('/admin/eventos')->assertSee('Falta transporte')->assertSee('Nueva fiesta');
     }
 
     public function test_repeated_november_hour_requires_a_choice_and_keeps_it(): void

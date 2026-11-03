@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
 
-// "Apartar recursos y confirmar" against the proposed ConfirmCapacity service. The bound stand-in hands the page's
+// "Confirmar reserva" against the proposed ConfirmCapacity service. The bound stand-in hands the page's
 // payload to Codex's real ConfirmBooking, so the payload shape and the business checks are exercised for real.
 class ConfirmCapacityPageTest extends TestCase
 {
@@ -81,7 +81,7 @@ class ConfirmCapacityPageTest extends TestCase
         config(['waoo.record_forms' => false]);
         $this->get("/admin/eventos/{$this->event->id}/confirmar")->assertForbidden();
         config(['waoo.record_forms' => true]);
-        $this->get("/admin/eventos/{$this->event->id}/editar")->assertSee('Apartar recursos y confirmar');
+        $this->get("/admin/eventos/{$this->event->id}/editar")->assertSee('Confirmar reserva');
     }
 
     public function test_owner_form_requires_reason_at_six_days_and_preserves_it_with_the_booking(): void
@@ -95,7 +95,7 @@ class ConfirmCapacityPageTest extends TestCase
         $this->assertDatabaseCount('booking_evidence', 0);
         $reason = 'César confirmó disponibilidad y preparación del equipo para esta fiesta ficticia.';
         $page->fillForm($this->form(['short_notice_reason' => $reason]))->call('confirm')
-            ->assertHasNoFormErrors()->assertNotified('Recursos apartados');
+            ->assertHasNoFormErrors()->assertNotified('Reserva confirmada');
         $this->assertSame($reason, \App\Models\OperationalReview::where('event_id', $this->event->id)->sole()->evidence['short_notice_reason']);
     }
 
@@ -105,7 +105,7 @@ class ConfirmCapacityPageTest extends TestCase
         $this->bindService();
         Livewire::test(ConfirmCapacity::class, ['record' => $this->event->id])
             ->assertFormFieldIsHidden('short_notice_reason')
-            ->fillForm($this->form())->call('confirm')->assertHasNoFormErrors()->assertNotified('Recursos apartados');
+            ->fillForm($this->form())->call('confirm')->assertHasNoFormErrors()->assertNotified('Reserva confirmada');
     }
 
     public function test_owner_form_at_ten_days_does_not_apply_the_website_fourteen_day_rule(): void
@@ -114,7 +114,7 @@ class ConfirmCapacityPageTest extends TestCase
         $this->bindService();
         Livewire::test(ConfirmCapacity::class, ['record' => $this->event->id])
             ->assertFormFieldIsHidden('short_notice_reason')
-            ->fillForm($this->form())->call('confirm')->assertHasNoFormErrors()->assertNotified('Recursos apartados');
+            ->fillForm($this->form())->call('confirm')->assertHasNoFormErrors()->assertNotified('Reserva confirmada');
     }
 
     public function test_confirms_with_the_exact_payload_and_reserves_the_units(): void
@@ -123,7 +123,7 @@ class ConfirmCapacityPageTest extends TestCase
         Livewire::test(ConfirmCapacity::class, ['record' => $this->event->id])
             ->assertSee('Fictitious Package: 1 personaje · 1 bocina')->assertSee('Total $125 · 50 % = $62.50')
             ->fillForm($this->form(['payment' => ['amount' => '63']]))->call('confirm')
-            ->assertHasNoFormErrors()->assertNotified('Recursos apartados')->assertRedirect();
+            ->assertHasNoFormErrors()->assertNotified('Reserva confirmada')->assertRedirect();
 
         [$actor, $eventId, $input] = $this->calls[0];
         $this->assertTrue($actor->is($this->owner));
@@ -174,7 +174,7 @@ class ConfirmCapacityPageTest extends TestCase
         $this->assertStringContainsString('Earlier party', $transfers[0]['label']);
 
         $filled = array_map(fn ($t) => [...$t, 'travel_minutes' => 40, 'contingency_minutes' => 15, 'note' => 'Google Maps ese sábado, 40 min.'], $page->get('data.transfers'));
-        $page->set('data.transfers', $filled)->call('confirm')->assertHasNoFormErrors()->assertNotified('Recursos apartados');
+        $page->set('data.transfers', $filled)->call('confirm')->assertHasNoFormErrors()->assertNotified('Reserva confirmada');
         $this->assertSame(1, count($this->calls[0][2]['review']['transfers']));
         $this->assertSame('capacity_reserved', $this->event->fresh()->status);
     }

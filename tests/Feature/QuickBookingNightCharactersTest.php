@@ -84,7 +84,7 @@ class QuickBookingNightCharactersTest extends TestCase
         $this->assertSame('0',$remaining[$id]['outfit']);
         $this->assertSame('Llevar el vestuario acordado',$remaining[$id]['note']);
         $title=EventResource::suggestTitle([$this->price->id],array_values($remaining),null,'María González');
-        $this->assertSame('Celebración mágica Mickey María González',$title);
+        $this->assertSame('Celebración mágica Mickey · María González',$title);
         $input=EventResource::servicesInput(['price_version_ids'=>[$this->price->id],'characters'=>$remaining]);
         $this->assertSame('0',$input[0]['characters'][0]['outfit']);
     }

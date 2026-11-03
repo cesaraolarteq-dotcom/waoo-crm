@@ -38,8 +38,8 @@ class EventAutoTitleTest extends TestCase
     public function test_suggestion_format(): void
     {
         $chars = [['character_id' => $this->rumi->id, 'quantity' => 1], ['character_id' => $this->zoey->id, 'quantity' => 1]];
-        $this->assertSame('Mágico (Magic) Rumi y Zoey 04/10 Claudia Martínez', EventResource::suggestTitle([$this->magic->id], $chars, '2026-04-10', 'Claudia Martínez'));
-        $this->assertSame('Mágico (Magic) 2 Rumi 04/10/27 Claudia Martínez', EventResource::suggestTitle([$this->magic->id], [['character_id' => $this->rumi->id, 'quantity' => 2]], '2027-04-10', 'Claudia Martínez'));
+        $this->assertSame('Mágico (Magic) Rumi y Zoey · Claudia Martínez', EventResource::suggestTitle([$this->magic->id], $chars, '2026-04-10', 'Claudia Martínez'));
+        $this->assertSame('Mágico (Magic) 2 Rumi · Claudia Martínez', EventResource::suggestTitle([$this->magic->id], [['character_id' => $this->rumi->id, 'quantity' => 2]], '2027-04-10', 'Claudia Martínez'));
         $this->assertSame('', EventResource::suggestTitle([], [], null, null));
     }
 
@@ -48,7 +48,7 @@ class EventAutoTitleTest extends TestCase
         $client = Customer::create(['name' => 'Claudia Martínez', 'locale' => 'es']);
         $page = Livewire::test(CreateEvent::class)
             ->fillForm(['customer_id' => $client->id])->fillForm(['price_version_ids' => [$this->magic->id]])->fillForm(['date' => '2026-12-19'])
-            ->assertSchemaStateSet(['title' => 'Mágico (Magic) 12/19 Claudia Martínez']);
+            ->assertSchemaStateSet(['title' => 'Mágico (Magic) · Claudia Martínez']);
         $page->fillForm(['title' => 'Mi nombre propio'])->fillForm(['date' => '2026-12-20'])->assertSchemaStateSet(['title' => 'Mi nombre propio']);
     }
 
@@ -56,6 +56,6 @@ class EventAutoTitleTest extends TestCase
     {
         Livewire::test(QuickBooking::class)
             ->fillForm(['price_version_ids' => [$this->magic->id]])->fillForm(['date' => '2027-04-10'])->fillForm(['customer_mode' => 'new', 'name' => 'Claudia Martínez'])
-            ->assertSchemaStateSet(['title' => 'Mágico (Magic) 04/10/27 Claudia Martínez']);
+            ->assertSchemaStateSet(['title' => 'Mágico (Magic) · Claudia Martínez']);
     }
 }

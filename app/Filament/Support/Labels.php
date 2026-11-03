@@ -20,7 +20,7 @@ final class Labels
     public const VARIANT_STATUS_COLOR = ['draft' => 'warning', 'active' => 'success', 'retired' => 'gray'];
 
     // capacity_reserved means staff/costumes/equipment are held after a verified deposit. It is not "contract signed" or "paid".
-    public const EVENT_STATUS = ['draft' => 'Borrador', 'capacity_reserved' => 'Recursos apartados', 'cancelled' => 'Cancelada'];
+    public const EVENT_STATUS = ['draft' => 'Borrador', 'capacity_reserved' => 'Confirmada', 'cancelled' => 'Cancelada'];
 
     public const EVENT_STATUS_COLOR = ['draft' => 'gray', 'capacity_reserved' => 'info', 'cancelled' => 'danger'];
 
@@ -70,6 +70,10 @@ final class Labels
 
     public static function when(?CarbonInterface $at): string
     {
-        return $at ? $at->setTimezone(self::TZ)->locale('es')->translatedFormat('D j M Y, g:i a') : '—';
+        if (! $at) return '—';
+        $local = $at->setTimezone(self::TZ)->locale('es');
+
+        // Owner 2026-11-02: the year only when it is not this year.
+        return $local->translatedFormat($local->year === now(self::TZ)->year ? 'D j M, g:i a' : 'D j M Y, g:i a');
     }
 }

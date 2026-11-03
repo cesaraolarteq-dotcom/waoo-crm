@@ -16,7 +16,7 @@ class CreateEvent extends CreateRecord
 
     protected static string $resource = EventResource::class;
 
-    protected static ?string $title = 'Nuevo evento (borrador)';
+    protected static ?string $title = 'Nueva fiesta (borrador)';
 
     protected ?string $subheading = 'Un borrador no aparta staff ni trajes. Se apartan al confirmar con el depósito recibido.';
 

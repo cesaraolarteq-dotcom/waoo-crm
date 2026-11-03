@@ -24,6 +24,7 @@ use Livewire\Attributes\Locked;
 // unknown costs or missing coverage show as pending, never as $0 profit.
 class EventCosts extends Page
 {
+    use \App\Filament\Resources\Events\Pages\Concerns\PartyPage { \App\Filament\Resources\Events\Pages\Concerns\PartyPage::getBreadcrumbs insteadof InteractsWithRecord; }
     use InteractsWithRecord;
 
     protected static string $resource = EventResource::class;
@@ -63,10 +64,6 @@ class EventCosts extends Page
         $this->displayedActualRevision = (int) EventCostSnapshot::where('event_id', $this->record->getKey())->where('kind', 'actual')->max('revision');
     }
 
-    public function getSubheading(): ?string
-    {
-        return $this->record->title.' · '.Labels::when($this->record->starts_at).' · Solo tú ves esta pantalla. Modo prueba.';
-    }
 
     public function summary(): array
     {

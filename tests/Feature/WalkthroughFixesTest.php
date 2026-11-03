@@ -35,8 +35,9 @@ class WalkthroughFixesTest extends TestCase
         foreach ([['TRAJE-RUMI-1', 'inactive'], ['TRAJE-RUMI-GOLDEN-1', 'active'], ['TRAJE-RUMI-HOW-1', 'maintenance']] as [$code, $status]) {
             \App\Models\Resource::create(['code' => $code, 'name' => "Traje {$code}", 'kind' => 'costume', 'status' => $status, 'character_id' => $rumi->id, 'skills' => []]);
         }
-        $this->actingAs($owner)->get('/admin/staff-y-trajes')->assertOk()
-            ->assertSee('TRAJE-RUMI-GOLDEN-1')->assertSee('TRAJE-RUMI-HOW-1')->assertDontSee('TRAJE-RUMI-1');
+        // The list opens on "Personas" (audit 2026-11-02); costumes are one tab away and show their names, not codes.
+        $this->actingAs($owner)->get('/admin/staff-y-trajes?tab=costume')->assertOk()
+            ->assertSee('Traje TRAJE-RUMI-GOLDEN-1')->assertSee('Traje TRAJE-RUMI-HOW-1')->assertDontSee('Traje TRAJE-RUMI-1');
     }
 
     // Owner 2026-10-20: one address (the party's), the agreed time shown fixed, and his HoneyBook questions.

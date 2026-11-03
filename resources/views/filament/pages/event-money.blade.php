@@ -8,11 +8,6 @@
     @include('filament.pages.partials.quick-payment-state',['event'=>$this->record])
     @include('filament.pages.partials.honeybook-responsible', ['event' => $this->record])
     <div class="wmoney">
-        <div class="wmoney-states" aria-label="Estados por separado">
-            <span>Pago: <b>{{ $paid > 0 ? ($rev && $f['balance_cents'] === 0 ? 'Pagado completo' : 'Pago recibido') : 'Sin pagos' }}</b></span>
-            <span>Recursos: <b>{{ \App\Filament\Support\Labels::label(\App\Filament\Support\Labels::EVENT_STATUS, $f['capacity_status']) }}</b></span>
-            <span>Contrato: <b>{{ ['not_issued' => 'Sin emitir', 'issued' => 'Enviado, sin firmar', 'signed' => 'Firmado'][$f['contract_status']] ?? $f['contract_status'] }}</b></span>
-        </div>
 
         @if (($f['customer_fee_received_cents'] ?? 0)>0)<p>Procesamiento de Stripe recibido: {{ $money($f['customer_fee_received_cents']) }} · Total cobrado: {{ $money($f['gross_received_cents']) }}</p>@endif
         @if (! $rev)
@@ -31,7 +26,7 @@
                     <small>@if ($f['deposit_shortfall_cents'] > 0) Faltan {{ $money($f['deposit_shortfall_cents']) }} para el depósito @else Depósito cubierto ✓ @endif</small></div>
                 <div><span>Recibido</span><b class="ok">{{ $money($paid) }}</b><small>{{ $f['refunded_cents'] ? 'Devuelto '.$money($f['refunded_cents']) : 'Solo pagos verificados' }}</small></div>
                 <div><span>Saldo pendiente</span><b>{{ $money($f['balance_cents']) }}</b>
-                    <small>Vence {{ \App\Filament\Support\Labels::when($rev->balance_due_at) }} · en el contrato: “{{ $f['balance_label'] }}”</small></div>
+                    <small>Vence {{ \App\Filament\Support\Labels::when($rev->balance_due_at) }}, como dice el contrato</small></div>
             </div>
             @if ($f['credit_cents'] > 0)
                 <div class="wmoney-warn" role="alert">Pagó {{ $money($f['credit_cents']) }} de más. Decide con el cliente si se aplica a otro servicio o se le devuelve; el sistema no devuelve nada solo.</div>

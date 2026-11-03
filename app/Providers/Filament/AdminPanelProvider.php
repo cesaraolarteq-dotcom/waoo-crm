@@ -59,7 +59,9 @@ class AdminPanelProvider extends PanelProvider
             ->pages([\App\Filament\Pages\HoneyBookInformation::class, \App\Filament\Pages\HoneyBookArchiveReview::class, \App\Filament\Pages\ImportHistory::class, Dashboard::class, \App\Filament\Pages\Calendar::class, \App\Filament\Pages\WeekendPlan::class, \App\Filament\Pages\Reports::class, \App\Filament\Pages\QuickBooking::class, \App\Filament\Pages\Leads::class, \App\Filament\Pages\Quotes::class, \App\Filament\Pages\QuoteDetail::class, \App\Filament\Pages\ContractTemplates::class, \App\Filament\Pages\EmailTemplates::class, \App\Filament\Pages\ImportHoneyBook::class, \App\Filament\Pages\StaffLinks::class, \App\Filament\Pages\StaffPlanPreview::class, \App\Filament\Pages\ChangePreview::class, \App\Filament\Pages\CutoverPreview::class, \App\Filament\Pages\HoneyBookCutover::class])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->renderHook(PanelsRenderHook::HEAD_END, fn () => view('filament.head'))
+            ->renderHook(PanelsRenderHook::BODY_END, fn () => auth()->check() ? view('filament.bottom-bar') : '')
             ->renderHook(PanelsRenderHook::PAGE_START, fn () => view('filament.section-tabs', ['rows' => \App\Filament\Support\Sections::rows()]))
+            ->renderHook(PanelsRenderHook::PAGE_HEADER_WIDGETS_BEFORE, fn () => ($e = \App\Filament\Support\Sections::eventPage()) ? view('filament.party-bar', ['chips' => \App\Filament\Support\PartyHeader::chips($e), 'tabs' => \App\Filament\Support\Sections::eventTabs() ?? []]) : '')
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

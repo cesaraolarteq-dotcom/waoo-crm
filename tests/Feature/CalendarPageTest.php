@@ -46,7 +46,7 @@ class CalendarPageTest extends TestCase
     {
         $this->party('Fiesta Mágica', '2026-12-19 15:00', 60, 'Mágico');
         $this->get('/admin/calendario?date=2026-12-19')->assertOk()->assertSee('Calendario')->assertSee('Lun')->assertDontSee('No hay fiestas este día')
-            ->assertSee('Fiesta Mágica')->assertSee('3:00 p. m.', false)->assertSee('#8D53D9')->assertSee('Transporte Pendiente');
+            ->assertSee('Fiesta Mágica')->assertSee('3:00 p. m.', false)->assertSee('#8D53D9')->assertSee('Falta el costo de transporte');
     }
 
     public function test_too_little_time_between_parties_sharing_a_unit_is_flagged(): void
@@ -55,7 +55,7 @@ class CalendarPageTest extends TestCase
         $this->party('Primera', '2026-12-19 12:00', 60, 'Waoo', [$performer->id]);   // ends 1:00, breakdown → 1:20
         $this->party('Segunda', '2026-12-19 14:00', 60, 'Waoo', [$performer->id]);   // setup from 1:30 → 10 min free
         Livewire::test(Calendar::class)->set('date', '2026-12-19')->call('setMode', 'day')
-            ->assertSee('Fictitious Performer: solo 10 min entre fiestas')->assertSee('Recursos apartados');
+            ->assertSee('Fictitious Performer: solo 10 min entre fiestas')->assertSee('Confirmada');
     }
 
     // Owner 2026-10-29: day view counts people and equipment at the busiest moment against what he has.

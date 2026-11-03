@@ -23,12 +23,12 @@ class EventResource extends Resource
 {
     protected static ?string $model = Event::class;
     protected static ?string $slug = 'eventos';
-    protected static ?string $modelLabel = 'evento';
-    protected static ?string $pluralModelLabel = 'eventos';
-    protected static ?string $navigationLabel = 'Eventos';
+    protected static ?string $modelLabel = 'fiesta';
+    protected static ?string $pluralModelLabel = 'fiestas';
+    protected static ?string $navigationLabel = 'Fiestas';
     protected static string|\UnitEnum|null $navigationGroup = 'Día a día';
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedCalendarDays;
-    protected static ?string $breadcrumb = 'Eventos';
+    protected static ?string $breadcrumb = 'Fiestas';
     protected static bool $hasTitleCaseModelLabel = false;
     protected static ?int $navigationSort = 10;
 
@@ -212,13 +212,13 @@ class EventResource extends Resource
     public static function titleField(): TextInput
     {
         return TextInput::make('title')->label('Nombre del evento')->required()->maxLength(255)
-            ->placeholder('Ej.: Mágico Rumi 04/10 Claudia Martínez')
-            ->helperText('Se llena solo: paquete + personajes + fecha + cliente. Si lo cambias a mano, ya no se toca.');
+            ->placeholder('Ej.: Mágico Rumi · Claudia Martínez')
+            ->helperText('Se llena solo: paquete + personajes + cliente. Si lo cambias a mano, ya no se toca.');
     }
 
     /**
-     * Owner's naming convention: package + characters + short date (MM/DD, plus /YY when it is not this year) + client.
-     * Example: "Mágico (Magic) Rumi 04/10 Claudia Martínez".
+     * Package + characters · client. Owner 2026-11-02: no date in the name (it went stale when a party moved); the date is
+     * always shown beside it. Example: "Mágico (Magic) Rumi · Claudia Martínez". $date is kept for callers.
      */
     public static function suggestTitle(array $priceVersionIds, array $characters, ?string $date, ?string $client): string
     {
@@ -232,17 +232,12 @@ class EventResource extends Resource
                 $name = \App\Models\Character::whereKey((int) $c['character_id'])->value('name');
                 $n = max(1, (int) ($c['quantity'] ?? 1));
 
-
                 return $name ? ($n > 1 ? "{$n} {$name}" : $name) : null;
             })->filter()->values();
         $chars = $names->count() > 1 ? $names->slice(0, -1)->implode(', ').' y '.$names->last() : (string) $names->first();
-        $short = null;
-        if ($date && preg_match('/^\d{4}-\d{2}-\d{2}/', $date)) {
-            $d = \Carbon\CarbonImmutable::parse(substr($date, 0, 10), ChicagoTime::TZ);
-            $short = $d->format('m/d').($d->year !== now(ChicagoTime::TZ)->year ? $d->format('/y') : '');
-        }
+        $what = trim(preg_replace('/\s+/', ' ', $packages.' '.$chars));
 
-        return trim(preg_replace('/\s+/', ' ', implode(' ', array_filter([$packages, $chars, $short, trim((string) $client)]))));
+        return implode(' · ', array_filter([$what, trim((string) $client)]));
     }
 
     /**
@@ -454,17 +449,25 @@ class EventResource extends Resource
                 TextColumn::make('starts_at')->label('Fecha y hora')->sortable()
                     ->formatStateUsing(fn ($state) => Labels::when($state))
                     ->description(fn ($record) => 'hasta '.$record->ends_at->setTimezone(Labels::TZ)->locale('es')->translatedFormat('g:i a')),
-                TextColumn::make('title')->label('Evento')->searchable()->weight('bold')
+                TextColumn::make('title')->label('Fiesta')->searchable()->weight('bold')
                     ->description(fn ($record) => $record->customer?->name),
-                TextColumn::make('postal_code')->label('ZIP')->placeholder('—')->visibleFrom('md'),
-                TextColumn::make('travel_fee_cents')->label('Costo de transporte')->visibleFrom('lg')
-                    ->formatStateUsing(fn ($state) => Labels::money($state))->placeholder('Pendiente')
-                    ->color(fn ($record) => $record->travel_fee_cents === null ? 'warning' : null),
                 TextColumn::make('total')->label('Total')
                     ->state(fn ($record) => $record->services_cents === null ? null : ($record->travel_fee_cents === null ? null : (int) $record->services_cents + $record->travel_fee_cents))
                     ->formatStateUsing(fn ($state) => Labels::money($state))
                     ->placeholder(fn ($record) => $record->services_cents === null ? 'Sin servicios' : 'Falta transporte')
                     ->alignEnd(),
+                // Audit 2026-11-02: what the owner acts on (balance, contract) instead of ZIP and travel fee.
+                TextColumn::make('balance')->label('Saldo')->alignEnd()->visibleFrom('md')
+                    ->state(function ($record) {
+                        if ($record->status === 'cancelled' || ! \App\Filament\Support\FinanceGate::enabled() || $record->getAttribute('responsible_system') === 'honeybook') return null;
+                        $f = app(\App\Services\Finance\FinanceSummary::class)->forEvent($record);
+                        return $f['financial_revision'] ? $f['balance_cents'] : null;
+                    })
+                    ->formatStateUsing(fn ($state) => $state === 0 ? 'Pagado' : Labels::money($state))->placeholder('—')
+                    ->color(fn ($state) => $state === 0 ? 'success' : ($state ? 'warning' : null)),
+                TextColumn::make('contract')->label('Contrato')->visibleFrom('lg')
+                    ->state(fn ($record) => $record->status === 'cancelled' ? null : \App\Filament\Support\PartyHeader::contract($record))->placeholder('—')
+                    ->color(fn ($state) => $state && str_starts_with($state, 'Firmado') ? 'success' : 'gray'),
                 // A draft that already has money or comes from HoneyBook is not a forgotten draft: say what it is.
                 TextColumn::make('status')->label('Estado')->badge()
                     ->formatStateUsing(fn ($state, $record) => self::listStatus($record)[0])
@@ -475,8 +478,8 @@ class EventResource extends Resource
             ])
             ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->defaultSort('starts_at')
-            ->emptyStateHeading('Todavía no hay eventos')
-            ->emptyStateDescription('Los eventos aparecen aquí cuando se crean. La reserva rápida es el siguiente paso.');
+            ->emptyStateHeading('Todavía no hay fiestas')
+            ->emptyStateDescription('Las fiestas aparecen aquí cuando se crean con Reserva rápida.');
     }
 
     public static function getPages(): array
