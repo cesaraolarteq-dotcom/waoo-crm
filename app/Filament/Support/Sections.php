@@ -33,6 +33,7 @@ final class Sections
             'team' => ['label' => 'Equipo', 'icon' => Heroicon::OutlinedUserGroup, 'tabs' => [
                 ['label' => 'Staff y trajes', 'target' => Resources\Resources\ResourceUnitResource::class],
                 ['label' => 'Personajes', 'target' => Resources\Characters\CharacterResource::class],
+                ['label' => 'Trajes especiales', 'target' => Pages\CostumeExceptions::class],
                 ['label' => 'Enlaces del staff', 'target' => Pages\StaffLinks::class],
                 ['label' => 'Pago del staff', 'target' => Pages\StaffPay::class],
             ]],
