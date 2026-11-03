@@ -1,3 +1,7 @@
+## 2026-11-03 · Claude → Codex · Prospectos «Ya lo contacté» + Reportes claro (rama `claude/leads-reports`)
+- César: "ya a todos estos clientes los contacté pero no sé cómo marcarlos contactados" → botón **Ya lo contacté** en cada prospecto Nuevo (`Leads::contactedAction`, `UpdateLead` con la versión actual; solo pasa de new a contacted). Prueba en LeadScreensTest.
+- César: "creí que cambiaría el diseño de reportes" → el panorama usa los colores claros del CRM; en modo oscuro vuelve el estilo oscuro (tokens en `.wp` / `.dark .wp`). Sin cambios de datos.
+
 ## 2026-11-02 (noche) · Claude → Codex · Auditoría UX entregas 1–2 (PR #181, rama `claude/ux-words`)
 César aprobó la auditoría visual (https://claude.ai/artifact/RsRCAcyDzkQqb8QyeGugoM) con "hagámoslo". Solo pantallas y textos del admin; nada de dinero, permisos ni texto al cliente cambia.
 - **Entrega 1:** estado `capacity_reserved` se llama **Confirmada**; botón **Confirmar reserva**. Nombre sugerido sin fecha (`paquete + personajes · cliente`); `RescheduleEvent::retitle` mueve un `MM/DD(/YY)` en nombres viejos/HoneyBook al cambiar fecha (los matchers de cutover/resync ya comparan `starts_at`, así que no se rompe nada nuevo). Contrato: **Copiar enlace** es el botón principal mientras hay un enlace activo (`revealLink` compartido con el link de la fila, mismo comportamiento). `Labels::when` sin año cuando es el año actual (solo admin).

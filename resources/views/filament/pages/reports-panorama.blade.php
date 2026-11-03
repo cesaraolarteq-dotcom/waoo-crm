@@ -1,5 +1,5 @@
 @php
-    // Panorama (César 2026-10-28): one dark "control room" block, same look in light and dark Filament themes.
+    // Panorama (César 2026-10-28; light since 2026-11-03 to match the CRM, dark in dark mode).
     $p = $this->panorama();
     $usd = fn (?int $c) => $c === null ? 'Pendiente' : '$'.number_format(intdiv($c + 50, 100));
     $prevYear = substr($p['previous']['from'], 0, 4) === substr($p['previous']['to'], 0, 4) ? substr($p['previous']['from'], 0, 4) : 'el año anterior';
@@ -59,8 +59,14 @@
 </script>
 <div class="wp" wire:loading.class="wp-busy" wire:target="setWindow,moveWindow,rangeFrom,rangeTo">
     <style>
-        .wp{--bg:#070a1c;--panel:#0f1430;--line:#1f2750;--ink:#eef0ff;--muted:#8c93c3;--gold:#f9c930;--teal:#15d1c4;--pink:#ff3d97;--purple:#9b6bff;--navy:#3a5bff;--hot:#ff7a59;--cold:#6aa7ff;
-            color-scheme:dark;background:radial-gradient(900px 420px at 85% -10%,#1a1f55 0%,transparent 60%),var(--bg);color:var(--ink);border-radius:24px;padding:22px;display:grid;gap:18px;font-variant-numeric:tabular-nums;transition:opacity .15s}
+        /* Audit 2026-11-02 (César 11-03 "creí que cambiaría el diseño de reportes"): same light look as the rest of the CRM; dark only in dark mode. */
+        .wp{--bg:transparent;--panel:#fff;--line:#E3E6F2;--ink:#0E1B52;--muted:#6B7398;--gold:#E0A100;--teal:#0E9F94;--pink:#E8317B;--purple:#7B4FE0;--navy:#2E4BDB;--hot:#E0552F;--cold:#2F6FD6;
+            --kpi:#fff;--seg-on:#0E1B52;--seg-on-ink:#fff;--pill-bg:#FDF1D6;--pill-ink:#8A5A00;--dash:rgba(14,27,82,.25);--glow-o:.10;--map:#F6F7FB;
+            --h0:#EEF1F9;--hc2:#BFD3F5;--hc1:#7FA8EA;--hm:#B7B0E0;--hw1:#F4A98C;--hw2:#F06A45;
+            color-scheme:light;background:var(--bg);color:var(--ink);display:grid;gap:18px;font-variant-numeric:tabular-nums;transition:opacity .15s}
+        .dark .wp{--bg:#070a1c;--panel:#0f1430;--line:#1f2750;--ink:#eef0ff;--muted:#8c93c3;--gold:#f9c930;--teal:#15d1c4;--pink:#ff3d97;--purple:#9b6bff;--navy:#3a5bff;--hot:#ff7a59;--cold:#6aa7ff;
+            --kpi:linear-gradient(180deg,#121842,#0d1230);--seg-on:#1f2860;--seg-on-ink:#eef0ff;--pill-bg:#1b2250;--pill-ink:#f9c930;--dash:rgba(238,240,255,.35);--glow-o:.35;--map:#0b0f26;
+            --h0:#141a3a;--hc2:#1f4f9e;--hc1:#4f86d6;--hm:#6f6aa8;--hw1:#e0805e;--hw2:#ff5a36;color-scheme:dark;border-radius:24px;padding:22px}
         .wp-busy{opacity:.55}
         .wp-kpi .s{font-size:.74rem;color:var(--muted);margin-top:2px}
         .wp *{box-sizing:border-box}
@@ -72,15 +78,15 @@
         .wp-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
         .wp-seg{display:flex;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px}
         .wp-seg button,.wp-tabs button,.wp-nav button{font:600 .85rem inherit;color:var(--muted);background:none;border:0;border-radius:9px;padding:8px 12px;cursor:pointer;min-height:36px}
-        .wp-seg button[aria-pressed=true]{background:#1f2860;color:var(--ink)}
+        .wp-seg button[aria-pressed=true]{background:var(--seg-on);color:var(--seg-on-ink)}
         .wp-nav{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px}
         .wp-nav b{min-width:9ch;text-align:center;font-size:.92rem}
         .wp-range{display:flex;gap:8px;align-items:center}
-        .wp-range input{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:7px 9px;color-scheme:dark}
+        .wp-range input{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:7px 9px}
         .wp-note{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
         .wp-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
-        .wp-kpi{background:linear-gradient(180deg,#121842,#0d1230);border:1px solid var(--line);border-radius:18px;padding:14px 16px;position:relative;overflow:hidden}
-        .wp-kpi::after{content:"";position:absolute;right:-40px;bottom:-60px;width:130px;height:130px;border-radius:50%;background:var(--glow);filter:blur(40px);opacity:.35}
+        .wp-kpi{background:var(--kpi);border:1px solid var(--line);border-radius:18px;padding:14px 16px;position:relative;overflow:hidden}
+        .wp-kpi::after{content:"";position:absolute;right:-40px;bottom:-60px;width:130px;height:130px;border-radius:50%;background:var(--glow);filter:blur(40px);opacity:var(--glow-o)}
         .wp-kpi .v{font-size:clamp(1.3rem,2.6vw,1.9rem);font-weight:800;letter-spacing:-.02em;line-height:1.15}
         .wp-kpi .l{color:var(--muted);font-size:.82rem}
         .wp-kpi .d{font-size:.74rem;margin-top:4px;color:var(--muted)}
@@ -90,16 +96,16 @@
         .wp-stage{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:14px}
         .wp-duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
         .wp-card{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px;min-width:0;display:grid;gap:10px;align-content:start}
-        .wp-pill{justify-self:start;font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:99px;background:#1b2250;color:var(--gold)}
+        .wp-pill{justify-self:start;font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:99px;background:var(--pill-bg);color:var(--pill-ink)}
         .wp-big{font-size:2.2rem;font-weight:800;line-height:1}
         .wp-cols{display:flex;align-items:flex-end;gap:4px;height:180px;padding-top:8px}
         .wp-cols button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;background:none;border:0;padding:0;cursor:pointer;border-radius:6px}
         .wp-cols .bar{position:relative;width:100%;max-width:38px;flex:1;display:flex;align-items:flex-end;justify-content:center}
         .wp-cols i{display:block;width:100%;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,var(--gold),var(--pink));min-height:2px;position:relative;z-index:1}
-        .wp-cols s{position:absolute;bottom:0;left:-3px;right:-3px;border:1.5px dashed rgba(238,240,255,.35);border-bottom:0;border-radius:6px 6px 0 0;text-decoration:none}
+        .wp-cols s{position:absolute;bottom:0;left:-3px;right:-3px;border:1.5px dashed var(--dash);border-bottom:0;border-radius:6px 6px 0 0;text-decoration:none}
         .wp-cols button[aria-pressed=true] i{background:linear-gradient(180deg,var(--teal),var(--navy))}
         .wp-ins{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:0;padding:0;list-style:none}
-        .wp-ins li{background:linear-gradient(180deg,#121842,#0d1230);border:1px solid var(--line);border-radius:18px;padding:14px 16px;display:grid;gap:4px;align-content:start;position:relative;overflow:hidden}
+        .wp-ins li{background:var(--kpi);border:1px solid var(--line);border-radius:18px;padding:14px 16px;display:grid;gap:4px;align-content:start;position:relative;overflow:hidden}
         .wp-ins li::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:var(--tone)}
         .wp-ins .t{font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--tone)}
         .wp-ins .b{font-size:1.45rem;font-weight:800;letter-spacing:-.02em;line-height:1.1;color:var(--ink)}
@@ -113,7 +119,7 @@
         .wp-bar b{font-size:.78rem;color:var(--muted);font-weight:500;text-align:right}
         .wp-heat{display:grid;grid-template-columns:repeat(auto-fill,minmax(16px,1fr));gap:4px}
         .wp-heat i{aspect-ratio:1;border-radius:4px;display:block}
-        .wp .h0{background:#141a3a}.wp .c2{background:#1f4f9e}.wp .c1{background:#4f86d6}.wp .m{background:#6f6aa8}.wp .w1{background:#e0805e}.wp .w2{background:#ff5a36}
+        .wp .h0{background:var(--h0)}.wp .c2{background:var(--hc2)}.wp .c1{background:var(--hc1)}.wp .m{background:var(--hm)}.wp .w1{background:var(--hw1)}.wp .w2{background:var(--hw2)}
         .wp-legend{display:flex;gap:6px;align-items:center;font-size:.72rem;color:var(--muted)}
         .wp-legend i{width:14px;height:14px;border-radius:4px;display:inline-block}
         .wp-list{display:grid;gap:6px;margin:0;padding:0;list-style:none;font-size:.86rem}
@@ -127,8 +133,8 @@
         .wp td,.wp th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
         .wp th{color:var(--muted);font-weight:500;font-size:.76rem}
         .wp button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
-        .wp-map{height:440px;border-radius:14px;overflow:hidden;background:#0b0f26;border:1px solid var(--line)}
-        .wp .leaflet-tooltip{background:#0f1430;color:var(--ink);border:1px solid var(--line);border-radius:8px;font:500 .8rem inherit}
+        .wp-map{height:440px;border-radius:14px;overflow:hidden;background:var(--map);border:1px solid var(--line)}
+        .wp .leaflet-tooltip{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;font:500 .8rem inherit}
         .wp .leaflet-container a{color:var(--muted)}
         .wp-chips{display:flex;flex-wrap:wrap;gap:6px}
         .wp-chips span{font-size:.72rem;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:3px 9px}
