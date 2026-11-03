@@ -106,6 +106,12 @@ class Dashboard extends BaseDashboard
         });
         if ($teamless->isNotEmpty()) $cards[] = ['tone' => 'warn', 'title' => 'Fiestas de esta semana sin equipo completo',
             'text' => 'Ármalo en Agenda → Planear el fin de semana.', 'items' => $teamless->map($link)->values()->all()];
+        // EXTRAS-01: what clients added from their link in the last 7 days (already in the balance; check the team).
+        $extras = \App\Models\EventExtra::where('accepted_at', '>=', $now->copy()->subDays(7))->orderByDesc('id')->get();
+        if ($extras->isNotEmpty()) $cards[] = ['tone' => 'info', 'title' => 'Extras que agregaron los clientes',
+            'text' => 'Ya están en su saldo. Revisa el equipo de esa fiesta.',
+            'items' => $extras->map(fn ($x) => ['label' => (Event::whereKey($x->event_id)->value('title') ?? 'Fiesta').' · '.Labels::money($x->amount_cents),
+                'url' => EventResource::getUrl('view', ['record' => $x->event_id])])->all()];
         // Owner 2026-11-03: someone on a planned team answered "No puedo" from their link: replace them in Planear.
         $declined = \App\Models\StaffJobAnswer::where('answer', 'no')->whereIn('event_id', (clone $upcoming)->where('status', 'capacity_reserved')->select('id'))->get()
             ->filter(function ($a) {

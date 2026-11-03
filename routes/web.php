@@ -187,6 +187,7 @@ Route::middleware([\App\Http\Middleware\AuthenticatePortal::class, 'throttle:60,
     Route::get('/contracts/{contract}', [\App\Http\Controllers\Portal\PortalController::class, 'show']);
     Route::get('/contracts/{contract}/pdf', [\App\Http\Controllers\Portal\PortalController::class, 'pdf']);
     Route::post('/contracts/{contract}/sign', [\App\Http\Controllers\Portal\PortalController::class, 'sign']);
+    Route::post('/extras', [\App\Http\Controllers\Portal\ExtrasController::class, 'accept']);
     Route::get('/contracts/{contract}/signature', [\App\Http\Controllers\Portal\PortalController::class, 'signature']);
 });
 

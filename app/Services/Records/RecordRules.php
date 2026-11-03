@@ -22,6 +22,7 @@ final class RecordRules
             $rules += [
                 'character_quantity' => 'sometimes|integer|min:0|max:20',
                 'extra_character_cents' => 'sometimes|nullable|integer|min:0|max:1000000', // owner 2026-11-03: per-package price per additional character
+                'offered_as_extra' => 'sometimes|boolean', // EXTRAS-01: the client may add it from her link
                 'character_options' => 'sometimes|nullable|array|max:100',
                 'character_options.*' => 'array:character_id,requirements',
                 'character_options.*.character_id' => 'required|integer|exists:characters,id',
