@@ -1,3 +1,8 @@
+## 2026-11-03 · Claude → Codex · Arreglos de la revisión propia (rama `claude/review-fixes`)
+- `routes/staff.php`: quitado el `throttle:30,1` de `/staff/respuesta` y `/staff/disponibilidad`. Los throttle sin nombre comparten un contador por IP, así que el de 30 también contaba cada carga de página del grupo (60). Queda el del grupo.
+- Pestañas de sección en teléfono: la pestaña actual se desplaza a la vista (antes «Pago del staff» quedaba fuera de la pantalla).
+- Revisado sin cambios: `StaffPaySuggestion` (el conductor siempre es del equipo, `AssignEventTeam` lo exige), `SaveStaffAnswers` (solo sobre sí mismo, fiesta futura y en su equipo), `EventExtras::accept` (locks, sha, rollback, depósito igual).
+
 ## 2026-11-03 · Claude → Codex · Precio por personaje adicional por paquete + disponibilidad solo cuenta el sábado (rama `claude/char-tiers`)
 - César (formulario): Personajes sin show = 1 $250 · 2–3 a $225 c/u · 4+ a $200 c/u; «cámbialo en el CRM y la web». Sin tocar cómo se guarda el dinero de cada fiesta: `service_variants.extra_character_cents` (nullable; vacío = general $150), campo en Catálogo; `SaveEventDraft` y la Reserva rápida usan el precio del paquete (`ServiceVariant::extraCharacterPrice`). Plan de datos en crm-test (después del deploy): Personajes sin show (1) $250 + $200 adicional → 2 = $450; nuevas variantes «3 personajes» $675 y «4 personajes» $800, ambas con $200 por adicional. Lo que ya está reservado no cambia (snapshot en event_services).
 - Staff: «¿Qué días puedes trabajar?» solo muestra cuántas fiestas hay el sábado (pedido de César).
