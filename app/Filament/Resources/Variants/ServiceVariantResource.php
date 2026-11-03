@@ -61,6 +61,8 @@ class ServiceVariantResource extends Resource
                 ->helperText('Cuánto se queda después para recoger. Vacío = aún no lo sabes.'),
             Select::make('status')->label('Estado')->options(Labels::VARIANT_STATUS)->default('draft')->required()->native(false)
                 ->helperText('Para activarlo, define primero lo que necesita.'),
+            \Filament\Forms\Components\Toggle::make('offered_as_extra')->label('El cliente lo puede agregar como extra')->default(false)
+                ->helperText('Aparece en su enlace hasta 7 días antes de la fiesta, al mismo tiempo que su servicio.'),
             Repeater::make('requirements')->label('Qué necesita (al mismo tiempo, todo el evento)')->columnSpanFull()->defaultItems(0)
                 ->addActionLabel('Agregar requisito')->columns(4)
                 ->schema(self::requirementFields()),
@@ -107,7 +109,7 @@ class ServiceVariantResource extends Resource
 
         return ['name' => trim((string) ($data['name'] ?? '')), 'long_description' => $long === '' ? null : $long, 'status' => $data['status'] ?? 'draft',
             'duration_minutes' => (int) ($data['duration_minutes'] ?? 0), 'requirements' => self::normalizeRequirements($data['requirements'] ?? []),
-            'character_quantity' => $quantity, 'character_options' => $options,
+            'character_quantity' => $quantity, 'character_options' => $options, 'offered_as_extra' => (bool) ($data['offered_as_extra'] ?? false),
             // PACKAGE-TIMING: blank = unknown (null), 0 is a real zero.
             'setup_minutes' => self::minutesOrNull($data['setup_minutes'] ?? null), 'breakdown_minutes' => self::minutesOrNull($data['breakdown_minutes'] ?? null)];
     }

@@ -73,6 +73,7 @@ return [
     'anniversary_mail_enabled' => (bool) env('WAOO_ANNIVERSARY_MAIL_ENABLED', false),
     'availability_crm_only' => (bool) env('WAOO_AVAILABILITY_CRM_ONLY', false),
     'postal_address' => env('WAOO_POSTAL_ADDRESS', 'Waoo Party LLC · 17350 State Hwy 249, Ste 220 · Houston, TX 77064'),
+    'sandbox_extras' => (bool) env('WAOO_SANDBOX_EXTRAS', false), // EXTRAS-01: client adds extras from her link (off until César turns it on)
     'extra_character_cents' => 15000, // César 2026-10-21: each character beyond the package's included ones adds $150, any package.
     // Owner 2026-10-21: two-way Google Calendar (OAuth client from the owner's Google Cloud project; never in Git).
     'google_calendar' => ['client_id' => env('GOOGLE_CALENDAR_CLIENT_ID'), 'client_secret' => env('GOOGLE_CALENDAR_CLIENT_SECRET'), 'calendar_name' => 'Waoo Party fiestas'],

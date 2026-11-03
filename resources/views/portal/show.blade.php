@@ -184,11 +184,13 @@
   </div>
   @if ($vm['reserved'] ?? false)</details>@endif
 </section>
+@include('portal._extras')
 @else
 <section class="p-card p-done">
   <h2>{{ $t('done_title') }}</h2>
   <p>{{ $t('done', ['when' => $e['when']]) }}</p>
 </section>
+@include('portal._extras')
 @include('portal._signed-contract')
 @endif
 @if (! ($vm['preview'] ?? false))

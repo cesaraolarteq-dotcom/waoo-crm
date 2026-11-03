@@ -106,6 +106,12 @@ class Dashboard extends BaseDashboard
         });
         if ($teamless->isNotEmpty()) $cards[] = ['tone' => 'warn', 'title' => 'Fiestas de esta semana sin equipo completo',
             'text' => 'Ármalo en Agenda → Planear el fin de semana.', 'items' => $teamless->map($link)->values()->all()];
+        // EXTRAS-01: what clients added from their link in the last 7 days (already in the balance; check the team).
+        $extras = \App\Models\EventExtra::where('accepted_at', '>=', $now->copy()->subDays(7))->orderByDesc('id')->get();
+        if ($extras->isNotEmpty()) $cards[] = ['tone' => 'info', 'title' => 'Extras que agregaron los clientes',
+            'text' => 'Ya están en su saldo. Revisa el equipo de esa fiesta.',
+            'items' => $extras->map(fn ($x) => ['label' => (Event::whereKey($x->event_id)->value('title') ?? 'Fiesta').' · '.Labels::money($x->amount_cents),
+                'url' => EventResource::getUrl('view', ['record' => $x->event_id])])->all()];
         $hbSoon = (clone $upcoming)->whereIn('id', \App\Models\ImportedProjectLink::query()->select('event_id'))->where('starts_at', '<', $now->copy()->addDays(7))->get();
         $cards[] = ['tone' => 'info', 'title' => 'Fiestas de HoneyBook en los próximos 7 días',
             'text' => 'Su staff y sus cobros se manejan en HoneyBook hasta el cambio. Aquí solo para que las tengas presentes.', 'items' => $hbSoon->map($link)->all()];

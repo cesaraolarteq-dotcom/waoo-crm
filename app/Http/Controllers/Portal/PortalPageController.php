@@ -142,7 +142,18 @@ final class PortalPageController extends Controller
 
         if(config('waoo.sandbox_company',false)&&!array_key_exists('billing_company',$prefill))$prefill['billing_company']=$event->billing_company;
 
+        // EXTRAS-01: offered only once the party is booked and signed, up to 7 days before; each with its exact annex.
+        $extras = null;
+        if (config('waoo.sandbox_extras', false) && in_array($step, ['pay', 'done'], true) && $signed && \App\Services\Extras\EventExtras::blocked($event) === null) {
+            $extras = ['action' => url('/portal/api/extras'), 'offers' => array_map(function ($o) use ($event, $lang) {
+                $text = \App\Services\Extras\EventExtras::annex($event, $o, $lang);
+                return [...$o, 'name' => $lang === 'en' ? preg_replace('/^Personaje adicional: /', 'Additional character: ', $o['name']) : $o['name'],
+                    'amount' => \App\Filament\Support\Labels::money($o['amount_cents']), 'annex' => $text, 'sha' => hash('sha256', $text)];
+            }, \App\Services\Extras\EventExtras::offers($event))];
+            if ($extras['offers'] === []) $extras = null;
+        }
         return [
+            'extras' => $extras,
             'lang' => $lang, 'step' => $step, 'reserved' => $signed && ($f['deposit_shortfall_cents'] ?? 1) === 0 && ! self::underReview($event->id), 'admin_view' => $client->adminAuthenticated, 'quick_payment'=>$quickPayment, 'steps' => $quickPayment ? ['details','pay','contract'] : ($canDetails ? ['details', 'contract', 'pay'] : ['contract', 'pay']), 'test_mode' => true,
             'details' => $details ? ['expected_event_version' => $details['expected_event_version'], 'expected_revision' => $details['expected_revision'],
                 'action' => url('/portal/api/details'),
