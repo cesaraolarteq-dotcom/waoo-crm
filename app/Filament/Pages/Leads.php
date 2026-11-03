@@ -102,6 +102,24 @@ class Leads extends Page
         return Lead::query()->selectRaw('status, count(*) as n')->groupBy('status')->pluck('n', 'status')->all();
     }
 
+    /** Owner 2026-11-03: one tap after writing to a new lead (WhatsApp, call), instead of opening "Actualizar". */
+    public function contactedAction(): Action
+    {
+        return Action::make('contacted')->label('Ya lo contacté')->icon('heroicon-o-check')->color('gray')->size('sm')
+            ->action(function (array $arguments) {
+                $lead = Lead::find((int) ($arguments['id'] ?? 0));
+                if (! $lead || $lead->status !== 'new') return;
+                try {
+                    app(UpdateLead::class)->execute(Filament::auth()->user(), $lead->id, ['expected_version' => (int) $lead->version, 'status' => 'contacted']);
+                } catch (ValidationException|RecordWriteRejected $e) {
+                    Notification::make()->danger()->title('No se guardó')->body($e instanceof ValidationException ? collect($e->errors())->flatten()->first() : $e->getMessage())->persistent()->send();
+
+                    return;
+                }
+                Notification::make()->success()->title('Marcado como contactado')->body('Lo encuentras en «Contactados».')->send();
+            });
+    }
+
     public function updateAction(): Action
     {
         return Action::make('update')->label('Actualizar')->icon('heroicon-o-pencil-square')->color('gray')->size('sm')

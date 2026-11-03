@@ -41,6 +41,7 @@
                                 <a class="wcal-btn" href="{{ \App\Filament\Resources\Events\EventResource::getUrl('create', ['lead' => $r->id]) }}">Crear cotización</a>
                             @endif
                         @endif
+                        @if ($r->status === 'new'){{ ($this->contactedAction)(['id' => $r->id]) }}@endif
                         {{ ($this->updateAction)(['id' => $r->id]) }}
                     </div>
                 </div>

@@ -65,6 +65,14 @@ class LeadScreensTest extends TestCase
         $this->assertSame(['contacted', 'Maybeli la llamó.'], [$lead->fresh()->status, $lead->fresh()->owner_note]);
     }
 
+    public function test_one_tap_marks_a_new_lead_contacted(): void
+    {
+        $lead = $this->lead();
+        Livewire::test(Leads::class)->assertSee('Ya lo contacté')->callAction('contacted', [], ['id' => $lead->id])->assertNotified('Marcado como contactado');
+        $this->assertSame('contacted', $lead->fresh()->status);
+        Livewire::test(Leads::class, ['status' => 'contacted'])->assertDontSee('Ya lo contacté');
+    }
+
     public function test_convert_prefills_quick_booking_and_marks_booked_only_when_saved(): void
     {
         $lead = $this->lead();
