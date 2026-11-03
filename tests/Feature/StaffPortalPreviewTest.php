@@ -36,13 +36,15 @@ class StaffPortalPreviewTest extends TestCase
         }
     }
 
-    public function test_week_shows_each_party_with_logistics_team_and_driver_but_no_answers_or_availability(): void
+    public function test_week_shows_each_party_with_logistics_team_driver_confirm_and_monday_days(): void
     {
         $this->get('/dev/staff/semana?lang=es')->assertSee('Tus fiestas de esta semana')->assertSee('Semana del lun. 19 oct. al dom. 25 oct.')
             ->assertSee('123 Sample St, Katy, TX 77494')->assertSee('456 Example Ave')->assertSee('Abrir en Maps')
             ->assertSee('Tú manejas en esta fiesta')->assertSee('Carlos (maneja)')->assertSee('Personaje de ejemplo (Gala)')
             ->assertSee('Aparece el día de la fiesta')->assertSee('guárdalo en tu celular')
-            ->assertDontSee('Sí, voy')->assertDontSee('No puedo ir')->assertDontSee('disponibilidad')->assertDontSee('type="checkbox"', false);
+            // Owner 2026-11-03: confirm each party and answer the Monday days, Saturday first; still no money anywhere.
+            ->assertSee('¿Confirmas esta fiesta?')->assertSee('Confirmaste esta fiesta')->assertSeeInOrder(['¿Qué días puedes trabajar?', 'Sábado 31 de octubre', 'Viernes 30 de octubre'])
+            ->assertDontSee('$')->assertDontSee('type="checkbox"', false);
         $this->get('/dev/staff/vacia?lang=en')->assertSee('You have no parties assigned this week');
     }
 

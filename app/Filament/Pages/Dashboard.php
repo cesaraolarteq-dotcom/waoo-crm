@@ -112,6 +112,17 @@ class Dashboard extends BaseDashboard
             'text' => 'Ya están en su saldo. Revisa el equipo de esa fiesta.',
             'items' => $extras->map(fn ($x) => ['label' => (Event::whereKey($x->event_id)->value('title') ?? 'Fiesta').' · '.Labels::money($x->amount_cents),
                 'url' => EventResource::getUrl('view', ['record' => $x->event_id])])->all()];
+        // Owner 2026-11-03: someone on a planned team answered "No puedo" from their link: replace them in Planear.
+        $declined = \App\Models\StaffJobAnswer::where('answer', 'no')->whereIn('event_id', (clone $upcoming)->where('status', 'capacity_reserved')->select('id'))->get()
+            ->filter(function ($a) {
+                $e = Event::find($a->event_id); $plan = \App\Models\EventTeamPlan::where('event_id', $a->event_id)->first();
+                return $e && $plan && $a->event_starts_at->equalTo($e->starts_at) && (collect($plan->slots)->contains(fn ($s) => (int) $s['resource_id'] === (int) $a->resource_id)
+                    || collect($plan->costumes)->contains(fn ($c) => (int) $c['wearer_id'] === (int) $a->resource_id));
+            });
+        if ($declined->isNotEmpty()) $cards[] = ['tone' => 'bad', 'title' => 'Staff que dijo «No puedo»',
+            'text' => 'Toca «Reemplazar» en Planear el fin de semana y guarda.',
+            'items' => $declined->map(fn ($a) => ['label' => (\App\Models\Resource::whereKey($a->resource_id)->value('name') ?? 'Alguien').' · '.Event::whereKey($a->event_id)->value('title'),
+                'url' => \App\Filament\Pages\WeekendPlan::getUrl(['fiesta' => $a->event_id])])->values()->all()];
         $hbSoon = (clone $upcoming)->whereIn('id', \App\Models\ImportedProjectLink::query()->select('event_id'))->where('starts_at', '<', $now->copy()->addDays(7))->get();
         $cards[] = ['tone' => 'info', 'title' => 'Fiestas de HoneyBook en los próximos 7 días',
             'text' => 'Su staff y sus cobros se manejan en HoneyBook hasta el cambio. Aquí solo para que las tengas presentes.', 'items' => $hbSoon->map($link)->all()];

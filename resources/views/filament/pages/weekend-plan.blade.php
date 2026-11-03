@@ -15,7 +15,7 @@
     </div>
 
     @forelse ($b['days'] as $day)
-        <h3 class="wtp-day">{{ $day['label'] }}</h3>
+        <h3 class="wtp-day">{{ $day['label'] }} <span class="wtp-avail">Staff: <b>{{ $day['avail']['yes'] }}</b> pueden · {{ $day['avail']['no'] }} no · {{ $day['avail']['none'] }} sin responder</span></h3>
         <div class="wtp-grid">
             @foreach ($day['parties'] as $p)
                 <section class="wtp-card" wire:key="party-{{ $p['id'] }}">
@@ -30,7 +30,9 @@
                             <select wire:model.live="picks.{{ $p['id'] }}.people.{{ $s['key'] }}">
                                 <option value="">— Elegir —</option>
                                 @foreach ($s['options'] as $id => $name)<option value="{{ $id }}">{{ $name }}</option>@endforeach
-                            </select></label>
+                            </select>
+                            @if ($s['status'])<span class="wtp-ans {{ $s['status'][0] }}">{{ $s['status'][1] }}@if ($s['status'][0] === 'bad') <button type="button" class="wtp-rep" wire:click="replace({{ $p['id'] }}, '{{ $s['key'] }}')">Reemplazar</button>@endif</span>@endif
+                        </label>
                     @endforeach
                     @foreach ($p['costumes'] as $c)
                         <div class="wtp-seat wtp-costume"><span>{{ $c['label'] }}</span>
@@ -41,7 +43,9 @@
                             <select wire:model.live="picks.{{ $p['id'] }}.costumes.{{ $c['key'] }}.wearer_id" aria-label="Quién usa {{ $c['label'] }}">
                                 <option value="">Quién lo usa…</option>
                                 @foreach ($c['wearers'] as $id => $name)<option value="{{ $id }}">{{ $name }}</option>@endforeach
-                            </select></div>
+                            </select>
+                            @if ($c['status'])<span class="wtp-ans {{ $c['status'][0] }}">{{ $c['status'][1] }}@if ($c['status'][0] === 'bad') <button type="button" class="wtp-rep" wire:click="replace({{ $p['id'] }}, '{{ $c['key'] }}', true)">Reemplazar</button>@endif</span>@endif
+                        </div>
                     @endforeach
                     <label class="wtp-seat wtp-driver"><span>Conductor</span>
                         @if ($p['auto_driver'] && ! ($picks[$p['id']]['driver'] ?? null))
@@ -58,6 +62,6 @@
             @endforeach
         </div>
     @empty
-        <div class="wtp-empty">No hay fiestas confirmadas este fin de semana.</div>
+        <div class="wtp-empty">No hay fiestas confirmadas esta semana.</div>
     @endforelse
 </x-filament-panels::page>

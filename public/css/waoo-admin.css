@@ -368,3 +368,9 @@ a.wdash-item:hover{border-color:#122F94;background:#F5F7FF}
 .dark .wqb-savebar{background:linear-gradient(to top,#0B1240 70%,rgba(11,18,64,0))}
 .wdash-row .wparty-chips{justify-content:flex-end;flex:0 1 auto} .wdash-row .wparty-chip{font-size:12px;padding:3px 9px}
 @media (max-width:640px){.wdash-row{flex-direction:column;align-items:flex-start}.wdash-row .wparty-chips{justify-content:flex-start}}
+/* Weekend plan answers (owner 2026-11-03): availability per day, who confirmed, Reemplazar. */
+.wtp-avail{font-size:12.5px;font-weight:500;color:#6B7398;margin-left:8px}
+.wtp-ans{grid-column:2;font-size:12.5px;font-weight:600;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.wtp-ans.ok{color:#11734A} .wtp-ans.bad{color:#B4233A} .wtp-ans.wait{color:#8A5A00}
+.wtp-rep{border:1px solid #B4233A;color:#B4233A;background:#fff;border-radius:8px;padding:2px 10px;font-weight:700;cursor:pointer;min-height:30px}
+@media (max-width:640px){.wtp-ans{grid-column:1}}
