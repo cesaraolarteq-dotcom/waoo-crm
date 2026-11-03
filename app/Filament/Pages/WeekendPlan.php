@@ -110,13 +110,17 @@ class WeekendPlan extends Page
                 'wearers' => $free->filter(fn ($r) => in_array('performer', $r->skills ?? [], true))->pluck('name', 'id')->all()])->all();
             $team = array_filter([...array_values($p['people']), ...array_column($p['costumes'], 'wearer_id')]);
             $drivers = $staff->whereIn('id', $team)->filter(fn ($r) => MatchEventResources::driver($r))->pluck('name', 'id')->all();
-            $missing = count(array_filter($p['people'], fn ($v) => ! $v)) + count(array_filter($p['costumes'], fn ($c) => ! $c['wearer_id'] || ! $c['unit_id']))
-                + (($p['driver'] ?? null) || count($drivers) === 1 || $team === [] ? 0 : 1);
+            // Says what is missing, not just how many ("Recreador/a 1, Kuromi").
+            $labels = collect($need['people'])->keyBy('key')->map(fn ($s) => $s['label'])->all() + collect($need['costumes'])->keyBy('key')->map(fn ($s) => $s['label'])->all();
+            $gaps = [...array_map(fn ($k) => $labels[$k] ?? $k, array_keys(array_filter($p['people'], fn ($v) => ! $v))),
+                ...array_map(fn ($k) => $labels[$k] ?? $k, array_keys(array_filter($p['costumes'], fn ($c) => ! $c['wearer_id'] || ! $c['unit_id']))),
+                ...(($p['driver'] ?? null) || count($drivers) === 1 || $team === [] ? [] : ['Conductor'])];
+            $missing = count($gaps);
             $local = $e->starts_at->setTimezone('America/Chicago');
             $days[$local->toDateString()]['label'] ??= ucfirst($local->locale('es')->translatedFormat('l j \d\e F'));
-            $days[$local->toDateString()]['parties'][] = ['id' => $e->id, 'title' => $e->title, 'time' => $local->format('g:i a').' – '.$e->ends_at->setTimezone('America/Chicago')->format('g:i a'),
+            $days[$local->toDateString()]['parties'][] = ['id' => $e->id, 'title' => $e->title, 'time' => $local->locale('es')->translatedFormat('g:i a').' – '.$e->ends_at->setTimezone('America/Chicago')->locale('es')->translatedFormat('g:i a'),
                 'place' => Str::limit((string) $e->address, 48), 'packages' => $e->services->map(fn ($s) => \App\Models\ServiceVariant::whereKey($s->service_variant_id)->value('name'))->filter()->implode(' + '),
-                'seats' => $seats, 'costumes' => $cos, 'drivers' => $drivers, 'auto_driver' => count($drivers) === 1 ? reset($drivers) : null, 'missing' => $missing,
+                'seats' => $seats, 'costumes' => $cos, 'drivers' => $drivers, 'auto_driver' => count($drivers) === 1 ? reset($drivers) : null, 'missing' => $missing, 'gaps' => $gaps, 'team_empty' => $team === [],
                 'url' => \App\Filament\Resources\Events\EventResource::getUrl('view', ['record' => $e])];
         }
         ksort($days);

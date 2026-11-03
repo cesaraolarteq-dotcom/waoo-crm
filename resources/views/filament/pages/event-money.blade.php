@@ -10,7 +10,7 @@
     <div class="wmoney">
         <div class="wmoney-states" aria-label="Estados por separado">
             <span>Pago: <b>{{ $paid > 0 ? ($rev && $f['balance_cents'] === 0 ? 'Pagado completo' : 'Pago recibido') : 'Sin pagos' }}</b></span>
-            <span>Recursos: <b>{{ \App\Filament\Support\Labels::label(\App\Filament\Support\Labels::EVENT_STATUS, $f['capacity_status']) }}</b></span>
+            <span>Reserva: <b>{{ \App\Filament\Support\Labels::label(\App\Filament\Support\Labels::EVENT_STATUS, $f['capacity_status']) }}</b></span>
             <span>Contrato: <b>{{ ['not_issued' => 'Sin emitir', 'issued' => 'Enviado, sin firmar', 'signed' => 'Firmado'][$f['contract_status']] ?? $f['contract_status'] }}</b></span>
         </div>
 

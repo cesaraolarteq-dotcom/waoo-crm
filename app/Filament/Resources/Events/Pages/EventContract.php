@@ -100,7 +100,7 @@ class EventContract extends Page
 
     protected function getHeaderActions(): array
     {
-        return [$this->approveAction(), $this->createAction(), $this->issueAction(), $this->linkAction()];
+        return [$this->approveAction(), $this->createAction(), $this->issueAction(), $this->copyActiveAction(), $this->linkAction()];
     }
 
     public function createAction(): Action
@@ -150,7 +150,9 @@ class EventContract extends Page
 
     public function linkAction(): Action
     {
-        return Action::make('link')->label('Crear enlace para el cliente')->icon('heroicon-o-link')->color('primary')
+        // With a live link the main button is «Copiar enlace»; making another one stays possible but secondary.
+        return Action::make('link')->label(fn () => $this->activeGrantId() ? 'Crear otro enlace' : 'Crear enlace para el cliente')->icon('heroicon-o-link')
+            ->color(fn () => $this->activeGrantId() ? 'gray' : 'primary')
             ->visible(fn () => in_array($this->state()['contract']?->state, ['issued'], true) || in_array($this->state()['detailsState'], ['waiting_details', 'review_details'], true))
             ->modalHeading('Enlace para el cliente')
             ->modalDescription('Con él el cliente lee el contrato, lo firma y ve cómo pagar. Mientras esté activo puedes volver a copiarlo desde aquí.')
@@ -199,25 +201,41 @@ class EventContract extends Page
     public function copyLinkAction(): Action
     {
         return Action::make('copyLink')->label('Copiar enlace')->icon('heroicon-o-clipboard-document')->color('primary')->size('sm')->link()
-            ->action(function (array $arguments) {
-                $grant = PortalGrant::where('event_id', $this->record->getKey())->find((int) ($arguments['id'] ?? 0));
-                try {
-                    $r = app(\App\Services\Portal\RevealPortalGrantLink::class)->execute(Filament::auth()->user(), $this->record->getKey(), (int) ($arguments['id'] ?? 0));
-                } catch (\App\Exceptions\PortalLinkRejected|\App\Exceptions\ResponsibilityRejected $e) {
-                    $n = Notification::make()->danger()->title('No se pudo copiar')->body($e->getMessage())->persistent();
-                    if (in_array($e->status, [409, 410], true) && $this->linkAction()->isVisible()) {
-                        $n->body($e->getMessage().' Usa «Crear enlace para el cliente» (arriba) para hacer uno nuevo.');
-                    } elseif ($e->status === 503) {
-                        $n->title('No se pudo recuperar ahora')->body('Inténtalo de nuevo en un momento.');
-                    } elseif ($e->status === 404) {
-                        $n->body('Recarga la página.');
-                    }
-                    $n->send();
+            ->action(fn (array $arguments) => $this->revealLink((int) ($arguments['id'] ?? 0)));
+    }
 
-                    return;
-                }
-                $this->newLink = $this->linkPanel($r->short_url ?? $r->url, $r->expires_at, in_array('details.submit', $grant?->scopes ?? [], true), true);
-            });
+    /** Header button: copies the newest active link, so the owner never makes a second link by accident. */
+    public function copyActiveAction(): Action
+    {
+        return Action::make('copyActive')->label('Copiar enlace')->icon('heroicon-o-clipboard-document')->color('primary')
+            ->visible(fn () => $this->activeGrantId() !== null)
+            ->action(fn () => $this->revealLink((int) $this->activeGrantId()));
+    }
+
+    private function activeGrantId(): ?int
+    {
+        return $this->state()['grants']->first(fn ($g) => $g->active && $g->can_reveal)?->id;
+    }
+
+    private function revealLink(int $id): void
+    {
+        $grant = PortalGrant::where('event_id', $this->record->getKey())->find($id);
+        try {
+            $r = app(\App\Services\Portal\RevealPortalGrantLink::class)->execute(Filament::auth()->user(), $this->record->getKey(), $id);
+        } catch (\App\Exceptions\PortalLinkRejected|\App\Exceptions\ResponsibilityRejected $e) {
+            $n = Notification::make()->danger()->title('No se pudo copiar')->body($e->getMessage())->persistent();
+            if (in_array($e->status, [409, 410], true) && $this->linkAction()->isVisible()) {
+                $n->body($e->getMessage().' Usa «Crear enlace para el cliente» (arriba) para hacer uno nuevo.');
+            } elseif ($e->status === 503) {
+                $n->title('No se pudo recuperar ahora')->body('Inténtalo de nuevo en un momento.');
+            } elseif ($e->status === 404) {
+                $n->body('Recarga la página.');
+            }
+            $n->send();
+
+            return;
+        }
+        $this->newLink = $this->linkPanel($r->short_url ?? $r->url, $r->expires_at, in_array('details.submit', $grant?->scopes ?? [], true), true);
     }
 
     public function approveAction(): Action

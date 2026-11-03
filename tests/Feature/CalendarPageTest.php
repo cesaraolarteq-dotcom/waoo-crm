@@ -55,7 +55,7 @@ class CalendarPageTest extends TestCase
         $this->party('Primera', '2026-12-19 12:00', 60, 'Waoo', [$performer->id]);   // ends 1:00, breakdown → 1:20
         $this->party('Segunda', '2026-12-19 14:00', 60, 'Waoo', [$performer->id]);   // setup from 1:30 → 10 min free
         Livewire::test(Calendar::class)->set('date', '2026-12-19')->call('setMode', 'day')
-            ->assertSee('Fictitious Performer: solo 10 min entre fiestas')->assertSee('Recursos apartados');
+            ->assertSee('Fictitious Performer: solo 10 min entre fiestas')->assertSee('Confirmada');
     }
 
     // Owner 2026-10-29: day view counts people and equipment at the busiest moment against what he has.

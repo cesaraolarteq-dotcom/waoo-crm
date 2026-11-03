@@ -31,7 +31,7 @@ class ConfirmCapacity extends Page
 
     protected static string $resource = EventResource::class;
 
-    protected static ?string $title = 'Apartar recursos y confirmar';
+    protected static ?string $title = 'Confirmar reserva';
 
     public ?array $data = [];
 
@@ -232,7 +232,7 @@ class ConfirmCapacity extends Page
 
             return;
         }
-        Notification::make()->success()->title('Recursos apartados')
+        Notification::make()->success()->title('Reserva confirmada')
             ->body(($state['staff_later'] ?? false) ? 'Reserva confirmada con el depósito verificado. El equipo lo asignas en «Planear el fin de semana».' : 'El staff, los trajes y el equipo quedaron asignados con el depósito verificado. Esto no es el contrato firmado.')->send();
         if ($note = \App\Filament\Support\AutoReminders::afterConfirm(Filament::auth()->user(), $this->record->getKey())) Notification::make()->warning()->title('Recordatorios')->body($note)->send();
         $this->redirect(EventResource::getUrl('index'));
@@ -254,7 +254,7 @@ class ConfirmCapacity extends Page
 
             return;
         }
-        Notification::make()->success()->title('Recursos apartados')
+        Notification::make()->success()->title('Reserva confirmada')
             ->body(($state['staff_later'] ?? false) ? 'Reserva confirmada con lo pagado en HoneyBook. El equipo lo asignas en «Planear el fin de semana».' : 'El staff, los trajes y el equipo quedaron asignados con lo pagado en HoneyBook. El contrato sigue en HoneyBook.')->send();
         $this->redirect(EventResource::getUrl('view', ['record' => $this->record]));
     }

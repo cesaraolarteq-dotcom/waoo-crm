@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\DB;
  * One capacity authority for the paths that commit a party before or with money (owner 2026-10-29; contract
  * docs/BOOKING-FEASIBILITY-CONTRACT.md "Admisión atómica antes de pago", steps 2–3): unpaid Stripe hold (a Zelle quick
  * booking is not gated: the deposit is already in the bank and its costume hold goes to review instead) and
- * "Apartar recursos y confirmar".
+ * "Confirmar reserva".
  * Lock order (never reversed): global DailyCapacity mutex → user (when applicable) → event → lease
  * → capacity days (Houston dates, ascending) → characters → resources.
  * Two requests for the last place serialize on the shared day rows, re-read every commitment and exactly one fits.

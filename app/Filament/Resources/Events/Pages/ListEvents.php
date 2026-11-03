@@ -15,7 +15,7 @@ class ListEvents extends ListRecords
 
     protected static ?string $breadcrumb = 'Lista';
 
-    protected ?string $subheading = 'Horas en hora de Houston. "Recursos apartados" significa staff y trajes asignados con depósito verificado; no es contrato firmado.';
+    protected ?string $subheading = 'Horas de Houston.';
 
     public function getTabs(): array
     {

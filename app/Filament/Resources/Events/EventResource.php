@@ -212,13 +212,13 @@ class EventResource extends Resource
     public static function titleField(): TextInput
     {
         return TextInput::make('title')->label('Nombre del evento')->required()->maxLength(255)
-            ->placeholder('Ej.: Mágico Rumi 04/10 Claudia Martínez')
-            ->helperText('Se llena solo: paquete + personajes + fecha + cliente. Si lo cambias a mano, ya no se toca.');
+            ->placeholder('Ej.: Mágico Rumi · Claudia Martínez')
+            ->helperText('Se llena solo: paquete + personajes + cliente. Si lo cambias a mano, ya no se toca.');
     }
 
     /**
-     * Owner's naming convention: package + characters + short date (MM/DD, plus /YY when it is not this year) + client.
-     * Example: "Mágico (Magic) Rumi 04/10 Claudia Martínez".
+     * Package + characters · client. Owner 2026-11-02: no date in the name (it went stale when a party moved); the date is
+     * always shown beside it. Example: "Mágico (Magic) Rumi · Claudia Martínez". $date is kept for callers.
      */
     public static function suggestTitle(array $priceVersionIds, array $characters, ?string $date, ?string $client): string
     {
@@ -232,17 +232,12 @@ class EventResource extends Resource
                 $name = \App\Models\Character::whereKey((int) $c['character_id'])->value('name');
                 $n = max(1, (int) ($c['quantity'] ?? 1));
 
-
                 return $name ? ($n > 1 ? "{$n} {$name}" : $name) : null;
             })->filter()->values();
         $chars = $names->count() > 1 ? $names->slice(0, -1)->implode(', ').' y '.$names->last() : (string) $names->first();
-        $short = null;
-        if ($date && preg_match('/^\d{4}-\d{2}-\d{2}/', $date)) {
-            $d = \Carbon\CarbonImmutable::parse(substr($date, 0, 10), ChicagoTime::TZ);
-            $short = $d->format('m/d').($d->year !== now(ChicagoTime::TZ)->year ? $d->format('/y') : '');
-        }
+        $what = trim(preg_replace('/\s+/', ' ', $packages.' '.$chars));
 
-        return trim(preg_replace('/\s+/', ' ', implode(' ', array_filter([$packages, $chars, $short, trim((string) $client)]))));
+        return implode(' · ', array_filter([$what, trim((string) $client)]));
     }
 
     /**

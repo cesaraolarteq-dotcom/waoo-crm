@@ -120,6 +120,10 @@ class ShortPortalLinksTest extends TestCase
         \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('admin'));
         $page=\Livewire\Livewire::test(\App\Filament\Resources\Events\Pages\EventContract::class,['record'=>$result->event->id])
             ->callAction('copyLink',[],['id'=>$grant->id])->assertSet('newLink.url',$copy->short_url)->assertSee($copy->short_url,false);
+        // Audit 2026-11-02: with a live link the main button copies it; making another one is secondary.
+        \Livewire\Livewire::test(\App\Filament\Resources\Events\Pages\EventContract::class,['record'=>$result->event->id])
+            ->assertActionVisible('copyActive')->assertActionHasLabel('link','Crear otro enlace')
+            ->callAction('copyActive')->assertSet('newLink.url',$copy->short_url);
         $this->assertDatabaseCount('portal_grants',1);$this->assertDatabaseCount('ledger_entries',1);
     }
 

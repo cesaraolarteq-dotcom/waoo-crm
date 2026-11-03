@@ -314,7 +314,7 @@ a.wdash-item:hover{border-color:#122F94;background:#F5F7FF}
 .wtp-week{display:flex;align-items:center;gap:10px;font-size:16px}
 .wtp-actions{display:flex;gap:8px}
 .wtp-muted{color:#6B7398;font-size:13px}
-.wtp-day{font-size:15px;font-weight:700;color:#0E1B52;margin:18px 0 8px;text-transform:capitalize}
+.wtp-day{font-size:15px;font-weight:700;color:#0E1B52;margin:18px 0 8px}
 .wtp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
 .wtp-card{background:#fff;border:1px solid #E3E6F2;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px}
 .wtp-card header{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:2px}
@@ -322,7 +322,9 @@ a.wdash-item:hover{border-color:#122F94;background:#F5F7FF}
 .wtp-chip{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:#FDF1D6;color:#8A5A00;white-space:nowrap}
 .wtp-chip.ok{background:#E3F4EC;color:#11734A}
 .wtp-seat{display:grid;grid-template-columns:110px 1fr;align-items:center;gap:8px;font-size:13px;color:#4A5282}
-.wtp-costume{grid-template-columns:110px 1fr 1fr}
+.wtp-costume{grid-template-columns:110px 1fr}
+.wtp-costume select+select{grid-column:2}
+.wtp-missing{font-size:12.5px;color:#8A5A00}
 .wtp-seat select{width:100%;border:1px solid #D7DBEA;border-radius:9px;padding:6px 8px;font-size:14px;background:#fff;color:#0E1B52}
 .wtp-driver b{color:#0E1B52;font-weight:600}
 .wtp-empty{padding:40px;text-align:center;color:#6B7398;border:1px dashed #D7DBEA;border-radius:14px}

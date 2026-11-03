@@ -41,7 +41,7 @@ class EventFileTest extends TestCase
         $unit = Resource::create(['code' => 'STF-1', 'name' => 'Fictitious Performer', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer']]);
         ResourceReservation::create(['event_id' => $this->event->id, 'resource_id' => $unit->id, 'starts_at' => $this->event->starts_at, 'ends_at' => $this->event->ends_at]);
         $this->event->forceFill(['status' => 'capacity_reserved'])->save();
-        $this->get("/admin/eventos/{$this->event->id}")->assertOk()->assertSee('Fictitious Performer')->assertSee('Recursos apartados')->assertDontSee('Editar borrador');
+        $this->get("/admin/eventos/{$this->event->id}")->assertOk()->assertSee('Fictitious Performer')->assertSee('Confirmada')->assertDontSee('Editar borrador');
         $this->get("/admin/eventos/{$this->event->id}/editar")->assertForbidden();
     }
 

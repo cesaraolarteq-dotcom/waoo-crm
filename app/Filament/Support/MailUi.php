@@ -45,7 +45,7 @@ final class MailUi
         'responsible_system_honeybook' => 'HoneyBook cobra y avisa esta fiesta: el CRM no le programa correos hasta el cambio final.',
         'mail_source_changed' => 'El evento o la ficha del cliente cambió. Recarga la página.',
         'mail_link_expires_before_reminder' => 'El enlace vence antes de algún recordatorio. Crea un enlace que dure más.',
-        'mail_event_requires_current_confirmed_finance' => 'El evento necesita recursos apartados con su pago vinculado y montos al día.',
+        'mail_event_requires_current_confirmed_finance' => 'La fiesta tiene que estar confirmada, con su pago vinculado y montos al día.',
         'mail_link_inactive' => 'Ese enlace ya no sirve (vencido, anulado o de otro cliente).',
         'payment_link_scope_required' => 'Para el recordatorio de saldo, el enlace debe permitir pagar.',
         'recipient_required' => 'El cliente no tiene un correo válido.',

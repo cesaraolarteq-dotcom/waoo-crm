@@ -12,7 +12,7 @@ use Filament\Resources\Pages\Page;
 use Illuminate\Support\Facades\DB;
 
 // Event file (read-only), for drafts and booked events alike: details, services + characters, assigned units,
-// money and the audit history. Changes happen in their own screens (edit draft, Apartar recursos, Dinero).
+// money and the audit history. Changes happen in their own screens (edit draft, Confirmar reserva, Dinero).
 class ViewEvent extends Page
 {
     use InteractsWithRecord;
@@ -353,7 +353,7 @@ class ViewEvent extends Page
                         ->body(($skipped ? 'No se programó: '.$skipped.'. ' : '').'Programado no es enviado.')->send();
                 }),
             Action::make('contract')->label('Contrato y enlace')->icon('heroicon-o-document-text')->color('gray')->visible(fn () => \App\Filament\Support\DocumentsGate::enabled())->url(fn () => EventResource::getUrl('contract', ['record' => $e])),
-            Action::make('confirm')->label('Apartar recursos y confirmar')->icon('heroicon-o-check-badge')->color('primary')->visible(fn () => ConfirmCapacity::canAccessFor($e))->url(fn () => EventResource::getUrl('confirm', ['record' => $e])),
+            Action::make('confirm')->label('Confirmar reserva')->icon('heroicon-o-check-badge')->color('primary')->visible(fn () => ConfirmCapacity::canAccessFor($e))->url(fn () => EventResource::getUrl('confirm', ['record' => $e])),
             $this->rescheduleCheckAction(),
             $this->rescheduleAction(),
             $this->cancelEventAction(),
@@ -429,7 +429,7 @@ class ViewEvent extends Page
                 // Part 4: tell the client right away when mail/SMS are on (best effort; the scheduled command retries).
                 if ($c->state === 'pending_signature') { try { app(\App\Services\Changes\RescheduleNotices::class)->sendDue(); } catch (\Throwable) {} }
                 \Filament\Notifications\Notification::make()->success()->title('Fecha cambiada · '.Labels::when($c->new_starts_at))
-                    ->body(($c->moved_reservations ? 'Se movieron '.$c->moved_reservations.' recursos apartados. ' : '').($c->state === 'pending_signature' ? 'Queda pendiente de firma del contrato nuevo.' : '').($c->fee_cents ? ' Cargo de $100 anotado.' : ' Sin cargo.'))->persistent()->send();
+                    ->body(($c->moved_reservations ? 'Se movieron '.$c->moved_reservations.' personas, trajes o equipo. ' : '').($c->state === 'pending_signature' ? 'Queda pendiente de firma del contrato nuevo.' : '').($c->fee_cents ? ' Cargo de $100 anotado.' : ' Sin cargo.'))->persistent()->send();
                 $this->redirect(EventResource::getUrl('view', ['record' => $e]));
             });
     }
@@ -866,7 +866,7 @@ class ViewEvent extends Page
             'event' => $e, 'services' => $services, 'units' => $units, 'history' => $history,
             'type' => $e->event_type ? (EventResource::EVENT_TYPES[$e->event_type] ?? $e->event_type) : 'Sin clasificar',
             // A draft only means nothing is set aside yet (owner visual review 2026-10-30).
-            'status' => $e->status === 'draft' ? 'Sin apartar' : Labels::label(Labels::EVENT_STATUS, $e->status), 'status_color' => Labels::EVENT_STATUS_COLOR[$e->status] ?? 'gray',
+            'status' => $e->status === 'draft' ? 'Borrador' : Labels::label(Labels::EVENT_STATUS, $e->status), 'status_color' => Labels::EVENT_STATUS_COLOR[$e->status] ?? 'gray',
             'finance' => FinanceGate::enabled() ? app(FinanceSummary::class)->forEvent($e) : null,
             'contract' => $this->contractLabel($e),
             // RESPONSIBLE-SYSTEM C1 (owner decision 2026-10-19): shown only once Codex's column exists; never inferred.

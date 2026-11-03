@@ -12,7 +12,7 @@
     @endif
     @include('filament.pages.partials.quick-payment-state',['event'=>$e])
     <div class="wmoney-states">
-        <span>Recursos: <b>{{ $f['status'] }}</b></span>
+        <span>Reserva: <b>{{ $f['status'] }}</b></span>
         @if ($pendingChange = \App\Models\EventChange::pendingSignature($e->id))
             <span>Cambio de fecha: <b>pendiente de firma</b> · antes {{ \App\Filament\Support\Labels::when($pendingChange->old_starts_at) }}</span>
             <span>Aviso al cliente: <b>{{ $pendingChange->notified_at ? 'enviado '.\App\Filament\Support\Labels::when($pendingChange->notified_at).($pendingChange->reminded_at ? ' · recordatorio enviado' : '') : (\App\Services\Mail\MailDeliveryGate::enabled() || \App\Services\Sms\SmsGate::enabled() ? 'pendiente' : 'no enviado (correo y SMS apagados): mándale su enlace por WhatsApp') }}</b></span>
@@ -74,7 +74,7 @@
             @forelse ($f['units'] as $u)
                 <div class="wmoney-row"><div><b>{{ $u->name }}</b> · {{ $u->kind }}</div></div>
             @empty
-                <p class="wmoney-p">Nada apartado todavía. El staff y los trajes se apartan con «Apartar recursos y confirmar».</p>
+                <p class="wmoney-p">Nada apartado todavía. El staff y los trajes se apartan con «Confirmar reserva».</p>
             @endforelse
         </x-filament::section>
         @if ($f['finance'] && $f['finance']['financial_revision'])
