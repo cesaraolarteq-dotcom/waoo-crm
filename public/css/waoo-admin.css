@@ -309,3 +309,23 @@ a.wdash-item:hover{border-color:#122F94;background:#F5F7FF}
 .wsec-sub .wsec-tab{font-size:13px;padding:5px 12px;border-radius:999px;border:1px solid #E3E6F2;margin:0}
 .wsec-sub .wsec-tab.on{background:#0E1B52;color:#fff;border-color:#0E1B52}
 .dark .wsec-tabs{border-color:rgba(255,255,255,.12)} .dark .wsec-tab{color:#C3CAEC} .dark .wsec-tab.on{color:#fff} .dark .wsec-tab:hover{background:rgba(255,255,255,.06)}
+/* Planear el fin de semana (owner 2026-11-02): one card per party, seats from the package, one save. */
+.wtp-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.wtp-week{display:flex;align-items:center;gap:10px;font-size:16px}
+.wtp-actions{display:flex;gap:8px}
+.wtp-muted{color:#6B7398;font-size:13px}
+.wtp-day{font-size:15px;font-weight:700;color:#0E1B52;margin:18px 0 8px;text-transform:capitalize}
+.wtp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.wtp-card{background:#fff;border:1px solid #E3E6F2;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.wtp-card header{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:2px}
+.wtp-title{font-weight:700;color:#0E1B52;text-decoration:none} .wtp-title:hover{text-decoration:underline}
+.wtp-chip{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;background:#FDF1D6;color:#8A5A00;white-space:nowrap}
+.wtp-chip.ok{background:#E3F4EC;color:#11734A}
+.wtp-seat{display:grid;grid-template-columns:110px 1fr;align-items:center;gap:8px;font-size:13px;color:#4A5282}
+.wtp-costume{grid-template-columns:110px 1fr 1fr}
+.wtp-seat select{width:100%;border:1px solid #D7DBEA;border-radius:9px;padding:6px 8px;font-size:14px;background:#fff;color:#0E1B52}
+.wtp-driver b{color:#0E1B52;font-weight:600}
+.wtp-empty{padding:40px;text-align:center;color:#6B7398;border:1px dashed #D7DBEA;border-radius:14px}
+@media (max-width:640px){.wtp-seat,.wtp-costume{grid-template-columns:1fr}.wtp-actions{width:100%}.wtp-actions .wcal-btn{flex:1}}
+.dark .wtp-card{background:#111a44;border-color:rgba(255,255,255,.1)} .dark .wtp-title,.dark .wtp-day,.dark .wtp-driver b{color:#fff}
+.dark .wtp-seat select{background:#0E1B52;color:#fff;border-color:rgba(255,255,255,.15)}

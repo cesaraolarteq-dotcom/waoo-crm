@@ -111,6 +111,7 @@ class ConfirmCapacity extends Page
         $pickers = [];
         foreach ($kinds as $kind => $label) {
             $pickers[] = Select::make("units.{$kind}")->label($label)->multiple()->native(false)->searchable()
+                ->visible(fn (Get $get) => $kind === 'costume' || ! $get('staff_later'))
                 ->options(fn () => self::unitOptions($kind))->live()
                 ->afterStateUpdated(function (Get $get, Set $set) use ($kind) {
                     $set('transfers', $this->neighborTransfers(self::selectedIds($get)));
@@ -121,7 +122,10 @@ class ConfirmCapacity extends Page
         return $schema->statePath('data')->components([
             Callout::make('Qué necesita esta fiesta')->info()->columnSpanFull()
                 ->description(fn () => $this->needsSummary()),
-            Section::make('1. Staff, trajes y equipo')->columns(2)->schema([...$pickers,
+            // Owner 2026-11-02: by default people are planned the week of the party ("Planear el fin de semana").
+            \Filament\Forms\Components\Toggle::make('staff_later')->label('Asignar el personal la semana de la fiesta')->default(true)->live()->columnSpanFull()
+                ->helperText('Recomendado. Ahora solo se revisa que alcancen personas, trajes y equipo a esa hora.'),
+            Section::make(fn (Get $get) => $get('staff_later') ? '1. Trajes (opcional)' : '1. Staff, trajes y equipo')->columns(2)->schema([...$pickers,
                 // OUTFIT-01 generic units (owner 2026-10-19: Mickey = 2 heads, 5 outfits): optional wardrobe per selected head; no preselection.
                 Repeater::make('wardrobe')->label('Vestuario de cada traje')->columnSpanFull()->addable(false)->deletable(false)->reorderable(false)->defaultItems(0)->columns(2)
                     ->visible(fn (Get $get) => ($get('wardrobe') ?? []) !== [])
@@ -165,12 +169,13 @@ class ConfirmCapacity extends Page
                     ->visible(fn (Get $get) => $this->isBelowTarget($get('payment.amount'))),
             ]),
             Section::make('3. Revisión')->columns(2)->schema([
-                Checkbox::make('staff_confirmed')->label('Confirmé con cada persona que puede ir')->accepted()->columnSpanFull(),
-                Checkbox::make('cargo_checked')->label('Revisé que el equipo y la gente caben en el vehículo')->accepted()->columnSpanFull(),
+                Checkbox::make('staff_confirmed')->label('Confirmé con cada persona que puede ir')->accepted()->columnSpanFull()->visible(fn (Get $get) => ! $get('staff_later')),
+                Checkbox::make('cargo_checked')->label('Revisé que el equipo y la gente caben en el vehículo')->accepted()->columnSpanFull()->visible(fn (Get $get) => ! $get('staff_later')),
                 Textarea::make('origin_return_note')->label('De dónde salen y cómo regresan')->required()->minLength(10)->maxLength(2000)->columnSpanFull()
+                    ->visible(fn (Get $get) => ! $get('staff_later'))
                     ->placeholder('Ej.: salen de la bodega en Katy a las 2:00 pm en la van y regresan ahí.'),
                 Textarea::make('short_notice_reason')->label('Faltan menos de 7 días: ¿por qué se aprueba?')->minLength(10)->maxLength(2000)->required()->columnSpanFull()
-                    ->visible(fn () => \App\Services\Scheduling\BookingNoticePolicy::requiresOwnerConfirmationReason($this->record->starts_at)),
+                    ->visible(fn () => $this->importedRevisionId === null && \App\Services\Scheduling\BookingNoticePolicy::requiresOwnerConfirmationReason($this->record->starts_at)),
             ]),
             Section::make('4. Traslados con eventos vecinos')->schema([
                 Text::make('Si alguna unidad tiene otra fiesta antes o después, revisa el tráfico de ese día y esa hora. El margen mínimo es manejo + 45 min (o desmontaje + montaje + imprevistos, lo que sea mayor).'),
@@ -228,7 +233,7 @@ class ConfirmCapacity extends Page
             return;
         }
         Notification::make()->success()->title('Recursos apartados')
-            ->body('El staff, los trajes y el equipo quedaron asignados con el depósito verificado. Esto no es el contrato firmado.')->send();
+            ->body(($state['staff_later'] ?? false) ? 'Reserva confirmada con el depósito verificado. El equipo lo asignas en «Planear el fin de semana».' : 'El staff, los trajes y el equipo quedaron asignados con el depósito verificado. Esto no es el contrato firmado.')->send();
         if ($note = \App\Filament\Support\AutoReminders::afterConfirm(Filament::auth()->user(), $this->record->getKey())) Notification::make()->warning()->title('Recordatorios')->body($note)->send();
         $this->redirect(EventResource::getUrl('index'));
     }
@@ -250,7 +255,7 @@ class ConfirmCapacity extends Page
             return;
         }
         Notification::make()->success()->title('Recursos apartados')
-            ->body('El staff, los trajes y el equipo quedaron asignados con lo pagado en HoneyBook. El contrato sigue en HoneyBook.')->send();
+            ->body(($state['staff_later'] ?? false) ? 'Reserva confirmada con lo pagado en HoneyBook. El equipo lo asignas en «Planear el fin de semana».' : 'El staff, los trajes y el equipo quedaron asignados con lo pagado en HoneyBook. El contrato sigue en HoneyBook.')->send();
         $this->redirect(EventResource::getUrl('view', ['record' => $this->record]));
     }
 
@@ -269,7 +274,8 @@ class ConfirmCapacity extends Page
     public function toServiceInput(array $s): array
     {
         $p = $s['payment'] ?? [];
-        $review = ['staff_confirmed' => (bool) ($s['staff_confirmed'] ?? false), 'cargo_checked' => (bool) ($s['cargo_checked'] ?? false),
+        $later = (bool) ($s['staff_later'] ?? false);
+        $review = $later ? ['transfers' => []] : ['staff_confirmed' => (bool) ($s['staff_confirmed'] ?? false), 'cargo_checked' => (bool) ($s['cargo_checked'] ?? false),
             'origin_return_note' => trim((string) ($s['origin_return_note'] ?? '')), 'transfers' => []];
         foreach (['short_notice_reason', 'deposit_exception_reason'] as $optional) {
             if (filled($s[$optional] ?? null)) {
@@ -287,7 +293,8 @@ class ConfirmCapacity extends Page
 
         return [
             'expected_version' => $this->displayedVersion,
-            'resource_ids' => self::selectedIds(fn ($path) => data_get($s, $path)),
+            ...($later ? ['staff_later' => true] : []),
+            'resource_ids' => $later ? array_values(array_map('intval', (array) ($s['units']['costume'] ?? []))) : self::selectedIds(fn ($path) => data_get($s, $path)),
             ...($wardrobe !== [] ? ['costume_outfits' => $wardrobe] : []),
             'payment' => ['method' => $p['method'] ?? null, 'reference' => trim((string) ($p['reference'] ?? '')),
                 'amount_cents' => EditServiceVariant::toCents((string) ($p['amount'] ?? '0')),

@@ -21,6 +21,7 @@ final class Sections
             'home' => ['label' => 'Inicio', 'icon' => Heroicon::OutlinedHome, 'tabs' => [['label' => 'Inicio', 'target' => Pages\Dashboard::class]]],
             'agenda' => ['label' => 'Agenda', 'icon' => Heroicon::OutlinedCalendarDays, 'tabs' => [
                 ['label' => 'Calendario', 'target' => Pages\Calendar::class],
+                ['label' => 'Planear el fin de semana', 'target' => Pages\WeekendPlan::class],
                 ['label' => 'Lista de fiestas', 'target' => Resources\Events\EventResource::class],
             ]],
             'sales' => ['label' => 'Ventas', 'icon' => Heroicon::OutlinedChatBubbleLeftRight, 'tabs' => [
