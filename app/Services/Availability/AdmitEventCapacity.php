@@ -63,10 +63,19 @@ final class AdmitEventCapacity
         return self::evaluate($event, $start, $end, $calendar, $drive);
     }
 
-    private static function evaluate(Event $event, CarbonImmutable $start, CarbonImmutable $end, ?array $calendar, ?callable $drive = null): string
+    /**
+     * Read-only preview for an extra the client may add (EXTRAS-01): the same party with these requirements added, without
+     * locks or writes, so the link only offers what fits. Not a hold: accepting re-checks with state() under the day locks.
+     */
+    public static function previewWith(Event $event, array $extraRequirements, ?array $calendar = []): string
+    {
+        return self::evaluate($event, CarbonImmutable::instance($event->starts_at), CarbonImmutable::instance($event->ends_at), $calendar, null, $extraRequirements);
+    }
+
+    private static function evaluate(Event $event, CarbonImmutable $start, CarbonImmutable $end, ?array $calendar, ?callable $drive = null, array $extraRequirements = []): string
     {
         if ($calendar === null) return 'review_required'; // the outside calendar did not answer: never "free"
-        $requirements = $event->services()->get()->flatMap(fn ($s) => $s->requirements_snapshot ?? [])->all();
+        $requirements = [...$event->services()->get()->flatMap(fn ($s) => $s->requirements_snapshot ?? [])->all(), ...$extraRequirements];
         $known = $event->setup_minutes !== null && $event->breakdown_minutes !== null;
         $local = $start->setTimezone('America/Chicago');
         $capacity = new WebsiteCapacity($local->startOfDay(), $calendar, $event->id);

@@ -147,9 +147,10 @@ final class PortalPageController extends Controller
         if (config('waoo.sandbox_extras', false) && in_array($step, ['pay', 'done'], true) && $signed && \App\Services\Extras\EventExtras::blocked($event) === null) {
             $extras = ['action' => url('/portal/api/extras'), 'offers' => array_map(function ($o) use ($event, $lang) {
                 $text = \App\Services\Extras\EventExtras::annex($event, $o, $lang);
+                unset($o['requirements']);
                 return [...$o, 'name' => $lang === 'en' ? preg_replace('/^Personaje adicional: /', 'Additional character: ', $o['name']) : $o['name'],
                     'amount' => \App\Filament\Support\Labels::money($o['amount_cents']), 'annex' => $text, 'sha' => hash('sha256', $text)];
-            }, \App\Services\Extras\EventExtras::offers($event))];
+            }, \App\Services\Extras\EventExtras::fitting($event))];
             if ($extras['offers'] === []) $extras = null;
         }
         return [

@@ -44,20 +44,31 @@ final class EventExtras
         foreach (ServiceVariant::where('offered_as_extra', true)->where('status', 'active')->orderBy('name')->get() as $v) {
             if (in_array($v->id, $have, true) || (int) $v->duration_minutes > $minutes || ! empty($v->character_options)) continue;
             $price = PriceVersion::where('service_variant_id', $v->id)->where('currency', 'USD')->orderByDesc('id')->first();
-            if ($price) $out[] = ['key' => 'v'.$v->id, 'name' => $v->name, 'amount_cents' => (int) $price->amount_cents, 'description' => $v->long_description];
+            if ($price) $out[] = ['key' => 'v'.$v->id, 'name' => $v->name, 'amount_cents' => (int) $price->amount_cents, 'description' => $v->long_description, 'requirements' => $v->requirements ?? []];
         }
         // An additional character on a package that has characters, at the catalog price for each extra character.
         foreach ($e->services()->with('characters')->get() as $s) {
             $v = ServiceVariant::find($s->service_variant_id);
             if (! $v || empty($v->character_options)) continue;
             $taken = $s->characters->pluck('character_id')->all();
-            foreach (collect($v->character_options)->pluck('character_id')->diff($taken) as $cid) {
+            $options = collect($v->character_options)->keyBy('character_id');
+            foreach ($options->keys()->diff($taken) as $cid) {
                 $c = Character::whereKey($cid)->where('active', true)->first();
-                if ($c) $out[] = ['key' => 'c'.$s->id.'-'.$c->id, 'name' => 'Personaje adicional: '.$c->name, 'amount_cents' => ServiceVariant::extraCharacterPrice($v), 'description' => null];
+                if ($c) $out[] = ['key' => 'c'.$s->id.'-'.$c->id, 'name' => 'Personaje adicional: '.$c->name, 'amount_cents' => ServiceVariant::extraCharacterPrice($v), 'description' => null,
+                    'requirements' => $options[$cid]['requirements'] ?? []];
             }
         }
 
         return $out;
+    }
+
+    /**
+     * What the link shows: only the offers the whole team can still cover on that date (read-only preview, no hold), so the
+     * client never reads an annex, ticks the box and then hears "it does not fit". accept() still re-checks under the locks.
+     */
+    public static function fitting(Event $e): array
+    {
+        return array_values(array_filter(self::offers($e), fn ($o) => AdmitEventCapacity::previewWith($e, $o['requirements']) === 'available'));
     }
 
     /** The annex exactly as the client reads and accepts it (approved text, 2026-11-02). */
