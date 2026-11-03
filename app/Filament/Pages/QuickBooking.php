@@ -174,22 +174,11 @@ class QuickBooking extends Page
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new'),
                 Select::make('locale')->label('Idioma de sus mensajes')->native(false)->options(['es' => 'Español', 'en' => 'Inglés'])->required()
                     ->visible(fn (Get $get) => $get('customer_mode') === 'new'),
-            ]),
-            // Owner 2026-10-28: one tap for how the client found Waoo; it feeds "De dónde vienen" in Reportes.
-            Section::make('¿Cómo nos encontró?')->schema([
-                ToggleButtons::make('channel')->hiddenLabel()->options(\App\Models\EventChannel::LABELS)->inline(),
-            ]),
-            Section::make('Facturar a empresa')->visible(fn()=>config('waoo.sandbox_company',false))->schema([
-                Checkbox::make('company_enabled')->label('Es para una empresa')->live()->default(false),
-                TextInput::make('company_name')->label('Nombre de la empresa')->required(fn(Get $get)=>(bool)$get('company_enabled'))->visible(fn(Get $get)=>(bool)$get('company_enabled'))->maxLength(255),
+                // Owner 2026-10-28: one tap for how the client found Waoo; it feeds "De dónde vienen" in Reportes.
+                ToggleButtons::make('channel')->label('¿Cómo nos encontró?')->options(\App\Models\EventChannel::LABELS)->inline()->columnSpanFull(),
             ]),
             Section::make('4. Depósito')->columns(3)->schema([
-                TextInput::make('promo_code')->label('Código de promoción (opcional)')->placeholder('WAOO-7KX9Q')->maxLength(20)->columnSpanFull()
-                    ->visible(fn () => (bool) config('waoo.sandbox_anniversary', false))->live(onBlur: true)
-                    ->helperText(fn (Get $get) => filled($get('promo_code')) ? \App\Services\Campaigns\AnniversaryCampaign::check($get('promo_code'), self::customerIdFor($get))['message']
-                        : 'El código del correo "Un año después": 10 % sobre el paquete y los adicionales (no el transporte), una sola vez y solo para quien lo recibió.')
-                    ->afterStateUpdated(fn (Get $get, Set $set) => self::refreshDeposit($get, $set)),
-                Select::make('deposit_received')->label('¿Ya recibiste el depósito?')->options([1 => 'Sí', 0 => 'Todavía no'])->default(1)->required()->live()->columnSpanFull()
+                ToggleButtons::make('deposit_received')->label('¿Ya recibiste el depósito?')->options([1 => 'Sí', 0 => 'Todavía no'])->inline()->default(1)->required()->live()->columnSpanFull()
                     ->visible(fn () => \App\Services\Booking\QuickPaymentProtocol::enabled()),
                 Grid::make(3)->statePath('deposit')->columnSpanFull()->visible(fn (Get $get) => !\App\Services\Booking\QuickPaymentProtocol::enabled() || (bool) $get('deposit_received'))->schema([
                     TextInput::make('amount')->label('Monto que llegó (USD)')->prefix('$')->required()->live(onBlur: true)
@@ -203,6 +192,16 @@ class QuickBooking extends Page
                     Checkbox::make('verified')->label('Lo vi reflejado en el banco')->accepted()->columnSpanFull(),
                 ]),
                 Callout::make('Resumen')->info()->columnSpanFull()->description(fn (Get $get) => $this->moneyLine($get)),
+            ]),
+            // Audit 2026-11-02: what is rarely used stays folded, so the booking fits in a few screens.
+            Section::make('Más opciones')->description('Código de promoción, factura a empresa y cuándo vence el enlace.')->collapsible()->collapsed()->columns(2)->schema([
+                TextInput::make('promo_code')->label('Código de promoción (opcional)')->placeholder('WAOO-7KX9Q')->maxLength(20)
+                    ->visible(fn () => (bool) config('waoo.sandbox_anniversary', false))->live(onBlur: true)
+                    ->helperText(fn (Get $get) => filled($get('promo_code')) ? \App\Services\Campaigns\AnniversaryCampaign::check($get('promo_code'), self::customerIdFor($get))['message']
+                        : 'El código del correo "Un año después": 10 % sobre el paquete y los adicionales (no el transporte), una sola vez y solo para quien lo recibió.')
+                    ->afterStateUpdated(fn (Get $get, Set $set) => self::refreshDeposit($get, $set)),
+                Checkbox::make('company_enabled')->label('Facturar a una empresa')->live()->default(false)->visible(fn()=>config('waoo.sandbox_company',false)),
+                TextInput::make('company_name')->label('Nombre de la empresa')->required(fn(Get $get)=>(bool)$get('company_enabled'))->visible(fn(Get $get)=>config('waoo.sandbox_company',false)&&(bool)$get('company_enabled'))->maxLength(255),
                 TextInput::make('expires_days')->label('El enlace vence en (días)')->integer()->minValue(1)->maxValue(60)->required(),
             ]),
         ]);
@@ -212,7 +211,8 @@ class QuickBooking extends Page
     {
         return $schema->components([
             Form::make([EmbeddedSchema::make('form')])->id('form')->livewireSubmitHandler('save')->footer([
-                Actions::make([Action::make('save')->label('Guardar reserva y crear enlace')->color('primary')->submit('save')]),
+                // Audit 2026-11-02: the save button stays in view at the bottom of the screen.
+                Actions::make([Action::make('save')->label('Guardar reserva y crear enlace')->color('primary')->size('lg')->submit('save')])->extraAttributes(['class' => 'wqb-savebar']),
             ])->visible(fn () => $this->result === null),
         ]);
     }

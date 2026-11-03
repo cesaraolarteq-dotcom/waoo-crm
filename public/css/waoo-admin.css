@@ -348,3 +348,21 @@ a.wdash-item:hover{border-color:#122F94;background:#F5F7FF}
 .dark .wfile-history{background:#111a44;border-color:rgba(255,255,255,.1)} .dark .wfile-history summary{color:#fff}
 .wcal-dot{width:9px;height:9px;border-radius:50%;background:#1F9D63;flex:none;margin-top:5px}
 .wsr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+/* Phone bottom bar (audit 2026-11-02): Inicio · Agenda · Reservar · Ventas · Más. Hidden where the sidebar is visible. */
+.wbar{display:none}
+@media (max-width:1023px){
+  .wbar{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid #E3E6F2;
+    padding:4px max(8px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px));box-shadow:0 -4px 16px rgba(14,27,82,.06)}
+  .wbar-item{display:grid;justify-items:center;gap:2px;min-height:48px;padding:6px 2px;font-size:11.5px;font-weight:600;color:#4A5282;text-decoration:none;background:none;border:0;cursor:pointer;font-family:inherit}
+  .wbar-ico{width:22px;height:22px;display:grid;place-items:center} .wbar-ico svg{width:22px;height:22px}
+  .wbar-item.on{color:#0E1B52} .wbar-item.on .wbar-ico{color:#E8317B}
+  .wbar-item.main{color:#E8317B} .wbar-item.main .wbar-ico{width:38px;height:38px;margin-top:-14px;border-radius:50%;background:#E8317B;color:#fff;box-shadow:0 4px 12px rgba(232,49,123,.35)}
+  .wbar-item:focus-visible{outline:3px solid #E8317B;outline-offset:-3px;border-radius:10px}
+  .fi-main-ctn{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+  .dark .wbar{background:#0E1B52;border-color:rgba(255,255,255,.1)} .dark .wbar-item{color:#C3CAEC} .dark .wbar-item.on{color:#fff}
+}
+/* Reserva rápida: save button pinned to the bottom (above the phone bar). */
+.wqb-savebar{position:sticky;bottom:0;z-index:20;background:linear-gradient(to top,#F6F7FB 70%,rgba(246,247,251,0));padding:14px 0 10px}
+.wqb-savebar .fi-btn{width:100%;max-width:420px;min-height:48px}
+@media (max-width:1023px){.wqb-savebar{bottom:calc(64px + env(safe-area-inset-bottom,0px))}}
+.dark .wqb-savebar{background:linear-gradient(to top,#0B1240 70%,rgba(11,18,64,0))}
