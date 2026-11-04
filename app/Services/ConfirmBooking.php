@@ -75,7 +75,9 @@ final class ConfirmBooking
                 if ($event->travel_fee_cents === null) {
                     $this->fail('Revisa el costo de transporte; no se asume cero.');
                 }
-                $total = \App\Models\PriceVersion::whereIn('id', $services->pluck('price_version_id'))->sum('amount_cents') + $event->travel_fee_cents;
+                $total = \App\Models\PriceVersion::whereIn('id', $services->pluck('price_version_id'))->sum('amount_cents') + $services->sum(fn ($s) => \App\Models\EventService::extraCents($s)) + $event->travel_fee_cents;
+                $finance = \App\Models\FinancialRevision::where('event_id',$eventId)->orderByDesc('revision')->first();
+                $firstFinance = \App\Models\FinancialRevision::where('event_id',$eventId)->orderBy('revision')->first();
                 $importLink=\App\Models\ImportedProjectLink::where('event_id',$eventId)->lockForUpdate()->first();
                 if($importLink){
                     $imported=\App\Models\ImportedProjectRevision::findOrFail($importLink->current_revision_id);
@@ -95,22 +97,23 @@ final class ConfirmBooking
                         409,'Confirma esta cotización desde sus pagos reales y su revisión financiera vigente.');
                     $total=$finance->total_cents;
                 }
-                if ((int) $data['payment']['amount_cents'] * 2 < $total && empty($data['review']['deposit_exception_reason'])) {
+                // A late administrative confirmation never changes the agreed deposit. Accepted quotes and imports keep their own evidence.
+                $target = $finance && $finance->event_version === $event->version ? $finance->deposit_target_cents
+                    : (($firstFinance ? \App\Services\Scheduling\DepositPolicy::revisionPercent($firstFinance) === 100
+                        : \App\Services\Scheduling\DepositPolicy::fullPayment($event->starts_at,$event->created_at)) ? $total : intdiv($total + 1,2));
+                if ($importLink) $target = intdiv($total + 1,2); // existing historical confirmation policy, not the new short-notice rule
+                if ((int) $data['payment']['amount_cents'] < $target && empty($data['review']['deposit_exception_reason'])) {
                     $this->fail('El depósito no alcanza el objetivo. Registra una excepción aprobada o completa el pago.');
                 }
-                // Owner 2026-11-04: today or tomorrow = paid 100 %, with at least 24 h notice (an owner exception note can still decide).
-                if (\App\Services\Scheduling\DepositPolicy::fullPayment($event->starts_at) && (int) $data['payment']['amount_cents'] < $total && empty($data['review']['deposit_exception_reason'])) {
-                    $this->fail('Para hoy o mañana se paga el 100 %. Registra el pago completo o una excepción.');
-                }
-                if (\App\Services\Scheduling\DepositPolicy::underDayNotice($event->starts_at) && empty($data['review']['short_notice_reason'])) {
+                if (!$importLink && \App\Services\Scheduling\DepositPolicy::underDayNotice($event->starts_at) && empty($data['review']['short_notice_reason'])) {
                     $this->fail('Faltan menos de 24 horas: la regla es no reservar. Si aun así la aceptas, escribe por qué.');
                 }
                 $slots = [];
-                $needed = \App\Models\ServiceVariant::partyMinutes($services->map(fn ($s) => [\App\Models\ServiceVariant::find($s->service_variant_id), (int) $s->duration_minutes])->all());
+                $needed = \App\Models\EventService::partyMinutes($services);
                 if ($event->starts_at->diffInMinutes($event->ends_at) < $needed) $this->fail("La fiesta debe durar {$needed} minutos: el paquete más el tiempo extra. Ajusta la hora de fin.");
                 foreach ($services as $service) {
                     // Extra time (owner 2026-11-04) has no staff of its own: the party's team stays longer.
-                    $extension = (bool) \App\Models\ServiceVariant::whereKey($service->service_variant_id)->value('extends_event');
+                    $extension = $service->extends_event_snapshot;
                     if (!$service->operational_ready || (empty($service->requirements_snapshot) && !$extension)) {
                         $this->fail('Faltan requisitos operativos.');
                     }

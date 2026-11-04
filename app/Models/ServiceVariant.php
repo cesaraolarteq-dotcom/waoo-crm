@@ -23,7 +23,8 @@ class ServiceVariant extends Model
     {
         $base = 0; $extra = 0;
         foreach ($services as [$variant, $minutes]) {
-            if ($variant?->extends_event) $extra += $minutes; else $base = max($base, $minutes);
+            if ($variant?->extends_event) $extra += $minutes;
+            elseif (!$variant || !\App\Services\Records\SameLengthExtras::applies($variant)) $base = max($base, $minutes);
         }
 
         return $base + $extra;

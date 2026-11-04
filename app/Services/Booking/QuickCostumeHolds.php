@@ -61,6 +61,8 @@ final class QuickCostumeHolds
         return $e->services()->with(['characters' => fn ($q) => $q->orderBy('id')])->orderBy('price_version_id')->get()->map(fn ($s) => [
             'price_version_id' => $s->price_version_id, 'duration_minutes' => $s->duration_minutes, 'ready' => $s->operational_ready,
             'requirements' => $s->requirements_snapshot, 'characters' => $s->characters->map(fn ($c) => $c->only(['character_id','quantity','outfit','note']))->all(),
+            ...($s->extends_event_snapshot ? ['extends_event_snapshot'=>true] : []),
+            ...($s->covers_event_snapshot ? ['covers_event_snapshot'=>true] : []),
         ])->all();
     }
     public static function slots(Event $e): array

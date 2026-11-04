@@ -49,7 +49,7 @@ final class CreateFinancialRevision
                 }
                 $variant = \App\Models\ServiceVariant::findOrFail($service->service_variant_id);
                 $amount = $price->amount_cents + \App\Models\EventService::extraCents($service);
-                $lines[] = ['event_service_id' => $service->id, 'service_variant_id' => $service->service_variant_id, 'price_version_id' => $price->id, 'amount_cents' => $amount, 'name' => $variant->name, 'long_description' => $variant->long_description, 'duration_minutes' => $service->duration_minutes, 'requirements_snapshot' => $service->requirements_snapshot, 'characters' => $characterSnapshot, ...\App\Models\EventService::extraSnapshot($service, $price->amount_cents)];
+                $lines[] = ['event_service_id' => $service->id, 'service_variant_id' => $service->service_variant_id, 'price_version_id' => $price->id, 'amount_cents' => $amount, 'name' => $variant->name, 'long_description' => $variant->long_description, 'duration_minutes' => $service->duration_minutes, 'requirements_snapshot' => $service->requirements_snapshot, 'characters' => $characterSnapshot, ...\App\Models\EventService::extraSnapshot($service, $price->amount_cents), ...($service->extends_event_snapshot ? ['extends_event_snapshot'=>true] : [])];
                 $subtotal += $amount;
             }
             // CHANGE-A: a charged $100 reschedule fee stays in every later revision of this booking (never dropped by a recompute).
@@ -61,8 +61,8 @@ final class CreateFinancialRevision
             // ANNIV-01: a redeemed anniversary code keeps its 10 % on the package price in every revision of this booking.
             $promo = \App\Services\Campaigns\AnniversaryCampaign::discount($event, $services);
             $total = $subtotal + $event->travel_fee_cents - ($promo['cents'] ?? 0);
-            $previous = FinancialRevision::where('event_id', $event->id)->orderByDesc('revision')->first();
-            $fullDeposit = $previous ? $previous->deposit_target_cents >= $previous->total_cents && $previous->total_cents > 0
+            $previous = FinancialRevision::where('event_id', $event->id)->orderBy('revision')->first();
+            $fullDeposit = $previous ? \App\Services\Scheduling\DepositPolicy::revisionPercent($previous) === 100
                 : \App\Services\Scheduling\DepositPolicy::fullPayment($event->starts_at);
             $revision = FinancialRevision::create(['event_id' => $event->id, 'revision' => (int) FinancialRevision::where('event_id', $event->id)->max('revision') + 1,
                 'event_version' => $event->version, 'currency' => 'USD', 'lines_snapshot' => $lines, 'subtotal_cents' => $subtotal,
@@ -70,6 +70,7 @@ final class CreateFinancialRevision
                 'travel_fee_cents' => $event->travel_fee_cents, 'tax_cents' => 0, 'customer_fee_cents' => 0, 'total_cents' => $total,
                 // Deposit stays 50 % of package + travel: a change fee is paid with the balance. Owner 2026-11-04: booked for today or
                 // tomorrow = 100 %; decided on the first revision only, so a later revision never moves an existing booking's target.
+                'deposit_percent_snapshot' => $fullDeposit ? 100 : 50,
                 'deposit_target_cents' => $fullDeposit ? $total - $changeFees : intdiv($total - $changeFees, 2) + (($total - $changeFees) % 2), 'balance_due_at' => $event->starts_at->subHours(24), 'created_by' => $actor->id]);
             SupersedeCollections::forEvent($eventId, 'financial_revision_changed', $actor);
             Audit::recordFor($actor, 'finance.revision_created', $revision, [], $revision->getAttributes());

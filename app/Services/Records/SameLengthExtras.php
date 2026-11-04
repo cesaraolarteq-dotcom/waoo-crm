@@ -23,16 +23,18 @@ final class SameLengthExtras
         $variants = ServiceVariant::whereIn('id', $prices->pluck('service_variant_id'))->orderBy('id')->lockForUpdate()->get()->keyBy('id');
         $extras = $prices->filter(fn ($p) => isset($variants[$p->service_variant_id]) && self::applies($variants[$p->service_variant_id]));
         if ($extras->isEmpty()) return;
+        $extensions=$prices->filter(fn($p)=>$variants[$p->service_variant_id]->extends_event);
         if ($packagePriceId === null) {
-            $bases = $prices->except($extras->keys()->all());
+            $bases = $prices->except([...$extras->keys()->all(),...$extensions->keys()->all()]);
             if ($bases->count() === 1) $packagePriceId = (int) $bases->first()->id;
         }
-        RecordWriteRejected::unless($packagePriceId !== null && $prices->has($packagePriceId) && !$extras->has($packagePriceId), 422,
+        RecordWriteRejected::unless($packagePriceId !== null && $prices->has($packagePriceId) && !$extras->has($packagePriceId) && !$extensions->has($packagePriceId), 422,
             'Elige el paquete principal para comprobar la duración de la recreadora extra.');
         $package = $variants[$prices[$packagePriceId]->service_variant_id];
         RecordWriteRejected::unless($package->duration_minutes !== null && $package->duration_minutes > 0, 422,
             'Completa la duración del paquete en el catálogo antes de agregar recreadora extra.');
-        foreach ($extras as $price) RecordWriteRejected::unless($variants[$price->service_variant_id]->duration_minutes === $package->duration_minutes, 422,
-            'La recreadora extra debe cubrir el mismo tiempo del paquete. Elige la versión de '.$package->duration_minutes.' minutos en el catálogo; no se cambió ningún precio ni se guardó la reserva.');
+        $minutes=$package->duration_minutes+(int)$extensions->sum(fn($p)=>$variants[$p->service_variant_id]->duration_minutes);
+        foreach ($extras as $price) RecordWriteRejected::unless($variants[$price->service_variant_id]->duration_minutes === $minutes, 422,
+            'La recreadora extra debe cubrir el mismo tiempo del paquete. Elige la versión de '.$minutes.' minutos en el catálogo; no se cambió ningún precio ni se guardó la reserva.');
     }
 }

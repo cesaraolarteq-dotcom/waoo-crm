@@ -25,6 +25,7 @@ final class PrepareQuickStripeLease
                 return QuickStripeLeases::view($lease,$event);
             }
             RecordWriteRejected::unless(!$lease,409,'Esta fiesta ya tuvo un apartado. No se renueva con otra solicitud.');
+            \App\Services\Scheduling\DepositPolicy::assertNotice($event->starts_at);
             QuickStripeLeases::unpaid($event);
             RecordWriteRejected::unless($event->version===$data['expected_event_version']&&$event->starts_at->isFuture()
                 &&!ResourceReservation::where('event_id',$eventId)->exists(),409,'La fiesta cambió, ya empezó o tiene recursos comprometidos.');
@@ -41,7 +42,10 @@ final class PrepareQuickStripeLease
             RecordWriteRejected::unless($units->count()<=500,409,'El inventario requiere revisión por volumen.');
             $available=$units->filter(fn($unit)=>QuickCostumeHolds::available($event,$unit))->values();
             $assignment=app(MatchEventResources::class)->execute($slots,$available->all(),fn($slot,$unit)=>$characters->get($unit->character_id)?->active&&CostumeOutfits::fits($slot,$unit,$characters,[]));
-            try{$terms=QuickStripeTerms::freeze($revision->total_cents,\Carbon\CarbonImmutable::now(),$data['deposit_percent'])->snapshot();}
+            $percents=\App\Services\Scheduling\DepositPolicy::collectionPercents($revision);
+            RecordWriteRejected::unless($percents!==[],409,'Revisa la versión financiera vigente.');
+            $percent=max($data['deposit_percent'],min($percents));
+            try{$terms=QuickStripeTerms::freeze($revision->total_cents,\Carbon\CarbonImmutable::now(),$percent)->snapshot();}
             catch(\InvalidArgumentException){throw new RecordWriteRejected(422,'Este importe requiere revisión antes de preparar un cobro de Stripe.');}
             $lease=QuickStripeLease::create(['event_id'=>$eventId,'customer_id'=>$event->customer_id,'financial_revision_id'=>$revision->id,'version'=>0,'state'=>'active','admission_state'=>$admission,
                 'expires_at'=>\Carbon\CarbonImmutable::createFromTimestampUTC($terms['expires_at']),'payload'=>[],'payload_sha256'=>str_repeat('0',64)]);

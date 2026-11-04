@@ -66,7 +66,7 @@ final class CommitHoneyBookEvent
                 $event=app(SaveEventDraft::class)->execute($actor,$draft,$event?->id);
                 if(!$existing){$event->forceFill(['responsible_system'=>'honeybook'])->save();} // Never flip an existing event during resync.
                 $event->forceFill(['travel_fee_evidence'=>['source'=>'honeybook','amount_cents'=>$n['travel_cents'],'source_sha256'=>$n['source_sha256'],'import_row_id'=>$row->id,'recorded_by'=>$actor->id]])->save();
-                RecordWriteRejected::unless($event->services->every(fn($service)=>$service->operational_ready&&(!empty($service->requirements_snapshot)||\App\Models\ServiceVariant::whereKey($service->service_variant_id)->value('extends_event'))),422,'Completa los personajes y requisitos del paquete antes de importar.');
+                RecordWriteRejected::unless($event->services->every(fn($service)=>$service->operational_ready&&(!empty($service->requirements_snapshot)||$service->extends_event_snapshot)),422,'Completa los personajes y requisitos del paquete antes de importar.');
                 $link=$existing??new ImportedProjectLink(['project_key'=>$row->source_key,'event_id'=>$event->id,'customer_id'=>$customer->id,'version'=>1]);
                 if($existing)$link->version++;$link->domain_sha256=$domainHash;$link->customer_id=$customer->id;$link->save();
                 $mapping=['intent'=>$d['services'],'customer_intent'=>isset($d['customer_id'])?['id'=>$d['customer_id']]:['new'=>true,'locale'=>$d['new_customer_locale']],

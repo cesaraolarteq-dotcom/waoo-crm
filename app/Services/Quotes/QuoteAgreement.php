@@ -23,11 +23,11 @@ final class QuoteAgreement
         foreach($services as $s){
             $characters=$s->characters->map(fn($c)=>['character_id'=>$c->character_id,'quantity'=>(int)$c->quantity,'outfit'=>$c->outfit])->all();
             if($characters===[])foreach($s->requirements_snapshot as $req)if($req['kind']==='costume')$characters[]=['character_id'=>$req['character_id'],'quantity'=>(int)$req['quantity'],'outfit'=>$req['outfit']??null];
-            $actual[]=['price_version_id'=>$s->price_version_id,'duration_minutes'=>$s->duration_minutes,'requirements_snapshot'=>$s->requirements_snapshot,'characters'=>$characters];
+            $actual[]=['price_version_id'=>$s->price_version_id,'duration_minutes'=>$s->duration_minutes,'requirements_snapshot'=>$s->requirements_snapshot,'characters'=>$characters,...($s->extends_event_snapshot?['extends_event_snapshot'=>true]:[]),...($s->covers_event_snapshot?['covers_event_snapshot'=>true]:[])];
             $serviceIds[$s->price_version_id]=$s->id;
         }
         $expected=array_map(fn($l)=>['price_version_id'=>$l['price_version_id'],'duration_minutes'=>$l['duration_minutes'],'requirements_snapshot'=>$l['requirements_snapshot'],
-            'characters'=>array_map(fn($c)=>['character_id'=>$c['character_id'],'quantity'=>$c['quantity'],'outfit'=>$c['outfit']??null],$l['characters'])],$r->lines_snapshot);
+            'characters'=>array_map(fn($c)=>['character_id'=>$c['character_id'],'quantity'=>$c['quantity'],'outfit'=>$c['outfit']??null],$l['characters']),...(!empty($l['extends_event_snapshot'])?['extends_event_snapshot'=>true]:[]),...(!empty($l['covers_event_snapshot'])?['covers_event_snapshot'=>true]:[])],$r->lines_snapshot);
         $normalize=function(array $lines):array{
             foreach($lines as &$line){usort($line['requirements_snapshot'],fn($a,$b)=>strcmp(MutationKey::hash($a),MutationKey::hash($b)));usort($line['characters'],fn($a,$b)=>strcmp(MutationKey::hash($a),MutationKey::hash($b)));}
             unset($line);usort($lines,fn($a,$b)=>$a['price_version_id']<=>$b['price_version_id']);return $lines;
