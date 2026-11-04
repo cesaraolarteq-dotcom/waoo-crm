@@ -176,7 +176,7 @@
       </details>
       @endif
     </div>
-    <form class="p-opt" method="POST" action="{{ $vm['actions']['checkout'] }}" id="pay-form" data-revision="{{ $vm['pay']['revision_id'] ?? '' }}" data-card-quote="{{ !empty($vm['pay']['card']) ? ($vm['pay']['card_quote_sha256'] ?? '') : '' }}" @if ((isset($vm['pay']) && ! $vm['pay']['can_checkout']) || (!empty($vm['pay']['enabled']) && empty($vm['pay']['card']))) hidden @endif>
+    <form class="p-opt" method="POST" action="{{ $vm['actions']['checkout'] }}" id="pay-form" data-revision="{{ $vm['pay']['revision_id'] ?? '' }}" data-card-quote="{{ !empty($vm['pay']['card']) ? ($vm['pay']['card_quote_sha256'] ?? '') : '' }}" @if (\App\Support\WaooRuntime::live() || (isset($vm['pay']) && ! $vm['pay']['can_checkout']) || (!empty($vm['pay']['enabled']) && empty($vm['pay']['card']))) hidden @endif>
       @csrf
       {{-- CARD-FEE-01 (owner 2026-10-28): credit cards only, the 3% shown with the amounts before paying, same as quick booking. --}}
       @php($later = collect($vm['pay']['later'] ?? [])->map(fn ($m) => ['klarna' => 'Klarna', 'afterpay_clearpay' => 'Afterpay'][$m])->join(', ', ' '.$t('or').' '))
