@@ -21,8 +21,19 @@ final class MatchEventResources
             }return false;
         };
         foreach($order as $resource){$seen=[];$search($resource,$seen);if(count($bySlot)===count($slots))break;}
-        if(count($bySlot)!==count($slots))throw ValidationException::withMessages(['booking'=>'No hay una combinación de recursos e intérpretes compatibles que cubra todos los roles simultáneos.']);
+        if(count($bySlot)!==count($slots))throw ValidationException::withMessages(['booking'=>'No hay una combinación de recursos e intérpretes compatibles que cubra todos los roles simultáneos.'.self::missing(array_diff_key($slots,$bySlot))]);
         $assigned=[];foreach($bySlot as $slot=>$resource)$assigned[$resource]=$slot;ksort($assigned);return $assigned;
+    }
+    /** Owner 2026-11-04: say what is missing, e.g. " Falta: Traje de Mickey, Animador/a." */
+    private static function missing(array $slots):string
+    {
+        $L=\App\Filament\Support\Labels::class;
+        $names=collect($slots)->map(fn($s)=>match($s['kind']??null){
+            'costume'=>'Traje de '.(\App\Models\Character::whereKey((int)($s['character_id']??0))->value('name')??'personaje'),
+            'equipment'=>$L::label($L::EQUIPMENT,$s['equipment_kind']??null),
+            'staff'=>isset($s['costume_unit_id'])?'Persona para usar el traje':$L::label($L::SKILL,$s['skill']??null),
+            default=>null})->filter()->unique()->values();
+        return $names->isEmpty()?'':' Falta: '.$names->implode(', ').'.';
     }
     public static function driver(object $resource):bool
     {

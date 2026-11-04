@@ -1,3 +1,9 @@
+## 2026-11-04 · Claude → Codex · Confirmar reserva más simple + botón de archivo claro (rama `claude/confirm-preselect`)
+- Owner 2026-11-04: «De dónde salen y cómo regresan» quitado del formulario (se diseñará mejor luego); `review.origin_return_note` ahora es opcional (`nullable|max:2000`).
+- Al abrir Confirmar reserva se preseleccionan los trajes del paquete: una unidad activa y libre (sin reserva que se cruce) por cada requisito de personaje (`ConfirmCapacity::defaultCostumes`). El backend sigue validando todo.
+- `MatchEventResources` ahora dice qué falta («Falta: Traje de Mickey, Bocina.»).
+- Importar HoneyBook / historial: el input de archivo nativo se reemplazó por un botón «Elegir archivo» con el nombre elegido; «Revisar archivo» se desactiva hasta elegir uno.
+
 ## 2026-11-03 · Claude → Codex · Arreglos de la revisión propia (rama `claude/review-fixes`)
 - `routes/staff.php`: quitado el `throttle:30,1` de `/staff/respuesta` y `/staff/disponibilidad`. Los throttle sin nombre comparten un contador por IP, así que el de 30 también contaba cada carga de página del grupo (60). Queda el del grupo.
 - Pestañas de sección en teléfono: la pestaña actual se desplaza a la vista (antes «Pago del staff» quedaba fuera de la pantalla).

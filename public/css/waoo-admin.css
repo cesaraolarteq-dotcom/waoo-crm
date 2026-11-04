@@ -130,6 +130,8 @@ a.wcal-name:hover{text-decoration:underline}
 .wwarn-inline{color:#8F5B00;background:#FFF1D2;border-radius:6px;padding:1px 6px;font-weight:700}
 /* IMPORT-01 owner screen */
 .wimp-form{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:8px}
+.wimp-pick{display:inline-flex;align-items:center;cursor:pointer;position:relative}.wimp-pick input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}.wimp-pick:focus-within{box-shadow:0 0 0 3px #15D1C4}
+.wimp-file{font-size:.875rem;opacity:.8;overflow-wrap:anywhere}
 .wimp-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .wimp-counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:12px 0}
 .wimp-counts div{background:#F5F7FC;border-radius:12px;padding:10px 12px;display:grid}.wimp-counts b{font-size:1.5rem}.wimp-counts span{opacity:.75;font-size:.85rem}
