@@ -223,6 +223,37 @@ class RescheduleContractTest extends TestCase
         $this->assertSame(1, app(\App\Services\Changes\RescheduleNotices::class)->sendDue()['notices'], 'goes out once unpaused');
     }
 
+    public function test_a_revoked_portal_link_after_planning_stops_both_notice_channels(): void
+    {
+        $this->signedThenRescheduled(); $this->realAdapters();
+        \App\Models\OutboundMessage::created(function ($message) {
+            if ($message->template_key === 'reschedule_notice') \App\Models\PortalGrant::where('event_id', $this->event->id)->update(['revoked_at' => now()]);
+        });
+        try {
+            $result = app(\App\Services\Changes\RescheduleNotices::class)->sendDue();
+            $this->assertSame(0, $result['notices']);
+            \Illuminate\Support\Facades\Http::assertNothingSent();
+            $this->assertSame(['email' => 'blocked', 'sms' => 'blocked'], \App\Models\NoticeDelivery::orderBy('channel')->pluck('status', 'channel')->all());
+        } finally { \App\Models\OutboundMessage::flushEventListeners(); }
+    }
+
+    public function test_a_phone_change_during_email_delivery_never_redirects_the_frozen_text(): void
+    {
+        $this->signedThenRescheduled(); $this->realAdapters();
+        DB::table('sms_consents')->insert(['phone_e164' => '+17135550127', 'status' => 'opted_in', 'source' => 'website_form', 'changed_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+        \Illuminate\Support\Facades\Http::fake([
+            'https://api.resend.com/emails' => function () {
+                \App\Models\Customer::whereKey($this->event->customer_id)->update(['phone' => '+17135550127']);
+                return \Illuminate\Support\Facades\Http::response(['id' => (string) Str::uuid()], 200);
+            },
+            'api.twilio.com/*' => \Illuminate\Support\Facades\Http::response(['sid' => 'SM'.str_repeat('e', 32)], 201),
+        ]);
+        $this->assertSame(1, app(\App\Services\Changes\RescheduleNotices::class)->sendDue()['notices'], 'the email was delivered');
+        \Illuminate\Support\Facades\Http::assertSentCount(1);
+        $this->assertSame('blocked', \App\Models\NoticeDelivery::where('channel', 'sms')->sole()->status);
+        $this->assertSame(0, \App\Models\SmsMessage::count(), 'the new contact does not receive an old event link');
+    }
+
     /** Sandbox protection: the outbox only sends to enrolled owner addresses on the allowlist; the fictitious client becomes one. */
     private function allowClient(): void
     {
