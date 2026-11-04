@@ -70,7 +70,7 @@ class Quotes extends Page
             $rev = $revs[$q['id']] ?? null;
 
             return (object) ['id' => $q['id'], 'number' => $q['number'], 'status' => $q['effective_status'], 'revision' => $q['current_revision'],
-                'client' => $rev?->customer_snapshot['name'] ?? '', 'when' => $rev ? Labels::when(\Carbon\CarbonImmutable::parse($rev->event_snapshot['starts_at'])) : '',
+                'client' => $rev?->customer_snapshot['name'] ?? '', 'when' => $rev ? (($rev->event_snapshot['time_tbd'] ?? false) ? \Carbon\CarbonImmutable::parse($rev->event_snapshot['starts_at'])->setTimezone(Labels::TZ)->locale('es')->translatedFormat('D j M Y').' · hora por definir' : Labels::when(\Carbon\CarbonImmutable::parse($rev->event_snapshot['starts_at']))) : '',
                 'total' => $rev ? Labels::money($rev->total_cents) : '—', 'valid' => Labels::when(\Carbon\CarbonImmutable::parse($q['valid_until']))];
         })->all();
     }

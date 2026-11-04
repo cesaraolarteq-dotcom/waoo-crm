@@ -7,7 +7,7 @@
 @endphp
 <h1>Waoo Party — {{ $es?'Cotización':'Quote' }} {{ $p['number'] }}</h1>
 <p>{{ $es?'Revisión':'Revision' }} {{ $p['revision'] }} · {{ $es?'Válida hasta':'Valid until' }} {{ $when($p['valid_until']) }}</p>
-<p>{{ $p['customer_name'] }}<br>{{ $when($p['event']['starts_at']) }} – {{ $when($p['event']['ends_at']) }}<br>{{ $p['event']['address'] ?? '' }} {{ $p['event']['postal_code'] ?? '' }}</p>
+<p>{{ $p['customer_name'] }}<br>@if($p['event']['time_tbd'] ?? false){{ \Carbon\CarbonImmutable::parse($p['event']['starts_at'])->setTimezone('America/Chicago')->format('Y-m-d') }} · Hora por definir / Time to be confirmed @else{{ $when($p['event']['starts_at']) }} – {{ $when($p['event']['ends_at']) }}@endif<br>{{ $p['event']['address'] ?? '' }} {{ $p['event']['postal_code'] ?? '' }}</p>
 @if($company=$p['event']['billing_company']??null)
 <p>{{ \App\Support\ApprovedClientTexts::text('pdf_bill_to', ($es ? 'es' : 'en')) }} <b>{{ $company['name'] }}</b> · {{ \App\Support\ApprovedClientTexts::text('pdf_attention', ($es ? 'es' : 'en')) }} {{ $p['customer_name'] }}
 @if(!empty($company['email']))<br>{{ $company['email'] }}@endif

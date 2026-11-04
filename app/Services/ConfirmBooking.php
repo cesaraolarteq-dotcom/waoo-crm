@@ -23,6 +23,7 @@ final class ConfirmBooking
             \App\Services\Scheduling\DailyCapacity::lock();
                 $event = Event::query()->lockForUpdate()->findOrFail($eventId);
                 \App\Services\Booking\QuickStripeLeases::assertNoActive($eventId);
+                if ($event->time_tbd) $this->fail('Falta la hora de la fiesta. Edita la fiesta y ponle la hora antes de confirmar.');
                 $ids = collect($data['resource_ids'])->map(fn($id) => (int) $id)->unique()->sort()->values();
                 // Owner 2026-11-02: confirm when the deposit arrives without naming people; the team is assigned the week of the party.
                 $staffLater = in_array($data['staff_later'] ?? false, [true, 1, '1'], true);

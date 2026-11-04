@@ -15,7 +15,7 @@
         </div>
         @if ($cur)
             <x-filament::section>
-                <x-slot name="heading">{{ $cur['customer_snapshot']['name'] ?? '' }} · {{ \App\Filament\Support\Labels::when(\Carbon\CarbonImmutable::parse($cur['event_snapshot']['starts_at'])) }}</x-slot>
+                <x-slot name="heading">{{ $cur['customer_snapshot']['name'] ?? '' }} · {{ ($cur['event_snapshot']['time_tbd'] ?? false) ? \Carbon\CarbonImmutable::parse($cur['event_snapshot']['starts_at'])->setTimezone('America/Chicago')->locale('es')->translatedFormat('D j M Y').' · hora por definir' : \App\Filament\Support\Labels::when(\Carbon\CarbonImmutable::parse($cur['event_snapshot']['starts_at'])) }}</x-slot>
                 <x-slot name="description">{{ $cur['event_snapshot']['address'] ?? 'Sin dirección' }}@if (! empty($cur['event_snapshot']['postal_code'])) · ZIP {{ $cur['event_snapshot']['postal_code'] }}@endif</x-slot>
                 @foreach ($cur['lines_snapshot'] as $l)
                     <div class="wmoney-row"><div><b>{{ $this->money($l['amount_cents']) }}</b> · {{ $l['name'] }} · {{ \App\Filament\Support\Labels::duration($l['duration_minutes']) }}</div>

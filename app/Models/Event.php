@@ -8,8 +8,8 @@ class Event extends Model
 {
     protected $attributes = ['responsible_system' => 'crm'];
     protected $hidden = ['travel_fee_evidence','billing_company'];
-    protected $fillable = ['billing_company', 'customer_id', 'title', 'event_type', 'starts_at', 'ends_at', 'timezone', 'address', 'postal_code', 'setup_minutes', 'breakdown_minutes', 'travel_fee_cents'];
-    protected function casts(): array { return ['billing_company'=>'encrypted:array','billing_company_version'=>'integer','travel_fee_evidence' => 'array', 'starts_at' => 'immutable_datetime', 'ends_at' => 'immutable_datetime', 'version' => 'integer', 'travel_fee_cents' => 'integer', 'setup_minutes' => 'integer', 'breakdown_minutes' => 'integer']; }
+    protected $fillable = ['billing_company', 'customer_id', 'title', 'event_type', 'starts_at', 'ends_at', 'time_tbd', 'timezone', 'address', 'postal_code', 'setup_minutes', 'breakdown_minutes', 'travel_fee_cents'];
+    protected function casts(): array { return ['billing_company'=>'encrypted:array','billing_company_version'=>'integer','travel_fee_evidence' => 'array', 'starts_at' => 'immutable_datetime', 'time_tbd' => 'boolean', 'ends_at' => 'immutable_datetime', 'version' => 'integer', 'travel_fee_cents' => 'integer', 'setup_minutes' => 'integer', 'breakdown_minutes' => 'integer']; }
 
     public function services() { return $this->hasMany(EventService::class); }
     public function reservations() { return $this->hasMany(ResourceReservation::class); }
