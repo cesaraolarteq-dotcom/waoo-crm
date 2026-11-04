@@ -19,6 +19,11 @@ final class PoolCapacitySolver
                 || ($r['kind'] === 'staff' && !is_bool($r['driver'] ?? null))
                 || ($r['kind'] === 'vehicle' && (!is_int($r['seats'] ?? null) || $r['seats'] < 1))) return $unknown('incomplete_resource');
             $units[$r['id']] = $r;
+            if ($r['kind'] === 'staff') {
+                $skills = array_key_exists('skills', $r) ? $r['skills'] : [];
+                if (!self::skills($skills)) return $unknown('incomplete_resource_skills');
+                $units[$r['id']]['skills'] = $skills;
+            }
         }
         foreach ($blocks as $b) {
             if (!is_array($b) || !is_int($b['resource_id'] ?? null) || !isset($units[$b['resource_id']]) || !self::interval($b)) return $unknown('invalid_block');
@@ -67,10 +72,12 @@ final class PoolCapacitySolver
             // 'people' => false checks physical units only (vehicles without drivers or seat counts).
             $people = $j['people'] ?? true;
             if (!is_bool($people)) return $unknown('incomplete_job');
+            $teamSkills = array_key_exists('team_skills', $j) ? $j['team_skills'] : [];
+            if (!self::skills($teamSkills)) return $unknown('invalid_team_skills');
             $required = $j['required'] ?? [];
             if (!is_array($required) || !array_is_list($required) || count($required) > 256) return $unknown('invalid_required');
             foreach ($required as $id) if (!is_int($id) || !isset($units[$id])) return $unknown('invalid_required');
-            $groups[$j['key']] = ['required' => array_unique($required), 'indices' => $indices, 'staff' => $staff, 'vehicles' => $people ? $vehicles : 0, 'drivers' => $people ? max($j['minimum_drivers'], $vehicles) : $j['minimum_drivers']];
+            $groups[$j['key']] = ['required' => array_unique($required), 'team_skills' => $people ? $teamSkills : [], 'indices' => $indices, 'staff' => $staff, 'vehicles' => $people ? $vehicles : 0, 'drivers' => $people ? max($j['minimum_drivers'], $vehicles) : $j['minimum_drivers']];
         }
         $separate = [];
         foreach ($separations as $edge) {
@@ -110,17 +117,20 @@ final class PoolCapacitySolver
             foreach ($groups as $group) {
                 if ($exhausted) return false;
                 $drivers = 0; $remainingDrivers = []; $seats = 0; $remainingVehicles = []; $unassignedVehicles = 0;
+                $coveredSkills = []; $remainingSkills = [];
                 foreach ($group['indices'] as $i) {
                     $task = $tasks[$i];
                     if (isset($chosen[$i])) {
                         $r = $units[$chosen[$i]];
                         if ($r['kind'] === 'staff' && $r['driver']) $drivers++;
+                        if ($r['kind'] === 'staff') foreach ($r['skills'] as $skill) $coveredSkills[$skill] = true;
                         if ($r['kind'] === 'vehicle') $seats += $r['seats'];
                     } else {
                         if ($task['kind'] === 'vehicle') $unassignedVehicles++;
                         foreach ($task['eligible'] as $id) if ($free($task, $id)) {
                             $r = $units[$id];
                             if ($r['kind'] === 'staff' && $r['driver']) $remainingDrivers[$id] = true;
+                            if ($r['kind'] === 'staff') foreach ($r['skills'] as $skill) $remainingSkills[$skill] = true;
                             if ($r['kind'] === 'vehicle') $remainingVehicles[$id] = $r['seats'];
                         }
                     }
@@ -133,6 +143,8 @@ final class PoolCapacitySolver
                     if (!$possible) return false;
                 }
                 if ($drivers + count($remainingDrivers) < $group['drivers']) return false;
+                // A skill belongs to someone in this job's actual crew, never a spare person elsewhere in the pool.
+                foreach ($group['team_skills'] as $skill) if (!isset($coveredSkills[$skill]) && !isset($remainingSkills[$skill])) return false;
                 rsort($remainingVehicles);
                 if ($group['vehicles'] > 0 && $seats + array_sum(array_slice($remainingVehicles, 0, $unassignedVehicles)) < $group['staff']) return false;
             }
@@ -164,5 +176,12 @@ final class PoolCapacitySolver
     private static function interval(array $v): bool
     {
         return is_int($v['starts_at'] ?? null) && is_int($v['ends_at'] ?? null) && $v['starts_at'] < $v['ends_at'];
+    }
+
+    private static function skills(mixed $skills): bool
+    {
+        return is_array($skills) && array_is_list($skills) && count($skills) <= 16
+            && !array_filter($skills, fn ($skill) => !is_string($skill) || $skill === '' || strlen($skill) > 60)
+            && count(array_unique($skills)) === count($skills);
     }
 }

@@ -220,7 +220,10 @@ class QuickBooking extends Page
     /** Package + extras → price_version_ids (what the rest of the page and QuickBook use); characters of a removed service go too. */
     public function syncServices(Get $get, Set $set): void
     {
-        $ids = array_values(array_unique(array_filter(array_map('strval', [$get('package_id'), ...((array) ($get('extra_ids') ?? []))]))));
+        // Owner 2026-11-04: the extra recreadora stays the whole package ($70/h), so its version follows the package length.
+        $extras = EventResource::matchPackageDuration($get('package_id'), array_map('strval', (array) ($get('extra_ids') ?? [])));
+        if ($extras !== array_map('strval', (array) ($get('extra_ids') ?? []))) $set('extra_ids', $extras);
+        $ids = array_values(array_unique(array_filter(array_map('strval', [$get('package_id'), ...$extras]))));
         $set('price_version_ids', $ids);
         $set('characters', collect($get('characters') ?? [])->filter(fn ($c) => blank($c['price_version_id'] ?? null) || in_array((string) $c['price_version_id'], $ids, true))->all());
         EventResource::syncCharacterSlots($get, $set);
@@ -535,6 +538,7 @@ class QuickBooking extends Page
             ...(filled($s['setup_minutes'] ?? null) ? ['setup_minutes' => (int) $s['setup_minutes']] : []),
             ...(filled($s['breakdown_minutes'] ?? null) ? ['breakdown_minutes' => (int) $s['breakdown_minutes']] : []),
             'services' => EventResource::servicesInput($s),
+            ...(filled($s['package_id'] ?? null) ? ['package_price_version_id' => (int) $s['package_id']] : []),
             ...(config('waoo.sandbox_anniversary', false) && filled($s['promo_code'] ?? null) ? ['promo_code' => trim((string) $s['promo_code'])] : []),
             ...($received ? ['deposit' => ['method' => 'zelle', 'amount_cents' => EditServiceVariant::toCents((string) $d['amount']), 'reference' => filled($d['reference'] ?? null) ? trim($d['reference']) : null,
                 'received_on' => $d['date'], 'verified_received' => (bool) ($d['verified'] ?? false)]] : ['deposit_received' => false]),

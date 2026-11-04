@@ -140,7 +140,7 @@ final class ConfirmBooking
                         $slots[$performerSlot]['costume_unit_id'] = $costume->id;
                     }
                 }
-                $assignment=app(MatchEventResources::class)->execute($slots, $resources->all(), function ($slot, $r) use ($compatibilities, $characters, $costumeChoices, $costumes) {
+                $assignment=app(MatchEventResources::class)->executeForTeam($slots, $resources->all(), function ($slot, $r) use ($compatibilities, $characters, $costumeChoices, $costumes) {
                     if ($r->kind !== $slot['kind'] || ($slot['kind'] === 'costume' && !CostumeOutfits::fits($slot, $r, $characters, $costumeChoices))
                         || (!empty($slot['character_id']) && (int) $r->character_id !== (int) $slot['character_id'])
                         || (!empty($slot['equipment_kind']) && $r->equipment_kind !== $slot['equipment_kind'])) return false;
@@ -151,7 +151,7 @@ final class ConfirmBooking
                         return \App\Support\CostumeWearers::allows($unit, $r, $characters->get((int) $unit->character_id), $compatibilities);
                     }
                     return empty($slot['skill']) || in_array($slot['skill'], $r->skills ?? [], true);
-                });
+                }, $staffLater ? [] : \App\Support\CrewSkills::required($services->flatMap(fn ($s) => $s->requirements_snapshot ?? [])->all()));
                 $assignedStaff=collect(array_keys($assignment))->map(fn($i)=>$resources[$i])->where('kind','staff');
                 $driverIds=$assignedStaff->filter(fn($r)=>MatchEventResources::driver($r))->pluck('id')->values()->all();
                 if($assignedStaff->isNotEmpty()&&$driverIds===[])$this->fail('Falta alguien que maneje en el equipo.');

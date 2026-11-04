@@ -31,6 +31,37 @@ final class PoolCapacitySolverTest extends TestCase
         $this->assertSame('feasible', $r['state']); $this->assertCount(2, $r['witness']['party']);
         $this->assertContains(1, $r['witness']['party']);
     }
+
+    public function test_a_team_skill_must_belong_to_someone_in_the_actual_assignment(): void
+    {
+        $job = $this->job('party', [$this->slot('animador', [1]), $this->slot('recreadora', [2])]);
+        $job['team_skills'] = ['face_painter'];
+        $units = [$this->staff(1), $this->staff(2), [...$this->staff(3), 'skills' => ['face_painter']]];
+        $this->assertSame('infeasible', (new PoolCapacitySolver)->solve($units, [$job])['state'], 'a spare painter who cannot cover either seat is not on the team');
+    }
+
+    public function test_a_team_skill_can_be_covered_in_any_seat_without_an_extra_person(): void
+    {
+        $job = $this->job('party', [$this->slot('animador', [1, 2]), $this->slot('recreadora', [2, 3])], drivers: 1);
+        $job['team_skills'] = ['face_painter'];
+        foreach ([1, 3] as $painter) {
+            $units = [$this->staff(1, true), $this->staff(2), $this->staff(3)];
+            foreach ($units as &$unit) $unit['skills'] = $unit['id'] === $painter ? ['face_painter'] : [];
+            unset($unit);
+            $result = (new PoolCapacitySolver)->solve($units, [$job]);
+            $this->assertSame('feasible', $result['state']);
+            $this->assertCount(2, $result['witness']['party']);
+            $this->assertContains($painter, $result['witness']['party']);
+        }
+    }
+
+    public function test_two_overlapping_teams_cannot_share_the_only_person_with_the_team_skill(): void
+    {
+        $units = [[...$this->staff(1), 'skills' => ['face_painter']], $this->staff(2), $this->staff(3), $this->staff(4)];
+        $jobs = [];
+        foreach (['a', 'b'] as $key) $jobs[] = [...$this->job($key, [$this->slot('animador', [1, 2, 3, 4]), $this->slot('recreadora', [1, 2, 3, 4])]), 'team_skills' => ['face_painter']];
+        $this->assertSame('infeasible', (new PoolCapacitySolver)->solve($units, $jobs)['state']);
+    }
     public function test_one_driver_cannot_count_for_two_overlapping_teams(): void
     {
         $jobs = [$this->job('a', [$this->slot('role', [1, 2])], drivers: 1), $this->job('b', [$this->slot('role', [1, 2])], drivers: 1)];

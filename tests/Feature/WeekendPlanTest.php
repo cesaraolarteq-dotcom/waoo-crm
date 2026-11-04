@@ -154,4 +154,48 @@ class WeekendPlanTest extends TestCase
         $cesar = (new \ReflectionMethod(\App\Services\Staff\ReadStaffWeek::class, 'job'))->invoke(app(\App\Services\Staff\ReadStaffWeek::class), $a->fresh(), Resource::find($ids('CESAR')), 'es', CarbonImmutable::now('America/Chicago'));
         $this->assertSame('Animador/a', $cesar['role']); $this->assertTrue($cesar['is_driver']);
     }
+
+    public function test_waoo_needs_someone_who_paints_in_any_seat_and_the_suggestion_finds_her(): void
+    {
+        // Owner 2026-11-04: «1 animador + 2 recreadoras», at least one of the three paints faces (any seat).
+        $e = $this->party('2026-11-07 15:00');
+        $svc = EventService::where('event_id', $e->id)->sole();
+        $svc->forceFill(['requirements_snapshot' => [['kind' => 'staff', 'skill' => 'entertainer', 'quantity' => 1], ['kind' => 'staff', 'skill' => 'host', 'quantity' => 2],
+            ['kind' => 'equipment', 'equipment_kind' => 'face_kit', 'quantity' => 1]]])->save();
+        $this->assertSame(['face_painter'], TeamSlots::for($e->fresh())['team_skills']);
+        // Nobody paints yet: the board says so after suggesting.
+        $page = Livewire::test(\App\Filament\Pages\WeekendPlan::class)->call('suggest')->assertSee('Alguien que pinte caritas');
+        // A recreadora who paints appears: the suggestion puts her in a recreadora seat.
+        $painter = Resource::create(['code' => 'PINTA', 'name' => 'Sofía Herrera', 'kind' => 'staff', 'status' => 'active', 'skills' => ['host', 'face_painter']]);
+        $team = app(SuggestWeekendTeams::class)->execute([$e->fresh()])[$e->id]['people'];
+        $this->assertContains($painter->id, array_values($team));
+        Livewire::test(\App\Filament\Pages\WeekendPlan::class)->call('suggest')->assertDontSee('Alguien que pinte caritas');
+    }
+
+    public function test_a_complete_team_cannot_be_saved_without_the_required_team_skill(): void
+    {
+        $e = $this->party('2026-11-07 15:00');
+        $e->services()->sole()->forceFill(['requirements_snapshot' => [['kind' => 'staff', 'skill' => 'entertainer', 'quantity' => 1],
+            ['kind' => 'staff', 'skill' => 'host', 'quantity' => 2], ['kind' => 'equipment', 'equipment_kind' => 'face_kit', 'quantity' => 1]]])->save();
+        $seats = array_column(TeamSlots::for($e)['people'], 'key');
+        $team = ['people' => array_combine($seats, array_map(fn ($code) => Resource::where('code', $code)->value('id'), ['CESAR', 'NICOLE-HERNANDEZ', 'LUIS-PEREZ']))];
+        try { $this->save($e, $team); $this->fail('A complete crew was saved without anybody who can paint.'); }
+        catch (\App\Exceptions\RecordWriteRejected $x) { $this->assertSame(422, $x->status); }
+        $this->assertDatabaseCount('event_team_plans', 0); $this->assertDatabaseCount('resource_reservations', 0);
+        Resource::where('code', 'CESAR')->firstOrFail()->update(['skills' => ['entertainer', 'host', 'driver', 'face_painter']]);
+        $plan = $this->save($e, $team);
+        $this->assertCount(3, $plan->slots);
+    }
+
+    public function test_partial_team_planning_still_allows_saving_progress_without_claiming_it_complete(): void
+    {
+        $e = $this->party('2026-11-07 15:00');
+        $service = $e->services()->sole();
+        $service->forceFill(['requirements_snapshot' => [...$service->requirements_snapshot,
+            ['kind' => 'equipment', 'equipment_kind' => 'face_kit', 'quantity' => 1]]])->save();
+        $seat = TeamSlots::for($e)['people'][0]['key'];
+        $this->save($e, ['people' => [$seat => Resource::where('code', 'CESAR')->value('id')]]);
+        $this->assertDatabaseCount('event_team_plans', 1);
+        Livewire::test(\App\Filament\Pages\WeekendPlan::class)->assertSee('Alguien que pinte caritas');
+    }
 }
