@@ -56,6 +56,7 @@ final class SuggestWeekendTeams
                 $busy[$p->id][] = TeamSlots::window($e);
             }
         }
+        $this->coverTeamSkills($events, $out, $staff, $busy);
         foreach ($events as $e) {
             $out[$e->id] ??= ['people' => [], 'costumes' => []];
             $out[$e->id] += ['people' => [], 'costumes' => []];
@@ -64,6 +65,30 @@ final class SuggestWeekendTeams
             $out[$e->id]['driver'] = $drivers->first(); // one driver on the team: it is that person; several: the first, the owner may change it
         }
         return $out;
+    }
+
+    /** Owner 2026-11-04: a team that needs someone who paints (Waoo) swaps one seat for a free person with that skill too. */
+    private function coverTeamSkills(array $events, array &$out, $staff, array &$busy): void
+    {
+        foreach ($events as $e) {
+            $skills = TeamSlots::teamSkills($e);
+            if ($skills === []) continue;
+            $people = $out[$e->id]['people'] ?? [];
+            $team = array_filter([...array_values($people), ...array_column($out[$e->id]['costumes'] ?? [], 'wearer_id')]);
+            foreach ($skills as $skill) {
+                if ($staff->whereIn('id', $team)->contains(fn ($p) => in_array($skill, $p->skills ?? [], true))) continue;
+                $seats = collect(TeamSlots::for($e)['people'])->keyBy('key');
+                foreach ($people as $key => $current) {
+                    $seatSkill = $seats[$key]['skill'] ?? null;
+                    $pick = $staff->first(fn ($p) => ! in_array($p->id, $team, true) && in_array($seatSkill, $p->skills ?? [], true) && in_array($skill, $p->skills ?? [], true)
+                        && TeamSlots::free($p, $e, $busy[$p->id] ?? []) && \App\Models\StaffAvailability::for($p->id, $e->starts_at) !== 'no');
+                    if (! $pick) continue;
+                    // The replaced person stays marked busy for this window: conservative, never double-books.
+                    $out[$e->id]['people'][$key] = $pick->id; $busy[$pick->id][] = TeamSlots::window($e); $team[] = $pick->id;
+                    break;
+                }
+            }
+        }
     }
 
     /** Parties that overlap (busy window + travel gap) are planned together. */

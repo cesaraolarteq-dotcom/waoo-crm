@@ -296,6 +296,25 @@ class EventResource extends Resource
 
     public const EVENT_TYPES = ['birthday' => 'Cumpleaños', 'baby_shower' => 'Baby shower', 'gender_reveal' => 'Gender reveal', 'corporate' => 'Corporativo', 'other' => 'Otro'];
 
+    /** Extras sold «for the same time as the package»: each one is swapped for its version with the package's duration, when it exists. */
+    public const SAME_LENGTH_EXTRAS = ['Recreadora extra'];
+
+    public static function matchPackageDuration(mixed $packageId, array $extraIds): array
+    {
+        $package = filled($packageId) ? ServiceVariant::find(PriceVersion::whereKey((int) $packageId)->value('service_variant_id')) : null;
+        if (! $package) return $extraIds;
+
+        return array_values(array_map(function ($id) use ($package) {
+            $variant = ServiceVariant::find(PriceVersion::whereKey((int) $id)->value('service_variant_id'));
+            $family = $variant ? collect(self::SAME_LENGTH_EXTRAS)->first(fn ($f) => str_starts_with($variant->name, $f)) : null;
+            if (! $family || (int) $variant->duration_minutes === (int) $package->duration_minutes) return (string) $id;
+            $match = ServiceVariant::where('name', 'like', $family.'%')->where('status', 'active')->where('duration_minutes', $package->duration_minutes)->first();
+            $price = $match ? PriceVersion::where('service_variant_id', $match->id)->orderByDesc('id')->value('id') : null;
+
+            return (string) ($price ?? $id);
+        }, $extraIds));
+    }
+
     /** Selected price versions whose service includes configurable characters: id => service name. */
     public static function configurablePrices(array $priceIds): array
     {
