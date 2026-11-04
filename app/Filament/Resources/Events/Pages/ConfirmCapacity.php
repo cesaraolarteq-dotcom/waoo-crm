@@ -142,7 +142,8 @@ class ConfirmCapacity extends Page
                             ->options(fn (Get $get) => collect(\App\Models\Character::find(Unit::whereKey((int) $get('resource_id'))->value('character_id'))?->outfits ?? [])->mapWithKeys(fn ($o) => [$o => $o])->all()),
                     ]),
             ])
-                ->description('Elige las unidades exactas. Una persona no puede hacer dos roles a la vez; un traje necesita a alguien que pueda usarlo. Al menos una de las personas que van debe manejar (Conductor/a); no hace falta sumar a nadie.'),
+                ->description(fn (Get $get) => $get('staff_later') ? 'Ya vienen los trajes del paquete (los apartados primero). Las personas se eligen en «Planear el fin de semana».'
+                    : 'Elige las unidades exactas. Una persona no puede hacer dos roles a la vez; un traje necesita a alguien que pueda usarlo. Al menos una de las personas que van debe manejar (Conductor/a); no hace falta sumar a nadie.'),
             Callout::make('2. Pagado según HoneyBook')->warning()->columnSpanFull()
                 ->visible(fn () => $this->importedRevisionId !== null)
                 ->description(fn () => ($i = $this->imported()) ? 'Pagado '.Labels::money($i['paid_cents']).' de '.Labels::money($i['total_cents'])
@@ -173,7 +174,10 @@ class ConfirmCapacity extends Page
                 Textarea::make('deposit_exception_reason')->label('Por qué se acepta menos del 50 %')->minLength(10)->maxLength(2000)->required()->columnSpanFull()
                     ->visible(fn (Get $get) => $this->isBelowTarget($get('payment.amount'))),
             ]),
-            Section::make('3. Revisión')->columns(2)->schema([
+            Section::make('3. Revisión')->columns(2)
+                // Audit 2026-11-04: in «staff later» mode every check is hidden; an empty card only confused.
+                ->visible(fn (Get $get) => ! $get('staff_later') || ($this->importedRevisionId === null && \App\Services\Scheduling\BookingNoticePolicy::requiresOwnerConfirmationReason($this->record->starts_at)))
+                ->schema([
                 Checkbox::make('staff_confirmed')->label('Confirmé con cada persona que puede ir')->accepted()->columnSpanFull()->visible(fn (Get $get) => ! $get('staff_later')),
                 Checkbox::make('cargo_checked')->label('Revisé que el equipo y la gente caben en el vehículo')->accepted()->columnSpanFull()->visible(fn (Get $get) => ! $get('staff_later')),
                 // Owner 2026-11-04: route note removed from the form for now (a better logistics design later); the service still accepts it.

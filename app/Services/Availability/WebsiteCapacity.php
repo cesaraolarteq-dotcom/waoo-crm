@@ -36,6 +36,9 @@ final class WebsiteCapacity
     private array $resources = [];
     private array $units = [];
     private array $blocks = [];
+    private array $candidatePins = [];
+    private ?array $candidateAssignment = null;
+    private ?\Illuminate\Support\Collection $characters = null;
     private ?string $zip = null;
     private ?string $location = null;
     private ?array $compat = null;
@@ -50,7 +53,7 @@ final class WebsiteCapacity
     public function __construct(private CarbonImmutable $dayStart, private ?array $calendar, private ?int $exclude = null)
     {
         $from = $dayStart->subDay(); $to = $dayStart->addDays(2);
-        foreach (Resource::query()->where('status', 'active')->get(['id', 'kind', 'equipment_kind', 'character_id', 'skills', 'seats']) as $r) {
+        foreach (Resource::query()->where('status', 'active')->get(['id', 'kind', 'equipment_kind', 'character_id', 'outfit', 'skills', 'seats']) as $r) {
             $this->units[$r->id] = $r;
             $this->resources[] = match ($r->kind) {
                 'staff' => ['id' => $r->id, 'kind' => 'staff', 'driver' => in_array('driver', (array) $r->skills, true)],
@@ -197,6 +200,7 @@ final class WebsiteCapacity
     /** 'available' | 'owner_approval_required' | 'unavailable' | 'review_required' for one candidate busy interval. */
     public function check(CarbonImmutable $from, CarbonImmutable $to, string $day, array $requirements): string
     {
+        $this->candidateAssignment = null;
         if ($this->partiesOn($day) >= self::MAX_PER_DAY) return 'unavailable';
         $state = $this->evaluate($from, $to, $requirements);
         if ($state === 'unavailable' || $state === 'review_required') return $state;
@@ -209,6 +213,21 @@ final class WebsiteCapacity
         return $uncertain ? 'owner_approval_required' : $state;
     }
 
+    /** Private server allocation for S1; never add its staff/resource identities to a public availability response. */
+    public function allocation(CarbonImmutable $from, CarbonImmutable $to, string $day, array $requirements, array $pinned = []): array
+    {
+        if (!array_is_list($pinned) || count($pinned) > 256
+            || array_filter($pinned, fn ($id) => !is_int($id) || !isset($this->units[$id]))
+            || count(array_unique($pinned)) !== count($pinned)) return ['state' => 'review_required', 'assignment' => []];
+        $previous = $this->candidatePins; $this->candidatePins = $pinned;
+        try {
+            if (!$this->calendarOk()) return ['state' => 'review_required', 'assignment' => []];
+            $state = $this->check($from, $to, $day, $requirements);
+            if ($state === 'available' && !$this->candidateAssignment) $state = 'review_required';
+            return ['state' => $state, 'assignment' => $state === 'available' ? $this->candidateAssignment : []];
+        } finally { $this->candidatePins = $previous; }
+    }
+
     /**
      * A shared resource needs route evidence from breakdown-end to setup-start, with 30 extra minutes. An unknown
      * or insufficient route prohibits sharing that resource; a separate complete team can still prove feasibility.
@@ -216,7 +235,7 @@ final class WebsiteCapacity
      */
     private function travelFits(CarbonImmutable $from, CarbonImmutable $to, array $requirements): bool
     {
-        $candidate = ['key' => 'candidate', 'from' => $from, 'to' => $to, 'requirements' => $requirements, 'pinned' => [],
+        $candidate = ['key' => 'candidate', 'from' => $from, 'to' => $to, 'requirements' => $requirements, 'pinned' => $this->candidatePins,
             'uncertain' => false, 'zip' => $this->zip, 'address' => $this->location];
         $parties = [...$this->parties, $candidate];
         $separations = [];
@@ -245,7 +264,7 @@ final class WebsiteCapacity
     private function evaluate(CarbonImmutable $from, CarbonImmutable $to, array $requirements): string
     {
         if (! $this->simultaneousOk($from, $to)) return 'unavailable';
-        $candidate = ['key' => 'candidate', 'from' => $from, 'to' => $to, 'requirements' => $requirements, 'pinned' => []];
+        $candidate = ['key' => 'candidate', 'from' => $from, 'to' => $to, 'requirements' => $requirements, 'pinned' => $this->candidatePins];
         // Only parties connected to the candidate through overlapping busy time can change the answer.
         $jobs = $this->connected(array_merge($this->parties, [$candidate]), count($this->parties));
         $physical = $this->solve($jobs, false);
@@ -306,7 +325,7 @@ final class WebsiteCapacity
                 $kind = $req['kind'] ?? null;
                 if ($kind === 'staff' && ! $withPeople) continue;
                 $eligible = array_keys(array_filter($this->units, fn ($u) => match ($kind) {
-                    'costume' => $u->kind === 'costume' && (int) $u->character_id === (int) ($req['character_id'] ?? 0),
+                    'costume' => $this->costumeFits($req, $u),
                     'equipment' => $u->kind === 'equipment' && $u->equipment_kind === ($req['equipment_kind'] ?? null),
                     'staff' => $u->kind === 'staff' && (($req['skill'] ?? null) === '*' || in_array($req['skill'] ?? null, (array) $u->skills, true)),
                     'vehicle' => $u->kind === 'vehicle' && (int) $u->seats >= max(1, (int) ($req['seats'] ?? 1)),
@@ -317,7 +336,10 @@ final class WebsiteCapacity
                 if ($kind === 'vehicle' && $eligible === [] && $p['key'] === 'candidate'
                     && array_filter($this->units, fn ($u) => $u->kind === 'vehicle' && ! $u->seats)) return 'unknown';
                 for ($q = 0; $q < max(1, (int) ($req['quantity'] ?? 1)); $q++) {
-                    if ($eligible === []) {
+                    // A performer slot paired below gets its eligibility from CostumeWearers (including explicit
+                    // exceptions and head → performer_wig). Do not reject it before its costume has been examined.
+                    $costumeRole = $withPeople && $kind === 'staff' && in_array($req['skill'] ?? null, ['performer', 'performer_wig'], true);
+                    if ($eligible === [] && !$costumeRole) {
                         // The candidate needs something nobody has: impossible. An already booked party is a fact: its role is
                         // skipped here, and the party is marked uncertain so nearby starts go to the owner (Codex audit S5).
                         if ($p['key'] === 'candidate') return 'infeasible';
@@ -327,9 +349,9 @@ final class WebsiteCapacity
                     $slots[] = ['key' => $kind.($k++), 'kind' => $kind, 'eligible' => $eligible, 'skill' => $req['skill'] ?? null];
                 }
             }
-            // Who can wear the costume (Codex audit R4, like ConfirmBooking): each costume of the candidate is worn by one of its
-            // performers, paired by the recorded "Quién puede usarlo" list. No recorded wearer = nobody can (people pass fails).
-            if ($withPeople && $p['key'] === 'candidate') {
+            // Every committed party must keep a compatible wearer, including unassigned existing parties. The costume's
+            // recorded exceptions override the default head/wig rule; generic recipe labels must not exclude them.
+            if ($withPeople) {
                 $used = [];
                 foreach ($slots as $ci => $slot) {
                     if ($slot['kind'] !== 'costume') continue;
@@ -339,6 +361,7 @@ final class WebsiteCapacity
                     $used[$wi] = true;
                     $slots[$ci]['pair'] = $slots[$wi]['key'];
                     $slots[$ci]['pairs'] = $this->wearers($slot['eligible']);
+                    $slots[$wi]['eligible'] = array_values(array_unique(array_column($slots[$ci]['pairs'], 1)));
                 }
             }
             foreach ($pinned as $i => $id) {
@@ -361,6 +384,14 @@ final class WebsiteCapacity
         $jobKeys = array_column($jobs, 'key');
         $separations = array_values(array_filter($separations, fn ($edge) => in_array($edge['first'], $jobKeys, true) && in_array($edge['second'], $jobKeys, true)));
         $r = (new PoolCapacitySolver())->solve($this->resources, $jobs, $blocks, $separations);
+        if ($withPeople && $r['state'] === 'feasible') $this->candidateAssignment = $r['witness']['candidate'] ?? [];
         return in_array($r['state'], ['feasible', 'infeasible'], true) ? $r['state'] : 'unknown';
+    }
+
+    private function costumeFits(array $requirement, Resource $unit): bool
+    {
+        if ($unit->kind !== 'costume' || (int) $unit->character_id !== (int) ($requirement['character_id'] ?? 0)) return false;
+        $this->characters ??= \App\Models\Character::whereIn('id', array_filter(array_map(fn ($u) => $u->character_id, $this->units)))->get()->keyBy('id');
+        return \App\Services\CostumeOutfits::fits($requirement, $unit, $this->characters, []);
     }
 }

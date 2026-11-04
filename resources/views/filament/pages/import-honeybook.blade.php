@@ -12,7 +12,7 @@
                 </label>
                 <span class="wimp-file" x-text="name || 'Ningún archivo elegido'"></span>
                 <span class="wqb-hint" wire:loading wire:target="csv">Cargando…</span>
-                <button type="submit" class="wcal-btn on" x-bind:disabled="!name" wire:loading.attr="disabled" wire:target="csv,stageFile">Revisar archivo</button>
+                <button type="submit" class="wcal-btn on" wire:loading.attr="disabled" wire:target="csv,stageFile">Revisar archivo</button>
             </form>
             @error('csv')<p class="wmoney-warn">{{ $message }}</p>@enderror
         </x-filament::section>
@@ -148,6 +148,7 @@
                 {{-- Owner 2026-11-04: import everything the CRM can match by itself; only the rest needs a person. --}}
                 <div class="wimp-bulk">
                     <label class="wimp-check"><input type="checkbox" wire:model.live="bulkReviewed"> Revisé la lista: estas fiestas están confirmadas en HoneyBook y sus importes, pagos y contrato se guardan tal como vienen.</label>
+                    <label class="wimp-check"><input type="checkbox" wire:model.live="bulkConfirm"> Confirmarlas también (el personal se asigna la semana de cada fiesta)</label>
                     <button type="button" class="wcal-btn on" wire:click="importAll" @disabled(! $bulkReviewed) wire:loading.attr="disabled" wire:target="importAll">Importar todo</button>
                     <p class="wqb-hint">El CRM reconoce el paquete y los personajes. Las que no pueda reconocer quedan marcadas para que elijas tú.</p>
                 </div>
@@ -165,7 +166,7 @@
                                 <span @class(['wimp-pill', 'is-'.($r['imported_current'] ? 'ready' : $r['status'])])>{{ $r['imported_current'] ? 'Importada' : (\App\Filament\Pages\ImportHoneyBook::STATUS[$r['status']] ?? $r['status']) }}</span>
                                 @if ($r['skip'])<br><small>{{ $r['skip'] === 'past' ? 'Ya pasó' : 'Cancelado' }}</small>@endif
                                 @unless ($r['imported_current'])@foreach ($r['reasons'] as $why)<br><small>{{ $why }}</small>@endforeach @endunless
-                                @if (! $r['imported_current'] && isset($bulkLeft[$r['id']]))<br><small class="wmoney-warn">{{ $bulkLeft[$r['id']] }}</small>@endif
+                                @if (isset($bulkLeft[$r['id']]))<br><small class="wmoney-warn">{{ $bulkLeft[$r['id']] }}</small>@endif
                                 @if ($r['outdated'])<br><small>{{ $r['money_review'] ? 'Cambiaron los pagos en HoneyBook: revísalos' : 'Cambió en el archivo: vuelve a importarla' }}</small>@endif
                             </td>
                             <td>

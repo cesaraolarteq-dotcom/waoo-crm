@@ -102,10 +102,11 @@ final class QuickPaymentProtocol
         $s = ClientDetailsSubmission::where('event_id',$event->id)->orderByDesc('revision')->sharedLock()->first();
         RecordWriteRejected::unless($s && $s->portal_grant_id === $b->portal_grant_id && $s->customer_id === $b->customer_id
             && $s->event_version === $event->version, 409, 'Completa y confirma tus datos primero. / Complete your details first.');
-        foreach (['first_name','last_name','phone','email','billing_address','event_address','event_postal_code','child_name','event_language','setup_area'] as $field) {
+        $celebrant = !in_array($event->event_type, ['baby_shower','gender_reveal','corporate'], true); // audit 2026-11-04: no child for these
+        foreach (['first_name','last_name','phone','email','billing_address','event_address','event_postal_code',...($celebrant?['child_name']:[]),'event_language','setup_area'] as $field) {
             RecordWriteRejected::unless(filled($s->data[$field] ?? null), 422, 'Completa todos los datos de la fiesta. / Complete all party details.');
         }
-        RecordWriteRejected::unless(isset($s->data['child_age'],$s->data['children_count']) && $s->data['start_time_confirmed'] === true,
+        RecordWriteRejected::unless(($celebrant ? isset($s->data['child_age']) : true) && isset($s->data['children_count']) && $s->data['start_time_confirmed'] === true,
             422, 'Confirma la hora y los datos de la fiesta. / Confirm the party time and details.');
         return $s;
     }

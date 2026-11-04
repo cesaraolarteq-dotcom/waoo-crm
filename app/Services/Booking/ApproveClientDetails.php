@@ -41,7 +41,16 @@ final class ApproveClientDetails
                 if ($reserved && isset($data[$field])) RecordWriteRejected::unless((int) $data[$field] === $event->{$field}, 409, 'Los tiempos operativos de una reserva comprometida requieren el flujo de cambios.');
             }
             if ($reserved) {
-                RecordWriteRejected::unless($event->address === $values['event_address'] && $event->postal_code === ($values['event_postal_code'] ?? $event->postal_code), 409, 'La dirección de una reserva comprometida requiere el flujo de cambios. No se reasignan recursos aquí.');
+                $sameZip = $event->postal_code === ($values['event_postal_code'] ?? $event->postal_code);
+                // Audit 2026-11-04: a party confirmed in «staff later» mode before the client sent her address gets its first address here
+                // (same ZIP, so the quoted transport and capacity stay valid). Changing an existing address or the ZIP still needs the change flow.
+                if (blank($event->address) && $sameZip && filled($values['event_address'] ?? null)) {
+                    // Version kept: the contract checks the event version against the money revision, and only the empty address is filled.
+                    $event->forceFill(['address' => $values['event_address']])->save();
+                }
+                RecordWriteRejected::unless($event->address === $values['event_address'] && $sameZip, 409, $sameZip
+                    ? 'La dirección de una reserva comprometida requiere el flujo de cambios. No se reasignan recursos aquí.'
+                    : 'El ZIP que mandó el cliente no es el de la reserva. Confírmalo con el cliente: si cambió, usa «Cambiar» en la fiesta para recalcular el transporte.');
                 \App\Services\Documents\CreateContract::assertCurrent($event, $previousFinance);
             }
             $beforeServices = $event->services()->with('characters')->orderBy('price_version_id')->get();

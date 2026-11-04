@@ -148,7 +148,7 @@ class EventResource extends Resource
     public static function characterFields(): array
     {
         return [
-            TextInput::make('character_count')->label('Cuántos')->integer()->minValue(1)->maxValue(100)
+            TextInput::make('character_count')->label('Cuántos personajes')->integer()->minValue(1)->maxValue(100)
                 ->dehydrated(false)->live(onBlur: true)
                 ->visible(fn (Get $get) => self::configurablePrices($get('price_version_ids') ?? []) !== [])
                 ->afterStateUpdated(function (Get $get, Set $set) {

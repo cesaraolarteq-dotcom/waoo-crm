@@ -47,13 +47,15 @@ class HoneyBookImportAllTest extends TestCase
         $page->call('importAll');
         $this->assertDatabaseCount('events', 0); // nothing without the owner's list review
 
-        $page->set('bulkReviewed', true)->call('importAll')->assertSee('HoneyBook no dice qué personaje')->assertSee('No reconozco el paquete «Mystery Package»');
+        $page->set('bulkConfirm', false)->set('bulkReviewed', true)->call('importAll')->assertSee('HoneyBook no dice qué personaje')->assertSee('No reconozco el paquete «Mystery Package»');
         $this->assertSame(2, ImportedProjectLink::count());
         $magicEvent = Event::findOrFail(ImportedProjectLink::where('project_key', ImportRow::where('source_line', 3)->value('source_key'))->value('event_id'));
         $this->assertSame('draft', $magicEvent->status);
         $this->assertSame(15, $magicEvent->setup_minutes);
         $this->assertTrue(EventService::where('event_id', $magicEvent->id)->sole()->operational_ready);
         $this->assertDatabaseCount('ledger_entries', 0);
+
+        $this->assertSame(0, Event::where('status', 'capacity_reserved')->count());
 
         // The row left for a person opens with the package already chosen; she only adds the character.
         $page->call('openRow', ImportRow::where('source_line', 4)->value('id'))
@@ -90,5 +92,39 @@ class HoneyBookImportAllTest extends TestCase
         }
         $guess = \App\Services\Imports\HoneyBookAutoMapping::guess(['services' => 'Magic Package; Waoo Package', 'characters' => 'Minnie']);
         $this->assertNotNull($guess['reason'], 'do not silently assign every character to the first package');
+    }
+
+    public function test_import_all_can_confirm_in_staff_later_mode_and_explains_what_it_left(): void
+    {
+        ServiceVariant::create(['name' => 'Photo Booth', 'status' => 'active', 'duration_minutes' => 60, 'setup_minutes' => 60, 'breakdown_minutes' => 30,
+            'requirements' => [['kind' => 'staff', 'quantity' => 1, 'skill' => 'operator']]]);
+        PriceVersion::create(['service_variant_id' => ServiceVariant::where('name', 'Photo Booth')->value('id'), 'amount_cents' => 42000, 'currency' => 'USD', 'created_by' => $this->owner->id]);
+        \App\Models\Resource::create(['code' => 'OP-1', 'name' => 'Ana Rodríguez', 'kind' => 'staff', 'status' => 'active', 'skills' => ['operator', 'driver']]);
+        $row = fn (string $id, string $paid, string $phone) => $this->futureRow(['honeybook_project_id' => $id, 'services' => 'Photo Booth Station (470.00)', 'characters' => '',
+            'client_email' => strtolower($id).'@example.test', 'client_phone' => $phone, 'package_total' => '100.00', 'travel_fee' => '20.00', 'discount' => '0.00', 'total' => '120.00',
+            'amount_paid' => $paid, 'balance' => number_format(120 - (float) $paid, 2, '.', ''), 'payments' => '2026-10-01|'.$paid.'|Zelle']);
+        Livewire::test(ImportHoneyBook::class)->set('csv', $this->futureFile([$row('HB-P1', '60.00', '+13465550111'), $row('HB-P2', '20.00', '+13465550112')]))->call('stageFile')->assertHasNoErrors()
+            ->set('bulkReviewed', true)->call('importAll')->assertSee('Pagó menos del 50 %');
+        $this->assertSame(2, ImportedProjectLink::count());
+        $statuses = Event::orderBy('id')->pluck('status')->all();
+        $this->assertSame(['capacity_reserved', 'draft'], $statuses);
+        $this->assertDatabaseCount('ledger_entries', 0);
+    }
+
+    public function test_bulk_confirmation_keeps_the_second_import_as_draft_when_the_only_equipment_is_taken(): void
+    {
+        $v = ServiceVariant::create(['name' => 'Photo Booth', 'status' => 'active', 'duration_minutes' => 60, 'setup_minutes' => 15, 'breakdown_minutes' => 15,
+            'requirements' => [['kind' => 'equipment', 'equipment_kind' => 'photo_booth', 'quantity' => 1], ['kind' => 'staff', 'skill' => 'operator', 'quantity' => 1]]]);
+        PriceVersion::create(['service_variant_id' => $v->id, 'amount_cents' => 40000, 'currency' => 'USD', 'created_by' => $this->owner->id]);
+        \App\Models\Resource::create(['code' => 'BOOTH-1', 'name' => 'Cabina A', 'kind' => 'equipment', 'equipment_kind' => 'photo_booth', 'status' => 'active']);
+        \App\Models\Resource::create(['code' => 'OP-1', 'name' => 'Ana Rodríguez', 'kind' => 'staff', 'status' => 'active', 'skills' => ['operator', 'driver']]);
+        $rows = [];
+        foreach ([1, 2] as $i) $rows[] = $this->futureRow(['honeybook_project_id' => 'HB-PHYSICAL-'.$i, 'services' => 'Photo Booth Station', 'characters' => '',
+            'client_email' => 'physical'.$i.'@example.test', 'client_phone' => '+1346555011'.$i]);
+        Livewire::test(ImportHoneyBook::class)->set('csv', $this->futureFile($rows))->call('stageFile')->assertHasNoErrors()
+            ->set('bulkReviewed', true)->call('importAll')->assertSee('No se pudo confirmar');
+        $this->assertSame(['capacity_reserved', 'draft'], Event::orderBy('id')->pluck('status')->all());
+        $this->assertSame([6000, 6000], \App\Models\ImportedProjectRevision::orderBy('id')->get()->map(fn ($r) => $r->normalized['paid_cents'])->all());
+        $this->assertDatabaseCount('ledger_entries', 0);
     }
 }

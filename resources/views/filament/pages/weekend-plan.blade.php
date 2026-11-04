@@ -21,7 +21,7 @@
                 <section class="wtp-card" wire:key="party-{{ $p['id'] }}">
                     <header>
                         <div><a href="{{ $p['url'] }}" class="wtp-title">{{ $p['title'] }}</a>
-                            <div class="wtp-muted">{{ $p['time'] }} · {{ $p['packages'] }}</div>
+                            <div class="wtp-muted">{{ $p['time'] }}@if ($p['packages'] !== '' && ! str_contains($p['title'], $p['packages'])) · {{ $p['packages'] }}@endif @if ($p['place'] === '')· <span class="wtp-warn">Falta la dirección</span>@endif</div>
                             @if ($p['gaps'])<div class="wtp-missing">Falta: {{ implode(', ', $p['gaps']) }}</div>@endif</div>
                         <span @class(['wtp-chip', 'ok' => $p['missing'] === 0])>{{ $p['missing'] === 0 ? 'Completo' : 'Faltan '.$p['missing'] }}</span>
                     </header>
@@ -62,6 +62,6 @@
             @endforeach
         </div>
     @empty
-        <div class="wtp-empty">No hay fiestas confirmadas esta semana.</div>
+        <div class="wtp-empty">No hay fiestas confirmadas esta semana.@if ($next = $this->nextWeekWithParties()) <button type="button" class="wcal-btn" wire:click="shiftWeek({{ $next['weeks'] }})">Ir a la próxima: {{ $next['label'] }}</button>@endif</div>
     @endforelse
 </x-filament-panels::page>

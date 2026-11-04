@@ -52,7 +52,8 @@ final class SubmitClientDetails
             if ($booking=\App\Services\Booking\QuickPaymentProtocol::booking($event->id)) {
                 \App\Services\Booking\QuickPaymentProtocol::gate();
                 RecordWriteRejected::unless($booking->portal_grant_id===$client->grantId,403,'Este enlace no corresponde.');
-                RecordInput::validate($data,['child_name'=>'required|string','child_age'=>'required|integer','event_language'=>'required|in:es,en,bilingual','setup_area'=>'required|in:indoor,outdoor','children_count'=>'required|integer']);
+                $celebrant=!in_array($event->event_type,['baby_shower','gender_reveal','corporate'],true); // audit 2026-11-04: no child for these
+                RecordInput::validate($data,[...($celebrant?['child_name'=>'required|string','child_age'=>'required|integer']:[]),'event_language'=>'required|in:es,en,bilingual','setup_area'=>'required|in:indoor,outdoor','children_count'=>'required|integer']);
             }
             $customer = Customer::whereKey($event->customer_id)->lockForUpdate()->firstOrFail();
             $payload = $data; unset($payload['expected_revision'], $payload['expected_event_version'], $payload['requested_local_time'], $payload['requested_time_choice']);

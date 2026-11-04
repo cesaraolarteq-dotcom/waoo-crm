@@ -36,6 +36,35 @@ class ConfirmPreselectTest extends TestCase
         $this->assertSame([$free->id], ConfirmCapacity::defaultCostumes($party()));
     }
 
+    public function test_held_costume_wins_and_page_starts_in_staff_later_mode(): void
+    {
+        $owner = User::factory()->create(['role' => 'owner_admin', 'active' => true]);
+        $mickey = Character::create(['name' => 'Mickey', 'active' => true]);
+        Resource::create(['code' => 'MK-1', 'name' => 'Mickey 1', 'kind' => 'costume', 'status' => 'active', 'character_id' => $mickey->id, 'skills' => []]);
+        $held = Resource::create(['code' => 'MK-2', 'name' => 'Mickey 2', 'kind' => 'costume', 'status' => 'active', 'character_id' => $mickey->id, 'skills' => []]);
+        $variant = ServiceVariant::create(['name' => 'Fiesta Mágica', 'status' => 'active', 'duration_minutes' => 60,
+            'requirements' => [['kind' => 'costume', 'character_id' => $mickey->id, 'quantity' => 1]]]);
+        $price = PriceVersion::create(['service_variant_id' => $variant->id, 'amount_cents' => 40000, 'currency' => 'USD', 'created_by' => $owner->id]);
+        $c = Customer::create(['name' => 'Laura Jiménez', 'locale' => 'es']);
+        $s = now()->addDays(20)->setTime(14, 0);
+        $e = Event::create(['customer_id' => $c->id, 'title' => 'Cumple de Mateo', 'starts_at' => $s, 'ends_at' => $s->copy()->addHour(), 'timezone' => 'America/Chicago',
+            'postal_code' => '77494', 'setup_minutes' => 15, 'breakdown_minutes' => 15, 'travel_fee_cents' => 0]);
+        EventService::create(['event_id' => $e->id, 'service_variant_id' => $variant->id, 'price_version_id' => $price->id,
+            'requirements_snapshot' => $variant->requirements, 'duration_minutes' => 60, 'operational_ready' => true]);
+        // Reserva rápida set Mickey 2 aside for this party: that unit is the one preselected, not the first by name.
+        ResourceReservation::create(['event_id' => $e->id, 'resource_id' => $held->id, 'starts_at' => $e->starts_at, 'ends_at' => $e->ends_at]);
+        $this->assertSame([$held->id], ConfirmCapacity::defaultCostumes($e));
+        config(['waoo.record_forms' => true]);
+        $this->actingAs($owner);
+        \Livewire\Livewire::test(ConfirmCapacity::class, ['record' => $e->id])->assertSet('data.staff_later', true)->assertSet('data.units.costume', [$held->id]);
+    }
+
+    public function test_select_lists_are_not_cut_at_fifty(): void
+    {
+        $this->assertCount(96, \App\Filament\Support\TimeSelect::options());
+        $this->assertGreaterThanOrEqual(96, \App\Filament\Support\TimeSelect::make('start_time')->getOptionsLimit());
+    }
+
     public function test_failed_match_names_the_missing_roles(): void
     {
         $mickey = Character::create(['name' => 'Mickey', 'active' => true]);

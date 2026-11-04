@@ -49,7 +49,7 @@
                     <template x-if="d">
                         <button type="button" class="waoo-cal-day" x-on:click="pick(d)" x-bind:disabled="past(d)" x-bind:aria-label="dayAria(d)"
                             x-bind:aria-pressed="state && state.slice(0, 10) === iso(d) ? 'true' : 'false'"
-                            x-bind:class="{ 'is-selected': state && state.slice(0, 10) === iso(d), 'is-today': min === iso(d), 'is-one': count(d) === 1, 'is-many': count(d) > 1 }">
+                            x-bind:class="{ 'is-selected': state && state.slice(0, 10) === iso(d), 'is-today': min === iso(d), 'is-one': count(d) === 1, 'is-many': count(d) > 1, 'is-weekend': i % 7 === 0 || i % 7 === 6 }">
                             <span x-text="d"></span>
                         </button>
                     </template>

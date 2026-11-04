@@ -36,8 +36,10 @@ final class ConfirmBooking
                     return $event;
                 }
                 abort_unless($event->status === 'draft' && $event->version === (int) $data['expected_version'], 409, 'El evento cambió. Actualiza la ficha.');
-                if (!$event->address || $event->setup_minutes === null || $event->breakdown_minutes === null) {
-                    $this->fail('Completa dirección, montaje y desmontaje.');
+                // Audit 2026-11-04: in «staff later» mode the client may still be filling the address in her link (Reserva rápida
+                // makes it optional); capacity only needs the times. Naming people still requires the address.
+                if ((!$staffLater && !$event->address) || $event->setup_minutes === null || $event->breakdown_minutes === null) {
+                    $this->fail($event->address || $staffLater ? 'Completa montaje y desmontaje en la ficha.' : 'Falta la dirección (el cliente la completa en su enlace, o escríbela en Editar). También montaje y desmontaje.');
                 }
                 if ($event->starts_at->isPast()) {
                     $this->fail('No se puede reservar un evento pasado.');
@@ -127,7 +129,7 @@ final class ConfirmBooking
                 foreach ($staffLater ? [] : $costumes as $costume) {
                     $performerSlot = null;
                     foreach ($slots as $index => $slot) {
-                        if ($slot['kind'] === 'staff' && ($slot['skill'] ?? null) === 'performer' && !isset($slot['costume_unit_id'])) {
+                        if ($slot['kind'] === 'staff' && in_array($slot['skill'] ?? null, ['performer', 'performer_wig'], true) && !isset($slot['costume_unit_id'])) {
                             $performerSlot = $index;
                             break;
                         }
@@ -139,7 +141,16 @@ final class ConfirmBooking
                     }
                 }
                 $assignment=app(MatchEventResources::class)->execute($slots, $resources->all(), function ($slot, $r) use ($compatibilities, $characters, $costumeChoices, $costumes) {
-                    return $r->kind === $slot['kind'] && ($slot['kind'] !== 'costume' || CostumeOutfits::fits($slot, $r, $characters, $costumeChoices)) && (empty($slot['skill']) || in_array($slot['skill'], $r->skills ?? [], true)) && (empty($slot['character_id']) || (int) $r->character_id === (int) $slot['character_id']) && (empty($slot['equipment_kind']) || $r->equipment_kind === $slot['equipment_kind']) && (empty($slot['costume_unit_id']) || \App\Support\CostumeWearers::allows($costumes->firstWhere('id', $slot['costume_unit_id']), $r, $characters->get((int) $costumes->firstWhere('id', $slot['costume_unit_id'])?->character_id), $compatibilities));
+                    if ($r->kind !== $slot['kind'] || ($slot['kind'] === 'costume' && !CostumeOutfits::fits($slot, $r, $characters, $costumeChoices))
+                        || (!empty($slot['character_id']) && (int) $r->character_id !== (int) $slot['character_id'])
+                        || (!empty($slot['equipment_kind']) && $r->equipment_kind !== $slot['equipment_kind'])) return false;
+                    // CostumeWearers owns both the default head/wig rule and recorded exceptions. Do not override it with
+                    // the generic performer label, or count an existing performer_wig seat as an extra, second person.
+                    if (!empty($slot['costume_unit_id'])) {
+                        $unit = $costumes->firstWhere('id', $slot['costume_unit_id']);
+                        return \App\Support\CostumeWearers::allows($unit, $r, $characters->get((int) $unit->character_id), $compatibilities);
+                    }
+                    return empty($slot['skill']) || in_array($slot['skill'], $r->skills ?? [], true);
                 });
                 $assignedStaff=collect(array_keys($assignment))->map(fn($i)=>$resources[$i])->where('kind','staff');
                 $driverIds=$assignedStaff->filter(fn($r)=>MatchEventResources::driver($r))->pluck('id')->values()->all();

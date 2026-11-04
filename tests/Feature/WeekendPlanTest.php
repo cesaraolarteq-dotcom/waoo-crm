@@ -110,6 +110,38 @@ class WeekendPlanTest extends TestCase
         Livewire::test(\App\Filament\Pages\WeekendPlan::class)->assertSee('Completo');
     }
 
+    public function test_reserved_costumes_are_prefilled_in_the_seat_of_the_requested_outfit(): void
+    {
+        $e = $this->party('2026-11-07 14:00', elsa: true);
+        $service = $e->services()->sole(); $recipe = $service->requirements_snapshot;
+        $recipe[2]['outfit'] = 'Azul';
+        $recipe[] = ['kind' => 'costume', 'character_id' => $this->elsa->id, 'outfit' => 'Rosa', 'quantity' => 1];
+        $service->forceFill(['requirements_snapshot' => $recipe])->save();
+        $rosa = Resource::where('code', 'ELSA-1')->firstOrFail(); $rosa->update(['name' => 'A Rosa', 'outfit' => 'Rosa']);
+        $azul = Resource::create(['code' => 'ELSA-2', 'name' => 'Z Azul', 'kind' => 'costume', 'status' => 'active', 'character_id' => $this->elsa->id, 'outfit' => 'Azul']);
+        foreach ([$rosa, $azul] as $unit) ResourceReservation::create(['event_id' => $e->id, 'resource_id' => $unit->id, 'starts_at' => $e->starts_at, 'ends_at' => $e->ends_at]);
+        $seats = TeamSlots::for($e)['costumes'];
+        Livewire::test(\App\Filament\Pages\WeekendPlan::class)
+            ->assertSet('picks.'.$e->id.'.costumes.'.$seats[0]['key'].'.unit_id', $azul->id)
+            ->assertSet('picks.'.$e->id.'.costumes.'.$seats[1]['key'].'.unit_id', $rosa->id);
+        $this->assertDatabaseCount('event_team_plans', 0, null);
+    }
+
+    public function test_saving_the_team_cannot_replace_the_agreed_outfit_with_another_outfit(): void
+    {
+        $e = $this->party('2026-11-07 14:00', elsa: true);
+        $service = $e->services()->sole(); $recipe = $service->requirements_snapshot; $recipe[2]['outfit'] = 'Azul';
+        $service->forceFill(['requirements_snapshot' => $recipe])->save();
+        $unit = Resource::where('code', 'ELSA-1')->firstOrFail(); $unit->update(['outfit' => 'Rosa']);
+        $seat = TeamSlots::for($e)['costumes'][0]['key'];
+        try {
+            $this->save($e, ['people' => [], 'costumes' => [$seat => ['unit_id' => $unit->id]]]);
+            $this->fail('The team plan replaced Azul with Rosa.');
+        } catch (\App\Exceptions\RecordWriteRejected $x) { $this->assertSame(422, $x->status); }
+        $this->assertDatabaseCount('event_team_plans', 0);
+        $this->assertDatabaseCount('resource_reservations', 0);
+    }
+
     public function test_each_person_sees_their_seat_in_their_staff_week(): void
     {
         $a = $this->party('2026-11-07 14:00', elsa: true);
