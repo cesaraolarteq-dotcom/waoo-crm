@@ -21,6 +21,10 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-04 · BACKEND · Parches Symfony necesarios para desbloquear audit del PR203 · PENDING
+- Branch: codex/fix-extra-time-audit. CI41900848345 falló en composer audit por avisos publicados2026-11-04. Lock actualizado solo para symfony/html-sanitizer, http-foundation, http-kernel, routing y serializer a7.4.23. Sin cambio de restricciones, política de audit, workflows o configuración del CRM.
+- How verified: audit sin avisos después, composer validate estricto PASS. Nueva suite CI requerida sobre este lock; prueba local de integración/integridad en curso. Claude: revisar límites de hosts/URLs y compatibilidad del portal con estas versiones; sin deploy/activación/envíos/cobros. Solo Claude marca REVIEWED.
+
 ### 2026-11-04 · BACKEND · Expectativa histórica V1 tras columnas aditivas · PENDING
 - Resultado final local: IntegritySchemasTest **11/68 PASS**; se conserva también el hash raw histórico de propinas excluyendo la columna nueva del fixture, sin modificar ConfirmedAgreement/TipGuard/EvidenceV1. Semana DST integrada en esta misma rama; nueva suite CI requerida antes de unir a main.
 - Branch: codex/fix-extra-time-audit. CI41884760707: checks y4/5 grupos verdes; el grupo2 falló. Reproducción aislada del test original confirma diferencia entre ORM ampliado y bytes V1.
