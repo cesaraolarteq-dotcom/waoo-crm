@@ -23,6 +23,7 @@ final class RecordRules
                 'character_quantity' => 'sometimes|integer|min:0|max:20',
                 'extra_character_cents' => 'sometimes|nullable|integer|min:0|max:1000000', // owner 2026-11-03: per-package price per additional character
                 'offered_as_extra' => 'sometimes|boolean', // EXTRAS-01: the client may add it from her link
+                'extends_event' => 'sometimes|boolean', // owner 2026-11-04: extra time — the same team stays longer, no staff of its own
                 'character_options' => 'sometimes|nullable|array|max:100',
                 'character_options.*' => 'array:character_id,requirements',
                 'character_options.*.character_id' => 'required|integer|exists:characters,id',

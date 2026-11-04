@@ -41,7 +41,7 @@ class StaffPortalBackendTest extends TestCase
         EventService::create(['event_id'=>$this->event->id,'service_variant_id'=>$variant->id,'price_version_id'=>$price->id,'requirements_snapshot'=>$requirements,'duration_minutes'=>60,'operational_ready'=>true]);
         $this->event=app(ConfirmBooking::class)->execute($this->event->id,['expected_version'=>1,'resource_ids'=>[$this->person->id,$this->teammate->id,$costume->id],
             'payment'=>['method'=>'external_zelle','reference'=>'PRIVATE_PAYMENT','amount_cents'=>61728,'received_at'=>now()->subHour()->toIso8601String()],
-            'review'=>['short_notice_reason'=>'Fixture owner approved short notice','staff_confirmed'=>true,'cargo_checked'=>true,'origin_return_note'=>'PRIVATE_INTERNAL_NOTES','transfers'=>[]]],$this->owner);
+            'review'=>['short_notice_reason'=>'Fixture owner approved short notice','deposit_exception_reason'=>'Fixture owner accepts a partial deposit for tomorrow.','staff_confirmed'=>true,'cargo_checked'=>true,'origin_return_note'=>'PRIVATE_INTERNAL_NOTES','transfers'=>[]]],$this->owner);
         $this->identity=$this->configure($this->person);
     }
     private function configure(Resource $resource, array $extra=[]): array

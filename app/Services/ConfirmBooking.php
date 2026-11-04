@@ -98,9 +98,20 @@ final class ConfirmBooking
                 if ((int) $data['payment']['amount_cents'] * 2 < $total && empty($data['review']['deposit_exception_reason'])) {
                     $this->fail('El depósito no alcanza el objetivo. Registra una excepción aprobada o completa el pago.');
                 }
+                // Owner 2026-11-04: today or tomorrow = paid 100 %, with at least 24 h notice (an owner exception note can still decide).
+                if (\App\Services\Scheduling\DepositPolicy::fullPayment($event->starts_at) && (int) $data['payment']['amount_cents'] < $total && empty($data['review']['deposit_exception_reason'])) {
+                    $this->fail('Para hoy o mañana se paga el 100 %. Registra el pago completo o una excepción.');
+                }
+                if (\App\Services\Scheduling\DepositPolicy::underDayNotice($event->starts_at) && empty($data['review']['short_notice_reason'])) {
+                    $this->fail('Faltan menos de 24 horas: la regla es no reservar. Si aun así la aceptas, escribe por qué.');
+                }
                 $slots = [];
+                $needed = \App\Models\ServiceVariant::partyMinutes($services->map(fn ($s) => [\App\Models\ServiceVariant::find($s->service_variant_id), (int) $s->duration_minutes])->all());
+                if ($event->starts_at->diffInMinutes($event->ends_at) < $needed) $this->fail("La fiesta debe durar {$needed} minutos: el paquete más el tiempo extra. Ajusta la hora de fin.");
                 foreach ($services as $service) {
-                    if (!$service->operational_ready || empty($service->requirements_snapshot)) {
+                    // Extra time (owner 2026-11-04) has no staff of its own: the party's team stays longer.
+                    $extension = (bool) \App\Models\ServiceVariant::whereKey($service->service_variant_id)->value('extends_event');
+                    if (!$service->operational_ready || (empty($service->requirements_snapshot) && !$extension)) {
                         $this->fail('Faltan requisitos operativos.');
                     }
                     if ($event->starts_at->diffInMinutes($event->ends_at) < $service->duration_minutes) {
