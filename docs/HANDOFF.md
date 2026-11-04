@@ -2,6 +2,7 @@
 - Owner 2026-11-04: «De dónde salen y cómo regresan» quitado del formulario (se diseñará mejor luego); `review.origin_return_note` ahora es opcional (`nullable|max:2000`).
 - Al abrir Confirmar reserva se preseleccionan los trajes del paquete: una unidad activa y libre (sin reserva que se cruce) por cada requisito de personaje (`ConfirmCapacity::defaultCostumes`). El backend sigue validando todo.
 - `MatchEventResources` ahora dice qué falta («Falta: Traje de Mickey, Bocina.»).
+- **Importar todo** (owner: «el sistema debería comparar y traer todo de forma automática»): `HoneyBookAutoMapping::guess` = equivalencia recordada → alias de nombres (`config/honeybook_aliases.php`, solo nombres en inglés de HoneyBook → paquete del CRM) → personajes por nombre exacto o prefijo único dentro de los permitidos del paquete. `importAll()` usa el mismo `CommitHoneyBookEvent` por fila (mismas validaciones, mismos pins frescos por fila), cliente existente solo si hay exactamente una coincidencia, montaje/desmontaje del paquete, una sola casilla de revisión de la lista. Salta filas con cualquier código de error (estado o diferencia de total) y las que no reconoce; esas quedan marcadas y al abrirlas ya traen el paquete. Dinero intacto. REVISAR: alias y la atestación única.
 - Importar HoneyBook / historial: el input de archivo nativo se reemplazó por un botón «Elegir archivo» con el nombre elegido; «Revisar archivo» se desactiva hasta elegir uno.
 
 ## 2026-11-03 · Claude → Codex · Arreglos de la revisión propia (rama `claude/review-fixes`)

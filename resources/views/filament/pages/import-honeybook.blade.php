@@ -144,6 +144,14 @@
 
         <x-filament::section>
             <x-slot name="heading">Filas del archivo</x-slot>
+            @if (collect($this->rows())->contains(fn ($r) => $r['importable'] && ! $r['outdated'] && ! $r['money_review']))
+                {{-- Owner 2026-11-04: import everything the CRM can match by itself; only the rest needs a person. --}}
+                <div class="wimp-bulk">
+                    <label class="wimp-check"><input type="checkbox" wire:model.live="bulkReviewed"> Revisé la lista: estas fiestas están confirmadas en HoneyBook y sus importes, pagos y contrato se guardan tal como vienen.</label>
+                    <button type="button" class="wcal-btn on" wire:click="importAll" @disabled(! $bulkReviewed) wire:loading.attr="disabled" wire:target="importAll">Importar todo</button>
+                    <p class="wqb-hint">El CRM reconoce el paquete y los personajes. Las que no pueda reconocer quedan marcadas para que elijas tú.</p>
+                </div>
+            @endif
             <div class="wimp-table-wrap">
                 <table class="wimp-table">
                     <thead><tr><th>Línea</th><th>Fecha (Houston)</th><th>Cliente</th><th>En HoneyBook</th><th>Total</th><th>Pagado</th><th>Saldo</th><th>Estado</th><th></th></tr></thead>
@@ -157,6 +165,7 @@
                                 <span @class(['wimp-pill', 'is-'.($r['imported_current'] ? 'ready' : $r['status'])])>{{ $r['imported_current'] ? 'Importada' : (\App\Filament\Pages\ImportHoneyBook::STATUS[$r['status']] ?? $r['status']) }}</span>
                                 @if ($r['skip'])<br><small>{{ $r['skip'] === 'past' ? 'Ya pasó' : 'Cancelado' }}</small>@endif
                                 @unless ($r['imported_current'])@foreach ($r['reasons'] as $why)<br><small>{{ $why }}</small>@endforeach @endunless
+                                @if (! $r['imported_current'] && isset($bulkLeft[$r['id']]))<br><small class="wmoney-warn">{{ $bulkLeft[$r['id']] }}</small>@endif
                                 @if ($r['outdated'])<br><small>{{ $r['money_review'] ? 'Cambiaron los pagos en HoneyBook: revísalos' : 'Cambió en el archivo: vuelve a importarla' }}</small>@endif
                             </td>
                             <td>
