@@ -110,4 +110,21 @@ class HoneyBookImportAllTest extends TestCase
         $this->assertSame(['capacity_reserved', 'draft'], $statuses);
         $this->assertDatabaseCount('ledger_entries', 0);
     }
+
+    public function test_bulk_confirmation_keeps_the_second_import_as_draft_when_the_only_equipment_is_taken(): void
+    {
+        $v = ServiceVariant::create(['name' => 'Photo Booth', 'status' => 'active', 'duration_minutes' => 60, 'setup_minutes' => 15, 'breakdown_minutes' => 15,
+            'requirements' => [['kind' => 'equipment', 'equipment_kind' => 'photo_booth', 'quantity' => 1], ['kind' => 'staff', 'skill' => 'operator', 'quantity' => 1]]]);
+        PriceVersion::create(['service_variant_id' => $v->id, 'amount_cents' => 40000, 'currency' => 'USD', 'created_by' => $this->owner->id]);
+        \App\Models\Resource::create(['code' => 'BOOTH-1', 'name' => 'Cabina A', 'kind' => 'equipment', 'equipment_kind' => 'photo_booth', 'status' => 'active']);
+        \App\Models\Resource::create(['code' => 'OP-1', 'name' => 'Ana Rodríguez', 'kind' => 'staff', 'status' => 'active', 'skills' => ['operator', 'driver']]);
+        $rows = [];
+        foreach ([1, 2] as $i) $rows[] = $this->futureRow(['honeybook_project_id' => 'HB-PHYSICAL-'.$i, 'services' => 'Photo Booth Station', 'characters' => '',
+            'client_email' => 'physical'.$i.'@example.test', 'client_phone' => '+1346555011'.$i]);
+        Livewire::test(ImportHoneyBook::class)->set('csv', $this->futureFile($rows))->call('stageFile')->assertHasNoErrors()
+            ->set('bulkReviewed', true)->call('importAll')->assertSee('No se pudo confirmar');
+        $this->assertSame(['capacity_reserved', 'draft'], Event::orderBy('id')->pluck('status')->all());
+        $this->assertSame([6000, 6000], \App\Models\ImportedProjectRevision::orderBy('id')->get()->map(fn ($r) => $r->normalized['paid_cents'])->all());
+        $this->assertDatabaseCount('ledger_entries', 0);
+    }
 }

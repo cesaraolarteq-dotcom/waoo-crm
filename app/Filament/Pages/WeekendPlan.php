@@ -65,10 +65,17 @@ class WeekendPlan extends Page
             // Audit 2026-11-04: with no team saved yet, a costume already reserved for this party (at confirm) fills its seat.
             $reserved = Resource::where('kind', 'costume')->whereIn('id', \App\Models\ResourceReservation::where('event_id', $e->id)->pluck('resource_id'))->orderBy('name')->get();
             $taken = collect($c['costumes'])->pluck('unit_id')->filter()->map(fn ($id) => (int) $id)->all();
+            $reserved = $reserved->whereNotIn('id', $taken)->values();
+            $missing = array_values(array_filter($need['costumes'], fn ($s) => empty($c['costumes'][$s['key']]['unit_id'])));
+            $characters = \App\Models\Character::whereIn('id', array_column($missing, 'character_id'))->get()->keyBy('id');
+            // Match all missing seats together: a generic seat must not take the only unit of a specific wardrobe.
+            $assignment = app(\App\Services\MatchEventResources::class)->partial($missing, $reserved->all(),
+                fn ($slot, $unit) => \App\Services\CostumeOutfits::fits($slot, $unit, $characters, []));
+            $defaults = [];
+            foreach ($assignment as $unitIndex => $slotIndex) $defaults[$missing[$slotIndex]['key']] = $reserved[$unitIndex]->id;
             $this->picks[$e->id] = ['people' => collect($need['people'])->mapWithKeys(fn ($s) => [$s['key'] => $c['people'][$s['key']] ?? null])->all(),
-                'costumes' => collect($need['costumes'])->mapWithKeys(function ($s) use ($c, $reserved, &$taken) {
-                    $unit = $c['costumes'][$s['key']]['unit_id'] ?? null;
-                    if (! $unit && ($r = $reserved->first(fn ($u) => (int) $u->character_id === (int) $s['character_id'] && ! in_array($u->id, $taken, true)))) { $unit = $r->id; $taken[] = $r->id; }
+                'costumes' => collect($need['costumes'])->mapWithKeys(function ($s) use ($c, $defaults) {
+                    $unit = $c['costumes'][$s['key']]['unit_id'] ?? $defaults[$s['key']] ?? null;
                     return [$s['key'] => ['unit_id' => $unit, 'wearer_id' => $c['costumes'][$s['key']]['wearer_id'] ?? null]];
                 })->all(),
                 'driver' => $c['driver']];
