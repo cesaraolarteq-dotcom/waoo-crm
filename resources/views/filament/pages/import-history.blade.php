@@ -5,9 +5,15 @@
         <x-filament::section>
             <x-slot name="heading">1. Sube el archivo del historial</x-slot>
             <p class="wqb-hint">Un CSV en UTF-8 con las 19 columnas del historial (project_id … event_type) más las columnas opcionales aprobadas, máximo 5 MB y 2,000 filas. No lo mandes por chat ni correo: súbelo solo aquí. Queda cifrado y no se guarda el nombre del archivo.</p>
-            <form wire:submit="stageFile" class="wimp-form">
-                <input type="file" wire:model="csv" accept=".csv,text/csv" aria-label="Archivo CSV del historial de HoneyBook">
-                <button type="submit" class="wcal-btn on" wire:loading.attr="disabled" wire:target="csv,stageFile">Revisar archivo</button>
+            {{-- Owner 2026-11-04: the browser's plain "Choose File" text was easy to miss; a clear button shows the chosen name. --}}
+            <form wire:submit="stageFile" class="wimp-form" x-data="{ name: '' }">
+                <label class="wcal-btn wimp-pick">
+                    <input type="file" wire:model="csv" accept=".csv,text/csv" aria-label="Archivo CSV del historial de HoneyBook" x-on:change="name = $event.target.files[0]?.name ?? ''">
+                    Elegir archivo
+                </label>
+                <span class="wimp-file" x-text="name || 'Ningún archivo elegido'"></span>
+                <span class="wqb-hint" wire:loading wire:target="csv">Cargando…</span>
+                <button type="submit" class="wcal-btn on" x-bind:disabled="!name" wire:loading.attr="disabled" wire:target="csv,stageFile">Revisar archivo</button>
             </form>
             @error('csv')<p class="wmoney-warn">{{ $message }}</p>@enderror
         </x-filament::section>

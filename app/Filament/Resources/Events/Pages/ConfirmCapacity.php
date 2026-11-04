@@ -73,7 +73,17 @@ class ConfirmCapacity extends Page
             $this->importedRevisionId = $imported['revision_id'];
             $this->importKey = (string) \Illuminate\Support\Str::uuid();
         }
-        $this->form->fill(['payment' => ['method' => 'external_zelle'], 'transfers' => []]);
+        // Owner 2026-11-04: the package's characters come preselected (one free unit each) so confirming needs no picking.
+        $suggested = \App\Services\SuggestEventCostumes::for($this->record);
+        $costumes = $suggested['ids'];
+        $this->form->fill(['staff_later' => true, 'payment' => ['method' => 'external_zelle'], 'transfers' => [], 'units' => ['costume' => $costumes],
+            'wardrobe' => self::wardrobeRows($costumes, $suggested['wardrobe'])]);
+    }
+
+    /** One active, free costume unit per costume requirement of the event's services; none when a character has no free unit. */
+    public static function defaultCostumes(Event $event): array
+    {
+        return \App\Services\SuggestEventCostumes::for($event)['ids'];
     }
 
     /**
@@ -166,9 +176,7 @@ class ConfirmCapacity extends Page
             Section::make('3. Revisión')->columns(2)->schema([
                 Checkbox::make('staff_confirmed')->label('Confirmé con cada persona que puede ir')->accepted()->columnSpanFull()->visible(fn (Get $get) => ! $get('staff_later')),
                 Checkbox::make('cargo_checked')->label('Revisé que el equipo y la gente caben en el vehículo')->accepted()->columnSpanFull()->visible(fn (Get $get) => ! $get('staff_later')),
-                Textarea::make('origin_return_note')->label('De dónde salen y cómo regresan')->required()->minLength(10)->maxLength(2000)->columnSpanFull()
-                    ->visible(fn (Get $get) => ! $get('staff_later'))
-                    ->placeholder('Ej.: salen de la bodega en Katy a las 2:00 pm en la van y regresan ahí.'),
+                // Owner 2026-11-04: route note removed from the form for now (a better logistics design later); the service still accepts it.
                 Textarea::make('short_notice_reason')->label('Faltan menos de 7 días: ¿por qué se aprueba?')->minLength(10)->maxLength(2000)->required()->columnSpanFull()
                     ->visible(fn () => $this->importedRevisionId === null && \App\Services\Scheduling\BookingNoticePolicy::requiresOwnerConfirmationReason($this->record->starts_at)),
             ]),

@@ -70,6 +70,7 @@ class ConfirmCapacityPageTest extends TestCase
     private function form(array $overrides = []): array
     {
         return array_replace_recursive([
+            'staff_later' => false, // This fixture exercises named-team confirmation; the owner default plans staff later.
             'units' => ['staff' => [$this->performer->id], 'equipment' => [$this->speaker->id]],
             'payment' => ['method' => 'external_zelle', 'reference' => 'ZELLE-FIXTURE-1', 'amount' => '62.50', 'date' => now('America/Chicago')->subDay()->format('Y-m-d'), 'time' => '09:00'],
             'staff_confirmed' => true, 'cargo_checked' => true, 'origin_return_note' => 'Salen de la bodega ficticia y regresan ahí.',

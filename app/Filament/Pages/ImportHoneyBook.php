@@ -6,7 +6,7 @@ use App\Exceptions\RecordWriteRejected;
 use App\Filament\Resources\Events\EventResource;
 use App\Filament\Support\{ChicagoTime, Labels};
 use App\Models\{Customer, ImportBatch, ImportedProjectLink, ImportRow, PriceVersion, ServiceVariant};
-use App\Services\Imports\{CommitHoneyBookEvent, FinalizeHoneyBookImport, HoneyBookMappingKey, HoneyBookPaymentLabels, HoneyBookSourceDifference, ReadImportCoverage, StageHoneyBookFutureEvents};
+use App\Services\Imports\{CommitHoneyBookEvent, FinalizeHoneyBookImport, HoneyBookAutoMapping, HoneyBookMappingKey, HoneyBookPaymentLabels, HoneyBookSourceDifference, ReadImportCoverage, StageHoneyBookFutureEvents};
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
@@ -89,6 +89,12 @@ class ImportHoneyBook extends Page
     public ?array $data = [];
 
     public bool $mappingSuggested = false;
+
+    /** Owner attests the whole list once before «Importar todo». */
+    public bool $bulkReviewed = false;
+
+    /** Rows «Importar todo» left for a person, keyed by row id → reason. */
+    public array $bulkLeft = [];
 
     /** C2 money resync (HONEYBOOK-MONEY-RESYNC-API): the whole diff projection read when the panel opened, pinned. */
     #[Locked]
@@ -245,16 +251,18 @@ class ImportHoneyBook extends Page
             'customers' => $this->matches($row)->pluck('version', 'id')->map(fn ($v) => (int) $v)->all(),
         ];
         // Shared helper (normalized case/space key with exact legacy fallback); a suggestion is shown, never applied by itself.
+        // Remembered equivalence first, then the name aliases (owner 2026-11-04): she only fills what is missing.
+        $guess = HoneyBookAutoMapping::guess($row->source)['selection'] ?? ['price_version_ids' => [], 'characters' => []];
         $suggestion = HoneyBookMappingKey::suggestion($row->source);
-        $selection = $suggestion?->selection ?? [];
         $matches = $this->matches($row);
+        [$setup, $breakdown] = self::defaultMinutes($guess['price_version_ids']);
         $this->form->fill([
             'customer_mode' => $matches->isNotEmpty() ? 'existing' : 'new', 'customer_id' => $matches->first()?->id, 'locale' => 'es',
-            'price_version_ids' => array_map(fn ($s) => (string) $s['price_version_id'], $selection),
+            'price_version_ids' => array_map('strval', $guess['price_version_ids']),
             // Outfit and note travel with the remembered choice (an exact version stays exact; "0" is a valid version name).
-            'characters' => collect($selection)->flatMap(fn ($s) => collect($s['characters'] ?? [])->map(fn ($c) => ['price_version_id' => (string) $s['price_version_id'], 'character_id' => (string) $c['character_id'],
-                'quantity' => $c['quantity'], 'outfit' => isset($c['outfit']) ? (string) $c['outfit'] : null, 'note' => $c['note'] ?? null]))->values()->all(),
-            'setup_minutes' => null, 'breakdown_minutes' => null, 'source_confirmed' => false, 'source_evidence_reviewed' => false, 'remember_mapping' => true,
+            'characters' => collect($guess['characters'])->map(fn ($c) => ['price_version_id' => (string) $c['price_version_id'], 'character_id' => (string) $c['character_id'],
+                'quantity' => $c['quantity'], 'outfit' => isset($c['outfit']) ? (string) $c['outfit'] : null, 'note' => $c['note'] ?? null])->values()->all(),
+            'setup_minutes' => $setup, 'breakdown_minutes' => $breakdown, 'source_confirmed' => false, 'source_evidence_reviewed' => false, 'remember_mapping' => true,
             'source_difference_accepted' => false, 'source_difference_note' => null,
         ]);
         $this->mappingSuggested = $suggestion !== null;
@@ -477,6 +485,61 @@ class ImportHoneyBook extends Page
         $this->resetAttestation();
         $this->key = (string) Str::uuid();
         unset($link);
+    }
+
+    /** The packages' own montaje/desmontaje (largest of the selected ones), or null when nothing is chosen. */
+    public static function defaultMinutes(array $priceIds): array
+    {
+        $variants = ServiceVariant::whereIn('id', PriceVersion::whereIn('id', array_map('intval', $priceIds))->pluck('service_variant_id'))->get();
+
+        if ($variants->isEmpty()) return [null, null];
+        return array_map(fn ($field) => $variants->contains(fn ($v) => $v->$field === null) ? null : (int) $variants->max($field), ['setup_minutes', 'breakdown_minutes']);
+    }
+
+    // ── 3c. Import everything the CRM can match by itself (owner 2026-11-04) ──
+
+    public function importAll(): void
+    {
+        if (! $this->bulkReviewed) {
+            Notification::make()->warning()->title('Marca primero que revisaste la lista')->send();
+
+            return;
+        }
+        $done = 0; $this->bulkLeft = [];
+        foreach ($this->rows() as $r) {
+            if (! $r['importable'] || $r['outdated'] || $r['money_review']) continue;
+            $row = ImportRow::find($r['id']);
+            if (array_column($row->errors ?? [], 'code') !== []) { $this->bulkLeft[$r['id']] = 'Tiene algo que revisar (estado o diferencia en el total).'; continue; }
+            ['selection' => $sel, 'reason' => $why] = HoneyBookAutoMapping::guess($row->source);
+            if ($why !== null) { $this->bulkLeft[$r['id']] = $why; continue; }
+            $matches = $this->matches($row);
+            if ($matches->count() > 1) { $this->bulkLeft[$r['id']] = 'Hay varias fichas de cliente con ese correo o teléfono: elige cuál.'; continue; }
+            $customer = $matches->first();
+            [$setup, $breakdown] = self::defaultMinutes($sel['price_version_ids']);
+            $services = collect($sel['price_version_ids'])->map(function ($id) use ($sel) {
+                $variant = ServiceVariant::find(PriceVersion::whereKey($id)->value('service_variant_id'));
+                $chars = collect($sel['characters'])->where('price_version_id', $id)->map(fn ($c) => collect($c)->except('price_version_id')->all())->values()->all();
+
+                return ['price_version_id' => (int) $id, 'expected_variant_version' => (int) $variant->version, ...($chars !== [] ? ['characters' => $chars] : [])];
+            })->all();
+            $batch = ImportBatch::find($this->batchId);
+            $input = ['expected_batch_version' => $batch->version, 'expected_row_version' => $row->version, 'expected_preview_sha256' => $row->preview_sha256,
+                'source_confirmed' => true, 'source_evidence_reviewed' => true, 'setup_minutes' => $setup, 'breakdown_minutes' => $breakdown,
+                'services' => $services, 'remember_mapping' => true,
+                ...($customer ? ['customer_id' => $customer->id, 'expected_customer_version' => (int) $customer->version] : ['create_separate_customer' => true, 'new_customer_locale' => 'es'])];
+            try {
+                app(CommitHoneyBookEvent::class)->execute(Filament::auth()->user(), $this->batchId, $row->id, $input, (string) Str::uuid());
+                $done++;
+            } catch (ValidationException $e) {
+                $this->bulkLeft[$r['id']] = collect($e->errors())->flatten()->first() ?: 'No se pudo importar: ábrela.';
+            } catch (RecordWriteRejected|AuthorizationException $e) {
+                $this->bulkLeft[$r['id']] = $e->getMessage();
+            }
+        }
+        $this->bulkReviewed = false;
+        $this->resetAttestation();
+        Notification::make()->{($this->bulkLeft === [] ? 'success' : 'warning')}()->title("Importadas {$done}")
+            ->body($this->bulkLeft === [] ? 'Todas quedaron como borrador. Siguiente paso: confirmar cada fiesta.' : count($this->bulkLeft).' necesitan que elijas algo: están marcadas en la lista.')->send();
     }
 
     /** Like EventResource::servicesInput, keeping each character's optional outfit and note (same limits as the event form). */

@@ -4,9 +4,15 @@
         <x-filament::section class="wimp-upload">
             <x-slot name="heading">1. Sube el archivo</x-slot>
             <p class="wqb-hint">Un CSV en UTF-8 con las 24 columnas acordadas (honeybook_project_id … notes). No lo mandes por chat ni correo: súbelo solo aquí.</p>
-            <form wire:submit="stageFile" class="wimp-form">
-                <input type="file" wire:model="csv" accept=".csv,text/csv" aria-label="Archivo CSV de HoneyBook">
-                <button type="submit" class="wcal-btn on" wire:loading.attr="disabled" wire:target="csv,stageFile">Revisar archivo</button>
+            {{-- Owner 2026-11-04: the browser's plain "Choose File" text was easy to miss; a clear button shows the chosen name. --}}
+            <form wire:submit="stageFile" class="wimp-form" x-data="{ name: '' }">
+                <label class="wcal-btn wimp-pick">
+                    <input type="file" wire:model="csv" accept=".csv,text/csv" aria-label="Archivo CSV de HoneyBook" x-on:change="name = $event.target.files[0]?.name ?? ''">
+                    Elegir archivo
+                </label>
+                <span class="wimp-file" x-text="name || 'Ningún archivo elegido'"></span>
+                <span class="wqb-hint" wire:loading wire:target="csv">Cargando…</span>
+                <button type="submit" class="wcal-btn on" x-bind:disabled="!name" wire:loading.attr="disabled" wire:target="csv,stageFile">Revisar archivo</button>
             </form>
             @error('csv')<p class="wmoney-warn">{{ $message }}</p>@enderror
         </x-filament::section>
@@ -138,6 +144,14 @@
 
         <x-filament::section>
             <x-slot name="heading">Filas del archivo</x-slot>
+            @if (collect($this->rows())->contains(fn ($r) => $r['importable'] && ! $r['outdated'] && ! $r['money_review']))
+                {{-- Owner 2026-11-04: import everything the CRM can match by itself; only the rest needs a person. --}}
+                <div class="wimp-bulk">
+                    <label class="wimp-check"><input type="checkbox" wire:model.live="bulkReviewed"> Revisé la lista: estas fiestas están confirmadas en HoneyBook y sus importes, pagos y contrato se guardan tal como vienen.</label>
+                    <button type="button" class="wcal-btn on" wire:click="importAll" @disabled(! $bulkReviewed) wire:loading.attr="disabled" wire:target="importAll">Importar todo</button>
+                    <p class="wqb-hint">El CRM reconoce el paquete y los personajes. Las que no pueda reconocer quedan marcadas para que elijas tú.</p>
+                </div>
+            @endif
             <div class="wimp-table-wrap">
                 <table class="wimp-table">
                     <thead><tr><th>Línea</th><th>Fecha (Houston)</th><th>Cliente</th><th>En HoneyBook</th><th>Total</th><th>Pagado</th><th>Saldo</th><th>Estado</th><th></th></tr></thead>
@@ -151,6 +165,7 @@
                                 <span @class(['wimp-pill', 'is-'.($r['imported_current'] ? 'ready' : $r['status'])])>{{ $r['imported_current'] ? 'Importada' : (\App\Filament\Pages\ImportHoneyBook::STATUS[$r['status']] ?? $r['status']) }}</span>
                                 @if ($r['skip'])<br><small>{{ $r['skip'] === 'past' ? 'Ya pasó' : 'Cancelado' }}</small>@endif
                                 @unless ($r['imported_current'])@foreach ($r['reasons'] as $why)<br><small>{{ $why }}</small>@endforeach @endunless
+                                @if (! $r['imported_current'] && isset($bulkLeft[$r['id']]))<br><small class="wmoney-warn">{{ $bulkLeft[$r['id']] }}</small>@endif
                                 @if ($r['outdated'])<br><small>{{ $r['money_review'] ? 'Cambiaron los pagos en HoneyBook: revísalos' : 'Cambió en el archivo: vuelve a importarla' }}</small>@endif
                             </td>
                             <td>

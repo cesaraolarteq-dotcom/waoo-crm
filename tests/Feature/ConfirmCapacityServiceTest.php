@@ -35,7 +35,7 @@ class ConfirmCapacityServiceTest extends TestCase
         try { app(ConfirmCapacity::class)->execute($owner, 123456, []); $this->fail('Invalid direct call was accepted.'); }
         catch (ValidationException $e) {
             $this->assertArrayHasKey('payment.reference', $e->errors());
-            $this->assertArrayHasKey('review.origin_return_note', $e->errors());
+            $this->assertArrayHasKey('review', $e->errors());
         }
         $this->assertDatabaseCount('booking_evidence', 0);
     }
