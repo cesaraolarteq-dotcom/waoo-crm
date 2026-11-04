@@ -64,7 +64,7 @@ final class MailUi
 
     public static function enabled(): bool
     {
-        return app()->environment(['local', 'testing', 'staging']) && (bool) config('waoo.sandbox_mail', false)
+        return \App\Support\WaooRuntime::trusted() && (bool) config('waoo.sandbox_mail', false)
             && class_exists(\App\Services\Mail\PlanEventMail::class);
     }
 

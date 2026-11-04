@@ -43,7 +43,7 @@ class ContractTemplates extends Page
 
     public function getSubheading(): ?string
     {
-        return 'Modo prueba. El contrato va en inglés. Antes de usarlo con clientes reales, que lo revise un abogado.';
+        return (\App\Support\WaooRuntime::live() ? '' : 'Modo prueba. ').'El contrato va en inglés. Antes de usarlo con clientes reales, que lo revise un abogado.';
     }
 
     public function versions()

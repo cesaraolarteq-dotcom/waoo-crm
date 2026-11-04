@@ -39,7 +39,7 @@ final class ReadQuoteViewModel
             if($tbd){$when=$start->locale($locale)->translatedFormat($locale==='es'?'D j \d\e M \d\e Y':'D, M j, Y').' · '.($locale==='es'?'Hora por definir':'Time to be confirmed');$canDecide=false;}
             $money=static fn(int $c)=>'$'.number_format(intdiv($c,100),0,'.',',').'.'.str_pad((string)($c%100),2,'0',STR_PAD_LEFT);
             $name=$payload['customer_name'];
-            $vm=['lang'=>$locale,'first_name'=>Str::before($name,' '),'test_mode'=>true,
+            $vm=['lang'=>$locale,'first_name'=>Str::before($name,' '),'test_mode'=>! \App\Support\WaooRuntime::live(),
                 'lang_url'=>['es'=>'/portal/quote?lang=es','en'=>'/portal/quote?lang=en'],
                 'quote'=>['number'=>$payload['number'],'revision'=>$payload['revision'],'state'=>$state,'valid_until'=>$date($payload['valid_until']),
                     'when'=>$when,...($tbd?['time_tbd'=>true]:[]),

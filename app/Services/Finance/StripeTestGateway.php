@@ -11,6 +11,8 @@ final class StripeTestGateway implements QuickStripeGateway, StripeRefundGateway
     public function __construct()
     {
         Sandbox::require();
+        // The real CRM never charges through the test account; live Stripe is a separate, reviewed step.
+        if (\App\Support\WaooRuntime::live()) throw new AuthorizationException('Stripe real todavía no está conectado. Usa Zelle.');
         $key = (string) config('waoo.stripe_test_secret');
         if (!str_starts_with($key, 'sk_test_') && !str_starts_with($key, 'rk_test_')) throw new AuthorizationException('Configura una clave Stripe de pruebas; las claves live están prohibidas.');
         $http = new \Stripe\HttpClient\CurlClient(); $http->setTimeout(12); $http->setConnectTimeout(3); \Stripe\ApiRequestor::setHttpClient($http);

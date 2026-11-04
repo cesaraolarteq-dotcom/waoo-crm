@@ -61,7 +61,7 @@ final class PartyHeader
         }
 
         // Money and contract tabs say once that nothing real is charged or sent while the CRM runs in test mode.
-        if (in_array(request()->route()?->getName(), [EventResource::getRouteBaseName().'.money', EventResource::getRouteBaseName().'.contract'], true)) {
+        if (! \App\Support\WaooRuntime::live() && in_array(request()->route()?->getName(), [EventResource::getRouteBaseName().'.money', EventResource::getRouteBaseName().'.contract'], true)) {
             $chips[] = ['label' => 'Modo prueba', 'tone' => 'muted', 'title' => 'No se cobra ni se envía nada real al cliente.'];
         }
 

@@ -18,7 +18,7 @@ final class QuickPaymentProtocol
 
     public static function enabled(): bool
     {
-        return app()->environment(['local','testing','staging']) && config('waoo.sandbox_quick_payments') === true;
+        return \App\Support\WaooRuntime::trusted() && config('waoo.sandbox_quick_payments') === true;
     }
 
     public static function booking(int $eventId, bool $lock = true): ?QuickPaymentBooking

@@ -165,7 +165,7 @@ class ImportHistory extends Page
 
     public static function canAccess(): bool
     {
-        return parent::canAccess() && app()->environment(['local', 'testing', 'staging']) && (bool) config('waoo.sandbox_history', false)
+        return parent::canAccess() && \App\Support\WaooRuntime::trusted() && (bool) config('waoo.sandbox_history', false)
             && class_exists(StageHistoricalImport::class) && Filament::auth()->user()?->canAccessPanel(Filament::getPanel('admin'));
     }
 
