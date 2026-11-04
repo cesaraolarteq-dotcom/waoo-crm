@@ -33,6 +33,7 @@ final class QuickPaymentCheckout
                 self::verify($request);return [$request,PaymentIntent::findOrFail($a->payment_intent_id)];
             }
             QuickPaymentProtocol::pin($b,$d);
+            RecordWriteRejected::unless(in_array($d['deposit_percent'],QuickPaymentProtocol::percents(\App\Models\FinancialRevision::findOrFail($b->financial_revision_id)),true),409,'Esta fiesta es para hoy o mañana: se paga el 100 %. / This party is today or tomorrow: pay 100%.');
             RecordWriteRejected::unless($b->state==='awaiting_payment'&&$b->expires_at->isFuture()&&!QuickPaymentProtocol::pendingNotice($b),409,'El apartado cambió o venció.');
             $lease=QuickStripeLease::whereKey($b->quick_stripe_lease_id)->lockForUpdate()->firstOrFail();$source=QuickStripeLeases::verify($lease,$e,false);
             \App\Services\Availability\AdmitEventCapacity::assertTeamStillHeld($e,$lease->admission_state); // S1: event → lease → days → inventory

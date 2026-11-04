@@ -115,6 +115,19 @@ class QuickPaymentsTest extends TestCase
     {
         config(['waoo.stripe_test_account'=>'acct_waoosandbox']);$g=new \Tests\Support\QuickPaymentGateway();app()->instance(\App\Services\Finance\StripeGateway::class,$g);return $g;
     }
+    // Owner 2026-11-04: a party for tomorrow paid only 50 % through the link; today/tomorrow is 100 % for card and Zelle.
+    public function test_party_tomorrow_offers_only_the_full_amount_for_card_and_zelle():void
+    {
+        $this->input['starts_at']=now('America/Chicago')->addDay()->setTime(15,0)->toIso8601String();$this->input['ends_at']=now('America/Chicago')->addDay()->setTime(17,0)->toIso8601String();
+        $r=$this->create();$this->client($r);$this->details();$this->gateway();
+        $q=$this->getJson('/portal/api/quick-payment')->assertOk()->json();
+        $this->assertSame([100],array_column($q['choices'],'deposit_percent'));
+        $this->assertSame(30001,$q['deposit_cents']);
+        $claim=$this->claim();unset($claim['amount_cents'],$claim['reference']);$claim['deposit_percent']=50;
+        $this->withHeader('Idempotency-Key',(string)Str::uuid())->postJson('/portal/api/quick-payment/checkout',$claim)->assertStatus(409);
+        $this->checkout(100);
+    }
+
     public function test_verified_stripe_separates_principal_fee_and_promotes_once_with_duplicate_webhooks():void
     {
         $r=$this->create();$this->client($r);$this->details();$g=$this->gateway();$key=(string)Str::uuid();$v=$this->checkout(50,$key);

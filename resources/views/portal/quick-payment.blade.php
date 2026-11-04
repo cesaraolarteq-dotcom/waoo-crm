@@ -25,7 +25,7 @@
 <h3>Stripe · {{ $es?'Tarjeta / Klarna':'Card / Klarna' }}</h3>
 <form id="quick-stripe" class="p-form" method="POST" action="{{ url('/portal/api/quick-payment/checkout') }}">@csrf
 @foreach($q['choices'] as $choice)
-<label class="p-check"><input type="radio" name="percent" value="{{ $choice['deposit_percent'] }}" @checked($choice['deposit_percent']===50)>
+<label class="p-check"><input type="radio" name="percent" value="{{ $choice['deposit_percent'] }}" @checked($choice['deposit_percent']===$q['choices'][0]['deposit_percent'])>
 {{ $choice['deposit_percent'] }} % · ${{ number_format($choice['principal_cents']/100,2) }} + ${{ number_format($choice['customer_fee_cents']/100,2) }} (3 %) = <b>${{ number_format($choice['payable_cents']/100,2) }}</b></label>
 @endforeach
 <button class="p-btn" type="submit">{{ $es?'Continuar a Stripe':'Continue to Stripe' }}</button></form>
