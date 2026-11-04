@@ -70,6 +70,8 @@ class IntegritySchemasTest extends TestCase
     {
         $id = $this->member(); $e = Event::findOrFail($id);
         $services = $e->services()->with('characters')->orderBy('id')->get(); $reservations = $e->reservations()->orderBy('id')->get();
+        // V1 predates extension/coverage columns. Compare the historical bytes, not today's enlarged ORM shape.
+        $services->each->makeHidden(['extends_event_snapshot','covers_event_snapshot']);
         $booking = BookingEvidence::where('event_id', $id)->orderBy('id')->get();
         $resources = Resource::whereIn('id', $reservations->pluck('resource_id'))->orderBy('id')->get(['id', 'version', 'status', 'kind', 'skills', 'character_id', 'outfit']);
         $legacy = ['services' => $services->toArray(), 'reservations' => $reservations->toArray(), 'booking' => $booking->toArray(), 'resources' => $resources->toArray()];
@@ -88,7 +90,7 @@ class IntegritySchemasTest extends TestCase
     public function test_existing_effective_binding_allocation_and_agreement_survive_real_unrelated_columns(): void
     {
         $id = $this->member(); $this->seedFutureActivation($this->prepareOpeningSet()); $e = Event::findOrFail($id); $f = FinancialRevision::sole();
-        $this->assertSame(MutationKey::hash($f->toArray()), MutationKey::hash(EvidenceV1::model($f, 'financial')));
+        $this->assertSame(MutationKey::hash(\Illuminate\Support\Arr::except($f->toArray(),['deposit_percent_snapshot'])), MutationKey::hash(EvidenceV1::model($f, 'financial')));
         app(RecordZellePayment::class)->execute($this->owner, $id, $this->sourcePaymentInput($id), (string)Str::uuid());
         $entry = LedgerEntry::sole(); $audit = DB::table('audit_entries')->where('action', 'payment.zelle_received')->where('subject_id', (string)$entry->id)->sole();
         $context = DB::transaction(fn () => OpeningReceiptContext::current(Event::whereKey($id)->lockForUpdate()->firstOrFail()));
@@ -158,7 +160,7 @@ class IntegritySchemasTest extends TestCase
         $service->characters()->create(['character_id' => $character->id, 'quantity' => 1, 'character_name_snapshot' => 'Elsa', 'outfit' => '0', 'note' => 'Vestuario elegido por María.']);
         $service->load('characters'); $shape = EvidenceV1::model($service, 'service');
         $this->assertSame('0', $shape['characters'][0]['outfit']);
-        $this->assertSame(MutationKey::hash($service->toArray()), MutationKey::hash($shape));
+        $this->assertSame(MutationKey::hash(\Illuminate\Support\Arr::except($service->toArray(),['extends_event_snapshot','covers_event_snapshot'])), MutationKey::hash($shape));
         $g = PortalGrant::create(['event_id' => $e->id, 'customer_id' => $e->customer_id, 'scopes' => ['payments.read'],
             'token_hash' => hash('sha256', 'enlace-daniela'), 'expires_at' => now()->addDay(), 'issued_by' => $this->owner->id]);
         $selected = PortalGrant::select(['id', 'event_id', 'updated_at', 'scopes', 'revoked_at', 'expires_at'])->findOrFail($g->id);
