@@ -122,4 +122,21 @@ class WeekendPlanTest extends TestCase
         $cesar = (new \ReflectionMethod(\App\Services\Staff\ReadStaffWeek::class, 'job'))->invoke(app(\App\Services\Staff\ReadStaffWeek::class), $a->fresh(), Resource::find($ids('CESAR')), 'es', CarbonImmutable::now('America/Chicago'));
         $this->assertSame('Animador/a', $cesar['role']); $this->assertTrue($cesar['is_driver']);
     }
+
+    public function test_waoo_needs_someone_who_paints_in_any_seat_and_the_suggestion_finds_her(): void
+    {
+        // Owner 2026-11-04: «1 animador + 2 recreadoras», at least one of the three paints faces (any seat).
+        $e = $this->party('2026-11-07 15:00');
+        $svc = EventService::where('event_id', $e->id)->sole();
+        $svc->forceFill(['requirements_snapshot' => [['kind' => 'staff', 'skill' => 'entertainer', 'quantity' => 1], ['kind' => 'staff', 'skill' => 'host', 'quantity' => 2],
+            ['kind' => 'equipment', 'equipment_kind' => 'face_kit', 'quantity' => 1]]])->save();
+        $this->assertSame(['face_painter'], TeamSlots::for($e->fresh())['team_skills']);
+        // Nobody paints yet: the board says so after suggesting.
+        $page = Livewire::test(\App\Filament\Pages\WeekendPlan::class)->call('suggest')->assertSee('Alguien que pinte caritas');
+        // A recreadora who paints appears: the suggestion puts her in a recreadora seat.
+        $painter = Resource::create(['code' => 'PINTA', 'name' => 'Sofía Herrera', 'kind' => 'staff', 'status' => 'active', 'skills' => ['host', 'face_painter']]);
+        $team = app(SuggestWeekendTeams::class)->execute([$e->fresh()])[$e->id]['people'];
+        $this->assertContains($painter->id, array_values($team));
+        Livewire::test(\App\Filament\Pages\WeekendPlan::class)->call('suggest')->assertDontSee('Alguien que pinte caritas');
+    }
 }

@@ -35,7 +35,22 @@ final class TeamSlots
                 }
             }
         }
-        return ['people' => $people, 'costumes' => $costumes, 'needs_driver' => $driver || $people !== [] || $costumes !== []];
+        return ['people' => $people, 'costumes' => $costumes, 'needs_driver' => $driver || $people !== [] || $costumes !== [], 'team_skills' => self::teamSkills($event)];
+    }
+
+    /**
+     * Owner 2026-11-04: in the Waoo «1 animador + 2 recreadoras», at least one of the three paints faces — it is not a seat of its own.
+     * A service that brings the face-paint kit without a face-painter seat needs someone on the team with that skill.
+     */
+    public static function teamSkills(Event $event): array
+    {
+        foreach ($event->services()->get() as $service) {
+            $req = collect((array) $service->requirements_snapshot);
+            $kit = $req->contains(fn ($r) => ($r['kind'] ?? null) === 'equipment' && ($r['equipment_kind'] ?? null) === 'face_kit');
+            $seat = $req->contains(fn ($r) => ($r['kind'] ?? null) === 'staff' && ($r['skill'] ?? null) === 'face_painter');
+            if ($kit && ! $seat) return ['face_painter'];
+        }
+        return [];
     }
 
     /** Busy window of a party (setup to breakdown). */

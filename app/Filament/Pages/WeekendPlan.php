@@ -174,7 +174,9 @@ class WeekendPlan extends Page
             $labels = collect($need['people'])->keyBy('key')->map(fn ($s) => $s['label'])->all() + collect($need['costumes'])->keyBy('key')->map(fn ($s) => $s['label'])->all();
             $gaps = [...array_map(fn ($k) => $labels[$k] ?? $k, array_keys(array_filter($p['people'], fn ($v) => ! $v))),
                 ...array_map(fn ($k) => $labels[$k] ?? $k, array_keys(array_filter($p['costumes'], fn ($c) => ! $c['wearer_id'] || ! $c['unit_id']))),
-                ...(($p['driver'] ?? null) || count($drivers) === 1 || $team === [] ? [] : ['Conductor'])];
+                ...(($p['driver'] ?? null) || count($drivers) === 1 || $team === [] ? [] : ['Conductor']),
+                // Owner 2026-11-04: Waoo — one of the team paints faces (any seat, the animador included).
+                ...(in_array('face_painter', $need['team_skills'] ?? [], true) && $team !== [] && ! $staff->whereIn('id', $team)->contains(fn ($r) => in_array('face_painter', $r->skills ?? [], true)) ? ['Alguien que pinte caritas'] : [])];
             $missing = count($gaps);
             $local = $e->starts_at->setTimezone('America/Chicago');
             $days[$local->toDateString()]['label'] ??= ucfirst($local->locale('es')->translatedFormat('l j \d\e F'));
