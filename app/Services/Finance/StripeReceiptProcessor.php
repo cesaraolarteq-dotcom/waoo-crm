@@ -70,7 +70,13 @@ final class StripeReceiptProcessor
             || !isset($charge['created']) || (int) $charge['created'] <= 0 || (int) $charge['created'] > time()) {
             $this->problem($receipt, $intent, 'unverified_payment_intent'); return;
         }
-        if($intent->card_fee_policy!==null && ($charge['payment_method_details']['card']['funding']??null)!=='credit'){
+        $details=is_array($charge['payment_method_details']??null)?$charge['payment_method_details']:[];
+        $method=$details['type']??(isset($details['card'])?'card':null);
+        // Klarna/Afterpay only count when this checkout itself offered them; a card still has to be a credit card when the fee applies.
+        if($method!=='card' && !(in_array($method,CreateCheckoutIntent::PAY_LATER,true) && in_array($method,$session['payment_method_types']??[],true))){
+            $this->problem($receipt,$intent,'payment_method_not_offered');return;
+        }
+        if($method==='card' && $intent->card_fee_policy!==null && ($details['card']['funding']??null)!=='credit'){
             $this->problem($receipt,$intent,'credit_card_policy_mismatch');return;
         }
         DB::transaction(function () use ($intent, $receipt, $session, $payment, $charge) {

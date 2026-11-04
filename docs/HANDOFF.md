@@ -2699,3 +2699,12 @@ César said work feels slow. New split (see `docs/DECISIONS.md`): Claude builds 
 4. **Reminders** (7 days before, balance 24 h before, thanks + review), texts already approved; sending stays held.
 5. **Close or finish the stale C3 PRs #92–#102** (open since 2026-10-19/20): merge what is still valid, close the rest with one line.
 - #146 (history dry run) can merge when green; it is not urgent.
+
+## 2026-11-03 night · Claude · balance-bnpl (Klarna/Afterpay on the client-link balance payment)
+
+Owner asked ("sí actívalos") to offer Klarna/Afterpay/Zip on the balance payment from the client link, like Reserva rápida.
+- `WAOO_PORTAL_PAYMENT_METHODS` (comma list, default `card`; allowed `card`, `klarna`, `afterpay_clearpay`; anything else → card only). Zip is NOT included: Stripe's `zip` method is not verified on this account yet.
+- `CreateCheckoutIntent`: pay-later methods are sent to Stripe only after `QuickStripeGateway::verifyMethods` confirms the exact account and active capabilities (`klarna_payments`, `afterpay_clearpay_payments`, added to `StripeTestGateway`); otherwise the checkout silently falls back to card so the client can still pay. The created session must echo the same `payment_method_types`.
+- `StripeReceiptProcessor`: a non-card payment counts only when it is Klarna/Afterpay AND that session offered it; else `payment_method_not_offered` reconciliation. Cards keep the credit-only rule when the 3% fee policy applies.
+- **Review for Codex:** with `WAOO_REGULAR_CARD_FEE_ENABLED=true` the 3% is added before the method is chosen, so a Klarna/Afterpay payment also carries it (same as Reserva rápida today). Check BNPL surcharge rules before turning the fee on in live.
+- Portal copy: "Tarjeta …, Klarna o Afterpay" + installments hint. Test `BalancePayLaterTest`.

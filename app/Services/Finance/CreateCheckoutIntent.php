@@ -59,8 +59,9 @@ final class CreateCheckoutIntent
         $origin = Sandbox::origin();
         $metadata = ['local_intent_id' => $intent->id, 'event_id' => (string) $eventId, 'financial_revision_id' => (string) $intent->financial_revision_id];
         \App\Services\Responsibility\RequireCrmResponsibility::forEvent($eventId);
+        $methods = self::verifiedMethods();
         try {
-            $session = app(StripeGateway::class)->createCheckout(['mode' => 'payment', 'payment_method_types' => ['card'], 'client_reference_id' => $intent->id,
+            $session = app(StripeGateway::class)->createCheckout(['mode' => 'payment', 'payment_method_types' => $methods, 'client_reference_id' => $intent->id,
                 'metadata' => $metadata, 'payment_intent_data' => ['metadata' => $metadata], 'line_items' => self::lineItems($intent),
                 'expires_at' => $intent->expires_at->timestamp, 'success_url' => $origin.'/portal/payment-return?intent='.$intent->id, 'cancel_url' => $origin.'/portal/payment-return?intent='.$intent->id.'&cancelled=1'], 'waoo-test:'.$intent->id);
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
@@ -72,6 +73,7 @@ final class CreateCheckoutIntent
         }
         if (($session['livemode'] ?? null) !== false || ($session['_verified_account'] ?? null) !== config('waoo.stripe_test_account')
             || ($session['client_reference_id'] ?? null) !== $intent->id || (int) ($session['amount_total'] ?? -1) !== $intent->payable_cents || ($session['currency'] ?? null) !== 'usd'
+            || ($methods !== ['card'] && self::sorted($session['payment_method_types'] ?? null) !== $methods)
             || parse_url($session['url'] ?? '', PHP_URL_HOST) !== 'checkout.stripe.com' || parse_url($session['url'] ?? '', PHP_URL_SCHEME) !== 'https') {
             $this->reconcile($intent, 'invalid_checkout_response');
             throw new RecordWriteRejected(409, 'La respuesta Stripe necesita conciliación; no se registró un pago.');
@@ -100,6 +102,36 @@ final class CreateCheckoutIntent
         RecordWriteRejected::when(in_array($updated->status, ['superseded','reconciliation_required','failed','expired'], true), 409, 'El intento ya no admite un cobro. Actualiza el saldo.');
         return $updated;
     }
+    public const PAY_LATER = ['klarna', 'afterpay_clearpay'];
+
+    /** The owner's configured methods for this payment: card always, plus Klarna/Afterpay when listed. Anything unknown falls back to card. */
+    public static function methods(): array
+    {
+        $methods = config('waoo.portal_payment_methods', ['card']);
+        if (!is_array($methods) || !in_array('card', $methods, true) || array_diff($methods, ['card', ...self::PAY_LATER]) !== []) return ['card'];
+        return self::sorted(array_values(array_unique($methods)));
+    }
+
+    /** Pay-later methods only go to Stripe once the account says they are active; otherwise the client can still pay by card. */
+    private static function verifiedMethods(): array
+    {
+        $methods = self::methods();
+        if ($methods === ['card']) return $methods;
+        $gateway = app(StripeGateway::class);
+        try {
+            $evidence = $gateway instanceof QuickStripeGateway ? $gateway->verifyMethods($methods) : null;
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) { throw $e;
+        } catch (\Throwable) { $evidence = null; }
+        return $evidence === ['account' => config('waoo.stripe_test_account'), 'methods' => $methods] ? $methods : ['card'];
+    }
+
+    private static function sorted(mixed $methods): ?array
+    {
+        if (!is_array($methods)) return null;
+        sort($methods, SORT_STRING);
+        return $methods;
+    }
+
     public static function cardFee(int $principal): int { return $principal===0 ? 0 : CardFees::quote($principal)['customer_fee_cents']; }
     private static function lineItems(PaymentIntent $intent): array
     {
