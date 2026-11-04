@@ -81,8 +81,9 @@
   <div class="p-field"><span>{{ $t('party_time') }}</span><strong class="p-fixed">{{ $e['time_range'] ?? $e['start_time'] }}</strong><small>{{ $t('party_time_hint') }}</small></div>
   <h3 class="p-sub-title">{{ $t('questions') }}</h3>
   <div class="p-row">
-    <label class="p-field"><span>{{ $t('child_name') }}</span><input name="child_name" required value="{{ $vm['prefill']['child_name'] ?? '' }}"></label>
-    <label class="p-field p-narrow"><span>{{ $t('child_age') }}</span><input name="child_age" inputmode="numeric" pattern="[0-9]*" maxlength="3" required value="{{ $vm['prefill']['child_age'] ?? '' }}"></label>
+    @php($celebrant = $vm['event']['celebrant'] ?? true)
+    <label class="p-field"><span>{{ $t('child_name') }}@unless($celebrant) <em>({{ $t('optional') }})</em>@endunless</span><input name="child_name" @if($celebrant) required @endif value="{{ $vm['prefill']['child_name'] ?? '' }}"></label>
+    @if ($celebrant)<label class="p-field p-narrow"><span>{{ $t('child_age') }}</span><input name="child_age" inputmode="numeric" pattern="[0-9]*" maxlength="3" required value="{{ $vm['prefill']['child_age'] ?? '' }}"></label>@endif
   </div>
   {{-- Owner 2026-10-20: big tap-friendly choices instead of dark native selects. --}}
   <fieldset class="p-field p-chips"><legend>{{ $t('event_language') }}</legend><div>
@@ -94,12 +95,15 @@
   <label class="p-field"><span>{{ $t('children_count') }}</span><input name="children_count" inputmode="numeric" pattern="[0-9]*" maxlength="3" required value="{{ $vm['prefill']['children_count'] ?? '' }}"><small>{{ $t('children_hint') }}</small></label>
   <label class="p-field"><span>{{ $t('notes') }} <em>({{ $t('optional') }})</em></span><textarea name="notes" rows="3">{{ $vm['prefill']['notes'] ?? '' }}</textarea></label>
   @if(config('waoo.sandbox_company',false))
-  <label class="p-check"><input type="checkbox" name="company_enabled" @checked(!empty($vm['prefill']['billing_company']))> {{ $vm['lang']==='es'?'Es para una empresa':'This is for a company' }}</label>
+  <label class="p-check"><input type="checkbox" name="company_enabled" @checked(!empty($vm['prefill']['billing_company'])) onchange="document.getElementById('p-company').hidden=!this.checked"> {{ $vm['lang']==='es'?'Es para una empresa':'This is for a company' }}</label>
+  {{-- Audit 2026-11-04: company fields only when the box is checked. --}}
+  <div id="p-company" @if(empty($vm['prefill']['billing_company'])) hidden @endif>
   <label class="p-field"><span>{{ $vm['lang']==='es'?'Nombre de la empresa (si aplica)':'Company name (if applicable)' }}</span><input name="company_name" maxlength="255" value="{{ $vm['prefill']['billing_company']['name']??'' }}"></label>
   <details><summary>{{ $vm['lang']==='es'?'Datos de facturación opcionales':'Optional billing details' }}</summary>
     <label class="p-field"><span>{{ $vm['lang']==='es'?'Correo de facturación':'Billing email' }}</span><input name="company_email" type="email" maxlength="255" value="{{ $vm['prefill']['billing_company']['email']??'' }}"></label>
     <label class="p-field"><span>{{ $vm['lang']==='es'?'Dirección de facturación':'Billing address' }}</span><input name="company_address" maxlength="1000" value="{{ $vm['prefill']['billing_company']['address']??'' }}"></label>
   </details>
+  </div>
   @endif
   @if (! empty($vm['details']['sms_consent']))
   <label class="p-check p-small"><input type="checkbox" name="sms_consent" value="1" data-version="{{ $vm['details']['sms_consent']['version'] }}"> {{ $vm['details']['sms_consent']['text'] }}</label>
@@ -225,7 +229,7 @@
     var body = {expected_event_version: Number(f.dataset.eventVersion), expected_revision: Number(f.dataset.revision),
       first_name: f.first_name.value.trim(), last_name: f.last_name.value.trim(), phone: f.phone.value.trim(), email: f.email.value.trim(),
       billing_address: f.event_address.value.trim(), event_address: f.event_address.value.trim(), event_postal_code: f.event_postal_code.value.trim(),
-      locale: f.dataset.lang, start_time_confirmed: true, child_name: f.child_name.value.trim(), child_age: Number(f.child_age.value),
+      locale: f.dataset.lang, start_time_confirmed: true, child_name: f.child_name.value.trim() || null, child_age: f.child_age && f.child_age.value !== '' ? Number(f.child_age.value) : null,
       event_language: f.event_language.value, setup_area: f.setup_area.value, children_count: Number(f.children_count.value)};
     if(f.company_enabled) body.billing_company = f.company_enabled.checked ? {name:f.company_name.value.trim(),email:f.company_email.value.trim()||null,address:f.company_address.value.trim()||null} : null;
     if (f.notes.value.trim()) body.notes = f.notes.value.trim();

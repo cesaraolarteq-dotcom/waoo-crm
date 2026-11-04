@@ -155,6 +155,16 @@ class QuickPaymentsTest extends TestCase
         $r=$this->create();$this->client($r);$this->details();$g=$this->gateway();$this->checkout();$sid=\App\Models\PaymentIntent::sole()->stripe_checkout_session_id;$g->pay($sid);$g->sessions[$sid]['amount_total']++;
         $this->webhook($g,$sid);$this->assertDatabaseCount('ledger_entries',0);$this->assertDatabaseHas('webhook_receipts',['state'=>'reconciliation_required']);
     }
+    public function test_baby_shower_needs_no_child_name_or_age_but_a_birthday_does():void
+    {
+        $this->input['event_type']='baby_shower';$r=$this->create();$this->client($r);
+        $send=fn(array $child)=>$this->withHeader('Idempotency-Key',(string)Str::uuid())->postJson('/portal/api/details',[
+            'expected_event_version'=>1,'expected_revision'=>0,'first_name'=>'Elena','last_name'=>'Martínez','phone'=>'+13465550101','email'=>'elena@example.test',
+            'billing_address'=>'123 Oak Street','event_address'=>'123 Oak Street','event_postal_code'=>'77493','start_time_confirmed'=>true,
+            'event_language'=>'es','setup_area'=>'indoor','children_count'=>15,...$child]);
+        $send([])->assertCreated();
+        $this->get('/portal')->assertOk()->assertDontSee('name="child_age"',false);
+    }
     public function test_every_party_detail_is_required_and_no_payment_starts_before_details():void
     {
         $r=$this->create();$this->client($r);$this->gateway();$q=$this->claim();unset($q['amount_cents'],$q['reference']);$q['deposit_percent']=50;

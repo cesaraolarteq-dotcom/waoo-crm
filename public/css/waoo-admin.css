@@ -404,3 +404,5 @@ a.wdash-item:hover{border-color:#122F94;background:#F5F7FF}
 .wce-h{font-weight:700;color:#0E1B52;margin-top:8px}
 .wce-row{text-align:left;cursor:pointer;margin-bottom:8px;width:100%}
 .dark .wce-field select{background:#0E1B52;border-color:rgba(255,255,255,.15);color:#fff} .dark .wce-person{border-color:rgba(255,255,255,.12);color:#fff} .dark .wce-h{color:#fff}
+.wtp-warn{color:#B45309;font-weight:600}
+.wtp-empty .wcal-btn{margin-left:8px}
