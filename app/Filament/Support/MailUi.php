@@ -13,6 +13,10 @@ final class MailUi
         'contract_ready' => 'Contrato listo', 'payment_received' => 'Pago recibido', 'zelle_notice_pending' => 'Aviso de Zelle recibido',
         ...self::TEMPLATES];
 
+    /** Display only: these notices must never become manually plannable event reminders. */
+    public const MESSAGE_NAMES = [...self::NAMES, 'anniversary_main' => 'Un año después', 'anniversary_reminder' => 'Recordatorio de Un año después',
+        'reschedule_notice' => 'Cambio de fecha', 'reschedule_reminder' => 'Recordatorio de firma por cambio de fecha'];
+
     public const STATUS = [
         'scheduled' => 'Programado', 'dispatching' => 'Enviándose (sin confirmar)', 'sent' => 'Enviado (no confirma que llegó)',
         'delivered' => 'Entregado', 'bounced' => 'Rebotó', 'complained' => 'Lo marcó como spam', 'blocked' => 'Bloqueado',

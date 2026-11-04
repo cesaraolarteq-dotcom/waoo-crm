@@ -18,7 +18,7 @@ final class SendSms
     public const FOOTER = ['es' => 'Waoo Party: responde HELP para ayuda o STOP para no recibir más textos. Pueden aplicar tarifas de mensajes y datos.',
         'en' => 'Waoo Party: reply HELP for help, STOP to opt out. Msg & data rates may apply.'];
 
-    public function execute(User $actor, int $customerId, ?int $eventId, string $body): SmsMessage
+    public function execute(User $actor, int $customerId, ?int $eventId, string $body, ?string $expectedRecipient = null): SmsMessage
     {
         RecordActor::authorize($actor);
         $body = trim($body);
@@ -27,6 +27,7 @@ final class SendSms
         $customer = Customer::findOrFail($customerId);
         $to = PhoneNumber::e164($customer->phone);
         if (! $to) throw ValidationException::withMessages(['body' => 'Este cliente no tiene un celular de EE. UU. válido.']);
+        if ($expectedRecipient !== null && $to !== $expectedRecipient) throw ValidationException::withMessages(['body' => 'El contacto cambió. Revisa el aviso antes de enviarlo.']);
         if (! SmsConsent::allows($to)) throw ValidationException::withMessages(['body' => 'Este número no aceptó recibir textos (o escribió STOP). Escríbele por WhatsApp.']);
         if (! SmsMessage::where('phone_e164', $to)->where('direction', 'out')->whereIn('status', ['sent', 'delivered'])->exists()) {
             $body .= "\n\n".self::FOOTER[$customer->locale === 'en' ? 'en' : 'es'];

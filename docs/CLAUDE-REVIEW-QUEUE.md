@@ -30,6 +30,16 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 - What Claude must check: casos de varios paquetes/personajes, null frente a cero y unidades genéricas con vestuario. La sugerencia nunca sustituye la admisión/ruta real ni confirma una reserva. El cambio de nota de origen opcional pedido por César permanece; rutas/recibos/locks no se eliminan.
 - Limits: no archivos de HoneyBook/clientes reales, no importación, deploy, cobro, envío ni activación de banderas. Solo Claude marca REVIEWED. S1 completo/calendario real/producción siguen abiertos.
 
+### 2026-11-04 · BACKEND / UI · Revisión de noviembre: detener avisos obsoletos y probar cambio C3 concurrente · PENDING
+- Branch / commits: `codex/fix-november-review`, base main `64fa0d3`; PR y run final en el comentario de entrega.
+- Reported by César: «tienes muchos trabajo pendiente, Claude avanzó por ti; dejó muchas cosas para tu revisión».
+- What changed and why: `CampaignOutbox` vuelve a comprobar la fuente después de reclamar el mensaje y antes del transporte; la campaña valida sus dos interruptores, estado/vencimiento y contenido/contacto vigente. Los avisos de cambio fijan fiesta, cliente, datos y enlace; revocación, firma, cambio o pausa bloquean el aviso. `SendSms` admite destinatario esperado y nunca redirige un texto ya preparado a otro teléfono. Se conservan los estados desconocidos y la prohibición de reintentos automáticos.
+- Inicio: los avisos sin evento enlazan al cliente/prospectos/configuración según su origen, sin inventar evento; se muestran nombres de campaña comprensibles sin agregarlos a los recordatorios programables. Foco de teclado con el token existente `--focus`.
+- Files: `CampaignOutbox`, `AnniversaryMail`, `RescheduleNotices`, `SendSms`, `ReadOutboundMail`, `Dashboard`, `MailUi`, CSS admin y sus pruebas; `CutoverTransferTest` añade dos dueños/procesos reales para el mismo grupo.
+- How verified: seis regresiones FAIL contra las cuatro clases originales de main (bootstrap aislado fuera de Git); después 35 pruebas/249 assertions PASS. Inicio sin evento ERROR antes (parámetro record ausente), PASS después. Grupo final **49/356 PASS**; carrera real C3 exactamente una transferencia. Visuales **8/8 PASS**, 390/1280 ES/EN claro/oscuro (foco visible/área táctil ≥44px/sin desborde) en el informe de esta rama; suite MariaDB CI requerida antes de fusionar.
+- What Claude must check: fuente/link/consentimiento en la frontera del proveedor, supresión de campañas vencidas o pausadas y SMS con teléfono cambiado. La carrera C3 debe conservar exactamente una transferencia y un acuerdo vigente por miembro, ninguna copia del dinero de HoneyBook. El guardado de un estado desconocido no implica que se envió ni se restablece para reenviar.
+- Limits: no Stripe/Resend/Twilio/Hostinger reales, ningún deploy, bandera o texto aprobado cambiado. S1 completo y adaptadores live siguen pendientes. #191 tiene alcance nuevo y hallazgos separados; este PR no lo da por revisado. Solo Claude marca REVIEWED.
+
 ### 2026-11-02 · UI · Auditoría UX entregas 1–2 (palabras, encabezado de la fiesta, lista, calendario) · PENDING
 - Branch / commits: claude/ux-words · PR #181
 - Reported by César: aprobó la auditoría ("okay me gusta tu propuesta hagamoslo").
