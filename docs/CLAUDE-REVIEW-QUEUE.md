@@ -21,6 +21,13 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-04 · BACKEND · Cierre documental de revisión e integración de Claude · PENDING
+- Branch / commits: `codex/fix-review-closure-november`, desde main de código `bcc01116980aa0f5efe32585916923b43083c137`.
+- What changed and why: HANDOFF abre con #192/#193, commits exactos de main, runs completos, pruebas y los pendientes de implementación. Registra la integración automática de #191 y el cierre explicado de #163 y siete pilas C3 recuperadas; no se vuelven a aplicar snapshots antiguos sobre main.
+- Files: solo `docs/HANDOFF.md` y esta cola. Sin cambio de runtime, tests, configuración, datos ni workflows.
+- How verified: `git diff --check`; solo dos Markdown difieren. El main de código coincide byte a byte con la punta probada 0452d48; CI completo SUCCESS en41798058958. No se repiten pruebas de aplicación por este cierre documental.
+- What Claude must check: tomar la lista superior del HANDOFF como estado actual: S1 durable, calendario real, extras/contrato y producción siguen abiertos. Ningún cierre de PR equivale a deploy/cambio real ni a declarar listo todo C3. Solo Claude marca REVIEWED.
+
 ### 2026-11-04 · BACKEND / UI · Revisar e integrar importación automática y preselección de trajes de #191 · PENDING
 - Branch / commits: `codex/fix-import-review`, conserva Claude `3c71d369` y `6b60b964`; integración a main sin reescritura.
 - What changed and why: el mapeo automático ya no pierde personajes cuando el paquete no los admite ni los adjudica todos al primero de varios paquetes configurables. Los tiempos ausentes no se convierten en cero, ni al combinar un paquete conocido con otro desconocido. El commit/importador sigue validando la receta y el dinero original.
