@@ -112,7 +112,7 @@ class IntegritySchemasTest extends TestCase
     {
         [$e, $f] = $this->native();
         $legacy = MutationKey::hash(['event_id' => $e->id, 'event_version' => $e->version, 'customer_id' => $e->customer_id,
-            'start' => $e->starts_at->toIso8601String(), 'end' => $e->ends_at->toIso8601String(), 'finance' => $f->getAttributes()]);
+            'start' => $e->starts_at->toIso8601String(), 'end' => $e->ends_at->toIso8601String(), 'finance' => \Illuminate\Support\Arr::except($f->getAttributes(),['deposit_percent_snapshot'])]);
         $this->assertSame($legacy, ConfirmedAgreement::nativeFingerprint($e, $f));
         $issued = app(IssueTipGrant::class)->execute($this->owner, $e->id, ['expected_event_version' => $e->version, 'financial_revision_id' => $f->id, 'locale' => 'es'], (string)Str::uuid());
         $g = TipGrant::sole(); $old = $g->getAttributes(); $this->assertSame($legacy, $g->snapshot_sha256);

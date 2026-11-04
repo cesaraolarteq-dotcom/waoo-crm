@@ -22,6 +22,7 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 ## Entries
 
 ### 2026-11-04 · BACKEND · Expectativa histórica V1 tras columnas aditivas · PENDING
+- Resultado final local: IntegritySchemasTest **11/68 PASS**; se conserva también el hash raw histórico de propinas excluyendo la columna nueva del fixture, sin modificar ConfirmedAgreement/TipGuard/EvidenceV1. Semana DST integrada en esta misma rama; nueva suite CI requerida antes de unir a main.
 - Branch: codex/fix-extra-time-audit. CI41884760707: checks y4/5 grupos verdes; el grupo2 falló. Reproducción aislada del test original confirma diferencia entre ORM ampliado y bytes V1.
 - Se conserva EvidenceV1 sin cambios: no se añaden columnas nuevas al sobre histórico ni se recalculan pruebas existentes. IntegritySchemasTest excluye explícitamente del lado legacy las columnas nuevas de extensión/cobertura/política y conserva comparaciones de hash, acuerdo, evidencia y no resellado. No cambia validación productiva ni relaja una guarda.
 - Claude: revisar compatibilidad de bytes tras migración, incluida la prueba de columnas ajenas. Grupo final f13b53f38/179 y ampliación33/248 PASS; resultado de integridad y CI nuevo en el PR. Sin deploy/envíos/cobros/activación; estado PENDING.
