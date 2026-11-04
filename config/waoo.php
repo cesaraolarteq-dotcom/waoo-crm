@@ -51,6 +51,8 @@ return [
     'sandbox_quick_payments' => env('WAOO_SANDBOX_QUICK_PAYMENTS', false),
     'sandbox_quick_payment_notifications' => env('WAOO_SANDBOX_QUICK_PAYMENT_NOTIFICATIONS', false),
     'quick_payment_methods' => ['card', 'klarna'],
+    // Owner 2026-11-03: the balance payment from the client link may also offer Klarna/Afterpay (comma list, card always included).
+    'portal_payment_methods' => array_values(array_filter(array_map('trim', explode(',', (string) env('WAOO_PORTAL_PAYMENT_METHODS', 'card'))))),
     'quick_stripe_requested_methods' => ['card'], // Requested policy only, never verified account capability or financing activation.
     'sandbox_finance' => env('WAOO_SANDBOX_FINANCE', false),
     'sandbox_changes' => env('WAOO_SANDBOX_CHANGES', false), // Owner 2026-10-29: cancel a party and refund money (card back to Stripe, Zelle recorded).
