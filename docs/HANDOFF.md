@@ -1,3 +1,8 @@
+## 2026-11-04 · Codex · Revisión de entregas de noviembre: avisos, Inicio y carrera C3
+Rama `codex/fix-november-review`, base `64fa0d3` (#171–#190 ya en main). Revisión y correcciones en la entrada nueva de `docs/CLAUDE-REVIEW-QUEUE.md` y `docs/NOVEMBER-REVIEW-2026-11-04.md`. Seis regresiones reproducen envíos con fuente/contacto/consentimiento cambiado; otra reproduce el fallo de Inicio con campañas sin evento. Corregidos sin cambiar los textos al cliente ni activar proveedores. Prueba adicional de dos procesos MariaDB para C3: un solo cambio completo del grupo. **49 pruebas /356 assertions PASS** (incluida la carrera C3); visuales 8/8 PASS. CI del PR en su comentario.
+
+#191 cambió durante la revisión: además de preselección de trajes ahora incorpora importación masiva. Hallazgos concretos sobre personajes omitidos, tiempos ausentes y preselección: https://github.com/cesaraolarteq-dotcom/waoo-crm/pull/191#issuecomment-6625374863 . No tratar ese alcance como revisado todavía. Siguen pendientes retención conjunta S1 completa, asociaciones reales de calendario y adaptadores/cambio completo a producción. Preview y pagos/envíos apagados; sin despliegue ni datos reales. Activación automática solo tras completar toda la migración, como autorizó César.
+
 ## 2026-11-03 · Claude → Codex · Arreglos de la revisión propia (rama `claude/review-fixes`)
 - `routes/staff.php`: quitado el `throttle:30,1` de `/staff/respuesta` y `/staff/disponibilidad`. Los throttle sin nombre comparten un contador por IP, así que el de 30 también contaba cada carga de página del grupo (60). Queda el del grupo.
 - Pestañas de sección en teléfono: la pestaña actual se desplaza a la vista (antes «Pago del staff» quedaba fuera de la pantalla).

@@ -51,6 +51,8 @@ final class RescheduleNotices
             if (! MailDeliveryGate::enabled() && ! SmsGate::enabled()) { $out['held']++; continue; }
             $link = $this->link($event);
             if ($link === null) { $out['no_link']++; continue; }
+            $source = $this->source($change, $event, $customer);
+            if ($source === null) { $out['no_link']++; continue; }
             $email = $this->email($event, $customer);
             $wantsEmail = MailDeliveryGate::enabled() && $email !== null && CampaignOutbox::canPlan($email);
             $phone = PhoneNumber::e164($customer->phone);
@@ -73,14 +75,18 @@ final class RescheduleNotices
                 return $ids;
             });
             if (! $planned) continue;
-            $guard = function () use ($change) {
+            $guard = function () use ($change, $source) {
                 $fresh = EventChange::whereKey($change->id)->first();
-                return $fresh && ! $this->blocked($fresh, Event::find($fresh->event_id)) ? null : 'no_longer_due';
+                $event = $fresh ? Event::find($fresh->event_id) : null;
+                $customer = $event ? Customer::find($event->customer_id) : null;
+                if (! $fresh || ! $event || ! $customer || $this->blocked($fresh, $event)) return 'no_longer_due';
+                $current = $this->source($fresh, $event, $customer);
+                return $current !== null && hash_equals($source, $current) ? null : 'source_changed';
             };
             $channels = []; $unknown = false;
             if (isset($planned['email'])) {
                 $row = NoticeDelivery::findOrFail($planned['email']);
-                $status = app(CampaignOutbox::class)->dispatch($row->outbound_message_id, $guard);
+                $status = app(CampaignOutbox::class)->dispatch($row->outbound_message_id, fn () => ! MailDeliveryGate::enabled() ? 'mail_held' : $guard());
                 $row->update(['status' => $status]);
                 if ($status === 'sent') $channels[] = 'email'; elseif ($status !== 'blocked') $unknown = true;
             }
@@ -89,7 +95,7 @@ final class RescheduleNotices
                 if ($reason = $guard()) { $row->update(['status' => 'blocked', 'reason' => $reason]); }
                 else {
                     try {
-                        $sms = app(SendSms::class)->execute(User::findOrFail($change->created_by), $customer->id, $event->id, $texts['sms']);
+                        $sms = app(SendSms::class)->execute(User::findOrFail($change->created_by), $customer->id, $event->id, $texts['sms'], $phone);
                         $row->update(['sms_message_id' => $sms->id, 'status' => $sms->status]);
                         if ($sms->status === 'sent') $channels[] = 'sms'; elseif ($sms->status === 'unknown') $unknown = true;
                     } catch (\Illuminate\Validation\ValidationException) {
@@ -112,6 +118,22 @@ final class RescheduleNotices
         return ! $change || ! $event || $change->state !== 'pending_signature' || $event->status === 'cancelled'
             || $event->responsible_system !== 'crm' || ! $event->starts_at->isFuture()
             || (bool) EventMessagePolicy::where('event_id', $event->id)->value('paused');
+    }
+
+    /** Frozen notice source: a different contact, link, party or signed agreement needs a new owner review. No tokens leave here. */
+    private function source(EventChange $change, Event $event, Customer $customer): ?string
+    {
+        $submission = ClientDetailsSubmission::where('event_id', $event->id)->orderByDesc('revision')->first();
+        $grant = $submission ? PortalGrant::find($submission->portal_grant_id) : null;
+        if (! $grant || ! $grant->canRevealLink() || $grant->event_id !== $event->id || $grant->customer_id !== $customer->id
+            || ! in_array('contract.sign', (array) $grant->scopes, true) || ! EventChange::signedIsBeforeChange($event->id)) return null;
+        return \App\Services\Finance\MutationKey::hash([
+            'change' => $change->only(['id', 'event_id', 'state', 'new_starts_at', 'new_ends_at', 'fee_cents', 'event_version_after', 'financial_revision_id']),
+            'event' => $event->only(['id', 'customer_id', 'version', 'status', 'responsible_system', 'starts_at', 'ends_at']),
+            'customer' => $customer->only(['id', 'name', 'email', 'phone', 'locale']),
+            'submission' => $submission->only(['id', 'revision', 'portal_grant_id', 'data']),
+            'grant' => $grant->only(['id', 'token_hash', 'scopes', 'expires_at']),
+        ]);
     }
 
     private function claim(EventChange $change, string $kind, string $channel, array $extra = []): NoticeDelivery

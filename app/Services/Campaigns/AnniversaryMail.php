@@ -65,7 +65,7 @@ final class AnniversaryMail
             if (! $customer || blank($customer->email) || ! filter_var($customer->email, FILTER_VALIDATE_EMAIL) || $customer->promo_opt_out_at !== null) continue;
             if (! self::enabled() || ! CampaignOutbox::canPlan($customer->email)) { $out['held']++; continue; }
             // Plan the message and claim the code in one transaction: two runs never plan the same email twice.
-            $messageId = MailGuard::transaction(function () use ($row, $kind) {
+            $message = MailGuard::transaction(function () use ($row, $kind) {
                 $fresh = AnniversaryCode::whereKey($row->id)->lockForUpdate()->first();
                 $customer = $fresh ? Customer::whereKey($fresh->customer_id)->lockForUpdate()->first() : null;
                 if (! $fresh || ! $customer || $customer->promo_opt_out_at !== null || $fresh->state === 'redeemed'
@@ -73,13 +73,17 @@ final class AnniversaryMail
                 $m = CampaignOutbox::plan('anniversary_'.$kind, 'anniversary|'.$fresh->id.'|'.$kind.'|email', $customer->email, 'en',
                     self::renderFor($fresh, $customer, $kind), ['customer_id' => $customer->id]);
                 $fresh->forceFill($kind === 'main' ? ['sent_at' => now(), 'state' => 'sent'] : ['reminder_sent_at' => now()])->save();
-                return $m->id;
+                return $m;
             });
-            if ($messageId === null) continue;
-            $status = app(CampaignOutbox::class)->dispatch($messageId, function () use ($row) {
+            if ($message === null) continue;
+            $status = app(CampaignOutbox::class)->dispatch($message->id, function () use ($row, $kind, $message) {
+                if (! self::enabled()) return 'campaign_held';
                 $customer = Customer::whereKey($row->customer_id)->lockForUpdate()->first();
                 if (! $customer || $customer->promo_opt_out_at !== null) return 'promo_opt_out';
-                return AnniversaryCode::whereKey($row->id)->value('state') === 'redeemed' ? 'code_redeemed' : null;
+                $fresh = AnniversaryCode::find($row->id);
+                if (! $fresh || $fresh->customer_id !== $customer->id || $fresh->state !== 'sent' || ! $fresh->expires_at->isFuture()) return 'code_no_longer_due';
+                $payload = ['recipient' => mb_strtolower((string) $customer->email), ...self::renderFor($fresh, $customer, $kind)];
+                return hash_equals($message->source_sha256, \App\Services\Finance\MutationKey::hash($payload)) ? null : 'source_changed';
             });
             match ($status) {
                 'sent' => $out[$kind === 'main' ? 'sent' : 'reminders']++,

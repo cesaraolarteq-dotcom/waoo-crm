@@ -70,6 +70,17 @@ final class CampaignOutbox
             return true;
         });
         if ($claimed !== true) return $claimed;
+        // A source can change after the durable claim commits (unsubscribe, owner pause, revoked link). Re-check it
+        // immediately before entering the transport. A refusal here is known not to have sent, never an unknown outcome.
+        if ($guard) {
+            $ready = MailGuard::transaction(function () use ($m, $guard) {
+                $state = OutboundMessageState::where('outbound_message_id', $m->id)->lockForUpdate()->firstOrFail();
+                if ($state->status !== 'dispatching') return $state->status;
+                if ($reason = $guard()) return $this->transition($m, $state, 'blocked', $reason);
+                return true;
+            });
+            if ($ready !== true) return $ready;
+        }
         // No automatic resend after crossing this boundary; a crash leaves dispatching for reconciliation.
         try {
             $p = $m->payload;
