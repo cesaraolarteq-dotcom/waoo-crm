@@ -98,7 +98,7 @@ class StaffLaterConfirmTest extends TestCase
     public function test_extra_time_makes_the_same_team_stay_longer(): void
     {
         // Owner 2026-11-04: «Hora extra» ($200) has no staff of its own; the party must cover package + extra.
-        $hour = ServiceVariant::create(['name' => 'Hora extra', 'status' => 'active', 'duration_minutes' => 60, 'requirements' => [], 'extends_event' => true]);
+        $hour = app(\App\Services\Records\SaveVariant::class)->execute($this->owner, ['name' => 'Hora extra', 'status' => 'active', 'duration_minutes' => 60, 'requirements' => [], 'extends_event' => true]);
         $p = PriceVersion::create(['service_variant_id' => $hour->id, 'amount_cents' => 10000, 'currency' => 'USD', 'created_by' => $this->owner->id]);
         $this->assertSame(120, ServiceVariant::partyMinutes([[$this->variant, 60], [$hour, 60]]));
         $short = $this->party('14:00');
