@@ -21,6 +21,11 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-04 · BUG / UI · Límites de la semana de Houston durante DST · PENDING
+- Branch: `codex/fix-week-houston-dst`, sobre f13b53f. `WeekendPlan::events` calcula inicio y fin en Houston antes de convertir a UTC; una semana local tiene167/169 horas durante DST.
+- Before: perdía domingo1nov2026 23:30; incluía lunes9mar2026 00:00 en la semana anterior. Dos regresiones FAIL antes, grupo13/48 PASS después. Render1/4 y8layouts ES/EN claro/oscuro390/1280 PASS, sin desborde; capturas fuera de Git.
+- Files: WeekendPlan, WeekHoustonDstTest y documentos. Sin modificación de textos/estilos, dinero, reservas o proveedor. Claude: comprobar domingo23:30 y lunes00:00 en ambas transiciones; no confundir con la prueba de ruta real del equipo, aún pendiente. Solo Claude marca REVIEWED. Sin deploy/activación/envíos/cobros.
+
 ### 2026-11-04 · BACKEND / UI · Integrar #200 sin cambiar depósitos antiguos ni perder duración operativa · PENDING
 - Branch / commits: `codex/fix-extra-time-audit`, desde main ae12637; conserva Claude43562bd3 + 3b37fde, sin reescritura. API y compatibilidad: `docs/EXTRA-TIME-DEPOSIT-REVIEW.md`.
 - What changed and why: arregla lease50 frente a objetivo100 y confirmación tardía que pretendía cobrar100 a una reserva acordada50. Primera política nativa congelada explícitamente y heredada sin cargos de cambio; objetivo de cotización nueva coherente. La API rechaza cobrar por debajo del objetivo, muestra el mismo importe en Zelle y selecciona por defecto la primera opción válida.

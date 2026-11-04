@@ -47,12 +47,13 @@ class WeekendPlan extends Page
         $this->load();
     }
 
-    /** @return \Illuminate\Support\Collection<int, Event> confirmed parties Fri–Sun of the weekend on screen */
+    /** @return \Illuminate\Support\Collection<int, Event> confirmed parties Mon–Sun of the Houston week on screen */
     public function events()
     {
         // Owner 2026-11-03: the whole week (Mon–Sun) so a party on a weekday is planned here too; past ones drop off.
-        $from = CarbonImmutable::parse($this->friday, 'America/Chicago')->subDays(4)->startOfDay()->utc();
-        return Event::where('status', 'capacity_reserved')->where('starts_at', '>=', $from)->where('starts_at', '<', $from->addDays(7))
+        $from = CarbonImmutable::parse($this->friday, 'America/Chicago')->subDays(4)->startOfDay();
+        // Calculate both boundaries locally: a Houston week may span 167 or 169 elapsed hours at a DST transition.
+        return Event::where('status', 'capacity_reserved')->where('starts_at', '>=', $from->utc())->where('starts_at', '<', $from->addWeek()->utc())
             ->where('ends_at', '>', now())->orderBy('starts_at')->with('services')->get();
     }
 
