@@ -55,6 +55,22 @@ class CreateEvent extends CreateRecord
         $this->fillFromLead(request()->integer('lead') ?: null);
     }
 
+    // Audit 2026-11-04: from «Nueva cotización» the page said «Nueva fiesta (borrador)» and the button «Crear».
+    public function getTitle(): string|\Illuminate\Contracts\Support\Htmlable
+    {
+        return $this->quoteAfterSave || $this->leadId ? 'Nueva cotización' : parent::getTitle();
+    }
+
+    public function getSubheading(): ?string
+    {
+        return $this->quoteAfterSave || $this->leadId ? 'Llena la fiesta y toca «Crear y cotizar»: se abre la cotización para revisarla y mandarla. No aparta staff ni trajes.' : parent::getSubheading();
+    }
+
+    protected function getCreateFormAction(): \Filament\Actions\Action
+    {
+        return parent::getCreateFormAction()->label($this->quoteAfterSave || $this->leadId ? 'Crear y cotizar' : 'Crear borrador');
+    }
+
     /** Prefill from the lead; the owner still reviews everything before saving. Never writes on page load. */
     public function fillFromLead(?int $id): void
     {

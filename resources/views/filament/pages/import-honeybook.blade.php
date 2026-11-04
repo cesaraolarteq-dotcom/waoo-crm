@@ -12,7 +12,7 @@
                 </label>
                 <span class="wimp-file" x-text="name || 'Ningún archivo elegido'"></span>
                 <span class="wqb-hint" wire:loading wire:target="csv">Cargando…</span>
-                <button type="submit" class="wcal-btn on" x-bind:disabled="!name" wire:loading.attr="disabled" wire:target="csv,stageFile">Revisar archivo</button>
+                <button type="submit" class="wcal-btn on" wire:loading.attr="disabled" wire:target="csv,stageFile">Revisar archivo</button>
             </form>
             @error('csv')<p class="wmoney-warn">{{ $message }}</p>@enderror
         </x-filament::section>

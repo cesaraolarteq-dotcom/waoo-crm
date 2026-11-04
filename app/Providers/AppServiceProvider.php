@@ -24,6 +24,8 @@ class AppServiceProvider extends ServiceProvider
     {
         // Audit 2026-11-04: Filament lists only 50 options before typing; the catalog has 70 characters, 78 costumes and 96 time slots.
         \Filament\Forms\Components\Select::configureUsing(fn (\Filament\Forms\Components\Select $select) => $select->optionsLimit(500));
+        // Audit 2026-11-04: lists opened at 10 rows (25 staff, 78 costumes, 70 characters meant paging all the time).
+        \Filament\Tables\Table::configureUsing(fn (\Filament\Tables\Table $table) => $table->paginated([25, 50, 100])->defaultPaginationPageOption(50));
         \Illuminate\Support\Facades\Event::listen(\Illuminate\Mail\Events\MessageSending::class,
             fn () => \App\Services\Mail\MailDeliveryGate::enabled() ? null : false);
         \App\Models\Event::observe(\App\Observers\EventGoogleSync::class); // owner 2026-10-21: Google Calendar mirror

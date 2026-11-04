@@ -83,8 +83,11 @@ final class PartyHeader
 
         $state = Contract::where('event_id', $e->id)->orderByDesc('revision')->value('state');
         // Audit 2026-11-04: right after Reserva rápida the link is out and the client still has to fill her data; «Sin preparar» read like a task for the owner.
-        if ($state === null && \App\Models\PortalGrant::where('event_id', $e->id)->whereNull('revoked_at')->where('expires_at', '>', now())->exists()
-            && ! \App\Models\ClientDetailsSubmission::where('event_id', $e->id)->exists()) return 'Esperando datos del cliente';
+        if ($state === null) {
+            $last = \App\Models\ClientDetailsSubmission::where('event_id', $e->id)->orderByDesc('revision')->first();
+            if ($last && ! \App\Models\ClientDetailsReview::where('submission_id', $last->id)->exists()) return 'Revisa los datos del cliente';
+            if (! $last && \App\Models\PortalGrant::where('event_id', $e->id)->whereNull('revoked_at')->where('expires_at', '>', now())->exists()) return 'Esperando datos del cliente';
+        }
 
         return match ($state) {
             'signed' => 'Firmado', 'issued' => 'Por firmar', 'draft' => 'Preparado, sin enviar', default => 'Sin preparar',

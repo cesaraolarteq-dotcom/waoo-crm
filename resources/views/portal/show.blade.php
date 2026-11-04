@@ -74,7 +74,7 @@
     <label class="p-field"><span>{{ $t('email') }}</span><input name="email" type="email" autocomplete="email" inputmode="email" required value="{{ old('email', $vm['prefill']['email'] ?? '') }}"></label>
   </div>
   <div class="p-row">
-    <label class="p-field"><span>{{ $t('event_address') }}</span><input name="event_address" autocomplete="street-address" required @readonly($vm['details']['fixed_address'] ?? false) value="{{ ($vm['details']['fixed_address'] ?? false) ? $vm['prefill']['event_address'] : old('event_address', $vm['prefill']['event_address'] ?? '') }}"></label>
+    <label class="p-field"><span>{{ $t('event_address') }}</span><input name="event_address" autocomplete="street-address" required onchange="var m=this.value.trim().match(/\b(\d{5})(?:-\d{4})?$/),z=this.form.event_postal_code;if(m&&z&&!z.readOnly)z.value=m[1]" @readonly($vm['details']['fixed_address'] ?? false) value="{{ ($vm['details']['fixed_address'] ?? false) ? $vm['prefill']['event_address'] : old('event_address', $vm['prefill']['event_address'] ?? '') }}"></label>
     <label class="p-field p-narrow"><span>ZIP</span><input name="event_postal_code" inputmode="numeric" maxlength="10" required @readonly($vm['details']['fixed_postal_code'] ?? false) value="{{ $vm['prefill']['event_postal_code'] ?? '' }}"></label>
   </div>
   @if (($vm['details']['fixed_address'] ?? false) && ($vm['details']['fixed_postal_code'] ?? false))<p class="p-hint">{{ $t('fixed_address_hint') }}</p>@endif
