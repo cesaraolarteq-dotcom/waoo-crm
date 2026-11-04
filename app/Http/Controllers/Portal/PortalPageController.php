@@ -170,6 +170,8 @@ final class PortalPageController extends Controller
             'lang_url' => ['es' => url('/portal?lang=es'.($reviewDetails ? '&review_details=1' : '')), 'en' => url('/portal?lang=en'.($reviewDetails ? '&review_details=1' : ''))],
             'event' => [
                 'package' => $services ?: $event->title,
+                // Audit 2026-11-04: a baby shower, gender reveal or company event has no child turning an age.
+                'celebrant' => ! in_array($event->event_type, ['baby_shower', 'gender_reveal', 'corporate'], true),
                 'characters' => collect($revision?->lines_snapshot ?? [])->flatMap(fn ($l) => $l['characters'] ?? [])->map(fn ($c) => $c['quantity'].' × '.$c['name'])->implode(', '),
                 'when' => $lang === 'es' ? $start->translatedFormat('D j M Y, g:i a') : $start->format('D, M j, Y \a\t g:i a'),
                 'start_time' => $lang === 'es' ? $start->translatedFormat('g:i a') : $start->format('g:i a'),

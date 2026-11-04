@@ -51,6 +51,18 @@ class StaffLaterConfirmTest extends TestCase
         $this->assertSame('later', BookingEvidence::where('event_id', $saved->id)->value('staff_assignment_snapshot')['staff_mode']);
     }
 
+    public function test_address_can_wait_for_the_client_link_only_in_staff_later_mode(): void
+    {
+        $e = $this->party('11:00'); $e->forceFill(['address' => null])->save();
+        try {
+            app(ConfirmCapacity::class)->execute($this->owner, $e->id, ['expected_version' => $e->fresh()->version, 'resource_ids' => [Resource::where('code', 'ANA')->value('id')],
+                'payment' => ['method' => 'external_zelle', 'reference' => 'ZELLE-NOADDR', 'amount_cents' => 10000, 'received_at' => now()->subHour()->toIso8601String()],
+                'review' => ['staff_confirmed' => true, 'cargo_checked' => true, 'transfers' => []]]);
+            $this->fail('Named people without an address.');
+        } catch (ValidationException $x) { $this->assertStringContainsString('Falta la dirección', collect($x->errors())->flatten()->first()); }
+        $this->assertSame('capacity_reserved', $this->confirm($e)->status);
+    }
+
     public function test_short_people_is_the_owners_call_but_missing_equipment_is_refused(): void
     {
         $this->confirm($this->party('14:00')); $this->confirm($this->party('14:00')); // both hosts are now counted at 2 pm

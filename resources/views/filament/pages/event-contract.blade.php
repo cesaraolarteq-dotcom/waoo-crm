@@ -72,7 +72,12 @@
                     <div><dt>Nombre</dt><dd>{{ $d['first_name'] ?? '' }} {{ $d['last_name'] ?? '' }}</dd></div>
                     <div><dt>Contacto</dt><dd>{{ $d['phone'] ?? '' }} · {{ $d['email'] ?? '' }}</dd></div>
                     <div><dt>Su dirección</dt><dd>{{ $d['billing_address'] ?? '' }}</dd></div>
-                    <div><dt>Dirección de la fiesta</dt><dd>{{ $d['event_address'] ?? '' }}@if (! empty($d['event_postal_code'])) · ZIP {{ $d['event_postal_code'] }}@endif</dd></div>
+                    @php
+                        // Audit 2026-11-04: the client can type an address in another ZIP and leave the prefilled ZIP; transport was priced on the event ZIP.
+                        $zips = array_values(array_unique(array_filter([preg_match('/\b(\d{5})(?:-\d{4})?\s*$/', trim((string) ($d['event_address'] ?? '')), $zm) ? $zm[1] : null, $d['event_postal_code'] ?? null, $s['e']->postal_code])));
+                    @endphp
+                    <div><dt>Dirección de la fiesta</dt><dd>{{ $d['event_address'] ?? '' }}@if (! empty($d['event_postal_code'])) · ZIP {{ $d['event_postal_code'] }}@endif
+                        @if (count($zips) > 1)<br><span class="wwarn-inline">Los ZIP no coinciden ({{ implode(' · ', $zips) }}). El transporte se cobró con el {{ $s['e']->postal_code }}: confirma con el cliente antes de aprobar.</span>@endif</dd></div>
                     <div><dt>Hora</dt><dd>@if ($req)<span class="wwarn-inline">Pidió otra hora: {{ $req }}</span> (actual: {{ $orig }})@else Confirmó {{ $orig }}@endif</dd></div>
                     @if (! empty($d['child_name']) || ! empty($d['child_age']))<div><dt>Cumpleañero/a</dt><dd>{{ $d['child_name'] ?? '' }}@if (! empty($d['child_age'])) · cumple {{ $d['child_age'] }}@endif</dd></div>@endif
                     @if (! empty($d['theme']))<div><dt>Tema</dt><dd>{{ $d['theme'] }}</dd></div>@endif

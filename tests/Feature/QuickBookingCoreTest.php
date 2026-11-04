@@ -367,6 +367,19 @@ class QuickBookingCoreTest extends TestCase
         $this->assertSame(FinancialRevision::sole()->id, $contract->financial_revision_id);
     }
 
+    public function test_party_confirmed_before_the_client_sent_her_address_gets_it_on_approval(): void
+    {
+        // Audit 2026-11-04: «staff later» confirms at deposit; the address arrives afterwards from the client link.
+        $event = $this->reservedClient();
+        $event->forceFill(['address' => null])->save();
+        $this->submit(['event_address' => '789 Fictitious Venue'])->assertCreated();
+        $this->approve()->assertOk();
+        $this->assertSame('789 Fictitious Venue', $event->fresh()->address);
+        $this->assertSame($event->version, $event->fresh()->version);
+        $contract = $this->issue();
+        $this->assertSame(FinancialRevision::sole()->id, $contract->financial_revision_id);
+    }
+
     public function test_reserved_venue_change_is_refused_with_commitment_and_money_intact(): void
     {
         $event = $this->reservedClient();

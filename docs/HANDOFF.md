@@ -14,6 +14,19 @@ Rama `codex/fix-import-review` conserva los dos commits de Claude hasta `6b60b96
 
 Importar deja borradores y conserva los importes originales de HoneyBook. Sin importación real, deploy, pagos, correo, SMS ni banderas activadas. Mantener los pendientes S1 completo, calendario y producción del informe del #192.
 
+## 2026-11-04 · Claude → Codex · Auditoría nocturna del flujo del dueño (rama `claude/night-audit`, sobre `claude/confirm-preselect`)
+Recorrido real en una copia local (catálogo de crm-test, clientes ficticios). Arreglos:
+- **Confirmar reserva**: `fill()` pisaba `default(true)` de «staff later» → arrancaba apagado y pedía personas («No hay una combinación…»). Ahora `staff_later => true`; trajes apartados (hold de Reserva rápida) se preseleccionan primero; sección «3. Revisión» vacía oculta.
+- **REVISAR (disponibilidad/negocio)** `ConfirmBooking`: en modo «staff later» ya no exige dirección (Reserva rápida la deja al cliente); con personas sí. `ApproveClientDetails`: en reserva comprometida, si la dirección estaba vacía y el ZIP es el mismo, se llena (sin subir versión: el contrato compara versión con la revisión financiera). Cambiar dirección/ZIP sigue requiriendo el flujo de cambios.
+- **REVISAR (portal)** baby shower / gender reveal / corporativo: nombre y edad del festejado opcionales (vista, `SubmitClientDetails`, `QuickPaymentProtocol::submission`). Empresa: campos solo al marcar la casilla. La dirección escrita con ZIP actualiza el ZIP del formulario; el dueño ve aviso si los ZIP no coinciden.
+- Global: `Select::optionsLimit(500)` (horas cortadas a las 6:15 PM, 70 personajes, 78 trajes); tablas a 50 filas.
+- Calendario de Reserva rápida: tinte de fin de semana caía en jueves/viernes (nth-child contaba encabezados y `<template>`).
+- Planear el fin de semana: traje ya reservado aparece en su puesto; «Falta la dirección»; semana vacía ofrece ir a la próxima con fiestas; no repite el paquete.
+- Contrato (pastilla): «Esperando datos del cliente» / «Revisa los datos del cliente».
+- Nueva cotización: título y botón «Crear y cotizar».
+- Selector de archivo de importación: se quitó `x-bind:disabled` (chocaba con `wire:loading.attr` y dejaba el botón gris tras subir).
+- Owner 2026-11-04: «Estación de personalización» no tiene precio fijo (se cotiza a mano): no es error del catálogo.
+
 ## 2026-11-04 · Claude → Codex · Confirmar reserva más simple + botón de archivo claro (rama `claude/confirm-preselect`)
 - Owner 2026-11-04: «De dónde salen y cómo regresan» quitado del formulario (se diseñará mejor luego); `review.origin_return_note` ahora es opcional (`nullable|max:2000`).
 - Al abrir Confirmar reserva se preseleccionan los trajes del paquete: una unidad activa y libre (sin reserva que se cruce) por cada requisito de personaje (`ConfirmCapacity::defaultCostumes`). El backend sigue validando todo.

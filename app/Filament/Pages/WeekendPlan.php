@@ -62,8 +62,15 @@ class WeekendPlan extends Page
         foreach ($this->events() as $e) {
             $c = TeamSlots::current($e);
             $need = TeamSlots::for($e);
+            // Audit 2026-11-04: with no team saved yet, a costume already reserved for this party (at confirm) fills its seat.
+            $reserved = Resource::where('kind', 'costume')->whereIn('id', \App\Models\ResourceReservation::where('event_id', $e->id)->pluck('resource_id'))->orderBy('name')->get();
+            $taken = collect($c['costumes'])->pluck('unit_id')->filter()->map(fn ($id) => (int) $id)->all();
             $this->picks[$e->id] = ['people' => collect($need['people'])->mapWithKeys(fn ($s) => [$s['key'] => $c['people'][$s['key']] ?? null])->all(),
-                'costumes' => collect($need['costumes'])->mapWithKeys(fn ($s) => [$s['key'] => ['unit_id' => $c['costumes'][$s['key']]['unit_id'] ?? null, 'wearer_id' => $c['costumes'][$s['key']]['wearer_id'] ?? null]])->all(),
+                'costumes' => collect($need['costumes'])->mapWithKeys(function ($s) use ($c, $reserved, &$taken) {
+                    $unit = $c['costumes'][$s['key']]['unit_id'] ?? null;
+                    if (! $unit && ($r = $reserved->first(fn ($u) => (int) $u->character_id === (int) $s['character_id'] && ! in_array($u->id, $taken, true)))) { $unit = $r->id; $taken[] = $r->id; }
+                    return [$s['key'] => ['unit_id' => $unit, 'wearer_id' => $c['costumes'][$s['key']]['wearer_id'] ?? null]];
+                })->all(),
                 'driver' => $c['driver']];
             $this->versions[$e->id] = $c['version'];
             $this->keys[$e->id] = (string) Str::uuid();
@@ -103,6 +110,17 @@ class WeekendPlan extends Page
         $this->load();
         if ($errors) Notification::make()->warning()->title($ok.' guardadas · '.count($errors).' con problema')->body(implode("\n", $errors))->persistent()->send();
         else Notification::make()->success()->title('Equipo guardado')->body($ok.' fiestas. Cada persona ya lo ve en su enlace del staff.')->send();
+    }
+
+    /** Audit 2026-11-04: an empty week offers a jump to the next week with a confirmed party. */
+    public function nextWeekWithParties(): ?array
+    {
+        $from = CarbonImmutable::parse($this->friday, 'America/Chicago')->subDays(4)->startOfDay()->addDays(7);
+        $e = Event::where('status', 'capacity_reserved')->where('starts_at', '>=', $from->utc())->orderBy('starts_at')->first();
+        if (! $e) return null;
+        $local = CarbonImmutable::instance($e->starts_at)->setTimezone('America/Chicago');
+
+        return ['weeks' => (int) floor($from->diffInDays($local->startOfDay()) / 7) + 1, 'label' => $local->locale('es')->translatedFormat('D j M')];
     }
 
     /** "Reemplazar": the best free person for that seat who is not already on the team (said yes first). The owner still saves. */
@@ -163,7 +181,7 @@ class WeekendPlan extends Page
             $days[$local->toDateString()]['avail'] ??= ['yes' => $staff->filter(fn ($r) => $answerOf($r->id, $e) === 'yes')->count(),
                 'no' => $staff->filter(fn ($r) => $answerOf($r->id, $e) === 'no')->count(), 'none' => $staff->filter(fn ($r) => $answerOf($r->id, $e) === null)->count()];
             $days[$local->toDateString()]['parties'][] = ['id' => $e->id, 'title' => $e->title, 'time' => $local->locale('es')->translatedFormat('g:i a').' – '.$e->ends_at->setTimezone('America/Chicago')->locale('es')->translatedFormat('g:i a'),
-                'place' => Str::limit((string) $e->address, 48), 'packages' => $e->services->map(fn ($s) => \App\Models\ServiceVariant::whereKey($s->service_variant_id)->value('name'))->filter()->implode(' + '),
+                'place' => Str::limit((string) (\App\Support\ClientAddress::forEvent($e)[0] ?? ''), 48), 'packages' => $e->services->map(fn ($s) => \App\Models\ServiceVariant::whereKey($s->service_variant_id)->value('name'))->filter()->implode(' + '),
                 'seats' => $seats, 'costumes' => $cos, 'drivers' => $drivers, 'auto_driver' => count($drivers) === 1 ? reset($drivers) : null, 'missing' => $missing, 'gaps' => $gaps, 'team_empty' => $team === [],
                 'url' => \App\Filament\Resources\Events\EventResource::getUrl('view', ['record' => $e])];
         }

@@ -269,7 +269,8 @@ a.wdash-item:focus-visible{outline:0;box-shadow:var(--focus)}
 .waoo-cal-dow{text-align:center;font-size:.7rem;font-weight:700;letter-spacing:.06em;color:#8A91B0;padding:4px 0}
 .waoo-cal-cell{aspect-ratio:1}
 .waoo-cal-day{position:relative;width:100%;height:100%;border-radius:999px;font-weight:600;font-variant-numeric:tabular-nums;cursor:pointer;transition:background-color .12s}
-.waoo-cal-cell:nth-child(7n+1) .waoo-cal-day:not(.is-selected):not(:disabled),.waoo-cal-cell:nth-child(7n) .waoo-cal-day:not(.is-selected):not(:disabled){background:#FFF0F7}
+/* Audit 2026-11-04: nth-child counted the weekday headers and <template> tags, so Thursday/Friday were tinted. */
+.waoo-cal-day.is-weekend:not(.is-selected):not(:disabled){background:#FFF0F7}
 .waoo-cal-day:hover:not(:disabled){background:#EEF1F9}
 .waoo-cal-day:disabled{opacity:.28;cursor:not-allowed}
 .waoo-cal-day.is-today{box-shadow:inset 0 0 0 2px #122F94;color:#122F94;font-weight:800}
@@ -286,7 +287,7 @@ a.wdash-item:focus-visible{outline:0;box-shadow:var(--focus)}
 .dark .waoo-cal{background:#11162B;border-color:rgba(255,255,255,.12)}
 .dark .waoo-cal-title,.dark .waoo-cal-nav{color:#93A7FF}.dark .waoo-cal-nav{background:rgba(255,255,255,.08)}
 .dark .waoo-cal-day:hover:not(:disabled){background:rgba(255,255,255,.08)}
-.dark .waoo-cal-cell:nth-child(7n+1) .waoo-cal-day:not(.is-selected):not(:disabled),.dark .waoo-cal-cell:nth-child(7n) .waoo-cal-day:not(.is-selected):not(:disabled){background:rgba(255,1,124,.10)}
+.dark .waoo-cal-day.is-weekend:not(.is-selected):not(:disabled){background:rgba(255,1,124,.10)}
 .dark .waoo-cal-day.is-today{box-shadow:inset 0 0 0 2px #7A93FF;color:#93A7FF}
 .dark .waoo-cal-day.is-selected{background:#7A93FF!important;color:#0B1026}
 .dark .waoo-cal-day.is-one::after{background:#93A7FF}
@@ -406,3 +407,5 @@ a.wdash-item:focus-visible{outline:0;box-shadow:var(--focus)}
 .wce-h{font-weight:700;color:#0E1B52;margin-top:8px}
 .wce-row{text-align:left;cursor:pointer;margin-bottom:8px;width:100%}
 .dark .wce-field select{background:#0E1B52;border-color:rgba(255,255,255,.15);color:#fff} .dark .wce-person{border-color:rgba(255,255,255,.12);color:#fff} .dark .wce-h{color:#fff}
+.wtp-warn{color:#B45309;font-weight:600}
+.wtp-empty .wcal-btn{margin-left:8px}
