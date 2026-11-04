@@ -75,25 +75,33 @@ class ConfirmCapacity extends Page
         }
         // Owner 2026-11-04: the package's characters come preselected (one free unit each) so confirming needs no picking.
         $costumes = self::defaultCostumes($this->record);
-        $this->form->fill(['payment' => ['method' => 'external_zelle'], 'transfers' => [], 'units' => ['costume' => $costumes],
+        // fill() replaces field defaults, so the recommended «staff later» must be set here (it was silently off).
+        $this->form->fill(['staff_later' => true, 'payment' => ['method' => 'external_zelle'], 'transfers' => [], 'units' => ['costume' => $costumes],
             'wardrobe' => self::wardrobeRows($costumes, [])]);
     }
 
     /** One active, free costume unit per costume requirement of the event's services; none when a character has no free unit. */
     public static function defaultCostumes(Event $event): array
     {
+        // Costumes already set aside for this party (Reserva rápida hold) come first and are always kept.
+        $held = Unit::query()->whereIn('id', ResourceReservation::where('event_id', $event->id)->pluck('resource_id'))->where('kind', 'costume')->get();
         $picked = [];
         $busy = ResourceReservation::where('event_id', '!=', $event->id)->where('starts_at', '<', $event->ends_at)->where('ends_at', '>', $event->starts_at)->pluck('resource_id')->all();
         foreach (\App\Models\EventService::where('event_id', $event->id)->get() as $service) {
             foreach ((array) $service->requirements_snapshot as $req) {
                 if (($req['kind'] ?? null) !== 'costume' || empty($req['character_id'])) continue;
+                $need = (int) ($req['quantity'] ?? 1);
+                $mine = $held->where('character_id', (int) $req['character_id'])->whereNotIn('id', $picked)->take($need)->pluck('id')->all();
+                $picked = [...$picked, ...$mine];
+                if (($need -= count($mine)) <= 0) continue;
                 $ids = Unit::query()->where('kind', 'costume')->where('status', 'active')->where('character_id', (int) $req['character_id'])
-                    ->whereNotIn('id', [...$busy, ...$picked])->orderBy('name')->limit((int) ($req['quantity'] ?? 1))->pluck('id')->all();
+                    ->whereNotIn('id', [...$busy, ...$picked])->orderBy('name')->limit($need)->pluck('id')->all();
                 $picked = [...$picked, ...$ids];
             }
         }
 
-        return array_map('intval', $picked);
+        // A held unit outside the package's requirements still has to be sent (the hold check refuses otherwise).
+        return array_map('intval', array_values(array_unique([...$picked, ...$held->pluck('id')->all()])));
     }
 
     /**
@@ -152,7 +160,8 @@ class ConfirmCapacity extends Page
                             ->options(fn (Get $get) => collect(\App\Models\Character::find(Unit::whereKey((int) $get('resource_id'))->value('character_id'))?->outfits ?? [])->mapWithKeys(fn ($o) => [$o => $o])->all()),
                     ]),
             ])
-                ->description('Elige las unidades exactas. Una persona no puede hacer dos roles a la vez; un traje necesita a alguien que pueda usarlo. Al menos una de las personas que van debe manejar (Conductor/a); no hace falta sumar a nadie.'),
+                ->description(fn (Get $get) => $get('staff_later') ? 'Ya vienen los trajes del paquete (los apartados primero). Las personas se eligen en «Planear el fin de semana».'
+                    : 'Elige las unidades exactas. Una persona no puede hacer dos roles a la vez; un traje necesita a alguien que pueda usarlo. Al menos una de las personas que van debe manejar (Conductor/a); no hace falta sumar a nadie.'),
             Callout::make('2. Pagado según HoneyBook')->warning()->columnSpanFull()
                 ->visible(fn () => $this->importedRevisionId !== null)
                 ->description(fn () => ($i = $this->imported()) ? 'Pagado '.Labels::money($i['paid_cents']).' de '.Labels::money($i['total_cents'])
@@ -183,7 +192,10 @@ class ConfirmCapacity extends Page
                 Textarea::make('deposit_exception_reason')->label('Por qué se acepta menos del 50 %')->minLength(10)->maxLength(2000)->required()->columnSpanFull()
                     ->visible(fn (Get $get) => $this->isBelowTarget($get('payment.amount'))),
             ]),
-            Section::make('3. Revisión')->columns(2)->schema([
+            Section::make('3. Revisión')->columns(2)
+                // Audit 2026-11-04: in «staff later» mode every check is hidden; an empty card only confused.
+                ->visible(fn (Get $get) => ! $get('staff_later') || ($this->importedRevisionId === null && \App\Services\Scheduling\BookingNoticePolicy::requiresOwnerConfirmationReason($this->record->starts_at)))
+                ->schema([
                 Checkbox::make('staff_confirmed')->label('Confirmé con cada persona que puede ir')->accepted()->columnSpanFull()->visible(fn (Get $get) => ! $get('staff_later')),
                 Checkbox::make('cargo_checked')->label('Revisé que el equipo y la gente caben en el vehículo')->accepted()->columnSpanFull()->visible(fn (Get $get) => ! $get('staff_later')),
                 // Owner 2026-11-04: route note removed from the form for now (a better logistics design later); the service still accepts it.

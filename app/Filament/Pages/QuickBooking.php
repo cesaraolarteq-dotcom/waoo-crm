@@ -83,7 +83,7 @@ class QuickBooking extends Page
         $this->key = (string) Str::uuid();
         $this->linkExpiryAnchorUtc = now('UTC')->startOfSecond()->toIso8601String();
         $this->form->fill(['deposit_received' => true, 'customer_mode' => 'existing', 'locale' => 'es', 'price_version_ids' => [], 'deposit' => ['method' => 'zelle', 'date' => now(ChicagoTime::TZ)->format('Y-m-d')],
-            'expires_days' => 14, 'characters' => []]);
+            'expires_days' => 14, 'characters' => [], 'event_type' => 'birthday']); // Audit 2026-11-04: almost every party is a birthday
         $this->fillFromLead(request()->integer('lead') ?: null);
     }
 

@@ -22,6 +22,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Audit 2026-11-04: Filament lists only 50 options before typing; the catalog has 70 characters, 78 costumes and 96 time slots.
+        \Filament\Forms\Components\Select::configureUsing(fn (\Filament\Forms\Components\Select $select) => $select->optionsLimit(500));
         \Illuminate\Support\Facades\Event::listen(\Illuminate\Mail\Events\MessageSending::class,
             fn () => \App\Services\Mail\MailDeliveryGate::enabled() ? null : false);
         \App\Models\Event::observe(\App\Observers\EventGoogleSync::class); // owner 2026-10-21: Google Calendar mirror

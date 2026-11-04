@@ -36,8 +36,10 @@ final class ConfirmBooking
                     return $event;
                 }
                 abort_unless($event->status === 'draft' && $event->version === (int) $data['expected_version'], 409, 'El evento cambió. Actualiza la ficha.');
-                if (!$event->address || $event->setup_minutes === null || $event->breakdown_minutes === null) {
-                    $this->fail('Completa dirección, montaje y desmontaje.');
+                // Audit 2026-11-04: in «staff later» mode the client may still be filling the address in her link (Reserva rápida
+                // makes it optional); capacity only needs the times. Naming people still requires the address.
+                if ((!$staffLater && !$event->address) || $event->setup_minutes === null || $event->breakdown_minutes === null) {
+                    $this->fail($event->address || $staffLater ? 'Completa montaje y desmontaje en la ficha.' : 'Falta la dirección (el cliente la completa en su enlace, o escríbela en Editar). También montaje y desmontaje.');
                 }
                 if ($event->starts_at->isPast()) {
                     $this->fail('No se puede reservar un evento pasado.');

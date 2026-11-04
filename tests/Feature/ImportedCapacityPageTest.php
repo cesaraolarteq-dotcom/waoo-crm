@@ -43,7 +43,7 @@ class ImportedCapacityPageTest extends TestCase
     private function filled(array $ids)
     {
         return Livewire::test(ConfirmCapacity::class, ['record' => $this->event->getKey()])
-            ->set('data.units.staff', [(string) $ids[0]])->set('data.units.equipment', [(string) $ids[1]])
+            ->set('data.staff_later', false)->set('data.units.staff', [(string) $ids[0]])->set('data.units.equipment', [(string) $ids[1]])
             ->set('data.staff_confirmed', true)->set('data.cargo_checked', true)->set('data.origin_return_note', 'Salen de la bodega ficticia y regresan ahí.');
     }
 
