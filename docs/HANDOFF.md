@@ -1,3 +1,8 @@
+## 2026-11-04 · Codex · Semana de Houston completa durante cambios de horario
+Rama `codex/fix-week-houston-dst`, sobre integración f13b53f. Cola PENDING. WeekendPlan calcula ambos límites lunes00:00 en Houston antes de convertirlos a UTC: conserva la última hora del domingo al terminar DST y excluye el lunes siguiente al comenzar DST.
+- Dos regresiones MariaDB FAIL antes; grupo WeekHoustonDst/WeekendPlan **13 tests/48 assertions PASS**. Render Blade real con datos ficticios **1/4 PASS** y **8/8 layouts PASS**, ES/EN claro/oscuro390/1280, sin desborde; capturas fuera de Git. No es E2E con proveedor real.
+- No cambia asignaciones, reservas, límites diarios, textos, dinero, rutas ni banderas. Ruta real en planificación y S1 siguen pendientes. Sin deploy/envíos/cobros. Integrar solo después de corregir el check pendiente de la integración #200 y verificar CI final.
+
 ## 2026-11-04 · Codex · Integración revisada #200: tiempo extra y objetivo de pago coherente
 Actualización de revisión: el run41884760707 pasó checks y4/5 grupos, pero falló IntegritySchemasTest porque comparaba el ORM ampliado con V1 histórico. Se conserva EvidenceV1 intacto y la expectativa excluye únicamente las columnas nuevas de extensión/cobertura/política. Repro antiguo FAIL; la nueva prueba sigue exigiendo los mismos bytes históricos y ausencia de resellado. Se requiere nueva suite verde antes de fusionar. Tanda final de la punta f13b53f:38tests/179assertions PASS; ampliación adicional33/248 PASS. Sin deploy ni activación.
 Rama `codex/fix-extra-time-audit`, main base `ae12637`, conserva Claude hasta `3b37fde` sin reescribir. Cola nueva PENDING; detalle y compatibilidad en `docs/EXTRA-TIME-DEPOSIT-REVIEW.md`.
