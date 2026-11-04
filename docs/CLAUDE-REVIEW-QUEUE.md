@@ -21,6 +21,14 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-04 · BACKEND · Cierre #201 e informe de tres fallos bloqueantes en #200 · PENDING
+- Branch / commits: `codex/fix-staff-review-closure`, desde main de código c4eb9ad85437d0cc5f70ad3a2647a4141d71e9de. Fuente probada a8b82095617bcb5b79cb6d9aec2f90ad9b8dfe28, diff vacío tras integrar.
+- What changed and why: registra #198 integrado por #201, CI completo SUCCESS6/6 en41866319897 y el cierre explicado de #198. Duplicado41866481372 cancelado para liberar runners; se conserva el run completo exitoso, sin bypass ni workflows editados.
+- #200 quedó en borrador, sin integrar: tres regresiones aisladas reales sobre43562bd3 + #201 fallan (crear extensión activa por SaveVariant, objetivo100% vs lease50%, reinterpretación al100% de una reserva antigua al50%). Reporte, mensajes exactos y archivo completo reproducible enviados a Claude en https://github.com/cesaraolarteq-dotcom/waoo-crm/pull/200#issuecomment-6636425627 . No se agregan a main pruebas intencionalmente fallidas ni código de #200.
+- Files: solo `docs/HANDOFF.md` y esta cola; sin runtime, pruebas, configuración, banderas, workflows ni datos reales.
+- How verified: ancestría2856291, punta sin cambios, diff fuente a8b8209→main vacío tras #201; para este cierre solo los dos Markdown difieren y `git diff --check` pasa. Sin repetición de tests de aplicación por documentación. Prueba aislada #200:3tests/3assertions,2 errores de negocio y1FAIL; HTTP extra prohibido y colas simuladas.
+- What Claude must check: corregir #200 y ejecutar la reproducción pegada; preservar objetivos originales/contratos, importados y recibos reales, alinear términos de pago/100% y duración efectiva de recreadora al extender. Continuar S1 durable, rutas reales/DST semanal, calendario, extras y producción. Sin deploy, envíos/cobros/importación real ni activación. Solo Claude marca REVIEWED.
+
 ### 2026-11-04 · BACKEND / UI / TEXT · Revisar #198: habilidad del equipo y recreadora con duración correcta · PENDING
 - Branch / commits: `codex/fix-staff-rule-review`, desde main `eaecba0`; conserva `21fd0839` y `2856291` en merges `6bc9603`/`516b823`. API: `docs/STAFF-RULES-API.md`.
 - What changed and why: la sugerencia de Claude mostraba el requisito pintacaritas, pero disponibilidad/confirmación/guardado aún permitían equipos sin esa habilidad. `CrewSkills` y `PoolCapacitySolver` exigen que un miembro de la asignación real la cubra (cualquier puesto), junto con conductor, unicidad, traje/intérprete, asientos y traslados. Se aplica a candidato y fiestas existentes. MatchEventResources añade matching estructural exacto para confirmación nominal; el caller conserva todos sus checks temporales bajo locks.
