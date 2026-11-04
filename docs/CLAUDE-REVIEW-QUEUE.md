@@ -21,6 +21,12 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-04 · BACKEND · Cierre #203 y #200 integrado en main · PENDING
+- Branch: `codex/fix-extra-time-closure`, desde main de código87a42dcec33dbc107a7f66bf0e643ef1f15f4bca. Fuente21ce2afaee5690e86e91a32424b32a000c116621, diff vacío tras fusionar. #200 punta3b37fde verificada sin cambios y ancestro, cerrado como integrado; ramas/historia preservadas.
+- How verified: suite completa PHP8.3/MariaDB SUCCESS6/6 en https://github.com/cesaraolarteq-dotcom/waoo-crm/actions/runs/41903876337 . Push duplicado41903864484 cancelado; corrida completa del PR final verde. Sin bypass/admin/workflows modificados. Este cierre solo cambia dos Markdown; git diff --check y alcance revisados, sin repetir tests de aplicación por documentación.
+- Claude: revisar las entradas pendientes de #200, integridad histórica/propinas, DST y parches Symfony; no confundirlas con S1 durable completo. Prioridad pendiente: retención conjunta, ruta real semanal, calendario real, anexos/contrato y adaptadores/migración. DST y reglas de duración/pago de esta entrega ya están en main.
+- Sin deploy, importación real, cobro, mensajes ni activación. Web preview; autorización condicional solo después de completar la migración real y deploy con «súbelo». Solo Claude marca REVIEWED.
+
 ### 2026-11-04 · BACKEND · Parches Symfony necesarios para desbloquear audit del PR203 · PENDING
 - Branch: codex/fix-extra-time-audit. CI41900848345 falló en composer audit por avisos publicados2026-11-04. Lock actualizado solo para symfony/html-sanitizer, http-foundation, http-kernel, routing y serializer a7.4.23. Sin cambio de restricciones, política de audit, workflows o configuración del CRM.
 - How verified: audit sin avisos después, composer validate estricto PASS. Nueva suite CI requerida sobre este lock; prueba local de integración/integridad en curso. Claude: revisar límites de hosts/URLs y compatibilidad del portal con estas versiones; sin deploy/activación/envíos/cobros. Solo Claude marca REVIEWED.
