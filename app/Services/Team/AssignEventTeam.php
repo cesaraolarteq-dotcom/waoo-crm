@@ -67,6 +67,11 @@ final class AssignEventTeam
                 }
                 $costumes[] = ['key' => $seat, 'character_id' => $s['character_id'], 'unit_id' => $unit?->id, 'wearer_id' => $wearer?->id];
             }
+            // Partial planning remains possible. A full roster cannot silently omit a package-wide capability.
+            if (count($team) === count($need['people']) + count($need['costumes'])) {
+                $missing = \App\Support\CrewSkills::missing($need['team_skills'] ?? [], $units->whereIn('id', $team));
+                RecordWriteRejected::unless($missing === [], 422, 'Falta: '.collect($missing)->map(fn ($s) => \App\Filament\Support\Labels::label(\App\Filament\Support\Labels::SKILL, $s))->implode(', ').'.');
+            }
             $external = ($d['driver'] ?? null) === 'external';
             $driver = is_numeric($d['driver'] ?? null) ? $units[(int) $d['driver']] : null;
             if ($driver) RecordWriteRejected::unless(in_array($driver->id, $team, true) && MatchEventResources::driver($driver), 422, 'El conductor tiene que ser alguien del equipo que maneje.');

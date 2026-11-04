@@ -23,6 +23,11 @@ for(const lang of ['es','en'])for(const theme of ['light','dark'])for(const widt
   return r.abort();
  });
  await page.goto('https://crm.example.test/');
+ const text=await page.locator('body').innerText();
+ assert.ok(text.includes(lang==='es'
+  ? 'a $70 la hora, por el mismo tiempo de tu paquete.'
+  : 'at $70 per hour, for the same length as your package.'));
+ assert.ok(!text.includes(lang==='es'?'mínimo 2 horas':'2-hour minimum'));
  await page.evaluate(t=>document.documentElement.dataset.theme=t,theme);
  assert.equal(await page.locator('[name="child_age"]').count(),0);
  assert.equal(await page.locator('[name="child_name"]').getAttribute('required'),null);

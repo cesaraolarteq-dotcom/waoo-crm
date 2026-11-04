@@ -56,7 +56,7 @@ final class WebsiteCapacity
         foreach (Resource::query()->where('status', 'active')->get(['id', 'kind', 'equipment_kind', 'character_id', 'outfit', 'skills', 'seats']) as $r) {
             $this->units[$r->id] = $r;
             $this->resources[] = match ($r->kind) {
-                'staff' => ['id' => $r->id, 'kind' => 'staff', 'driver' => in_array('driver', (array) $r->skills, true)],
+                'staff' => ['id' => $r->id, 'kind' => 'staff', 'driver' => in_array('driver', (array) $r->skills, true), 'skills' => (array) $r->skills],
                 // Unknown seats are never assumed (Codex audit R3): such a vehicle can't prove a requirement (review instead).
                 'vehicle' => ['id' => $r->id, 'kind' => 'vehicle', 'seats' => max(1, (int) $r->seats)],
                 default => ['id' => $r->id, 'kind' => in_array($r->kind, ['equipment', 'costume'], true) ? $r->kind : 'equipment'],
@@ -378,7 +378,8 @@ final class WebsiteCapacity
             $hasStaff = (bool) array_filter($slots, fn ($s) => $s['kind'] === 'staff');
             if ($slots === []) continue;
             $jobs[] = ['key' => $p['key'], 'starts_at' => $p['from']->getTimestamp(), 'ends_at' => $p['to']->getTimestamp(), 'slots' => $slots,
-                'minimum_drivers' => $withPeople && $hasStaff ? 1 : 0, 'people' => $withPeople, 'required' => $required];
+                'minimum_drivers' => $withPeople && $hasStaff ? 1 : 0, 'people' => $withPeople, 'required' => $required,
+                'team_skills' => $withPeople ? \App\Support\CrewSkills::required($p['requirements']) : []];
         }
         if ($jobs === []) return 'feasible';
         $jobKeys = array_column($jobs, 'key');

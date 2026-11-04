@@ -538,6 +538,7 @@ class QuickBooking extends Page
             ...(filled($s['setup_minutes'] ?? null) ? ['setup_minutes' => (int) $s['setup_minutes']] : []),
             ...(filled($s['breakdown_minutes'] ?? null) ? ['breakdown_minutes' => (int) $s['breakdown_minutes']] : []),
             'services' => EventResource::servicesInput($s),
+            ...(filled($s['package_id'] ?? null) ? ['package_price_version_id' => (int) $s['package_id']] : []),
             ...(config('waoo.sandbox_anniversary', false) && filled($s['promo_code'] ?? null) ? ['promo_code' => trim((string) $s['promo_code'])] : []),
             ...($received ? ['deposit' => ['method' => 'zelle', 'amount_cents' => EditServiceVariant::toCents((string) $d['amount']), 'reference' => filled($d['reference'] ?? null) ? trim($d['reference']) : null,
                 'received_on' => $d['date'], 'verified_received' => (bool) ($d['verified'] ?? false)]] : ['deposit_received' => false]),

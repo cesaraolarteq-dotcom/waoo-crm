@@ -45,6 +45,7 @@ final class QuickBook
             'address' => 'nullable|string|max:255', 'setup_minutes' => 'nullable|integer|min:0|max:720', 'breakdown_minutes' => 'nullable|integer|min:0|max:720',
             'travel_fee_quote_id' => 'sometimes|nullable|integer|min:1', 'travel_fee_override_note' => 'sometimes|nullable|string|min:10|max:1000',
             'travel_fee_cents' => 'required|integer|min:0|max:100000000', 'services' => 'required|array|min:1|max:10',
+            'package_price_version_id' => 'sometimes|integer|min:1|exists:price_versions,id',
             'deposit' => 'required|array:method,amount_cents,reference,received_at,received_on,verified_received,note',
             'deposit.method' => ['required', Rule::in(['zelle'])], 'deposit.amount_cents' => 'required|integer|min:1|max:100000000',
             'deposit.reference' => 'nullable|string|min:3|max:255',
@@ -68,6 +69,7 @@ final class QuickBook
                 \App\Exceptions\RecordWriteRejected::unless($saved->result_type==='quick_booking',409,'Esta clave corresponde a otro tipo de reserva.');
                 return [QuickBookingRecord::findOrFail($saved->result_id), false];
             }
+            \App\Services\Records\SameLengthExtras::assertForQuick($data['services'], isset($data['package_price_version_id']) ? (int) $data['package_price_version_id'] : null);
             $lead = null;
             if (isset($data['lead_id'])) {
                 $lead = \App\Models\Lead::whereKey($data['lead_id'])->lockForUpdate()->firstOrFail();
@@ -77,7 +79,7 @@ final class QuickBook
             if (isset($data['portal']['expires_at'])) RecordInput::validate($data, ['portal.expires_at' => ['date','after:now','before_or_equal:'.now()->addDays(30)->toIso8601String()]]);
             $customer = $this->customer($actor, $data);
             if (blank($data['deposit']['reference'] ?? null)) app(GuardUnreferencedQuickBooking::class)->check($customer, $data);
-            $eventInput = array_diff_key($data, array_flip(['new_customer','customer_update','deposit','portal','lead_id','lead_expected_version','promo_code']));
+            $eventInput = array_diff_key($data, array_flip(['new_customer','customer_update','deposit','portal','lead_id','lead_expected_version','promo_code','package_price_version_id']));
             $event = app(SaveEventDraft::class)->execute($actor, [...$eventInput, 'customer_id' => $customer->id]);
             \App\Services\Scheduling\DailyCapacity::assertRoom($event);
             if (filled($data['promo_code'] ?? null)) \App\Services\Campaigns\AnniversaryCampaign::redeem($actor, $data['promo_code'], $event);

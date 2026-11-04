@@ -44,13 +44,7 @@ final class TeamSlots
      */
     public static function teamSkills(Event $event): array
     {
-        foreach ($event->services()->get() as $service) {
-            $req = collect((array) $service->requirements_snapshot);
-            $kit = $req->contains(fn ($r) => ($r['kind'] ?? null) === 'equipment' && ($r['equipment_kind'] ?? null) === 'face_kit');
-            $seat = $req->contains(fn ($r) => ($r['kind'] ?? null) === 'staff' && ($r['skill'] ?? null) === 'face_painter');
-            if ($kit && ! $seat) return ['face_painter'];
-        }
-        return [];
+        return \App\Support\CrewSkills::required($event->services()->get()->flatMap(fn ($s) => $s->requirements_snapshot ?? [])->all());
     }
 
     /** Busy window of a party (setup to breakdown). */

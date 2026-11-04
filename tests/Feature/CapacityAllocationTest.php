@@ -127,6 +127,76 @@ class CapacityAllocationTest extends TestCase
         $this->assertDatabaseCount('resource_reservations', 0);
     }
 
+    public function test_face_painting_must_be_covered_by_one_of_the_three_package_seats(): void
+    {
+        $this->first->update(['skills' => ['entertainer', 'driver']]);
+        $this->second->update(['skills' => ['host', 'driver']]);
+        Resource::create(['code' => 'STAFF-3', 'name' => 'Luis Pérez', 'kind' => 'staff', 'status' => 'active', 'skills' => ['host']]);
+        Resource::create(['code' => 'KIT-1', 'name' => 'Maleta A', 'kind' => 'equipment', 'equipment_kind' => 'face_kit', 'status' => 'active']);
+        $recipe = [['kind' => 'staff', 'skill' => 'entertainer', 'quantity' => 1], ['kind' => 'staff', 'skill' => 'host', 'quantity' => 2],
+            ['kind' => 'equipment', 'equipment_kind' => 'face_kit', 'quantity' => 1]];
+        $this->assertSame('owner_approval_required', $this->allocate($this->capacity(), $recipe)['state']);
+        $this->first->update(['skills' => ['entertainer', 'driver', 'face_painter']]);
+        $result = $this->allocate($this->capacity(), $recipe);
+        $this->assertSame('available', $result['state']);
+        $this->assertCount(4, $result['assignment'], 'three people plus the kit, without inventing a fourth staff seat');
+        $this->assertContains($this->first->id, $result['assignment']);
+    }
+
+    public function test_a_spare_painter_who_cannot_cover_a_package_seat_does_not_prove_availability(): void
+    {
+        $this->first->update(['skills' => ['entertainer', 'driver']]);
+        $this->second->update(['skills' => ['host', 'driver']]);
+        Resource::create(['code' => 'STAFF-3', 'name' => 'Luis Pérez', 'kind' => 'staff', 'status' => 'active', 'skills' => ['host']]);
+        Resource::create(['code' => 'STAFF-4', 'name' => 'Sofía Herrera', 'kind' => 'staff', 'status' => 'active', 'skills' => ['face_painter']]);
+        Resource::create(['code' => 'KIT-1', 'name' => 'Maleta A', 'kind' => 'equipment', 'equipment_kind' => 'face_kit', 'status' => 'active']);
+        $recipe = [['kind' => 'staff', 'skill' => 'entertainer', 'quantity' => 1], ['kind' => 'staff', 'skill' => 'host', 'quantity' => 2],
+            ['kind' => 'equipment', 'equipment_kind' => 'face_kit', 'quantity' => 1]];
+        $this->assertSame(['state' => 'owner_approval_required', 'assignment' => []], $this->allocate($this->capacity(), $recipe));
+    }
+
+    public function test_named_confirmation_requires_the_package_team_skill_and_rolls_back_if_it_is_missing(): void
+    {
+        [$event, $input] = $this->paintParty();
+        try { app(\App\Services\Records\ConfirmCapacity::class)->execute(User::sole(), $event->id, $input); $this->fail('Confirmed without anybody who paints.'); }
+        catch (\Illuminate\Validation\ValidationException $x) { $this->assertArrayHasKey('booking', $x->errors()); }
+        $this->assertSame('draft', $event->fresh()->status);
+        $this->assertDatabaseCount('booking_evidence', 0); $this->assertDatabaseCount('resource_reservations', 0);
+        $this->first->update(['skills' => ['entertainer', 'driver', 'face_painter']]);
+        $this->assertSame('capacity_reserved', app(\App\Services\Records\ConfirmCapacity::class)->execute(User::sole(), $event->id, $input)->status);
+    }
+
+    public function test_named_confirmation_finds_the_painter_without_losing_the_driver_or_adding_a_role(): void
+    {
+        [$event, $input] = $this->paintParty();
+        $painter = Resource::create(['code' => 'STAFF-4', 'name' => 'Sofía Herrera', 'kind' => 'staff', 'status' => 'active', 'skills' => ['host', 'face_painter']]);
+        $input['resource_ids'][] = $painter->id;
+        app(\App\Services\Records\ConfirmCapacity::class)->execute(User::sole(), $event->id, $input);
+        $snapshot = \App\Models\BookingEvidence::sole()->staff_assignment_snapshot;
+        $assigned = collect($snapshot['assignments'])->where('kind', 'staff');
+        $this->assertCount(3, $assigned);
+        $this->assertContains($painter->id, $assigned->pluck('resource_id')->all());
+        $this->assertNotEmpty($snapshot['assigned_driver_ids']);
+    }
+
+    private function paintParty(): array
+    {
+        $this->first->update(['skills' => ['entertainer', 'driver']]);
+        $this->second->update(['skills' => ['host', 'driver']]);
+        $third = Resource::create(['code' => 'STAFF-3', 'name' => 'Luis Pérez', 'kind' => 'staff', 'status' => 'active', 'skills' => ['host', 'driver']]);
+        $kit = Resource::create(['code' => 'KIT-1', 'name' => 'Maleta A', 'kind' => 'equipment', 'equipment_kind' => 'face_kit', 'status' => 'active']);
+        $recipe = [['kind' => 'staff', 'skill' => 'entertainer', 'quantity' => 1], ['kind' => 'staff', 'skill' => 'host', 'quantity' => 2],
+            ['kind' => 'equipment', 'equipment_kind' => 'face_kit', 'quantity' => 1]];
+        $customer = Customer::create(['name' => 'María González', 'locale' => 'es']);
+        $event = Event::create(['customer_id' => $customer->id, 'title' => 'Cumpleaños de Sofía', 'starts_at' => $this->start, 'ends_at' => $this->start->addHour(),
+            'timezone' => 'America/Chicago', 'address' => '123 Example St', 'postal_code' => '77001', 'travel_fee_cents' => 0, 'setup_minutes' => 0, 'breakdown_minutes' => 0]);
+        EventService::create(['event_id' => $event->id, 'service_variant_id' => $this->price->service_variant_id, 'price_version_id' => $this->price->id,
+            'requirements_snapshot' => $recipe, 'duration_minutes' => 60, 'operational_ready' => true]);
+        return [$event, ['expected_version' => $event->fresh()->version, 'resource_ids' => [$this->first->id, $this->second->id, $third->id, $kit->id],
+            'payment' => ['method' => 'external_zelle', 'reference' => 'FIXTURE-PAINT-'.$event->id, 'amount_cents' => 20000, 'received_at' => now()->subMinute()->toIso8601String()],
+            'review' => ['staff_confirmed' => true, 'cargo_checked' => true, 'transfers' => []]]];
+    }
+
     public function test_a_candidate_pin_is_preserved_in_the_final_solution(): void
     {
         $result = $this->allocate($this->capacity(), $this->recipe(), [$this->second->id]);
