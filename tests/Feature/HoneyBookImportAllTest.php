@@ -59,4 +59,36 @@ class HoneyBookImportAllTest extends TestCase
         $page->call('openRow', ImportRow::where('source_line', 4)->value('id'))
             ->assertSet('data.price_version_ids', [(string) PriceVersion::where('service_variant_id', $magic->id)->value('id')])->assertSet('data.setup_minutes', 15);
     }
+
+    public function test_named_characters_cannot_disappear_when_the_matched_package_has_no_character_recipe(): void
+    {
+        $v = ServiceVariant::create(['name' => 'Photo Booth', 'status' => 'active', 'duration_minutes' => 60,
+            'requirements' => [['kind' => 'staff', 'skill' => 'operator', 'quantity' => 1]]]);
+        PriceVersion::create(['service_variant_id' => $v->id, 'amount_cents' => 40000, 'currency' => 'USD', 'created_by' => $this->owner->id]);
+        $guess = \App\Services\Imports\HoneyBookAutoMapping::guess(['services' => 'Photo Booth Station', 'characters' => 'Minnie']);
+        $this->assertNotNull($guess['reason'], 'a person must map the character instead of importing zero costume demand');
+    }
+
+    public function test_missing_operational_minutes_remain_unknown_even_beside_a_known_package(): void
+    {
+        $req = [['kind' => 'staff', 'skill' => 'host', 'quantity' => 1]];
+        $a = ServiceVariant::create(['name' => 'Paquete A', 'status' => 'active', 'duration_minutes' => 60, 'requirements' => $req, 'setup_minutes' => null, 'breakdown_minutes' => 10]);
+        $b = ServiceVariant::create(['name' => 'Paquete B', 'status' => 'active', 'duration_minutes' => 60, 'requirements' => $req, 'setup_minutes' => 15, 'breakdown_minutes' => 30]);
+        $ids = [];
+        foreach ([$a, $b] as $v) $ids[] = PriceVersion::create(['service_variant_id' => $v->id, 'amount_cents' => 40000, 'currency' => 'USD', 'created_by' => $this->owner->id])->id;
+        $this->assertSame([null, 10], ImportHoneyBook::defaultMinutes([$ids[0]]));
+        $this->assertSame([null, 30], ImportHoneyBook::defaultMinutes($ids));
+    }
+
+    public function test_two_character_packages_require_a_person_to_choose_which_package_gets_each_character(): void
+    {
+        $c = Character::create(['name' => 'Minnie Mouse', 'active' => true]);
+        foreach (['Mágico (Magic)', 'Waoo'] as $name) {
+            $v = ServiceVariant::create(['name' => $name, 'status' => 'active', 'duration_minutes' => 60, 'character_quantity' => 1, 'requirements' => [['kind' => 'staff', 'skill' => 'host', 'quantity' => 1]],
+                'character_options' => [['character_id' => $c->id, 'requirements' => [['kind' => 'costume', 'character_id' => $c->id, 'quantity' => 1], ['kind' => 'staff', 'skill' => 'performer', 'quantity' => 1]]]]]);
+            PriceVersion::create(['service_variant_id' => $v->id, 'amount_cents' => 40000, 'currency' => 'USD', 'created_by' => $this->owner->id]);
+        }
+        $guess = \App\Services\Imports\HoneyBookAutoMapping::guess(['services' => 'Magic Package; Waoo Package', 'characters' => 'Minnie']);
+        $this->assertNotNull($guess['reason'], 'do not silently assign every character to the first package');
+    }
 }

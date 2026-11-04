@@ -74,26 +74,16 @@ class ConfirmCapacity extends Page
             $this->importKey = (string) \Illuminate\Support\Str::uuid();
         }
         // Owner 2026-11-04: the package's characters come preselected (one free unit each) so confirming needs no picking.
-        $costumes = self::defaultCostumes($this->record);
+        $suggested = \App\Services\SuggestEventCostumes::for($this->record);
+        $costumes = $suggested['ids'];
         $this->form->fill(['payment' => ['method' => 'external_zelle'], 'transfers' => [], 'units' => ['costume' => $costumes],
-            'wardrobe' => self::wardrobeRows($costumes, [])]);
+            'wardrobe' => self::wardrobeRows($costumes, $suggested['wardrobe'])]);
     }
 
     /** One active, free costume unit per costume requirement of the event's services; none when a character has no free unit. */
     public static function defaultCostumes(Event $event): array
     {
-        $picked = [];
-        $busy = ResourceReservation::where('event_id', '!=', $event->id)->where('starts_at', '<', $event->ends_at)->where('ends_at', '>', $event->starts_at)->pluck('resource_id')->all();
-        foreach (\App\Models\EventService::where('event_id', $event->id)->get() as $service) {
-            foreach ((array) $service->requirements_snapshot as $req) {
-                if (($req['kind'] ?? null) !== 'costume' || empty($req['character_id'])) continue;
-                $ids = Unit::query()->where('kind', 'costume')->where('status', 'active')->where('character_id', (int) $req['character_id'])
-                    ->whereNotIn('id', [...$busy, ...$picked])->orderBy('name')->limit((int) ($req['quantity'] ?? 1))->pluck('id')->all();
-                $picked = [...$picked, ...$ids];
-            }
-        }
-
-        return array_map('intval', $picked);
+        return \App\Services\SuggestEventCostumes::for($event)['ids'];
     }
 
     /**

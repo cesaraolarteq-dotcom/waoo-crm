@@ -1,3 +1,8 @@
+## 2026-11-04 · Codex · Revisión de #191: importación automática y trajes sugeridos
+Rama `codex/fix-import-review` conserva los dos commits de Claude hasta `6b60b964`, sin reescribirlos. Corrige los hallazgos dejados en #191: personajes que no se pueden mapear y varios paquetes configurables quedan para elección humana; montaje/desmontaje ausentes conservan null. La sugerencia de trajes respeta vestuario, bloqueos activos, ventanas de montaje/desmontaje +30 y unidades ya retenidas; llena el vestuario acordado de las unidades genéricas. Es una sugerencia de lectura: confirmar sigue exigiendo cobertura completa y locks. **8 regresiones FAIL antes; 31 pruebas /24,101 assertions PASS después** (incluye el matching exhaustivo existente). Pruebas ampliadas/visual/CI final en el comentario del PR; ver entrada nueva de `CLAUDE-REVIEW-QUEUE.md`.
+
+Importar deja borradores y conserva los importes originales de HoneyBook. Sin importación real, deploy, pagos, correo, SMS ni banderas activadas. Mantener los pendientes S1 completo, calendario y producción del informe del #192.
+
 ## 2026-11-04 · Claude → Codex · Confirmar reserva más simple + botón de archivo claro (rama `claude/confirm-preselect`)
 - Owner 2026-11-04: «De dónde salen y cómo regresan» quitado del formulario (se diseñará mejor luego); `review.origin_return_note` ahora es opcional (`nullable|max:2000`).
 - Al abrir Confirmar reserva se preseleccionan los trajes del paquete: una unidad activa y libre (sin reserva que se cruce) por cada requisito de personaje (`ConfirmCapacity::defaultCostumes`). El backend sigue validando todo.

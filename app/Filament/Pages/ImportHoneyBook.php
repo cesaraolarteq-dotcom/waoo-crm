@@ -492,7 +492,8 @@ class ImportHoneyBook extends Page
     {
         $variants = ServiceVariant::whereIn('id', PriceVersion::whereIn('id', array_map('intval', $priceIds))->pluck('service_variant_id'))->get();
 
-        return $variants->isEmpty() ? [null, null] : [(int) $variants->max('setup_minutes'), (int) $variants->max('breakdown_minutes')];
+        if ($variants->isEmpty()) return [null, null];
+        return array_map(fn ($field) => $variants->contains(fn ($v) => $v->$field === null) ? null : (int) $variants->max($field), ['setup_minutes', 'breakdown_minutes']);
     }
 
     // ── 3c. Import everything the CRM can match by itself (owner 2026-11-04) ──

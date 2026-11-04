@@ -32,6 +32,10 @@ final class HoneyBookAutoMapping
         $configurable = array_keys(EventResource::configurablePrices($prices));
         $names = preg_split('/\s*,\s*/u', trim((string) ($source['characters'] ?? '')), -1, PREG_SPLIT_NO_EMPTY);
         $characters = [];
+        if ($names !== [] && $configurable === []) return ['selection' => ['price_version_ids' => $prices, 'characters' => []],
+            'reason' => 'HoneyBook trae personajes que este paquete no permite elegir. Revisa el paquete y los personajes.'];
+        if (count($configurable) > 1) return ['selection' => ['price_version_ids' => $prices, 'characters' => []],
+            'reason' => 'Hay varios paquetes con personajes. Elige los personajes de cada paquete.'];
         if ($configurable !== []) {
             if ($names === []) return ['selection' => ['price_version_ids' => $prices, 'characters' => []], 'reason' => 'HoneyBook no dice qué personaje: elígelo tú.'];
             $for = $configurable[0];

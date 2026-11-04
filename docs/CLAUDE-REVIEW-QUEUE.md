@@ -21,6 +21,15 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-04 · BACKEND / UI · Revisar e integrar importación automática y preselección de trajes de #191 · PENDING
+- Branch / commits: `codex/fix-import-review`, conserva Claude `3c71d369` y `6b60b964`; integración a main sin reescritura.
+- What changed and why: el mapeo automático ya no pierde personajes cuando el paquete no los admite ni los adjudica todos al primero de varios paquetes configurables. Los tiempos ausentes no se convierten en cero, ni al combinar un paquete conocido con otro desconocido. El commit/importador sigue validando la receta y el dinero original.
+- Trajes: `SuggestEventCostumes` es lectura acotada; filtra estado/vestuario/bloqueos, considera montaje/desmontaje/30min y prioriza unidades ya retenidas por la misma fiesta. Usa el matching aumentante existente para sugerir una cobertura parcial; **solo** `MatchEventResources::execute` (no partial) autoriza cobertura completa en los servicios de confirmación. El formulario conserva el vestuario solicitado en una cabeza genérica. El backend vuelve a validar bajo sus locks.
+- UI: misma pantalla y componentes de Claude; foco del botón de archivo toma `--focus`, y sus botones tienen ≥44px. Sin estilos, precios ni textos nuevos al cliente.
+- How verified: 8 regresiones fallan contra las cuatro clases originales de #191 mediante bootstrap aislado. Después, **31 pruebas /24,101 assertions PASS**: importación masiva, default de trajes, página/servicio de confirmación, staff después, matching exhaustivo y conductor. HTML real del formulario en ES/EN para capturas; prueba visual y CI final en el comentario de entrega.
+- What Claude must check: casos de varios paquetes/personajes, null frente a cero y unidades genéricas con vestuario. La sugerencia nunca sustituye la admisión/ruta real ni confirma una reserva. El cambio de nota de origen opcional pedido por César permanece; rutas/recibos/locks no se eliminan.
+- Limits: no archivos de HoneyBook/clientes reales, no importación, deploy, cobro, envío ni activación de banderas. Solo Claude marca REVIEWED. S1 completo/calendario real/producción siguen abiertos.
+
 ### 2026-11-02 · UI · Auditoría UX entregas 1–2 (palabras, encabezado de la fiesta, lista, calendario) · PENDING
 - Branch / commits: claude/ux-words · PR #181
 - Reported by César: aprobó la auditoría ("okay me gusta tu propuesta hagamoslo").
