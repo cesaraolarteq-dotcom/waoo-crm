@@ -202,7 +202,8 @@ class TipCoreTest extends TestCase {
     protected function tearDown():void {if($this->app)$this->app->detectEnvironment(fn()=>'testing');parent::tearDown();}
     public function test_common_native_agreement_keeps_the_legacy_tip_snapshot_and_recopy_contract():void {
         $e=$this->event->fresh();$f=$this->finance->fresh();
-        $legacy=\App\Services\Finance\MutationKey::hash(['event_id'=>$e->id,'event_version'=>$e->version,'customer_id'=>$e->customer_id,'start'=>$e->starts_at->toIso8601String(),'end'=>$e->ends_at->toIso8601String(),'finance'=>$f->getAttributes()]);
+        // The pre-upgrade fingerprint must exclude the new policy column; the production V1 format stays frozen.
+        $legacy=\App\Services\Finance\MutationKey::hash(['event_id'=>$e->id,'event_version'=>$e->version,'customer_id'=>$e->customer_id,'start'=>$e->starts_at->toIso8601String(),'end'=>$e->ends_at->toIso8601String(),'finance'=>\Illuminate\Support\Arr::except($f->getAttributes(),['deposit_percent_snapshot'])]);
         $this->getJson('/admin/api/events/'.$e->id.'/confirmed-agreement')->assertOk()->assertJsonPath('origin','crm')->assertJsonPath('snapshot_sha256',$legacy)->assertJsonPath('original_document',null);
         $g=$this->issue();$this->assertSame($legacy,TipGrant::sole()->snapshot_sha256);$key=(string)Str::uuid();$input=['expected_version'=>1,'expected_snapshot_sha256'=>$legacy];
         $this->postJson('/admin/api/tip-grants/'.$g['id'].'/reveal',$input,['Idempotency-Key'=>$key])->assertOk()->assertJsonPath('link',$g['link'])->assertHeader('Cache-Control','no-store, private');

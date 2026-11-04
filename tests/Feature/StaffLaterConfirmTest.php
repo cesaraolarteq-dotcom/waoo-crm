@@ -94,4 +94,18 @@ class StaffLaterConfirmTest extends TestCase
             $this->fail('Normal mode accepted an empty team.');
         } catch (ValidationException $x) { $this->assertArrayHasKey('booking', $x->errors()); }
     }
+
+    public function test_extra_time_makes_the_same_team_stay_longer(): void
+    {
+        // Owner 2026-11-04: «Hora extra» ($200) has no staff of its own; the party must cover package + extra.
+        $hour = app(\App\Services\Records\SaveVariant::class)->execute($this->owner, ['name' => 'Hora extra', 'status' => 'active', 'duration_minutes' => 60, 'requirements' => [], 'extends_event' => true]);
+        $p = PriceVersion::create(['service_variant_id' => $hour->id, 'amount_cents' => 10000, 'currency' => 'USD', 'created_by' => $this->owner->id]);
+        $this->assertSame(120, ServiceVariant::partyMinutes([[$this->variant, 60], [$hour, 60]]));
+        $short = $this->party('14:00');
+        EventService::create(['event_id' => $short->id, 'service_variant_id' => $hour->id, 'price_version_id' => $p->id, 'requirements_snapshot' => [], 'duration_minutes' => 60, 'operational_ready' => true, 'extends_event_snapshot' => true]);
+        try { $this->confirm($short); $this->fail('A one-hour party took a package of one hour plus an extra hour.'); }
+        catch (ValidationException $x) { $this->assertStringContainsString('120 minutos', collect($x->errors())->flatten()->first()); }
+        $short->forceFill(['ends_at' => $short->starts_at->addHours(2)])->save();
+        $this->assertSame('capacity_reserved', $this->confirm($short)->status);
+    }
 }

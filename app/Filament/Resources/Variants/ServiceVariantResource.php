@@ -63,6 +63,9 @@ class ServiceVariantResource extends Resource
                 ->helperText('Para activarlo, define primero lo que necesita.'),
             \Filament\Forms\Components\Toggle::make('offered_as_extra')->label('El cliente lo puede agregar como extra')->default(false)
                 ->helperText('Aparece en su enlace hasta 7 días antes de la fiesta, al mismo tiempo que su servicio.'),
+            // Owner 2026-11-04: «Hora extra», «+30 min» — the same team stays longer.
+            \Filament\Forms\Components\Toggle::make('extends_event')->label('Es tiempo extra (alarga la fiesta)')->default(false)
+                ->helperText('Su duración se suma a la del paquete y el mismo equipo se queda más tiempo. No necesita personal propio.'),
             Repeater::make('requirements')->label('Qué necesita (al mismo tiempo, todo el evento)')->columnSpanFull()->defaultItems(0)
                 ->addActionLabel('Agregar requisito')->columns(4)
                 ->schema(self::requirementFields()),
@@ -112,7 +115,7 @@ class ServiceVariantResource extends Resource
 
         return ['name' => trim((string) ($data['name'] ?? '')), 'long_description' => $long === '' ? null : $long, 'status' => $data['status'] ?? 'draft',
             'duration_minutes' => (int) ($data['duration_minutes'] ?? 0), 'requirements' => self::normalizeRequirements($data['requirements'] ?? []),
-            'character_quantity' => $quantity, 'character_options' => $options, 'offered_as_extra' => (bool) ($data['offered_as_extra'] ?? false),
+            'character_quantity' => $quantity, 'character_options' => $options, 'offered_as_extra' => (bool) ($data['offered_as_extra'] ?? false), 'extends_event' => (bool) ($data['extends_event'] ?? false),
             'extra_character_cents' => $quantity > 0 && filled($data['extra_character_price'] ?? null) ? (int) round(((float) $data['extra_character_price']) * 100) : null,
             // PACKAGE-TIMING: blank = unknown (null), 0 is a real zero.
             'setup_minutes' => self::minutesOrNull($data['setup_minutes'] ?? null), 'breakdown_minutes' => self::minutesOrNull($data['breakdown_minutes'] ?? null)];

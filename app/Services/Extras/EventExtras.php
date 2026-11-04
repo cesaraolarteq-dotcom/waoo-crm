@@ -41,7 +41,7 @@ final class EventExtras
         $out = [];
         // Catalog extras that fit inside the party time (they run at the same time; an extra longer than the party is not offered).
         $have = $e->services()->pluck('service_variant_id')->all();
-        foreach (ServiceVariant::where('offered_as_extra', true)->where('status', 'active')->orderBy('name')->get() as $v) {
+        foreach (ServiceVariant::where('offered_as_extra', true)->where('extends_event',false)->where('status', 'active')->orderBy('name')->get() as $v) {
             if (in_array($v->id, $have, true) || (int) $v->duration_minutes > $minutes || ! empty($v->character_options)) continue;
             $price = PriceVersion::where('service_variant_id', $v->id)->where('currency', 'USD')->orderByDesc('id')->first();
             if ($price) $out[] = ['key' => 'v'.$v->id, 'name' => $v->name, 'amount_cents' => (int) $price->amount_cents, 'description' => $v->long_description, 'requirements' => $v->requirements ?? []];

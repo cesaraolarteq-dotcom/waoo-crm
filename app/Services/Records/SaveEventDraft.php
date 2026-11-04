@@ -61,9 +61,16 @@ final class SaveEventDraft
                 $characters = $selection['characters'] ?? ($previous->get($price->id)?->characters->map(fn ($row) => $row->only(['character_id', 'quantity', 'outfit', 'note']))->all() ?? []);
                 $compiled = CharacterRecipe::compile($variant, $characters, "services.{$index}.characters");
                 $service = EventService::create(['event_id' => $event->id, 'service_variant_id' => $variant->id, 'price_version_id' => $price->id, 'requirements_snapshot' => $compiled['requirements'], 'duration_minutes' => $variant->duration_minutes, 'operational_ready' => $compiled['ready'],
+                    'extends_event_snapshot' => (bool) $variant->extends_event,
+                    'covers_event_snapshot' => SameLengthExtras::applies($variant),
                     'extra_characters' => $compiled['extra'], 'extra_character_cents' => $compiled['extra'] > 0 ? ServiceVariant::extraCharacterPrice($variant) : null]);
                 $service->characters()->createMany($compiled['characters']);
                 $auditServices[] = ['price_version_id' => $price->id, 'characters' => $compiled['characters']];
+            }
+            if (collect($timingVariants)->contains(fn ($v) => $v->extends_event)) {
+                RecordWriteRejected::unless(collect($timingVariants)->contains(fn ($v) => !$v->extends_event),422,'Selecciona servicios con requisitos completos.');
+                $needed=EventService::partyMinutes($event->services()->get());
+                RecordWriteRejected::unless($event->starts_at->diffInMinutes($event->ends_at)>=$needed,422,"La fiesta debe durar {$needed} minutos: el paquete más el tiempo extra. Ajusta la hora de fin.");
             }
             if (!$id) {
                 foreach (PackageTimingDefaults::fromVariants($timingVariants) as $field => $default) {

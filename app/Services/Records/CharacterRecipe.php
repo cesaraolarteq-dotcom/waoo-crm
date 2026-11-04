@@ -12,7 +12,8 @@ final class CharacterRecipe
     public static function validateCatalog(ServiceVariant $variant): void
     {
         $quantity = (int) ($variant->character_quantity ?? 0);
-        RecordWriteRejected::when($variant->status === 'active' && empty($variant->requirements) && $quantity === 0, 422, 'Define requisitos antes de activar el servicio.');
+        RecordWriteRejected::when($variant->extends_event && (!empty($variant->requirements) || $quantity > 0 || !empty($variant->character_options)),422,'El tiempo extra conserva el equipo del paquete; no lleva requisitos propios.');
+        RecordWriteRejected::when($variant->status === 'active' && empty($variant->requirements) && $quantity === 0 && ! $variant->extends_event, 422, 'Define requisitos antes de activar el servicio.');
         $options = $variant->character_options ?? [];
         if ($variant->status === 'active' && $quantity > 0 && $options === []) {
             throw ValidationException::withMessages(['character_options' => 'Define los personajes permitidos y sus requisitos antes de activar el servicio.']);

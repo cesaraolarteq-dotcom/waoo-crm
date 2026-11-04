@@ -119,7 +119,7 @@ class QuickBooking extends Page
                     ->minDate(now(ChicagoTime::TZ)->format('Y-m-d'))->busy(fn () => self::busyDays())
                     ->rule('date_format:Y-m-d')->rule('after_or_equal:'.now(ChicagoTime::TZ)->format('Y-m-d'))
                     ->helperText(fn (Get $get) => self::dayLine($get('date')))
-                    ->afterStateUpdated(fn (Get $get, Set $set) => EventResource::refreshTitle($get, $set)),
+                    ->afterStateUpdated(function (Get $get, Set $set) { EventResource::refreshTitle($get, $set); self::refreshDeposit($get, $set); }),
                 \App\Filament\Support\TimeSelect::make('start_time')->label('Empieza (Houston)')->required()->live()
                     ->afterStateUpdated(fn (Get $get, Set $set) => $this->fillEnd($get, $set))
                     ->helperText('El cliente la confirma en su enlace.'),
@@ -182,7 +182,7 @@ class QuickBooking extends Page
                     ->visible(fn () => \App\Services\Booking\QuickPaymentProtocol::enabled()),
                 Grid::make(3)->statePath('deposit')->columnSpanFull()->visible(fn (Get $get) => !\App\Services\Booking\QuickPaymentProtocol::enabled() || (bool) $get('deposit_received'))->schema([
                     TextInput::make('amount')->label('Monto que llegó (USD)')->prefix('$')->required()->live(onBlur: true)
-                        ->helperText('Se llena con el 50 % del total (servicios + transporte). Cámbialo si llegó otro monto.')
+                        ->helperText(fn (Get $get) => is_string($d = $get('../date')) && preg_match('/^\d{4}-\d{2}-\d{2}/', $d) && \App\Services\Scheduling\DepositPolicy::fullPayment(CarbonImmutable::parse(substr($d, 0, 10).' 12:00', ChicagoTime::TZ)) ? 'Es para hoy o mañana: se paga el 100 % (con al menos 24 h de anticipación).' : 'Se llena con el 50 % del total (servicios + transporte). Cámbialo si llegó otro monto.')
                         ->rule('regex:/^\d{1,7}(\.\d{1,2})?$/')->validationMessages(['regex' => 'Escribe solo el número, por ejemplo 250.'])
                         ->afterStateUpdated(fn (Get $get, Set $set) => $set('amount_custom', filled($get('amount')))),
                     Hidden::make('amount_custom')->default(false)->dehydrated(false),
@@ -264,28 +264,31 @@ class QuickBooking extends Page
     public function fillEnd(Get $get, Set $set): void
     {
         $start = self::hm($get('start_time'));
-        $minutes = PriceVersion::query()->whereIn('price_versions.id', array_map('intval', $get('price_version_ids') ?? []))
-            ->join('service_variants', 'service_variants.id', '=', 'price_versions.service_variant_id')->max('service_variants.duration_minutes');
+        // Package length plus any «extra time» (owner 2026-11-04).
+        $minutes = ServiceVariant::partyMinutes(PriceVersion::whereIn('id', array_map('intval', $get('price_version_ids') ?? []))->get()
+            ->map(fn ($p) => [$v = ServiceVariant::find($p->service_variant_id), (int) $v?->duration_minutes])->all());
         if ($start && $minutes && preg_match('/^\d{2}:\d{2}/', $start)) {
             $set('end_time', CarbonImmutable::createFromFormat('H:i', substr($start, 0, 5))->addMinutes((int) $minutes)->format('H:i'));
         }
     }
 
-    public static function depositDefault(array $priceIds, mixed $fee, int $extraCents = 0, int $discountCents = 0): ?string
+    public static function depositDefault(array $priceIds, mixed $fee, int $extraCents = 0, int $discountCents = 0, ?string $date = null): ?string
     {
         $ids = array_values(array_unique(array_map('intval', $priceIds)));
         if ($ids === [] || is_bool($fee) || !is_scalar($fee) || !preg_match('/^\d{1,7}(\.\d{1,2})?$/D', (string) $fee)) return null;
         $prices = PriceVersion::whereIn('id', $ids)->get(['amount_cents', 'currency']);
         if ($prices->count() !== count($ids) || $prices->contains(fn ($price) => $price->currency !== 'USD')) return null;
         $total = (int) $prices->sum('amount_cents') + $extraCents + EditServiceVariant::toCents((string) $fee) - $discountCents;
-        $target = intdiv($total, 2) + $total % 2;
+        // Owner 2026-11-04: a party for today or tomorrow is paid 100 %.
+        $full = is_string($date) && preg_match('/^\d{4}-\d{2}-\d{2}/', $date) && \App\Services\Scheduling\DepositPolicy::fullPayment(CarbonImmutable::parse(substr($date, 0, 10).' 12:00', ChicagoTime::TZ));
+        $target = $full ? $total : intdiv($total, 2) + $total % 2;
         return intdiv($target,100).'.'.str_pad((string)($target%100),2,'0',STR_PAD_LEFT);
     }
 
     public static function refreshDeposit(Get $get, Set $set): void
     {
         if ($get('deposit.amount_custom')) return;
-        $set('deposit.amount', self::depositDefault($get('price_version_ids') ?? [], $get('travel_fee'), self::extraCents($get), self::promoCents($get)));
+        $set('deposit.amount', self::depositDefault($get('price_version_ids') ?? [], $get('travel_fee'), self::extraCents($get), self::promoCents($get), $get('date')));
     }
 
     /** The client the booking is for, when an existing one is selected (a code belongs to one client). */
@@ -317,7 +320,7 @@ class QuickBooking extends Page
         $extra = EventResource::extraCharacterCents(['price_version_ids' => $this->data['price_version_ids'] ?? [], 'characters' => $this->data['characters'] ?? []]);
         $this->data['deposit']['amount'] = self::depositDefault($this->data['price_version_ids'] ?? [], $this->data['travel_fee'] ?? null, $extra,
             self::promoCentsFor($this->data['promo_code'] ?? null, ($this->data['customer_mode'] ?? null) === 'existing' && filled($this->data['customer_id'] ?? null) ? (int) $this->data['customer_id'] : null,
-                $this->data['price_version_ids'] ?? [], $extra));
+                $this->data['price_version_ids'] ?? [], $extra), $this->data['date'] ?? null);
     }
 
     /** Extra characters × the per-character amount, from the live form (the backend recounts and snapshots it on save). */

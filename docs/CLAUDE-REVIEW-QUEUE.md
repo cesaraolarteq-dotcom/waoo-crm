@@ -21,6 +21,33 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-04 · BACKEND · Parches Symfony necesarios para desbloquear audit del PR203 · PENDING
+- Branch: codex/fix-extra-time-audit. CI41900848345 falló en composer audit por avisos publicados2026-11-04. Lock actualizado solo para symfony/html-sanitizer, http-foundation, http-kernel, routing y serializer a7.4.23. Sin cambio de restricciones, política de audit, workflows o configuración del CRM.
+- How verified: audit sin avisos después, composer validate estricto PASS. Nueva suite CI requerida sobre este lock; prueba local de integración/integridad en curso. Claude: revisar límites de hosts/URLs y compatibilidad del portal con estas versiones; sin deploy/activación/envíos/cobros. Solo Claude marca REVIEWED.
+
+### 2026-11-04 · BACKEND · Expectativa histórica V1 tras columnas aditivas · PENDING
+- TipCoreTest también reconstruía el raw legacy incluyendo la columna nueva. Caso reproducido FAIL, corregido solo en la expectativa y PASS1/13; ConfirmedAgreement/EvidenceV1/TipGuard siguen intactos. Tanda con Symfony corregido28/133 PASS; unidades del shard2 4/10 PASS. Nueva punta necesita suite completa antes de fusionar.
+- Resultado final local: IntegritySchemasTest **11/68 PASS**; se conserva también el hash raw histórico de propinas excluyendo la columna nueva del fixture, sin modificar ConfirmedAgreement/TipGuard/EvidenceV1. Semana DST integrada en esta misma rama; nueva suite CI requerida antes de unir a main.
+- Branch: codex/fix-extra-time-audit. CI41884760707: checks y4/5 grupos verdes; el grupo2 falló. Reproducción aislada del test original confirma diferencia entre ORM ampliado y bytes V1.
+- Se conserva EvidenceV1 sin cambios: no se añaden columnas nuevas al sobre histórico ni se recalculan pruebas existentes. IntegritySchemasTest excluye explícitamente del lado legacy las columnas nuevas de extensión/cobertura/política y conserva comparaciones de hash, acuerdo, evidencia y no resellado. No cambia validación productiva ni relaja una guarda.
+- Claude: revisar compatibilidad de bytes tras migración, incluida la prueba de columnas ajenas. Grupo final f13b53f38/179 y ampliación33/248 PASS; resultado de integridad y CI nuevo en el PR. Sin deploy/envíos/cobros/activación; estado PENDING.
+
+### 2026-11-04 · BUG / UI · Límites de la semana de Houston durante DST · PENDING
+- Branch: `codex/fix-week-houston-dst`, sobre f13b53f. `WeekendPlan::events` calcula inicio y fin en Houston antes de convertir a UTC; una semana local tiene167/169 horas durante DST.
+- Before: perdía domingo1nov2026 23:30; incluía lunes9mar2026 00:00 en la semana anterior. Dos regresiones FAIL antes, grupo13/48 PASS después. Render1/4 y8layouts ES/EN claro/oscuro390/1280 PASS, sin desborde; capturas fuera de Git.
+- Files: WeekendPlan, WeekHoustonDstTest y documentos. Sin modificación de textos/estilos, dinero, reservas o proveedor. Claude: comprobar domingo23:30 y lunes00:00 en ambas transiciones; no confundir con la prueba de ruta real del equipo, aún pendiente. Solo Claude marca REVIEWED. Sin deploy/activación/envíos/cobros.
+
+### 2026-11-04 · BACKEND / UI · Integrar #200 sin cambiar depósitos antiguos ni perder duración operativa · PENDING
+- Branch / commits: `codex/fix-extra-time-audit`, desde main ae12637; conserva Claude43562bd3 + 3b37fde, sin reescritura. API y compatibilidad: `docs/EXTRA-TIME-DEPOSIT-REVIEW.md`.
+- What changed and why: arregla lease50 frente a objetivo100 y confirmación tardía que pretendía cobrar100 a una reserva acordada50. Primera política nativa congelada explícitamente y heredada sin cargos de cambio; objetivo de cotización nueva coherente. La API rechaza cobrar por debajo del objetivo, muestra el mismo importe en Zelle y selecciona por defecto la primera opción válida.
+- Extensiones: compilación real, exige paquete base, congela extensión/cobertura completa, usa duración efectiva para la recreadora y evita sumar otra hora al contar su duración completa. No se venden extensiones mediante el flujo simultáneo EXTRAS-01. No se crean ni cambian precios.
+- Ventana24h antes de abrir nuevo apartado/checkout, sesiones acotadas a inicio−24h. Lease/termsV1 y requests históricos se reconstruyen igual; nuevo checkout cliente schema3, solicitud interna acotada schema2. Dinero parcial/tardío válido se registra y pasa a revisión; no fabrica pago/confirmación. No se alteran contratos, textos aprobados ni política de reembolsos.
+- Files: modelos de servicio/finanzas, migraciones aditivas sin backfill histórico, SaveEventDraft/CharacterRecipe/SameLengthExtras, ConfirmBooking, lease/checkout/promoción/lectura, QuoteSnapshot/QuoteAgreement, EventExtras y formulario/selector, pruebas y documentos.
+- How verified: siete fallos antes de los arreglos, más doble suma FAIL en la combinación extensión/recreadora3h. Grupo principal32/124 PASS; navegador16/16 PASS, 50/100%, ES/EN claro/oscuro390/1280, foco y botones≥44px, sin desborde, payload correcto. Resultados ampliados y CI completo en el PR. Capturas fuera de Git; pruebas sintéticas, ningún proveedor real.
+- Ampliación PASS: pagos/finanzas/importados/solicitudes153/1,217; compatibilidad schema2/pago y cotización2/9; política y fecha reactiva4/25 (solapado). Render admin1/6 y16layouts. Los fixtures respetan cifrado del sobre y guardas de rollback; no se modifica el protocolo productivo para facilitar tests. CI completo sobre la punta final antes de fusionar.
+- What Claude must check: objetivos originales y un centavo, importados/cotizaciones aceptadas, dinero real incompleto, expiración a24h y sobres antiguos, extensión3h + recreadora3h sin convertirse en4h. Revisar borradores de crm-test previos al snapshot de extensión de forma explícita; no inferir datos históricos desde el catálogo. Cola queda PENDING; solo Claude la marca REVIEWED.
+- Limits: no deploy, cobro, envío, importación real ni activación. S1 durable conjunto y rutas/DST semanal, calendario real, anexos, adaptadores/cambio de producción siguen abiertos. La autorización de activar pagos/envíos requiere completar la migración real y desplegar con «súbelo».
+
 ### 2026-11-04 · BACKEND · Cierre #201 e informe de tres fallos bloqueantes en #200 · PENDING
 - Branch / commits: `codex/fix-staff-review-closure`, desde main de código c4eb9ad85437d0cc5f70ad3a2647a4141d71e9de. Fuente probada a8b82095617bcb5b79cb6d9aec2f90ad9b8dfe28, diff vacío tras integrar.
 - What changed and why: registra #198 integrado por #201, CI completo SUCCESS6/6 en41866319897 y el cierre explicado de #198. Duplicado41866481372 cancelado para liberar runners; se conserva el run completo exitoso, sin bypass ni workflows editados.
