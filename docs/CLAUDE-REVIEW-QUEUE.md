@@ -21,6 +21,13 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-04 · BACKEND · Cierre documental de integración #195/#196 por #197 · PENDING
+- Branch / commits: `codex/fix-night-review-closure`, desde main de código `d80545e07268ceeb63c0cbc17d73fc10b6301df9`.
+- What changed and why: registra #197, el main exacto, punta probada 58cf04b, CI completo SUCCESS 6/6 en41853379154 y el cierre explicado de #195/#196 (ancestros verificados, ramas intactas). Al fusionar quedaba un job duplicado en ejecución, sin fallos; no hubo bypass. No volver a integrar sus snapshots antiguos sobre los arreglos de vestuario y compatibilidad.
+- Files: únicamente `docs/HANDOFF.md` y esta cola. Sin runtime, tests, configuración, workflows, datos ni cambios de flags.
+- How verified: diff vacío de 58cf04b contra el main de código tras fusionar; ambos commits Claude son ancestros de main y sus PR conservaron las puntas revisadas. Este diff solo cambia los dos Markdown y pasa `git diff --check`; no se repiten pruebas de aplicación por un cierre documental. El run completo enlazado prueba exactamente la fuente ejecutable conservada.
+- What Claude must check: nueva entrega #198 @21fd0839 llegó después de #197 y aún necesita revisión de disponibilidad; no está integrada ni cubierta por la suite de #197. La corrida duplicada41853426110 también completó SUCCESS sobre58cf04b después de fusionar (12/12 checks). Continuar S1 durable, ruta real en reasignación semanal, calendario real, extras y producción. Añadido un borde de planificación heredado probado sin datos reales: para la semana 26oct–1nov2026, fin actual05:00Z vs fin Houston06:00Z (falta60min); calcular ambos límites en Houston antes de UTC. Sin deploy, cobro, envío ni activación. Solo Claude marca REVIEWED.
+
 ### 2026-11-04 · BACKEND / UI · Integrar #195/#196 y conservar compatibilidad física al confirmar y planear · PENDING
 - Branch / commits: `codex/fix-joint-capacity-hold`, base main `14192d4`, merge de Claude `b67df87` hasta `3a770fd`. Sin reescribir commits ni volver a aplicar la sugerencia antigua sobre los fixes de #193.
 - What changed and why: conserva la auditoría nocturna y la importación/confirmación masiva de Claude. Resuelve conflictos usando `SuggestEventCostumes` (vestuario/bloqueos/ventanas/wardrobe/default staff_later) y mantiene todas las regresiones de main y de Claude. Bulk confirmation deja borrador si el equipo físico ya no alcanza, preservando importes históricos y sin crear ledger.
