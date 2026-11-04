@@ -96,6 +96,9 @@ class ImportHoneyBook extends Page
     /** Rows «Importar todo» left for a person, keyed by row id → reason. */
     public array $bulkLeft = [];
 
+    /** Owner 2026-11-04: also confirm each imported party («staff later»: people are planned the week of the party). */
+    public bool $bulkConfirm = true;
+
     /** C2 money resync (HONEYBOOK-MONEY-RESYNC-API): the whole diff projection read when the panel opened, pinned. */
     #[Locked]
     public ?array $resync = null;
@@ -527,8 +530,9 @@ class ImportHoneyBook extends Page
                 'services' => $services, 'remember_mapping' => true,
                 ...($customer ? ['customer_id' => $customer->id, 'expected_customer_version' => (int) $customer->version] : ['create_separate_customer' => true, 'new_customer_locale' => 'es'])];
             try {
-                app(CommitHoneyBookEvent::class)->execute(Filament::auth()->user(), $this->batchId, $row->id, $input, (string) Str::uuid());
+                $link = app(CommitHoneyBookEvent::class)->execute(Filament::auth()->user(), $this->batchId, $row->id, $input, (string) Str::uuid());
                 $done++;
+                if ($this->bulkConfirm && ($why = $this->confirmImported($link))) $this->bulkLeft[$r['id']] = 'Importada como borrador. '.$why;
             } catch (ValidationException $e) {
                 $this->bulkLeft[$r['id']] = collect($e->errors())->flatten()->first() ?: 'No se pudo importar: ábrela.';
             } catch (RecordWriteRejected|AuthorizationException $e) {
@@ -538,7 +542,30 @@ class ImportHoneyBook extends Page
         $this->bulkReviewed = false;
         $this->resetAttestation();
         Notification::make()->{($this->bulkLeft === [] ? 'success' : 'warning')}()->title("Importadas {$done}")
-            ->body($this->bulkLeft === [] ? 'Todas quedaron como borrador. Siguiente paso: confirmar cada fiesta.' : count($this->bulkLeft).' necesitan que elijas algo: están marcadas en la lista.')->send();
+            ->body($this->bulkLeft === [] ? ($this->bulkConfirm ? 'Y confirmadas. El personal lo asignas en «Planear el fin de semana».' : 'Todas quedaron como borrador. Siguiente paso: confirmar cada fiesta.')
+                : count($this->bulkLeft).' necesitan algo de ti: están marcadas en la lista.')->send();
+    }
+
+    /** Confirms an imported draft like the «Confirmar reserva» page would in «staff later» mode; returns why not, or null. */
+    private function confirmImported(ImportedProjectLink $link): ?string
+    {
+        $event = \App\Models\Event::find($link->event_id);
+        if (! $event || $event->status !== 'draft') return null;
+        $revision = \App\Models\ImportedProjectRevision::find($link->current_revision_id);
+        $n = $revision?->normalized ?? [];
+        if (($n['paid_cents'] ?? 0) * 2 < ($n['total_cents'] ?? 0)) return 'Pagó menos del 50 %: confírmala tú con el motivo.';
+        if (\App\Services\Scheduling\BookingNoticePolicy::requiresOwnerConfirmationReason($event->starts_at)) return 'Faltan menos de 7 días: confírmala tú con el motivo.';
+        try {
+            app(\App\Services\Imports\ConfirmImportedCapacity::class)->execute(Filament::auth()->user(), $event->id, ['expected_version' => (int) $event->version, 'staff_later' => true,
+                'resource_ids' => \App\Filament\Resources\Events\Pages\ConfirmCapacity::defaultCostumes($event), 'costume_outfits' => [], 'review' => ['transfers' => []],
+                'imported_revision_id' => (int) $link->current_revision_id], (string) Str::uuid());
+        } catch (ValidationException $e) {
+            return 'No se pudo confirmar: '.(collect($e->errors())->flatten()->first() ?: 'ábrela.');
+        } catch (RecordWriteRejected|AuthorizationException $e) {
+            return 'No se pudo confirmar: '.$e->getMessage();
+        }
+
+        return null;
     }
 
     /** Like EventResource::servicesInput, keeping each character's optional outfit and note (same limits as the event form). */
