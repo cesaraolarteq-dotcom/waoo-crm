@@ -89,7 +89,7 @@ class EventMoneyPageTest extends TestCase
         Livewire::test(EventMoney::class, ['record' => $this->event->id])->callAction('zelle', $this->zelle('62.50'))->assertSee('Siguiente paso');
 
         Livewire::test(ConfirmCapacity::class, ['record' => $this->event->id])->assertSee('Depósito ya registrado')->assertDontSee('Cómo pagó')
-            ->fillForm(['units' => ['staff' => [$performer->id]], 'staff_confirmed' => true, 'cargo_checked' => true, 'origin_return_note' => 'Salen y regresan a la bodega ficticia.'])
+            ->fillForm(['staff_later' => false, 'units' => ['staff' => [$performer->id]], 'staff_confirmed' => true, 'cargo_checked' => true, 'origin_return_note' => 'Salen y regresan a la bodega ficticia.'])
             ->call('confirm')->assertHasNoFormErrors()->assertNotified('Reserva confirmada');
         $this->assertSame('capacity_reserved', $this->event->fresh()->status);
         $this->assertSame(1, DB::table('capacity_payment_links')->where('event_id', $this->event->id)->count());

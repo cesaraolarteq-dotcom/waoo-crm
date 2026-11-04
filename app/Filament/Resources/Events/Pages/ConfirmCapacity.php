@@ -76,7 +76,7 @@ class ConfirmCapacity extends Page
         // Owner 2026-11-04: the package's characters come preselected (one free unit each) so confirming needs no picking.
         $suggested = \App\Services\SuggestEventCostumes::for($this->record);
         $costumes = $suggested['ids'];
-        $this->form->fill(['payment' => ['method' => 'external_zelle'], 'transfers' => [], 'units' => ['costume' => $costumes],
+        $this->form->fill(['staff_later' => true, 'payment' => ['method' => 'external_zelle'], 'transfers' => [], 'units' => ['costume' => $costumes],
             'wardrobe' => self::wardrobeRows($costumes, $suggested['wardrobe'])]);
     }
 

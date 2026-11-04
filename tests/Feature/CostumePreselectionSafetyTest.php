@@ -66,4 +66,9 @@ class CostumePreselectionSafetyTest extends TestCase
             ->assertSet('data.units.costume', [$this->first->id])
             ->assertSet('data.wardrobe', fn ($rows) => count($rows) === 1 && array_values($rows)[0]['outfit'] === 'Rosa');
     }
+
+    public function test_confirmation_defaults_to_planning_staff_the_week_of_the_party(): void
+    {
+        Livewire::test(ConfirmCapacity::class, ['record' => $this->event->id])->assertSet('data.staff_later', true);
+    }
 }
