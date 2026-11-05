@@ -76,7 +76,9 @@ final class ConfirmBooking
                 if ($event->travel_fee_cents === null) {
                     $this->fail('Revisa el costo de transporte; no se asume cero.');
                 }
-                $total = \App\Models\PriceVersion::whereIn('id', $services->pluck('price_version_id'))->sum('amount_cents') + $event->travel_fee_cents;
+                $total = \App\Models\PriceVersion::whereIn('id', $services->pluck('price_version_id'))->sum('amount_cents') + $services->sum(fn ($s) => \App\Models\EventService::extraCents($s)) + $event->travel_fee_cents;
+                $finance = \App\Models\FinancialRevision::where('event_id',$eventId)->orderByDesc('revision')->first();
+                $firstFinance = \App\Models\FinancialRevision::where('event_id',$eventId)->orderBy('revision')->first();
                 $importLink=\App\Models\ImportedProjectLink::where('event_id',$eventId)->lockForUpdate()->first();
                 if($importLink){
                     $imported=\App\Models\ImportedProjectRevision::findOrFail($importLink->current_revision_id);
@@ -96,24 +98,23 @@ final class ConfirmBooking
                         409,'Confirma esta cotización desde sus pagos reales y su revisión financiera vigente.');
                     $total=$finance->total_cents;
                 }
-                if ((int) $data['payment']['amount_cents'] * 2 < $total && empty($data['review']['deposit_exception_reason'])) {
+                // A late administrative confirmation never changes the agreed deposit. Accepted quotes and imports keep their own evidence.
+                $target = $finance && $finance->event_version === $event->version ? $finance->deposit_target_cents
+                    : (($firstFinance ? \App\Services\Scheduling\DepositPolicy::revisionPercent($firstFinance) === 100
+                        : \App\Services\Scheduling\DepositPolicy::fullPayment($event->starts_at,$event->created_at)) ? $total : intdiv($total + 1,2));
+                if ($importLink) $target = intdiv($total + 1,2); // existing historical confirmation policy, not the new short-notice rule
+                if ((int) $data['payment']['amount_cents'] < $target && empty($data['review']['deposit_exception_reason'])) {
                     $this->fail('El depósito no alcanza el objetivo. Registra una excepción aprobada o completa el pago.');
                 }
-                // Owner 2026-11-04: today or tomorrow = paid 100 %, with at least 24 h notice (an owner exception note can still decide).
-                // Judged when the money arrived, not when the owner confirms; a HoneyBook booking was made there long before.
-                $asOf = filled($data['payment']['received_at'] ?? null) ? \Carbon\CarbonImmutable::parse($data['payment']['received_at']) : now();
-                if (! $importLink && \App\Services\Scheduling\DepositPolicy::fullPayment($event->starts_at, $asOf) && (int) $data['payment']['amount_cents'] < $total && empty($data['review']['deposit_exception_reason'])) {
-                    $this->fail('Para hoy o mañana se paga el 100 %. Registra el pago completo o una excepción.');
-                }
-                if (! $importLink && \App\Services\Scheduling\DepositPolicy::underDayNotice($event->starts_at, $asOf) && empty($data['review']['short_notice_reason'])) {
+                if (!$importLink && \App\Services\Scheduling\DepositPolicy::underDayNotice($event->starts_at) && empty($data['review']['short_notice_reason'])) {
                     $this->fail('Faltan menos de 24 horas: la regla es no reservar. Si aun así la aceptas, escribe por qué.');
                 }
                 $slots = [];
-                $needed = \App\Models\ServiceVariant::partyMinutes($services->map(fn ($s) => [\App\Models\ServiceVariant::find($s->service_variant_id), (int) $s->duration_minutes])->all());
+                $needed = \App\Models\EventService::partyMinutes($services);
                 if ($event->starts_at->diffInMinutes($event->ends_at) < $needed) $this->fail("La fiesta debe durar {$needed} minutos: el paquete más el tiempo extra. Ajusta la hora de fin.");
                 foreach ($services as $service) {
                     // Extra time (owner 2026-11-04) has no staff of its own: the party's team stays longer.
-                    $extension = (bool) \App\Models\ServiceVariant::whereKey($service->service_variant_id)->value('extends_event');
+                    $extension = $service->extends_event_snapshot;
                     if (!$service->operational_ready || (empty($service->requirements_snapshot) && !$extension)) {
                         $this->fail('Faltan requisitos operativos.');
                     }
@@ -143,7 +144,7 @@ final class ConfirmBooking
                 foreach ($staffLater ? [] : $costumes as $costume) {
                     $performerSlot = null;
                     foreach ($slots as $index => $slot) {
-                        if ($slot['kind'] === 'staff' && ($slot['skill'] ?? null) === 'performer' && !isset($slot['costume_unit_id'])) {
+                        if ($slot['kind'] === 'staff' && in_array($slot['skill'] ?? null, ['performer', 'performer_wig'], true) && !isset($slot['costume_unit_id'])) {
                             $performerSlot = $index;
                             break;
                         }
@@ -154,9 +155,18 @@ final class ConfirmBooking
                         $slots[$performerSlot]['costume_unit_id'] = $costume->id;
                     }
                 }
-                $assignment=app(MatchEventResources::class)->execute($slots, $resources->all(), function ($slot, $r) use ($compatibilities, $characters, $costumeChoices, $costumes) {
-                    return $r->kind === $slot['kind'] && ($slot['kind'] !== 'costume' || CostumeOutfits::fits($slot, $r, $characters, $costumeChoices)) && (empty($slot['skill']) || in_array($slot['skill'], $r->skills ?? [], true)) && (empty($slot['character_id']) || (int) $r->character_id === (int) $slot['character_id']) && (empty($slot['equipment_kind']) || $r->equipment_kind === $slot['equipment_kind']) && (empty($slot['costume_unit_id']) || \App\Support\CostumeWearers::allows($costumes->firstWhere('id', $slot['costume_unit_id']), $r, $characters->get((int) $costumes->firstWhere('id', $slot['costume_unit_id'])?->character_id), $compatibilities));
-                });
+                $assignment=app(MatchEventResources::class)->executeForTeam($slots, $resources->all(), function ($slot, $r) use ($compatibilities, $characters, $costumeChoices, $costumes) {
+                    if ($r->kind !== $slot['kind'] || ($slot['kind'] === 'costume' && !CostumeOutfits::fits($slot, $r, $characters, $costumeChoices))
+                        || (!empty($slot['character_id']) && (int) $r->character_id !== (int) $slot['character_id'])
+                        || (!empty($slot['equipment_kind']) && $r->equipment_kind !== $slot['equipment_kind'])) return false;
+                    // CostumeWearers owns both the default head/wig rule and recorded exceptions. Do not override it with
+                    // the generic performer label, or count an existing performer_wig seat as an extra, second person.
+                    if (!empty($slot['costume_unit_id'])) {
+                        $unit = $costumes->firstWhere('id', $slot['costume_unit_id']);
+                        return \App\Support\CostumeWearers::allows($unit, $r, $characters->get((int) $unit->character_id), $compatibilities);
+                    }
+                    return empty($slot['skill']) || in_array($slot['skill'], $r->skills ?? [], true);
+                }, $staffLater ? [] : \App\Support\CrewSkills::required($services->flatMap(fn ($s) => $s->requirements_snapshot ?? [])->all()));
                 $assignedStaff=collect(array_keys($assignment))->map(fn($i)=>$resources[$i])->where('kind','staff');
                 $driverIds=$assignedStaff->filter(fn($r)=>MatchEventResources::driver($r))->pluck('id')->values()->all();
                 if($assignedStaff->isNotEmpty()&&$driverIds===[])$this->fail('Falta alguien que maneje en el equipo.');

@@ -496,7 +496,8 @@ class ImportHoneyBook extends Page
         // Review 2026-11-05: an unknown package timing stays unknown (never a real 0); same rule as SaveEventDraft.
         $t = \App\Services\Records\PackageTimingDefaults::forPriceIds(array_map('intval', $priceIds));
 
-        return [$t['setup_minutes'], $t['breakdown_minutes']];
+        if ($variants->isEmpty()) return [null, null];
+        return array_map(fn ($field) => $variants->contains(fn ($v) => $v->$field === null) ? null : (int) $variants->max($field), ['setup_minutes', 'breakdown_minutes']);
     }
 
     // ── 3c. Import everything the CRM can match by itself (owner 2026-11-04) ──

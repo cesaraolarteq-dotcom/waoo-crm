@@ -35,6 +35,8 @@ final class AssignEventTeam
             RecordWriteRejected::unless(array_diff(array_keys($d['people']), $people->keys()->all()) === [] && array_diff(array_keys($d['costumes']), $costumeSeats->keys()->all()) === [], 422, 'El paquete cambió. Recarga la página.');
             $ids = collect($d['people'])->filter()->merge(collect($d['costumes'])->pluck('unit_id')->filter())->merge(collect($d['costumes'])->pluck('wearer_id')->filter())
                 ->merge(is_numeric($d['driver'] ?? null) ? [(int) $d['driver']] : [])->map(fn ($i) => (int) $i)->unique()->sort()->values();
+            $characterIds = Resource::whereIn('id', $ids)->where('kind', 'costume')->pluck('character_id')->filter()->unique()->sort()->values();
+            $characters = Character::whereIn('id', $characterIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
             $units = Resource::whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
             RecordWriteRejected::unless($units->count() === $ids->count(), 422, 'Una persona o traje ya no existe.');
             // Current reads after the unit locks: other parties' reservations of these people/costumes.
@@ -53,17 +55,22 @@ final class AssignEventTeam
                 $unit = ($c['unit_id'] ?? null) ? $units[(int) $c['unit_id']] : null; $wearer = ($c['wearer_id'] ?? null) ? $units[(int) $c['wearer_id']] : null;
                 $s = $costumeSeats[$seat];
                 if ($unit) {
-                    RecordWriteRejected::unless($unit->kind === 'costume' && (int) $unit->character_id === $s['character_id'], 422, 'Ese traje no es de '.$s['label'].'.');
+                    RecordWriteRejected::unless($characters->has((int) $unit->character_id) && \App\Services\CostumeOutfits::fits($s, $unit, $characters, []), 422, 'Ese traje no es de '.$s['label'].'.');
                     RecordWriteRejected::unless(TeamSlots::free($unit, $event), 409, 'El traje '.$unit->name.' ya está en otra fiesta a esa hora.');
                 }
                 if ($wearer) {
                     RecordWriteRejected::unless($unit !== null, 422, 'Elige primero el traje de '.$s['label'].'.');
-                    RecordWriteRejected::unless($wearer->kind === 'staff' && CostumeWearers::allows($unit, $wearer, Character::find($unit->character_id), $compat), 422, $wearer->name.' no puede usar el traje '.$unit->name.'.');
+                    RecordWriteRejected::unless($wearer->kind === 'staff' && CostumeWearers::allows($unit, $wearer, $characters->get((int) $unit->character_id), $compat), 422, $wearer->name.' no puede usar el traje '.$unit->name.'.');
                     RecordWriteRejected::unless(TeamSlots::free($wearer, $event), 409, $wearer->name.' ya tiene otra fiesta o un bloqueo a esa hora.');
                     RecordWriteRejected::unless(! in_array($wearer->id, $team, true), 422, $wearer->name.' está en dos puestos de la misma fiesta.');
                     $team[] = $wearer->id;
                 }
                 $costumes[] = ['key' => $seat, 'character_id' => $s['character_id'], 'unit_id' => $unit?->id, 'wearer_id' => $wearer?->id];
+            }
+            // Partial planning remains possible. A full roster cannot silently omit a package-wide capability.
+            if (count($team) === count($need['people']) + count($need['costumes'])) {
+                $missing = \App\Support\CrewSkills::missing($need['team_skills'] ?? [], $units->whereIn('id', $team));
+                RecordWriteRejected::unless($missing === [], 422, 'Falta: '.collect($missing)->map(fn ($s) => \App\Filament\Support\Labels::label(\App\Filament\Support\Labels::SKILL, $s))->implode(', ').'.');
             }
             $external = ($d['driver'] ?? null) === 'external';
             $driver = is_numeric($d['driver'] ?? null) ? $units[(int) $d['driver']] : null;

@@ -70,7 +70,7 @@ final class QuickStripeCheckoutRequests
         try {
             $p = $request->envelope;
             RecordWriteRejected::unless(is_array($p) && count($p) === count(self::KEYS) && array_diff(self::KEYS, array_keys($p)) === []
-                && $p['schema_version'] === 1 && is_string($p['request_id']) && Str::isUuid($p['request_id'])
+                && in_array($p['schema_version'],[1,2],true) && is_string($p['request_id']) && Str::isUuid($p['request_id'])
                 && $p['request_id'] === $request->id && $p['lease_id'] === $lease->id
                 && $request->quick_stripe_lease_id === $lease->id && $p['event_id'] === $request->event_id
                 && $p['event_id'] === $lease->event_id && $p['customer_id'] === $request->customer_id
@@ -108,6 +108,7 @@ final class QuickStripeCheckoutRequests
             self::safeOrigin($p['origin']);
             $sorted = $p['requested_methods']; sort($sorted, SORT_STRING);
             $expiry = $terms->checkoutExpiresAt(CarbonImmutable::createFromTimestampUTC($p['created_at']));
+            if($p['schema_version']===2)$expiry=\App\Services\Scheduling\DepositPolicy::checkoutExpiry($expiry,CarbonImmutable::parse($source['window']['party_start']),$p['created_at']);
             $date = CarbonImmutable::parse($source['window']['party_start'])->setTimezone('America/Chicago')->format('Y-m-d');
             RecordWriteRejected::unless($sorted === $p['requested_methods'] && $p['parameters'] === self::parameters(
                 $request->id, $p['event_id'], $money, $date, $p['origin'], $sorted, $expiry),

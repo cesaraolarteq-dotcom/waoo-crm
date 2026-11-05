@@ -68,6 +68,37 @@ class CutoverTransferTest extends TestCase
         try { $this->activate($set); $this->fail('Second switch accepted.'); } catch (RecordWriteRejected $e) { $this->assertSame(409, $e->status); }
     }
 
+    public function test_two_owners_switching_the_same_group_create_exactly_one_complete_transfer(): void
+    {
+        if (DB::connection()->getDriverName() !== 'mysql') $this->markTestSkipped('Real row-lock concurrency requires MariaDB.');
+        $a = $this->openingMember('RACE-A'); $b = $this->openingMember('RACE-B');
+        $versions = Event::whereIn('id', [$a->event_id, $b->event_id])->pluck('version', 'id')->all();
+        $set = $this->prepareOpeningSet();
+        $other = \App\Models\User::factory()->create(['role' => 'owner_admin', 'active' => true,
+            'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'), 'two_factor_confirmed_at' => now()]);
+        $input = ['opening_set_id' => $set->id, 'expected_opening_set_sha256' => $set->payload_sha256, 'owner_confirms_switch' => true];
+        $workers = [];
+        foreach ([$this->owner->id, $other->id] as $actorId) {
+            $key = (string) Str::uuid();
+            $workers[] = static function () use ($actorId, $input, $key) {
+                try { app(ActivateCutoverTransfer::class)->execute(\App\Models\User::findOrFail($actorId), $input, $key); return 'transferred'; }
+                catch (RecordWriteRejected $e) { return $e->status === 409 ? 'conflict' : 'unexpected'; }
+            };
+        }
+        $results = \Tests\Support\ConcurrentWorkers::run($workers); sort($results);
+        $this->assertSame(['conflict', 'transferred'], $results);
+        $this->assertDatabaseCount('cutover_transfers', 1);
+        $this->assertDatabaseCount('cutover_financial_bindings', 2);
+        $this->assertDatabaseCount('cutover_active_openings', 2);
+        $this->assertSame($versions, Event::whereIn('id', array_keys($versions))->pluck('version', 'id')->all());
+        foreach (array_keys($versions) as $id) {
+            $this->assertSame('crm', Event::findOrFail($id)->responsible_system);
+            $this->assertNotNull(EffectiveOpeningAgreement::find(Event::findOrFail($id)));
+            $this->assertSame(1, FinancialRevision::where('event_id', $id)->count());
+        }
+        $this->assertSame(0, LedgerEntry::count(), 'source money is never duplicated as a CRM receipt');
+    }
+
     public function test_a_stale_screen_or_an_expired_review_refuses_without_partial_writes(): void
     {
         $this->openingMember('TRANSFER-C'); $set = $this->prepareOpeningSet();

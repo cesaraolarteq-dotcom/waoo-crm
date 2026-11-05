@@ -110,6 +110,38 @@ class WeekendPlanTest extends TestCase
         Livewire::test(\App\Filament\Pages\WeekendPlan::class)->assertSee('Completo');
     }
 
+    public function test_reserved_costumes_are_prefilled_in_the_seat_of_the_requested_outfit(): void
+    {
+        $e = $this->party('2026-11-07 14:00', elsa: true);
+        $service = $e->services()->sole(); $recipe = $service->requirements_snapshot;
+        $recipe[2]['outfit'] = 'Azul';
+        $recipe[] = ['kind' => 'costume', 'character_id' => $this->elsa->id, 'outfit' => 'Rosa', 'quantity' => 1];
+        $service->forceFill(['requirements_snapshot' => $recipe])->save();
+        $rosa = Resource::where('code', 'ELSA-1')->firstOrFail(); $rosa->update(['name' => 'A Rosa', 'outfit' => 'Rosa']);
+        $azul = Resource::create(['code' => 'ELSA-2', 'name' => 'Z Azul', 'kind' => 'costume', 'status' => 'active', 'character_id' => $this->elsa->id, 'outfit' => 'Azul']);
+        foreach ([$rosa, $azul] as $unit) ResourceReservation::create(['event_id' => $e->id, 'resource_id' => $unit->id, 'starts_at' => $e->starts_at, 'ends_at' => $e->ends_at]);
+        $seats = TeamSlots::for($e)['costumes'];
+        Livewire::test(\App\Filament\Pages\WeekendPlan::class)
+            ->assertSet('picks.'.$e->id.'.costumes.'.$seats[0]['key'].'.unit_id', $azul->id)
+            ->assertSet('picks.'.$e->id.'.costumes.'.$seats[1]['key'].'.unit_id', $rosa->id);
+        $this->assertDatabaseCount('event_team_plans', 0, null);
+    }
+
+    public function test_saving_the_team_cannot_replace_the_agreed_outfit_with_another_outfit(): void
+    {
+        $e = $this->party('2026-11-07 14:00', elsa: true);
+        $service = $e->services()->sole(); $recipe = $service->requirements_snapshot; $recipe[2]['outfit'] = 'Azul';
+        $service->forceFill(['requirements_snapshot' => $recipe])->save();
+        $unit = Resource::where('code', 'ELSA-1')->firstOrFail(); $unit->update(['outfit' => 'Rosa']);
+        $seat = TeamSlots::for($e)['costumes'][0]['key'];
+        try {
+            $this->save($e, ['people' => [], 'costumes' => [$seat => ['unit_id' => $unit->id]]]);
+            $this->fail('The team plan replaced Azul with Rosa.');
+        } catch (\App\Exceptions\RecordWriteRejected $x) { $this->assertSame(422, $x->status); }
+        $this->assertDatabaseCount('event_team_plans', 0);
+        $this->assertDatabaseCount('resource_reservations', 0);
+    }
+
     public function test_each_person_sees_their_seat_in_their_staff_week(): void
     {
         $a = $this->party('2026-11-07 14:00', elsa: true);
@@ -138,5 +170,32 @@ class WeekendPlanTest extends TestCase
         $team = app(SuggestWeekendTeams::class)->execute([$e->fresh()])[$e->id]['people'];
         $this->assertContains($painter->id, array_values($team));
         Livewire::test(\App\Filament\Pages\WeekendPlan::class)->call('suggest')->assertDontSee('Alguien que pinte caritas');
+    }
+
+    public function test_a_complete_team_cannot_be_saved_without_the_required_team_skill(): void
+    {
+        $e = $this->party('2026-11-07 15:00');
+        $e->services()->sole()->forceFill(['requirements_snapshot' => [['kind' => 'staff', 'skill' => 'entertainer', 'quantity' => 1],
+            ['kind' => 'staff', 'skill' => 'host', 'quantity' => 2], ['kind' => 'equipment', 'equipment_kind' => 'face_kit', 'quantity' => 1]]])->save();
+        $seats = array_column(TeamSlots::for($e)['people'], 'key');
+        $team = ['people' => array_combine($seats, array_map(fn ($code) => Resource::where('code', $code)->value('id'), ['CESAR', 'NICOLE-HERNANDEZ', 'LUIS-PEREZ']))];
+        try { $this->save($e, $team); $this->fail('A complete crew was saved without anybody who can paint.'); }
+        catch (\App\Exceptions\RecordWriteRejected $x) { $this->assertSame(422, $x->status); }
+        $this->assertDatabaseCount('event_team_plans', 0); $this->assertDatabaseCount('resource_reservations', 0);
+        Resource::where('code', 'CESAR')->firstOrFail()->update(['skills' => ['entertainer', 'host', 'driver', 'face_painter']]);
+        $plan = $this->save($e, $team);
+        $this->assertCount(3, $plan->slots);
+    }
+
+    public function test_partial_team_planning_still_allows_saving_progress_without_claiming_it_complete(): void
+    {
+        $e = $this->party('2026-11-07 15:00');
+        $service = $e->services()->sole();
+        $service->forceFill(['requirements_snapshot' => [...$service->requirements_snapshot,
+            ['kind' => 'equipment', 'equipment_kind' => 'face_kit', 'quantity' => 1]]])->save();
+        $seat = TeamSlots::for($e)['people'][0]['key'];
+        $this->save($e, ['people' => [$seat => Resource::where('code', 'CESAR')->value('id')]]);
+        $this->assertDatabaseCount('event_team_plans', 1);
+        Livewire::test(\App\Filament\Pages\WeekendPlan::class)->assertSee('Alguien que pinte caritas');
     }
 }

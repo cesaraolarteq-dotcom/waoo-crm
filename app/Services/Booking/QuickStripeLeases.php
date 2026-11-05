@@ -38,7 +38,8 @@ final class QuickStripeLeases
     public static function financialHash(FinancialRevision $revision):string
     {
         return MutationKey::hash(['schema_version'=>1,'revision'=>$revision->only(['id','event_id','revision','event_version','currency','lines_snapshot',
-            'subtotal_cents','travel_fee_cents','discount_cents','discounts_snapshot','tax_cents','customer_fee_cents','total_cents','deposit_target_cents','balance_due_at','quote_revision_id','created_by'])]);
+            'subtotal_cents','travel_fee_cents','discount_cents','discounts_snapshot','tax_cents','customer_fee_cents','total_cents','deposit_target_cents','balance_due_at','quote_revision_id','created_by']),
+            ...($revision->deposit_percent_snapshot!==null?['deposit_percent_snapshot'=>$revision->deposit_percent_snapshot]:[])]);
     }
     public static function eventHash(Event $event):string
     {

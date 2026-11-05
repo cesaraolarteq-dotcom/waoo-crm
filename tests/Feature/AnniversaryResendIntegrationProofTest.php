@@ -70,4 +70,56 @@ class AnniversaryResendIntegrationProofTest extends TestCase
         Http::assertNothingSent();
         $this->assertNull(AnniversaryCode::sole()->sent_at);
     }
+
+    private function changeAfterPlanning(\Closure $change): void
+    {
+        Http::fake(['https://api.resend.com/emails' => Http::response(['id' => '11111111-2222-4333-8444-555555555555'], 200)]);
+        OutboundMessage::created(function (OutboundMessage $message) use ($change) {
+            if ($message->template_key === 'anniversary_main') $change();
+        });
+        try {
+            $this->assertSame(1, app(AnniversaryMail::class)->sendDue()['blocked']);
+            Http::assertNothingSent();
+            $this->assertSame('blocked', OutboundMessageState::sole()->status);
+            $this->assertSame(0, app(AnniversaryMail::class)->sendDue()['sent'], 'a blocked immutable intent is never replayed');
+        } finally { OutboundMessage::flushEventListeners(); }
+    }
+
+    public function test_the_campaign_switch_is_rechecked_after_planning(): void
+    {
+        $this->changeAfterPlanning(fn () => config(['waoo.anniversary_mail_enabled' => false]));
+    }
+
+    public function test_a_changed_contact_cannot_receive_a_frozen_campaign(): void
+    {
+        $this->changeAfterPlanning(fn () => $this->client->update(['email' => 'changed@example.test']));
+    }
+
+    public function test_a_code_that_expires_after_planning_is_not_sent(): void
+    {
+        $this->changeAfterPlanning(fn () => AnniversaryCode::query()->update(['expires_at' => now()->subSecond()]));
+    }
+
+    public function test_opt_out_after_claim_but_before_transport_blocks_delivery(): void
+    {
+        Http::fake(['https://api.resend.com/emails' => Http::response(['id' => '11111111-2222-4333-8444-555555555555'], 200)]);
+        OutboundMessageState::updated(function (OutboundMessageState $state) {
+            if ($state->status === 'dispatching') $this->client->forceFill(['promo_opt_out_at' => now()])->save();
+        });
+        try {
+            $this->assertSame(1, app(AnniversaryMail::class)->sendDue()['blocked']);
+            Http::assertNothingSent();
+            $this->assertSame('blocked', OutboundMessageState::sole()->status);
+        } finally { OutboundMessageState::flushEventListeners(); }
+    }
+
+    public function test_a_campaign_warning_without_an_event_keeps_inicio_usable(): void
+    {
+        $this->actingAs($this->owner);
+        Http::fake(['https://api.resend.com/emails' => fn () => throw new \Illuminate\Http\Client\ConnectionException('timeout')]);
+        $this->assertSame(1, app(AnniversaryMail::class)->sendDue()['unknown']);
+        \Livewire\Livewire::test(\App\Filament\Pages\Dashboard::class)
+            ->assertSee('Correos por revisar')
+            ->assertSee(\App\Filament\Resources\Customers\CustomerResource::getUrl('view', ['record' => $this->client->id]), false);
+    }
 }

@@ -162,8 +162,17 @@ class Dashboard extends BaseDashboard
             // Bounces only in their own card; other warnings say honestly that the result is unknown or blocked.
             $read = app(\App\Services\Mail\ReadOutboundMail::class);
             $owner = \Filament\Facades\Filament::auth()->user();
-            $item = fn ($m) => ['label' => (Event::whereKey($m['event_id'])->value('title') ?? 'Evento').' · '.(\App\Filament\Support\MailUi::TEMPLATES[$m['template_key']] ?? $m['template_key'])
-                .' · '.(\App\Filament\Support\MailUi::STATUS[$m['status']] ?? $m['status']), 'url' => EventResource::getUrl('view', ['record' => $m['event_id']])];
+            $item = function ($m) {
+                $label = $m['event_id'] ? Event::whereKey($m['event_id'])->value('title') : \App\Models\Customer::whereKey($m['customer_id'] ?? null)->value('name');
+                $url = match (true) {
+                    $m['event_id'] !== null => EventResource::getUrl('view', ['record' => $m['event_id']]),
+                    ($m['customer_id'] ?? null) !== null => \App\Filament\Resources\Customers\CustomerResource::getUrl('view', ['record' => $m['customer_id']]),
+                    ($m['lead_id'] ?? null) !== null => Leads::getUrl(),
+                    default => EmailTemplates::getUrl(),
+                };
+                return ['label' => ($label ?: 'Mensaje').' · '.(\App\Filament\Support\MailUi::MESSAGE_NAMES[$m['template_key']] ?? $m['template_key'])
+                    .' · '.(\App\Filament\Support\MailUi::STATUS[$m['status']] ?? $m['status']), 'url' => $url];
+            };
             $cards[] = ['tone' => 'bad', 'title' => 'Correos que rebotaron', 'text' => 'No llegaron. Confirma el correo del cliente por WhatsApp; no se reenvía solo.',
                 'items' => collect($read->warnings($owner, ['status' => 'bounced', 'per_page' => 50])['data'])->map($item)->all()];
             $review = collect(['complained', 'delivery_unknown', 'dispatching', 'blocked'])->flatMap(fn ($st) => $read->warnings($owner, ['status' => $st, 'per_page' => 50])['data']);

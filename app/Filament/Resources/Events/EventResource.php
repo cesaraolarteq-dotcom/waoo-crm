@@ -320,18 +320,22 @@ class EventResource extends Resource
     public const EVENT_TYPES = ['birthday' => 'Cumpleaños', 'baby_shower' => 'Baby shower', 'gender_reveal' => 'Gender reveal', 'corporate' => 'Corporativo', 'other' => 'Otro'];
 
     /** Extras sold «for the same time as the package»: each one is swapped for its version with the package's duration, when it exists. */
-    public const SAME_LENGTH_EXTRAS = ['Recreadora extra'];
+    public const SAME_LENGTH_EXTRAS = \App\Services\Records\SameLengthExtras::FAMILIES;
 
     public static function matchPackageDuration(mixed $packageId, array $extraIds): array
     {
         $package = filled($packageId) ? ServiceVariant::find(PriceVersion::whereKey((int) $packageId)->value('service_variant_id')) : null;
         if (! $package) return $extraIds;
+        $minutes=(int)$package->duration_minutes+(int)PriceVersion::whereIn('id',array_map('intval',$extraIds))->get()
+            ->sum(fn($p)=>($v=ServiceVariant::find($p->service_variant_id))?->extends_event ? (int)$v->duration_minutes : 0);
 
-        return array_values(array_map(function ($id) use ($package) {
+        return array_values(array_map(function ($id) use ($minutes) {
             $variant = ServiceVariant::find(PriceVersion::whereKey((int) $id)->value('service_variant_id'));
-            $family = $variant ? collect(self::SAME_LENGTH_EXTRAS)->first(fn ($f) => str_starts_with($variant->name, $f)) : null;
-            if (! $family || (int) $variant->duration_minutes === (int) $package->duration_minutes) return (string) $id;
-            $match = ServiceVariant::where('name', 'like', $family.'%')->where('status', 'active')->where('duration_minutes', $package->duration_minutes)->first();
+            $family = $variant && \App\Services\Records\SameLengthExtras::applies($variant) ? self::SAME_LENGTH_EXTRAS[0] : null;
+            if (! $family || (int) $variant->duration_minutes === $minutes) return (string) $id;
+            $matches = ServiceVariant::where('name', 'like', $family.'%')->where('status', 'active')->where('duration_minutes', $minutes)->get()
+                ->filter(fn ($v) => \App\Services\Records\SameLengthExtras::applies($v))->take(2);
+            $match = $matches->count() === 1 ? $matches->first() : null;
             $price = $match ? PriceVersion::where('service_variant_id', $match->id)->orderByDesc('id')->value('id') : null;
 
             return (string) ($price ?? $id);

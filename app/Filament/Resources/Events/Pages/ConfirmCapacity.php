@@ -74,34 +74,16 @@ class ConfirmCapacity extends Page
             $this->importKey = (string) \Illuminate\Support\Str::uuid();
         }
         // Owner 2026-11-04: the package's characters come preselected (one free unit each) so confirming needs no picking.
-        $costumes = self::defaultCostumes($this->record);
-        // fill() replaces field defaults, so the recommended «staff later» must be set here (it was silently off).
+        $suggested = \App\Services\SuggestEventCostumes::for($this->record);
+        $costumes = $suggested['ids'];
         $this->form->fill(['staff_later' => true, 'payment' => ['method' => 'external_zelle'], 'transfers' => [], 'units' => ['costume' => $costumes],
-            'wardrobe' => self::wardrobeRows($costumes, [])]);
+            'wardrobe' => self::wardrobeRows($costumes, $suggested['wardrobe'])]);
     }
 
     /** One active, free costume unit per costume requirement of the event's services; none when a character has no free unit. */
     public static function defaultCostumes(Event $event): array
     {
-        // Costumes already set aside for this party (Reserva rápida hold) come first and are always kept.
-        $held = Unit::query()->whereIn('id', ResourceReservation::where('event_id', $event->id)->pluck('resource_id'))->where('kind', 'costume')->get();
-        $picked = [];
-        $busy = ResourceReservation::where('event_id', '!=', $event->id)->where('starts_at', '<', $event->ends_at)->where('ends_at', '>', $event->starts_at)->pluck('resource_id')->all();
-        foreach (\App\Models\EventService::where('event_id', $event->id)->get() as $service) {
-            foreach ((array) $service->requirements_snapshot as $req) {
-                if (($req['kind'] ?? null) !== 'costume' || empty($req['character_id'])) continue;
-                $need = (int) ($req['quantity'] ?? 1);
-                $mine = $held->where('character_id', (int) $req['character_id'])->whereNotIn('id', $picked)->take($need)->pluck('id')->all();
-                $picked = [...$picked, ...$mine];
-                if (($need -= count($mine)) <= 0) continue;
-                $ids = Unit::query()->where('kind', 'costume')->where('status', 'active')->where('character_id', (int) $req['character_id'])
-                    ->whereNotIn('id', [...$busy, ...$picked])->orderBy('name')->limit($need)->pluck('id')->all();
-                $picked = [...$picked, ...$ids];
-            }
-        }
-
-        // A held unit outside the package's requirements still has to be sent (the hold check refuses otherwise).
-        return array_map('intval', array_values(array_unique([...$picked, ...$held->pluck('id')->all()])));
+        return \App\Services\SuggestEventCostumes::for($event)['ids'];
     }
 
     /**
@@ -189,7 +171,7 @@ class ConfirmCapacity extends Page
                     Radio::make('choice')->label('Esa hora se repite ese día: ¿cuál?')->options(ChicagoTime::CHOICES)->required()->columnSpanFull()
                         ->visible(fn (Get $get) => ChicagoTime::isAmbiguous($get('date'), $get('time'))),
                 ]),
-                Textarea::make('deposit_exception_reason')->label(fn () => \App\Services\Scheduling\DepositPolicy::fullPayment($this->record->starts_at) ? 'Por qué se acepta menos del 100 % (fiesta para hoy o mañana)' : 'Por qué se acepta menos del 50 %')->minLength(10)->maxLength(2000)->required()->columnSpanFull()
+                Textarea::make('deposit_exception_reason')->label(fn () => \App\Services\Scheduling\DepositPolicy::fullPayment($this->record->starts_at, $this->record->created_at) ? 'Por qué se acepta menos del 100 % (fiesta para hoy o mañana)' : 'Por qué se acepta menos del 50 %')->minLength(10)->maxLength(2000)->required()->columnSpanFull()
                     ->visible(fn (Get $get) => $this->isBelowTarget($get('payment.amount'))),
             ]),
             Section::make('3. Revisión')->columns(2)
@@ -427,7 +409,7 @@ class ConfirmCapacity extends Page
 
         $cents = EditServiceVariant::toCents($amount);
         // Today or tomorrow is paid 100 % (owner 2026-11-04): anything less needs the exception note too.
-        return $cents * 2 < $total || (\App\Services\Scheduling\DepositPolicy::fullPayment($this->record->starts_at) && $cents < $total);
+        return $cents * 2 < $total || (\App\Services\Scheduling\DepositPolicy::fullPayment($this->record->starts_at, $this->record->created_at) && $cents < $total);
     }
 
     private function depositHint(): string

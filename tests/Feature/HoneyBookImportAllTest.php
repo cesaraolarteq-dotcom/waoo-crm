@@ -62,6 +62,38 @@ class HoneyBookImportAllTest extends TestCase
             ->assertSet('data.price_version_ids', [(string) PriceVersion::where('service_variant_id', $magic->id)->value('id')])->assertSet('data.setup_minutes', 15);
     }
 
+    public function test_named_characters_cannot_disappear_when_the_matched_package_has_no_character_recipe(): void
+    {
+        $v = ServiceVariant::create(['name' => 'Photo Booth', 'status' => 'active', 'duration_minutes' => 60,
+            'requirements' => [['kind' => 'staff', 'skill' => 'operator', 'quantity' => 1]]]);
+        PriceVersion::create(['service_variant_id' => $v->id, 'amount_cents' => 40000, 'currency' => 'USD', 'created_by' => $this->owner->id]);
+        $guess = \App\Services\Imports\HoneyBookAutoMapping::guess(['services' => 'Photo Booth Station', 'characters' => 'Minnie']);
+        $this->assertNotNull($guess['reason'], 'a person must map the character instead of importing zero costume demand');
+    }
+
+    public function test_missing_operational_minutes_remain_unknown_even_beside_a_known_package(): void
+    {
+        $req = [['kind' => 'staff', 'skill' => 'host', 'quantity' => 1]];
+        $a = ServiceVariant::create(['name' => 'Paquete A', 'status' => 'active', 'duration_minutes' => 60, 'requirements' => $req, 'setup_minutes' => null, 'breakdown_minutes' => 10]);
+        $b = ServiceVariant::create(['name' => 'Paquete B', 'status' => 'active', 'duration_minutes' => 60, 'requirements' => $req, 'setup_minutes' => 15, 'breakdown_minutes' => 30]);
+        $ids = [];
+        foreach ([$a, $b] as $v) $ids[] = PriceVersion::create(['service_variant_id' => $v->id, 'amount_cents' => 40000, 'currency' => 'USD', 'created_by' => $this->owner->id])->id;
+        $this->assertSame([null, 10], ImportHoneyBook::defaultMinutes([$ids[0]]));
+        $this->assertSame([null, 30], ImportHoneyBook::defaultMinutes($ids));
+    }
+
+    public function test_two_character_packages_require_a_person_to_choose_which_package_gets_each_character(): void
+    {
+        $c = Character::create(['name' => 'Minnie Mouse', 'active' => true]);
+        foreach (['Mágico (Magic)', 'Waoo'] as $name) {
+            $v = ServiceVariant::create(['name' => $name, 'status' => 'active', 'duration_minutes' => 60, 'character_quantity' => 1, 'requirements' => [['kind' => 'staff', 'skill' => 'host', 'quantity' => 1]],
+                'character_options' => [['character_id' => $c->id, 'requirements' => [['kind' => 'costume', 'character_id' => $c->id, 'quantity' => 1], ['kind' => 'staff', 'skill' => 'performer', 'quantity' => 1]]]]]);
+            PriceVersion::create(['service_variant_id' => $v->id, 'amount_cents' => 40000, 'currency' => 'USD', 'created_by' => $this->owner->id]);
+        }
+        $guess = \App\Services\Imports\HoneyBookAutoMapping::guess(['services' => 'Magic Package; Waoo Package', 'characters' => 'Minnie']);
+        $this->assertNotNull($guess['reason'], 'do not silently assign every character to the first package');
+    }
+
     public function test_import_all_can_confirm_in_staff_later_mode_and_explains_what_it_left(): void
     {
         ServiceVariant::create(['name' => 'Photo Booth', 'status' => 'active', 'duration_minutes' => 60, 'setup_minutes' => 60, 'breakdown_minutes' => 30,
@@ -76,6 +108,23 @@ class HoneyBookImportAllTest extends TestCase
         $this->assertSame(2, ImportedProjectLink::count());
         $statuses = Event::orderBy('id')->pluck('status')->all();
         $this->assertSame(['capacity_reserved', 'draft'], $statuses);
+        $this->assertDatabaseCount('ledger_entries', 0);
+    }
+
+    public function test_bulk_confirmation_keeps_the_second_import_as_draft_when_the_only_equipment_is_taken(): void
+    {
+        $v = ServiceVariant::create(['name' => 'Photo Booth', 'status' => 'active', 'duration_minutes' => 60, 'setup_minutes' => 15, 'breakdown_minutes' => 15,
+            'requirements' => [['kind' => 'equipment', 'equipment_kind' => 'photo_booth', 'quantity' => 1], ['kind' => 'staff', 'skill' => 'operator', 'quantity' => 1]]]);
+        PriceVersion::create(['service_variant_id' => $v->id, 'amount_cents' => 40000, 'currency' => 'USD', 'created_by' => $this->owner->id]);
+        \App\Models\Resource::create(['code' => 'BOOTH-1', 'name' => 'Cabina A', 'kind' => 'equipment', 'equipment_kind' => 'photo_booth', 'status' => 'active']);
+        \App\Models\Resource::create(['code' => 'OP-1', 'name' => 'Ana Rodríguez', 'kind' => 'staff', 'status' => 'active', 'skills' => ['operator', 'driver']]);
+        $rows = [];
+        foreach ([1, 2] as $i) $rows[] = $this->futureRow(['honeybook_project_id' => 'HB-PHYSICAL-'.$i, 'services' => 'Photo Booth Station', 'characters' => '',
+            'client_email' => 'physical'.$i.'@example.test', 'client_phone' => '+1346555011'.$i]);
+        Livewire::test(ImportHoneyBook::class)->set('csv', $this->futureFile($rows))->call('stageFile')->assertHasNoErrors()
+            ->set('bulkReviewed', true)->call('importAll')->assertSee('No se pudo confirmar');
+        $this->assertSame(['capacity_reserved', 'draft'], Event::orderBy('id')->pluck('status')->all());
+        $this->assertSame([6000, 6000], \App\Models\ImportedProjectRevision::orderBy('id')->get()->map(fn ($r) => $r->normalized['paid_cents'])->all());
         $this->assertDatabaseCount('ledger_entries', 0);
     }
 }

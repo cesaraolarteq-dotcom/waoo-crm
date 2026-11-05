@@ -33,7 +33,7 @@ final class QuoteSnapshot
             $lines[] = ['price_version_id' => $price->id, 'service_variant_id' => $variant->id, 'name' => $variant->name,
                 'long_description' => $variant->long_description, 'duration_minutes' => $service->duration_minutes,
                 'quantity' => 1, 'amount_cents' => $price->amount_cents + \App\Models\EventService::extraCents($service), 'characters' => $characters, 'requirements_snapshot' => $service->requirements_snapshot,
-                ...\App\Models\EventService::extraSnapshot($service, $price->amount_cents)];
+                ...\App\Models\EventService::extraSnapshot($service, $price->amount_cents), ...($service->extends_event_snapshot ? ['extends_event_snapshot'=>true] : []), ...($service->covers_event_snapshot ? ['covers_event_snapshot'=>true] : [])];
             $subtotal += $price->amount_cents + \App\Models\EventService::extraCents($service);
         }
         $discounts = []; $discountTotal = 0;
@@ -51,6 +51,6 @@ final class QuoteSnapshot
                 'timezone' => $event->timezone, ...($event->time_tbd ? ['time_tbd' => true] : []), 'address' => $event->address, 'postal_code' => $event->postal_code, ...($event->billing_company!==null || $event->billing_company_version>0 ? ['billing_company'=>$event->billing_company,'billing_company_version'=>$event->billing_company_version] : [])],
             'lines_snapshot' => $lines, 'travel_fee_evidence' => $event->travel_fee_evidence, 'discounts_snapshot' => $discounts,
             'subtotal_cents' => $subtotal, 'travel_fee_cents' => $event->travel_fee_cents, 'discount_cents' => $discountTotal,
-            'total_cents' => $total, 'deposit_target_cents' => \App\Services\Scheduling\DepositPolicy::fullPayment($event->starts_at) ? $total : intdiv($total, 2) + ($total % 2), /* owner 2026-11-04: today/tomorrow = 100 % */ 'valid_until' => $validUntil, 'created_by' => $actor->id];
+            'total_cents' => $total, 'deposit_target_cents' => \App\Services\Scheduling\DepositPolicy::targetCents($total,$event->starts_at), 'valid_until' => $validUntil, 'created_by' => $actor->id];
     }
 }

@@ -21,9 +21,9 @@ final class ReadQuickPayment
             $generation=\App\Models\QuickPaymentAttempt::where('quick_payment_booking_id',$b->id)->count();
             $pending=(bool)QuickPaymentProtocol::pendingNotice($b);
             return ['attempt_generation'=>$generation,'active_checkout'=>$active,'state'=>$b->state,'expected_booking_version'=>$b->version,'expected_payment_sha256'=>$b->agreement_sha256,'total_cents'=>$f->total_cents,
-                'balance_cents'=>app(\App\Services\Finance\FinanceSummary::class)->forEvent($e)['balance_cents'],'deposit_cents'=>QuickPaymentProtocol::percents($f)===[100]?QuickStripeTerms::freeze($f->total_cents,\Carbon\CarbonImmutable::createFromTimestampUTC($s['terms']['created_at']),100)->snapshot()['principal_cents']:$s['terms']['principal_cents'],'currency'=>'USD','expires_at'=>$b->expires_at->toIso8601String(),
-                'choices'=>array_map(fn($percent)=>QuickStripeTerms::freeze($f->total_cents,\Carbon\CarbonImmutable::createFromTimestampUTC($s['terms']['created_at']),$percent)->snapshot(),QuickPaymentProtocol::percents($f)),
-                'can_pay'=>$active===null&&$b->state==='awaiting_payment'&&$b->expires_at->isFuture(),'can_sign'=>$pending||in_array($b->state,['paid','paid_needs_review'],true),
+                'balance_cents'=>app(\App\Services\Finance\FinanceSummary::class)->forEvent($e)['balance_cents'],'deposit_cents'=>$s['terms']['principal_cents'],'currency'=>'USD','expires_at'=>$b->expires_at->toIso8601String(),
+                'choices'=>array_map(fn($percent)=>QuickStripeTerms::freeze($f->total_cents,\Carbon\CarbonImmutable::createFromTimestampUTC($s['terms']['created_at']),$percent)->snapshot(),\App\Services\Scheduling\DepositPolicy::collectionPercents($f)),
+                'can_pay'=>$active===null&&$b->state==='awaiting_payment'&&$b->expires_at->isFuture()&&$e->starts_at->timestamp>=now()->addHours(24)->addSeconds(1860)->timestamp,'can_sign'=>$pending||in_array($b->state,['paid','paid_needs_review'],true),
                 'zelle_pending'=>$pending,'receipt_recorded'=>$b->receipt_id!==null];
         },3);
     }

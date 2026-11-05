@@ -52,4 +52,16 @@ class QuickBookingDepositDefaultTest extends TestCase
             ->assertSchemaStateSet(['travel_fee'=>'40','travel_quote_status'=>'ok','deposit.amount'=>'170.01']);
         $this->assertDatabaseCount('ledger_entries',0);
     }
+
+    public function test_date_changes_refresh_the_full_payment_default_but_keep_an_actual_amount_typed_by_the_owner(): void
+    {
+        $this->travelTo(\Carbon\CarbonImmutable::parse('2026-11-04T10:00:00-06:00'));
+        Http::preventStrayRequests();
+        Livewire::test(QuickBooking::class)->fillForm(['package_id'=>(string)$this->price->id,'travel_fee'=>'0.02','date'=>'2026-11-20'])
+            ->assertSchemaStateSet(['deposit.amount'=>'150.02'])
+            ->fillForm(['date'=>'2026-11-05'])->assertSchemaStateSet(['deposit.amount'=>'300.03'])
+            ->fillForm(['deposit.amount'=>'200.00'])->fillForm(['date'=>'2026-11-20'])
+            ->assertSchemaStateSet(['deposit.amount'=>'200.00','deposit.amount_custom'=>true]);
+        $this->assertDatabaseCount('ledger_entries',0);
+    }
 }

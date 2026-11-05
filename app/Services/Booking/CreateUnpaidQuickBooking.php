@@ -29,6 +29,7 @@ final class CreateUnpaidQuickBooking
             'address'=>'nullable|string|max:255','setup_minutes'=>'nullable|integer|min:0|max:720','breakdown_minutes'=>'nullable|integer|min:0|max:720',
             'travel_fee_cents'=>'required|integer|min:0|max:100000000','travel_fee_quote_id'=>'nullable|integer|min:1',
             'travel_fee_override_note'=>'nullable|string|min:10|max:1000','services'=>'required|array|min:1|max:10',
+            'package_price_version_id'=>'sometimes|integer|min:1|exists:price_versions,id',
             'portal'=>'sometimes|array:expires_at','lead_id'=>'sometimes|integer|min:1','lead_expected_version'=>'required_with:lead_id|integer|min:1',
             'promo_code'=>'sometimes|nullable|string|max:20',
         ]);
@@ -43,6 +44,7 @@ final class CreateUnpaidQuickBooking
                 RecordWriteRejected::unless($r->result_type==='quick_payment_booking',409,'Esta clave corresponde a otra reserva.');
                 return $this->result(QuickPaymentBooking::whereKey($r->result_id)->lockForUpdate()->firstOrFail(),null,true);
             }
+            \App\Services\Records\SameLengthExtras::assertForQuick($data['services'],isset($data['package_price_version_id'])?(int)$data['package_price_version_id']:null);
             $lead=null;
             if(isset($data['lead_id'])) {
                 $lead=\App\Models\Lead::whereKey($data['lead_id'])->lockForUpdate()->firstOrFail();
@@ -52,7 +54,7 @@ final class CreateUnpaidQuickBooking
             $customer = isset($data['customer_id']) ? Customer::whereKey($data['customer_id'])->lockForUpdate()->firstOrFail()
                 : app(SaveQuickBookingCustomer::class)->execute($actor,$data['new_customer']);
             if(isset($data['customer_update'])) $customer=app(SaveQuickBookingCustomer::class)->execute($actor,$data['customer_update'],$customer->id);
-            $eventInput=array_diff_key($data,array_flip(['deposit_received','deposit','new_customer','customer_update','portal','lead_id','lead_expected_version','promo_code']));
+            $eventInput=array_diff_key($data,array_flip(['deposit_received','deposit','new_customer','customer_update','portal','lead_id','lead_expected_version','promo_code','package_price_version_id']));
             $e=app(SaveEventDraft::class)->execute($actor,[...$eventInput,'customer_id'=>$customer->id]);
             if(filled($data['promo_code']??null)) \App\Services\Campaigns\AnniversaryCampaign::redeem($actor,$data['promo_code'],$e);
             $f=app(CreateFinancialRevision::class)->execute($actor,$e->id,['expected_version'=>$e->version],(string)Str::uuid());
