@@ -124,7 +124,7 @@ class QuickPaymentsTest extends TestCase
         $this->assertSame([100],array_column($q['choices'],'deposit_percent'));
         $this->assertSame(30001,$q['deposit_cents']);
         $claim=$this->claim();unset($claim['amount_cents'],$claim['reference']);$claim['deposit_percent']=50;
-        $this->withHeader('Idempotency-Key',(string)Str::uuid())->postJson('/portal/api/quick-payment/checkout',$claim)->assertStatus(409);
+        $this->withHeader('Idempotency-Key',(string)Str::uuid())->postJson('/portal/api/quick-payment/checkout',$claim)->assertStatus(422);
         $this->checkout(100);
     }
 

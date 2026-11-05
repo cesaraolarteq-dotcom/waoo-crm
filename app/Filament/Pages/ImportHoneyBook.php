@@ -493,8 +493,7 @@ class ImportHoneyBook extends Page
     /** The packages' own montaje/desmontaje (largest of the selected ones), or null when nothing is chosen. */
     public static function defaultMinutes(array $priceIds): array
     {
-        // Review 2026-11-05: an unknown package timing stays unknown (never a real 0); same rule as SaveEventDraft.
-        $t = \App\Services\Records\PackageTimingDefaults::forPriceIds(array_map('intval', $priceIds));
+        $variants = ServiceVariant::whereIn('id', PriceVersion::whereIn('id', array_map('intval', $priceIds))->pluck('service_variant_id'))->get();
 
         if ($variants->isEmpty()) return [null, null];
         return array_map(fn ($field) => $variants->contains(fn ($v) => $v->$field === null) ? null : (int) $variants->max($field), ['setup_minutes', 'breakdown_minutes']);
