@@ -79,6 +79,29 @@ class WeekendPlanTest extends TestCase
         $this->assertSame(1,ResourceReservation::where('event_id',$a->id)->count());
     }
 
+    // Claude review 2026-11-05 (Codex asked about the previous neighbour whose party already ended).
+    public function test_last_weeks_party_without_address_neither_blocks_the_team_nor_asks_for_a_route(): void
+    {
+        $old=$this->party('2026-11-07 14:00');$staff=Resource::where('code','CESAR')->value('id');
+        $s=CarbonImmutable::parse('2026-10-31 14:00','America/Chicago')->utc();
+        $old->forceFill(['starts_at'=>$s,'ends_at'=>$s->addHours(2),'address'=>null,'breakdown_minutes'=>null])->save();
+        ResourceReservation::create(['event_id'=>$old->id,'resource_id'=>$staff,'starts_at'=>$old->starts_at,'ends_at'=>$old->ends_at]);
+        $b=$this->party('2026-11-07 14:00');
+        app()->instance('waoo.availability.drive',fn(...$args)=>throw new \RuntimeException('No route is needed for a party a week earlier.'));
+        $this->save($b,['people'=>[TeamSlots::for($b)['people'][0]['key']=>$staff]]);
+        $this->assertTrue(EventTeamPlan::where('event_id',$b->id)->exists());
+    }
+
+    public function test_a_same_day_neighbour_without_address_still_blocks_the_team(): void
+    {
+        $a=$this->party('2026-11-07 11:00');$staff=Resource::where('code','CESAR')->value('id');
+        $this->save($a,['people'=>[TeamSlots::for($a)['people'][0]['key']=>$staff]]);
+        $a->forceFill(['address'=>null])->save();
+        $b=$this->party('2026-11-07 15:00');
+        try{$this->save($b,['people'=>[TeamSlots::for($b)['people'][0]['key']=>$staff]]);$this->fail('Saved without a provable same-day route.');}
+        catch(\App\Exceptions\RecordWriteRejected $x){$this->assertSame(409,$x->status);}
+    }
+
     public function test_a_proven_short_drive_uses_drive_plus_thirty_instead_of_a_fixed_sixty(): void
     {
         $a=$this->party('2026-11-07 14:00');$b=$this->party('2026-11-07 17:45');

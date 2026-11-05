@@ -80,6 +80,19 @@ final class RescheduleTransfers
             'setup' => $event->setup_minutes, 'breakdown' => $event->breakdown_minutes, 'address' => $event->address, 'zip' => $event->postal_code];
     }
 
+    /**
+     * A neighbour party more than 18 free hours away needs no route (owner drives fit in a few hours; 160-mile round-trip limit):
+     * last week's party without an address must neither block today's team nor spend a route lookup. Same-day neighbours always
+     * need a proven route, however long the gap. Unknown setup or breakdown counts as the 720-minute maximum.
+     */
+    private const TRAVEL_HORIZON_MINUTES = 1080;
+
+    private static function farApart(array $from, array $to): bool
+    {
+        $free = CarbonImmutable::parse($from['end'])->addMinutes($from['breakdown'] ?? 720)->diffInMinutes(CarbonImmutable::parse($to['start'])->subMinutes($to['setup'] ?? 720), false);
+        return $free >= self::TRAVEL_HORIZON_MINUTES;
+    }
+
     private function edges(array $snapshot): array
     {
         $candidate = $snapshot['candidate']; $edges = [];
@@ -93,7 +106,7 @@ final class RescheduleTransfers
                 if ($other['start'] >= $candidate['end'] && ($after === null || $other['start'] < $after['start'])) $after = $other;
             }
             foreach ([[$before, $candidate], [$candidate, $after]] as [$from, $to]) {
-                if ($from === null || $to === null) continue;
+                if ($from === null || $to === null || self::farApart($from, $to)) continue;
                 // Include the unit so every resource's blocks are checked, even when its route is shared by the crew.
                 $edges[$resourceId.':'.$from['id'].':'.$to['id']] = [$from, $to, $resourceId];
             }

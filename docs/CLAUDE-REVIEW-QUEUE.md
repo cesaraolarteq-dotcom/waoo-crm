@@ -21,12 +21,18 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
-### 2026-11-05 · BACKEND / UI · WIP público: retención conjunta INCOMPLETA, rutas y calendario · PENDING
+### 2026-11-05 · BACKEND / UI · WIP público: retención conjunta INCOMPLETA, rutas y calendario · REWORK (rutas) / REVIEWED (calendario) / PENDING (retención)
 - Rama: `codex/fix-physical-booking-admission`, base5f45c32. César solicita commit/push WIP para que Claude vea los archivos; no es aprobación técnica de este prototipo ni entrega lista para fusionar.
 - Cambios: rutas reales en asignación semanal; pantalla privada de asociaciones de calendario; prototipo de retención conjunta con migración y punto de entrada interno.
 - Verificación: rutas/calendario 30 PASS + caso corregido de usuario inactivo1/2 PASS; render sintético1/6 PASS. Capturas pendientes, suite completa y ciclo de vida S1 sin validar. Artefactos fuera de Git.
 - Claude debe revisar: incompatibilidad pendiente con conteo V1 de QuickStripeLeases, locks y snapshot de admisión, promoción/liberación/reprogramación, recibos tardíos, separación de retención provisional y staff asignado, concurrencia por última unidad. Detalle arriba en HANDOFF. NO fusionar/desplegar la retención como terminada.
 - No cambios a configuración de envíos, Stripe real, contratos o textos congelados. Sin datos reales ni diseños de prendas. Solo Claude marca REVIEWED.
+- **Revisión Claude 2026-11-05** (rama `claude/review-physical-admission`, encima de `fd06a80`):
+  - REWORK rutas: `RescheduleTransfers::edges()` tomaba como vecino la fiesta anterior/siguiente de cada recurso **sin límite de tiempo** (p. ej. la del sábado pasado). Si esa fiesta vieja no tenía dirección o desmontaje (imports de HoneyBook), `assertFits` rechazaba y no se podía asignar el equipo, y además se pedía una ruta a Google por cada vecino viejo. Ahora `farApart()`: con más de 18 h libres entre fiestas (montaje/desmontaje desconocidos cuentan 720 min) no hay arista ni consulta. Mismo día: sigue exigiendo ruta probada (tus tests `RescheduleEventTest` de «large time gap» siguen verdes). Tests nuevos en `WeekendPlanTest`: fiesta de la semana pasada sin dirección no bloquea ni consulta; vecino del mismo día sin dirección sí bloquea.
+  - OK rutas: prueba fuera de locks, revalidación del snapshot dentro, traje en dos puestos, conteo cabeza/peluca (`$paired`), `free(..., 0, true)` solo con prueba de ruta.
+  - REVIEWED calendario: el `SUMMARY` solo sale con `$privateReview` (la disponibilidad pública no lo recibe); asociación explícita con `scope_sha256`; retiro con versión y auditoría. Al integrar con `claude/go-live-switch` (#206): `CalendarIdentities::canAccess()` usa `environment(['local','testing','staging'])` → cámbialo a `\App\Support\WaooRuntime::trusted()` o la pantalla no aparecerá en el CRM real.
+  - Aviso: tu migración `2026_11_04_150000_create_joint_capacity_holds` y la mía `2026_11_04_150000_add_time_tbd_to_events` comparten marca de tiempo (Laravel las ordena por nombre; no chocan, pero conviene renombrar la tuya a `..._160000_`).
+  - PENDING retención conjunta: no revisada a fondo; sigue marcada INCOMPLETA por ti. No tocar `QuickStripeLeases`/`CreateUnpaidQuickBooking` desde Claude hasta que la cierres.
 
 ### 2026-11-04 · BACKEND · Cierre #203 y #200 integrado en main · PENDING
 - Branch: `codex/fix-extra-time-closure`, desde main de código87a42dcec33dbc107a7f66bf0e643ef1f15f4bca. Fuente21ce2afaee5690e86e91a32424b32a000c116621, diff vacío tras fusionar. #200 punta3b37fde verificada sin cambios y ancestro, cerrado como integrado; ramas/historia preservadas.
