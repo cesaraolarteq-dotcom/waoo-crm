@@ -41,7 +41,7 @@ final class StripeReceiptProcessor
         if (!$sessionId) throw new \RuntimeException('checkout_not_linked_yet');
         $session = app(StripeGateway::class)->retrieveCheckout($sessionId);
         $metadata = $session['metadata'] ?? [];
-        $valid = ($session['id'] ?? null) === $sessionId && ($session['livemode'] ?? null) === false && ($session['_verified_account'] ?? null) === config('waoo.stripe_test_account')
+        $valid = ($session['id'] ?? null) === $sessionId && ($session['livemode'] ?? null) === \App\Services\Finance\StripeMode::livemode() && ($session['_verified_account'] ?? null) === \App\Services\Finance\StripeMode::account()
             && (!$receipt->stripe_account_id || $receipt->stripe_account_id === $session['_verified_account'])
             && ($session['client_reference_id'] ?? null) === $intent->id && ($metadata['local_intent_id'] ?? null) === $intent->id
             && (int) ($metadata['event_id'] ?? 0) === $intent->event_id && (int) ($metadata['financial_revision_id'] ?? 0) === $intent->financial_revision_id
@@ -64,7 +64,7 @@ final class StripeReceiptProcessor
         }
         $payment = $session['payment_intent'] ?? null;
         $charge = is_array($payment) ? ($payment['latest_charge'] ?? null) : null;
-        if (!is_array($payment) || !is_array($charge) || ($payment['livemode'] ?? null) !== false || ($payment['status'] ?? null) !== 'succeeded'
+        if (!is_array($payment) || !is_array($charge) || ($payment['livemode'] ?? null) !== \App\Services\Finance\StripeMode::livemode() || ($payment['status'] ?? null) !== 'succeeded'
             || ($payment['currency'] ?? null) !== 'usd' || (int) ($payment['amount_received'] ?? -1) !== $intent->payable_cents
             || empty($payment['id']) || ($charge['captured'] ?? null) !== true || ($charge['paid'] ?? null) !== true
             || !isset($charge['created']) || (int) $charge['created'] <= 0 || (int) $charge['created'] > time()) {

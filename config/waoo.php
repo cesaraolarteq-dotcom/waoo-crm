@@ -85,6 +85,11 @@ return [
     'sandbox_documents' => env('WAOO_SANDBOX_DOCUMENTS', false),
     'sandbox_immediate_contracts' => env('WAOO_SANDBOX_IMMEDIATE_CONTRACTS', false),
     'sandbox_staff' => env('WAOO_SANDBOX_STAFF', false), // STAFF-01 v2 owner link actions; read by Codex's services too.
+    // Owner 2026-11-04: live Stripe only on the real CRM (WAOO_LIVE) and only with STRIPE_LIVE=true (App\\Services\\Finance\\StripeMode).
+    'stripe_live' => env('STRIPE_LIVE', false) === true || env('STRIPE_LIVE') === 'true',
+    'stripe_live_secret' => env('STRIPE_LIVE_SECRET'),
+    'stripe_live_webhook_secret' => env('STRIPE_LIVE_WEBHOOK_SECRET'),
+    'stripe_live_account' => env('STRIPE_LIVE_ACCOUNT'),
     'stripe_test_secret' => env('STRIPE_TEST_SECRET'),
     'stripe_test_webhook_secret' => env('STRIPE_TEST_WEBHOOK_SECRET'),
     'stripe_test_account' => env('STRIPE_TEST_ACCOUNT'),

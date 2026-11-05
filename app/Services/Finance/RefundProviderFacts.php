@@ -34,7 +34,7 @@ final class RefundProviderFacts
             && (($callback['charge'] ?? null) === null || $callback['charge'] === $c['id'])
             && (($callback['payment_intent'] ?? null) === null || $callback['payment_intent'] === $i['id'])
             && $r['currency'] === 'usd' && $c['currency'] === 'usd' && $i['currency'] === 'usd'
-            && $c['livemode'] === false && $i['livemode'] === false && $c['captured'] === true && $c['paid'] === true && $i['status'] === 'succeeded'
+            && $c['livemode'] === \App\Services\Finance\StripeMode::livemode() && $i['livemode'] === \App\Services\Finance\StripeMode::livemode() && $c['captured'] === true && $c['paid'] === true && $i['status'] === 'succeeded'
             && $i['amount_received'] === $c['amount'] && $r['amount'] <= $c['amount']
             && $r['created'] >= $c['created'] && $r['created'] <= now()->timestamp;
     }
@@ -42,9 +42,9 @@ final class RefundProviderFacts
     {
         $c = $p['charge']; $i = $p['payment'];
         if (in_array(null, $c, true) || in_array(null, $i, true)) return false;
-        return $p['account'] !== null && $p['account'] === config('waoo.stripe_test_account') && $c['id'] === $chargeId
+        return $p['account'] !== null && $p['account'] === \App\Services\Finance\StripeMode::account() && $c['id'] === $chargeId
             && $c['payment_id'] === $i['id'] && $c['currency'] === 'usd' && $i['currency'] === 'usd'
-            && $c['livemode'] === false && $i['livemode'] === false && $c['paid'] === true && $c['captured'] === true
+            && $c['livemode'] === \App\Services\Finance\StripeMode::livemode() && $i['livemode'] === \App\Services\Finance\StripeMode::livemode() && $c['paid'] === true && $c['captured'] === true
             && $i['status'] === 'succeeded' && $c['amount'] === $i['amount_received'] && $c['created'] <= now()->timestamp;
     }
     private static function id(mixed $value, string $prefix): ?string

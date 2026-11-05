@@ -29,7 +29,7 @@ final class QuickPaymentCheckout
         try{$evidence=$gateway->verifyMethods($methods);}
         catch(\Illuminate\Auth\Access\AuthorizationException $error){throw $error;}
         catch(\Throwable){throw new RecordWriteRejected(503,'No pudimos verificar los métodos de Stripe. Puedes elegir Zelle o reintentar. / We could not verify Stripe methods. Choose Zelle or retry.');}
-        RecordWriteRejected::unless($evidence===['account'=>config('waoo.stripe_test_account'),'methods'=>$methods],409,'La cuenta o los métodos de Stripe no coinciden.');
+        RecordWriteRejected::unless($evidence===['account'=>\App\Services\Finance\StripeMode::account(),'methods'=>$methods],409,'La cuenta o los métodos de Stripe no coinciden.');
         [$request,$intent]=DB::transaction(function()use($client,$d,$key,$scope,$hash,$evidence){
             [$b,$e,$grant]=QuickPaymentProtocol::portal($client);QuickPaymentProtocol::submission($b,$e);
             if($r=MutationKey::find($scope,$key,$hash,true)){
@@ -118,7 +118,7 @@ final class QuickPaymentCheckout
     public static function session(array $s,QuickStripeCheckoutRequest $r):void
     {
         $p=self::verify($r);$t=$p['terms'];
-        RecordWriteRejected::unless(($s['livemode']??null)===false&&($s['_verified_account']??null)===$p['capabilities']['account']
+        RecordWriteRejected::unless(($s['livemode']??null)===\App\Services\Finance\StripeMode::livemode()&&($s['_verified_account']??null)===$p['capabilities']['account']
             &&($s['client_reference_id']??null)===$r->id&&is_array($s['metadata']??null)&&MutationKey::hash($s['metadata'])===MutationKey::hash($p['parameters']['metadata'])&&($s['currency']??null)==='usd'
             &&is_array($s['payment_method_types']??null)&&array_diff($s['payment_method_types'],$p['capabilities']['methods'])===[]&&$s['payment_method_types']!==[]&&($s['amount_total']??null)===$t['payable_cents']&&is_string($s['id']??null)&&preg_match('/\Acs_test_[A-Za-z0-9_]+\z/',$s['id']),409,'Stripe no confirmó el acuerdo de pago.');
     }

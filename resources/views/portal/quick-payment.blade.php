@@ -23,7 +23,7 @@
 <button class="p-btn" type="submit">{{ $es?'Pagué por Zelle':'I paid by Zelle' }}</button>
 </form>
 {{-- The real CRM has no card payments until live Stripe is connected (owner 2026-11-04). --}}
-@if(! \App\Support\WaooRuntime::live())
+@if(! \App\Support\WaooRuntime::live() || \App\Services\Finance\StripeMode::live())
 <h3>Stripe · {{ $es?'Tarjeta / Klarna':'Card / Klarna' }}</h3>
 <form id="quick-stripe" class="p-form" method="POST" action="{{ url('/portal/api/quick-payment/checkout') }}">@csrf
 @foreach($q['choices'] as $choice)
