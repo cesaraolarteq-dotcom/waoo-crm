@@ -17,7 +17,7 @@ TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 SHORT=$(git rev-parse --short "$REV")
 git archive --format=tar.gz -o "$TMP/deploy-$SHORT.tgz" "$SHORT"
 scp -q -P 65002 -i "$HOME/.ssh/waoo_hostinger" "$TMP/deploy-$SHORT.tgz" "u506936325@217.196.54.217:$BK/deploy-$SHORT.tgz"
-"${SSH[@]}" "set -e; TS=\$(date +%Y%m%d-%H%M%S); cd ~/domains/waooparty.com; NEW=$APP-new-\$TS
+"${SSH[@]}" "set -eo pipefail; TS=\$(date +%Y%m%d-%H%M%S); cd ~/domains/waooparty.com; NEW=$APP-new-\$TS
 echo \"before: \$(cat $APP/REV 2>/dev/null)\"
 bash ~/bin/waoo-backup.sh ~/domains/waooparty.com/$APP $WEB-predeploy >/dev/null && echo 'backup ok'
 mkdir \$NEW && tar xzf ~/$BK/deploy-$SHORT.tgz -C \$NEW

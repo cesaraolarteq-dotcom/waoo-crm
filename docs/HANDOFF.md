@@ -1,3 +1,15 @@
+## 2026-11-05 · Claude · Revisión independiente de `claude/stripe-live` (Codex sin créditos; César eligió «B»: revisar + unir con controles)
+Revisor aparte (code-review high, diff completo contra main). Corregido en la rama:
+- Reserva rápida en vivo rechazaba toda sesión `cs_live_` (`QuickPaymentCheckout::session` aún exigía `cs_test_`): ahora `StripeMode::sessionPrefix()`.
+- `StripeMode::disabled()` (real CRM sin `STRIPE_LIVE`): sin clave, cuenta ni secreto de webhook → el webhook responde 403 y no guarda eventos de prueba.
+- `ConfirmBooking`: reglas 100 % hoy/mañana y <24 h se evalúan con `payment.received_at` (no con la hora de confirmar) y no aplican a fiestas importadas de HoneyBook. Confirmar reserva muestra el motivo de excepción también cuando hoy/mañana paga <100 %.
+- Depósito 100 %: se lee de la PRIMERA revisión (un cargo de cambio de $100 ya no lo regresa a 50 %), igual en `QuickPaymentProtocol::percents()`.
+- Cotizaciones para hoy/mañana congelan depósito 100 % (`QuoteSnapshot`), texto EN/ES `deposit_hint_full`, PDF «Pago completo».
+- Importar todo: montaje/desmontaje desconocidos quedan null (`PackageTimingDefaults`), no 0; errores 409/SQL de una fila no cortan el lote.
+- Mensaje de `DecideQuote` sin hora ahora EN + ES. `deploy-hostinger.sh`: `pipefail` (una migración fallida ya no se reporta como éxito).
+- PENDIENTE (anotado, no bloquea): las filas de ledger/intents siguen con `environment='test'` también en el CRM real (bases separadas, así que no se mezcla dinero). Cambiarlo toca ~40 lugares + migración de valores: hacerlo aparte.
+- Tests: `StripeModeTest` (+2). Suites de dinero/reservas/importación 915 tests: solo fallan las de MariaDB (concurrencia/auditoría).
+
 ## 2026-11-05 · Claude → Codex · Stripe real en el CRM real (rama `claude/stripe-live`, sobre `claude/go-live-switch`) — REVISAR (dinero + seguridad)
 - Owner 2026-11-04: «conectemos stripe real; hagámoslo» (paso 2). NO activo en ningún servidor: necesita `STRIPE_LIVE=true` + claves live que el dueño pega él mismo.
 - `App\Services\Finance\StripeMode`: `live()` = `WaooRuntime::live()` && `waoo.stripe_live===true`. Decide `livemode()` esperado, `account()` (`STRIPE_LIVE_ACCOUNT` vs `STRIPE_TEST_ACCOUNT`), `secret()`, `webhookSecret()`, `keyAllowed()` (live: `sk_live_`/`rk_live_`; resto: `sk_test_`/`rk_test_`), `sessionPrefix()` (propinas).

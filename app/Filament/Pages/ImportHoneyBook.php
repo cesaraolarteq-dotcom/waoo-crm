@@ -493,9 +493,10 @@ class ImportHoneyBook extends Page
     /** The packages' own montaje/desmontaje (largest of the selected ones), or null when nothing is chosen. */
     public static function defaultMinutes(array $priceIds): array
     {
-        $variants = ServiceVariant::whereIn('id', PriceVersion::whereIn('id', array_map('intval', $priceIds))->pluck('service_variant_id'))->get();
+        // Review 2026-11-05: an unknown package timing stays unknown (never a real 0); same rule as SaveEventDraft.
+        $t = \App\Services\Records\PackageTimingDefaults::forPriceIds(array_map('intval', $priceIds));
 
-        return $variants->isEmpty() ? [null, null] : [(int) $variants->max('setup_minutes'), (int) $variants->max('breakdown_minutes')];
+        return [$t['setup_minutes'], $t['breakdown_minutes']];
     }
 
     // ── 3c. Import everything the CRM can match by itself (owner 2026-11-04) ──
@@ -537,6 +538,9 @@ class ImportHoneyBook extends Page
                 $this->bulkLeft[$r['id']] = collect($e->errors())->flatten()->first() ?: 'No se pudo importar: ábrela.';
             } catch (RecordWriteRejected|AuthorizationException $e) {
                 $this->bulkLeft[$r['id']] = $e->getMessage();
+            } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface|\Illuminate\Database\QueryException $e) {
+                report($e);
+                $this->bulkLeft[$r['id']] = 'No se pudo importar ahora (cambió mientras se importaba): ábrela.';
             }
         }
         $this->bulkReviewed = false;
@@ -563,6 +567,10 @@ class ImportHoneyBook extends Page
             return 'No se pudo confirmar: '.(collect($e->errors())->flatten()->first() ?: 'ábrela.');
         } catch (RecordWriteRejected|AuthorizationException $e) {
             return 'No se pudo confirmar: '.$e->getMessage();
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface|\Illuminate\Database\QueryException $e) {
+            // Review 2026-11-05: a 409 abort or a lock timeout on one row must not stop «Importar todo» halfway.
+            report($e);
+            return 'No se pudo confirmar ahora (cambió mientras se importaba): ábrela y confírmala.';
         }
 
         return null;

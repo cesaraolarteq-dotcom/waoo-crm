@@ -24,7 +24,7 @@
 <tr><td>{{ $es?'Costo de transporte':'Travel fee' }}</td><td class="money">{{ $money($p['travel_fee_cents']) }}</td></tr>
 @foreach($p['discounts'] as $discount)<tr><td>{{ $es?'Descuento':'Discount' }}: {{ $discount['label'] }}</td><td class="money">−{{ $money($discount['amount_cents']) }}</td></tr>@endforeach
 <tr><td><b>Total</b></td><td class="money"><b>{{ $money($p['total_cents']) }}</b></td></tr>
-<tr><td>{{ $es?'Depósito del 50 %':'50% deposit' }}</td><td class="money">{{ $money($p['deposit_target_cents']) }}</td></tr>
+<tr><td>@if($p['deposit_target_cents'] >= $p['total_cents']){{ $es?'Pago completo (hoy o mañana)':'Full payment (today or tomorrow)' }}@else{{ $es?'Depósito del 50 %':'50% deposit' }}@endif</td><td class="money">{{ $money($p['deposit_target_cents']) }}</td></tr>
 </tbody></table>
 <p>{{ $es?'Aceptar esta cotización no confirma recursos ni registra un pago. El contrato se firma por separado.':'Accepting this quote does not confirm resources or record a payment. The contract is signed separately.' }}</p>
 <small>{{ $es?'La disponibilidad se confirma por separado.':'Availability is confirmed separately.' }}</small>

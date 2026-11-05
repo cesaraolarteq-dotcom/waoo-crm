@@ -62,7 +62,9 @@ final class CreateFinancialRevision
             $promo = \App\Services\Campaigns\AnniversaryCampaign::discount($event, $services);
             $total = $subtotal + $event->travel_fee_cents - ($promo['cents'] ?? 0);
             $previous = FinancialRevision::where('event_id', $event->id)->orderByDesc('revision')->first();
-            $fullDeposit = $previous ? $previous->deposit_target_cents >= $previous->total_cents && $previous->total_cents > 0
+            // Review 2026-11-05: read the FIRST revision (never has a change fee), so a later $100 change fee cannot flip it back to 50 %.
+            $first = FinancialRevision::where('event_id', $event->id)->orderBy('revision')->first();
+            $fullDeposit = $first ? $first->deposit_target_cents >= $first->total_cents && $first->total_cents > 0
                 : \App\Services\Scheduling\DepositPolicy::fullPayment($event->starts_at);
             $revision = FinancialRevision::create(['event_id' => $event->id, 'revision' => (int) FinancialRevision::where('event_id', $event->id)->max('revision') + 1,
                 'event_version' => $event->version, 'currency' => 'USD', 'lines_snapshot' => $lines, 'subtotal_cents' => $subtotal,

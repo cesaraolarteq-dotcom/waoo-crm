@@ -57,4 +57,22 @@ class StripeModeTest extends TestCase
         $t = time(); $sig = hash_hmac('sha256', $t.'.'.$payload, 'whsec_live_fixture');
         $this->call('POST', '/webhooks/stripe', [], [], [], ['HTTP_STRIPE_SIGNATURE' => "t=$t,v1=$sig", 'CONTENT_TYPE' => 'application/json', 'HTTPS' => 'on'], $payload)->assertStatus(400);
     }
+
+    // Review 2026-11-05: before the switch the real CRM accepts no Stripe event at all, test or live.
+    public function test_real_crm_without_the_switch_refuses_every_webhook(): void
+    {
+        $this->realCrm(false);
+        config(['waoo.stripe_test_webhook_secret' => 'whsec_test_fixture']);
+        $this->assertTrue(StripeMode::disabled());
+        $this->assertNull(StripeMode::account());
+        $payload = json_encode(['id' => 'evt_fixture', 'type' => 'checkout.session.completed', 'livemode' => false, 'created' => time(), 'data' => ['object' => ['id' => 'cs_test_x', 'object' => 'checkout.session']]]);
+        $t = time(); $sig = hash_hmac('sha256', $t.'.'.$payload, 'whsec_test_fixture');
+        $this->call('POST', '/webhooks/stripe', [], [], [], ['HTTP_STRIPE_SIGNATURE' => "t=$t,v1=$sig", 'CONTENT_TYPE' => 'application/json', 'HTTPS' => 'on'], $payload)->assertStatus(403);
+    }
+
+    public function test_live_quick_checkout_sessions_use_the_live_prefix(): void
+    {
+        $this->realCrm(true);
+        $this->assertSame('cs_live_', StripeMode::sessionPrefix());
+    }
 }

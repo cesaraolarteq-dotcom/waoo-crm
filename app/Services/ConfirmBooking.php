@@ -100,10 +100,12 @@ final class ConfirmBooking
                     $this->fail('El depósito no alcanza el objetivo. Registra una excepción aprobada o completa el pago.');
                 }
                 // Owner 2026-11-04: today or tomorrow = paid 100 %, with at least 24 h notice (an owner exception note can still decide).
-                if (\App\Services\Scheduling\DepositPolicy::fullPayment($event->starts_at) && (int) $data['payment']['amount_cents'] < $total && empty($data['review']['deposit_exception_reason'])) {
+                // Judged when the money arrived, not when the owner confirms; a HoneyBook booking was made there long before.
+                $asOf = filled($data['payment']['received_at'] ?? null) ? \Carbon\CarbonImmutable::parse($data['payment']['received_at']) : now();
+                if (! $importLink && \App\Services\Scheduling\DepositPolicy::fullPayment($event->starts_at, $asOf) && (int) $data['payment']['amount_cents'] < $total && empty($data['review']['deposit_exception_reason'])) {
                     $this->fail('Para hoy o mañana se paga el 100 %. Registra el pago completo o una excepción.');
                 }
-                if (\App\Services\Scheduling\DepositPolicy::underDayNotice($event->starts_at) && empty($data['review']['short_notice_reason'])) {
+                if (! $importLink && \App\Services\Scheduling\DepositPolicy::underDayNotice($event->starts_at, $asOf) && empty($data['review']['short_notice_reason'])) {
                     $this->fail('Faltan menos de 24 horas: la regla es no reservar. Si aun así la aceptas, escribe por qué.');
                 }
                 $slots = [];

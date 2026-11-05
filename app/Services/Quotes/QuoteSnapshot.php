@@ -51,6 +51,6 @@ final class QuoteSnapshot
                 'timezone' => $event->timezone, ...($event->time_tbd ? ['time_tbd' => true] : []), 'address' => $event->address, 'postal_code' => $event->postal_code, ...($event->billing_company!==null || $event->billing_company_version>0 ? ['billing_company'=>$event->billing_company,'billing_company_version'=>$event->billing_company_version] : [])],
             'lines_snapshot' => $lines, 'travel_fee_evidence' => $event->travel_fee_evidence, 'discounts_snapshot' => $discounts,
             'subtotal_cents' => $subtotal, 'travel_fee_cents' => $event->travel_fee_cents, 'discount_cents' => $discountTotal,
-            'total_cents' => $total, 'deposit_target_cents' => intdiv($total, 2) + ($total % 2), 'valid_until' => $validUntil, 'created_by' => $actor->id];
+            'total_cents' => $total, 'deposit_target_cents' => \App\Services\Scheduling\DepositPolicy::fullPayment($event->starts_at) ? $total : intdiv($total, 2) + ($total % 2), /* owner 2026-11-04: today/tomorrow = 100 % */ 'valid_until' => $validUntil, 'created_by' => $actor->id];
     }
 }

@@ -113,6 +113,6 @@ final class QuickPaymentCheckout
         $p=self::verify($r);$t=$p['terms'];
         RecordWriteRejected::unless(($s['livemode']??null)===\App\Services\Finance\StripeMode::livemode()&&($s['_verified_account']??null)===$p['capabilities']['account']
             &&($s['client_reference_id']??null)===$r->id&&is_array($s['metadata']??null)&&MutationKey::hash($s['metadata'])===MutationKey::hash($p['parameters']['metadata'])&&($s['currency']??null)==='usd'
-            &&is_array($s['payment_method_types']??null)&&array_diff($s['payment_method_types'],$p['capabilities']['methods'])===[]&&$s['payment_method_types']!==[]&&($s['amount_total']??null)===$t['payable_cents']&&is_string($s['id']??null)&&preg_match('/\Acs_test_[A-Za-z0-9_]+\z/',$s['id']),409,'Stripe no confirmó el acuerdo de pago.');
+            &&is_array($s['payment_method_types']??null)&&array_diff($s['payment_method_types'],$p['capabilities']['methods'])===[]&&$s['payment_method_types']!==[]&&($s['amount_total']??null)===$t['payable_cents']&&is_string($s['id']??null)&&preg_match('/\A'.\App\Services\Finance\StripeMode::sessionPrefix().'[A-Za-z0-9_]+\z/',$s['id']),409,'Stripe no confirmó el acuerdo de pago.');
     }
 }

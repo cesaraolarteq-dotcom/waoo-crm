@@ -49,7 +49,7 @@ final class ReadQuoteViewModel
                         'amount'=>$money($l['amount_cents'])],$payload['lines']),
                     'travel'=>$money($payload['travel_fee_cents']),
                     'discounts'=>array_map(fn($d)=>['label'=>$d['label'],'amount'=>$money($d['amount_cents'])],$payload['discounts']),
-                    'total'=>$money($payload['total_cents']),'deposit'=>$money($payload['deposit_target_cents']),
+                    'total'=>$money($payload['total_cents']),'deposit'=>$money($payload['deposit_target_cents']),...($payload['deposit_target_cents']>=$payload['total_cents']?['deposit_full'=>true]:[]),
                     'pdf_url'=>$state==='superseded'?null:'/portal/api/quote/pdf'],
                 'consent'=>['version'=>$approved?$consent['version']:null,'text'=>$approved?$consent['text']:null],
                 'prefill'=>['name'=>$name,'email'=>''],
