@@ -111,6 +111,12 @@ final class QuickPaymentProtocol
         return $s;
     }
 
+    /** Owner 2026-11-04: a party today or tomorrow is paid 100 % (the revision's deposit target is the whole total). */
+    public static function percents(\App\Models\FinancialRevision $f): array
+    {
+        return $f->deposit_target_cents >= $f->total_cents ? [100] : [50, 100];
+    }
+
     public static function pin(QuickPaymentBooking $b, array $data): void
     {
         RecordWriteRejected::unless($b->version === (int)$data['expected_booking_version']

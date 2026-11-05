@@ -34,12 +34,15 @@ final class ReadQuoteViewModel
             $start=CarbonImmutable::parse($payload['event']['starts_at'])->setTimezone('America/Chicago');
             $end=CarbonImmutable::parse($payload['event']['ends_at'])->setTimezone('America/Chicago')->locale($locale);
             $when=$date($payload['event']['starts_at']).' – '.($start->isSameDay($end)?$end->translatedFormat('g:i A T'):$date($payload['event']['ends_at']));
+            // Owner 2026-11-04: a quote can go out before the start time is known; the client accepts once it is set.
+            $tbd=(bool)($payload['event']['time_tbd']??false);
+            if($tbd){$when=$start->locale($locale)->translatedFormat($locale==='es'?'D j \d\e M \d\e Y':'D, M j, Y').' · '.($locale==='es'?'Hora por definir':'Time to be confirmed');$canDecide=false;}
             $money=static fn(int $c)=>'$'.number_format(intdiv($c,100),0,'.',',').'.'.str_pad((string)($c%100),2,'0',STR_PAD_LEFT);
             $name=$payload['customer_name'];
             $vm=['lang'=>$locale,'first_name'=>Str::before($name,' '),'test_mode'=>true,
                 'lang_url'=>['es'=>'/portal/quote?lang=es','en'=>'/portal/quote?lang=en'],
                 'quote'=>['number'=>$payload['number'],'revision'=>$payload['revision'],'state'=>$state,'valid_until'=>$date($payload['valid_until']),
-                    'when'=>$when,
+                    'when'=>$when,...($tbd?['time_tbd'=>true]:[]),
                     'where'=>$payload['event']['address']??'',
                     'lines'=>array_map(fn($l)=>['name'=>$l['name'],'duration'=>$l['duration_minutes'].' min',
                         'characters'=>implode(', ',array_map(fn($c)=>$c['name'].($c['quantity']>1?' × '.$c['quantity']:''),$l['characters'])),

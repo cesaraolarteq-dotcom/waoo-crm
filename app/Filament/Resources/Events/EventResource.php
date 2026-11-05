@@ -64,6 +64,13 @@ class EventResource extends Resource
                     ->placeholder(fn ($livewire) => filled($livewire->leadClient ?? null) ? 'Cliente nuevo: '.$livewire->leadClient['name'] : null)
                     ->helperText(fn ($livewire) => filled($livewire->leadClient ?? null) ? 'Déjalo vacío y se registra como cliente al guardar, o elige un cliente que ya tengas.' : null)
                     ->options(fn () => self::customerOptions())
+                    // Owner 2026-11-04: search ignores accents (César = Cesar) and a new client is created right here.
+                    ->getSearchResultsUsing(fn (string $search) => \App\Filament\Pages\QuickBooking::possibleMatches($search, $search, $search))
+                    ->createOptionForm(self::newCustomerFields())
+                    ->createOptionUsing(fn (array $data) => app(\App\Services\Records\SaveCustomer::class)->execute(\Filament\Facades\Filament::auth()->user(), [
+                        'name' => trim((string) $data['name']), 'phone' => filled($data['phone'] ?? null) ? trim($data['phone']) : null,
+                        'email' => filled($data['email'] ?? null) ? trim($data['email']) : null, 'locale' => $data['locale'] ?? 'es'])->id)
+                    ->createOptionModalHeading('Cliente nuevo')
                     ->live()->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set)),
                 self::titleField(),
                 Hidden::make('title_suggested')->dehydrated(false),
@@ -71,8 +78,13 @@ class EventResource extends Resource
                     ->helperText('Elígelo tú (no se adivina). Solo los cumpleaños reciben el correo «Un año después».'),
                 DatePicker::make('date')->label('Fecha')->native()->required()->live()
                     ->afterStateUpdated(fn (Get $get, Set $set) => self::refreshTitle($get, $set)),
-                \App\Filament\Support\TimeSelect::make('start_time')->label('Empieza (hora de Houston)')->required()->live(),
-                \App\Filament\Support\TimeSelect::make('end_time')->label('Termina')->required()->live(),
+                // Owner 2026-11-04: many quotes go out before the client knows the time; it is set before booking.
+                \Filament\Forms\Components\Toggle::make('time_tbd')->label('Todavía no tiene hora')->live()->columnSpanFull()
+                    ->helperText(fn (Get $get) => $get('time_tbd') ? 'La cotización dice «Hora por definir». Ponle la hora antes de que el cliente la acepte.' : null),
+                \App\Filament\Support\TimeSelect::make('start_time')->label('Empieza (hora de Houston)')->required(fn (Get $get) => ! $get('time_tbd'))->live()
+                    ->visible(fn (Get $get) => ! $get('time_tbd')),
+                \App\Filament\Support\TimeSelect::make('end_time')->label('Termina')->required(fn (Get $get) => ! $get('time_tbd'))->live()
+                    ->visible(fn (Get $get) => ! $get('time_tbd')),
                 $choice('date', 'start_time'),
                 $choice('date', 'end_time'),
             ]),
@@ -258,6 +270,17 @@ class EventResource extends Resource
     }
 
     /** Client choices; a provisional client with no name yet (quick booking) shows her phone or email instead of breaking the list. */
+    /** Same fields as a client in Reserva rápida; only the name is required. */
+    public static function newCustomerFields(): array
+    {
+        return [
+            TextInput::make('name')->label('Nombre')->required()->maxLength(255),
+            TextInput::make('phone')->label('Teléfono / WhatsApp')->tel()->maxLength(40),
+            TextInput::make('email')->label('Correo')->email()->maxLength(255),
+            Select::make('locale')->label('Idioma de sus mensajes')->native(false)->options(['es' => 'Español', 'en' => 'Inglés'])->default('es')->required(),
+        ];
+    }
+
     public static function customerOptions(): array
     {
         return Customer::query()->orderBy('name')->get(['id', 'name', 'phone', 'email'])
@@ -376,6 +399,14 @@ class EventResource extends Resource
     /** Form state -> SaveEventDraft input (explicit offsets, cents, null travel fee when unknown). */
     public static function toServiceInput(array $data): array
     {
+        $tbd = (bool) ($data['time_tbd'] ?? false);
+        if ($tbd) {
+            // No time yet: a noon placeholder for the package length keeps the date, deposit and quote rules working.
+            $minutes = ServiceVariant::partyMinutes(PriceVersion::whereIn('id', array_map('intval', $data['price_version_ids'] ?? []))->get()
+                ->map(fn ($p) => [$v = ServiceVariant::find($p->service_variant_id), (int) $v?->duration_minutes])->all()) ?: 120;
+            $data['start_time'] = '12:00'; $data['end_time'] = date('H:i', strtotime('2000-01-01 12:00') + 60 * min($minutes, 660));
+            $data['start_time_choice'] = $data['end_time_choice'] = null;
+        }
         $start = ChicagoTime::toIso($data['date'], $data['start_time'], $data['start_time_choice'] ?? null, 'data.start_time');
         $end = ChicagoTime::toIso($data['date'], $data['end_time'], $data['end_time_choice'] ?? null, 'data.end_time');
         if (strtotime($end) <= strtotime($start)) {
@@ -386,7 +417,7 @@ class EventResource extends Resource
 
         return [
             'customer_id' => (int) $data['customer_id'], 'title' => trim((string) $data['title']),
-            'starts_at' => $start, 'ends_at' => $end, 'timezone' => ChicagoTime::TZ,
+            'starts_at' => $start, 'ends_at' => $end, 'time_tbd' => $tbd, 'timezone' => ChicagoTime::TZ,
             'address' => $blankToNull($data['address'] ?? null), 'postal_code' => $blankToNull($data['postal_code'] ?? null),
             'setup_minutes' => filled($data['setup_minutes'] ?? null) ? (int) $data['setup_minutes'] : null,
             'breakdown_minutes' => filled($data['breakdown_minutes'] ?? null) ? (int) $data['breakdown_minutes'] : null,
@@ -455,7 +486,8 @@ class EventResource extends Resource
 
         return [
             'customer_id' => $event->customer_id, 'title' => $event->title, 'date' => $date,
-            'start_time' => $start, 'start_time_choice' => $startChoice, 'end_time' => $end, 'end_time_choice' => $endChoice,
+            'time_tbd' => (bool) $event->time_tbd,
+            'start_time' => $event->time_tbd ? null : $start, 'start_time_choice' => $startChoice, 'end_time' => $event->time_tbd ? null : $end, 'end_time_choice' => $endChoice,
             'address' => $event->address, 'postal_code' => $event->postal_code, 'travel_has_evidence' => filled($event->travel_fee_evidence ?? null) ? '1' : null,
             'setup_minutes' => $event->setup_minutes, 'breakdown_minutes' => $event->breakdown_minutes,
             'travel_fee' => $event->travel_fee_cents === null ? null : rtrim(rtrim(number_format($event->travel_fee_cents / 100, 2, '.', ''), '0'), '.'),
@@ -482,8 +514,8 @@ class EventResource extends Resource
                 ->selectSub(fn ($s) => $s->from('event_services')->join('price_versions', 'price_versions.id', '=', 'event_services.price_version_id')->selectRaw('sum(price_versions.amount_cents)')->whereColumn('event_services.event_id', 'events.id'), 'services_cents'))
             ->columns([
                 TextColumn::make('starts_at')->label('Fecha y hora')->sortable()
-                    ->formatStateUsing(fn ($state) => Labels::when($state))
-                    ->description(fn ($record) => 'hasta '.$record->ends_at->setTimezone(Labels::TZ)->locale('es')->translatedFormat('g:i a')),
+                    ->formatStateUsing(fn ($state, $record) => $record->time_tbd ? $state->setTimezone(Labels::TZ)->locale('es')->translatedFormat('D j M Y') : Labels::when($state))
+                    ->description(fn ($record) => $record->time_tbd ? 'Hora por definir' : 'hasta '.$record->ends_at->setTimezone(Labels::TZ)->locale('es')->translatedFormat('g:i a')),
                 TextColumn::make('title')->label('Fiesta')->searchable()->weight('bold')
                     ->description(fn ($record) => $record->customer?->name),
                 TextColumn::make('total')->label('Total')
