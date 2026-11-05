@@ -45,7 +45,7 @@ final class OpeningStripeProof
                 && $intent['payable_cents'] === $intent['principal_cents'] + $intent['customer_fee_cents']
                 // main CARD-FEE-01: the receipt row is the principal; the 3% fee is its own customer_fee row (same transaction).
                 && $intent['principal_cents'] === $entry->amount_cents && $provider['gross_cents'] === $intent['payable_cents'] && self::feeRowMatches($entry, $intent)
-                && is_string($provider['account']) && $provider['account'] !== '' && $provider['account'] === config('waoo.stripe_test_account')
+                && is_string($provider['account']) && $provider['account'] !== '' && $provider['account'] === \App\Services\Finance\StripeMode::account()
                 && ($webhook['stripe_account_id'] === null || $webhook['stripe_account_id'] === $provider['account'])
                 && in_array($webhook['event_type'], ['checkout.session.completed', 'checkout.session.async_payment_succeeded', 'payment_intent.succeeded'], true)
                 && $provider['session_id'] === $intent['stripe_checkout_session_id'] && $provider['payment_id'] === $intent['stripe_payment_intent_id']

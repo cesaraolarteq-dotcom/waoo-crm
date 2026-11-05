@@ -87,10 +87,10 @@ final class OpeningRefundProof
             'sanitized_payload_sha256' => MutationKey::hash($payload)];
         if ($p['webhook'] !== $webhook || $w->state !== 'processed' || !$w->processed_at || !$w->verified_at || $w->verified_at->isFuture()
             || !preg_match('/^[a-f0-9]{64}$/D', $w->raw_sha256) || $payload['id'] !== $w->id || $payload['type'] !== $w->event_type
-            || $payload['livemode'] !== false || $payload['account'] !== $w->stripe_account_id
+            || $payload['livemode'] !== \App\Services\Finance\StripeMode::livemode() || $payload['account'] !== $w->stripe_account_id
             || (!in_array($w->event_type, ['refund.created', 'refund.updated', 'charge.refund.updated', 'charge.refunded'], true)
                 && !str_starts_with($w->event_type, 'charge.dispute.'))
-            || ($w->stripe_account_id !== null && $w->stripe_account_id !== config('waoo.stripe_test_account')))
+            || ($w->stripe_account_id !== null && $w->stripe_account_id !== \App\Services\Finance\StripeMode::account()))
             throw new \UnexpectedValueException('Invalid private refund callback.');
         return ['payload' => $p, 'object' => $payload['data']['object'], 'type' => $w->event_type];
     }

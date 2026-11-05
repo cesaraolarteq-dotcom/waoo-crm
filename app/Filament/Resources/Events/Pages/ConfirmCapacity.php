@@ -171,7 +171,7 @@ class ConfirmCapacity extends Page
                     Radio::make('choice')->label('Esa hora se repite ese día: ¿cuál?')->options(ChicagoTime::CHOICES)->required()->columnSpanFull()
                         ->visible(fn (Get $get) => ChicagoTime::isAmbiguous($get('date'), $get('time'))),
                 ]),
-                Textarea::make('deposit_exception_reason')->label('Por qué se acepta menos del 50 %')->minLength(10)->maxLength(2000)->required()->columnSpanFull()
+                Textarea::make('deposit_exception_reason')->label(fn () => \App\Services\Scheduling\DepositPolicy::fullPayment($this->record->starts_at, $this->record->created_at) ? 'Por qué se acepta menos del 100 % (fiesta para hoy o mañana)' : 'Por qué se acepta menos del 50 %')->minLength(10)->maxLength(2000)->required()->columnSpanFull()
                     ->visible(fn (Get $get) => $this->isBelowTarget($get('payment.amount'))),
             ]),
             Section::make('3. Revisión')->columns(2)
@@ -407,7 +407,9 @@ class ConfirmCapacity extends Page
             return false;
         }
 
-        return EditServiceVariant::toCents($amount) * 2 < $total;
+        $cents = EditServiceVariant::toCents($amount);
+        // Today or tomorrow is paid 100 % (owner 2026-11-04): anything less needs the exception note too.
+        return $cents * 2 < $total || (\App\Services\Scheduling\DepositPolicy::fullPayment($this->record->starts_at, $this->record->created_at) && $cents < $total);
     }
 
     private function depositHint(): string

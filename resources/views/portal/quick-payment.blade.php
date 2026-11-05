@@ -22,6 +22,8 @@
 <label class="p-field">{{ $es?'Referencia (opcional)':'Reference (optional)' }}<input name="reference" maxlength="255"></label>
 <button class="p-btn" type="submit">{{ $es?'Pagué por Zelle':'I paid by Zelle' }}</button>
 </form>
+{{-- The real CRM has no card payments until live Stripe is connected (owner 2026-11-04). --}}
+@if(! \App\Support\WaooRuntime::live() || \App\Services\Finance\StripeMode::live())
 <h3>Stripe · {{ $es?'Tarjeta / Klarna':'Card / Klarna' }}</h3>
 <form id="quick-stripe" class="p-form" method="POST" action="{{ url('/portal/api/quick-payment/checkout') }}">@csrf
 @foreach($q['choices'] as $choice)
@@ -29,6 +31,7 @@
 {{ $choice['deposit_percent'] }} % · ${{ number_format($choice['principal_cents']/100,2) }} + ${{ number_format($choice['customer_fee_cents']/100,2) }} (3 %) = <b>${{ number_format($choice['payable_cents']/100,2) }}</b></label>
 @endforeach
 <button class="p-btn" type="submit">{{ $es?'Continuar a Stripe':'Continue to Stripe' }}</button></form>
+@endif
 @else
 <p role="status">{{ $es?'Esta reserva necesita revisión del dueño antes de continuar. No hagas otro pago.':'This booking needs owner review before continuing. Please do not make another payment.' }}</p>
 @endif

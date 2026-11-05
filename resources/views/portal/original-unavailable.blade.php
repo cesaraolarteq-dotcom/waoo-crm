@@ -1,4 +1,4 @@
-@php($vm=['lang'=>$lang,'test_mode'=>true,'lang_url'=>['es'=>url('/portal?lang=es'),'en'=>url('/portal?lang=en')]])
+@php($vm=['lang'=>$lang,'test_mode'=>! \App\Support\WaooRuntime::live(),'lang_url'=>['es'=>url('/portal?lang=es'),'en'=>url('/portal?lang=en')]])
 @extends('portal.layout')
 @section('content')
 <section class="p-card"><h1 class="p-h1">{{ $lang==='es'?'Acuerdo no disponible':'Agreement unavailable' }}</h1>

@@ -1,5 +1,5 @@
 @php
-    $vm = ['lang' => $lang, 'test_mode' => true, 'lang_url' => ['es' => url('/portal?lang=es'), 'en' => url('/portal?lang=en')]];
+    $vm = ['lang' => $lang, 'test_mode' => ! \App\Support\WaooRuntime::live(), 'lang_url' => ['es' => url('/portal?lang=es'), 'en' => url('/portal?lang=en')]];
     $t = fn ($k, $r = []) => \App\Support\PortalCopy::get($lang, $k, $r);
 @endphp
 @extends('portal.layout')

@@ -7,7 +7,7 @@ final class FinanceGate
 {
     public static function enabled(): bool
     {
-        return app()->environment(['local', 'testing', 'staging']) && (bool) config('waoo.sandbox_finance', false)
+        return \App\Support\WaooRuntime::trusted() && (bool) config('waoo.sandbox_finance', false)
             && class_exists(\App\Services\Finance\RecordZellePayment::class);
     }
 }

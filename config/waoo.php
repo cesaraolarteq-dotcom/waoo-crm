@@ -54,6 +54,8 @@ return [
     // Owner 2026-11-03: the balance payment from the client link may also offer Klarna/Afterpay (comma list, card always included).
     'portal_payment_methods' => array_values(array_filter(array_map('trim', explode(',', (string) env('WAOO_PORTAL_PAYMENT_METHODS', 'card'))))),
     'quick_stripe_requested_methods' => ['card'], // Requested policy only, never verified account capability or financing activation.
+    // Owner 2026-11-04: the real CRM (APP_ENV=production) only runs its features with WAOO_LIVE=true.
+    'live' => env('WAOO_LIVE', false) === true || env('WAOO_LIVE') === 'true',
     'sandbox_finance' => env('WAOO_SANDBOX_FINANCE', false),
     'sandbox_changes' => env('WAOO_SANDBOX_CHANGES', false), // Owner 2026-10-29: cancel a party and refund money (card back to Stripe, Zelle recorded).
     'sandbox_history' => env('WAOO_SANDBOX_HISTORY', false),
@@ -83,6 +85,11 @@ return [
     'sandbox_documents' => env('WAOO_SANDBOX_DOCUMENTS', false),
     'sandbox_immediate_contracts' => env('WAOO_SANDBOX_IMMEDIATE_CONTRACTS', false),
     'sandbox_staff' => env('WAOO_SANDBOX_STAFF', false), // STAFF-01 v2 owner link actions; read by Codex's services too.
+    // Owner 2026-11-04: live Stripe only on the real CRM (WAOO_LIVE) and only with STRIPE_LIVE=true (App\\Services\\Finance\\StripeMode).
+    'stripe_live' => env('STRIPE_LIVE', false) === true || env('STRIPE_LIVE') === 'true',
+    'stripe_live_secret' => env('STRIPE_LIVE_SECRET'),
+    'stripe_live_webhook_secret' => env('STRIPE_LIVE_WEBHOOK_SECRET'),
+    'stripe_live_account' => env('STRIPE_LIVE_ACCOUNT'),
     'stripe_test_secret' => env('STRIPE_TEST_SECRET'),
     'stripe_test_webhook_secret' => env('STRIPE_TEST_WEBHOOK_SECRET'),
     'stripe_test_account' => env('STRIPE_TEST_ACCOUNT'),

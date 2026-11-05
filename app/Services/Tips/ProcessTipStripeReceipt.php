@@ -29,7 +29,7 @@ final class ProcessTipStripeReceipt {
                 $r->fill(['state'=>'processed','processed_at'=>now(),'last_error'=>null])->save();},3);return;
         }
         $p=$s['payment_intent']??null;$c=is_array($p)?($p['latest_charge']??null):null;
-        if(!is_array($p)||!is_array($c)||!is_string($p['id']??null)||!preg_match('/^pi_[A-Za-z0-9_]{1,220}$/D',$p['id'])||($p['livemode']??null)!==false||($p['status']??null)!=='succeeded'
+        if(!is_array($p)||!is_array($c)||!is_string($p['id']??null)||!preg_match('/^pi_[A-Za-z0-9_]{1,220}$/D',$p['id'])||($p['livemode']??null)!==\App\Services\Finance\StripeMode::livemode()||($p['status']??null)!=='succeeded'
             ||($p['currency']??null)!=='usd'||!is_int($p['amount_received']??null)||$p['amount_received']!==$i->amount_cents||($c['captured']??null)!==true||($c['paid']??null)!==true||!is_int($c['created']??null)||$c['created']<=0||$c['created']>time()){$this->problem($receipt,$i,'tip_payment_not_verified');return;}
         if((($o['object']??null)==='payment_intent'&&($o['id']??null)!==$p['id'])||(is_string($o['payment_intent']??null)&&$o['payment_intent']!==$p['id'])){$this->problem($receipt,$i,'tip_payment_binding_mismatch');return;}
         DB::transaction(function()use($i,$receipt,$s,$p,$c){

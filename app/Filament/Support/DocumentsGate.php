@@ -7,7 +7,7 @@ final class DocumentsGate
 {
     public static function enabled(): bool
     {
-        return app()->environment(['local', 'testing', 'staging']) && (bool) config('waoo.sandbox_documents', false)
+        return \App\Support\WaooRuntime::trusted() && (bool) config('waoo.sandbox_documents', false)
             && class_exists(\App\Services\Documents\CreateContract::class);
     }
 }

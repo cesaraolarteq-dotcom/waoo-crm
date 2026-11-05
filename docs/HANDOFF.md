@@ -1,3 +1,37 @@
+## 2026-11-05 · Claude · Revisión independiente de `claude/stripe-live` (Codex sin créditos; César eligió «B»: revisar + unir con controles)
+Revisor aparte (code-review high, diff completo contra main). Corregido en la rama:
+- Reserva rápida en vivo rechazaba toda sesión `cs_live_` (`QuickPaymentCheckout::session` aún exigía `cs_test_`): ahora `StripeMode::sessionPrefix()`.
+- `StripeMode::disabled()` (real CRM sin `STRIPE_LIVE`): sin clave, cuenta ni secreto de webhook → el webhook responde 403 y no guarda eventos de prueba.
+- `ConfirmBooking`: reglas 100 % hoy/mañana y <24 h se evalúan con `payment.received_at` (no con la hora de confirmar) y no aplican a fiestas importadas de HoneyBook. Confirmar reserva muestra el motivo de excepción también cuando hoy/mañana paga <100 %.
+- Depósito 100 %: se lee de la PRIMERA revisión (un cargo de cambio de $100 ya no lo regresa a 50 %), igual en `QuickPaymentProtocol::percents()`.
+- Cotizaciones para hoy/mañana congelan depósito 100 % (`QuoteSnapshot`), texto EN/ES `deposit_hint_full`, PDF «Pago completo».
+- Importar todo: montaje/desmontaje desconocidos quedan null (`PackageTimingDefaults`), no 0; errores 409/SQL de una fila no cortan el lote.
+- Mensaje de `DecideQuote` sin hora ahora EN + ES. `deploy-hostinger.sh`: `pipefail` (una migración fallida ya no se reporta como éxito).
+- PENDIENTE (anotado, no bloquea): las filas de ledger/intents siguen con `environment='test'` también en el CRM real (bases separadas, así que no se mezcla dinero). Cambiarlo toca ~40 lugares + migración de valores: hacerlo aparte.
+- Tests: `StripeModeTest` (+2). Suites de dinero/reservas/importación 915 tests: solo fallan las de MariaDB (concurrencia/auditoría).
+
+## 2026-11-05 · Claude → Codex · Stripe real en el CRM real (rama `claude/stripe-live`, sobre `claude/go-live-switch`) — REVISAR (dinero + seguridad)
+- Owner 2026-11-04: «conectemos stripe real; hagámoslo» (paso 2). NO activo en ningún servidor: necesita `STRIPE_LIVE=true` + claves live que el dueño pega él mismo.
+- `App\Services\Finance\StripeMode`: `live()` = `WaooRuntime::live()` && `waoo.stripe_live===true`. Decide `livemode()` esperado, `account()` (`STRIPE_LIVE_ACCOUNT` vs `STRIPE_TEST_ACCOUNT`), `secret()`, `webhookSecret()`, `keyAllowed()` (live: `sk_live_`/`rk_live_`; resto: `sk_test_`/`rk_test_`), `sessionPrefix()` (propinas).
+- Reemplazados todos los `livemode===false` y `config('waoo.stripe_test_account'|..._secret|..._webhook_secret)` en webhook, recibos (normal, rápido, propinas), checkout, refunds, apertura/cutover, CardFees. En crm-test nada cambia (sigue solo test). Real sin `STRIPE_LIVE`: gateway y refunds se niegan; formularios de tarjeta ocultos.
+- Para activar en el real: `STRIPE_LIVE=true`, `STRIPE_LIVE_SECRET`, `STRIPE_LIVE_WEBHOOK_SECRET` (endpoint `https://crm.waooparty.com/webhooks/stripe`, mismos eventos que el de pruebas), `STRIPE_LIVE_ACCOUNT`, y `WAOO_STRIPE_CREDIT_ONLY_ACCOUNT` = la misma cuenta live (CardFees exige que coincidan). Prueba real de $1 + reembolso antes de clientes.
+- Test `StripeModeTest` (4). Suites de pagos verdes salvo las de MariaDB.
+
+## 2026-11-04 · Claude → Codex · Interruptor del CRM real `WAOO_LIVE` (rama `claude/go-live-switch`, sobre `claude/quote-new-client`) — REVISAR (seguridad)
+- Owner: «creemos el CRM real», paso 1 = crm.waooparty.com sin Stripe real (solo Zelle), sin mensajes a clientes, en paralelo con HoneyBook.
+- `App\Support\WaooRuntime::trusted()` = local/testing/staging **o** (`production` + `WAOO_LIVE=true`). Reemplaza los 16 `environment(['local','testing','staging'])` y `Sandbox::require`; `hosted()` reemplaza los 3 `environment('staging')` (HTTPS + cookie segura también en el real). Cada función sigue pidiendo su `WAOO_SANDBOX_*`.
+- `StripeTestGateway` se niega en el real («Stripe real todavía no está conectado. Usa Zelle.»). Avisos «Modo prueba» (portal, cotización, propina, pestañas Dinero/Contrato, plantilla de contrato) solo fuera del real. Vista previa del portal sigue local.
+- Test `WaooRuntimeTest` (3). Suites Portal/Quote/Tip/Mail/Lead/Finance/Contract/Import verdes salvo las de MariaDB.
+- Pendiente: Stripe real (paso 2, gateway live + webhook, revisión Codex); cambiar el envío de leads de la web al real.
+
+## 2026-11-04 · Claude → Codex · Hoy/mañana = 100 % también en el enlace de Reserva rápida (rama `claude/quote-new-client`) — REVISAR (dinero)
+- Bug del dueño en crm-test (WP-41, fiesta mañana): la revisión pedía 100 % pero el portal ofrecía 50 % (tarjeta) y Zelle sugería el 50 %. `QuickPaymentProtocol::percents()` = [100] cuando `deposit_target_cents >= total_cents`; `ReadQuickPayment` solo ofrece esas opciones y el monto Zelle sugerido es el 100 %; `QuickPaymentCheckout` rechaza 50 % (409). Test `test_party_tomorrow_offers_only_the_full_amount_for_card_and_zelle`.
+- `composer.lock`: Symfony 7.4.23 (avisos de seguridad publicados hoy hacían fallar `checks`).
+
+## 2026-11-04 · Claude → Codex · Nueva cotización: cliente nuevo + sin hora (rama `claude/quote-new-client`, sobre `claude/extra-time`) — REVISAR (cotización/portal)
+- **Cliente nuevo desde «Nueva cotización»** (owner: «las cotizaciones normalmente son para clientes nuevos»): el campo Cliente del formulario de fiesta tiene «+» con nombre/teléfono/correo/idioma (`SaveCustomer`). La búsqueda usa `QuickBooking::possibleMatches` (ignora acentos: «cesar» encuentra «César»).
+- **Sin hora** (owner: «muchas veces solo cotizan, no tienen hora»): nueva columna `events.time_tbd`. Toggle «Todavía no tiene hora» oculta las horas; se guarda 12:00 + duración del paquete como marcador (fecha, depósito y vigencia siguen funcionando). Lista de fiestas: «Hora por definir». El snapshot de la cotización lleva `time_tbd=true` solo cuando aplica (hash igual para las viejas). Portal/PDF/Cotizaciones: «Hora por definir / Time to be confirmed»; el cliente NO puede aceptar (botón oculto + `DecideQuote` 409), sí rechazar; aviso EN/ES `time_tbd_note`. `ConfirmBooking` rechaza fiestas sin hora. Para reservar: el dueño pone la hora y manda la revisión.
+- Archivos: migración `2026_11_04_150000_add_time_tbd_to_events`, `Event`, `SaveEventDraft`, `EventResource`, `QuoteSnapshot`, `ReadQuoteViewModel`, `DecideQuote`, `ConfirmBooking`, `QuoteCopy`, vistas `portal/quote`, `pdf/quote`, `quote-detail`, `Quotes`. Test `QuoteWithoutTimeTest` (4). Local: suites Quote/Event/Booking verdes salvo las de MariaDB (concurrencia/auditoría) que siempre fallan en sqlite.
 ## 2026-11-04 · Codex · #203 fusionado: #200 integrado, semana Houston y parches de seguridad
 - **Main de código:** `87a42dcec33dbc107a7f66bf0e643ef1f15f4bca`. Fuente probada `21ce2afaee5690e86e91a32424b32a000c116621`; `git diff` contra main quedó vacío tras fusionar. Conserva Claude hasta `3b37fde` sin reescribir commits; #200 cerrado como ya integrado, rama preservada.
 - **Suite completa PHP8.3/MariaDB SUCCESS6/6:** https://github.com/cesaraolarteq-dotcom/waoo-crm/actions/runs/41903876337 . Sin bypass/admin ni cambios de workflows. Push duplicado41903864484 cancelado sobre el mismo SHA; se conserva la corrida completa del PR, con todos sus jobs verdes.

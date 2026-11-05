@@ -33,10 +33,13 @@
     @endforeach
     <li class="q-total"><span>{{ $t('total') }}</span><b>{{ $q['total'] }}</b></li>
   </ul>
-  <p class="p-hint"><b>{{ $t('deposit') }}:</b> {{ $t('deposit_hint', ['amount' => $q['deposit']]) }}</p>
+  <p class="p-hint"><b>{{ $t('deposit') }}:</b> {{ $t(($q['deposit_full'] ?? false) ? 'deposit_hint_full' : 'deposit_hint', ['amount' => $q['deposit']]) }}</p>
   @if ($q['pdf_url'] && $q['state'] !== 'open')<a class="p-btn p-btn-quiet" href="{{ $q['pdf_url'] }}" target="_blank" rel="noopener noreferrer">{{ $t('pdf') }}</a>@endif
 </section>
 
+@if ($q['state'] === 'open' && ($q['time_tbd'] ?? false))
+<p class="p-card p-notice p-notice-pending" role="status">{{ $t('time_tbd_note') }}</p>
+@endif
 @if ($q['state'] === 'open')
 @php
     $d = $vm['decide'] ?? [];

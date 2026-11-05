@@ -33,6 +33,7 @@ final class DecideQuote
             RecordWriteRejected::unless($q->status==='sent'&&$q->valid_until->isFuture()&&$data['expected_revision']===$r->revision
                 &&hash_equals($p->snapshot_sha256,$data['snapshot_sha256'])&&hash_equals($p->pdf_sha256,$data['pdf_sha256'])
                 &&$consent['version']===$data['consent_version']&&hash_equals($consent['sha256'],$data['consent_sha256']),409,'Revisa la versión y el texto vigentes de la cotización.');
+            RecordWriteRejected::when($data['outcome']==='accepted'&&($r->event_snapshot['time_tbd']??false),409,'Falta confirmar la hora de la fiesta. Te mandamos la cotización con la hora para que la aceptes. / Your party time is not confirmed yet. We will send the quote with the time so you can accept it.');
             if (filled($r->customer_snapshot['email']??null)&&strcasecmp($r->customer_snapshot['email'],$data['email'])!==0) throw ValidationException::withMessages(['email'=>'Usa el correo de esta cotización.']);
             app(QuoteArtifacts::class)->read($p);
             if (!DB::table('quote_pdf_views')->where(['quote_presentation_id'=>$p->id,'portal_grant_id'=>$g->id])->exists()) throw ValidationException::withMessages(['quote'=>'Abre el PDF completo antes de registrar tu decisión.']);

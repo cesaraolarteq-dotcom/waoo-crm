@@ -20,7 +20,7 @@ final class CreateTipCheckout {
             RecordWriteRejected::unless(!TipCheckoutIntent::where('active_event_id',$g->event_id)->lockForUpdate()->first(),409,'Ya hay una propina en proceso. Reutiliza el intento o pide revisión; no abras otro cobro.');
             $expires=now()->toImmutable()->utc()->addHour()->min($g->expires_at);
             RecordWriteRejected::unless($expires->greaterThan(now()->addMinutes(30)),409,'Este enlace está por vencer.');
-            $account=config('waoo.stripe_test_account');
+            $account=\App\Services\Finance\StripeMode::account();
             RecordWriteRejected::unless(is_string($account)&&preg_match('/^acct_[A-Za-z0-9_]+$/D',$account),403,'Configura la cuenta de pruebas antes de iniciar un cobro.');
             $origin=Sandbox::origin();RecordWriteRejected::unless(strlen($origin)<=255,403,'El origen de pruebas es inválido.');
             $i=TipCheckoutIntent::create(['id'=>(string)Str::uuid(),'tip_grant_id'=>$g->id,'event_id'=>$g->event_id,'financial_revision_id'=>$g->financial_revision_id,'active_grant_id'=>$g->id,'active_event_id'=>$g->event_id,
@@ -64,7 +64,7 @@ final class CreateTipCheckout {
         RecordWriteRejected::unless(!isset($result['_expiry_pending']),409,'El cobro venció; estamos verificando su cierre. No abras otro intento.');return $result;
     }
     private function configuration(TipCheckoutIntent $i):void {
-        if($i->provider_account!==config('waoo.stripe_test_account')||$i->request_origin!==Sandbox::origin()){
+        if($i->provider_account!==\App\Services\Finance\StripeMode::account()||$i->request_origin!==Sandbox::origin()){
             $this->problem($i,'provider_configuration_changed');throw new RecordWriteRejected(409,'La configuración cambió; este intento requiere conciliación.');
         }
     }

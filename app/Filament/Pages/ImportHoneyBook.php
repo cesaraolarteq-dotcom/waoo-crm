@@ -121,7 +121,7 @@ class ImportHoneyBook extends Page
 
     public static function canAccess(): bool
     {
-        return parent::canAccess() && app()->environment(['local', 'testing', 'staging']) && (bool) config('waoo.sandbox_imports', false)
+        return parent::canAccess() && \App\Support\WaooRuntime::trusted() && (bool) config('waoo.sandbox_imports', false)
             && class_exists(CommitHoneyBookEvent::class);
     }
 
@@ -538,6 +538,9 @@ class ImportHoneyBook extends Page
                 $this->bulkLeft[$r['id']] = collect($e->errors())->flatten()->first() ?: 'No se pudo importar: ábrela.';
             } catch (RecordWriteRejected|AuthorizationException $e) {
                 $this->bulkLeft[$r['id']] = $e->getMessage();
+            } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface|\Illuminate\Database\QueryException $e) {
+                report($e);
+                $this->bulkLeft[$r['id']] = 'No se pudo importar ahora (cambió mientras se importaba): ábrela.';
             }
         }
         $this->bulkReviewed = false;
@@ -564,6 +567,10 @@ class ImportHoneyBook extends Page
             return 'No se pudo confirmar: '.(collect($e->errors())->flatten()->first() ?: 'ábrela.');
         } catch (RecordWriteRejected|AuthorizationException $e) {
             return 'No se pudo confirmar: '.$e->getMessage();
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface|\Illuminate\Database\QueryException $e) {
+            // Review 2026-11-05: a 409 abort or a lock timeout on one row must not stop «Importar todo» halfway.
+            report($e);
+            return 'No se pudo confirmar ahora (cambió mientras se importaba): ábrela y confírmala.';
         }
 
         return null;

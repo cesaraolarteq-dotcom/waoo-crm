@@ -15,7 +15,7 @@ final class ReadOpeningPortalViewModel
             $c=Customer::whereKey($e->customer_id)->sharedLock()->firstOrFail();
             $source=ImportedProjectRevision::whereKey($o['source_revision_id'])->sharedLock()->firstOrFail()->source_snapshot;
             $money=OpeningFinanceSummary::forEvent($e);
-            return ['schema_version'=>1,'kind'=>'imported_agreement','lang'=>$lang,'test_mode'=>true,
+            return ['schema_version'=>1,'kind'=>'imported_agreement','lang'=>$lang,'test_mode'=>! \App\Support\WaooRuntime::live(),
                 'first_name'=>preg_split('/[\s\p{Z}]+/u',trim($c->name),2)[0]??'',
                 'event'=>$e->only(['title','starts_at','ends_at','timezone','address']),
                 'agreement'=>['origin'=>'honeybook','package_description'=>$source['services'],'characters_description'=>$source['characters'],

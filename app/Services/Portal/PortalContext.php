@@ -62,7 +62,7 @@ final readonly class PortalContext
     }
     public static function requireTransport(Request $request): void
     {
-        if (app()->environment('staging') && (!$request->isSecure() || config('session.secure') !== true)) {
+        if (\App\Support\WaooRuntime::hosted() && (!$request->isSecure() || config('session.secure') !== true)) {
             throw new AuthorizationException('El portal de pruebas requiere HTTPS y una cookie de sesión segura.');
         }
     }

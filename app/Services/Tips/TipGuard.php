@@ -9,7 +9,7 @@ use Illuminate\Validation\ValidationException;
 final class TipGuard {
     public static function enabled():void {Sandbox::require('sandbox_tips');Sandbox::require();}
     public static function transport(\Illuminate\Http\Request $r):void {
-        self::enabled();abort_unless(!app()->environment('staging')||($r->isSecure()&&config('session.secure')===true),403);
+        self::enabled();abort_unless(!\App\Support\WaooRuntime::hosted()||($r->isSecure()&&config('session.secure')===true),403);
         if(!$r->isMethodSafe()&&$r->headers->has('Origin')){
             $p=parse_url(Sandbox::origin());$origin=$p['scheme'].'://'.$p['host'].(isset($p['port'])?':'.$p['port']:'');abort_unless($r->header('Origin')===$origin,403);
         }

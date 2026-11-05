@@ -13,7 +13,7 @@ final class CardFees
 
     public static function ready(): bool
     {
-        $account=config('waoo.stripe_test_account');
+        $account=\App\Services\Finance\StripeMode::account();
         return self::enabled() && is_string($account) && str_starts_with($account,'acct_')
             && config('waoo.stripe_credit_only_account')===$account;
     }

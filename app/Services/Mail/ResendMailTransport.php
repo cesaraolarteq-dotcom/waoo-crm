@@ -10,7 +10,7 @@ final class ResendMailTransport implements MailTransport
     public function configured(): bool
     {
         $key=config('services.resend.key');$name=config('waoo.mail_from_name');
-        return MailDeliveryGate::enabled() && app()->environment(['local','testing','staging'])
+        return MailDeliveryGate::enabled() && \App\Support\WaooRuntime::trusted()
             && config('waoo.sandbox_mail')===true && config('waoo.mail_provider')==='resend'
             && is_string($key) && strlen($key)>=16 && strlen($key)<=512 && !preg_match('/[\x00-\x20\x7f]/',$key)
             && is_string($name) && strlen($name)>0 && strlen($name)<=120 && !preg_match('/[\x00-\x1f\x7f<>]/',$name)

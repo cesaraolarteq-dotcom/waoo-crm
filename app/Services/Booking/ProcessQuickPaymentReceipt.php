@@ -39,11 +39,11 @@ final class ProcessQuickPaymentReceipt
             },3);return;
         }
         $pi=$s['payment_intent']??null;$charge=is_array($pi)?($pi['latest_charge']??null):null;$t=$envelope['terms'];
-        $valid=is_array($pi)&&is_array($charge)&&($pi['livemode']??null)===false&&($pi['status']??null)==='succeeded'&&($pi['currency']??null)==='usd'
+        $valid=is_array($pi)&&is_array($charge)&&($pi['livemode']??null)===\App\Services\Finance\StripeMode::livemode()&&($pi['status']??null)==='succeeded'&&($pi['currency']??null)==='usd'
             &&($pi['amount_received']??null)===$t['payable_cents']&&is_array($pi['metadata']??null)&&MutationKey::hash($pi['metadata'])===MutationKey::hash($envelope['parameters']['metadata'])
             &&is_string($pi['id']??null)&&preg_match('/\Api_[A-Za-z0-9_]+\z/',$pi['id'])
             &&in_array($charge['payment_method_details']['type']??null,$envelope['capabilities']['methods'],true)
-            &&($charge['paid']??null)===true&&($charge['captured']??null)===true&&($charge['livemode']??null)===false
+            &&($charge['paid']??null)===true&&($charge['captured']??null)===true&&($charge['livemode']??null)===\App\Services\Finance\StripeMode::livemode()
             &&($charge['amount']??null)===$t['payable_cents']&&($charge['currency']??null)==='usd'&&($charge['payment_intent']??null)===$pi['id']
             &&is_int($charge['created']??null)&&$charge['created']>0&&$charge['created']<=now()->timestamp+300
             &&(!$intent->stripe_payment_intent_id||$intent->stripe_payment_intent_id===$pi['id']);

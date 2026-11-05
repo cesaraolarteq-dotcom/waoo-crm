@@ -155,7 +155,7 @@ final class PortalPageController extends Controller
         }
         return [
             'extras' => $extras,
-            'lang' => $lang, 'step' => $step, 'reserved' => $signed && ($f['deposit_shortfall_cents'] ?? 1) === 0 && ! self::underReview($event->id), 'admin_view' => $client->adminAuthenticated, 'quick_payment'=>$quickPayment, 'steps' => $quickPayment ? ['details','pay','contract'] : ($canDetails ? ['details', 'contract', 'pay'] : ['contract', 'pay']), 'test_mode' => true,
+            'lang' => $lang, 'step' => $step, 'reserved' => $signed && ($f['deposit_shortfall_cents'] ?? 1) === 0 && ! self::underReview($event->id), 'admin_view' => $client->adminAuthenticated, 'quick_payment'=>$quickPayment, 'steps' => $quickPayment ? ['details','pay','contract'] : ($canDetails ? ['details', 'contract', 'pay'] : ['contract', 'pay']), 'test_mode' => ! \App\Support\WaooRuntime::live(),
             'details' => $details ? ['expected_event_version' => $details['expected_event_version'], 'expected_revision' => $details['expected_revision'],
                 'action' => url('/portal/api/details'),
                 'prepare_action' => (config('waoo.sandbox_immediate_contracts') || ($quickPayment['can_sign'] ?? false)) && $details['submission'] && !$signed && !$details['reviewed'] ? url('/portal/api/details/contract') : null,
