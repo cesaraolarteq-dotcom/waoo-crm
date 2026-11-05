@@ -71,7 +71,7 @@ final class CreateCheckoutIntent
             PaymentIntent::whereKey($intent->id)->update(['last_error' => 'provider_request_failed', 'updated_at' => now()]);
             throw new RecordWriteRejected(503, 'Stripe de pruebas no respondió. Reintenta la misma solicitud; no se ha marcado ningún pago.');
         }
-        if (($session['livemode'] ?? null) !== false || ($session['_verified_account'] ?? null) !== config('waoo.stripe_test_account')
+        if (($session['livemode'] ?? null) !== \App\Services\Finance\StripeMode::livemode() || ($session['_verified_account'] ?? null) !== \App\Services\Finance\StripeMode::account()
             || ($session['client_reference_id'] ?? null) !== $intent->id || (int) ($session['amount_total'] ?? -1) !== $intent->payable_cents || ($session['currency'] ?? null) !== 'usd'
             || ($methods !== ['card'] && self::sorted($session['payment_method_types'] ?? null) !== $methods)
             || parse_url($session['url'] ?? '', PHP_URL_HOST) !== 'checkout.stripe.com' || parse_url($session['url'] ?? '', PHP_URL_SCHEME) !== 'https') {
@@ -122,7 +122,7 @@ final class CreateCheckoutIntent
             $evidence = $gateway instanceof QuickStripeGateway ? $gateway->verifyMethods($methods) : null;
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) { throw $e;
         } catch (\Throwable) { $evidence = null; }
-        return $evidence === ['account' => config('waoo.stripe_test_account'), 'methods' => $methods] ? $methods : ['card'];
+        return $evidence === ['account' => \App\Services\Finance\StripeMode::account(), 'methods' => $methods] ? $methods : ['card'];
     }
 
     private static function sorted(mixed $methods): ?array

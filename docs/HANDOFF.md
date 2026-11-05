@@ -1,3 +1,10 @@
+## 2026-11-05 · Claude → Codex · Stripe real en el CRM real (rama `claude/stripe-live`, sobre `claude/go-live-switch`) — REVISAR (dinero + seguridad)
+- Owner 2026-11-04: «conectemos stripe real; hagámoslo» (paso 2). NO activo en ningún servidor: necesita `STRIPE_LIVE=true` + claves live que el dueño pega él mismo.
+- `App\Services\Finance\StripeMode`: `live()` = `WaooRuntime::live()` && `waoo.stripe_live===true`. Decide `livemode()` esperado, `account()` (`STRIPE_LIVE_ACCOUNT` vs `STRIPE_TEST_ACCOUNT`), `secret()`, `webhookSecret()`, `keyAllowed()` (live: `sk_live_`/`rk_live_`; resto: `sk_test_`/`rk_test_`), `sessionPrefix()` (propinas).
+- Reemplazados todos los `livemode===false` y `config('waoo.stripe_test_account'|..._secret|..._webhook_secret)` en webhook, recibos (normal, rápido, propinas), checkout, refunds, apertura/cutover, CardFees. En crm-test nada cambia (sigue solo test). Real sin `STRIPE_LIVE`: gateway y refunds se niegan; formularios de tarjeta ocultos.
+- Para activar en el real: `STRIPE_LIVE=true`, `STRIPE_LIVE_SECRET`, `STRIPE_LIVE_WEBHOOK_SECRET` (endpoint `https://crm.waooparty.com/webhooks/stripe`, mismos eventos que el de pruebas), `STRIPE_LIVE_ACCOUNT`, y `WAOO_STRIPE_CREDIT_ONLY_ACCOUNT` = la misma cuenta live (CardFees exige que coincidan). Prueba real de $1 + reembolso antes de clientes.
+- Test `StripeModeTest` (4). Suites de pagos verdes salvo las de MariaDB.
+
 ## 2026-11-04 · Claude → Codex · Interruptor del CRM real `WAOO_LIVE` (rama `claude/go-live-switch`, sobre `claude/quote-new-client`) — REVISAR (seguridad)
 - Owner: «creemos el CRM real», paso 1 = crm.waooparty.com sin Stripe real (solo Zelle), sin mensajes a clientes, en paralelo con HoneyBook.
 - `App\Support\WaooRuntime::trusted()` = local/testing/staging **o** (`production` + `WAOO_LIVE=true`). Reemplaza los 16 `environment(['local','testing','staging'])` y `Sandbox::require`; `hosted()` reemplaza los 3 `environment('staging')` (HTTPS + cookie segura también en el real). Cada función sigue pidiendo su `WAOO_SANDBOX_*`.

@@ -13,13 +13,13 @@ final class StripeWebhookController extends Controller
 {
     public function __invoke(Request $request)
     {
-        Sandbox::require(); $raw = $request->getContent(); $secret = (string) config('waoo.stripe_test_webhook_secret');
+        Sandbox::require(); $raw = $request->getContent(); $secret = \App\Services\Finance\StripeMode::webhookSecret();
         abort_unless(str_starts_with($secret, 'whsec_'), 403, 'Webhook de pruebas no configurado.');
         abort_if(strlen($raw) > 1024 * 1024, 413);
         try { $event = Webhook::constructEvent($raw, (string) $request->header('Stripe-Signature'), $secret, 300)->toArray(); }
         catch (\Throwable $e) { return response()->json(['message' => 'Invalid Stripe signature or payload.'], 400); }
-        if (($event['livemode'] ?? null) !== false || !is_string($event['id'] ?? null) || strlen($event['id']) > 255 || !is_string($event['type'] ?? null) || strlen($event['type']) > 255
-            || !is_array($event['data']['object'] ?? null) || (isset($event['account']) && $event['account'] !== config('waoo.stripe_test_account'))) {
+        if (($event['livemode'] ?? null) !== \App\Services\Finance\StripeMode::livemode() || !is_string($event['id'] ?? null) || strlen($event['id']) > 255 || !is_string($event['type'] ?? null) || strlen($event['type']) > 255
+            || !is_array($event['data']['object'] ?? null) || (isset($event['account']) && $event['account'] !== \App\Services\Finance\StripeMode::account())) {
             return response()->json(['message' => 'Test mode/account/event required.'], 400);
         }
         // Verify raw bytes first, then persist only allocation facts. Card/payment-method/billing data is never retained.
@@ -50,7 +50,7 @@ final class StripeWebhookController extends Controller
             if(is_scalar($metadata['grant_id']??null)&&ctype_digit((string)$metadata['grant_id']))$minimal['metadata']['grant_id']=(string)$metadata['grant_id'];
         }
         foreach (['event_id','financial_revision_id'] as $field) if (is_scalar($metadata[$field] ?? null) && ctype_digit((string) $metadata[$field])) $minimal['metadata'][$field] = (string) $metadata[$field];
-        $payload = ['id' => $event['id'], 'type' => $event['type'], 'livemode' => false, 'account' => $event['account'] ?? null, 'created' => $event['created'] ?? null, 'data' => ['object' => $minimal]];
+        $payload = ['id' => $event['id'], 'type' => $event['type'], 'livemode' => \App\Services\Finance\StripeMode::livemode(), 'account' => $event['account'] ?? null, 'created' => $event['created'] ?? null, 'data' => ['object' => $minimal]];
         $inserted = false;
         DB::transaction(function () use ($event, $raw, $payload, &$inserted) {
             $inserted = WebhookReceipt::query()->insertOrIgnore(['id' => $event['id'], 'event_type' => $event['type'], 'raw_sha256' => hash('sha256', $raw),

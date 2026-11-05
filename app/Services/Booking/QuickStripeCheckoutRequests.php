@@ -19,7 +19,7 @@ final class QuickStripeCheckoutRequests
 
     public static function policy(): array
     {
-        $account = config('waoo.stripe_test_account');
+        $account = \App\Services\Finance\StripeMode::account();
         $origin = Sandbox::origin();
         $methods = config('waoo.quick_stripe_requested_methods', ['card']);
         RecordWriteRejected::unless(is_string($account) && preg_match('/\Aacct_[A-Za-z0-9]+\z/', $account) === 1,
