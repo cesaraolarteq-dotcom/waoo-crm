@@ -36,6 +36,7 @@ class StripeModeTest extends TestCase
     public function test_real_crm_without_the_stripe_switch_charges_nothing(): void
     {
         $this->realCrm(false);
+        $this->assertFalse(\App\Services\Finance\CardFees::ready());
         $this->assertFalse(StripeMode::live());
         $this->assertStringContainsString('todavía no está conectado', $this->refused());
     }

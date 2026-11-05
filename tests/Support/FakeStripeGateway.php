@@ -6,13 +6,14 @@ use App\Services\Finance\StripeGateway;
 final class FakeStripeGateway implements StripeGateway
 {
     public array $calls = []; public array $sessions = []; public array $keys = []; public array $expired = [];
+    public bool $live = false;
     public bool $failAfterCreate = false; public bool $failRetrieve = false;
     public function createCheckout(array $parameters, string $key): array
     {
         $this->calls[] = ['parameters' => $parameters, 'key' => $key];
         if (!isset($this->keys[$key])) {
-            $id = 'cs_test_fixture_'.(count($this->sessions) + 1); $this->keys[$key] = $id;
-            $this->sessions[$id] = ['id' => $id, 'livemode' => false, '_verified_account' => 'acct_fixture', 'client_reference_id' => $parameters['client_reference_id'],
+            $id = ($this->live?'cs_live_fixture_':'cs_test_fixture_').(count($this->sessions) + 1); $this->keys[$key] = $id;
+            $this->sessions[$id] = ['id' => $id, 'livemode' => $this->live, '_verified_account' => 'acct_fixture', 'client_reference_id' => $parameters['client_reference_id'],
                 'metadata' => $parameters['metadata'], 'payment_method_types' => $parameters['payment_method_types'] ?? ['card'], 'amount_total' => array_sum(array_map(fn ($l) => (int) $l['price_data']['unit_amount'] * (int) ($l['quantity'] ?? 1), $parameters['line_items'])), 'currency' => 'usd',
                 'status' => 'open', 'payment_status' => 'unpaid', 'payment_intent' => null, 'url' => 'https://checkout.stripe.com/c/pay/'.$id];
         }
@@ -24,7 +25,7 @@ final class FakeStripeGateway implements StripeGateway
     public function paid(string $id): void
     {
         $session = &$this->sessions[$id]; $session['status'] = 'complete'; $session['payment_status'] = 'paid';
-        $session['payment_intent'] = ['id' => 'pi_fixture_'.($session['metadata']['local_intent_id'] ?? str_replace('-', '', $session['metadata']['local_tip_intent_id'])), 'livemode' => false, 'status' => 'succeeded', 'currency' => 'usd',
-            'amount_received' => $session['amount_total'], 'latest_charge' => ['paid' => true, 'captured' => true, 'created' => time() - 5, 'payment_method_details'=>['card'=>['funding'=>'credit']]]];
+        $session['payment_intent'] = ['id' => 'pi_fixture_'.($session['metadata']['local_intent_id'] ?? str_replace('-', '', $session['metadata']['local_tip_intent_id'])), 'livemode' => $this->live, 'status' => 'succeeded', 'currency' => 'usd',
+            'amount_received' => $session['amount_total'], 'latest_charge' => ['livemode' => $this->live, 'paid' => true, 'captured' => true, 'created' => time() - 5, 'payment_method_details'=>['card'=>['funding'=>'credit']]]];
     }
 }

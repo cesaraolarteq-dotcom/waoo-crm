@@ -20,6 +20,7 @@ final class ProcessQuickPaymentReceipt
         })->first();$a=$intent?QuickPaymentAttempt::where('payment_intent_id',$intent->id)->first():null;}
         if(!$a){$this->problem($r,null,'unlinked_quick_payment');return;}
         $request=QuickStripeCheckoutRequest::findOrFail($a->id);$envelope=QuickPaymentCheckout::verify($request);$intent=PaymentIntent::findOrFail($a->payment_intent_id);
+        if(!\App\Services\Finance\StripeMode::acceptsEvent($p)){$this->problem($r,$intent,'webhook_mode_or_account_mismatch');return;}
         if(!in_array($r->event_type,['checkout.session.completed','checkout.session.expired','checkout.session.async_payment_succeeded','checkout.session.async_payment_failed','payment_intent.succeeded'],true)){$this->problem($r,$intent,'unsupported_event');return;}
         $sid=($o['object']??null)==='checkout.session'?$o['id']:$intent->stripe_checkout_session_id;
         if(!$sid)throw new \RuntimeException('quick_checkout_not_linked_yet');

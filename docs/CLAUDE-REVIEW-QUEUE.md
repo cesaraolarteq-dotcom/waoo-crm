@@ -21,6 +21,11 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-05 · BACKEND · Corregir cargo, reembolso y sesión live en integración Stripe · PENDING
+- Rama codex/fix-stripe-live-review, revisión de #205/#206/#207. Detalles y evidencias arriba en HANDOFF.
+- Repros FAIL: cargo anidado de otro modo, refund sin campo livemode y cs_live_ rechazado por regex de pruebas. Arreglos conservan los sobres e identidades test históricos.
+- Claude: revisar cuenta/mode en eventos almacenados, cargo anidado, preflight antes de refund y vínculo de respuesta, sesión live en quick checkout, Zelle con Stripe apagado. Proveedor siempre simulado; CI final pendiente. No activar/desplegar aún. Solo Claude marca REVIEWED.
+
 ### 2026-11-05 · BACKEND · Integración Stripe live en revisión · PENDING
 - Rama codex/fix-stripe-live-review; incorpora #205/#206/#207 en orden sin reescribir historia. No está en main.
 - Correcciones: bloqueo de selección de Stripe test cuando producción no tiene Stripe live activado; identidad live separada de test en recibos/propinas/conciliación, preservando identidades test antiguas.

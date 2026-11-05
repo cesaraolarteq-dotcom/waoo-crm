@@ -49,6 +49,14 @@ final class StripeMode
     }
 
     /** Preserve historical test identities; live receipts must have a distinct namespace. */
+    public static function acceptsEvent(array $payload): bool
+    {
+        $account=self::account();
+        return is_string($account) && str_starts_with($account,'acct_')
+            && ($payload['livemode']??null)===self::livemode()
+            && (!isset($payload['account']) || $payload['account']===$account);
+    }
+
     public static function paymentIdentity(string $account, string $payment): string
     {
         self::requireEnabledProduction();

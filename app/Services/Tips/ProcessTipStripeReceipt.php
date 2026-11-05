@@ -13,6 +13,7 @@ final class ProcessTipStripeReceipt {
         $id=$m['local_tip_intent_id']??null;$i=$id?TipCheckoutIntent::find($id):null;
         if(!$i&&!$id){$q=TipCheckoutIntent::query();$i=($o['object']??null)==='checkout.session'?$q->where('provider_session_id',$o['id'])->first():$q->where('provider_payment_id',($o['object']??null)==='payment_intent'?$o['id']:($o['payment_intent']??'unlinked'))->first();}
         if(!$i){$this->problem($receipt,null,'unlinked_tip_event');return;}
+        if(!\App\Services\Finance\StripeMode::acceptsEvent($payload)){$this->problem($receipt,$i,'webhook_mode_or_account_mismatch');return;}
         if(isset($m['local_intent_id'])||isset($m['financial_revision_id'])||(isset($m['kind'])&&$m['kind']!=='tip')
             ||(isset($m['event_id'])&&(string)$m['event_id']!==(string)$i->event_id)||(isset($m['grant_id'])&&(string)$m['grant_id']!==(string)$i->tip_grant_id)){$this->problem($receipt,$i,'tip_namespace_conflict');return;}
         if(!in_array($receipt->event_type,['checkout.session.completed','checkout.session.async_payment_succeeded','checkout.session.async_payment_failed','checkout.session.expired','payment_intent.succeeded'],true)){$this->problem($receipt,$i,'tip_refund_or_unsupported_event');return;}
@@ -30,7 +31,7 @@ final class ProcessTipStripeReceipt {
         }
         $p=$s['payment_intent']??null;$c=is_array($p)?($p['latest_charge']??null):null;
         if(!is_array($p)||!is_array($c)||!is_string($p['id']??null)||!preg_match('/^pi_[A-Za-z0-9_]{1,220}$/D',$p['id'])||($p['livemode']??null)!==\App\Services\Finance\StripeMode::livemode()||($p['status']??null)!=='succeeded'
-            ||($p['currency']??null)!=='usd'||!is_int($p['amount_received']??null)||$p['amount_received']!==$i->amount_cents||($c['captured']??null)!==true||($c['paid']??null)!==true||!is_int($c['created']??null)||$c['created']<=0||$c['created']>time()){$this->problem($receipt,$i,'tip_payment_not_verified');return;}
+            ||($c['livemode']??null)!==\App\Services\Finance\StripeMode::livemode()||($p['currency']??null)!=='usd'||!is_int($p['amount_received']??null)||$p['amount_received']!==$i->amount_cents||($c['captured']??null)!==true||($c['paid']??null)!==true||!is_int($c['created']??null)||$c['created']<=0||$c['created']>time()){$this->problem($receipt,$i,'tip_payment_not_verified');return;}
         if((($o['object']??null)==='payment_intent'&&($o['id']??null)!==$p['id'])||(is_string($o['payment_intent']??null)&&$o['payment_intent']!==$p['id'])){$this->problem($receipt,$i,'tip_payment_binding_mismatch');return;}
         DB::transaction(function()use($i,$receipt,$s,$p,$c){
             $e=Event::whereKey($i->event_id)->lockForUpdate()->firstOrFail();$current=true;

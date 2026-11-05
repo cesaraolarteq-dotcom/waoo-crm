@@ -1,3 +1,13 @@
+## 2026-11-05 · Codex · Stripe: correcciones de revisión y validación en curso
+- Rama `codex/fix-stripe-live-review`: integra #205→#206→#207 preservando commits, sin tocar el WIP de retención. No desplegado ni activado.
+- Regresiones reproducidas: cargo anidado de modo contrario acreditaba dinero/propina (2 FAIL); Refund del SDK no tiene livemode y el adaptador fallaba después de pedir el reembolso (2 casos FAIL/ERROR); Reserva rápida rechazaba cs_live_ por regex fija cs_test_ (ERROR).
+- Correcciones: modo/cuenta revalidados al procesar webhooks guardados; cargo anidado validado en pagos/propinas; Refund valida primero el PaymentIntent de la cuenta/modo y luego ID, importe, moneda y vínculo de la respuesta; regex de sesión depende del modo. CardFees devuelve no disponible cuando Stripe está apagado en producción para conservar Zelle.
+- Identidades de pago live separadas, identidades test históricas intactas. El campo histórico environment='test' continúa siendo parte de los sobres/V1 existentes; la validación Stripe usa mode/account/session y la identidad externa, no ese rótulo. No se reescriben evidencias.
+- Pruebas locales: base13/47 PASS; cargos y modos8/25 PASS; reembolso2/4 PASS; conjunto nativo/modos/reembolso29/166 PASS. Reserva rápida live/mañana y propinas se están completando; CI completo requerido sobre commit final.
+- Tanda172 anterior NO válida para aprobar: se modificó código durante su ejecución y el proceso conservó el fake anterior sin livemode del cargo; fallos de propinas deben comprobarse en proceso limpio. Expectativa del caso mañana ajustada a422, preservando la validación existente de main. No presentar esa corrida como suite verde.
+- Cierre local: propinas y webhook almacenado **30/272 PASS**; Reserva rápida live y pago100% mañana **2/16 PASS**. CI completo sobre la punta final pendiente.
+- Sin proveedor real, cobro, envío, deploy, secretos ni datos reales. No activar el pago real de$1 hasta terminar la revisión y fusionar con CI verde.
+
 ## 2026-11-05 · Codex · Revisión de integración #205/#206/#207 EN CURSO
 - Rama `codex/fix-stripe-live-review`, desde main5f45c32. Tres merges locales en orden, conservando historia Claude. No fusionado a main ni desplegado.
 - Conflictos de #205 resueltos conservando plazo mínimo24h, opciones derivadas del objetivo congelado y primera opción seleccionada de main; HANDOFF conserva ambos historiales.

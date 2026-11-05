@@ -33,6 +33,7 @@ final class StripeReceiptProcessor
         $intent = $intentId ? PaymentIntent::find($intentId) : null;
         if (!$intent && !empty($object['payment_intent'])) $intent = PaymentIntent::where('stripe_payment_intent_id', $object['payment_intent'])->first();
         if (!$intent) { $receipt->fill(['state' => 'ignored', 'last_error' => 'unlinked_provider_event', 'processed_at' => now()])->save(); return; }
+        if(!StripeMode::acceptsEvent($payload)){$this->problem($receipt,$intent,'webhook_mode_or_account_mismatch');return;}
         if(!CardFees::valid($intent)){$this->problem($receipt,$intent,'invalid_frozen_card_terms');return;}
         if (!in_array($receipt->event_type, ['checkout.session.completed','checkout.session.async_payment_succeeded','checkout.session.async_payment_failed','checkout.session.expired','payment_intent.succeeded'], true)) {
             $this->problem($receipt, $intent, 'unsupported_financial_event'); return;
@@ -66,6 +67,7 @@ final class StripeReceiptProcessor
         $charge = is_array($payment) ? ($payment['latest_charge'] ?? null) : null;
         if (!is_array($payment) || !is_array($charge) || ($payment['livemode'] ?? null) !== \App\Services\Finance\StripeMode::livemode() || ($payment['status'] ?? null) !== 'succeeded'
             || ($payment['currency'] ?? null) !== 'usd' || (int) ($payment['amount_received'] ?? -1) !== $intent->payable_cents
+            || ($charge['livemode'] ?? null) !== StripeMode::livemode()
             || empty($payment['id']) || ($charge['captured'] ?? null) !== true || ($charge['paid'] ?? null) !== true
             || !isset($charge['created']) || (int) $charge['created'] <= 0 || (int) $charge['created'] > time()) {
             $this->problem($receipt, $intent, 'unverified_payment_intent'); return;

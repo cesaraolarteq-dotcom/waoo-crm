@@ -84,6 +84,12 @@ class TipCoreTest extends TestCase {
         $this->checkout($cookie)->assertConflict();$this->event->forceFill(['responsible_system'=>'honeybook'])->save();$this->stripe->paid($i->provider_session_id);
         $this->webhook($i)->assertOk();$this->process();$this->assertDatabaseCount('tip_receipts',1);$this->assertSame('paid',$i->fresh()->status);$this->assertDatabaseHas('tip_reconciliations',['reason'=>'late_tip_source_changed']);$this->assertDatabaseCount('ledger_entries',1);
     }
+    public function test_nested_charge_from_another_mode_never_creates_a_tip():void {
+        $cookie=$this->enter();$this->checkout($cookie)->assertCreated();$i=TipCheckoutIntent::sole();$this->stripe->paid($i->provider_session_id);
+        $this->stripe->sessions[$i->provider_session_id]['payment_intent']['latest_charge']['livemode']=true;
+        $this->webhook($i)->assertOk();$this->process();
+        $this->assertDatabaseCount('tip_receipts',0);$this->assertDatabaseCount('ledger_entries',1);
+    }
     public function test_wrong_provider_amount_and_namespace_never_become_booking_money_or_a_tip():void {
         $cookie=$this->enter();$this->checkout($cookie)->assertCreated();$i=TipCheckoutIntent::sole();$this->stripe->paid($i->provider_session_id);
         $m=$this->stripe->sessions[$i->provider_session_id]['metadata'];$this->webhook($i,'evt_tip_conflict',[...$m,'local_intent_id'=>(string)Str::uuid()])->assertOk();$this->process('evt_tip_conflict');

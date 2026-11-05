@@ -31,6 +31,7 @@ class QuickPaymentsTest extends TestCase
     }
     protected function tearDown():void
     {
+        if($this->app)$this->app['env']='testing';
         // Only this disposable synthetic database. Keep production rollback guard intact.
         foreach(['quick_payment_notifications','quick_payment_receipts','quick_payment_attempts','quick_payment_events','quick_payment_bookings'] as $t)DB::table($t)->delete();
         DB::table('quick_stripe_checkout_requests')->delete();
@@ -106,7 +107,7 @@ class QuickPaymentsTest extends TestCase
     private function webhook(\Tests\Support\QuickPaymentGateway $g,string $sid,?string $id=null):void
     {
         $id??='evt_'.str_replace('-','',Str::uuid());$s=$g->sessions[$sid];
-        $payload=['id'=>$id,'type'=>'checkout.session.completed','livemode'=>false,'data'=>['object'=>['id'=>$sid,'object'=>'checkout.session','metadata'=>$s['metadata']]]];
+        $payload=['id'=>$id,'type'=>'checkout.session.completed','livemode'=>$g->live,'data'=>['object'=>['id'=>$sid,'object'=>'checkout.session','metadata'=>$s['metadata']]]];
         \App\Models\WebhookReceipt::create(['id'=>$id,'event_type'=>'checkout.session.completed','raw_sha256'=>hash('sha256',json_encode($payload)),
             'encrypted_payload'=>\Illuminate\Support\Facades\Crypt::encryptString(json_encode($payload)),'verified_at'=>now(),'state'=>'queued','attempts'=>0]);
         app(\App\Services\Finance\StripeReceiptRouter::class)->execute($id);
@@ -124,8 +125,22 @@ class QuickPaymentsTest extends TestCase
         $this->assertSame([100],array_column($q['choices'],'deposit_percent'));
         $this->assertSame(30001,$q['deposit_cents']);
         $claim=$this->claim();unset($claim['amount_cents'],$claim['reference']);$claim['deposit_percent']=50;
-        $this->withHeader('Idempotency-Key',(string)Str::uuid())->postJson('/portal/api/quick-payment/checkout',$claim)->assertStatus(409);
+        $this->withHeader('Idempotency-Key',(string)Str::uuid())->postJson('/portal/api/quick-payment/checkout',$claim)->assertStatus(422);
         $this->checkout(100);
+    }
+
+    public function test_live_quick_checkout_accepts_live_session_and_records_one_live_receipt():void
+    {
+        $r=$this->create();$this->client($r);$this->details();$g=$this->gateway();$g->live=true;
+        $claim=$this->claim();unset($claim['amount_cents'],$claim['reference']);$claim['deposit_percent']=50;
+        $context=\App\Services\Portal\PortalContext::fromRequest(request());
+        $this->app['env']='production';request()->server->set('HTTPS','on');config(['session.secure'=>true,'waoo.live'=>true,'waoo.stripe_live'=>true,'waoo.stripe_live_account'=>'acct_waoosandbox']);
+        app(\App\Services\Booking\QuickPaymentCheckout::class)->execute($context,$claim,(string)Str::uuid());
+        $sid=\App\Models\PaymentIntent::sole()->stripe_checkout_session_id;$this->assertStringStartsWith('cs_live_',$sid);$g->pay($sid);
+        $this->webhook($g,$sid);$this->webhook($g,$sid);
+        $this->assertSame('paid',QuickPaymentBooking::sole()->state);
+        $this->assertDatabaseCount('quick_payment_receipts',1);
+        $this->assertStringStartsWith('stripe:live:',LedgerEntry::where('kind','receipt')->sole()->external_identity_key);
     }
 
     public function test_verified_stripe_separates_principal_fee_and_promotes_once_with_duplicate_webhooks():void
@@ -288,7 +303,7 @@ class QuickPaymentsTest extends TestCase
     {
         $r=$this->create();$this->client($r);$this->details();$g=$this->gateway();$this->checkout();$sid=\App\Models\PaymentIntent::sole()->stripe_checkout_session_id;$g->pay($sid);
         \Illuminate\Support\Facades\Queue::fake();config(['waoo.stripe_test_webhook_secret'=>'whsec_synthetic_quick_payment']);
-        $payload=json_encode(['id'=>'evt_signed_quick','type'=>'checkout.session.completed','livemode'=>false,'data'=>['object'=>['id'=>$sid,'object'=>'checkout.session','metadata'=>$g->sessions[$sid]['metadata']]]]);
+        $payload=json_encode(['id'=>'evt_signed_quick','type'=>'checkout.session.completed','livemode'=>$g->live,'data'=>['object'=>['id'=>$sid,'object'=>'checkout.session','metadata'=>$g->sessions[$sid]['metadata']]]]);
         $now=time();$sig='t='.$now.',v1='.hash_hmac('sha256',$now.'.'.$payload,'whsec_synthetic_quick_payment');
         $this->call('POST','/webhooks/stripe',[],[],[],['CONTENT_TYPE'=>'application/json','HTTP_STRIPE_SIGNATURE'=>$sig],$payload)->assertOk();
         // Owner 2026-10-21: confirmed right after the signed callback (no 5-minute wait for the cron); the cron then has nothing left to do.
