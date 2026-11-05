@@ -4,7 +4,7 @@ namespace Tests\Feature;
 use App\Models\{BookingEvidence, Character, Customer, Event, EventService, EventTeamPlan, PriceVersion, Resource, ResourceReservation, ServiceVariant, User};
 use App\Services\Team\{AssignEventTeam, SuggestWeekendTeams, TeamSlots};
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
@@ -13,7 +13,81 @@ use Tests\TestCase;
 /** Owner 2026-11-02: plan the weekend's teams at once; seats come from the package; someone on the team drives. */
 class WeekendPlanTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseMigrations;
+
+    public function test_unknown_or_changed_route_evidence_never_releases_the_previous_team(): void
+    {
+        $a=$this->party('2026-11-07 14:00');$b=$this->party('2026-11-07 19:00');$id=Resource::where('code','CESAR')->value('id');
+        $this->save($a,['people'=>[TeamSlots::for($a)['people'][0]['key']=>$id]]);$old=ResourceReservation::pluck('id')->all();
+        foreach([false,true] as $changed){
+            app()->instance('waoo.availability.drive',function(...$args)use($a,$changed){
+                $this->assertSame(0,DB::transactionLevel());if($changed)$a->update(['address'=>'456 Example Ave']);return $changed?15:null;
+            });
+            try{$this->save($b,['people'=>[TeamSlots::for($b)['people'][0]['key']=>$id]]);$this->fail('Unknown or stale route evidence reached the commit.');}
+            catch(\App\Exceptions\RecordWriteRejected $e){$this->assertSame(409,$e->status);}
+            $this->assertSame($old,ResourceReservation::pluck('id')->all());$this->assertFalse(EventTeamPlan::where('event_id',$b->id)->exists());
+        }
+    }
+
+    public function test_team_replay_neither_calls_the_route_provider_nor_replaces_reservations(): void
+    {
+        $e=$this->party('2026-11-07 14:00');$id=Resource::where('code','CESAR')->value('id');$key=(string)Str::uuid();
+        $input=['expected_plan_version'=>0,'people'=>[TeamSlots::for($e)['people'][0]['key']=>$id],'costumes'=>[],'driver'=>null];
+        $p=app(AssignEventTeam::class)->execute($this->owner,$e->id,$input,$key);$before=ResourceReservation::all()->toArray();
+        app()->instance('waoo.availability.drive',fn(...$args)=>throw new \RuntimeException('A replay must not access the provider.'));
+        $this->travel(3)->minutes();$again=app(AssignEventTeam::class)->execute($this->owner,$e->id,$input,$key);
+        $this->assertSame($p->version,$again->version);$this->assertSame($before,ResourceReservation::all()->toArray());
+    }
+
+    public function test_one_costume_unit_cannot_cover_two_character_seats(): void
+    {
+        $e=$this->party('2026-11-07 14:00',elsa:true);$s=$e->services()->first();$recipe=$s->requirements_snapshot;
+        foreach($recipe as &$r)if(in_array($r['kind'],['costume'],true)||($r['skill']??null)==='performer')$r['quantity']=2;
+        unset($r);$s->update(['requirements_snapshot'=>$recipe]);$seats=TeamSlots::for($e)['costumes'];
+        $unit=Resource::where('code','ELSA-1')->value('id');$a=Resource::where('code','NICOLE-HERNANDEZ')->value('id');$b=Resource::where('code','ANA-RODRIGUEZ')->value('id');
+        try{$this->save($e,['people'=>[],'costumes'=>[$seats[0]['key']=>['unit_id'=>$unit,'wearer_id'=>$a],$seats[1]['key']=>['unit_id'=>$unit,'wearer_id'=>$b]]]);$this->fail('The same physical costume was used twice.');}
+        catch(\App\Exceptions\RecordWriteRejected $x){$this->assertSame(422,$x->status);}
+        $this->assertDatabaseCount('resource_reservations',0);
+    }
+
+    public function test_paired_wig_roles_are_not_duplicated_and_unpaired_roles_are_not_lost(): void
+    {
+        $e=$this->party('2026-11-07 14:00',elsa:true);$s=$e->services()->first();$recipe=$s->requirements_snapshot;
+        foreach($recipe as &$r)if(($r['skill']??null)==='performer')$r['skill']='performer_wig';unset($r);
+        $s->update(['requirements_snapshot'=>$recipe]);$this->assertCount(2,TeamSlots::for($e)['people']);
+        foreach($recipe as &$r)if(($r['skill']??null)==='performer_wig')$r['quantity']=2;unset($r);
+        $s->update(['requirements_snapshot'=>$recipe]);$this->assertCount(3,TeamSlots::for($e)['people']);
+    }
+
+    protected function tearDown(): void
+    {
+        // Disposable synthetic fixtures only; preserve the production rollback guard.
+        if ($this->app && \Illuminate\Support\Facades\Schema::hasTable('event_team_plans')) \Illuminate\Support\Facades\DB::table('event_team_plans')->delete();
+        parent::tearDown();
+    }
+
+
+    public function test_a_fixed_gap_cannot_authorize_a_long_drive_for_the_saved_team(): void
+    {
+        $a=$this->party('2026-11-07 14:00');$b=$this->party('2026-11-07 18:00');
+        $staff=Resource::where('code','CESAR')->value('id');
+        $this->save($a,['people'=>[TeamSlots::for($a)['people'][0]['key']=>$staff]]);
+        app()->instance('waoo.availability.drive',function(...$args){$this->assertSame(0,DB::transactionLevel());return 60;});
+        try{$this->save($b,['people'=>[TeamSlots::for($b)['people'][0]['key']=>$staff]]);$this->fail('Saved a team without enough time for the real drive plus30/setup/breakdown.');}
+        catch(\App\Exceptions\RecordWriteRejected $x){$this->assertSame(409,$x->status);}
+        $this->assertFalse(EventTeamPlan::where('event_id',$b->id)->exists());
+        $this->assertSame(1,ResourceReservation::where('event_id',$a->id)->count());
+    }
+
+    public function test_a_proven_short_drive_uses_drive_plus_thirty_instead_of_a_fixed_sixty(): void
+    {
+        $a=$this->party('2026-11-07 14:00');$b=$this->party('2026-11-07 17:45');
+        $staff=Resource::where('code','CESAR')->value('id');
+        $this->save($a,['people'=>[TeamSlots::for($a)['people'][0]['key']=>$staff]]);
+        app()->instance('waoo.availability.drive',function(...$args){$this->assertSame(0,DB::transactionLevel());return 15;});
+        $this->save($b,['people'=>[TeamSlots::for($b)['people'][0]['key']=>$staff]]);
+        $this->assertTrue(EventTeamPlan::where('event_id',$b->id)->exists());
+    }
 
     private User $owner; private ServiceVariant $waoo; private PriceVersion $price; private Character $elsa; private int $n = 0;
 
@@ -21,6 +95,8 @@ class WeekendPlanTest extends TestCase
     {
         parent::setUp();
         $this->travelTo(CarbonImmutable::parse('2026-11-03 10:00', 'America/Chicago')); // Tuesday: planning day
+        // These fixtures share one venue; explicit route cases override this synthetic provider.
+        app()->instance('waoo.availability.drive',fn(...$args)=>0);
         $this->owner = User::factory()->create(['role' => 'owner_admin', 'active' => true, 'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'), 'two_factor_confirmed_at' => now()]);
         $this->actingAs($this->owner);
         $this->elsa = Character::create(['name' => 'Elsa', 'active' => true]);

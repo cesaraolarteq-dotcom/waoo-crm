@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 
 final class CreateUnpaidQuickBooking
 {
-    public function execute(User $actor, array $input, string $key): UnpaidQuickBooking
+    public function execute(User $actor, array $input, string $key, ?array $capacityProof = null): UnpaidQuickBooking
     {
         QuickPaymentProtocol::gate(); $actor = RecordActor::authorize($actor);
         RecordWriteRejected::unless(DB::transactionLevel() === 0, 409, 'No se pudo iniciar la reserva.');
@@ -35,7 +35,7 @@ final class CreateUnpaidQuickBooking
         ]);
         if (isset($data['customer_update'])) RecordWriteRejected::unless(isset($data['customer_id']),422,'Selecciona el cliente antes de actualizarlo.');
         $scope = "owner:{$actor->id}:quick-book"; $hash = MutationKey::hash($data);
-        return DB::transaction(function()use($actor,$data,$scope,$hash,$key) {
+        return DB::transaction(function()use($actor,$data,$scope,$hash,$key,$capacityProof) {
             \App\Services\Scheduling\DailyCapacity::lock();
             User::whereKey($actor->id)->lockForUpdate()->firstOrFail(); RecordActor::authorize($actor);
             // The owner row already serializes this owner-scoped key, before the first snapshot read.
@@ -60,6 +60,7 @@ final class CreateUnpaidQuickBooking
             $f=app(CreateFinancialRevision::class)->execute($actor,$e->id,['expected_version'=>$e->version],(string)Str::uuid());
             $view=app(PrepareQuickStripeLease::class)->execute($actor,$e->id,['expected_event_version'=>$e->version,'financial_revision_id'=>$f->id],(string)Str::uuid());
             $lease=QuickStripeLease::whereKey($view['lease_id'])->lockForUpdate()->firstOrFail();
+            if($capacityProof!==null)app(\App\Services\Availability\JointCapacityHolds::class)->acquire($e,$f,$capacityProof,$lease->id,$lease->expires_at);
             $b=QuickPaymentBooking::create(['event_id'=>$e->id,'customer_id'=>$customer->id,'financial_revision_id'=>$f->id,'quick_stripe_lease_id'=>$lease->id,
                 'created_by'=>$actor->id,'version'=>0,'state'=>'awaiting_payment','expires_at'=>$lease->expires_at,
                 'reminder_at'=>CarbonImmutable::createFromTimestampUTC($view['terms']['reminder_at'])]);

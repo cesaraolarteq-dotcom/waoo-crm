@@ -21,6 +21,13 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-05 · BACKEND / UI · WIP público: retención conjunta INCOMPLETA, rutas y calendario · PENDING
+- Rama: `codex/fix-physical-booking-admission`, base5f45c32. César solicita commit/push WIP para que Claude vea los archivos; no es aprobación técnica de este prototipo ni entrega lista para fusionar.
+- Cambios: rutas reales en asignación semanal; pantalla privada de asociaciones de calendario; prototipo de retención conjunta con migración y punto de entrada interno.
+- Verificación: rutas/calendario 30 PASS + caso corregido de usuario inactivo1/2 PASS; render sintético1/6 PASS. Capturas pendientes, suite completa y ciclo de vida S1 sin validar. Artefactos fuera de Git.
+- Claude debe revisar: incompatibilidad pendiente con conteo V1 de QuickStripeLeases, locks y snapshot de admisión, promoción/liberación/reprogramación, recibos tardíos, separación de retención provisional y staff asignado, concurrencia por última unidad. Detalle arriba en HANDOFF. NO fusionar/desplegar la retención como terminada.
+- No cambios a configuración de envíos, Stripe real, contratos o textos congelados. Sin datos reales ni diseños de prendas. Solo Claude marca REVIEWED.
+
 ### 2026-11-04 · BACKEND · Cierre #203 y #200 integrado en main · PENDING
 - Branch: `codex/fix-extra-time-closure`, desde main de código87a42dcec33dbc107a7f66bf0e643ef1f15f4bca. Fuente21ce2afaee5690e86e91a32424b32a000c116621, diff vacío tras fusionar. #200 punta3b37fde verificada sin cambios y ancestro, cerrado como integrado; ramas/historia preservadas.
 - How verified: suite completa PHP8.3/MariaDB SUCCESS6/6 en https://github.com/cesaraolarteq-dotcom/waoo-crm/actions/runs/41903876337 . Push duplicado41903864484 cancelado; corrida completa del PR final verde. Sin bypass/admin/workflows modificados. Este cierre solo cambia dos Markdown; git diff --check y alcance revisados, sin repetir tests de aplicación por documentación.

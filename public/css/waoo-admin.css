@@ -133,6 +133,7 @@ a.wcal-name:hover{text-decoration:underline}
 .wimp-form{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:8px}
 .wimp-pick{display:inline-flex;align-items:center;cursor:pointer;position:relative}.wimp-pick input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}.wimp-pick:focus-within{box-shadow:var(--focus)}
 .wimp-form .wcal-btn{min-height:44px;box-sizing:border-box}
+.wci-form{display:grid;min-width:0}.wci-form>*{min-width:0;max-width:100%}.wci-form select{width:100%;min-height:44px}.wci-attest{display:flex;align-items:center;gap:8px;min-height:44px}.wci-attest span{min-width:0;overflow-wrap:anywhere}.wci-form :focus-visible{outline:none;box-shadow:var(--focus)}
 .wimp-bulk{display:grid;gap:8px;margin-bottom:12px}
 .wimp-file{font-size:.875rem;opacity:.8;overflow-wrap:anywhere}
 .wimp-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}

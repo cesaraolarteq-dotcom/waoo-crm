@@ -16,11 +16,14 @@ final class BindCalendarIdentity
     {
         RecordActor::authorize($actor);
         $data = RecordInput::validate($input, [
-            'expected_event_version' => 'required|integer|min:1', 'uid' => 'required|string|max:1024',
+            'expected_event_version' => 'required|integer|min:1', 'uid' => 'required_without:uid_sha256|string|max:1024',
+            'uid_sha256' => 'required_without:uid|prohibits:uid|string|regex:/^[a-f0-9]{64}$/D',
+            'expected_scope_sha256' => 'sometimes|required|string|regex:/^[a-f0-9]{64}$/D',
             'verified_same_event' => 'required|accepted', 'reason' => 'required|string|min:10|max:1000',
         ]);
         $scope = HoneyBookCalendarFeed::scope();
-        $uid = HoneyBookCalendarFeed::uidHash($data['uid']);
+        $uid = $data['uid_sha256'] ?? HoneyBookCalendarFeed::uidHash($data['uid']);
+        RecordWriteRejected::unless(!isset($data['expected_scope_sha256']) || $scope===$data['expected_scope_sha256'],409,'Cambió el calendario. Vuelve a revisar la identidad.');
         RecordWriteRejected::unless($scope !== null && $uid !== null && DB::transactionLevel() === 0, 409, 'No se pudo verificar la identidad del calendario.');
         $hint = Event::findOrFail($eventId);
         RecordWriteRejected::unless($hint->version === (int) $data['expected_event_version']

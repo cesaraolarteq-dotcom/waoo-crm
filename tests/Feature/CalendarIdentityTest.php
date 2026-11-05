@@ -17,6 +17,45 @@ final class CalendarIdentityTest extends TestCase
     private string $feedText = '';
     private const UID = 'fictional-party-1@example.test';
 
+    public function test_inactive_owner_cannot_open_the_review_screen_or_trigger_a_feed_fetch(): void
+    {
+        config(['waoo.sandbox_imports'=>true]);$this->owner->forceFill(['active'=>false])->save();$this->actingAs($this->owner);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('admin'));
+        $this->get(\App\Filament\Pages\CalendarIdentities::getUrl())->assertForbidden();\Illuminate\Support\Facades\Http::assertNothingSent();
+    }
+
+    public function test_private_review_has_labels_but_public_capacity_metadata_never_contains_them(): void
+    {
+        $entries=$this->feed(str_replace('END:VEVENT',"SUMMARY:Cumpleaños de Sofía <script>\r\nEND:VEVENT",$this->entry()));
+        $this->assertArrayNotHasKey('summary',$entries[0][2]);
+        $v=app(\App\Services\Availability\ReviewCalendarIdentity::class)->read($this->owner,$this->event->id);
+        $this->assertCount(1,$v['options']);$this->assertStringContainsString('Cumpleaños',$v['options'][0]['summary']);
+        $this->assertStringNotContainsString(self::UID,json_encode($v));$this->assertStringNotContainsString('private-feed',json_encode($v));
+    }
+
+    public function test_owner_screen_requires_attestation_and_can_remove_the_binding_without_erasing_the_party(): void
+    {
+        $this->feed($this->entry());config(['waoo.sandbox_imports'=>true]);$this->actingAs($this->owner);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('admin'));
+        $page=\Livewire\Livewire::test(\App\Filament\Pages\CalendarIdentities::class)->set('eventId',(string)$this->event->id)->call('inspect')
+            ->assertSet('verified',false)->assertSet('identity',null)->set('identity',hash('sha256',self::UID))
+            ->set('reason','Comparé la fiesta con su proyecto original de HoneyBook.')->call('associate')->assertHasErrors(['verified']);
+        $this->assertDatabaseCount('calendar_identity_links',0);
+        $page->set('verified',true)->call('associate')->assertHasNoErrors();$this->assertDatabaseCount('calendar_identity_links',1);
+        $page->set('reason','Esta asociación era incorrecta; conservo ambos eventos.')->call('remove')->assertHasNoErrors();
+        $this->assertDatabaseCount('calendar_identity_links',0);$this->assertDatabaseCount('events',1);
+        $this->assertDatabaseCount('resource_reservations',0);$this->assertDatabaseCount('ledger_entries',0);
+    }
+
+    public function test_review_scope_cannot_be_reused_after_changing_the_calendar_source(): void
+    {
+        $this->feed($this->entry());$scope=HoneyBookCalendarFeed::scope();config(['waoo.honeybook_ical_url'=>'https://calendar.example.test/another-feed']);
+        try{app(BindCalendarIdentity::class)->execute($this->owner,$this->event->id,['uid_sha256'=>hash('sha256',self::UID),
+            'expected_scope_sha256'=>$scope,'expected_event_version'=>1,'verified_same_event'=>true,'reason'=>'Owner checked the original feed.']);$this->fail('Reused another source.');}
+        catch(RecordWriteRejected $e){$this->assertSame(409,$e->status);}
+        $this->assertDatabaseCount('calendar_identity_links',0);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();

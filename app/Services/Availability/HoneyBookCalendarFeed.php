@@ -31,7 +31,7 @@ final class HoneyBookCalendarFeed
     }
 
     /** @return list<array{0: CarbonImmutable, 1: CarbonImmutable, 2?: array{uid_sha256: string, scope_sha256?: string}}>|null null when the feed did not answer or cannot be trusted */
-    public function between(CarbonImmutable $from, CarbonImmutable $to): ?array
+    public function between(CarbonImmutable $from, CarbonImmutable $to, bool $privateReview = false): ?array
     {
         $url = (string) config('waoo.honeybook_ical_url');
         $key = 'waoo.hb-ical.'.substr(hash('sha256', $url), 0, 16); // a changed URL never reuses the old calendar
@@ -50,7 +50,7 @@ final class HoneyBookCalendarFeed
             $ics = $body;
             Cache::put($key, $ics, 120);
         }
-        $events = self::events($ics);
+        $events = self::events($ics, $privateReview);
         if ($events === null) return null;
         return array_values(array_map(function ($e) {
             if (isset($e[2]['uid_sha256'])) $e[2]['scope_sha256'] = self::scope();
@@ -59,7 +59,7 @@ final class HoneyBookCalendarFeed
     }
 
     /** @return list<array{0: CarbonImmutable, 1: CarbonImmutable, 2?: array{uid_sha256: string, scope_sha256?: string}}>|null null when anything is unsupported or malformed */
-    public static function events(string $ics): ?array
+    public static function events(string $ics, bool $privateReview = false): ?array
     {
         // Property names and BEGIN/END values are case-insensitive in iCalendar (RFC 5545 3.1): normalize them, never skip a line.
         if (strlen($ics) > self::MAX_BYTES || ! preg_match('/^BEGIN:VCALENDAR\r?$/mi', $ics) || ! preg_match('/^END:VCALENDAR\r?$/mi', $ics)) return null;
@@ -84,13 +84,16 @@ final class HoneyBookCalendarFeed
                         [$seenStart, $seenEnd] = $identities[$uid];
                         if (!$seenStart->equalTo($start) || !$seenEnd->equalTo($end)) return null;
                     } else {
-                        $events[] = $uid === null ? [$start, $end] : [$start, $end, ['uid_sha256' => $uid]];
+                        $events[] = $uid === null ? [$start, $end] : [$start, $end, ['uid_sha256' => $uid,...($privateReview?['summary'=>$cur['SUMMARY']??'']:[])]];
                         if ($uid !== null) $identities[$uid] = [$start, $end];
                     }
                 }
                 $cur = null; continue;
             }
             if ($cur === null) continue;
+            if ($privateReview && preg_match('/^SUMMARY(?:;[^:]*)?:(.*)$/',$line,$summary)) {
+                $cur['SUMMARY']=mb_substr(str_replace(['\\n','\\N','\\,','\\;','\\\\'],[' ',' ',',',';','\\'],$summary[1]),0,200);continue;
+            }
             if (preg_match('/^UID(?:;[^:]*)?:(.*)$/', $line, $uid)) {
                 if (isset($cur['UID_HASH']) || ($cur['UID_HASH'] = self::uidHash($uid[1])) === null) return null;
                 continue;

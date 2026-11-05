@@ -23,8 +23,17 @@ final class AssignEventTeam
         $d = RecordInput::validate($input, ['expected_plan_version' => 'required|integer|min:0', 'people' => 'present|array|max:50', 'people.*' => 'nullable|integer',
             'costumes' => 'present|array|max:50', 'costumes.*.unit_id' => 'nullable|integer', 'costumes.*.wearer_id' => 'nullable|integer', 'driver' => 'nullable']);
         $scope = "owner:{$actor->id}:event:{$eventId}:team"; $hash = MutationKey::hash($d);
-        return DB::transaction(function () use ($actor, $eventId, $d, $scope, $hash, $key) {
+        if ($saved = MutationKey::find($scope,$key,$hash)) return EventTeamPlan::findOrFail($saved->result_id);
+        $selectedIds=collect($d['people'])->filter()->merge(collect($d['costumes'])->pluck('unit_id')->filter())
+            ->merge(collect($d['costumes'])->pluck('wearer_id')->filter())->map(fn($id)=>(int)$id)->unique()->sort()->values()->all();
+        $hint=Event::findOrFail($eventId);
+        RecordWriteRejected::unless($hint->status==='capacity_reserved' && $hint->ends_at->isFuture(),409,'Solo se arma el equipo de fiestas confirmadas que no han pasado.');
+        RecordWriteRejected::unless($selectedIds===[] || (filled($hint->address) && $hint->setup_minutes!==null && $hint->breakdown_minutes!==null),409,'Completa dirección, montaje y desmontaje antes de asignar el equipo.');
+        $transfers=app(\App\Services\Changes\RescheduleTransfers::class);
+        $proof=$transfers->prepare($hint,\Carbon\CarbonImmutable::instance($hint->starts_at)->utc(),$selectedIds);
+        return DB::transaction(function () use ($actor, $eventId, $d, $scope, $hash, $key, $transfers, $proof, $selectedIds) {
             \App\Services\Scheduling\DailyCapacity::lock();
+            User::whereKey($actor->id)->lockForUpdate()->firstOrFail();RecordActor::authorize($actor);
             $event = Event::whereKey($eventId)->lockForUpdate()->firstOrFail();
             if ($saved = MutationKey::find($scope, $key, $hash, true)) return EventTeamPlan::findOrFail($saved->result_id);
             RecordWriteRejected::unless($event->status === 'capacity_reserved' && $event->ends_at->isFuture(), 409, 'Solo se arma el equipo de fiestas confirmadas que no han pasado.');
@@ -46,22 +55,24 @@ final class AssignEventTeam
             foreach ($d['people'] as $seat => $id) {
                 if (! $id) continue; $p = $units[(int) $id];
                 RecordWriteRejected::unless($p->kind === 'staff' && in_array($people[$seat]['skill'], $p->skills ?? [], true), 422, $p->name.' no tiene la habilidad para '.$people[$seat]['label'].'.');
-                RecordWriteRejected::unless(TeamSlots::free($p, $event), 409, $p->name.' ya tiene otra fiesta o un bloqueo a esa hora.');
+                RecordWriteRejected::unless(TeamSlots::free($p, $event, [], 0, true), 409, $p->name.' ya tiene otra fiesta o un bloqueo a esa hora.');
                 RecordWriteRejected::unless(! in_array($p->id, $team, true), 422, $p->name.' está en dos puestos de la misma fiesta.');
                 $team[] = $p->id;
             }
-            $compat = DB::table('costume_compatibilities')->get(); $costumes = [];
+            $compat = DB::table('costume_compatibilities')->whereIn('costume_id',$units->where('kind','costume')->keys())->sharedLock()->get(); $costumes = []; $selectedCostumes=[];
             foreach ($d['costumes'] as $seat => $c) {
                 $unit = ($c['unit_id'] ?? null) ? $units[(int) $c['unit_id']] : null; $wearer = ($c['wearer_id'] ?? null) ? $units[(int) $c['wearer_id']] : null;
                 $s = $costumeSeats[$seat];
                 if ($unit) {
+                    RecordWriteRejected::unless(!in_array($unit->id,$selectedCostumes,true),422,'Una misma unidad de traje no puede cubrir dos puestos.');
+                    $selectedCostumes[]=$unit->id;
                     RecordWriteRejected::unless($characters->has((int) $unit->character_id) && \App\Services\CostumeOutfits::fits($s, $unit, $characters, []), 422, 'Ese traje no es de '.$s['label'].'.');
-                    RecordWriteRejected::unless(TeamSlots::free($unit, $event), 409, 'El traje '.$unit->name.' ya está en otra fiesta a esa hora.');
+                    RecordWriteRejected::unless(TeamSlots::free($unit, $event, [], 0, true), 409, 'El traje '.$unit->name.' ya está en otra fiesta a esa hora.');
                 }
                 if ($wearer) {
                     RecordWriteRejected::unless($unit !== null, 422, 'Elige primero el traje de '.$s['label'].'.');
                     RecordWriteRejected::unless($wearer->kind === 'staff' && CostumeWearers::allows($unit, $wearer, $characters->get((int) $unit->character_id), $compat), 422, $wearer->name.' no puede usar el traje '.$unit->name.'.');
-                    RecordWriteRejected::unless(TeamSlots::free($wearer, $event), 409, $wearer->name.' ya tiene otra fiesta o un bloqueo a esa hora.');
+                    RecordWriteRejected::unless(TeamSlots::free($wearer, $event, [], 0, true), 409, $wearer->name.' ya tiene otra fiesta o un bloqueo a esa hora.');
                     RecordWriteRejected::unless(! in_array($wearer->id, $team, true), 422, $wearer->name.' está en dos puestos de la misma fiesta.');
                     $team[] = $wearer->id;
                 }
@@ -80,6 +91,7 @@ final class AssignEventTeam
                 if ($drivers->count() === 1) $driver = $units[$drivers->first()]; // only one driver on the team: it is that person
             }
             // Replace what this plan reserved before; keep units reserved by the booking itself (e.g. costumes held at confirmation).
+            $transfers->assertFits($event,\Carbon\CarbonImmutable::instance($event->starts_at)->utc(),$proof,$selectedIds);
             ResourceReservation::whereIn('id', $own)->where('event_id', $event->id)->delete();
             $created = [];
             foreach (array_unique([...$team, ...array_filter(array_column($costumes, 'unit_id'))]) as $id) {

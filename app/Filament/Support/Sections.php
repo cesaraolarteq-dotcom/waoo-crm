@@ -48,6 +48,7 @@ final class Sections
             'honeybook' => ['label' => 'HoneyBook', 'icon' => null, 'parent' => 'settings', 'tabs' => [
                 ['label' => 'Importar', 'target' => Pages\ImportHoneyBook::class],
                 ['label' => 'Historial', 'target' => Pages\ImportHistory::class],
+                ['label' => 'Revisar calendario', 'target' => Pages\CalendarIdentities::class],
                 ['label' => 'Por organizar', 'target' => Pages\HoneyBookInformation::class],
                 ['label' => 'Saldos y origen', 'target' => Pages\HoneyBookArchiveReview::class],
                 ['label' => 'Cambio final', 'target' => Pages\HoneyBookCutover::class],
