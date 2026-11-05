@@ -50,6 +50,23 @@ class StripeModeTest extends TestCase
         $this->assertStringContainsString('clave Stripe real', $this->refused());
     }
 
+    public function test_live_payment_identity_is_separate_and_test_identity_is_preserved(): void
+    {
+        $this->assertSame('stripe:test:acct_fixture:pi_fixture',StripeMode::paymentIdentity('acct_fixture','pi_fixture'));
+        $this->realCrm(true);
+        $this->assertSame('stripe:live:acct_fixture:pi_fixture',StripeMode::paymentIdentity('acct_fixture','pi_fixture'));
+    }
+
+    public function test_disabled_live_stripe_cannot_fall_back_to_the_test_webhook(): void
+    {
+        $this->realCrm(false);
+        config(['waoo.stripe_test_webhook_secret'=>'whsec_test_fixture']);
+        $payload=json_encode(['id'=>'evt_disabled_fixture','type'=>'checkout.session.completed','livemode'=>false,
+            'data'=>['object'=>['id'=>'cs_test_fixture','object'=>'checkout.session']]]);
+        $t=time();$sig=hash_hmac('sha256',$t.'.'.$payload,'whsec_test_fixture');
+        $this->call('POST','/webhooks/stripe',[],[],[],['HTTP_STRIPE_SIGNATURE'=>"t=$t,v1=$sig",'CONTENT_TYPE'=>'application/json','HTTPS'=>'on'],$payload)->assertForbidden();
+    }
+
     public function test_real_crm_webhook_refuses_a_test_mode_event(): void
     {
         $this->realCrm(true);

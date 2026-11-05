@@ -23,7 +23,7 @@ final class CaptureOpeningChargeNotice
         $valid = RefundProviderFacts::validCharge($provider, $chargeId)
             && (!$receipt->stripe_account_id || $receipt->stripe_account_id === $provider['account'])
             && (($object['payment_intent'] ?? null) === null || $object['payment_intent'] === $provider['payment']['id']);
-        $identity = $valid ? 'stripe:test:'.$provider['account'].':'.$provider['payment']['id'] : null;
+        $identity = $valid ? StripeMode::paymentIdentity($provider['account'],$provider['payment']['id']) : null;
         $hint = $identity ? LedgerEntry::where('external_identity_key', $identity)->first() : null;
         if ($hint && !ImportedProjectLink::where('event_id', $hint->event_id)->exists()) $hint = null;
         DB::transaction(function () use ($receipt, $provider, $valid, $hint, $identity, $dispute, $chargeId) {

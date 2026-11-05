@@ -21,6 +21,11 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-05 · BACKEND · Integración Stripe live en revisión · PENDING
+- Rama codex/fix-stripe-live-review; incorpora #205/#206/#207 en orden sin reescribir historia. No está en main.
+- Correcciones: bloqueo de selección de Stripe test cuando producción no tiene Stripe live activado; identidad live separada de test en recibos/propinas/conciliación, preservando identidades test antiguas.
+- Pruebas aisladas y suite ampliada pendientes; ver HANDOFF. Revisar cargo anidado, reembolso, cuenta y modo en todos los caminos. No deploy ni activación/pago real. Solo Claude marca REVIEWED.
+
 ### 2026-11-04 · BACKEND · Cierre #203 y #200 integrado en main · PENDING
 - Branch: `codex/fix-extra-time-closure`, desde main de código87a42dcec33dbc107a7f66bf0e643ef1f15f4bca. Fuente21ce2afaee5690e86e91a32424b32a000c116621, diff vacío tras fusionar. #200 punta3b37fde verificada sin cambios y ancestro, cerrado como integrado; ramas/historia preservadas.
 - How verified: suite completa PHP8.3/MariaDB SUCCESS6/6 en https://github.com/cesaraolarteq-dotcom/waoo-crm/actions/runs/41903876337 . Push duplicado41903864484 cancelado; corrida completa del PR final verde. Sin bypass/admin/workflows modificados. Este cierre solo cambia dos Markdown; git diff --check y alcance revisados, sin repetir tests de aplicación por documentación.

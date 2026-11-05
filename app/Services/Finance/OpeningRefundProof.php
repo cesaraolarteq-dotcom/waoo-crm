@@ -43,7 +43,7 @@ final class OpeningRefundProof
                 || $parent->kind !== 'receipt' || $parent->method !== 'stripe' || $parent->source_type !== 'verified_stripe_webhook'
                 || $parent->environment !== 'test' || $parent->currency !== 'USD' || $parent->verified_by !== null
                 || OpeningStripeProof::grossOf($parent) !== $provider['charge']['amount'] || $parent->external_reference !== $provider['payment']['id']
-                || $parent->external_identity_key !== 'stripe:test:'.$provider['account'].':'.$provider['payment']['id']
+                || $parent->external_identity_key !== StripeMode::paymentIdentity($provider['account'],$provider['payment']['id'])
                 || $parent->received_at?->timestamp !== $provider['charge']['created']) return $failed;
             $issues = [];
             if ($entry->event_id !== $context['binding']->event_id || $entry->financial_revision_id !== $context['finance']->id

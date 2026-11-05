@@ -25,7 +25,7 @@ final class CaptureOpeningStripeRefund
             && (($object['charge'] ?? null) === null || $object['charge'] === $provider['charge']['id'])
             && (($object['payment_intent'] ?? null) === null || $object['payment_intent'] === $provider['payment']['id']);
         $valid = $chargeValid && RefundProviderFacts::valid($provider, $object);
-        $identity = $chargeValid ? 'stripe:test:'.$provider['account'].':'.$provider['payment']['id'] : null;
+        $identity = $chargeValid ? StripeMode::paymentIdentity($provider['account'],$provider['payment']['id']) : null;
         $hint = $identity ? LedgerEntry::where('external_identity_key', $identity)->first() : null;
         // Native/TIP/ambiguous refunds get an observation only. No source event or parent is invented.
         if ($hint && (!ImportedProjectLink::where('event_id', $hint->event_id)->exists() || !self::parentValid($hint, $provider))) $hint = null;

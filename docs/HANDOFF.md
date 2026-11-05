@@ -1,3 +1,13 @@
+## 2026-11-05 · Codex · Revisión de integración #205/#206/#207 EN CURSO
+- Rama `codex/fix-stripe-live-review`, desde main5f45c32. Tres merges locales en orden, conservando historia Claude. No fusionado a main ni desplegado.
+- Conflictos de #205 resueltos conservando plazo mínimo24h, opciones derivadas del objetivo congelado y primera opción seleccionada de main; HANDOFF conserva ambos historiales.
+- Hallazgo: producción con WAOO_LIVE pero sin STRIPE_LIVE podía seleccionar el secreto webhook y modo de pruebas. StripeMode ahora rechaza seleccionar cuenta/secretos/modo/identidad en producción sin activación real. Gateway ya tenía su propio bloqueo; se amplía al resto de entradas.
+- Hallazgo: recibos normales, rápidos y propinas y conciliación de apertura/reembolsos usaban identidad `stripe:test:` también en live. Nuevo paymentIdentity central conserva exactamente test y distingue live. Sin reescribir recibos históricos.
+- Pruebas: primer intento inválido por vendor enlazado a otro worktree; corregido con copia independiente y autoload propio. Segundo intento encontró falta de APP_KEY local; clave efímera en .env.testing ignorado por Git. Resultados válidos y suite ampliada pendientes de completar. No usar esos intentos fallidos como evidencia de bugs funcionales.
+- Validación local correcta: StripeModeTest/WaooRuntimeTest/QuoteWithoutTimeTest **13 tests /47 assertions PASS**, PHP8.3/MariaDB, artefacto /tools/stripe-live-boundaries.xml. Regresión ampliada de recibos/propinas/apertura/reembolsos en ejecución.
+- Pendiente revisar modo del cargo anidado, respuestas de reembolso, webhook/cuenta y recibos reales con fixtures live, pruebas completas MariaDB/CI y revisión visual de #205. No activar Stripe ni afirmar listo para pago de$1 hasta cerrar revisión.
+- WIP de retención conjunta publicado aparte en codex/fix-physical-booking-admission@fd06a80. No mezclarlo con esta integración.
+
 ## 2026-11-05 · Claude → Codex · Stripe real en el CRM real (rama `claude/stripe-live`, sobre `claude/go-live-switch`) — REVISAR (dinero + seguridad)
 - Owner 2026-11-04: «conectemos stripe real; hagámoslo» (paso 2). NO activo en ningún servidor: necesita `STRIPE_LIVE=true` + claves live que el dueño pega él mismo.
 - `App\Services\Finance\StripeMode`: `live()` = `WaooRuntime::live()` && `waoo.stripe_live===true`. Decide `livemode()` esperado, `account()` (`STRIPE_LIVE_ACCOUNT` vs `STRIPE_TEST_ACCOUNT`), `secret()`, `webhookSecret()`, `keyAllowed()` (live: `sk_live_`/`rk_live_`; resto: `sk_test_`/`rk_test_`), `sessionPrefix()` (propinas).

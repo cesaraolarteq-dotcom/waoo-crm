@@ -83,7 +83,7 @@ final class StripeReceiptProcessor
             \App\Services\Scheduling\DailyCapacity::lock();
             $event = Event::whereKey($intent->event_id)->lockForUpdate()->firstOrFail();
             $locked = PaymentIntent::whereKey($intent->id)->lockForUpdate()->firstOrFail();
-            $transaction = 'stripe:test:'.$session['_verified_account'].':'.$payment['id'];
+            $transaction = StripeMode::paymentIdentity($session['_verified_account'],$payment['id']);
             $existing = LedgerEntry::where('external_identity_key', $transaction)->first();
             if ($existing && ($existing->event_id !== $intent->event_id || $existing->amount_cents !== $intent->principal_cents || $existing->financial_revision_id !== $intent->financial_revision_id
                 || $existing->kind!=='receipt' || $existing->method!=='stripe' || $existing->currency!=='USD' || $existing->external_reference!==$payment['id'])) {

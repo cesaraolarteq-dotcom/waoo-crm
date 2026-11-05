@@ -53,7 +53,7 @@ final class ProcessQuickPaymentReceipt
             $e=Event::whereKey($intent->event_id)->lockForUpdate()->firstOrFail();$b=QuickPaymentProtocol::booking($e->id);$i=PaymentIntent::whereKey($intent->id)->lockForUpdate()->firstOrFail();
             $receipt=WebhookReceipt::whereKey($r->id)->lockForUpdate()->firstOrFail();if($receipt->state==='processed')return;
             QuickPaymentCheckout::verify($request);
-            $identity='stripe:test:'.$s['_verified_account'].':'.$pi['id'];$existing=LedgerEntry::where('external_identity_key',$identity)->lockForUpdate()->first();
+            $identity=\App\Services\Finance\StripeMode::paymentIdentity($s['_verified_account'],$pi['id']);$existing=LedgerEntry::where('external_identity_key',$identity)->lockForUpdate()->first();
             if($existing){
                 $verification=QuickPaymentReceipt::where('external_identity_key',$identity)->first();
                 if(!$verification||$verification->request_id!==$a->id||$verification->ledger_entry_id!==$existing->id){$this->problem($receipt,$i,'transaction_already_allocated');return;}

@@ -51,7 +51,7 @@ final class OpeningStripeProof
                 && $provider['session_id'] === $intent['stripe_checkout_session_id'] && $provider['payment_id'] === $intent['stripe_payment_intent_id']
                 && is_string($provider['payment_id']) && str_starts_with($provider['payment_id'], 'pi_')
                 && $provider['payment_id'] === $entry->external_reference
-                && $entry->external_identity_key === 'stripe:test:'.$provider['account'].':'.$provider['payment_id']
+                && $entry->external_identity_key === StripeMode::paymentIdentity($provider['account'],$provider['payment_id'])
                 && $provider['received_at'] === $entry->received_at?->toIso8601String();
             if (!$valid) return $failed;
             return ['eligible' => true, 'issue_codes' => [], 'principal_cents' => $intent['principal_cents'],

@@ -38,7 +38,7 @@ final class ProcessTipStripeReceipt {
             $locked=TipCheckoutIntent::whereKey($i->id)->lockForUpdate()->firstOrFail();$r=WebhookReceipt::whereKey($receipt->id)->lockForUpdate()->firstOrFail();if(in_array($r->state,['processed','reconciliation_required'],true))return;
             // Binding is checked again against the row now locked, after any concurrent create/receipt.
             if(!TipProvider::binding($locked,$s)||($locked->provider_payment_id&&$locked->provider_payment_id!==$p['id'])){$this->lockedProblem($r,$locked,'tip_current_binding_mismatch');return;}
-            $external='stripe:test:'.$s['_verified_account'].':'.$p['id'];$sha=hash('sha256',$external);
+            $external=\App\Services\Finance\StripeMode::paymentIdentity($s['_verified_account'],$p['id']);$sha=hash('sha256',$external);
             if(LedgerEntry::where('external_identity_key',$external)->exists()){$this->lockedProblem($r,$locked,'tip_booking_payment_collision');return;}
             $prior=TipReceipt::where('external_sha256',$sha)->orWhere('tip_checkout_intent_id',$locked->id)->lockForUpdate()->first();
             if($prior&&($prior->tip_checkout_intent_id!==$locked->id||$prior->external_sha256!==$sha||$prior->gross_cents!==$locked->amount_cents)){$this->lockedProblem($r,$locked,'tip_transaction_already_allocated');return;}
