@@ -1,3 +1,10 @@
+## 2026-11-04 · Claude → Codex · Interruptor del CRM real `WAOO_LIVE` (rama `claude/go-live-switch`, sobre `claude/quote-new-client`) — REVISAR (seguridad)
+- Owner: «creemos el CRM real», paso 1 = crm.waooparty.com sin Stripe real (solo Zelle), sin mensajes a clientes, en paralelo con HoneyBook.
+- `App\Support\WaooRuntime::trusted()` = local/testing/staging **o** (`production` + `WAOO_LIVE=true`). Reemplaza los 16 `environment(['local','testing','staging'])` y `Sandbox::require`; `hosted()` reemplaza los 3 `environment('staging')` (HTTPS + cookie segura también en el real). Cada función sigue pidiendo su `WAOO_SANDBOX_*`.
+- `StripeTestGateway` se niega en el real («Stripe real todavía no está conectado. Usa Zelle.»). Avisos «Modo prueba» (portal, cotización, propina, pestañas Dinero/Contrato, plantilla de contrato) solo fuera del real. Vista previa del portal sigue local.
+- Test `WaooRuntimeTest` (3). Suites Portal/Quote/Tip/Mail/Lead/Finance/Contract/Import verdes salvo las de MariaDB.
+- Pendiente: Stripe real (paso 2, gateway live + webhook, revisión Codex); cambiar el envío de leads de la web al real.
+
 ## 2026-11-04 · Claude → Codex · Hoy/mañana = 100 % también en el enlace de Reserva rápida (rama `claude/quote-new-client`) — REVISAR (dinero)
 - Bug del dueño en crm-test (WP-41, fiesta mañana): la revisión pedía 100 % pero el portal ofrecía 50 % (tarjeta) y Zelle sugería el 50 %. `QuickPaymentProtocol::percents()` = [100] cuando `deposit_target_cents >= total_cents`; `ReadQuickPayment` solo ofrece esas opciones y el monto Zelle sugerido es el 100 %; `QuickPaymentCheckout` rechaza 50 % (409). Test `test_party_tomorrow_offers_only_the_full_amount_for_card_and_zelle`.
 - `composer.lock`: Symfony 7.4.23 (avisos de seguridad publicados hoy hacían fallar `checks`).

@@ -13,7 +13,7 @@ final class ReadTipViewModel {
             if($context->checkoutId){$i=TipCheckoutIntent::whereKey($context->checkoutId)->where('tip_grant_id',$g->id)->firstOrFail();$paid=TipReceipt::where('tip_checkout_intent_id',$i->id)->exists();}
             $query=$context->checkoutId?'&checkout='.rawurlencode($context->checkoutId):'';
             $review=config('waoo.mail_review_url');if(!is_string($review)||parse_url($review,PHP_URL_SCHEME)!=='https'||!filter_var($review,FILTER_VALIDATE_URL)||parse_url($review,PHP_URL_USER)||parse_url($review,PHP_URL_PASS))$review=null;
-            return ['lang'=>$locale,'lang_url'=>['es'=>'/portal/tip?lang=es'.$query,'en'=>'/portal/tip?lang=en'.$query],'test_mode'=>true,'preview'=>false,
+            return ['lang'=>$locale,'lang_url'=>['es'=>'/portal/tip?lang=es'.$query,'en'=>'/portal/tip?lang=en'.$query],'test_mode'=>! \App\Support\WaooRuntime::live(),'preview'=>false,
                 'first_name'=>$first($e->customer->name),'review_url'=>$review,'tip'=>['state'=>$paid?'paid':'open','when'=>$e->starts_at->setTimezone('America/Chicago')->locale($locale)->isoFormat($locale==='es'?'D [de] MMMM [de] YYYY':'MMMM D, YYYY'),
                     'team'=>$team,'total'=>TipAmounts::money($g->total_cents),'financial_revision_id'=>$g->financial_revision_id,'snapshot_sha256'=>$g->snapshot_sha256,'options'=>TipAmounts::options($g->total_cents)],'actions'=>['checkout'=>'/portal/api/tip/checkout']];
         },3);

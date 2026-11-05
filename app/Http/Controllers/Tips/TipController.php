@@ -13,7 +13,7 @@ final class TipController {
     public function page(Request $r,ReadTipViewModel $s){
         TipGuard::transport($r);abort_if($r->user()!==null,403,'Abre el enlace como cliente en una sesión separada.');
         $lang=in_array($r->query('lang'),['es','en'],true)?$r->query('lang'):'es';
-        $base=['lang'=>$lang,'lang_url'=>['es'=>'/portal/tip?lang=es','en'=>'/portal/tip?lang=en'],'test_mode'=>true,'preview'=>false,'first_name'=>'','review_url'=>null,'tip'=>['state'=>'closed'],'actions'=>[]];
+        $base=['lang'=>$lang,'lang_url'=>['es'=>'/portal/tip?lang=es','en'=>'/portal/tip?lang=en'],'test_mode'=>! \App\Support\WaooRuntime::live(),'preview'=>false,'first_name'=>'','review_url'=>null,'tip'=>['state'=>'closed'],'actions'=>[]];
         if($r->boolean('exchange')||!$r->cookie(TipContext::COOKIE))return response()->view('portal.tip-access',['vm'=>$base]);
         try{$vm=$s->read(TipContext::fromRequest($r));}
         catch(\Illuminate\Database\QueryException $e){throw $e;}

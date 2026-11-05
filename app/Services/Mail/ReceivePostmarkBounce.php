@@ -13,7 +13,7 @@ final class ReceivePostmarkBounce
 {
     public function execute(Request $request): void
     {
-        abort_unless(app()->environment(['local', 'testing', 'staging']) && config('waoo.sandbox_mail_bounces') === true, 404);
+        abort_unless(\App\Support\WaooRuntime::trusted() && config('waoo.sandbox_mail_bounces') === true, 404);
         abort_unless($request->isSecure(), 403);
         $user = config('waoo.postmark_bounce_username');
         $secret = config('waoo.postmark_bounce_password');

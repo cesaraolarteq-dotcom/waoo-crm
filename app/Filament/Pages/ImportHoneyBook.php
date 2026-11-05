@@ -121,7 +121,7 @@ class ImportHoneyBook extends Page
 
     public static function canAccess(): bool
     {
-        return parent::canAccess() && app()->environment(['local', 'testing', 'staging']) && (bool) config('waoo.sandbox_imports', false)
+        return parent::canAccess() && \App\Support\WaooRuntime::trusted() && (bool) config('waoo.sandbox_imports', false)
             && class_exists(CommitHoneyBookEvent::class);
     }
 

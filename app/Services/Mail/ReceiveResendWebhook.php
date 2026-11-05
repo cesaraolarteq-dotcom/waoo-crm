@@ -10,7 +10,7 @@ final class ReceiveResendWebhook
 {
     public function execute(Request $request): void
     {
-        abort_unless(app()->environment(['local','testing','staging'])&&config('waoo.sandbox_resend_webhooks')===true,404);
+        abort_unless(\App\Support\WaooRuntime::trusted()&&config('waoo.sandbox_resend_webhooks')===true,404);
         abort_unless($request->isSecure(),403);
         $body=$request->getContent();abort_if(strlen($body)>65536||(int)$request->header('Content-Length',0)>65536,413);
         app(VerifyResendSignature::class)->execute($body,(string)$request->header('svix-id'),(string)$request->header('svix-timestamp'),(string)$request->header('svix-signature'));

@@ -21,9 +21,9 @@ final class AuthenticateWebsiteAvailability
         if(RateLimiter::tooManyAttempts($key,60))return self::error('rate_limited',429,['Retry-After'=>(string)RateLimiter::availableIn($key)]);
         RateLimiter::hit($key,60);
         $secret=config('waoo.availability_shared_secret');
-        if(!app()->environment(['local','testing','staging']) || config('waoo.sandbox_web_availability')!==true
+        if(!\App\Support\WaooRuntime::trusted() || config('waoo.sandbox_web_availability')!==true
             || !is_string($secret) || strlen($secret)<32 || strlen($secret)>512)return self::error('availability_unavailable',503);
-        if(app()->environment('staging')&&!$request->isSecure())return self::error('availability_unavailable',403);
+        if(\App\Support\WaooRuntime::hosted()&&!$request->isSecure())return self::error('availability_unavailable',403);
         $method=(string)$request->server('REQUEST_METHOD');
         if(!in_array($method,['GET','POST'],true)||$method!==$request->getMethod()||$request->headers->has('X-HTTP-Method-Override'))return self::error('method_not_allowed',405);
         $body=$request->getContent();$target=$request->getRequestUri();

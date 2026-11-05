@@ -14,7 +14,7 @@ final class CaptureMailOccurrence
 
     public static function enabled(): bool
     {
-        return app()->environment(['local', 'testing', 'staging']) && config('waoo.sandbox_mail') === true;
+        return \App\Support\WaooRuntime::trusted() && config('waoo.sandbox_mail') === true;
     }
     public function record(string $key, int|string $sourceId, array $locator, ?User $actor = null): ?MailOccurrence
     {

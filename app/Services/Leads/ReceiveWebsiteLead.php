@@ -15,7 +15,7 @@ final class ReceiveWebsiteLead
     public function execute(string $body, string $timestamp, string $key, string $signature): Lead
     {
         $secret = config('waoo.lead_shared_secret');
-        abort_unless(app()->environment(['local','testing','staging']) && config('waoo.sandbox_lead_intake')
+        abort_unless(\App\Support\WaooRuntime::trusted() && config('waoo.sandbox_lead_intake')
             && is_string($secret) && strlen($secret) >= 32 && strlen($secret) <= 512, 503, 'Lead intake unavailable.');
         abort_if(strlen($body) > 65536, 413);
         abort_unless(preg_match('/^[1-9][0-9]{9}$/D', $timestamp)
