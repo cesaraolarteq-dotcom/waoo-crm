@@ -215,7 +215,7 @@ class EventMoney extends Page
 
     public function payments()
     {
-        return LedgerEntry::query()->where('event_id', $this->record->getKey())->where('environment', 'test')
+        return LedgerEntry::query()->where('event_id', $this->record->getKey())->where('environment', \App\Support\WaooRuntime::ledgerEnvironment())
             ->orderByDesc('received_at')->get()
             ->map(fn ($e) => (object) ['when' => Labels::when($e->received_at), 'amount' => Labels::money($e->amount_cents), 'method' => $e->method === 'zelle' ? 'Zelle' : 'Tarjeta',
                 'reference' => $e->external_reference, 'kind' => $e->kind === 'receipt' ? 'Recibido' : ucfirst($e->kind), 'note' => $e->note,

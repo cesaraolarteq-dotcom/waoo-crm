@@ -24,13 +24,13 @@ final class PrepareOwnerReport
         $containing = ReportPeriod::resolve(['period' => $periodKind, 'anchor' => $data['as_of']]);
         $priorAnchor = CarbonImmutable::parse($containing['starts_on'], 'America/Chicago')->subDay()->toDateString();
         $period = ReportPeriod::resolve(['period' => $periodKind, 'anchor' => $priorAnchor]);
-        $identity = ['environment' => 'test', 'kind' => $data['kind'], 'period_starts_on' => $period['starts_on']];
+        $identity = ['environment' => \App\Support\WaooRuntime::ledgerEnvironment(), 'kind' => $data['kind'], 'period_starts_on' => $period['starts_on']];
         if ($saved = OwnerReportSnapshot::where($identity)->first()) return $saved;
 
         try {
             return DB::transaction(function () use ($actor, $identity, $periodKind, $priorAnchor, $period) {
                 $input = ['period' => $periodKind, 'anchor' => $priorAnchor];
-                $payload = ['schema_version' => 1, 'environment' => 'test', 'timezone' => 'America/Chicago', 'due_on' => $period['ends_before'],
+                $payload = ['schema_version' => 1, 'environment' => \App\Support\WaooRuntime::ledgerEnvironment(), 'timezone' => 'America/Chicago', 'due_on' => $period['ends_before'],
                     'operations' => app(OperationalReport::class)->execute($actor, $input),
                     'bookings' => app(BookingSalesReport::class)->execute($actor, $input),
                     'upcoming_weekend' => $identity['kind'] === 'weekly'

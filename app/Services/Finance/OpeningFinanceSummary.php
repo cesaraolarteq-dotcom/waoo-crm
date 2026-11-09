@@ -19,7 +19,7 @@ final class OpeningFinanceSummary
         if (!$hasSlot && !CutoverFinancialBinding::where('event_id', $event->id)->sharedLock()->first()
             && !(ImportedProjectLink::where('event_id', $event->id)->sharedLock()->first()
                 && ($event->responsible_system === 'crm' || LedgerEntry::query()->forceIndex('opening_receipts_event_index')->where('event_id', $event->id)->sharedLock()->first()))) return null;
-        $base = ['environment' => 'test', 'source' => 'honeybook_opening', 'responsible_system' => $event->responsible_system,
+        $base = ['environment' => \App\Support\WaooRuntime::ledgerEnvironment(), 'source' => 'honeybook_opening', 'responsible_system' => $event->responsible_system,
             'funds_verified' => false, 'financial_revision' => null, 'received_cents' => null, 'refunded_cents' => null, 'net_received_cents' => null,
             'balance_cents' => null, 'credit_cents' => null, 'deposit_shortfall_cents' => 0, 'balance_label' => 'Imported agreement balance',
             'capacity_status' => $event->status, 'contract_status' => 'original_imported_agreement', 'collection_blocked' => true, 'exceptions' => []];

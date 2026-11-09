@@ -35,13 +35,13 @@ final class OpeningRefundProof
                 || $p['ledger_sha256'] !== MutationKey::hash(EvidenceV1::model($entry, 'ledger'))
                 || $p['parent_ledger_sha256'] !== MutationKey::hash(EvidenceV1::model($parent, 'ledger'))
                 || $entry->source_id !== $o->webhook_receipt_id || $entry->source_type !== 'verified_stripe_refund'
-                || $entry->kind !== 'refund' || $entry->method !== 'stripe' || $entry->environment !== 'test' || $entry->currency !== 'USD'
+                || $entry->kind !== 'refund' || $entry->method !== 'stripe' || $entry->environment !== \App\Support\WaooRuntime::ledgerEnvironment() || $entry->currency !== 'USD'
                 || $entry->verified_by !== null || $entry->event_id !== $parent->event_id || $entry->financial_revision_id !== $parent->financial_revision_id
                 || $entry->amount_cents !== $provider['refund']['amount'] || $entry->external_reference !== $provider['refund']['id']
                 || $entry->external_identity_key !== 'stripe-refund:test:'.$provider['account'].':'.$provider['refund']['id']
                 || $entry->received_at?->timestamp !== $provider['refund']['created']
                 || $parent->kind !== 'receipt' || $parent->method !== 'stripe' || $parent->source_type !== 'verified_stripe_webhook'
-                || $parent->environment !== 'test' || $parent->currency !== 'USD' || $parent->verified_by !== null
+                || $parent->environment !== \App\Support\WaooRuntime::ledgerEnvironment() || $parent->currency !== 'USD' || $parent->verified_by !== null
                 || OpeningStripeProof::grossOf($parent) !== $provider['charge']['amount'] || $parent->external_reference !== $provider['payment']['id']
                 || $parent->external_identity_key !== 'stripe:test:'.$provider['account'].':'.$provider['payment']['id']
                 || $parent->received_at?->timestamp !== $provider['charge']['created']) return $failed;

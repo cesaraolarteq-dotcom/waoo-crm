@@ -26,10 +26,10 @@ final class OperationalReport
             $ids = $events->modelKeys();
             $finances = FinancialRevision::whereIn('event_id', $ids)->orderByDesc('revision')->get()->unique('event_id')->keyBy('event_id');
             $costs = EventCostSnapshot::whereIn('event_id', $ids)->orderByDesc('revision')->get()->unique(fn ($c) => $c->event_id.':'.$c->kind)->keyBy(fn ($c) => $c->event_id.':'.$c->kind);
-            $ledger = LedgerEntry::whereIn('event_id', $ids)->where('environment', 'test')->where('currency', 'USD')
+            $ledger = LedgerEntry::whereIn('event_id', $ids)->where('environment', \App\Support\WaooRuntime::ledgerEnvironment())->where('currency', 'USD')
                 ->selectRaw("event_id, SUM(CASE WHEN kind = 'receipt' THEN amount_cents WHEN kind = 'refund' THEN -amount_cents ELSE 0 END) AS net")
                 ->groupBy('event_id')->get()->keyBy('event_id');
-            $cashRows = LedgerEntry::where('environment', 'test')->where('currency', 'USD')->where('received_at', '>=', $from)->where('received_at', '<', $until)
+            $cashRows = LedgerEntry::where('environment', \App\Support\WaooRuntime::ledgerEnvironment())->where('currency', 'USD')->where('received_at', '>=', $from)->where('received_at', '<', $until)
                 ->selectRaw('kind, SUM(amount_cents) AS amount')->groupBy('kind')->get()->keyBy('kind');
             $received = (int) ($cashRows->get('receipt')?->amount ?? 0);
             $refunded = (int) ($cashRows->get('refund')?->amount ?? 0);
@@ -67,7 +67,7 @@ final class OperationalReport
                     $scheduled[$kind]['staff_cost_cents'] = null;
                 }
             }
-            return ['environment' => 'test', 'timezone' => 'America/Chicago', 'generated_at' => now()->toIso8601String(),
+            return ['environment' => \App\Support\WaooRuntime::ledgerEnvironment(), 'timezone' => 'America/Chicago', 'generated_at' => now()->toIso8601String(),
                 'period' => $period,
                 'cash' => ['basis' => 'ledger.received_at', 'customer_fee_received_cents'=>(int)($cashRows->get('customer_fee')?->amount??0),'gross_received_cents'=>$received+(int)($cashRows->get('customer_fee')?->amount??0),'received_cents' => $received, 'refunded_cents' => $refunded, 'net_received_cents' => $received - $refunded], 'scheduled' => $scheduled];
         }, 3);

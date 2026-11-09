@@ -67,7 +67,7 @@ final class ReadPanorama
         $events = Event::query()->orderBy('id')->get();
         $finances = FinancialRevision::query()->whereIn('event_id', $events->modelKeys())->orderByDesc('revision')->get()->unique('event_id')->keyBy('event_id');
         $channels = \App\Models\EventChannel::query()->pluck('channel', 'event_id');
-        $paid = LedgerEntry::query()->where('environment', 'test')->where('currency', 'USD')->whereIn('event_id', $events->modelKeys())
+        $paid = LedgerEntry::query()->where('environment', \App\Support\WaooRuntime::ledgerEnvironment())->where('currency', 'USD')->whereIn('event_id', $events->modelKeys())
             ->selectRaw("event_id, SUM(CASE WHEN kind = 'receipt' THEN amount_cents WHEN kind = 'refund' THEN -amount_cents ELSE 0 END) AS net")
             ->groupBy('event_id')->pluck('net', 'event_id');
         foreach ($events as $event) {
@@ -101,7 +101,7 @@ final class ReadPanorama
                 'profit' => $finance ? $this->profit($event, $finance) : null];
         }
 
-        $receipts = LedgerEntry::query()->where('environment', 'test')->where('currency', 'USD')->where('kind', 'receipt')->whereNotNull('received_at')->get()->groupBy('event_id');
+        $receipts = LedgerEntry::query()->where('environment', \App\Support\WaooRuntime::ledgerEnvironment())->where('currency', 'USD')->where('kind', 'receipt')->whereNotNull('received_at')->get()->groupBy('event_id');
         foreach ($receipts as $entries) {
             array_push($payments, ...$this->markDeposit($entries->map(fn ($e) => ['date' => CarbonImmutable::parse($e->received_at)->setTimezone('America/Chicago')->toDateString(), 'amount_cents' => $e->amount_cents])->all()));
         }

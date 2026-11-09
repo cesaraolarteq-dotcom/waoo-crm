@@ -16,7 +16,7 @@ final class GuardUnreferencedQuickBooking
             ->join('ledger_entries', 'ledger_entries.id', '=', 'quick_bookings.receipt_id')
             ->where('events.starts_at', CarbonImmutable::parse($data['starts_at'])->utc())
             ->where('events.ends_at', CarbonImmutable::parse($data['ends_at'])->utc())
-            ->where('ledger_entries.environment', 'test')->where('ledger_entries.kind', 'receipt')->where('ledger_entries.method', 'zelle')
+            ->where('ledger_entries.environment', \App\Support\WaooRuntime::ledgerEnvironment())->where('ledger_entries.kind', 'receipt')->where('ledger_entries.method', 'zelle')
             ->where('ledger_entries.currency', 'USD')->where('ledger_entries.amount_cents', $data['deposit']['amount_cents'])
             ->where('ledger_entries.received_at', '>=', $start)->where('ledger_entries.received_at', '<', $end)
             ->pluck('quick_bookings.customer_id')->unique();

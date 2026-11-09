@@ -96,12 +96,12 @@ final class StripeReceiptProcessor
             }
             if(!$existing && $existingFee){$this->problem($receipt,$intent,'fee_allocation_mismatch');return;}
             if (!$existing) {
-                $entry = LedgerEntry::create(['event_id' => $intent->event_id, 'financial_revision_id' => $intent->financial_revision_id, 'environment' => 'test', 'kind' => 'receipt', 'method' => 'stripe',
+                $entry = LedgerEntry::create(['event_id' => $intent->event_id, 'financial_revision_id' => $intent->financial_revision_id, 'environment' => \App\Support\WaooRuntime::ledgerEnvironment(), 'kind' => 'receipt', 'method' => 'stripe',
                     'amount_cents' => $intent->principal_cents, 'currency' => 'USD', 'received_at' => CarbonImmutable::createFromTimestampUTC($charge['created']),
                     'external_reference' => $payment['id'], 'external_identity_key' => $transaction, 'verified_by' => null, 'source_type' => 'verified_stripe_webhook', 'source_id' => $receipt->id]);
                 \App\Services\Scheduling\DailyCapacity::recordPaidOverflow($event,$intent->financial_revision_id,$entry->id);
                 if($intent->customer_fee_cents>0)LedgerEntry::create(['event_id'=>$intent->event_id,'financial_revision_id'=>$intent->financial_revision_id,
-                    'environment'=>'test','kind'=>'customer_fee','method'=>'stripe','amount_cents'=>$intent->customer_fee_cents,'currency'=>'USD',
+                    'environment'=>\App\Support\WaooRuntime::ledgerEnvironment(),'kind'=>'customer_fee','method'=>'stripe','amount_cents'=>$intent->customer_fee_cents,'currency'=>'USD',
                     'received_at'=>CarbonImmutable::createFromTimestampUTC($charge['created']),'external_reference'=>$payment['id'],
                     'external_identity_key'=>$feeIdentity,'verified_by'=>null,'source_type'=>'verified_stripe_webhook','source_id'=>$receipt->id]);
                 app(\App\Services\Mail\CaptureMailOccurrence::class)->record('payment_received', $entry->id, ['event_id'=>$event->id, 'customer_id'=>$event->customer_id, 'financial_revision_id'=>$intent->financial_revision_id, 'ledger_entry_id'=>$entry->id]);
