@@ -50,7 +50,8 @@ return [
     'sandbox_quick_stripe' => env('WAOO_SANDBOX_QUICK_STRIPE', false), // Internal leases/request preparation only; no provider or cron activation.
     'sandbox_quick_payments' => env('WAOO_SANDBOX_QUICK_PAYMENTS', false),
     'sandbox_quick_payment_notifications' => env('WAOO_SANDBOX_QUICK_PAYMENT_NOTIFICATIONS', false),
-    'quick_payment_methods' => ['card', 'klarna'],
+    // Audit 2026-11-09: card-only when the live Stripe account has no active Klarna (WAOO_QUICK_PAYMENT_METHODS=card).
+    'quick_payment_methods' => array_values(array_filter(array_map('trim', explode(',', (string) env('WAOO_QUICK_PAYMENT_METHODS', 'card,klarna'))))),
     // Owner 2026-11-03: the balance payment from the client link may also offer Klarna/Afterpay (comma list, card always included).
     'portal_payment_methods' => array_values(array_filter(array_map('trim', explode(',', (string) env('WAOO_PORTAL_PAYMENT_METHODS', 'card'))))),
     'quick_stripe_requested_methods' => ['card'], // Requested policy only, never verified account capability or financing activation.
