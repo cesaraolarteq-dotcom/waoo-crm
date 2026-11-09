@@ -20,7 +20,7 @@ final class EventMailSource
         $binding=DB::table('capacity_payment_links')->where('event_id',$eventId)->lockForUpdate()->first();
         RecordWriteRejected::unless($event->status==='capacity_reserved'&&$event->version===$finance->event_version+1&&$binding&&(int)$binding->financial_revision_id===$finance->id,409,'mail_event_requires_current_confirmed_finance');
         RecordWriteRejected::unless($grant->event_id===$eventId&&$grant->customer_id===$customer->id&&$grant->quote_revision_id===null&&!$grant->revoked_at&&$grant->expires_at->isFuture()&&in_array('payments.read',$grant->scopes,true),409,'mail_link_inactive');
-        $ledger=LedgerEntry::where('event_id',$eventId)->where('environment','test')->orderBy('id')->lockForUpdate()->get();
+        $ledger=LedgerEntry::where('event_id',$eventId)->where('environment',\App\Support\WaooRuntime::ledgerEnvironment())->orderBy('id')->lockForUpdate()->get();
         $net=(int)$ledger->sum(fn($line)=>$line->kind==='receipt'?$line->amount_cents:($line->kind==='refund'?-$line->amount_cents:0));
         return [$event,$customer,$finance,$grant,$net];
     }

@@ -11,7 +11,7 @@ final class OpeningReceiptProof
     {
         $issues = []; $audit = null;
         if ($entry->event_id !== $context['binding']->event_id || $entry->financial_revision_id !== $context['finance']->id) $issues[] = 'receipt_agreement_mismatch';
-        if ($entry->environment !== 'test' || $entry->currency !== 'USD') $issues[] = 'receipt_environment_or_currency';
+        if ($entry->environment !== \App\Support\WaooRuntime::ledgerEnvironment() || $entry->currency !== 'USD') $issues[] = 'receipt_environment_or_currency';
         if ($entry->kind !== 'receipt') $issues[] = 'refund_allocation_pending';
         if ($entry->amount_cents <= 0 || $entry->amount_cents > 100000000) $issues[] = 'receipt_amount_outside_scope';
         if (!$entry->received_at || $entry->received_at->lessThan($context['transfer']->effective_at) || $entry->received_at->isFuture()) $issues[] = 'receipt_time_outside_transfer';

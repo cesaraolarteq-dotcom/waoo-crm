@@ -58,7 +58,7 @@ final class ProcessQuickPaymentReceipt
                 $verification=QuickPaymentReceipt::where('external_identity_key',$identity)->first();
                 if(!$verification||$verification->request_id!==$a->id||$verification->ledger_entry_id!==$existing->id){$this->problem($receipt,$i,'transaction_already_allocated');return;}
             }else{
-                $fields=['event_id'=>$e->id,'financial_revision_id'=>$b->financial_revision_id,'environment'=>'test','method'=>'stripe','currency'=>'USD','received_at'=>CarbonImmutable::createFromTimestampUTC($charge['created']),
+                $fields=['event_id'=>$e->id,'financial_revision_id'=>$b->financial_revision_id,'environment'=>\App\Support\WaooRuntime::ledgerEnvironment(),'method'=>'stripe','currency'=>'USD','received_at'=>CarbonImmutable::createFromTimestampUTC($charge['created']),
                     'external_reference'=>$pi['id'],'verified_by'=>null,'source_type'=>'verified_quick_stripe','source_id'=>$r->id];
                 $entry=LedgerEntry::create([...$fields,'kind'=>'receipt','amount_cents'=>$t['principal_cents'],'external_identity_key'=>$identity]);
                 $fee=$t['customer_fee_cents']>0?LedgerEntry::create([...$fields,'kind'=>'customer_fee','amount_cents'=>$t['customer_fee_cents'],'external_identity_key'=>'stripe:fee:'.hash('sha256',$identity)]):null;

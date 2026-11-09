@@ -25,7 +25,7 @@ final class QuickCostumeHolds
         $receipt = LedgerEntry::whereKey($q->receipt_id)->sharedLock()->firstOrFail();
         RecordWriteRejected::unless($e->customer_id === $q->customer_id && $e->responsible_system === 'crm'
             && $receipt->event_id === $e->id && $receipt->financial_revision_id === $q->initial_financial_revision_id
-            && $receipt->kind === 'receipt' && $receipt->environment === 'test' && $receipt->currency === 'USD'
+            && $receipt->kind === 'receipt' && $receipt->environment === \App\Support\WaooRuntime::ledgerEnvironment() && $receipt->currency === 'USD'
             && $receipt->amount_cents > 0 && (($receipt->verified_by !== null && $receipt->source_type === 'owner_verified') || self::verifiedStripeReceipt($receipt)),
             409, 'La reserva o su depósito requieren revisión.');
         return $q;

@@ -52,7 +52,7 @@ final class QuickPaymentCheckout
                 'lease_id'=>$lease->id,'lease_sha256'=>$lease->payload_sha256,'terms'=>$terms->snapshot(),'capabilities'=>$evidence,'created_at'=>$now->timestamp,'provider_key'=>'waoo-quick-test:'.$id,'parameters'=>$params];
             $request=QuickStripeCheckoutRequest::create(['id'=>$id,'quick_stripe_lease_id'=>$lease->id,'event_id'=>$e->id,'customer_id'=>$b->customer_id,'financial_revision_id'=>$b->financial_revision_id,
                 'envelope'=>$p,'envelope_sha256'=>MutationKey::hash($p),'created_at'=>$now,'updated_at'=>$now]);
-            $t=$terms->snapshot();$intent=PaymentIntent::create(['id'=>$intentId,'event_id'=>$e->id,'financial_revision_id'=>$b->financial_revision_id,'purpose'=>'quick_deposit','status'=>'prepared',
+            $t=$terms->snapshot();$intent=PaymentIntent::create(['id'=>$intentId,'environment'=>\App\Support\WaooRuntime::ledgerEnvironment(),'event_id'=>$e->id,'financial_revision_id'=>$b->financial_revision_id,'purpose'=>'quick_deposit','status'=>'prepared',
                 'collection_slot'=>'event:'.$e->id,'principal_cents'=>$t['principal_cents'],'customer_fee_cents'=>$t['customer_fee_cents'],'payable_cents'=>$t['payable_cents'],'currency'=>'USD','expires_at'=>CarbonImmutable::createFromTimestampUTC($expires)]);
             QuickPaymentAttempt::create(['id'=>$id,'quick_payment_booking_id'=>$b->id,'portal_grant_id'=>$grant->id,'payment_intent_id'=>$intentId,'booking_version'=>$b->version,'request_sha256'=>$request->envelope_sha256]);
             Audit::recordSystem('quick_payment.request_prepared',$request,[],['event_id'=>$e->id,'sha256'=>$request->envelope_sha256]);

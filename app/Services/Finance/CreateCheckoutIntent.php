@@ -45,11 +45,11 @@ final class CreateCheckoutIntent
                 if($actor instanceof PortalContext && (!isset($data['card_quote_sha256']) || !hash_equals($quote['card_quote_sha256'],$data['card_quote_sha256'])))CardFees::reject();
             }
             $intent = PaymentIntent::create(['id' => (string) Str::uuid(), 'event_id' => $eventId, 'financial_revision_id' => $revision->id,
-                'environment' => 'test', 'purpose' => $data['purpose'], 'currency' => 'USD', 'principal_cents' => $amount, 'customer_fee_cents' => $terms['customer_fee_cents'], 'payable_cents' => $terms['payable_cents'], 'card_fee_policy'=>$policy,
+                'environment' => \App\Support\WaooRuntime::ledgerEnvironment(), 'purpose' => $data['purpose'], 'currency' => 'USD', 'principal_cents' => $amount, 'customer_fee_cents' => $terms['customer_fee_cents'], 'payable_cents' => $terms['payable_cents'], 'card_fee_policy'=>$policy,
                 'status' => 'creating', 'collection_slot' => 'event:'.$eventId, 'expires_at' => now()->addHour()]);
             if($policy!==null){$intent->card_fee_terms_sha256=CardFees::fingerprint($intent);$intent->save();}
-            if ($actor instanceof User) \App\Services\Audit::recordFor($actor, 'payment.checkout_intent_created', $intent, [], ['amount_cents' => $amount, 'environment' => 'test']);
-            else \App\Services\Audit::recordSystem('payment.checkout_intent_created', $intent, [], ['amount_cents' => $amount, 'portal_grant_id' => $actor->grantId, 'environment' => 'test']);
+            if ($actor instanceof User) \App\Services\Audit::recordFor($actor, 'payment.checkout_intent_created', $intent, [], ['amount_cents' => $amount, 'environment' => \App\Support\WaooRuntime::ledgerEnvironment()]);
+            else \App\Services\Audit::recordSystem('payment.checkout_intent_created', $intent, [], ['amount_cents' => $amount, 'portal_grant_id' => $actor->grantId, 'environment' => \App\Support\WaooRuntime::ledgerEnvironment()]);
             MutationKey::store($scope, $key, $hash, 'payment_intent', $intent->id);
             return $intent;
         }, 3);

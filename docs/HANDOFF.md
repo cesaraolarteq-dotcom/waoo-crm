@@ -1,3 +1,8 @@
+## 2026-11-09 · Claude · Auditoría: etiqueta `live` del dinero real + Reserva rápida solo tarjeta (rama `claude/ledger-environment`, desde main b0219d0) — REVISAR (dinero)
+- `WaooRuntime::ledgerEnvironment()` = `live` en el CRM real (WAOO_LIVE), `test` en todo lo demás. Reemplazados los 60 literales `environment='test'` (escritores y lectores de ledger, intents, propinas, reportes, snapshots de reportes, apertura/cutover, CardFees). `QuickPaymentCheckout` ahora escribe `environment` explícito en su PaymentIntent (antes dependía del default de la columna). La referencia `ledger:test:` de ConfirmPaidCapacity/ConfirmBooking se dejó igual (identificador interno en ambos lados). El CRM real tiene 0 filas de dinero, sin migración de valores.
+- `waoo.quick_payment_methods` desde `WAOO_QUICK_PAYMENT_METHODS` (default `card,klarna`): si la cuenta live no tiene Klarna activo, `card` evita que Reserva rápida falle también con tarjeta (verifyMethods exige todas activas).
+- Tests: `LiveLedgerTest` (2), `QuickPaymentsTest::test_card_only_configuration_opens_a_card_checkout`. Suite local completa 1,875: solo fallan las de MariaDB (concurrencia/auditoría/InnoDB).
+
 ## 2026-11-05 · Claude · Revisión independiente de `claude/stripe-live` (Codex sin créditos; César eligió «B»: revisar + unir con controles)
 Revisor aparte (code-review high, diff completo contra main). Corregido en la rama:
 - Reserva rápida en vivo rechazaba toda sesión `cs_live_` (`QuickPaymentCheckout::session` aún exigía `cs_test_`): ahora `StripeMode::sessionPrefix()`.

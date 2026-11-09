@@ -128,6 +128,16 @@ class QuickPaymentsTest extends TestCase
         $this->checkout(100);
     }
 
+    // Audit 2026-11-09: a Stripe account without Klarna still takes cards in Reserva rápida.
+    public function test_card_only_configuration_opens_a_card_checkout():void
+    {
+        config(['waoo.quick_payment_methods'=>['card']]);
+        $r=$this->create();$this->client($r);$this->details();$g=$this->gateway();
+        $out=$this->checkout(50);
+        $this->assertNotEmpty($out);
+        $this->assertSame(['card'],collect($g->sessions)->first()['payment_method_types']??null);
+    }
+
     public function test_verified_stripe_separates_principal_fee_and_promotes_once_with_duplicate_webhooks():void
     {
         $r=$this->create();$this->client($r);$this->details();$g=$this->gateway();$key=(string)Str::uuid();$v=$this->checkout(50,$key);

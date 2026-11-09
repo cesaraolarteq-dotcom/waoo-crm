@@ -34,7 +34,7 @@ final class RefundPayment
                 RecordWriteRejected::unless($existing->event_id === $eventId && $existing->receipt_id === $data['receipt_id'] && $existing->amount_cents === $data['amount_cents'], 409, 'Esta clave ya se usó con otros datos.');
                 return $existing;
             }
-            $receipt = LedgerEntry::whereKey($data['receipt_id'])->where('event_id', $eventId)->where('kind', 'receipt')->where('environment', 'test')->first();
+            $receipt = LedgerEntry::whereKey($data['receipt_id'])->where('event_id', $eventId)->where('kind', 'receipt')->where('environment', \App\Support\WaooRuntime::ledgerEnvironment())->first();
             RecordWriteRejected::unless($receipt && in_array($receipt->method, ['stripe', 'zelle'], true), 409, 'Ese pago no es de esta fiesta o no se puede devolver desde aquí.');
             $committed = (int) RefundRequest::where('receipt_id', $receipt->id)->whereIn('state', ['requested', 'unknown', 'succeeded'])->lockForUpdate()->sum('amount_cents');
             RecordWriteRejected::unless($data['amount_cents'] <= $receipt->amount_cents - $committed, 422, 'El monto es mayor que lo que queda de ese pago ('.number_format(($receipt->amount_cents - $committed) / 100, 2).' USD).');
@@ -78,7 +78,7 @@ final class RefundPayment
 
     private function record(User $actor, RefundRequest $request, LedgerEntry $receipt, CarbonImmutable $at, ?string $reference, string $identity): void
     {
-        $entry = LedgerEntry::create(['event_id' => $request->event_id, 'financial_revision_id' => $receipt->financial_revision_id, 'environment' => 'test', 'kind' => 'refund',
+        $entry = LedgerEntry::create(['event_id' => $request->event_id, 'financial_revision_id' => $receipt->financial_revision_id, 'environment' => \App\Support\WaooRuntime::ledgerEnvironment(), 'kind' => 'refund',
             'method' => $request->method, 'amount_cents' => $request->amount_cents, 'currency' => 'USD', 'received_at' => $at, 'external_reference' => $reference,
             'external_identity_key' => $identity, 'verified_by' => $actor->id, 'source_type' => 'owner_refund', 'source_id' => (string) $request->id, 'note' => $request->reason]);
         RefundRequest::whereKey($request->id)->update(['ledger_entry_id' => $entry->id]);
