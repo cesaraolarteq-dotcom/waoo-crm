@@ -2850,3 +2850,10 @@ Owner asked ("sí actívalos") to offer Klarna/Afterpay/Zip on the balance payme
 - `StripeReceiptProcessor`: a non-card payment counts only when it is Klarna/Afterpay AND that session offered it; else `payment_method_not_offered` reconciliation. Cards keep the credit-only rule when the 3% fee policy applies.
 - **Review for Codex:** with `WAOO_REGULAR_CARD_FEE_ENABLED=true` the 3% is added before the method is chosen, so a Klarna/Afterpay payment also carries it (same as Reserva rápida today). Check BNPL surcharge rules before turning the fee on in live.
 - Portal copy: "Tarjeta …, Klarna o Afterpay" + installments hint. Test `BalancePayLaterTest`.
+
+## 2026-11-17 · Claude · Zip on the balance payment (owner: "configura el zip en el crm")
+- Stripe live account: `zip_payments` capability **active** (checked via API 2026-11-17), Zip enabled by César in the dashboard.
+- `CreateCheckoutIntent::PAY_LATER` + `zip`; `StripeTestGateway::verifyMethods` maps `zip` → `zip_payments`; portal label "Zip".
+- `CreateCheckoutIntent::forAmount()`: Zip only for $35–$4,000 (Stripe Zip US range) so Checkout never gets an out-of-range method (the session check compares methods exactly).
+- Enabled per environment with `WAOO_PORTAL_PAYMENT_METHODS=card,klarna,afterpay_clearpay,zip`. Reserva rápida public flow unchanged (card/Klarna only by owner rule).
+- Review for Codex: money path (receipt counts only when that session offered Zip — same rule as Klarna/Afterpay).

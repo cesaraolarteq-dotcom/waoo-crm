@@ -72,7 +72,7 @@ final class StripeReceiptProcessor
         }
         $details=is_array($charge['payment_method_details']??null)?$charge['payment_method_details']:[];
         $method=$details['type']??(isset($details['card'])?'card':null);
-        // Klarna/Afterpay only count when this checkout itself offered them; a card still has to be a credit card when the fee applies.
+        // Klarna/Afterpay/Zip only count when this checkout itself offered them; a card still has to be a credit card when the fee applies.
         if($method!=='card' && !(in_array($method,CreateCheckoutIntent::PAY_LATER,true) && in_array($method,$session['payment_method_types']??[],true))){
             $this->problem($receipt,$intent,'payment_method_not_offered');return;
         }
