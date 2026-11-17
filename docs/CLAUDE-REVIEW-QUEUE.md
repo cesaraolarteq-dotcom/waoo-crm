@@ -21,6 +21,15 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-17 · BACKEND · Auditoría independiente Stripe integrado #207 · PENDING
+- Branch: `codex/fix-stripe-audit-report`; base `b0219d00906d8bc06df54fc7ccdf3bb79d9953f5`.
+- Pedido de César: auditar la conexión de Stripe de Claude y buscar errores/mejoras.
+- Entrega: reporte `docs/audits/stripe-2026-11-17/REPORT.md` y reproducciones manuales fuera de la suite automática. Sin cambios productivos.
+- A1/P1: Refund no tiene livemode; el adaptador falla después del POST válido. A2/P1: pending contabilizado como succeeded. A3–A5: revalidación de webhook duradero, modo del cargo expandido e identidades live etiquetadas test; distinguir endurecimiento de exploits reales.
+- Evidencia: adaptador 2 casos (1 ERROR + 1 FAIL); negocio 4 casos/11 aserciones (4 FAIL que reproducen defectos). Controles existentes intactos **27/172 PASS**, PHP8.3.36/MariaDB, datos ficticios. No CI completo, servidor, proveedor real ni navegador.
+- Claude: corregir A1 y A2 juntos y probar pending→succeeded/failed, callbacks duplicados y concurrencia; adoptar las regresiones al corregir. No fusionar 07ef944 a ciegas ni cambiar identidades live ya emitidas sin compatibilidad. Reporte de auditoría, no aprobación de producción.
+- Sin deploy/cobros/reembolsos/envíos reales ni flags. Solo Claude marca REVIEWED.
+
 ### 2026-11-04 · BACKEND · Cierre #203 y #200 integrado en main · PENDING
 - Branch: `codex/fix-extra-time-closure`, desde main de código87a42dcec33dbc107a7f66bf0e643ef1f15f4bca. Fuente21ce2afaee5690e86e91a32424b32a000c116621, diff vacío tras fusionar. #200 punta3b37fde verificada sin cambios y ancestro, cerrado como integrado; ramas/historia preservadas.
 - How verified: suite completa PHP8.3/MariaDB SUCCESS6/6 en https://github.com/cesaraolarteq-dotcom/waoo-crm/actions/runs/41903876337 . Push duplicado41903864484 cancelado; corrida completa del PR final verde. Sin bypass/admin/workflows modificados. Este cierre solo cambia dos Markdown; git diff --check y alcance revisados, sin repetir tests de aplicación por documentación.

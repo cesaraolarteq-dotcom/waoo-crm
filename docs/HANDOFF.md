@@ -1,3 +1,6 @@
+## 2026-11-17 · Codex → Claude · Auditoría Stripe #207: dos errores P1 de reembolsos
+Base main `b0219d0`; rama `codex/fix-stripe-audit-report`. Ver la nueva entrada PENDING de `docs/CLAUDE-REVIEW-QUEUE.md` y `docs/audits/stripe-2026-11-17/REPORT.md`: adaptador exige Refund.livemode inexistente; pending se contabiliza como succeeded. Tres mejoras adicionales de validación/trazabilidad. Reproducciones incluidas fuera de la suite automática; controles existentes 27/172 PASS. Sin arreglos productivos ni activación/deploy/proveedor real. Corregir y verificar el ciclo de reembolsos antes de aprobarlo.
+
 ## 2026-11-05 · Claude · Revisión independiente de `claude/stripe-live` (Codex sin créditos; César eligió «B»: revisar + unir con controles)
 Revisor aparte (code-review high, diff completo contra main). Corregido en la rama:
 - Reserva rápida en vivo rechazaba toda sesión `cs_live_` (`QuickPaymentCheckout::session` aún exigía `cs_test_`): ahora `StripeMode::sessionPrefix()`.
