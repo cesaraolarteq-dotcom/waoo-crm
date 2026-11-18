@@ -162,7 +162,8 @@ class StripeSandboxTest extends TestCase
     public function test_live_receipt_uses_live_identity_and_same_callback_is_idempotent(): void
     {
         $this->app['env']='production';$this->stripe->live=true;
-        config(['waoo.live'=>true,'waoo.stripe_live'=>true,'waoo.stripe_live_account'=>'acct_fixture','waoo.stripe_live_webhook_secret'=>'whsec_fixture']);
+        // Production only accepts an https origin for client links (Sandbox::origin).
+        config(['app.url'=>'https://crm.example.test','waoo.live'=>true,'waoo.stripe_live'=>true,'waoo.stripe_live_account'=>'acct_fixture','waoo.stripe_live_webhook_secret'=>'whsec_fixture']);
         $intent=app(\App\Services\Finance\CreateCheckoutIntent::class)->execute($this->owner,$this->event->id,
             ['financial_revision_id'=>$this->finance->id,'purpose'=>'deposit'],(string)Str::uuid());
         $this->stripe->paid($intent->stripe_checkout_session_id);
