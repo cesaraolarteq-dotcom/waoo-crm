@@ -215,4 +215,21 @@ class CancelAndRefundTest extends TestCase
         $this->assertSame('unknown', RefundRequest::where('receipt_id', $card->id)->value('state'));
         $this->assertSame(0, LedgerEntry::where('kind', 'refund')->count());
     }
+
+    /** A pending refund whose webhook never arrives is settled by the scheduled re-check, which never creates a refund. */
+    public function test_scheduled_recheck_settles_a_pending_refund_without_a_webhook(): void
+    {
+        config(['waoo.sandbox_changes' => true]);
+        $e = $this->book(); $card = $this->cardReceipt($e);
+        $fake = $this->fakeStripe(fn ($pi, $amount) => ['id' => 're_quiet', 'status' => 'pending', 'amount' => $amount, 'payment_intent' => $pi]);
+        $r = app(RefundPayment::class)->execute($this->owner, $e->id, ['receipt_id' => $card->id, 'amount_cents' => 5000, 'reason' => 'Decisión de la dueña.'], (string) Str::uuid());
+        $fake->later = fn ($id, $pi, $amount) => ['id' => $id, 'status' => 'succeeded', 'amount' => $amount, 'payment_intent' => $pi];
+        $this->artisan('waoo:refunds:recheck')->assertSuccessful(); // too recent: not touched yet
+        $this->assertSame('pending', $r->fresh()->state);
+        $this->travel(20)->minutes();
+        $this->artisan('waoo:refunds:recheck')->assertSuccessful();
+        $this->assertSame('succeeded', $r->fresh()->state);
+        $this->assertCount(1, $fake->calls); $this->assertSame(['re_quiet'], $fake->retrieved);
+        $this->assertSame(1, LedgerEntry::where('kind', 'refund')->count());
+    }
 }
