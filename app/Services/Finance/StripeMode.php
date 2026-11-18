@@ -59,6 +59,23 @@ final class StripeMode
         return self::live() ? 'cs_live_' : 'cs_test_';
     }
 
+    /** Codex audit 2026-11-17 A3: a stored webhook is used only if it still belongs to this mode and account (config or a restored queue may differ). */
+    public static function storedEventMatches(array $payload, ?string $receiptAccount): bool
+    {
+        $account = self::account();
+        return ($payload['livemode'] ?? null) === self::livemode()
+            && (($payload['account'] ?? null) === null || $payload['account'] === $account)
+            && ($receiptAccount === null || $receiptAccount === $account);
+    }
+
+    /** Marks a stored webhook from another mode/account for review without touching money. Returns true when it did. */
+    public static function refuseForeignStoredEvent(\App\Models\WebhookReceipt $receipt, array $payload): bool
+    {
+        if (self::storedEventMatches($payload, $receipt->stripe_account_id)) return false;
+        $receipt->fill(['state' => 'reconciliation_required', 'last_error' => 'webhook_mode_or_account_mismatch', 'processed_at' => now()])->save();
+        return true;
+    }
+
     /** Codex audit 2026-11-17 A5: ledger identity of a Stripe payment says which mode it came from (no live payment was recorded before this). */
     public static function identityPrefix(): string
     {

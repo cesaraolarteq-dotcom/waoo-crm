@@ -9,7 +9,7 @@ final class ProcessTipStripeReceipt {
     public function execute(string $receiptId):void {
         // Intake/cleanup of an already issued test collection survives a disabled tips UI.
         Sandbox::require();$receipt=WebhookReceipt::findOrFail($receiptId);if(in_array($receipt->state,['processed','ignored','reconciliation_required'],true))return;
-        $receipt->increment('attempts');$payload=json_decode(Crypt::decryptString($receipt->encrypted_payload),true,flags:JSON_THROW_ON_ERROR);$o=$payload['data']['object'];$m=$o['metadata']??[];
+        $receipt->increment('attempts');$payload=json_decode(Crypt::decryptString($receipt->encrypted_payload),true,flags:JSON_THROW_ON_ERROR);if(\App\Services\Finance\StripeMode::refuseForeignStoredEvent($receipt,$payload))return;$o=$payload['data']['object'];$m=$o['metadata']??[];
         $id=$m['local_tip_intent_id']??null;$i=$id?TipCheckoutIntent::find($id):null;
         if(!$i&&!$id){$q=TipCheckoutIntent::query();$i=($o['object']??null)==='checkout.session'?$q->where('provider_session_id',$o['id'])->first():$q->where('provider_payment_id',($o['object']??null)==='payment_intent'?$o['id']:($o['payment_intent']??'unlinked'))->first();}
         if(!$i){$this->problem($receipt,null,'unlinked_tip_event');return;}

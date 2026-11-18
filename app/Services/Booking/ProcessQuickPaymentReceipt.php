@@ -11,7 +11,7 @@ final class ProcessQuickPaymentReceipt
     public function execute(string $id):void
     {
         QuickPaymentProtocol::gate(true);$r=WebhookReceipt::findOrFail($id);if(in_array($r->state,['processed','ignored','reconciliation_required'],true))return;
-        $p=json_decode(Crypt::decryptString($r->encrypted_payload),true,flags:JSON_THROW_ON_ERROR);$o=$p['data']['object'];
+        $p=json_decode(Crypt::decryptString($r->encrypted_payload),true,flags:JSON_THROW_ON_ERROR);if(\App\Services\Finance\StripeMode::refuseForeignStoredEvent($r,$p))return;$o=$p['data']['object'];
         $requestId=$o['metadata']['quick_booking_request_id']??null;
         $a=$requestId?QuickPaymentAttempt::find($requestId):null;
         if(!$a){$intent=PaymentIntent::where('purpose','quick_deposit')->where(function($q)use($o){

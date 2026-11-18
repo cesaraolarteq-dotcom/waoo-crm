@@ -28,6 +28,7 @@ final class StripeReceiptProcessor
         if (in_array($receipt->state, ['processed','ignored','reconciliation_required'], true)) return;
         $receipt->increment('attempts');
         $payload = json_decode(Crypt::decryptString($receipt->encrypted_payload), true, flags: JSON_THROW_ON_ERROR);
+        if (StripeMode::refuseForeignStoredEvent($receipt, $payload)) return;
         $object = $payload['data']['object'];
         $intentId = $object['metadata']['local_intent_id'] ?? null;
         $intent = $intentId ? PaymentIntent::find($intentId) : null;
