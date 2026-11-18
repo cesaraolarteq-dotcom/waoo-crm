@@ -58,4 +58,10 @@ final class StripeMode
     {
         return self::live() ? 'cs_live_' : 'cs_test_';
     }
+
+    /** Codex audit 2026-11-17 A5: ledger identity of a Stripe payment says which mode it came from (no live payment was recorded before this). */
+    public static function identityPrefix(): string
+    {
+        return self::live() ? 'stripe:live:' : 'stripe:test:';
+    }
 }

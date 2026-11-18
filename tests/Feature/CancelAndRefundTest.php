@@ -68,9 +68,10 @@ class CancelAndRefundTest extends TestCase
     private function fakeStripe(\Closure $answer): object
     {
         $fake = new class($answer) implements StripeRefunds {
-            public array $calls = [];
+            public array $calls = []; public array $retrieved = []; public ?\Closure $later = null;
             public function __construct(public \Closure $answer) {}
             public function refund(string $paymentIntentId, int $amountCents, string $key): array { $this->calls[] = [$paymentIntentId, $amountCents, $key]; return ($this->answer)($paymentIntentId, $amountCents, $key); }
+            public function retrieve(string $refundId, string $paymentIntentId, int $amountCents): array { $this->retrieved[] = $refundId; return ($this->later)($refundId, $paymentIntentId, $amountCents); }
         };
         $this->app->instance(StripeRefunds::class, $fake);
         return $fake;
@@ -151,5 +152,67 @@ class CancelAndRefundTest extends TestCase
         catch (RecordWriteRejected $x) { $this->assertSame(422, $x->status); }
         $this->assertSame('failed', RefundRequest::where('receipt_id', $card->id)->value('state'));
         $this->assertSame(0, app(FinanceSummary::class)->forEvent($e)['refunded_cents']);
+    }
+    public function test_audit_pending_refund_is_not_booked_as_completed(): void
+    {
+        $e=$this->book();$card=$this->cardReceipt($e);
+        $this->fakeStripe(fn($pi,$amount)=>['id'=>'re_pending_fixture','status'=>'pending','amount'=>$amount,'payment_intent'=>$pi]);
+        $r=app(RefundPayment::class)->execute($this->owner,$e->id,['receipt_id'=>$card->id,'amount_cents'=>100,'reason'=>'Synthetic audit pending refund.'],(string)Str::uuid());
+        $this->assertNotSame('succeeded',$r->state);
+        $this->assertSame(0,LedgerEntry::where('kind','refund')->count());
+    }
+
+    /** Codex audit A2: pending stays reserved, then the refund webhook settles it once (duplicates and late callbacks change nothing). */
+    public function test_pending_refund_becomes_money_returned_only_when_stripe_says_succeeded(): void
+    {
+        $e = $this->book(); $card = $this->cardReceipt($e);
+        $fake = $this->fakeStripe(fn ($pi, $amount) => ['id' => 're_pending_1', 'status' => 'pending', 'amount' => $amount, 'payment_intent' => $pi]);
+        $r = app(RefundPayment::class)->execute($this->owner, $e->id, ['receipt_id' => $card->id, 'amount_cents' => 15000, 'reason' => 'Decisión de la dueña.'], (string) Str::uuid());
+        $this->assertSame(['pending', 're_pending_1'], [$r->state, $r->provider_refund_id]);
+        $this->assertSame(0, LedgerEntry::where('kind', 'refund')->count());
+        // Still reserved: only $50 of the $200 payment can be refunded now.
+        try { app(RefundPayment::class)->execute($this->owner, $e->id, ['receipt_id' => $card->id, 'amount_cents' => 6000, 'reason' => 'Decisión de la dueña.'], (string) Str::uuid()); $this->fail('Pending amount was not reserved'); }
+        catch (RecordWriteRejected $x) { $this->assertSame(422, $x->status); }
+        $fake->later = fn ($id, $pi, $amount) => ['id' => $id, 'status' => 'pending', 'amount' => $amount, 'payment_intent' => $pi];
+        app(RefundPayment::class)->settleFromProvider('re_pending_1');
+        $this->assertSame('pending', $r->fresh()->state);
+        $fake->later = fn ($id, $pi, $amount) => ['id' => $id, 'status' => 'succeeded', 'amount' => $amount, 'payment_intent' => $pi];
+        app(RefundPayment::class)->settleFromProvider('re_pending_1'); app(RefundPayment::class)->settleFromProvider('re_pending_1');
+        $this->assertSame('succeeded', $r->fresh()->state);
+        $this->assertSame(1, LedgerEntry::where('kind', 'refund')->count());
+        $this->assertSame(15000, app(FinanceSummary::class)->forEvent($e)['refunded_cents']);
+        // A late "failed" callback after success changes nothing.
+        $fake->later = fn ($id, $pi, $amount) => ['id' => $id, 'status' => 'failed', 'amount' => $amount, 'payment_intent' => $pi];
+        app(RefundPayment::class)->settleFromProvider('re_pending_1');
+        $this->assertSame('succeeded', $r->fresh()->state);
+    }
+
+    public function test_pending_refund_that_fails_frees_the_amount_and_returns_no_money(): void
+    {
+        $e = $this->book(); $card = $this->cardReceipt($e);
+        $fake = $this->fakeStripe(fn ($pi, $amount) => ['id' => 're_pending_2', 'status' => 'requires_action', 'amount' => $amount, 'payment_intent' => $pi]);
+        $key = (string) Str::uuid(); $input = ['receipt_id' => $card->id, 'amount_cents' => 20000, 'reason' => 'Decisión de la dueña.'];
+        $r = app(RefundPayment::class)->execute($this->owner, $e->id, $input, $key);
+        $this->assertSame('pending', $r->state);
+        // Repeating the same request asks Stripe for the state of that refund, never creates a second one.
+        $fake->later = fn ($id, $pi, $amount) => ['id' => $id, 'status' => 'failed', 'amount' => $amount, 'payment_intent' => $pi];
+        try { app(RefundPayment::class)->execute($this->owner, $e->id, $input, $key); $this->fail('Failed refund reported as done'); }
+        catch (RecordWriteRejected $x) { $this->assertSame(422, $x->status); }
+        $this->assertCount(1, $fake->calls); $this->assertSame(['re_pending_2'], $fake->retrieved);
+        $this->assertSame('failed', $r->fresh()->state);
+        $this->assertSame(0, LedgerEntry::where('kind', 'refund')->count());
+        // The full amount can be refunded again with a new request.
+        $fake->answer = fn ($pi, $amount) => ['id' => 're_ok_3', 'status' => 'succeeded', 'amount' => $amount, 'payment_intent' => $pi];
+        $this->assertSame('succeeded', app(RefundPayment::class)->execute($this->owner, $e->id, $input, (string) Str::uuid())->state);
+    }
+
+    public function test_answer_for_another_payment_keeps_the_amount_reserved_for_review(): void
+    {
+        $e = $this->book(); $card = $this->cardReceipt($e);
+        $this->fakeStripe(fn ($pi, $amount) => ['id' => 're_other', 'status' => 'succeeded', 'amount' => $amount - 1, 'payment_intent' => $pi]);
+        try { app(RefundPayment::class)->execute($this->owner, $e->id, ['receipt_id' => $card->id, 'amount_cents' => 20000, 'reason' => 'Decisión de la dueña.'], (string) Str::uuid()); $this->fail(); }
+        catch (RecordWriteRejected $x) { $this->assertSame(409, $x->status); }
+        $this->assertSame('unknown', RefundRequest::where('receipt_id', $card->id)->value('state'));
+        $this->assertSame(0, LedgerEntry::where('kind', 'refund')->count());
     }
 }

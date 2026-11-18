@@ -29,6 +29,8 @@ class StripeSandboxTest extends TestCase
     }
     protected function tearDown(): void
     {
+        // Restore the synthetic environment before DatabaseMigrations rolls fixtures back.
+        if($this->app)$this->app['env']='testing';
         // Only disposable test metadata: populated fee evidence deliberately blocks a destructive down migration.
         if($this->app && \Illuminate\Support\Facades\Schema::hasColumn('payment_intents','card_fee_policy')) \Illuminate\Support\Facades\DB::table('payment_intents')->update(['card_fee_policy'=>null,'card_fee_terms_sha256'=>null]);
         parent::tearDown();
@@ -157,6 +159,41 @@ class StripeSandboxTest extends TestCase
         $this->webhook($intent, 'evt_wrong_account', ['account' => 'acct_other'])->assertStatus(400);
         $this->assertDatabaseCount('webhook_receipts', 0); $this->assertDatabaseCount('ledger_entries', 0);
     }
+    public function test_live_receipt_uses_live_identity_and_same_callback_is_idempotent(): void
+    {
+        $this->app['env']='production';$this->stripe->live=true;
+        config(['waoo.live'=>true,'waoo.stripe_live'=>true,'waoo.stripe_live_account'=>'acct_fixture','waoo.stripe_live_webhook_secret'=>'whsec_fixture']);
+        $intent=app(\App\Services\Finance\CreateCheckoutIntent::class)->execute($this->owner,$this->event->id,
+            ['financial_revision_id'=>$this->finance->id,'purpose'=>'deposit'],(string)Str::uuid());
+        $this->stripe->paid($intent->stripe_checkout_session_id);
+        $this->webhook($intent,'evt_live_receipt',['livemode'=>true])->assertOk();
+        app(StripeReceiptProcessor::class)->execute('evt_live_receipt');app(StripeReceiptProcessor::class)->execute('evt_live_receipt');
+        $this->assertSame('paid',$intent->fresh()->status);
+        $this->assertDatabaseCount('ledger_entries',2);
+        $receipt=LedgerEntry::where('kind','receipt')->sole();
+        $this->assertStringStartsWith('stripe:live:acct_fixture:',$receipt->external_identity_key);
+        $this->assertSame($this->finance->deposit_target_cents,$receipt->amount_cents);
+    }
+
+    public function test_stored_webhook_mode_is_rechecked_before_receipt_processing(): void
+    {
+        $this->create()->assertCreated();$intent=PaymentIntent::sole();$this->stripe->paid($intent->stripe_checkout_session_id);
+        $this->webhook($intent)->assertOk();$receipt=WebhookReceipt::findOrFail('evt_fixture_one');
+        $payload=json_decode(Crypt::decryptString($receipt->encrypted_payload),true);$payload['livemode']=true;
+        $receipt->update(['encrypted_payload'=>Crypt::encryptString(json_encode($payload))]);
+        app(StripeReceiptProcessor::class)->execute($receipt->id);
+        $this->assertDatabaseCount('ledger_entries',0);$this->assertSame('webhook_mode_or_account_mismatch',$receipt->fresh()->last_error);
+    }
+
+    public function test_nested_charge_from_another_mode_never_creates_a_receipt(): void
+    {
+        $this->create()->assertCreated();$intent=PaymentIntent::firstOrFail();$this->stripe->paid($intent->stripe_checkout_session_id);
+        $this->stripe->sessions[$intent->stripe_checkout_session_id]['payment_intent']['latest_charge']['livemode']=true;
+        $this->webhook($intent)->assertOk();app(StripeReceiptProcessor::class)->execute('evt_fixture_one');
+        $this->assertDatabaseCount('ledger_entries',0);
+        $this->assertSame('reconciliation_required',$intent->fresh()->status);
+    }
+
     public function test_provider_amount_mismatch_is_reconciliation_not_a_received_payment(): void
     {
         $this->create()->assertCreated(); $intent = PaymentIntent::firstOrFail(); $this->stripe->paid($intent->stripe_checkout_session_id);
