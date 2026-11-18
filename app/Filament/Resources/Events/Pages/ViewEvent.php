@@ -503,6 +503,11 @@ class ViewEvent extends Page
                     \Filament\Notifications\Notification::make()->danger()->title('No se devolvió')->body($ex instanceof \Illuminate\Validation\ValidationException ? collect($ex->errors())->flatten()->first() : $ex->getMessage())->persistent()->send();
                     $action->halt();
                 }
+                if ($r->state === 'pending') { // Codex audit A2: Stripe has not finished it yet; the CRM records the money when Stripe confirms.
+                    \Filament\Notifications\Notification::make()->warning()->title('Reembolso en proceso: '.Labels::money($r->amount_cents))
+                        ->body('Stripe lo está procesando. El CRM lo anota como devuelto cuando Stripe lo confirme (llega solo).')->persistent()->send();
+                    $this->redirect(EventResource::getUrl('view', ['record' => $e])); return;
+                }
                 \Filament\Notifications\Notification::make()->success()->title('Reembolso registrado: '.Labels::money($r->amount_cents))
                     ->body($r->method === 'stripe' ? 'Stripe lo devuelve a la misma tarjeta (tarda de 5 a 10 días en verse).' : 'Quedó registrado el Zelle que mandaste.')->send();
                 $this->redirect(EventResource::getUrl('view', ['record' => $e]));
