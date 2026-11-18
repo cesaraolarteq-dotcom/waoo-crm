@@ -26,7 +26,7 @@ final class ReceiveWebsiteLead
         try { $payload = json_decode($body, true, 32, JSON_THROW_ON_ERROR); }
         catch (\JsonException) { throw ValidationException::withMessages(['payload' => 'Invalid JSON payload.']); }
         $data = Validator::make(['payload' => $payload], [
-            'payload' => 'required|array:name,phone,email,event_date,start_time,zip,event_type,package,message,travel_estimate_text,locale,consent,demand_flag,submitted_at,page',
+            'payload' => 'required|array:name,phone,email,event_date,start_time,zip,event_type,package,message,travel_estimate_text,locale,consent,demand_flag,submitted_at,page,attribution',
             'payload.name' => 'required|string|max:255', 'payload.phone' => 'required|string|max:40', 'payload.email' => 'required|email|max:255',
             'payload.event_date' => 'required|date_format:Y-m-d|after_or_equal:2000-01-01|before:2101-01-01',
             'payload.start_time' => 'present|nullable|date_format:H:i', 'payload.zip' => ['required','string','regex:/^[0-9]{5}(?:-[0-9]{4})?$/'],
@@ -37,6 +37,13 @@ final class ReceiveWebsiteLead
             'payload.page' => ['required', Rule::in(['/contact'])], 'payload.consent' => 'present|nullable|array:text,version',
             'payload.consent.text' => 'required_with:payload.consent|string|max:4000',
             'payload.consent.version' => 'required_with:payload.consent|string|max:120',
+            // Owner 2026-11-17: where the visitor came from (Google Ads, Google, Instagram…), optional so older website copies keep working.
+            'payload.attribution' => 'sometimes|nullable|array:channel,campaign,term,referrer,landing,first_seen_at',
+            'payload.attribution.channel' => ['required_with:payload.attribution', Rule::in(array_keys(LeadSource::LABELS))],
+            'payload.attribution.campaign' => 'sometimes|nullable|string|max:150', 'payload.attribution.term' => 'sometimes|nullable|string|max:150',
+            'payload.attribution.referrer' => ['sometimes', 'nullable', 'string', 'max:120', 'regex:/^[a-z0-9.-]+$/'],
+            'payload.attribution.landing' => ['sometimes', 'nullable', 'string', 'max:200', 'regex:/^\/[^\s]*$/'],
+            'payload.attribution.first_seen_at' => 'sometimes|nullable|date_format:Y-m-d',
         ])->validate()['payload'];
         $hash = hash('sha256', $body);
         if ($existing = LeadSubmission::where('request_key', $key)->first()) return $this->retry($existing, $hash);

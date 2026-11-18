@@ -88,9 +88,30 @@ class BalancePayLaterTest extends TestCase
     public function test_unknown_configuration_offers_card_only(): void
     {
         $this->gateway(true);
-        config(['waoo.portal_payment_methods' => ['klarna', 'zip']]);
+        config(['waoo.portal_payment_methods' => ['klarna', 'affirm']]);
         $this->assertSame(['card'], CreateCheckoutIntent::methods());
         $this->create();
         $this->assertSame(['card'], $this->stripe->calls[0]['parameters']['payment_method_types']);
+    }
+
+    /** Owner 2026-11-17: Zip is offered like Klarna/Afterpay when Stripe says it is active, only for $35–$4,000, and a Zip payment counts. */
+    public function test_zip_is_offered_in_range_and_a_zip_payment_counts(): void
+    {
+        config(['waoo.portal_payment_methods' => ['card', 'zip', 'klarna']]);
+        $this->gateway(true);
+        $intent = $this->create();
+        $this->assertSame(['card', 'klarna', 'zip'], $this->stripe->calls[0]['parameters']['payment_method_types']);
+        $this->settle($intent, ['type' => 'zip', 'zip' => []]);
+        $this->assertSame(10000, LedgerEntry::where('kind', 'receipt')->sole()->amount_cents);
+        $this->assertSame('paid', $intent->fresh()->status);
+    }
+
+    public function test_zip_is_left_out_below_35_and_above_4000_dollars(): void
+    {
+        $all = ['afterpay_clearpay', 'card', 'klarna', 'zip'];
+        $this->assertSame(['afterpay_clearpay', 'card', 'klarna'], CreateCheckoutIntent::forAmount($all, 3499));
+        $this->assertSame($all, CreateCheckoutIntent::forAmount($all, 3500));
+        $this->assertSame($all, CreateCheckoutIntent::forAmount($all, 400000));
+        $this->assertSame(['afterpay_clearpay', 'card', 'klarna'], CreateCheckoutIntent::forAmount($all, 400001));
     }
 }
