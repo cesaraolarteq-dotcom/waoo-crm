@@ -128,6 +128,27 @@ class QuickPaymentsTest extends TestCase
         $this->checkout(100);
     }
 
+    // Owner 2026-11-20: less than 24 h is asked, not refused, when the owner books it; the card window then closes 1 h before the party.
+    public function test_owner_confirmed_short_notice_books_and_the_card_window_closes_one_hour_before():void
+    {
+        $start=now('America/Chicago')->setTime(20,0);
+        $this->input['starts_at']=$start->toIso8601String();$this->input['ends_at']=$start->addHours(2)->toIso8601String();
+        try{$this->create();$this->fail('Short notice booked without the owner confirming it.');}
+        catch(\App\Exceptions\RecordWriteRejected $e){$this->assertSame(\App\Services\Scheduling\DepositPolicy::SHORT_NOTICE,$e->getMessage());}
+        $this->assertSame(0,\App\Models\ShortNoticeApproval::count());
+        $this->input['short_notice_confirmed']=true;
+        $r=$this->create();
+        $this->assertSame($this->owner->id,\App\Models\ShortNoticeApproval::where('event_id',$r->event->id)->sole()->approved_by);
+        config(['waoo.portal_payment_methods'=>['card','klarna','afterpay_clearpay','zip']]);
+        $this->client($r);$this->details();$g=$this->gateway();
+        $q=$this->getJson('/portal/api/quick-payment')->assertOk()->json();
+        $this->assertSame([100],array_column($q['choices'],'deposit_percent'));
+        $this->checkout(100);
+        $request=\App\Models\QuickStripeCheckoutRequest::sole();
+        $this->assertSame($start->getTimestamp()-3600,$request->envelope['parameters']['expires_at']);
+        $this->assertSame(['afterpay_clearpay','card','klarna','zip'],$request->envelope['parameters']['payment_method_types']);
+    }
+
     public function test_verified_stripe_separates_principal_fee_and_promotes_once_with_duplicate_webhooks():void
     {
         $r=$this->create();$this->client($r);$this->details();$g=$this->gateway();$key=(string)Str::uuid();$v=$this->checkout(50,$key);

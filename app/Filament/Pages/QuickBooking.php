@@ -357,6 +357,18 @@ class QuickBooking extends Page
         return rtrim($line, '.').'.';
     }
 
+    /** Owner 2026-11-20: a party with less than 24 h of notice is asked, not refused, when the owner books it. */
+    public bool $shortNoticeOk = false;
+
+    public function confirmShortNoticeAction(): Action
+    {
+        return Action::make('confirmShortNotice')->requiresConfirmation()->icon('heroicon-o-clock')->color('warning')
+            ->modalHeading('Faltan menos de 24 horas')
+            ->modalDescription('Esta fiesta empieza en menos de 24 horas. ¿Seguro que quieres reservarla? El cliente paga el 100 % con el enlace, y el pago con tarjeta cierra 1 hora antes de la fiesta.')
+            ->modalSubmitActionLabel('Sí, reservar')
+            ->action(function () { $this->shortNoticeOk = true; $this->save(); });
+    }
+
     public function save(): void
     {
         $s = $this->form->getState();
@@ -364,6 +376,14 @@ class QuickBooking extends Page
             throw ValidationException::withMessages(['data.package_id' => 'Elige el paquete.']);
         }
         $input = $this->toServiceInput($s);
+        if (($input['deposit_received'] ?? null) === false) {
+            if (! $this->shortNoticeOk && \App\Services\Scheduling\DepositPolicy::underDayNotice(CarbonImmutable::parse($input['starts_at']))) {
+                $this->mountAction('confirmShortNotice');
+
+                return;
+            }
+            if ($this->shortNoticeOk) $input['short_notice_confirmed'] = true;
+        }
         try {
             $r = app(self::SERVICE)->execute(Filament::auth()->user(), $input, $this->key);
         } catch (ValidationException $e) {
@@ -375,7 +395,7 @@ class QuickBooking extends Page
         }
         \App\Models\EventChannel::record($r->event->id, $s['channel'] ?? null, Filament::auth()->id());
         $this->result = self::presentResult($r, $s);
-        $this->key = (string) Str::uuid();
+        $this->key = (string) Str::uuid(); $this->shortNoticeOk = false;
         $this->leadId = null; $this->leadVersion = null; $this->leadSummary = null;
     }
 
@@ -643,7 +663,7 @@ class QuickBooking extends Page
 
     public function startOver(): void
     {
-        $this->result = null;
+        $this->result = null; $this->shortNoticeOk = false;
         $this->mount();
     }
 }
