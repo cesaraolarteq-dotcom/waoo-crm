@@ -14,4 +14,4 @@
 Rules:
 - Contracts between the two sides (routes, field names, events, API payloads) are written in `docs/` before they are built.
 - A request for the other side goes into `docs/HANDOFF.md` as "Request for Codex" or "Request for Claude".
-- Owner approval is required for each phase start, for the contract text, for prices, and for any deployment.
+- Owner approval is required for the contract text, for prices/policies, for real-money actions and for any deployment. Everything else: see "Autonomy" in AGENTS.md (owner 2026-11-20) — do it without asking.
