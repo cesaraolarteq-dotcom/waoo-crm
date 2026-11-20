@@ -179,7 +179,7 @@ class AnniversaryCampaignTest extends TestCase
         \Livewire\Livewire::test(\App\Filament\Pages\QuickBooking::class)
             ->fillForm(['customer_mode' => 'existing', 'customer_id' => $maria->id])->fillForm(['price_version_ids' => [$this->price->id], 'travel_fee' => '40'])
             ->fillForm(['promo_code' => $code])
-            ->assertSee('Código válido: 10 % menos en el paquete y los adicionales')->assertSee("con código −\$30)")
+            ->assertSee('Código válido: 10 % menos en el paquete y los adicionales')->assertSee("con descuento −\$30)")
             ->assertSchemaStateSet(['deposit.amount' => '155.00']);
         \Livewire\Livewire::test(\App\Filament\Pages\QuickBooking::class)->fillForm(['promo_code' => 'WAOO-ZZZZZ'])->assertSee('Ese código no existe');
         $this->book($maria, $code);

@@ -131,7 +131,7 @@ class QuickPaymentsTest extends TestCase
     // Owner 2026-11-20: less than 24 h is asked, not refused, when the owner books it; the card window then closes 1 h before the party.
     public function test_owner_confirmed_short_notice_books_and_the_card_window_closes_one_hour_before():void
     {
-        $start=now('America/Chicago')->setTime(20,0);
+        $start=now('America/Chicago')->toImmutable()->setTime(20,0);
         $this->input['starts_at']=$start->toIso8601String();$this->input['ends_at']=$start->addHours(2)->toIso8601String();
         try{$this->create();$this->fail('Short notice booked without the owner confirming it.');}
         catch(\App\Exceptions\RecordWriteRejected $e){$this->assertSame(\App\Services\Scheduling\DepositPolicy::SHORT_NOTICE,$e->getMessage());}
