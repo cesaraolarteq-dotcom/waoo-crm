@@ -42,7 +42,7 @@ final class CardFees
 
     public static function valid(PaymentIntent $intent): bool
     {
-        if($intent->currency!=='USD' || $intent->environment!=='test' || $intent->principal_cents<1)return false;
+        if($intent->currency!=='USD' || $intent->environment!==\App\Support\WaooRuntime::ledgerEnvironment() || $intent->principal_cents<1)return false;
         if($intent->card_fee_policy===null)return $intent->card_fee_terms_sha256===null && $intent->customer_fee_cents===0 && $intent->principal_cents===$intent->payable_cents;
         try{$terms=self::quote($intent->principal_cents);}catch(ValidationException){return false;}
         return $intent->card_fee_policy===self::POLICY && $intent->currency==='USD' && $intent->customer_fee_cents===$terms['customer_fee_cents']

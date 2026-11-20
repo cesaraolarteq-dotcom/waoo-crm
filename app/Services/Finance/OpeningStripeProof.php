@@ -38,9 +38,9 @@ final class OpeningStripeProof
                 && $p['ledger_sha256'] === MutationKey::hash(EvidenceV1::model($entry, 'ledger'))
                 && $p['intent'] === $intent && $p['webhook'] === $webhook
                 && $entry->kind === 'receipt' && $entry->method === 'stripe' && $entry->source_type === 'verified_stripe_webhook'
-                && $entry->verified_by === null && $entry->environment === 'test' && $entry->currency === 'USD'
+                && $entry->verified_by === null && $entry->environment === \App\Support\WaooRuntime::ledgerEnvironment() && $entry->currency === 'USD'
                 && $intent['event_id'] === $entry->event_id && $intent['financial_revision_id'] === $entry->financial_revision_id
-                && $intent['environment'] === 'test' && $intent['currency'] === 'USD' && in_array($intent['purpose'], ['deposit', 'balance', 'installment'], true)
+                && $intent['environment'] === \App\Support\WaooRuntime::ledgerEnvironment() && $intent['currency'] === 'USD' && in_array($intent['purpose'], ['deposit', 'balance', 'installment'], true)
                 && $intent['principal_cents'] > 0 && $intent['customer_fee_cents'] >= 0 && $intent['payable_cents'] <= 100000000
                 && $intent['payable_cents'] === $intent['principal_cents'] + $intent['customer_fee_cents']
                 // main CARD-FEE-01: the receipt row is the principal; the 3% fee is its own customer_fee row (same transaction).
@@ -87,7 +87,7 @@ final class OpeningStripeProof
         $f = $rows->first();
         return $rows->count() === 1 && $f->kind === 'customer_fee' && $f->method === 'stripe' && $f->event_id === $entry->event_id
             && $f->financial_revision_id === $entry->financial_revision_id && $f->amount_cents === $intent['customer_fee_cents']
-            && $f->source_id === $entry->source_id && $f->environment === 'test' && $f->currency === 'USD';
+            && $f->source_id === $entry->source_id && $f->environment === \App\Support\WaooRuntime::ledgerEnvironment() && $f->currency === 'USD';
     }
 
     private static function intent(PaymentIntent $intent): array

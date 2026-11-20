@@ -20,7 +20,7 @@ final class EventMailSource
         $binding=DB::table('capacity_payment_links')->where('event_id',$eventId)->lockForUpdate()->first();
         RecordWriteRejected::unless($event->status==='capacity_reserved'&&$event->version===$finance->event_version+1&&$binding&&(int)$binding->financial_revision_id===$finance->id,409,'mail_event_requires_current_confirmed_finance');
         RecordWriteRejected::unless($grant->event_id===$eventId&&$grant->customer_id===$customer->id&&$grant->quote_revision_id===null&&!$grant->revoked_at&&$grant->expires_at->isFuture()&&in_array('payments.read',$grant->scopes,true),409,'mail_link_inactive');
-        $ledger=LedgerEntry::where('event_id',$eventId)->where('environment','test')->orderBy('id')->lockForUpdate()->get();
+        $ledger=LedgerEntry::where('event_id',$eventId)->where('environment',\App\Support\WaooRuntime::ledgerEnvironment())->orderBy('id')->lockForUpdate()->get();
         $net=(int)$ledger->sum(fn($line)=>$line->kind==='receipt'?$line->amount_cents:($line->kind==='refund'?-$line->amount_cents:0));
         return [$event,$customer,$finance,$grant,$net];
     }
@@ -40,7 +40,7 @@ final class EventMailSource
         $money=fn(int $v)=>'$'.number_format(intdiv($v,100),0,'.',',').'.'.str_pad((string)($v%100),2,'0',STR_PAD_LEFT);
         $date=fn($d)=>MailDates::full($d,$locale);
         $link=Sandbox::origin().'/portal#token='.PortalTokenVault::open($g);
-        $vars=['first_name'=>explode(' ',$c->name)[0],'event_date'=>$date($e->starts_at),'subject_date'=>MailDates::subject($e->starts_at,$locale),'address'=>$e->address,'package'=>implode(' + ',array_column($f->lines_snapshot,'name')),
+        $vars=['first_name'=>explode(' ',$c->name)[0],'event_date'=>$date($e->starts_at),'subject_date'=>MailDates::subject($e->starts_at,$locale),'address'=>$e->address,'package'=>implode(' + ',array_map(fn($n)=>\App\Support\PackageName::for($n,$locale),array_column($f->lines_snapshot,'name'))),
             'package_price'=>$money($f->subtotal_cents),'travel_fee'=>$money($f->travel_fee_cents),'subtotal'=>$money($f->subtotal_cents+$f->travel_fee_cents),'discount_total'=>$money($f->discount_cents),
             'total'=>$money($f->total_cents),'deposit'=>$money($f->deposit_target_cents),'paid'=>$money(max(0,$net)),'balance'=>$money($balance),'has_balance'=>$balance>0,
             'due'=>$f->balance_due_at===null?'':MailDates::due($f->balance_due_at,$locale),

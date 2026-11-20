@@ -44,7 +44,7 @@ final class PortalController extends Controller
         $summary['card_quotes']=$revision ? ['deposit'=>\App\Services\Finance\CardFees::publicQuote($event->id,$revision->id,'deposit',(int)$summary['deposit_shortfall_cents']),
             'balance'=>\App\Services\Finance\CardFees::publicQuote($event->id,$revision->id,'balance',(int)$summary['balance_cents'])] : [];
         $services = collect($revision?->lines_snapshot ?? [])->map(fn ($line) => [
-            'name' => $line['name'] ?? null, 'duration_minutes' => $line['duration_minutes'] ?? null,
+            'name' => isset($line['name']) ? \App\Support\PackageName::for($line['name'], $event->customer?->locale) : null, 'duration_minutes' => $line['duration_minutes'] ?? null,
             'amount_cents' => $line['amount_cents'], 'extra_characters' => (int) ($line['extra_characters'] ?? 0), 'characters' => collect($line['characters'] ?? [])->map(fn ($character) => [
                 'name' => $character['name'], 'quantity' => $character['quantity'],
             ])->all(),

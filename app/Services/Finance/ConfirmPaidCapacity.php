@@ -27,8 +27,8 @@ final class ConfirmPaidCapacity
                 }
                 RecordWriteRejected::unless($event->status === 'draft' && $event->version === (int) $data['expected_version'] && $revision->event_version === $event->version
                     && (int) FinancialRevision::where('event_id', $eventId)->max('revision') === $revision->revision, 409, 'El evento o sus importes cambiaron. Actualiza antes de asignar recursos.');
-                $receipts = LedgerEntry::where('event_id', $eventId)->where('environment', 'test')->where('kind', 'receipt')->orderBy('id')->get();
-                $net = $receipts->sum('amount_cents') - (int) LedgerEntry::where('event_id', $eventId)->where('environment', 'test')->where('kind', 'refund')->sum('amount_cents');
+                $receipts = LedgerEntry::where('event_id', $eventId)->where('environment', \App\Support\WaooRuntime::ledgerEnvironment())->where('kind', 'receipt')->orderBy('id')->get();
+                $net = $receipts->sum('amount_cents') - (int) LedgerEntry::where('event_id', $eventId)->where('environment', \App\Support\WaooRuntime::ledgerEnvironment())->where('kind', 'refund')->sum('amount_cents');
                 if ($net <= 0) throw ValidationException::withMessages(['booking' => 'Primero registra un pago recibido y verificado.']);
                 $payment = ['method' => $receipts->every(fn ($entry) => $entry->method === 'zelle') ? 'external_zelle' : 'external_card',
                     'reference' => 'ledger:test:'.$eventId.':'.$revision->id, 'amount_cents' => $net, 'received_at' => $receipts->sortByDesc('received_at')->first()->received_at];

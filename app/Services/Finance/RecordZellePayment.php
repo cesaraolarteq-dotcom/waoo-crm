@@ -47,14 +47,14 @@ final class RecordZellePayment
                 if($quick && $quick->quick_booking_id===null && ($quick->receipt_id===null || $pendingLease?->state==='active')) {
                     \App\Services\Booking\QuickPaymentProtocol::gate();\App\Services\Booking\QuickPaymentProtocol::verify($quick,$event);
                     $prior=$quick->receipt_id?LedgerEntry::whereKey($quick->receipt_id)->sharedLock()->first():null;
-                    $priorValid=$prior && $prior->event_id===$eventId && $prior->financial_revision_id===$quick->financial_revision_id && $prior->kind==='receipt' && $prior->environment==='test'
+                    $priorValid=$prior && $prior->event_id===$eventId && $prior->financial_revision_id===$quick->financial_revision_id && $prior->kind==='receipt' && $prior->environment===\App\Support\WaooRuntime::ledgerEnvironment()
                         && $prior->amount_cents>0 && (($prior->source_type==='owner_verified' && $prior->verified_by!==null) || \App\Services\Booking\QuickCostumeHolds::verifiedStripeReceipt($prior));
                     RecordWriteRejected::unless($priorValid || ($quick->receipt_id===null && \App\Services\Booking\QuickPaymentProtocol::pendingNotice($quick)),409,'Revisa primero el aviso de Zelle o el pago real de esta reserva.');
                     $p=\App\Services\Booking\QuickStripeLeases::verify($pendingLease,$event,false,(bool)$priorValid);\App\Services\Booking\QuickStripeLeases::lockInventory($p);\App\Services\Booking\QuickStripeLeases::verify($pendingLease,$event,true,(bool)$priorValid);
                 } else \App\Services\Booking\QuickStripeLeases::assertNoActive($eventId);
                 $receivedAt = ZelleReceivedDate::timestamp($data);
                 if (!$hasReference) {
-                    $duplicate = LedgerEntry::where('event_id', $eventId)->where('environment', 'test')->where('kind', 'receipt')->where('method', 'zelle')
+                    $duplicate = LedgerEntry::where('event_id', $eventId)->where('environment', \App\Support\WaooRuntime::ledgerEnvironment())->where('kind', 'receipt')->where('method', 'zelle')
                         ->where('amount_cents', $data['amount_cents'])->where('currency', $data['currency'])
                         ->where('received_at', '>=', $dayStart)->where('received_at', '<', $dayEnd)->exists();
                     RecordWriteRejected::unless(!$duplicate, 409, 'Hay un pago del mismo monto en esta fecha. Revisa el historial; si es otro pago, usa su referencia bancaria real.');
@@ -72,7 +72,7 @@ final class RecordZellePayment
                 RecordWriteRejected::unless($latest->id === $revision->id, 409, 'La revisión financiera cambió. Actualiza antes de registrar el pago.');
                 // Once capacity is reserved its version legitimately changes; receipts still belong to its agreement.
                 RecordWriteRejected::unless($event->status !== 'draft' || $event->version === $revision->event_version, 409, 'Los datos del evento cambiaron; revisa sus importes.');
-                $entry = LedgerEntry::create(['event_id' => $eventId, 'financial_revision_id' => $revision->id, 'environment' => 'test', 'kind' => 'receipt', 'method' => 'zelle',
+                $entry = LedgerEntry::create(['event_id' => $eventId, 'financial_revision_id' => $revision->id, 'environment' => \App\Support\WaooRuntime::ledgerEnvironment(), 'kind' => 'receipt', 'method' => 'zelle',
                     'amount_cents' => $data['amount_cents'], 'currency' => 'USD', 'received_at' => $receivedAt, 'external_reference' => $data['reference'] ?? null,
                     'external_identity_key' => $identity, 'verified_by' => $actor->id, 'source_type' => 'owner_verified', 'note' => $data['note'] ?? null]);
                 if($quick && $quick->quick_booking_id===null) app(\App\Services\Booking\PromoteQuickPayment::class)->execute($quick,$event,$entry,$actor);

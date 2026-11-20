@@ -10,7 +10,9 @@ final class MailGuard
     public static function allowlist():array
     {
         $owners=User::where('role','owner_admin')->where('active',true)->whereNotNull('two_factor_secret')->whereNotNull('two_factor_confirmed_at')->pluck('email')->map(fn($e)=>mb_strtolower($e))->all();
-        return array_values(array_unique(array_filter(array_map(fn($v)=>is_string($v)?mb_strtolower(trim($v)):'',(array)config('waoo.mail_allowlist',[])),fn($v)=>filter_var($v,FILTER_VALIDATE_EMAIL)&&in_array($v,$owners,true))));
+        $owner=array_filter(array_map(fn($v)=>is_string($v)?mb_strtolower(trim($v)):'',(array)config('waoo.mail_allowlist',[])),fn($v)=>filter_var($v,FILTER_VALIDATE_EMAIL)&&in_array($v,$owners,true));
+        $tests=array_filter(array_map(fn($v)=>is_string($v)?mb_strtolower(trim($v)):'',(array)config('waoo.mail_test_recipients',[])),fn($v)=>filter_var($v,FILTER_VALIDATE_EMAIL)!==false);
+        return array_values(array_unique([...$owner,...$tests]));
     }
     public static function transaction(callable $work):mixed
     {

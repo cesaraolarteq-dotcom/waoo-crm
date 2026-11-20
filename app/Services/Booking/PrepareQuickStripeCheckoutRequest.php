@@ -41,9 +41,9 @@ final class PrepareQuickStripeCheckoutRequest
             RecordWriteRejected::unless(!QuickStripeCheckoutRequest::where('quick_stripe_lease_id', $lease->id)->lockForUpdate()->first(),
                 409, 'Este apartado ya tiene una solicitud. No se abre otra sin conciliar la anterior.');
             $now = CarbonImmutable::now()->startOfSecond();
-            \App\Services\Scheduling\DepositPolicy::assertNotice($event->starts_at);
+            \App\Services\Scheduling\DepositPolicy::assertNotice($event->starts_at,$event->id);
             $ordinaryExpiry = QuickStripeTerms::restore($source['terms'])->checkoutExpiresAt($now);
-            $expiry = \App\Services\Scheduling\DepositPolicy::checkoutExpiry($ordinaryExpiry,$event->starts_at,$now->timestamp);
+            $expiry = \App\Services\Scheduling\DepositPolicy::checkoutExpiry($ordinaryExpiry,$event->starts_at,$now->timestamp,\App\Services\Scheduling\DepositPolicy::ownerApproved($event->id));
             $id = (string) Str::uuid();
             $p = ['schema_version' => $expiry===$ordinaryExpiry?1:2, 'request_id' => $id, 'lease_id' => $lease->id, 'lease_version' => $lease->version,
                 'lease_sha256' => $lease->payload_sha256, 'event_id' => $event->id, 'event_version' => $event->version,

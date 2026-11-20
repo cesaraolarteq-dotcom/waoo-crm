@@ -19,6 +19,15 @@ final class WaooRuntime
         return app()->environment('production') && config('waoo.live') === true;
     }
 
+    /**
+     * Label on every money row and report (ledger, payment intents, owner reports). The real CRM writes and reads `live`;
+     * every test environment keeps `test`. Its own database, so the label never mixes the two; it states what the money is.
+     */
+    public static function ledgerEnvironment(): string
+    {
+        return self::live() ? 'live' : 'test';
+    }
+
     /** Environments reached over the internet must use HTTPS and secure cookies. */
     public static function hosted(): bool
     {
