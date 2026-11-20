@@ -232,4 +232,30 @@ class CancelAndRefundTest extends TestCase
         $this->assertCount(1, $fake->calls); $this->assertSame(['re_quiet'], $fake->retrieved);
         $this->assertSame(1, LedgerEntry::where('kind', 'refund')->count());
     }
+    public function test_known_refund_identity_is_retrieved_even_after_reconciliation_mismatch(): void
+    {
+        $e=$this->book(); $card=$this->cardReceipt($e); $key=(string)Str::uuid();
+        $input=['receipt_id'=>$card->id,'amount_cents'=>100,'reason'=>'Synthetic retry identity regression.'];
+        $fake=$this->fakeStripe(fn($pi,$amount)=>['id'=>'re_known','status'=>'pending','amount'=>$amount,'payment_intent'=>$pi]);
+        $r=app(RefundPayment::class)->execute($this->owner,$e->id,$input,$key);
+        $fake->later=fn($id,$pi,$amount)=>['id'=>$id,'status'=>'pending','amount'=>$amount+1,'payment_intent'=>$pi];
+        app(RefundPayment::class)->settleFromProvider('re_known');
+        $this->assertSame('unknown',$r->fresh()->state);
+        $fake->later=fn($id,$pi,$amount)=>['id'=>$id,'status'=>'succeeded','amount'=>$amount,'payment_intent'=>$pi];
+        app(RefundPayment::class)->execute($this->owner,$e->id,$input,$key);
+        $this->assertCount(1,$fake->calls);
+        $this->assertSame('succeeded',$r->fresh()->state);
+    }
+
+    public function test_scheduled_recheck_rotates_past_an_old_unavailable_refund(): void
+    {
+        $e=$this->book(); $card=$this->cardReceipt($e); $n=0;
+        $fake=$this->fakeStripe(function($pi,$amount)use(&$n){return ['id'=>'re_rotate_'.++$n,'status'=>'pending','amount'=>$amount,'payment_intent'=>$pi];});
+        foreach([1,2] as $j) app(RefundPayment::class)->execute($this->owner,$e->id,['receipt_id'=>$card->id,'amount_cents'=>100,'reason'=>'Synthetic recheck rotation.'],(string)Str::uuid());
+        $fake->later=function($id,$pi,$amount){if($id==='re_rotate_1')throw new \RuntimeException('unavailable');return ['id'=>$id,'status'=>'succeeded','amount'=>$amount,'payment_intent'=>$pi];};
+        $this->travel(20)->minutes(); $this->artisan('waoo:refunds:recheck',['--limit'=>1])->assertSuccessful();
+        $this->travel(30)->minutes(); $this->artisan('waoo:refunds:recheck',['--limit'=>1])->assertSuccessful();
+        $this->assertSame(['re_rotate_1','re_rotate_2'],$fake->retrieved);
+        $this->assertSame(1,LedgerEntry::where('kind','refund')->count());
+    }
 }

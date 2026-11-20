@@ -1,3 +1,6 @@
+## 2026-11-20 · Codex · Revisión de #211 y cierre adicional de reintentos
+Rama `codex/fix-refund-review`, conserva Claude `2b8daa0`. A1–A5 revisados; corregidos dos casos adicionales reproducidos (2 FAIL): una petición unknown con provider_refund_id vuelve a consultar ese reembolso, nunca vuelve a crearlo; el cron prioriza la revisión más antigua y rota también después de errores, evitando bloquear el resto. Un error al consultar una devolución existente no libera su importe. Regresión integrada de Stripe/reembolsos/propinas/reservas rápidas en ejecución; resultado final pendiente. No deploy, mensajes ni dinero real. #208–#214 se revisan por separado; #212 es rama de despliegue, no fusionar su PR.
+
 ## 2026-11-17/18 · Claude · Fixes for Codex's Stripe audit (A1–A5) · branch `claude/refund-fixes`
 Owner: "okay inicia". Codex regressions adopted into the suite (`StripeRefundAdapterTest`, CancelAndRefundTest, StripeSandboxTest, FakeStripeGateway).
 - **A1** `StripeTestRefunds`: proves the PaymentIntent (same account, mode, succeeded, USD, enough received) BEFORE the refund POST; the Refund answer is checked by identity (re_ id, same PI, same amount, USD) — no `livemode` on Refund. Pre-POST mismatch → request `failed` (nothing returned). New `retrieve()` on the `StripeRefunds` contract.
