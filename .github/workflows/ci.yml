@@ -6,6 +6,7 @@ on:
 permissions:
   contents: read
 # A newer commit on the same branch/PR cancels the older run; main always finishes.
+# 2026-11-20: 10 shards (was 5, ~15–19 min wall) so a full run takes about half the time; same files, each in exactly one shard.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
@@ -40,8 +41,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5]
-    name: test (${{ matrix.shard }}/5)
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    name: test (${{ matrix.shard }}/10)
     services:
       mariadb:
         image: mariadb:11.8
@@ -77,5 +78,5 @@ jobs:
       - run: composer install --no-interaction --prefer-dist
       - run: cp .env.example .env && php artisan key:generate
       # Each shard has its own MariaDB; every test file runs in exactly one shard (tools/ci-shard.php checks it).
-      - run: php tools/ci-shard.php 5 ${{ matrix.shard }} > phpunit-shard.xml
+      - run: php tools/ci-shard.php 10 ${{ matrix.shard }} > phpunit-shard.xml
       - run: vendor/bin/phpunit --configuration=phpunit-shard.xml
