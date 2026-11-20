@@ -43,6 +43,18 @@ class ContractScreensTest extends TestCase
         $this->get("/admin/eventos/{$this->event->id}/contrato")->assertForbidden();
     }
 
+    public function test_page_shows_one_contract_in_use_and_keeps_old_versions_as_history(): void
+    {
+        // Owner 2026-11-19 "una sola versión": the active one + the newer draft; older drafts are replaced and not activatable.
+        $make = fn (int $n, string $state) => ContractTemplateVersion::create(['version' => $n, 'state' => $state, 'locale' => 'en', 'source_html' => 'x', 'source_sha256' => hash('sha256', 'x'),
+            'terms_html' => "<p>Fixture terms {$n}</p>", 'terms_sha256' => hash('sha256', "t{$n}"), 'change_note' => "Fixture note {$n}", 'created_by' => $this->owner->id]);
+        $make(1, 'draft'); $make(2, 'active'); $make(3, 'draft');
+        Livewire::test(ContractTemplates::class)
+            ->assertSeeInOrder(['Contrato en uso · versión 2', 'Nuevo texto por aprobar · versión 3', 'Versiones anteriores (1)', 'Reemplazada (nunca se usó)'])
+            ->assertSee('Activar esta versión');
+        $this->assertSame(1, substr_count(Livewire::test(ContractTemplates::class)->html(), 'Activar esta versión'));
+    }
+
     public function test_owner_flow_template_contract_issue_and_one_time_link(): void
     {
         Livewire::test(ContractTemplates::class)->assertSee('Todavía no hay plantilla')
@@ -73,5 +85,15 @@ class ContractScreensTest extends TestCase
         $this->assertSame(1, PortalGrant::count());
         $page->call('hideLink')->assertDontSee('/portal#token=', false);
         $this->get("/admin/eventos/{$this->event->id}/contrato")->assertOk()->assertDontSee('#token=', false)->assertSee('Todavía no abre el contrato');
+    }
+    public function test_server_rejects_activation_of_a_draft_older_than_current_contract(): void
+    {
+        $make=fn($n,$state)=>ContractTemplateVersion::create(['version'=>$n,'state'=>$state,'locale'=>'en','source_html'=>'x','source_sha256'=>hash('sha256','x'),'terms_html'=>'<p>Fixture</p>','terms_sha256'=>hash('sha256','fixture'),'change_note'=>'Synthetic revision','created_by'=>$this->owner->id]);
+        $old=$make(10,'draft');$active=$make(11,'active');
+        \Illuminate\Support\Facades\DB::table('contract_template_registry')->where('id',1)->update(['active_version_id'=>$active->id]);
+        try { app(\App\Services\Documents\ActivateTemplateVersion::class)->execute($this->owner,$old->id,['expected_source_sha256'=>$old->source_sha256,'approval_note'=>'Synthetic stale draft attempt.']); $this->fail('Old draft reactivated'); }
+        catch(\App\Exceptions\RecordWriteRejected $e){$this->assertSame(409,$e->status);}
+        $this->assertSame('active',$active->fresh()->state);
+        $this->assertSame('draft',$old->fresh()->state);
     }
 }
