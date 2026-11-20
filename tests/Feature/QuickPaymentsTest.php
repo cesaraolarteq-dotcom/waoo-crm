@@ -157,13 +157,16 @@ class QuickPaymentsTest extends TestCase
         $r=$this->create();$f=\App\Models\FinancialRevision::where('event_id',$r->event->id)->sole();
         $this->assertSame(10000,$f->discount_cents);$this->assertSame(30001+4000-10000,$f->total_cents);
         $this->assertSame('Descuento / Discount',$f->discounts_snapshot[0]['label']);
-        $this->input['discount']=['kind'=>'percent','value'=>10];
+        $day=fn(int $n)=>['starts_at'=>now()->addDays($n)->toIso8601String(),'ends_at'=>now()->addDays($n)->addHours(2)->toIso8601String()]; // one costume: another day each
+        $this->input=[...$this->input,...$day(21),'discount'=>['kind'=>'percent','value'=>10]];
         $r=$this->create();$f=\App\Models\FinancialRevision::where('event_id',$r->event->id)->sole();
         $this->assertSame(3000,$f->discount_cents);$this->assertSame(30001+4000-3000,$f->total_cents);
-        $this->input['discount']=['kind'=>'fixed','value'=>99999999];
+        $this->input=[...$this->input,...$day(22),'discount'=>['kind'=>'fixed','value'=>99999999]];
         $r=$this->create();$f=\App\Models\FinancialRevision::where('event_id',$r->event->id)->sole();
         $this->assertSame(4000,$f->total_cents); // never below the travel fee
-        $this->input['discount']=['kind'=>'percent','value'=>150];
+        $this->input=[...$this->input,...$day(23),'discount'=>['kind'=>'percent','value'=>100]];
+        $r=$this->create();$this->assertSame(4000,\App\Models\FinancialRevision::where('event_id',$r->event->id)->sole()->total_cents);
+        $this->input=[...$this->input,...$day(24),'discount'=>['kind'=>'percent','value'=>150]];
         $this->expectException(\App\Exceptions\RecordWriteRejected::class);$this->create();
     }
 
