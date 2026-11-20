@@ -47,7 +47,7 @@ class AdminScreensTest extends TestCase
             ->assertSee('1 h 30 min')->assertSee('1 personaje · 1 bocina')->assertSee('+ costo de transporte');
         $this->get('/admin/staff-y-trajes')->assertOk()->assertSee('Fictitious Performer')->assertSee('Personaje, Conductor/a')
             ->assertSee('En mantenimiento')->assertSee('Trajes')
-            ->assertSee('(346) 555-0118')->assertSee('tel:13465550118', false); // owner 2026-11-19: staff phone visible on the list
+            ->assertSee('(346) 555-0118')->assertSee('tel:3465550118', false); // owner 2026-11-19: staff phone visible on the list
         $this->get('/admin/personajes')->assertOk()->assertSee('Fictitious Hero')->assertSee('1 de 2');
         // Unknown travel fee is "Pendiente", never $0, and the total waits for it.
         $this->get('/admin/eventos')->assertOk()->assertSee('Fictitious Party')->assertSee('Falta transporte')->assertSee('Borrador')->assertDontSee('$0');

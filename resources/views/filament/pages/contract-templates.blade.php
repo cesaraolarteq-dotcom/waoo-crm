@@ -2,7 +2,7 @@
     @php($versions = $this->versions())
     @php($history = $versions->where('current', false))
     {{-- Owner 2026-11-19: one contract in use (plus the next draft to approve); older versions stay as history. --}}
-    @forelse ($versions->where('current', true) as $v)
+    @forelse ($versions->where('current', true)->sortBy(fn ($v) => $v->state === 'active' ? 0 : 1) as $v)
         <x-filament::section>
             <x-slot name="heading">{{ $v->state === 'active' ? 'Contrato en uso' : 'Nuevo texto por aprobar' }} · versión {{ $v->version }}</x-slot>
             <x-slot name="afterHeader">
