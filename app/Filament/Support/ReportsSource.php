@@ -44,7 +44,7 @@ final class ReportsSource
         $f = self::fixture($kind === 'monthly' ? 'month' : 'week', $closedAnchor);
         $next = self::fixture('week', $f['operations']['period']['ends_before']);
 
-        return ['schema_version' => 1, 'environment' => 'test', 'timezone' => 'America/Chicago', 'generated_at' => now()->toIso8601String(), 'kind' => $kind, 'as_of' => $asOf,
+        return ['schema_version' => 1, 'environment' => \App\Support\WaooRuntime::ledgerEnvironment(), 'timezone' => 'America/Chicago', 'generated_at' => now()->toIso8601String(), 'kind' => $kind, 'as_of' => $asOf,
             'due_on' => $f['operations']['period']['ends_before'], 'operations' => $f['operations'], 'bookings' => $f['bookings'],
             'upcoming_weekend' => $kind === 'weekly' ? $next['weekend'] : null,
             'delivery' => ['recipient' => 'sales@waooparty.com', 'status' => 'not_sent', 'enabled' => false], 'sample' => true];
@@ -62,17 +62,17 @@ final class ReportsSource
         $weekendStart = $start->addDays(5);
 
         return [
-            'operations' => ['environment' => 'test', 'timezone' => 'America/Chicago', 'generated_at' => now()->toIso8601String(), 'period' => $p,
+            'operations' => ['environment' => \App\Support\WaooRuntime::ledgerEnvironment(), 'timezone' => 'America/Chicago', 'generated_at' => now()->toIso8601String(), 'period' => $p,
                 'cash' => ['basis' => 'ledger.received_at', 'received_cents' => 184500, 'refunded_cents' => 0, 'net_received_cents' => 184500],
                 'scheduled' => ['basis' => 'events.starts_at', 'event_count' => 6, 'events' => [], 'pending_balance_cents' => 212000, 'pending_balance_unknown_events' => 1,
                     'estimate' => $agg(93000, 0, 93000, 81000), 'actual' => $agg(41000, 3, null, null)]],
-            'bookings' => ['environment' => 'test', 'timezone' => 'America/Chicago', 'generated_at' => now()->toIso8601String(), 'period' => $p,
+            'bookings' => ['environment' => \App\Support\WaooRuntime::ledgerEnvironment(), 'timezone' => 'America/Chicago', 'generated_at' => now()->toIso8601String(), 'period' => $p,
                 'basis' => 'first_booking.capacity_reserved.created_at', 'booking_count' => 4, 'imported_confirmation_count_excluded' => 2, 'package_coverage_complete' => false, 'package_unknown_booking_count' => 1,
                 'package_occurrence_count' => null, 'known_package_occurrence_count' => 4,
                 'packages' => [['service_variant_id' => 1, 'name' => 'Magic Package', 'occurrence_count' => 1, 'booking_count' => 1],
                     ['service_variant_id' => 2, 'name' => 'Waoo Package', 'occurrence_count' => 2, 'booking_count' => 2],
                     ['service_variant_id' => 3, 'name' => 'Face Painting', 'occurrence_count' => 1, 'booking_count' => 1]]],
-            'weekend' => ['environment' => 'test', 'timezone' => 'America/Chicago', 'generated_at' => now()->toIso8601String(),
+            'weekend' => ['environment' => \App\Support\WaooRuntime::ledgerEnvironment(), 'timezone' => 'America/Chicago', 'generated_at' => now()->toIso8601String(),
                 'window' => ['starts_on' => $weekendStart->toDateString(), 'ends_before' => $weekendStart->addDays(2)->toDateString()],
                 'basis' => 'confirmed_events.starts_at', 'event_count' => 3, 'draft_event_count' => 1, 'events' => [],
                 'pending_balance_cents' => 96500, 'pending_balance_unknown_events' => 0,

@@ -20,7 +20,7 @@ final class OwnerReportSnapshotController extends Controller
         Sandbox::require();
         \App\Services\Portal\PortalContext::requireTransport($request);
         RecordActor::authorize($request->user());
-        abort_unless($snapshot->environment === 'test', 404);
+        abort_unless($snapshot->environment === \App\Support\WaooRuntime::ledgerEnvironment(), 404);
         return response()->json($snapshot)->header('Cache-Control', 'no-store, private');
     }
 }
