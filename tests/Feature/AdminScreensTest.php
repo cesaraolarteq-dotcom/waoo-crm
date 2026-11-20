@@ -20,7 +20,8 @@ class AdminScreensTest extends TestCase
         $hero = Character::create(['name' => 'Fictitious Hero', 'active' => true]);
         Resource::create(['code' => 'COS-HERO-1', 'name' => 'Hero costume 1', 'kind' => 'costume', 'status' => 'active', 'character_id' => $hero->id, 'skills' => []]);
         Resource::create(['code' => 'COS-HERO-2', 'name' => 'Hero costume 2', 'kind' => 'costume', 'status' => 'maintenance', 'character_id' => $hero->id, 'skills' => []]);
-        Resource::create(['code' => 'STF-1', 'name' => 'Fictitious Performer', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer', 'driver']]);
+        $performer = Resource::create(['code' => 'STF-1', 'name' => 'Fictitious Performer', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer', 'driver']]);
+        \App\Models\StaffIdentity::create(['resource_id' => $performer->id, 'locale' => 'es', 'phone' => '+1 346 555 0118', 'active' => true]);
         Resource::create(['code' => 'SPK-1', 'name' => 'Speaker 1', 'kind' => 'equipment', 'status' => 'active', 'equipment_kind' => 'speaker', 'skills' => []]);
         $variant = ServiceVariant::create(['name' => 'Fictitious Package', 'status' => 'active', 'duration_minutes' => 90, 'requirements' => [['kind' => 'staff', 'quantity' => 1, 'skill' => 'performer'], ['kind' => 'equipment', 'quantity' => 1, 'equipment_kind' => 'speaker']]]);
         PriceVersion::create(['service_variant_id' => $variant->id, 'amount_cents' => 11100, 'currency' => 'USD', 'created_by' => $owner->id]);
@@ -45,7 +46,8 @@ class AdminScreensTest extends TestCase
         $this->get('/admin/catalogo')->assertOk()->assertSee('Fictitious Package')->assertSee('$123')->assertDontSee('$111')
             ->assertSee('1 h 30 min')->assertSee('1 personaje · 1 bocina')->assertSee('+ costo de transporte');
         $this->get('/admin/staff-y-trajes')->assertOk()->assertSee('Fictitious Performer')->assertSee('Personaje, Conductor/a')
-            ->assertSee('En mantenimiento')->assertSee('Trajes');
+            ->assertSee('En mantenimiento')->assertSee('Trajes')
+            ->assertSee('(346) 555-0118')->assertSee('tel:13465550118', false); // owner 2026-11-19: staff phone visible on the list
         $this->get('/admin/personajes')->assertOk()->assertSee('Fictitious Hero')->assertSee('1 de 2');
         // Unknown travel fee is "Pendiente", never $0, and the total waits for it.
         $this->get('/admin/eventos')->assertOk()->assertSee('Fictitious Party')->assertSee('Falta transporte')->assertSee('Borrador')->assertDontSee('$0');
