@@ -60,6 +60,10 @@ final class CreateFinancialRevision
             }
             // ANNIV-01: a redeemed anniversary code keeps its 10 % on the package price in every revision of this booking.
             $promo = \App\Services\Campaigns\AnniversaryCampaign::discount($event, $services);
+            // Owner 2026-11-20: the owner's own discount ($ or %) is kept in every revision too, after the anniversary code.
+            if ($own = \App\Services\Booking\OwnerDiscount::forEvent($event, $services, $promo['cents'] ?? 0)) {
+                $promo = ['cents' => ($promo['cents'] ?? 0) + $own['cents'], 'snapshot' => [...($promo['snapshot'] ?? []), ...$own['snapshot']]];
+            }
             $total = $subtotal + $event->travel_fee_cents - ($promo['cents'] ?? 0);
             $previous = FinancialRevision::where('event_id', $event->id)->orderBy('revision')->first();
             $fullDeposit = $previous ? \App\Services\Scheduling\DepositPolicy::revisionPercent($previous) === 100

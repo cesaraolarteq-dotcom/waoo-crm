@@ -149,6 +149,24 @@ class QuickPaymentsTest extends TestCase
         $this->assertSame(['afterpay_clearpay','card','klarna','zip'],$request->envelope['parameters']['payment_method_types']);
     }
 
+    // Owner 2026-11-20: his own discount, $ off or % off the package and add-ons, never the travel fee, kept in the revision.
+    public function test_owner_discount_fixed_or_percent_lowers_the_total_but_not_the_travel_fee():void
+    {
+        $this->input['travel_fee_cents']=4000;
+        $this->input['discount']=['kind'=>'fixed','value'=>10000];
+        $r=$this->create();$f=\App\Models\FinancialRevision::where('event_id',$r->event->id)->sole();
+        $this->assertSame(10000,$f->discount_cents);$this->assertSame(30001+4000-10000,$f->total_cents);
+        $this->assertSame('Descuento / Discount',$f->discounts_snapshot[0]['label']);
+        $this->input['discount']=['kind'=>'percent','value'=>10];
+        $r=$this->create();$f=\App\Models\FinancialRevision::where('event_id',$r->event->id)->sole();
+        $this->assertSame(3000,$f->discount_cents);$this->assertSame(30001+4000-3000,$f->total_cents);
+        $this->input['discount']=['kind'=>'fixed','value'=>99999999];
+        $r=$this->create();$f=\App\Models\FinancialRevision::where('event_id',$r->event->id)->sole();
+        $this->assertSame(4000,$f->total_cents); // never below the travel fee
+        $this->input['discount']=['kind'=>'percent','value'=>150];
+        $this->expectException(\App\Exceptions\RecordWriteRejected::class);$this->create();
+    }
+
     public function test_verified_stripe_separates_principal_fee_and_promotes_once_with_duplicate_webhooks():void
     {
         $r=$this->create();$this->client($r);$this->details();$g=$this->gateway();$key=(string)Str::uuid();$v=$this->checkout(50,$key);

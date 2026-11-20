@@ -194,7 +194,17 @@ class QuickBooking extends Page
                 Callout::make('Resumen')->info()->columnSpanFull()->description(fn (Get $get) => $this->moneyLine($get)),
             ]),
             // Audit 2026-11-02: what is rarely used stays folded, so the booking fits in a few screens.
-            Section::make('Más opciones')->description('Código de promoción, factura a empresa y cuándo vence el enlace.')->collapsible()->collapsed()->columns(2)->schema([
+            Section::make('Más opciones')->description('Descuento, código de promoción, factura a empresa y cuándo vence el enlace.')->collapsible()->collapsed()->columns(2)->schema([
+                // Owner 2026-11-20: his own discount, $ off or % off the packages and add-ons (never the travel fee).
+                ToggleButtons::make('discount_kind')->label('Descuento')->inline()->default('none')->live()
+                    ->options(['none' => 'Sin descuento', 'fixed' => '$ de descuento', 'percent' => '% de descuento'])
+                    ->afterStateUpdated(fn (Get $get, Set $set) => self::refreshDeposit($get, $set)),
+                TextInput::make('discount_value')->label(fn (Get $get) => $get('discount_kind') === 'percent' ? 'Porcentaje (1 a 100)' : 'Monto en dólares')
+                    ->visible(fn (Get $get) => in_array($get('discount_kind'), ['fixed', 'percent'], true))->required(fn (Get $get) => in_array($get('discount_kind'), ['fixed', 'percent'], true))
+                    ->prefix(fn (Get $get) => $get('discount_kind') === 'fixed' ? '$' : null)->suffix(fn (Get $get) => $get('discount_kind') === 'percent' ? '%' : null)
+                    ->regex(fn (Get $get) => $get('discount_kind') === 'percent' ? '/^(100|[1-9][0-9]?)$/' : '/^\d{1,7}(\.\d{1,2})?$/')
+                    ->helperText('Se descuenta del paquete y los adicionales, no del transporte. El cliente lo ve en su enlace y en el contrato.')
+                    ->live(onBlur: true)->afterStateUpdated(fn (Get $get, Set $set) => self::refreshDeposit($get, $set)),
                 TextInput::make('promo_code')->label('Código de promoción (opcional)')->placeholder('WAOO-7KX9Q')->maxLength(20)
                     ->visible(fn () => (bool) config('waoo.sandbox_anniversary', false))->live(onBlur: true)
                     ->helperText(fn (Get $get) => filled($get('promo_code')) ? \App\Services\Campaigns\AnniversaryCampaign::check($get('promo_code'), self::customerIdFor($get))['message']
@@ -300,7 +310,19 @@ class QuickBooking extends Page
     /** Preview of the anniversary discount for the suggested deposit and the summary; the backend recomputes it on save. */
     public static function promoCents(Get $get): int
     {
-        return self::promoCentsFor($get('promo_code'), self::customerIdFor($get), $get('price_version_ids') ?? [], self::extraCents($get));
+        $promo = self::promoCentsFor($get('promo_code'), self::customerIdFor($get), $get('price_version_ids') ?? [], self::extraCents($get));
+        return $promo + self::ownerDiscountCentsFor($get('discount_kind'), $get('discount_value'), $get('price_version_ids') ?? [], self::extraCents($get), $promo);
+    }
+
+    /** Preview of the owner's own discount (backend recomputes it on save). */
+    public static function ownerDiscountCentsFor(?string $kind, mixed $value, array $priceIds, int $extraCents = 0, int $already = 0): int
+    {
+        $value = (string) $value;
+        if ($kind === 'percent' && preg_match('/^(100|[1-9][0-9]?)$/', $value)) $v = (int) $value;
+        elseif ($kind === 'fixed' && preg_match('/^\d{1,7}(\.\d{1,2})?$/', $value)) $v = EditServiceVariant::toCents($value);
+        else return 0;
+        $base = (int) PriceVersion::whereIn('id', array_map('intval', $priceIds))->sum('amount_cents') + $extraCents;
+        return \App\Services\Booking\OwnerDiscount::cents($kind, $v, max(0, $base - $already));
     }
 
     /** Packages and add-ons (extra characters), never the travel fee (César 2026-10-29). */
@@ -318,9 +340,10 @@ class QuickBooking extends Page
         if (! str_starts_with($key, 'characters') && $key !== 'character_count') return;
         if ($this->data['deposit']['amount_custom'] ?? false) return;
         $extra = EventResource::extraCharacterCents(['price_version_ids' => $this->data['price_version_ids'] ?? [], 'characters' => $this->data['characters'] ?? []]);
-        $this->data['deposit']['amount'] = self::depositDefault($this->data['price_version_ids'] ?? [], $this->data['travel_fee'] ?? null, $extra,
-            self::promoCentsFor($this->data['promo_code'] ?? null, ($this->data['customer_mode'] ?? null) === 'existing' && filled($this->data['customer_id'] ?? null) ? (int) $this->data['customer_id'] : null,
-                $this->data['price_version_ids'] ?? [], $extra), $this->data['date'] ?? null);
+        $promo = self::promoCentsFor($this->data['promo_code'] ?? null, ($this->data['customer_mode'] ?? null) === 'existing' && filled($this->data['customer_id'] ?? null) ? (int) $this->data['customer_id'] : null,
+            $this->data['price_version_ids'] ?? [], $extra);
+        $promo += self::ownerDiscountCentsFor($this->data['discount_kind'] ?? null, $this->data['discount_value'] ?? null, $this->data['price_version_ids'] ?? [], $extra, $promo);
+        $this->data['deposit']['amount'] = self::depositDefault($this->data['price_version_ids'] ?? [], $this->data['travel_fee'] ?? null, $extra, $promo, $this->data['date'] ?? null);
     }
 
     /** Extra characters × the per-character amount, from the live form (the backend recounts and snapshots it on save). */
@@ -346,7 +369,7 @@ class QuickBooking extends Page
         $target = intdiv($total, 2) + $total % 2;
         $amount = \App\Services\Booking\QuickPaymentProtocol::enabled() && !$get('deposit_received') ? null : $get('deposit.amount');
         $paid = $amount && preg_match('/^\d{1,7}(\.\d{1,2})?$/', (string) $amount) ? EditServiceVariant::toCents((string) $amount) : 0;
-        $line = 'Total '.Labels::money($total).($extra ? ' (incluye personajes adicionales '.Labels::money($extra).')' : '').($promo ? ' (con código −'.Labels::money($promo).')' : '').' · depósito 50 % '.Labels::money($target).' · recibido '.Labels::money($paid).' · saldo '.Labels::money(max($total - $paid, 0));
+        $line = 'Total '.Labels::money($total).($extra ? ' (incluye personajes adicionales '.Labels::money($extra).')' : '').($promo ? ' (con descuento −'.Labels::money($promo).')' : '').' · depósito 50 % '.Labels::money($target).' · recibido '.Labels::money($paid).' · saldo '.Labels::money(max($total - $paid, 0));
         if ($paid && $paid < $target) {
             $line .= ' · faltan '.Labels::money($target - $paid).' para el 50 %';
         }
@@ -534,6 +557,7 @@ class QuickBooking extends Page
             $key === 'starts_at' => 'start_time',
             $key === 'ends_at' => 'end_time',
             str_starts_with($key, 'services') => 'package_id',
+            str_starts_with($key, 'discount') => 'discount_value',
             default => $key,
         };
     }
@@ -563,6 +587,8 @@ class QuickBooking extends Page
             'services' => EventResource::servicesInput($s),
             ...(filled($s['package_id'] ?? null) ? ['package_price_version_id' => (int) $s['package_id']] : []),
             ...(config('waoo.sandbox_anniversary', false) && filled($s['promo_code'] ?? null) ? ['promo_code' => trim((string) $s['promo_code'])] : []),
+            ...(in_array($s['discount_kind'] ?? null, ['fixed', 'percent'], true) && filled($s['discount_value'] ?? null)
+                ? ['discount' => ['kind' => $s['discount_kind'], 'value' => $s['discount_kind'] === 'percent' ? (int) $s['discount_value'] : EditServiceVariant::toCents((string) $s['discount_value'])]] : []),
             ...($received ? ['deposit' => ['method' => 'zelle', 'amount_cents' => EditServiceVariant::toCents((string) $d['amount']), 'reference' => filled($d['reference'] ?? null) ? trim($d['reference']) : null,
                 'received_on' => $d['date'], 'verified_received' => (bool) ($d['verified'] ?? false)]] : ['deposit_received' => false]),
             // The pre-request snapshot retains this anchor even when the save response is lost.
