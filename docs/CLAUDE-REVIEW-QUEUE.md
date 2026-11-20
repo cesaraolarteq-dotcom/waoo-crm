@@ -21,6 +21,12 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-20 · BACKEND · Revisión #211: identidad durable y rotación del cron · PENDING
+- Branch: codex/fix-refund-review; base Claude 2b8daa0, sin reescribir commits.
+- Cambios: conservar retrieve para cualquier refund con identidad remota, incluso unknown; error de lectura no marca failed; cron ordenado por updated_at/id y rota errores para alcanzar toda la cola.
+- Pruebas: dos regresiones FAIL antes (2 casos/5 aserciones); suite integrada en curso, no declarar verde todavía.
+- Claude: revisar respuesta discrepante seguida de replay y cola con primer proveedor fallando. Sin cambios de textos/clientes/flags ni despliegue/proveedor real.
+
 ### 2026-11-04 · BACKEND · Cierre #203 y #200 integrado en main · PENDING
 - Branch: `codex/fix-extra-time-closure`, desde main de código87a42dcec33dbc107a7f66bf0e643ef1f15f4bca. Fuente21ce2afaee5690e86e91a32424b32a000c116621, diff vacío tras fusionar. #200 punta3b37fde verificada sin cambios y ancestro, cerrado como integrado; ramas/historia preservadas.
 - How verified: suite completa PHP8.3/MariaDB SUCCESS6/6 en https://github.com/cesaraolarteq-dotcom/waoo-crm/actions/runs/41903876337 . Push duplicado41903864484 cancelado; corrida completa del PR final verde. Sin bypass/admin/workflows modificados. Este cierre solo cambia dos Markdown; git diff --check y alcance revisados, sin repetir tests de aplicación por documentación.

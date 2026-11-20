@@ -58,10 +58,12 @@ final class RefundPayment
         $receipt = LedgerEntry::findOrFail($request->receipt_id);
         $stripe = app(StripeRefunds::class);
         try {
-            $refund = $request->state === 'pending' && $request->provider_refund_id
+            $refund = $request->provider_refund_id
                 ? $stripe->retrieve($request->provider_refund_id, (string) $receipt->external_reference, $request->amount_cents)
                 : $stripe->refund((string) $receipt->external_reference, $request->amount_cents, $request->request_key);
         } catch (\Stripe\Exception\InvalidRequestException|\Stripe\Exception\CardException $e) {
+            // A failed lookup does not prove that an already-created refund failed.
+            if ($request->provider_refund_id) $this->unknown($request);
             RefundRequest::whereKey($request->id)->whereIn('state', ['requested', 'unknown'])->update(['state' => 'failed', 'error_code' => mb_substr((string) ($e->getStripeCode() ?: 'stripe_rejected'), 0, 100)]);
             throw new RecordWriteRejected(422, 'Stripe no aceptó el reembolso. No se devolvió nada.');
         } catch (\RuntimeException $e) {

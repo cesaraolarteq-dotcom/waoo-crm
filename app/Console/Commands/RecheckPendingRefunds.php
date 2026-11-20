@@ -22,15 +22,18 @@ final class RecheckPendingRefunds extends Command
         if ($limit === false) { $this->error('limit: 1–500'); return self::FAILURE; }
         $done = ['checked' => 0, 'succeeded' => 0, 'failed' => 0, 'still_pending' => 0, 'errors' => 0];
         RefundRequest::where('method', 'stripe')->where('state', 'pending')->whereNotNull('provider_refund_id')
-            ->where('updated_at', '<', now()->subMinutes(15))->orderBy('id')->limit($limit)->get()
+            ->where('updated_at', '<', now()->subMinutes(15))->orderBy('updated_at')->orderBy('id')->limit($limit)->get()
             ->each(function (RefundRequest $r) use ($refunds, &$done) {
                 $done['checked']++;
                 try {
                     $state = $refunds->settleFromProvider($r->provider_refund_id)?->state;
                     $key = ['succeeded' => 'succeeded', 'failed' => 'failed'][$state] ?? 'still_pending';
                     $done[$key]++;
-                    if ($key === 'still_pending') $r->touch(); // next look in 15+ minutes, not every run
+                    // Rotate even unresolved cases behind refunds not checked yet.
                 } catch (\Throwable) { $done['errors']++; }
+                finally {
+                    RefundRequest::whereKey($r->id)->whereIn('state', ['pending', 'unknown'])->update(['updated_at' => now()]);
+                }
             });
         $this->line(json_encode($done, JSON_THROW_ON_ERROR));
         return self::SUCCESS;
