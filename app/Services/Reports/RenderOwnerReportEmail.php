@@ -13,7 +13,7 @@ final class RenderOwnerReportEmail
         Sandbox::require();
         RecordActor::authorize($actor);
         PortalContext::requireTransport(request());
-        $snapshot = OwnerReportSnapshot::where('environment', 'test')->findOrFail($snapshotId);
+        $snapshot = OwnerReportSnapshot::where('environment', \App\Support\WaooRuntime::ledgerEnvironment())->findOrFail($snapshotId);
         abort_unless(hash_equals($snapshot->payload_sha256, hash('sha256', $snapshot->payload_json)), 409, 'El reporte guardado no coincide con su evidencia.');
         $payload = json_decode($snapshot->payload_json, true, flags: JSON_THROW_ON_ERROR);
         abort_unless(($payload['schema_version'] ?? null) === 1, 409, 'Versión de reporte no compatible.');

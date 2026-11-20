@@ -115,7 +115,7 @@ final class AnniversaryCampaign
         $base = 0;
         foreach ($services as $s) $base += (int) PriceVersion::whereKey($s->price_version_id)->value('amount_cents') + \App\Models\EventService::extraCents($s);
         $cents = intdiv($base * self::PERCENT + 50, 100); // rounded to the cent
-        return ['cents' => $cents, 'snapshot' => [['kind' => 'anniversary', 'code' => $row->code, 'percent' => self::PERCENT,
+        return ['cents' => $cents, 'snapshot' => [['kind' => 'anniversary', 'label' => 'Código aniversario 10 % / Anniversary 10% off', 'code' => $row->code, 'percent' => self::PERCENT,
             'applies_to' => 'services_not_travel', 'base_cents' => $base, 'amount_cents' => $cents, 'anniversary_code_id' => $row->id]]];
     }
 

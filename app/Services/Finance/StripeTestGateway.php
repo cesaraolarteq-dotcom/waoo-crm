@@ -30,7 +30,7 @@ final class StripeTestGateway implements QuickStripeGateway, StripeRefundGateway
     public function verifyMethods(array $methods):array
     {
         $id=$this->account();$account=$this->client->accounts->retrieve();
-        $capability=['card'=>'card_payments','klarna'=>'klarna_payments','afterpay_clearpay'=>'afterpay_clearpay_payments'];
+        $capability=['card'=>'card_payments','klarna'=>'klarna_payments','afterpay_clearpay'=>'afterpay_clearpay_payments','zip'=>'zip_payments'];
         if (!$methods || array_diff($methods,array_keys($capability))) throw new \RuntimeException('unsupported_quick_payment_method');
         foreach($methods as $method) if(($account->capabilities->{$capability[$method]}??null)!=='active') throw new \RuntimeException('quick_payment_method_not_active');
         return ['account'=>$id,'methods'=>$methods];

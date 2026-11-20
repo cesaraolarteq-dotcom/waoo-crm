@@ -92,6 +92,23 @@ class TwilioSmsTest extends TestCase
         $this->assertDatabaseMissing('sms_messages', ['body' => 'Tu fiesta quedó reservada.']); // stored encrypted
     }
 
+    // Owner 2026-11-20: while testing with his own phone, texts go only to the numbers on the server's test list.
+    public function test_test_list_limits_texts_to_those_numbers(): void
+    {
+        config(['waoo.sms_delivery_enabled' => true, 'waoo.sms_allowlist' => ['+13465550111']]);
+        $this->consent(); Http::fake(['api.twilio.com/*' => Http::response(['sid' => 'SM'.str_repeat('3', 32)], 201)]);
+        $this->refused(fn () => app(SendSms::class)->execute($this->owner, $this->client->id, null, 'Hola'), 'modo prueba');
+        Http::assertNothingSent();
+        config(['waoo.sms_allowlist' => ['+13465550100']]);
+        $this->assertSame('sent', app(SendSms::class)->execute($this->owner, $this->client->id, null, 'Hola')->status);
+    }
+
+    public function test_mail_test_recipients_are_allowed_even_when_not_owner_accounts(): void
+    {
+        config(['waoo.mail_allowlist' => ['client-not-owner@example.test'], 'waoo.mail_test_recipients' => ['Tester@Example.test', 'not-an-email']]);
+        $this->assertSame(['tester@example.test'], \App\Services\Mail\MailGuard::allowlist());
+    }
+
     public function test_unsigned_callbacks_are_refused_and_stop_turns_texting_off(): void
     {
         $this->consent();

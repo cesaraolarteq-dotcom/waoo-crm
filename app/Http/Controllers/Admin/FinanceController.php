@@ -25,7 +25,7 @@ final class FinanceController extends Controller
     public function payments(Event $event)
     {
         Sandbox::require();
-        return response()->json(LedgerEntry::where('event_id', $event->id)->where('environment', 'test')->orderByDesc('received_at')->paginate(50))->header('Cache-Control', 'no-store, private');
+        return response()->json(LedgerEntry::where('event_id', $event->id)->where('environment', \App\Support\WaooRuntime::ledgerEnvironment())->orderByDesc('received_at')->paginate(50))->header('Cache-Control', 'no-store, private');
     }
     public function confirm(Request $request, Event $event, \App\Services\Finance\ConfirmPaidCapacity $service, FinanceSummary $summary)
     {

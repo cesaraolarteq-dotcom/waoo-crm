@@ -14,6 +14,11 @@ class TravelFeeReferenceCalibrationTest extends TestCase
     public function test_all_22_recorded_reference_cases_match_with_the_recorded_route_selection(): void
     {
         config(['waoo.sandbox_routes' => true, 'waoo.google_routes_key' => 'fictional-calibration-key']);
+        // These 22 cases were priced with the 2026-10-14 rules; keep checking the engine against them with those rules
+        // (owner changed the prices on 2026-11-19, covered by TravelFeeParityTest).
+        config(['travel_fees' => [...config('travel_fees'), 'version' => 'website-2026-10-14-calibration', 'flat_up_to_miles' => 10, 'flat_fee' => 20,
+            'tiers' => [['up_to' => 40, 'rate' => 0.35], ['up_to' => 55, 'rate' => 2.00], ['up_to' => null, 'rate' => 1.40]], 'charge_tolls' => true, 'max_round_trip_miles' => 160,
+            'special_zips' => ['77520' => 180, '77521' => 180, '77433' => 40, '77447' => 50, '77355' => 80, '77380' => 100, '77013' => 100, '77573' => 125]]]);
         Http::preventStrayRequests();
         $cases = json_decode(file_get_contents(base_path('docs/calibration/ROUTE-01-reference-22.json')), true, flags: JSON_THROW_ON_ERROR)['cases'];
         $this->assertCount(22, $cases);

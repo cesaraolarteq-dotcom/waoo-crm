@@ -15,7 +15,7 @@ final class CreateTipCheckout {
             $amount=TipAmounts::amount($g->total_cents,$d);$scope='tip-grant:'.$g->id.':checkout';$hash=MutationKey::hash($d);
             if($r=TipGuard::receipt($scope,$key,$hash)){
                 $existing=TipCheckoutIntent::whereKey($r->result_id)->where('tip_grant_id',$g->id)->lockForUpdate()->firstOrFail();
-                RecordWriteRejected::unless($existing->event_id===$g->event_id&&$existing->financial_revision_id===$g->financial_revision_id&&$existing->amount_cents===$amount&&$existing->option===$d['option']&&$existing->currency==='USD'&&$existing->environment==='test',409,'El intento requiere revisión.');return $existing;
+                RecordWriteRejected::unless($existing->event_id===$g->event_id&&$existing->financial_revision_id===$g->financial_revision_id&&$existing->amount_cents===$amount&&$existing->option===$d['option']&&$existing->currency==='USD'&&$existing->environment===\App\Support\WaooRuntime::ledgerEnvironment(),409,'El intento requiere revisión.');return $existing;
             }
             RecordWriteRejected::unless(!TipCheckoutIntent::where('active_event_id',$g->event_id)->lockForUpdate()->first(),409,'Ya hay una propina en proceso. Reutiliza el intento o pide revisión; no abras otro cobro.');
             $expires=now()->toImmutable()->utc()->addHour()->min($g->expires_at);
@@ -24,8 +24,8 @@ final class CreateTipCheckout {
             RecordWriteRejected::unless(is_string($account)&&preg_match('/^acct_[A-Za-z0-9_]+$/D',$account),403,'Configura la cuenta de pruebas antes de iniciar un cobro.');
             $origin=Sandbox::origin();RecordWriteRejected::unless(strlen($origin)<=255,403,'El origen de pruebas es inválido.');
             $i=TipCheckoutIntent::create(['id'=>(string)Str::uuid(),'tip_grant_id'=>$g->id,'event_id'=>$g->event_id,'financial_revision_id'=>$g->financial_revision_id,'active_grant_id'=>$g->id,'active_event_id'=>$g->event_id,
-                'provider_account'=>$account,'request_locale'=>$context->locale,'request_origin'=>$origin,'environment'=>'test','option'=>$d['option'],'amount_cents'=>$amount,'currency'=>'USD','status'=>'creating','expires_at'=>$expires]);
-            Audit::recordSystem('tip.checkout_created',$i,[],['event_id'=>$g->event_id,'tip_grant_id'=>$g->id,'amount_cents'=>$amount,'environment'=>'test']);MutationKey::store($scope,$key,$hash,'tip_intent',$i->id);return $i;
+                'provider_account'=>$account,'request_locale'=>$context->locale,'request_origin'=>$origin,'environment'=>\App\Support\WaooRuntime::ledgerEnvironment(),'option'=>$d['option'],'amount_cents'=>$amount,'currency'=>'USD','status'=>'creating','expires_at'=>$expires]);
+            Audit::recordSystem('tip.checkout_created',$i,[],['event_id'=>$g->event_id,'tip_grant_id'=>$g->id,'amount_cents'=>$amount,'environment'=>\App\Support\WaooRuntime::ledgerEnvironment()]);MutationKey::store($scope,$key,$hash,'tip_intent',$i->id);return $i;
         },3);
         if($i->status!=='paid')$this->configuration($i);
         if($i->status!=='creating')return $this->result($context,$i->id);

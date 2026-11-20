@@ -1,3 +1,8 @@
+## 2026-11-19/20 · Claude → Codex · Staff phone + contract page (#213) and travel fee v2 (#214, stacked) — REVISAR (PII + dinero)
+
+- #213 `claude/staff-phone`: Staff y trajes shows each person's phone (encrypted identity, read per request, `tel:` link; edit stays in Enlaces del staff). Contract page: active version + newer draft on top, older drafts shown as "Reemplazada" and not activatable. Data (not code): 25 staff identities copied crm-test → real by resource code (system audit, source note); contract v5 draft on real (v4 + 3.6 electricity), owner activates.
+- #214 `claude/travel-fee-v2`: owner per-mile formula (2026-11-19) $20 first 5 mi, $1.25/mi to 40, $5/mi after, tolls included (`charge_tolls=false`), 70 mi one-way limit, new fixed ZIPs. Website already live with the same rules. Calibration test pinned to the 2026-10-14 rules.
+- Both CI green. Deploy plan: merge into `claude/deploy-20261117` with #209–#211 after review; César runs the real deploy.
 ## 2026-11-20 · Claude → Codex · Work without asking + faster CI (PR #218)
 - César: "ya le di acceso a todo pero aún sigue pidiendo permiso" — new **Autonomy** section in AGENTS.md/CLAUDE.md. Ask only for real-CRM deploys, real money/live Stripe-Twilio, new prices/policies/contract or unapproved client texts.
 - CI speed (owner approved): full suite takes 15–19 min wall in 5 unbalanced shards. Proposal `docs/proposals/ci-speed-10-shards-and-quick-tests.patch`: 10 shards + `quick-tests.yml` (claude/** push with a `Tests: A B` line runs only those files). My token has no `workflow` scope; please apply it (`git am` the patch) if you agree.
@@ -15,6 +20,10 @@ Owner: "okay inicia". Codex regressions adopted into the suite (`StripeRefundAda
 - UI: refund in process shows "Reembolso en proceso" (warning) instead of "registrado".
 - Not verified: real Stripe pending refunds (only fakes), scheduler for pending refunds that never get a webhook (owner can repeat the same refund to re-check; a periodic re-check is a follow-up).
 - Codex: please review (money path). Owner rule until deployed: card refunds only in the Stripe dashboard.
+## 2026-11-09 · Claude · Auditoría: etiqueta `live` del dinero real + Reserva rápida solo tarjeta (rama `claude/ledger-environment`, desde main b0219d0) — REVISAR (dinero)
+- `WaooRuntime::ledgerEnvironment()` = `live` en el CRM real (WAOO_LIVE), `test` en todo lo demás. Reemplazados los 60 literales `environment='test'` (escritores y lectores de ledger, intents, propinas, reportes, snapshots de reportes, apertura/cutover, CardFees). `QuickPaymentCheckout` ahora escribe `environment` explícito en su PaymentIntent (antes dependía del default de la columna). La referencia `ledger:test:` de ConfirmPaidCapacity/ConfirmBooking se dejó igual (identificador interno en ambos lados). El CRM real tiene 0 filas de dinero, sin migración de valores.
+- `waoo.quick_payment_methods` desde `WAOO_QUICK_PAYMENT_METHODS` (default `card,klarna`): si la cuenta live no tiene Klarna activo, `card` evita que Reserva rápida falle también con tarjeta (verifyMethods exige todas activas).
+- Tests: `LiveLedgerTest` (2), `QuickPaymentsTest::test_card_only_configuration_opens_a_card_checkout`. Suite local completa 1,875: solo fallan las de MariaDB (concurrencia/auditoría/InnoDB).
 
 ## 2026-11-05 · Claude · Revisión independiente de `claude/stripe-live` (Codex sin créditos; César eligió «B»: revisar + unir con controles)
 Revisor aparte (code-review high, diff completo contra main). Corregido en la rama:
@@ -2868,3 +2877,10 @@ Owner asked ("sí actívalos") to offer Klarna/Afterpay/Zip on the balance payme
 - `StripeReceiptProcessor`: a non-card payment counts only when it is Klarna/Afterpay AND that session offered it; else `payment_method_not_offered` reconciliation. Cards keep the credit-only rule when the 3% fee policy applies.
 - **Review for Codex:** with `WAOO_REGULAR_CARD_FEE_ENABLED=true` the 3% is added before the method is chosen, so a Klarna/Afterpay payment also carries it (same as Reserva rápida today). Check BNPL surcharge rules before turning the fee on in live.
 - Portal copy: "Tarjeta …, Klarna o Afterpay" + installments hint. Test `BalancePayLaterTest`.
+
+## 2026-11-17 · Claude · Zip on the balance payment (owner: "configura el zip en el crm")
+- Stripe live account: `zip_payments` capability **active** (checked via API 2026-11-17), Zip enabled by César in the dashboard.
+- `CreateCheckoutIntent::PAY_LATER` + `zip`; `StripeTestGateway::verifyMethods` maps `zip` → `zip_payments`; portal label "Zip".
+- `CreateCheckoutIntent::forAmount()`: Zip only for $35–$4,000 (Stripe Zip US range) so Checkout never gets an out-of-range method (the session check compares methods exactly).
+- Enabled per environment with `WAOO_PORTAL_PAYMENT_METHODS=card,klarna,afterpay_clearpay,zip`. Reserva rápida public flow unchanged (card/Klarna only by owner rule).
+- Review for Codex: money path (receipt counts only when that session offered Zip — same rule as Klarna/Afterpay).

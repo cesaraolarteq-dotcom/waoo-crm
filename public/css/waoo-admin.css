@@ -99,7 +99,7 @@ a.wcal-name:hover{text-decoration:underline}
 .dark .wqb-done{background:rgba(255,255,255,.04)}
 .wqb-done h2{margin:0;font-size:1.3rem;font-weight:800}.wqb-done h2 span{display:block;font-size:.9rem;font-weight:600;opacity:.75;margin-top:4px}
 .wqb-hint{margin:0}.wqb-warn{margin:0;background:#FFF1D2;color:#8F5B00;border-radius:10px;padding:10px 12px;font-weight:700}
-.wqb-link{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.wqb-link code{flex:1;min-width:0;overflow-wrap:anywhere;background:#EEF1F9;border-radius:10px;padding:10px 12px}
+.wqb-link{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.wqb-link code{flex:1;min-width:0;overflow-wrap:anywhere;background:#EEF1F9;color:#122F94;font-weight:600;border-radius:10px;padding:10px 12px}.dark .wqb-link code{background:#1E2A55;color:#E6ECFF} /* owner 2026-11-20: link was invisible in dark mode */
 .wqb-msg{display:grid;gap:10px;border-left:4px solid #15D1C4;padding-left:14px}.wqb-msg p{margin:0;line-height:1.55}.wqb-msg small{opacity:.7}
 .wqb-next{display:flex;gap:8px;flex-wrap:wrap}
 .fi-sidebar a[href$="/reserva-rapida"]{background:#FF017C!important;border-radius:10px}

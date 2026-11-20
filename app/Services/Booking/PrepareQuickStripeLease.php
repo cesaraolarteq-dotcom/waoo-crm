@@ -13,7 +13,7 @@ final class PrepareQuickStripeLease
     {
         $actor=QuickStripeLeases::actor($actor);
         $data=QuickStripeLeases::input($input,['expected_event_version'=>'required|integer|min:1','financial_revision_id'=>'required|integer|min:1',
-            'deposit_percent'=>'sometimes|required|integer|in:50,100']);$data['deposit_percent']??=50;
+            'deposit_percent'=>'sometimes|required|integer|in:50,100','short_notice_ok'=>'sometimes|accepted']);$data['deposit_percent']??=50;
         $scope="owner:{$actor->id}:event:{$eventId}:quick-stripe-prepare";$hash=MutationKey::hash($data);
         return DB::transaction(function()use($actor,$eventId,$data,$scope,$hash,$key){
             \App\Services\Scheduling\DailyCapacity::lock();
@@ -25,7 +25,12 @@ final class PrepareQuickStripeLease
                 return QuickStripeLeases::view($lease,$event);
             }
             RecordWriteRejected::unless(!$lease,409,'Esta fiesta ya tuvo un apartado. No se renueva con otra solicitud.');
-            \App\Services\Scheduling\DepositPolicy::assertNotice($event->starts_at);
+            if(!empty($data['short_notice_ok'])&&\App\Services\Scheduling\DepositPolicy::underDayNotice($event->starts_at)&&!\App\Models\ShortNoticeApproval::where('event_id',$eventId)->exists()){
+                // Owner 2026-11-20: the owner may confirm a party with less than 24 h of notice; the client still pays before it is booked.
+                $approval=\App\Models\ShortNoticeApproval::create(['event_id'=>$eventId,'approved_by'=>$actor->id]);
+                \App\Services\Audit::recordFor($actor,'booking.short_notice_approved',$approval,[],['event_id'=>$eventId,'starts_at'=>$event->starts_at->toIso8601String()]);
+            }
+            \App\Services\Scheduling\DepositPolicy::assertNotice($event->starts_at,$eventId);
             QuickStripeLeases::unpaid($event);
             RecordWriteRejected::unless($event->version===$data['expected_event_version']&&$event->starts_at->isFuture()
                 &&!ResourceReservation::where('event_id',$eventId)->exists(),409,'La fiesta cambió, ya empezó o tiene recursos comprometidos.');

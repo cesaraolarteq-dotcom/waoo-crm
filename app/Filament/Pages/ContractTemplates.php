@@ -48,8 +48,13 @@ class ContractTemplates extends Page
 
     public function versions()
     {
+        // Owner 2026-11-19 "una sola versión": drafts older than the active one are replaced, not activatable, and go to history.
+        $active = ContractTemplateVersion::query()->where('state', 'active')->max('version');
+
         return ContractTemplateVersion::query()->orderByDesc('version')->get()->map(fn ($t) => (object) [
-            'id' => $t->id, 'version' => $t->version, 'state' => $t->state, 'note' => $t->change_note,
+            'id' => $t->id, 'version' => $t->version, 'note' => $t->change_note,
+            'state' => $t->state === 'draft' && $active !== null && $t->version < $active ? 'replaced' : $t->state,
+            'current' => $t->state === 'active' || ($t->state === 'draft' && ($active === null || $t->version > $active)),
             'by' => User::whereKey($t->created_by)->value('name'), 'when' => Labels::when($t->created_at),
             'approved' => $t->approved_at ? Labels::when($t->approved_at).' · '.User::whereKey($t->approved_by)->value('name') : null,
             'terms' => $t->terms_html, 'sha' => $t->source_sha256,

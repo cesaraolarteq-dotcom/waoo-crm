@@ -30,3 +30,10 @@ QuickBook will accept optional paired lead_id/lead_expected_version, check/lock 
 ## Review prerequisite completed
 
 Reviewed #47→#46→#48→#49→#44 exact heads in docs/reviews/CLAUDE-47-46-48-49-44.md; published codex/review-47-46-48-49-44. #46/#49 need changes; others approved as documented. LEAD starts independently from main7038f30, not from blocked UI integration. Then ROUTE-01, then OUTFIT-01. Screens/spool, real website outage fallback, shared-secret provisioning and live activation remain Claude/owner integration work, not claimed by backend tests.
+
+## Attribution (owner 2026-11-17)
+Optional `attribution` object, so the owner sees where each request came from ("Llegó por") and how many book per source:
+`channel` (required inside the object): `google_ads` | `google_organic` | `instagram` | `facebook` | `campaign` | `referral` | `direct`;
+optional `campaign`, `term` (≤150 chars, utm_campaign / utm_term), `referrer` (host only, `[a-z0-9.-]`), `landing` (path starting with `/`),
+`first_seen_at` (`Y-m-d`). No ad click IDs (gclid/fbclid) or other keys are accepted. Older website copies that send no `attribution` keep working.
+The CRM must be deployed before the website starts sending it (unknown keys are a 422, and 422 leads are not retried).
