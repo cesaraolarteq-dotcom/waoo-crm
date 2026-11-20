@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ServiceVariant extends Model
 {
-    protected $fillable = ['name', 'long_description', 'status', 'duration_minutes', 'setup_minutes', 'breakdown_minutes', 'requirements', 'character_quantity', 'character_options', 'offered_as_extra', 'extra_character_cents', 'extends_event'];
+    protected $fillable = ['name', 'long_description', 'status', 'duration_minutes', 'setup_minutes', 'breakdown_minutes', 'requirements', 'character_quantity', 'character_options', 'offered_as_extra', 'extra_character_cents', 'extends_event', 'name_en'];
     protected function casts(): array { return ['requirements' => 'array', 'character_options' => 'array', 'character_quantity' => 'integer', 'duration_minutes' => 'integer', 'version' => 'integer', 'setup_minutes' => 'integer', 'breakdown_minutes' => 'integer', 'offered_as_extra' => 'boolean', 'extends_event' => 'boolean', 'extra_character_cents' => 'integer']; }
 
     /** Price of each character beyond the included ones: this package's own, or the general one. */
