@@ -40,7 +40,7 @@ final class EventMailSource
         $money=fn(int $v)=>'$'.number_format(intdiv($v,100),0,'.',',').'.'.str_pad((string)($v%100),2,'0',STR_PAD_LEFT);
         $date=fn($d)=>MailDates::full($d,$locale);
         $link=Sandbox::origin().'/portal#token='.PortalTokenVault::open($g);
-        $vars=['first_name'=>explode(' ',$c->name)[0],'event_date'=>$date($e->starts_at),'subject_date'=>MailDates::subject($e->starts_at,$locale),'address'=>$e->address,'package'=>implode(' + ',array_column($f->lines_snapshot,'name')),
+        $vars=['first_name'=>explode(' ',$c->name)[0],'event_date'=>$date($e->starts_at),'subject_date'=>MailDates::subject($e->starts_at,$locale),'address'=>$e->address,'package'=>implode(' + ',array_map(fn($n)=>\App\Support\PackageName::for($n,$locale),array_column($f->lines_snapshot,'name'))),
             'package_price'=>$money($f->subtotal_cents),'travel_fee'=>$money($f->travel_fee_cents),'subtotal'=>$money($f->subtotal_cents+$f->travel_fee_cents),'discount_total'=>$money($f->discount_cents),
             'total'=>$money($f->total_cents),'deposit'=>$money($f->deposit_target_cents),'paid'=>$money(max(0,$net)),'balance'=>$money($balance),'has_balance'=>$balance>0,
             'due'=>$f->balance_due_at===null?'':MailDates::due($f->balance_due_at,$locale),

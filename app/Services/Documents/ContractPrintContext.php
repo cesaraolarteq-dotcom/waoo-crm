@@ -15,8 +15,9 @@ final class ContractPrintContext
         $services = []; $lines = []; $characters = [];
         foreach ($snapshot['services'] as $service) {
             // Owner 2026-10-22: the client sees the package description, not the internal staff/equipment recipe.
-            $services[] = ['name' => $service['name'], 'total' => self::money($service['amount_cents']), 'duration' => $service['duration_minutes'].' minutes', 'includes' => [], 'long_description' => $service['long_description'] ?? ''];
-            $lines[] = ['label' => $service['name'], 'amount' => self::money($service['amount_cents'])];
+            $name = $service['name_en'] ?? $service['name']; // the contract is English (owner 2026-11-20)
+            $services[] = ['name' => $name, 'total' => self::money($service['amount_cents']), 'duration' => $service['duration_minutes'].' minutes', 'includes' => [], 'long_description' => $service['long_description'] ?? ''];
+            $lines[] = ['label' => $name, 'amount' => self::money($service['amount_cents'])];
             foreach ($service['characters'] ?? [] as $character) $characters[] = $character['quantity'].' × '.\App\Services\Records\CharacterLabel::fromSnapshot($character);
         }
         $lines[] = ['label' => 'Travel fee', 'amount' => self::money($snapshot['travel_fee_cents'])];
