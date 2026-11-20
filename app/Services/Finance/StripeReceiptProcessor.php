@@ -28,12 +28,29 @@ final class StripeReceiptProcessor
         if (in_array($receipt->state, ['processed','ignored','reconciliation_required'], true)) return;
         $receipt->increment('attempts');
         $payload = json_decode(Crypt::decryptString($receipt->encrypted_payload), true, flags: JSON_THROW_ON_ERROR);
+        if (StripeMode::refuseForeignStoredEvent($receipt, $payload)) return;
         $object = $payload['data']['object'];
         $intentId = $object['metadata']['local_intent_id'] ?? null;
         $intent = $intentId ? PaymentIntent::find($intentId) : null;
         if (!$intent && !empty($object['payment_intent'])) $intent = PaymentIntent::where('stripe_payment_intent_id', $object['payment_intent'])->first();
         if (!$intent) { $receipt->fill(['state' => 'ignored', 'last_error' => 'unlinked_provider_event', 'processed_at' => now()])->save(); return; }
         if(!CardFees::valid($intent)){$this->problem($receipt,$intent,'invalid_frozen_card_terms');return;}
+        // Codex audit 2026-11-17 A2: refunds this CRM asked for settle here (pending → succeeded/failed), re-read from Stripe.
+        // A refund nobody asked for here (e.g. made in the Stripe dashboard) still goes to reconciliation below.
+        if (in_array($receipt->event_type, ['refund.created', 'refund.updated', 'charge.refund.updated', 'charge.refunded'], true)) {
+            $ours = \App\Models\RefundRequest::where('method', 'stripe')->whereIn('receipt_id', LedgerEntry::where('kind', 'receipt')->where('method', 'stripe')
+                ->where('external_reference', (string) ($object['payment_intent'] ?? ''))->pluck('id'));
+            if (($object['object'] ?? null) === 'refund' && $receipt->event_type !== 'charge.refunded') {
+                if (app(\App\Services\Changes\RefundPayment::class)->settleFromProvider((string) $object['id'])) {
+                    $receipt->fill(['state' => 'processed', 'last_error' => null, 'processed_at' => now()])->save(); return;
+                }
+            } elseif ($receipt->event_type === 'charge.refunded' && (clone $ours)->whereIn('state', ['pending', 'succeeded'])->exists()) {
+                // Each refund also sends its own refund.* event, which is the one that counts; the charge notice adds nothing.
+                $receipt->fill(['state' => 'ignored', 'last_error' => 'covered_by_refund_request', 'processed_at' => now()])->save(); return;
+            }
+            // Our own refund whose Stripe answer is not stored yet (webhook faster than the answer): try again later.
+            if ((clone $ours)->whereIn('state', ['requested', 'unknown'])->exists()) throw new \RuntimeException('refund_request_not_settled_yet');
+        }
         if (!in_array($receipt->event_type, ['checkout.session.completed','checkout.session.async_payment_succeeded','checkout.session.async_payment_failed','checkout.session.expired','payment_intent.succeeded'], true)) {
             $this->problem($receipt, $intent, 'unsupported_financial_event'); return;
         }
@@ -66,7 +83,7 @@ final class StripeReceiptProcessor
         $charge = is_array($payment) ? ($payment['latest_charge'] ?? null) : null;
         if (!is_array($payment) || !is_array($charge) || ($payment['livemode'] ?? null) !== \App\Services\Finance\StripeMode::livemode() || ($payment['status'] ?? null) !== 'succeeded'
             || ($payment['currency'] ?? null) !== 'usd' || (int) ($payment['amount_received'] ?? -1) !== $intent->payable_cents
-            || empty($payment['id']) || ($charge['captured'] ?? null) !== true || ($charge['paid'] ?? null) !== true
+            || empty($payment['id']) || ($charge['livemode'] ?? null) !== \App\Services\Finance\StripeMode::livemode() || ($charge['captured'] ?? null) !== true || ($charge['paid'] ?? null) !== true
             || !isset($charge['created']) || (int) $charge['created'] <= 0 || (int) $charge['created'] > time()) {
             $this->problem($receipt, $intent, 'unverified_payment_intent'); return;
         }
@@ -83,7 +100,7 @@ final class StripeReceiptProcessor
             \App\Services\Scheduling\DailyCapacity::lock();
             $event = Event::whereKey($intent->event_id)->lockForUpdate()->firstOrFail();
             $locked = PaymentIntent::whereKey($intent->id)->lockForUpdate()->firstOrFail();
-            $transaction = 'stripe:test:'.$session['_verified_account'].':'.$payment['id'];
+            $transaction = \App\Services\Finance\StripeMode::identityPrefix().$session['_verified_account'].':'.$payment['id'];
             $existing = LedgerEntry::where('external_identity_key', $transaction)->first();
             if ($existing && ($existing->event_id !== $intent->event_id || $existing->amount_cents !== $intent->principal_cents || $existing->financial_revision_id !== $intent->financial_revision_id
                 || $existing->kind!=='receipt' || $existing->method!=='stripe' || $existing->currency!=='USD' || $existing->external_reference!==$payment['id'])) {
