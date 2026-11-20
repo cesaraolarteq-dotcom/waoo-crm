@@ -21,6 +21,12 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-20 · BACKEND · Integración parcial de prospectos, Zip, staff, contratos y transporte · PENDING
+- Branch: codex/fix-verified-nov20. Sources: #209, #210, #213 and #214 through 8be3959.
+- The server rejects activating an older draft. Zip eligibility uses the amount collected including the fee. The website lead transport regression uses explicit HTTP and HTTPS origins.
+- Evidence: initial MariaDB integration 52/53, remaining HTTPS fixture corrected and rerun 1/1. Full CI required for this branch.
+- Review the latest #214 separately. #208 and #215 risks in HANDOFF. No production writes or provider calls.
+
 ### 2026-11-20 · BACKEND · Revisión #211: identidad durable y rotación del cron · PENDING
 - Branch: codex/fix-refund-review; base Claude 2b8daa0, sin reescribir commits.
 - Cambios: conservar retrieve para cualquier refund con identidad remota, incluso unknown; error de lectura no marca failed; cron ordenado por updated_at/id y rota errores para alcanzar toda la cola.

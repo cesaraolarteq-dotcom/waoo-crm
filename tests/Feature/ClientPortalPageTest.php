@@ -95,4 +95,13 @@ class ClientPortalPageTest extends TestCase
         config(['waoo.sandbox_documents' => false]);
         $this->get('/portal')->assertNotFound();
     }
+    public function test_zip_visibility_uses_the_total_charged_including_the_fee(): void
+    {
+        config(['waoo.regular_card_fee_enabled'=>true,'waoo.stripe_credit_only_account'=>'acct_fixture','waoo.portal_payment_methods'=>['card','zip']]);
+        $owner=User::where('role','owner_admin')->firstOrFail();
+        $revision=\App\Models\FinancialRevision::where('event_id',$this->event->id)->latest('revision')->firstOrFail();
+        app(RecordZellePayment::class)->execute($owner,$this->event->id,['financial_revision_id'=>$revision->id,'amount_cents'=>2850,'currency'=>'USD','reference'=>'ZIP-BOUNDARY-FIXTURE','received_at'=>now()->subMinute()->toIso8601String(),'verified_received'=>true],(string)Str::uuid());
+        $this->postJson('/portal/api/session',['token'=>$this->token])->assertOk();
+        $this->get('/portal')->assertOk()->assertViewHas('vm',fn($vm)=>$vm['pay']['payable_cents']===3502 && in_array('zip',$vm['pay']['later'],true));
+    }
 }
