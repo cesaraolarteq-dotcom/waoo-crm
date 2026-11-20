@@ -35,6 +35,10 @@ return [
     'process_after_response' => env('WAOO_PROCESS_AFTER_RESPONSE', true),
     'sandbox_mail' => env('WAOO_SANDBOX_MAIL', false),
     'mail_allowlist' => [],
+    // Owner 2026-11-20: test recipients set on the server (his own email/phone) — mail may go to these addresses even
+    // though they are not CRM owner accounts; texts go ONLY to these numbers while the list is not empty.
+    'mail_test_recipients' => array_values(array_filter(array_map('trim', explode(',', mb_strtolower((string) env('WAOO_MAIL_TEST_RECIPIENTS', '')))))),
+    'sms_allowlist' => array_values(array_filter(array_map('trim', explode(',', (string) env('WAOO_SMS_ALLOWLIST', ''))))),
     'mail_templates' => \App\Support\ApprovedClientTexts::mailDefinitions($clientTexts),
     'mail_review_url' => 'https://g.page/r/CVT57MD29OwXEAE/review', // Waoo Party's public Google review link (owner 2026-10-18).
     'sandbox_web_availability' => env('WAOO_SANDBOX_WEB_AVAILABILITY', false),

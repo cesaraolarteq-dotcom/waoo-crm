@@ -28,6 +28,8 @@ final class SendSms
         $to = PhoneNumber::e164($customer->phone);
         if (! $to) throw ValidationException::withMessages(['body' => 'Este cliente no tiene un celular de EE. UU. válido.']);
         if ($expectedRecipient !== null && $to !== $expectedRecipient) throw ValidationException::withMessages(['body' => 'El contacto cambió. Revisa el aviso antes de enviarlo.']);
+        $only = (array) config('waoo.sms_allowlist', []);
+        if ($only !== [] && ! in_array($to, $only, true)) throw ValidationException::withMessages(['body' => 'Los textos están en modo prueba: solo salen a los números de prueba.']);
         if (! SmsConsent::allows($to)) throw ValidationException::withMessages(['body' => 'Este número no aceptó recibir textos (o escribió STOP). Escríbele por WhatsApp.']);
         if (! SmsMessage::where('phone_e164', $to)->where('direction', 'out')->whereIn('status', ['sent', 'delivered'])->exists()) {
             $body .= "\n\n".self::FOOTER[$customer->locale === 'en' ? 'en' : 'es'];
