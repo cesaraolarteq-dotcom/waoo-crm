@@ -9,7 +9,7 @@ final class ProcessTipStripeReceipt {
     public function execute(string $receiptId):void {
         // Intake/cleanup of an already issued test collection survives a disabled tips UI.
         Sandbox::require();$receipt=WebhookReceipt::findOrFail($receiptId);if(in_array($receipt->state,['processed','ignored','reconciliation_required'],true))return;
-        $receipt->increment('attempts');$payload=json_decode(Crypt::decryptString($receipt->encrypted_payload),true,flags:JSON_THROW_ON_ERROR);$o=$payload['data']['object'];$m=$o['metadata']??[];
+        $receipt->increment('attempts');$payload=json_decode(Crypt::decryptString($receipt->encrypted_payload),true,flags:JSON_THROW_ON_ERROR);if(\App\Services\Finance\StripeMode::refuseForeignStoredEvent($receipt,$payload))return;$o=$payload['data']['object'];$m=$o['metadata']??[];
         $id=$m['local_tip_intent_id']??null;$i=$id?TipCheckoutIntent::find($id):null;
         if(!$i&&!$id){$q=TipCheckoutIntent::query();$i=($o['object']??null)==='checkout.session'?$q->where('provider_session_id',$o['id'])->first():$q->where('provider_payment_id',($o['object']??null)==='payment_intent'?$o['id']:($o['payment_intent']??'unlinked'))->first();}
         if(!$i){$this->problem($receipt,null,'unlinked_tip_event');return;}
@@ -30,7 +30,7 @@ final class ProcessTipStripeReceipt {
         }
         $p=$s['payment_intent']??null;$c=is_array($p)?($p['latest_charge']??null):null;
         if(!is_array($p)||!is_array($c)||!is_string($p['id']??null)||!preg_match('/^pi_[A-Za-z0-9_]{1,220}$/D',$p['id'])||($p['livemode']??null)!==\App\Services\Finance\StripeMode::livemode()||($p['status']??null)!=='succeeded'
-            ||($p['currency']??null)!=='usd'||!is_int($p['amount_received']??null)||$p['amount_received']!==$i->amount_cents||($c['captured']??null)!==true||($c['paid']??null)!==true||!is_int($c['created']??null)||$c['created']<=0||$c['created']>time()){$this->problem($receipt,$i,'tip_payment_not_verified');return;}
+            ||($p['currency']??null)!=='usd'||!is_int($p['amount_received']??null)||$p['amount_received']!==$i->amount_cents||($c['livemode']??null)!==\App\Services\Finance\StripeMode::livemode()||($c['captured']??null)!==true||($c['paid']??null)!==true||!is_int($c['created']??null)||$c['created']<=0||$c['created']>time()){$this->problem($receipt,$i,'tip_payment_not_verified');return;}
         if((($o['object']??null)==='payment_intent'&&($o['id']??null)!==$p['id'])||(is_string($o['payment_intent']??null)&&$o['payment_intent']!==$p['id'])){$this->problem($receipt,$i,'tip_payment_binding_mismatch');return;}
         DB::transaction(function()use($i,$receipt,$s,$p,$c){
             $e=Event::whereKey($i->event_id)->lockForUpdate()->firstOrFail();$current=true;
@@ -38,7 +38,7 @@ final class ProcessTipStripeReceipt {
             $locked=TipCheckoutIntent::whereKey($i->id)->lockForUpdate()->firstOrFail();$r=WebhookReceipt::whereKey($receipt->id)->lockForUpdate()->firstOrFail();if(in_array($r->state,['processed','reconciliation_required'],true))return;
             // Binding is checked again against the row now locked, after any concurrent create/receipt.
             if(!TipProvider::binding($locked,$s)||($locked->provider_payment_id&&$locked->provider_payment_id!==$p['id'])){$this->lockedProblem($r,$locked,'tip_current_binding_mismatch');return;}
-            $external='stripe:test:'.$s['_verified_account'].':'.$p['id'];$sha=hash('sha256',$external);
+            $external=\App\Services\Finance\StripeMode::identityPrefix().$s['_verified_account'].':'.$p['id'];$sha=hash('sha256',$external);
             if(LedgerEntry::where('external_identity_key',$external)->exists()){$this->lockedProblem($r,$locked,'tip_booking_payment_collision');return;}
             $prior=TipReceipt::where('external_sha256',$sha)->orWhere('tip_checkout_intent_id',$locked->id)->lockForUpdate()->first();
             if($prior&&($prior->tip_checkout_intent_id!==$locked->id||$prior->external_sha256!==$sha||$prior->gross_cents!==$locked->amount_cents)){$this->lockedProblem($r,$locked,'tip_transaction_already_allocated');return;}

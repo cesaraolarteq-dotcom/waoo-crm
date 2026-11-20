@@ -43,6 +43,18 @@ class ContractScreensTest extends TestCase
         $this->get("/admin/eventos/{$this->event->id}/contrato")->assertForbidden();
     }
 
+    public function test_page_shows_one_contract_in_use_and_keeps_old_versions_as_history(): void
+    {
+        // Owner 2026-11-19 "una sola versión": the active one + the newer draft; older drafts are replaced and not activatable.
+        $make = fn (int $n, string $state) => ContractTemplateVersion::create(['version' => $n, 'state' => $state, 'locale' => 'en', 'source_html' => 'x', 'source_sha256' => hash('sha256', 'x'),
+            'terms_html' => "<p>Fixture terms {$n}</p>", 'terms_sha256' => hash('sha256', "t{$n}"), 'change_note' => "Fixture note {$n}", 'created_by' => $this->owner->id]);
+        $make(1, 'draft'); $make(2, 'active'); $make(3, 'draft');
+        Livewire::test(ContractTemplates::class)
+            ->assertSeeInOrder(['Contrato en uso · versión 2', 'Nuevo texto por aprobar · versión 3', 'Versiones anteriores (1)', 'Reemplazada (nunca se usó)'])
+            ->assertSee('Activar esta versión');
+        $this->assertSame(1, substr_count(Livewire::test(ContractTemplates::class)->html(), 'Activar esta versión'));
+    }
+
     public function test_owner_flow_template_contract_issue_and_one_time_link(): void
     {
         Livewire::test(ContractTemplates::class)->assertSee('Todavía no hay plantilla')

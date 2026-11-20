@@ -51,7 +51,7 @@ return [
     'sandbox_quick_payments' => env('WAOO_SANDBOX_QUICK_PAYMENTS', false),
     'sandbox_quick_payment_notifications' => env('WAOO_SANDBOX_QUICK_PAYMENT_NOTIFICATIONS', false),
     'quick_payment_methods' => ['card', 'klarna'],
-    // Owner 2026-11-03: the balance payment from the client link may also offer Klarna/Afterpay (comma list, card always included).
+    // Owner 2026-11-03: the balance payment from the client link may also offer Klarna/Afterpay, and Zip since 2026-11-17 (comma list, card always included).
     'portal_payment_methods' => array_values(array_filter(array_map('trim', explode(',', (string) env('WAOO_PORTAL_PAYMENT_METHODS', 'card'))))),
     'quick_stripe_requested_methods' => ['card'], // Requested policy only, never verified account capability or financing activation.
     // Owner 2026-11-04: the real CRM (APP_ENV=production) only runs its features with WAOO_LIVE=true.

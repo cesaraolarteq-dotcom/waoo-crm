@@ -1,3 +1,14 @@
+## 2026-11-17/18 · Claude · Fixes for Codex's Stripe audit (A1–A5) · branch `claude/refund-fixes`
+Owner: "okay inicia". Codex regressions adopted into the suite (`StripeRefundAdapterTest`, CancelAndRefundTest, StripeSandboxTest, FakeStripeGateway).
+- **A1** `StripeTestRefunds`: proves the PaymentIntent (same account, mode, succeeded, USD, enough received) BEFORE the refund POST; the Refund answer is checked by identity (re_ id, same PI, same amount, USD) — no `livemode` on Refund. Pre-POST mismatch → request `failed` (nothing returned). New `retrieve()` on the `StripeRefunds` contract.
+- **A2** `RefundPayment`: Stripe `pending`/`requires_action` → request `pending` with provider_refund_id, still reserved against new refunds, no ledger. `succeeded` → ledger once; `failed`/`canceled` → `failed` (amount free). Settled by refund webhooks (`StripeReceiptProcessor` → `settleFromProvider`, re-reads Stripe) or by repeating the same request (retrieve, never a second refund). A provider answer for another amount/PI → `unknown` + 409 (kept reserved for review). State is committed before the owner error is raised; party → refund row lock order kept. `charge.refunded` covered by our refund → ignored; our refund whose answer is not stored yet → retry later. Refunds made outside the CRM (dashboard) still go to reconciliation.
+- **A3** `StripeMode::refuseForeignStoredEvent` in router, processor, quick and tip receipts: stored payload mode/account rechecked → `reconciliation_required` / `webhook_mode_or_account_mismatch`, money untouched.
+- **A4** latest_charge.livemode checked in normal receipts and tips (quick already did).
+- **A5** `StripeMode::identityPrefix()` → `stripe:live:` in live. Checked on the real CRM 2026-11-17: 0 Stripe ledger rows, 0 refund requests, 0 tips, so no emitted identity changes. `environment` column still 'test' (legacy, unchanged).
+- UI: refund in process shows "Reembolso en proceso" (warning) instead of "registrado".
+- Not verified: real Stripe pending refunds (only fakes), scheduler for pending refunds that never get a webhook (owner can repeat the same refund to re-check; a periodic re-check is a follow-up).
+- Codex: please review (money path). Owner rule until deployed: card refunds only in the Stripe dashboard.
+
 ## 2026-11-05 · Claude · Revisión independiente de `claude/stripe-live` (Codex sin créditos; César eligió «B»: revisar + unir con controles)
 Revisor aparte (code-review high, diff completo contra main). Corregido en la rama:
 - Reserva rápida en vivo rechazaba toda sesión `cs_live_` (`QuickPaymentCheckout::session` aún exigía `cs_test_`): ahora `StripeMode::sessionPrefix()`.
@@ -2850,3 +2861,10 @@ Owner asked ("sí actívalos") to offer Klarna/Afterpay/Zip on the balance payme
 - `StripeReceiptProcessor`: a non-card payment counts only when it is Klarna/Afterpay AND that session offered it; else `payment_method_not_offered` reconciliation. Cards keep the credit-only rule when the 3% fee policy applies.
 - **Review for Codex:** with `WAOO_REGULAR_CARD_FEE_ENABLED=true` the 3% is added before the method is chosen, so a Klarna/Afterpay payment also carries it (same as Reserva rápida today). Check BNPL surcharge rules before turning the fee on in live.
 - Portal copy: "Tarjeta …, Klarna o Afterpay" + installments hint. Test `BalancePayLaterTest`.
+
+## 2026-11-17 · Claude · Zip on the balance payment (owner: "configura el zip en el crm")
+- Stripe live account: `zip_payments` capability **active** (checked via API 2026-11-17), Zip enabled by César in the dashboard.
+- `CreateCheckoutIntent::PAY_LATER` + `zip`; `StripeTestGateway::verifyMethods` maps `zip` → `zip_payments`; portal label "Zip".
+- `CreateCheckoutIntent::forAmount()`: Zip only for $35–$4,000 (Stripe Zip US range) so Checkout never gets an out-of-range method (the session check compares methods exactly).
+- Enabled per environment with `WAOO_PORTAL_PAYMENT_METHODS=card,klarna,afterpay_clearpay,zip`. Reserva rápida public flow unchanged (card/Klarna only by owner rule).
+- Review for Codex: money path (receipt counts only when that session offered Zip — same rule as Klarna/Afterpay).
