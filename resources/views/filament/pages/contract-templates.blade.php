@@ -1,12 +1,12 @@
 <x-filament-panels::page>
     @php($versions = $this->versions())
-    @forelse ($versions as $v)
+    @php($history = $versions->where('current', false))
+    {{-- Owner 2026-11-19: one contract in use (plus the next draft to approve); older versions stay as history. --}}
+    @forelse ($versions->where('current', true)->sortBy(fn ($v) => $v->state === 'active' ? 0 : 1) as $v)
         <x-filament::section>
-            <x-slot name="heading">Versión {{ $v->version }}</x-slot>
+            <x-slot name="heading">{{ $v->state === 'active' ? 'Contrato en uso' : 'Nuevo texto por aprobar' }} · versión {{ $v->version }}</x-slot>
             <x-slot name="afterHeader">
-                <x-filament::badge :color="$v->state === 'active' ? 'success' : ($v->state === 'draft' ? 'warning' : 'gray')">
-                    {{ ['active' => 'Activa', 'draft' => 'Borrador', 'retired' => 'Retirada'][$v->state] ?? $v->state }}
-                </x-filament::badge>
+                <x-filament::badge :color="$v->state === 'active' ? 'success' : 'warning'">{{ $v->state === 'active' ? 'Activa' : 'Borrador' }}</x-filament::badge>
             </x-slot>
             <p class="wmoney-p">{{ $v->note }} · {{ $v->by }} · {{ $v->when }}@if ($v->approved) · aprobada {{ $v->approved }}@endif</p>
             <details class="wterms"><summary>Ver el texto</summary><div class="wterms-body">{!! $v->terms !!}</div></details>
@@ -20,4 +20,14 @@
             <p class="wmoney-p">Toca “Nueva versión del texto”, pega los términos y luego actívala. Sin una versión activa no se puede emitir ningún contrato.</p>
         </x-filament::section>
     @endforelse
+    @if ($history->isNotEmpty())
+        <details class="wterms"><summary>Versiones anteriores ({{ $history->count() }})</summary>
+            @foreach ($history as $v)
+                <div class="wterms-body">
+                    <p class="wmoney-p"><strong>Versión {{ $v->version }}</strong> · {{ ['retired' => 'Retirada', 'replaced' => 'Reemplazada (nunca se usó)'][$v->state] ?? $v->state }} · {{ $v->note }}</p>
+                    <details><summary>Ver el texto</summary>{!! $v->terms !!}</details>
+                </div>
+            @endforeach
+        </details>
+    @endif
 </x-filament-panels::page>

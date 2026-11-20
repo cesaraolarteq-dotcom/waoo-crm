@@ -30,7 +30,8 @@ final class TravelFeeRules
             if ($tier['up_to'] === null) break;
             $lo = (float) $tier['up_to'];
         }
-        $raw += $oneWayTollCents * 2 / 100; $step = max(1, (float) $cfg['round_to']);
+        if ($cfg['charge_tolls'] ?? true) $raw += $oneWayTollCents * 2 / 100; // owner 2026-11-19: tolls are inside the per-mile price
+        $step = max(1, (float) $cfg['round_to']);
         return ['fee_cents' => (int) (round($raw / $step) * $step * 100), 'raw_cents' => (int) round($raw * 100),
             'one_way_miles' => $oneWayMiles, 'round_trip_miles' => $oneWayMiles * 2, 'round_trip_tolls_cents' => 2 * $oneWayTollCents, 'tiers' => $tiers];
     }

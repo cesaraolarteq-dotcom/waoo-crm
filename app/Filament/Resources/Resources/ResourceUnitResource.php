@@ -68,6 +68,11 @@ class ResourceUnitResource extends Resource
                 ->visible(fn (Get $get) => $get('kind') === 'equipment')->required(fn (Get $get) => $get('kind') === 'equipment'),
             TextInput::make('seats')->label('Asientos (contando al conductor)')->integer()->minValue(1)->maxValue(100)
                 ->visible(fn (Get $get) => $get('kind') === 'vehicle')->required(fn (Get $get) => $get('kind') === 'vehicle'),
+            // Phone lives on the staff identity (encrypted) and is edited in "Enlaces del staff"; shown here so it is easy to find (César 2026-11-19).
+            TextInput::make('staff_phone')->label('Teléfono')->disabled()->dehydrated(false)
+                ->formatStateUsing(fn ($record) => $record ? (self::staffPhone($record->getKey()) ?? 'Sin teléfono') : null)
+                ->visible(fn (Get $get, $record) => $record !== null && $get('kind') === 'staff')
+                ->helperText('Para cambiarlo, ve a Enlaces del staff.'),
             TextInput::make('location')->label('Dónde está normalmente')->maxLength(255)->placeholder('Ej.: bodega Katy'),
         ]);
     }
@@ -108,6 +113,10 @@ class ResourceUnitResource extends Resource
                         'vehicle' => $record->seats ? "{$record->seats} asientos (con conductor)" : null,
                         default => null,
                     })->placeholder('—')->wrap(),
+                TextColumn::make('phone')->label('Teléfono')
+                    ->state(fn ($record) => $record->kind === 'staff' ? self::staffPhone($record->getKey()) : null)
+                    ->url(fn ($record) => $record->kind === 'staff' && ($d = preg_replace('/\D/', '', (string) self::staffPhone($record->getKey()))) !== '' ? 'tel:'.$d : null)
+                    ->placeholder('—'),
                 TextColumn::make('location')->label('Dónde está')->placeholder('—')->toggleable()->visibleFrom('lg'),
                 TextColumn::make('upcoming_total')->label('Fiestas próximas')->alignEnd()->visibleFrom('md'),
                 TextColumn::make('status')->label('Estado')->badge()
@@ -123,6 +132,18 @@ class ResourceUnitResource extends Resource
             ->defaultSort('name')
             ->emptyStateHeading('Todavía no hay staff ni trajes')
             ->emptyStateDescription('Se cargan con el inventario de César: cada persona, cada traje (por ejemplo, 2 de Mickey), cada bocina y cada vehículo.');
+    }
+
+    /** Staff resource id => formatted phone, loaded once per request (phones are encrypted, so no SQL join). */
+    public static function staffPhone(int $resourceId): ?string
+    {
+        $bag = request()->attributes;
+        if (! $bag->has('waoo.staff_phones')) {
+            $bag->set('waoo.staff_phones', \App\Models\StaffIdentity::query()->get(['resource_id', 'phone'])
+                ->filter(fn ($i) => filled($i->phone))->mapWithKeys(fn ($i) => [$i->resource_id => Labels::phone($i->phone)])->all());
+        }
+
+        return $bag->get('waoo.staff_phones')[$resourceId] ?? null;
     }
 
     public static function getPages(): array

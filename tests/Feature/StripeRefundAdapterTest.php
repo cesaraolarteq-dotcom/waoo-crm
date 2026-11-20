@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\{RunTestsInSeparateProcesses,PreserveGlobalStat
 class StripeRefundAdapterTest extends \Tests\TestCase
 {
     private array $calls=[];
+    private array $listed=[];
     private function provider(bool $paymentLive=true): void
     {
         $this->app['env']='production';
@@ -21,7 +22,8 @@ class StripeRefundAdapterTest extends \Tests\TestCase
             $body=match(parse_url($url,PHP_URL_PATH)){
                 '/v1/account'=>['id'=>'acct_fixture','object'=>'account'],
                 '/v1/payment_intents/pi_fixture'=>['id'=>'pi_fixture','object'=>'payment_intent','livemode'=>$paymentLive,'status'=>'succeeded','currency'=>'usd','amount_received'=>100],
-                '/v1/refunds'=>['id'=>'re_fixture','object'=>'refund','status'=>'succeeded','currency'=>'usd','amount'=>100,'payment_intent'=>'pi_fixture'],
+                '/v1/refunds'=>strtolower($method)==='get' ? ['object'=>'list','data'=>$this->listed,'has_more'=>false]
+                    : ['id'=>'re_fixture','object'=>'refund','status'=>'succeeded','currency'=>'usd','amount'=>100,'payment_intent'=>'pi_fixture'],
                 default=>throw new \RuntimeException('Unexpected provider request'),
             };
             return [json_encode($body),200,[]];
@@ -31,7 +33,15 @@ class StripeRefundAdapterTest extends \Tests\TestCase
     {
         $this->provider();$r=(new StripeTestRefunds())->refund('pi_fixture',100,'fixture');
         $this->assertSame('re_fixture',$r['id']);
-        $this->assertSame(['get /v1/account','get /v1/payment_intents/pi_fixture','post /v1/refunds'],$this->calls);
+        $this->assertSame(['get /v1/account','get /v1/payment_intents/pi_fixture','get /v1/refunds','post /v1/refunds'],$this->calls);
+    }
+    public function test_replay_after_idempotency_window_finds_the_refund_by_its_key_and_creates_none(): void
+    {
+        $this->listed=[['id'=>'re_other','object'=>'refund','status'=>'succeeded','currency'=>'usd','amount'=>100,'payment_intent'=>'pi_fixture','metadata'=>['waoo_refund_key'=>'another']],
+            ['id'=>'re_earlier','object'=>'refund','status'=>'succeeded','currency'=>'usd','amount'=>100,'payment_intent'=>'pi_fixture','metadata'=>['waoo_refund_key'=>'fixture']]];
+        $this->provider();$r=(new StripeTestRefunds())->refund('pi_fixture',100,'fixture');
+        $this->assertSame('re_earlier',$r['id']);
+        $this->assertSame(['get /v1/account','get /v1/payment_intents/pi_fixture','get /v1/refunds'],$this->calls);
     }
     public function test_wrong_mode_payment_is_rejected_before_creating_any_refund(): void
     {

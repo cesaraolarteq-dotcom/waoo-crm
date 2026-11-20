@@ -179,7 +179,7 @@
     <form class="p-opt" method="POST" action="{{ $vm['actions']['checkout'] }}" id="pay-form" data-revision="{{ $vm['pay']['revision_id'] ?? '' }}" data-card-quote="{{ !empty($vm['pay']['card']) ? ($vm['pay']['card_quote_sha256'] ?? '') : '' }}" @if ((\App\Support\WaooRuntime::live() && ! \App\Services\Finance\StripeMode::live()) || (isset($vm['pay']) && ! $vm['pay']['can_checkout']) || (!empty($vm['pay']['enabled']) && empty($vm['pay']['card']))) hidden @endif>
       @csrf
       {{-- CARD-FEE-01 (owner 2026-10-28): credit cards only, the 3% shown with the amounts before paying, same as quick booking. --}}
-      @php($later = collect($vm['pay']['later'] ?? [])->map(fn ($m) => ['klarna' => 'Klarna', 'afterpay_clearpay' => 'Afterpay'][$m])->join(', ', ' '.$t('or').' '))
+      @php($later = collect($vm['pay']['later'] ?? [])->map(fn ($m) => ['klarna' => 'Klarna', 'afterpay_clearpay' => 'Afterpay', 'zip' => 'Zip'][$m])->join(', ', ' '.$t('or').' '))
       <h3>{{ $t(!empty($vm['pay']['card']) ? 'card_credit' : 'card') }}{{ $later !== '' ? ', '.$later : '' }}</h3>
       <p class="p-hint">{{ $t(!empty($vm['pay']['card']) ? 'card_fee_hint' : 'card_hint') }}</p>
       @if ($later !== '')<p class="p-hint p-later">{{ $t('later_hint', ['names' => $later]) }}</p>@endif
