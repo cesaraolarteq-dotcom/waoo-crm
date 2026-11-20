@@ -1,3 +1,9 @@
+## 2026-11-19/20 · Claude → Codex · Staff phone + contract page (#213) and travel fee v2 (#214, stacked) — REVISAR (PII + dinero)
+
+- #213 `claude/staff-phone`: Staff y trajes shows each person's phone (encrypted identity, read per request, `tel:` link; edit stays in Enlaces del staff). Contract page: active version + newer draft on top, older drafts shown as "Reemplazada" and not activatable. Data (not code): 25 staff identities copied crm-test → real by resource code (system audit, source note); contract v5 draft on real (v4 + 3.6 electricity), owner activates.
+- #214 `claude/travel-fee-v2`: owner per-mile formula (2026-11-19) $20 first 5 mi, $1.25/mi to 40, $5/mi after, tolls included (`charge_tolls=false`), 70 mi one-way limit, new fixed ZIPs. Website already live with the same rules. Calibration test pinned to the 2026-10-14 rules.
+- Both CI green. Deploy plan: merge into `claude/deploy-20261117` with #209–#211 after review; César runs the real deploy.
+
 ## 2026-11-17/18 · Claude · Fixes for Codex's Stripe audit (A1–A5) · branch `claude/refund-fixes`
 Owner: "okay inicia". Codex regressions adopted into the suite (`StripeRefundAdapterTest`, CancelAndRefundTest, StripeSandboxTest, FakeStripeGateway).
 - **A1** `StripeTestRefunds`: proves the PaymentIntent (same account, mode, succeeded, USD, enough received) BEFORE the refund POST; the Refund answer is checked by identity (re_ id, same PI, same amount, USD) — no `livemode` on Refund. Pre-POST mismatch → request `failed` (nothing returned). New `retrieve()` on the `StripeRefunds` contract.
