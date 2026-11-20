@@ -28,7 +28,7 @@ final class QuickStripeCheckoutRequests
         RecordWriteRejected::unless(is_array($methods) && array_is_list($methods) && $methods !== []
             && count(array_filter($methods, 'is_string')) === count($methods)
             && count($methods) === count(array_unique($methods, SORT_REGULAR))
-            && array_diff($methods, QuickPaymentCheckout::METHODS) === [],
+            && array_diff($methods, ['card', 'klarna', 'afterpay_clearpay']) === [],
             422, 'Revisa los métodos solicitados. No se habilita un método de Stripe sin comprobar su compatibilidad.');
         sort($methods, SORT_STRING);
         return ['account' => $account, 'origin' => $origin, 'requested_methods' => $methods];
@@ -103,7 +103,7 @@ final class QuickStripeCheckoutRequests
                 && is_string($p['origin']) && is_array($p['requested_methods']) && array_is_list($p['requested_methods'])
                 && count(array_filter($p['requested_methods'], 'is_string')) === count($p['requested_methods'])
                 && $p['requested_methods'] !== [] && count($p['requested_methods']) === count(array_unique($p['requested_methods'], SORT_REGULAR))
-                && array_diff($p['requested_methods'], QuickPaymentCheckout::METHODS) === []
+                && array_diff($p['requested_methods'], ['card', 'klarna', 'afterpay_clearpay']) === []
                 && $p['provider_key'] === 'waoo-quick-test:'.$request->id, 409, 'La solicitud no coincide con sus términos originales.');
             self::safeOrigin($p['origin']);
             $sorted = $p['requested_methods']; sort($sorted, SORT_STRING);
