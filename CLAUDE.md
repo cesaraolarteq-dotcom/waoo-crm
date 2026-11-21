@@ -5,7 +5,7 @@ The same rules are in `AGENTS.md`. Keep both files identical.
 ## Product
 - Owner: César (Waoo Party LLC). The only users are César and his wife. Spanish-speaking, not technical: explain things in plain Spanish.
 - Goal: replace HoneyBook (~$80/mo) for about 40 events a month. Run in parallel with HoneyBook until proven, then migrate about 250 archived clients.
-- The plan is `docs/PLAN.md`. Work phase by phase. No phase starts without the owner's OK.
+- The plan is `docs/PLAN.md`. Work phase by phase.
 
 ## Business rules (never invent; owner data wins)
 - Deposit is 50% of (package + travel fee) and non-refundable. The remaining 50% balance is due 24 h before the event. Record the exact amount received and recalculate the balance.
@@ -14,6 +14,15 @@ The same rules are in `AGENTS.md`. Keep both files identical.
 - A character is required only when the package includes one.
 - Prices, packages, fees and policies come from the owner (see the Waoo master context in the website repo). Never invent a price, discount, availability or policy.
 - In Spanish write "costo de transporte"; in English write "travel fee". Every client-facing text is EN + ES.
+
+## Autonomy (owner 2026-11-20: "ya le di acceso a todo")
+César gave full access. Do NOT ask him before routine work: reading, branching, coding, running tests/CI, fixing failures,
+reviewing and merging PRs that passed CI and review, updating HANDOFF/queues, and anything inside the repo or CI.
+Just do it and report what was done. Ask the owner ONLY for:
+- deploying to the real CRM (he runs the deploy and types SUBIR);
+- real money or live Stripe/Twilio actions;
+- a new price, discount rule, policy or contract text, or any wording a client reads that he has not approved.
+When something needs his decision, give a recommendation and keep working on everything else meanwhile.
 
 ## Security and privacy
 - Never commit `.env`, API keys, Stripe/Twilio secrets, database dumps, HoneyBook exports or any real client data. Use fake fixtures in tests.
