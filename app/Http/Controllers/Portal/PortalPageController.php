@@ -153,6 +153,10 @@ final class PortalPageController extends Controller
             }, \App\Services\Extras\EventExtras::fitting($event))];
             if ($extras['offers'] === []) $extras = null;
         }
+        $laterAmount = (int) ($balance ?? 0);
+        if (\App\Services\Finance\CardFees::enabled() && $revision && $laterAmount > 0) {
+            $laterAmount = \App\Services\Finance\CardFees::publicQuote($event->id, $revision->id, 'balance', $laterAmount)['payable_cents'] ?? $laterAmount;
+        }
         return [
             'extras' => $extras,
             'lang' => $lang, 'step' => $step, 'reserved' => $signed && ($f['deposit_shortfall_cents'] ?? 1) === 0 && ! self::underReview($event->id), 'admin_view' => $client->adminAuthenticated, 'quick_payment'=>$quickPayment, 'steps' => $quickPayment ? ['details','pay','contract'] : ($canDetails ? ['details', 'contract', 'pay'] : ['contract', 'pay']), 'test_mode' => ! \App\Support\WaooRuntime::live(),
@@ -185,7 +189,7 @@ final class PortalPageController extends Controller
                 'pdf_url' => url('/portal/api/contracts/'.$contract->id.'/pdf'), 'final_url' => $contract->final_pdf_path ? url('/portal/api/contracts/'.$contract->id.'/pdf?artifact=final') : null,
                 'signed_name' => $signed ? SignatureEvidence::where('contract_id', $contract->id)->value('signer_name') : null] : null,
             'consent' => InHouseSignatureProvider::consent($lang),
-            'pay' => ['card'=>(\App\Services\Finance\CardFees::ready() && $revision && ($balance??0)>0 && ($cardQuote=\App\Services\Finance\CardFees::publicQuote($event->id,$revision->id,'balance',(int)$balance))) ? ['principal'=>$cardQuote['card_principal'],'fee'=>$cardQuote['card_fee'],'total'=>$cardQuote['card_total']] : null, ...($revision ? (\App\Services\Finance\CardFees::publicQuote($event->id,$revision->id,'balance',(int)($balance??0))??[]) : []), 'later' => array_values(array_intersect(\App\Services\Finance\CreateCheckoutIntent::PAY_LATER, \App\Services\Finance\CreateCheckoutIntent::forAmount(\App\Services\Finance\CreateCheckoutIntent::methods(), (int) ($balance ?? 0)))), 'revision_id' => $revision?->id, 'can_checkout' => \App\Services\Portal\PortalContext::allows($grant, 'checkout.create') && ($balance ?? 0) > 0],
+            'pay' => ['card'=>(\App\Services\Finance\CardFees::ready() && $revision && ($balance??0)>0 && ($cardQuote=\App\Services\Finance\CardFees::publicQuote($event->id,$revision->id,'balance',(int)$balance))) ? ['principal'=>$cardQuote['card_principal'],'fee'=>$cardQuote['card_fee'],'total'=>$cardQuote['card_total']] : null, ...($revision ? (\App\Services\Finance\CardFees::publicQuote($event->id,$revision->id,'balance',(int)($balance??0))??[]) : []), 'later' => array_values(array_intersect(\App\Services\Finance\CreateCheckoutIntent::PAY_LATER, \App\Services\Finance\CreateCheckoutIntent::forAmount(\App\Services\Finance\CreateCheckoutIntent::methods(), $laterAmount))), 'revision_id' => $revision?->id, 'can_checkout' => \App\Services\Portal\PortalContext::allows($grant, 'checkout.create') && ($balance ?? 0) > 0],
             'zelle_memo' => 'WP-'.$event->id,
             // Her own notices, through Codex's client projection only (never the owner's review note, bank reference or ledger).
             'zelle' => ['can_notify' => \App\Services\Portal\PortalContext::allows($grant, 'checkout.create') && ($balance ?? 0) > 0, 'action' => url('/portal/api/zelle-notices'),

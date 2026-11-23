@@ -86,4 +86,14 @@ class ContractScreensTest extends TestCase
         $page->call('hideLink')->assertDontSee('/portal#token=', false);
         $this->get("/admin/eventos/{$this->event->id}/contrato")->assertOk()->assertDontSee('#token=', false)->assertSee('Todavía no abre el contrato');
     }
+    public function test_server_rejects_activation_of_a_draft_older_than_current_contract(): void
+    {
+        $make=fn($n,$state)=>ContractTemplateVersion::create(['version'=>$n,'state'=>$state,'locale'=>'en','source_html'=>'x','source_sha256'=>hash('sha256','x'),'terms_html'=>'<p>Fixture</p>','terms_sha256'=>hash('sha256','fixture'),'change_note'=>'Synthetic revision','created_by'=>$this->owner->id]);
+        $old=$make(10,'draft');$active=$make(11,'active');
+        \Illuminate\Support\Facades\DB::table('contract_template_registry')->where('id',1)->update(['active_version_id'=>$active->id]);
+        try { app(\App\Services\Documents\ActivateTemplateVersion::class)->execute($this->owner,$old->id,['expected_source_sha256'=>$old->source_sha256,'approval_note'=>'Synthetic stale draft attempt.']); $this->fail('Old draft reactivated'); }
+        catch(\App\Exceptions\RecordWriteRejected $e){$this->assertSame(409,$e->status);}
+        $this->assertSame('active',$active->fresh()->state);
+        $this->assertSame('draft',$old->fresh()->state);
+    }
 }

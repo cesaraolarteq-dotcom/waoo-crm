@@ -33,7 +33,7 @@ class WebsiteLeadsTest extends TestCase
         $key ??= (string) Str::uuid(); $at ??= (string) now()->getTimestamp();
         $server = ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json', 'HTTP_IDEMPOTENCY_KEY' => $key,
             'HTTP_X_WAOO_TIMESTAMP' => $at, 'HTTP_X_WAOO_SIGNATURE' => 'sha256='.hash_hmac('sha256', $at."\n".$key."\n".$body, $this->secret)];
-        return $this->call('POST', ($headers['HTTPS'] ?? null) === 'on' ? 'https://localhost/api/leads' : '/api/leads', [], [], [], [...$server, ...$headers], $body);
+        return $this->call('POST', ($headers['HTTPS'] ?? null) === 'on' ? 'https://localhost/api/leads' : 'http://localhost/api/leads', [], [], [], [...$server, ...$headers], $body);
     }
     private function receive(array $over = []): Lead
     {
