@@ -1,0 +1,65 @@
+name: Quick tests
+# 2026-11-20 (owner: faster turnaround): on a claude/** push whose commit message has a line
+#   Tests: AdminScreensTest QuickPaymentsTest
+# run only those test files (a few minutes). The full suite still runs on the PR before any deploy.
+on:
+  push:
+    branches: ['claude/**']
+permissions:
+  contents: read
+concurrency:
+  group: quick-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  quick:
+    if: contains(github.event.head_commit.message, 'Tests:')
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: ci-only-disposable-password
+          MARIADB_DATABASE: waoo_phase1_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      APP_ENV: testing
+      APP_DEBUG: 'false'
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: waoo_phase1_test
+      DB_USERNAME: root
+      DB_PASSWORD: ci-only-disposable-password
+      SESSION_SECURE_COOKIE: 'false'
+      COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, pdo_sqlite, intl, bcmath, mbstring, pcntl, zip
+          coverage: none
+          tools: composer:v2
+      - uses: actions/cache@v6
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ hashFiles('composer.lock') }}
+      - run: composer install --no-interaction --prefer-dist
+      - run: cp .env.example .env && php artisan key:generate
+      - name: Selected test files
+        run: |
+          line=$(sed -n '/^Tests:[[:space:]]*/{s/^Tests:[[:space:]]*//;p;q;}' <<< "$COMMIT_MESSAGE")
+          [[ -n "$line" ]] || exit 0
+          read -r -a names <<< "${line//,/ }"
+          files=()
+          for name in "${names[@]}"; do
+            [[ "$name" =~ ^[A-Za-z0-9_]+Test$ ]] || { printf 'Invalid test name: %s\n' "$name"; exit 1; }
+            mapfile -t matches < <(find tests/Unit tests/Feature -type f -name "$name.php")
+            (( ${#matches[@]} == 1 )) || { printf 'Expected exactly one file for %s\n' "$name"; exit 1; }
+            files+=("${matches[0]}")
+          done
+          (( ${#files[@]} > 0 )) || exit 1
+          vendor/bin/phpunit "${files[@]}"
