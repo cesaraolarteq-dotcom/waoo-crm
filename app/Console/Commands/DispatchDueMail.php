@@ -10,7 +10,7 @@ class DispatchDueMail extends Command
     public function handle():int
     {
         Sandbox::require('sandbox_mail');$raw=(string)$this->option('limit');if(!ctype_digit($raw)||(int)$raw<1||(int)$raw>200){$this->error('Limit must be 1–200.');return self::FAILURE;}
-        $ids=OutboundMessage::where('due_at','<=',now())->whereIn('id',OutboundMessageState::where('status','scheduled')->select('outbound_message_id'))->orderBy('id')->limit((int)$raw)->pluck('id');
+        $ids=OutboundMessage::whereNotNull('portal_grant_id')->where('due_at','<=',now())->whereIn('id',OutboundMessageState::where('status','scheduled')->select('outbound_message_id'))->orderBy('id')->limit((int)$raw)->pluck('id');
         foreach($ids as $id)DispatchOutboundMailJob::dispatch((int)$id);$this->info('Queued message IDs: '.$ids->count());return self::SUCCESS;
     }
 }

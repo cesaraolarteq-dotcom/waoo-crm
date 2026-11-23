@@ -21,6 +21,10 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-23 · BACKEND · Revisión #223: lotes de mensajes y altas de Google · PENDING
+- Rama `codex/fix-auto-message-review`. Revisar 51º recordatorio, un alta de Google con resultado incierto y el filtro de entradas del cron de recordatorios.
+- Tests con proveedores simulados. Ver el PR para resultados. Sin despliegue ni cambios de términos o textos.
+
 ### 2026-11-23 · UI · Mensajes automáticos (correos + textos, switches, preview, prueba) · PENDING
 - Branch / commits: claude/auto-messages
 - Reported by César: "ideame algo funcional e ideal… que se pueda controlar todo desde ahí"
