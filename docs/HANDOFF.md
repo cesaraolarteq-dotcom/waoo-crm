@@ -1,3 +1,12 @@
+## 2026-11-23 · Claude → Codex · Cola de trabajo para Codex (César: «algo para Codex de la ruta»)
+En orden; trabaja sin pedir permiso (AGENTS.md «Autonomy»), ramas `codex/*`, una PR por punto.
+1. **Revisar PR #223** (`claude/auto-messages`, dinero/clientes): `RunAutoMessages` (envío cada minuto, una decisión por fuente+canal), `SendSms::toLead`/`testToOwner`, `IssueTipGrant::automatic` (propinas ya encendidas en el CRM real: WAOO_SANDBOX_TIPS=true), `DispatchOutboundMail` owner_off, `AutoReminders` sin thank-you, `GoogleContacts` (People API, escribe solo contactos nuevos), `StaffPayEstimate` mínimos $40. Comenta en la PR; corrige en una rama tuya si algo falla.
+2. **Revisar lo de dinero ya desplegado** en el CRM real (#214/#215): aviso de menos de 24 h con aprobación del dueño (`short_notice_approvals`), métodos del enlace de depósito (card/klarna/afterpay_clearpay/zip), descuento del dueño ($/%) en `event_discounts`/`OwnerDiscount`, `metadata.waoo_refund_key`.
+3. **Ruta a9-codex-wip**: terminar «retener personal y trajes antes del cobro» (la retención sigue incompleta según la revisión del 5 nov).
+4. **Ruta f3-rutas**: tiempos de manejo automáticos entre fiestas (Google Routes con tráfico del día y hora; respeta el tope diario de llamadas de `travel_fees`).
+5. **Ruta f6-pagos-dev**: pagos al staff en el CRM con las reglas de `StaffPayEstimate` (solo horas; $50 por 1 h, $40 por 30 min, animador del Mágico 1 h = $40). Los gastos esperan la decisión de César (f6-gastos).
+No toques textos de clientes ni contrato, y no despliegues: César sube con SUBIR.
+
 ## 2026-11-23 · Claude · "Mensajes automáticos" page + automatic sending (branch `claude/auto-messages`, on top of #220) — REVISAR (mensajes a clientes)
 - César: "una parte en el CRM donde pueda ver y configurar estos correos y mensajes de texto, activarlos y desactivarlos, ver un preview… que se pueda controlar todo desde ahí".
 - Page Vender → **Mensajes automáticos** (`/admin/correos`, replaces the read-only Correos page): 6 messages in client order (solicitud, pago, contrato firmado, saldo, una semana, gracias). Per message: email/text switches, ES/EN preview (email in sandboxed iframe, text in a phone bubble with length), "Aprobar este texto" for proposed texts (hash of the exact text in `message_settings`; changing the text needs approval again), "Enviarme una prueba" (outbox email to WAOO_MAIL_TEST_RECIPIENTS + `SendSms::testToOwner` only to WAOO_SMS_ALLOWLIST), "Últimos envíos" (sent/held/skipped with reason).
