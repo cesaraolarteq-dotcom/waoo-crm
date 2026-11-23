@@ -17,6 +17,8 @@ final class DispatchOutboundMail
             if($m->environment!=='sandbox'||$m->channel!=='email'){$this->transition($m,$state,'blocked','unsupported_environment_or_channel');return false;}
             if($event->responsible_system!=='crm'){$this->transition($m,$state,'blocked','responsible_system_honeybook');return false;}
             $policy=EventMessagePolicy::where('event_id',$m->event_id)->lockForUpdate()->first();if($policy?->paused)return false;
+            // Owner 2026-11-23: the switch on Mensajes automáticos. Off = this reminder is skipped, never sent later.
+            if(!\App\Support\AutoMessages::emailOn($m->template_key)){$this->transition($m,$state,'skipped','owner_off');return false;}
             try{$actor=User::findOrFail($m->created_by);MailGuard::actor($actor);$source=EventMailSource::lock($m->event_id,$m->portal_grant_id);$rendered=EventMailSource::compose($m->template_key,$source);}
             catch(\Illuminate\Database\QueryException $error){throw $error;}
             catch(\Illuminate\Validation\ValidationException){$this->transition($m,$state,'blocked','source_configuration_required');return false;}

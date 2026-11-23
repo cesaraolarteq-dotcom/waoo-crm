@@ -36,6 +36,33 @@ final class SendSms
         }
         $message = SmsMessage::create(['direction' => 'out', 'phone_e164' => $to, 'customer_id' => $customer->id, 'event_id' => $eventId,
             'body' => $body, 'status' => 'queued', 'created_by' => $actor->id]);
+
+        return $this->deliver($actor, $message, $to, $body);
+    }
+
+    /**
+     * Owner 2026-11-23 "Enviarme una prueba": a sample text to the owner's own test number. Only numbers listed in
+     * WAOO_SMS_ALLOWLIST (his phone); never a client. Same Twilio path, footer rule and log as a real text.
+     */
+    public function testToOwner(User $actor, string $to, string $body, string $locale = 'es'): SmsMessage
+    {
+        RecordActor::authorize($actor);
+        $body = trim($body);
+        if ($body === '' || mb_strlen($body) > 640) throw ValidationException::withMessages(['body' => 'Escribe el texto (máximo 640 letras).']);
+        if (! SmsGate::enabled()) throw ValidationException::withMessages(['body' => 'Los textos están apagados en el servidor.']);
+        $only = (array) config('waoo.sms_allowlist', []);
+        if ($only === [] || ! in_array($to, $only, true)) throw ValidationException::withMessages(['body' => 'Las pruebas solo van a tu número de prueba.']);
+        if (! SmsMessage::where('phone_e164', $to)->where('direction', 'out')->whereIn('status', ['sent', 'delivered'])->exists()) {
+            $body .= "\n\n".self::FOOTER[$locale === 'en' ? 'en' : 'es'];
+        }
+        $message = SmsMessage::create(['direction' => 'out', 'phone_e164' => $to, 'customer_id' => null, 'event_id' => null,
+            'body' => $body, 'status' => 'queued', 'created_by' => $actor->id]);
+
+        return $this->deliver($actor, $message, $to, $body);
+    }
+
+    private function deliver(User $actor, SmsMessage $message, string $to, string $body): SmsMessage
+    {
         $c = config('services.twilio');
         try {
             $response = Http::asForm()->withBasicAuth($c['api_key_sid'], $c['api_key_secret'])->acceptJson()->connectTimeout(3)->timeout(8)

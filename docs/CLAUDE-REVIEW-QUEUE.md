@@ -21,6 +21,14 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-23 · UI · Mensajes automáticos (correos + textos, switches, preview, prueba) · PENDING
+- Branch / commits: claude/auto-messages
+- Reported by César: "ideame algo funcional e ideal… que se pueda controlar todo desde ahí"
+- What changed and why: /admin/correos rebuilt as the control page for automatic messages (see HANDOFF 2026-11-23). Styles `.wmsg-*` in waoo-admin.css with local light/dark tokens.
+- Files: app/Filament/Pages/EmailTemplates.php, resources/views/filament/pages/email-templates.blade.php, public/css/waoo-admin.css, app/Support/AutoMessages.php, app/Services/Messages/*, config/auto-messages.php
+- How verified: AutoMessagesTest, EmailTemplatesPageTest/BoundaryTest; screenshots 390×844 (list, email preview, SMS bubble) and 1280 light/dark.
+- What Claude must check: proposed SMS wording is owner-approved on the page before any text goes out.
+
 ### 2026-11-20 · BACKEND · Revisión #211: identidad durable y rotación del cron · REVIEWED (Claude 2026-11-20)
 - Branch: codex/fix-refund-review; base Claude 2b8daa0, sin reescribir commits.
 - Cambios: conservar retrieve para cualquier refund con identidad remota, incluso unknown; error de lectura no marca failed; cron ordenado por updated_at/id y rota errores para alcanzar toda la cola.

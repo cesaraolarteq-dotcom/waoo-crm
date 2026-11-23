@@ -32,6 +32,12 @@ final class EventMailSource
             'week_before'=>$e->starts_at->setTimezone('America/Chicago')->subDays(7)->utc(),
             'thank_you_review'=>$e->ends_at->setTimezone('America/Chicago')->addDay()->setTime(10,0)->utc(),default=>throw new \InvalidArgumentException('Unsupported reminder.')};
     }
+    // Thank-you needs the tip link (TIP-01): the event's newest active tip link, if one was issued. Read-only.
+    private static function tipLink(Event $e):?string
+    {
+        $tip=\App\Models\TipGrant::where('event_id',$e->id)->whereNull('revoked_at')->where('expires_at','>',now())->orderByDesc('id')->first();
+        if(!$tip)return null;try{return \App\Services\Tips\TipGuard::link($tip);}catch(\Throwable){return null;}
+    }
     public static function compose(string $key,#[\SensitiveParameter] array $source):array
     {
         [$e,$c,$f,$g,$net]=$source;$locale=$c->locale;if(!in_array($locale,['es','en'],true))ApprovedMail::fail('missing_recipient_locale');
@@ -45,7 +51,7 @@ final class EventMailSource
             'total'=>$money($f->total_cents),'deposit'=>$money($f->deposit_target_cents),'paid'=>$money(max(0,$net)),'balance'=>$money($balance),'has_balance'=>$balance>0,
             'due'=>$f->balance_due_at===null?'':MailDates::due($f->balance_due_at,$locale),
             'balance_due'=>$balance>0?($locale==='es'?' · vence ':' · due ').$date($f->balance_due_at):'',
-            'link'=>$link,'review_link'=>config('waoo.mail_review_url')];
+            'link'=>$link,'review_link'=>config('waoo.mail_review_url'),'tip_link'=>self::tipLink($e)];
         $totals=[['label'=>$locale==='es'?'Paquete':'Package','amount'=>$vars['package_price']],['label'=>$locale==='es'?'Costo de transporte':'Travel fee','amount'=>$vars['travel_fee']]];
         foreach($f->discounts_snapshot??[] as $d)$totals[]=['label'=>$d['label'],'amount'=>'−'.$money($d['amount_cents']),'discount'=>true];$totals[]=['label'=>'Total','amount'=>$vars['total'],'strong'=>true];
         $rendered=ApprovedMail::render($key,$locale,$vars,$totals);$recipient=mb_strtolower(trim((string)$c->email));if(!filter_var($recipient,FILTER_VALIDATE_EMAIL))ApprovedMail::fail('recipient_required');
