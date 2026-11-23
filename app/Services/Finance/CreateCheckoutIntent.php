@@ -59,7 +59,7 @@ final class CreateCheckoutIntent
         $origin = Sandbox::origin();
         $metadata = ['local_intent_id' => $intent->id, 'event_id' => (string) $eventId, 'financial_revision_id' => (string) $intent->financial_revision_id];
         \App\Services\Responsibility\RequireCrmResponsibility::forEvent($eventId);
-        $methods = self::verifiedMethods();
+        $methods = self::forAmount(self::verifiedMethods(), (int) $intent->payable_cents);
         try {
             $session = app(StripeGateway::class)->createCheckout(['mode' => 'payment', 'payment_method_types' => $methods, 'client_reference_id' => $intent->id,
                 'metadata' => $metadata, 'payment_intent_data' => ['metadata' => $metadata], 'line_items' => self::lineItems($intent),
@@ -102,9 +102,19 @@ final class CreateCheckoutIntent
         RecordWriteRejected::when(in_array($updated->status, ['superseded','reconciliation_required','failed','expired'], true), 409, 'El intento ya no admite un cobro. Actualiza el saldo.');
         return $updated;
     }
-    public const PAY_LATER = ['klarna', 'afterpay_clearpay'];
+    public const PAY_LATER = ['klarna', 'afterpay_clearpay', 'zip'];
 
-    /** The owner's configured methods for this payment: card always, plus Klarna/Afterpay when listed. Anything unknown falls back to card. */
+    /** Owner 2026-11-17: Zip (US) only takes purchases from $35 to $4,000 (Stripe docs), so it is offered only inside that range. */
+    public const ZIP_MIN_CENTS = 3500;
+    public const ZIP_MAX_CENTS = 400000;
+
+    /** The methods that can really be offered for this amount (Stripe would otherwise drop or refuse an out-of-range method). */
+    public static function forAmount(array $methods, int $cents): array
+    {
+        return array_values(array_filter($methods, fn ($m) => $m !== 'zip' || ($cents >= self::ZIP_MIN_CENTS && $cents <= self::ZIP_MAX_CENTS)));
+    }
+
+    /** The owner's configured methods for this payment: card always, plus Klarna/Afterpay/Zip when listed. Anything unknown falls back to card. */
     public static function methods(): array
     {
         $methods = config('waoo.portal_payment_methods', ['card']);
