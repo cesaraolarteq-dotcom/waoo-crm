@@ -22,6 +22,7 @@ final class OperationalReport
             // Parent-row locks are shared with financial/cost/receipt writers. Fixed order avoids
             // different report requests taking these locks in opposite orders. No ledger writes.
             $events = Event::where('starts_at', '>=', $from)->where('starts_at', '<', $until)
+                ->where(fn ($q) => \App\Support\TestCustomers::exclude($q, 'customer_id', \App\Support\TestCustomers::ids())) // owner's test parties never count
                 ->orderBy('id')->lockForUpdate()->get();
             $ids = $events->modelKeys();
             $finances = FinancialRevision::whereIn('event_id', $ids)->orderByDesc('revision')->get()->unique('event_id')->keyBy('event_id');
@@ -29,7 +30,7 @@ final class OperationalReport
             $ledger = LedgerEntry::whereIn('event_id', $ids)->where('environment', \App\Support\WaooRuntime::ledgerEnvironment())->where('currency', 'USD')
                 ->selectRaw("event_id, SUM(CASE WHEN kind = 'receipt' THEN amount_cents WHEN kind = 'refund' THEN -amount_cents ELSE 0 END) AS net")
                 ->groupBy('event_id')->get()->keyBy('event_id');
-            $cashRows = LedgerEntry::where('environment', \App\Support\WaooRuntime::ledgerEnvironment())->where('currency', 'USD')->where('received_at', '>=', $from)->where('received_at', '<', $until)
+            $cashRows = LedgerEntry::where('environment', \App\Support\WaooRuntime::ledgerEnvironment())->where('currency', 'USD')->where(fn ($q) => \App\Support\TestCustomers::exclude($q, 'event_id', \App\Support\TestCustomers::eventIds()))->where('received_at', '>=', $from)->where('received_at', '<', $until)
                 ->selectRaw('kind, SUM(amount_cents) AS amount')->groupBy('kind')->get()->keyBy('kind');
             $received = (int) ($cashRows->get('receipt')?->amount ?? 0);
             $refunded = (int) ($cashRows->get('refund')?->amount ?? 0);
