@@ -5,7 +5,7 @@ use App\Filament\Pages\StaffPay;
 use App\Models\{Customer, Event, EventService, PriceVersion, Resource, ServiceVariant, StaffPayLine, User};
 use App\Services\Team\{AssignEventTeam, StaffPaySuggestion, TeamSlots};
 use Carbon\CarbonImmutable;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -13,7 +13,15 @@ use Tests\TestCase;
 /** Owner 2026-11-03: suggested pay with the reason, editable up or down, marked paid. */
 class StaffPayTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseMigrations;
+
+    protected function tearDown(): void
+    {
+        // Disposable synthetic fixtures only; preserve the production rollback guard.
+        if ($this->app && \Illuminate\Support\Facades\Schema::hasTable('event_team_plans')) \Illuminate\Support\Facades\DB::table('event_team_plans')->delete();
+        parent::tearDown();
+    }
+
 
     public function test_suggestion_explains_itself_and_the_owner_can_change_and_pay(): void
     {

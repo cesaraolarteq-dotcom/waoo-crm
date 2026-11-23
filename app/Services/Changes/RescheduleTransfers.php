@@ -11,10 +11,10 @@ use Illuminate\Support\Facades\DB;
 /** Private, short-lived route proof. All provider I/O precedes the admission transaction. */
 final class RescheduleTransfers
 {
-    public function prepare(Event $event, CarbonImmutable $start): array
+    public function prepare(Event $event, CarbonImmutable $start, ?array $resourceIds = null): array
     {
         RecordWriteRejected::unless(DB::transactionLevel() === 0, 409, 'Revisa el traslado antes de cambiar la fecha.');
-        $snapshot = $this->snapshot($event, $start, false);
+        $snapshot = $this->snapshot($event, $start, false, $resourceIds);
         $routes = new DriveMinutes(3, 2.0);
         $proof = ['snapshot' => MutationKey::hash($snapshot), 'read_at' => now()->timestamp, 'routes' => []];
         foreach ($this->edges($snapshot) as $key => [$from, $to, $resourceId]) {
@@ -33,10 +33,10 @@ final class RescheduleTransfers
     }
 
     /** Caller holds the global admission mutex, event, and all its reserved resource rows. */
-    public function assertFits(Event $event, CarbonImmutable $start, array $proof): void
+    public function assertFits(Event $event, CarbonImmutable $start, array $proof, ?array $resourceIds = null): void
     {
         RecordWriteRejected::unless(DB::transactionLevel() > 0, 409, 'No se pudo revisar la agenda.');
-        $snapshot = $this->snapshot($event, $start, true);
+        $snapshot = $this->snapshot($event, $start, true, $resourceIds);
         RecordWriteRejected::unless(now()->timestamp >= $proof['read_at'] && now()->timestamp - $proof['read_at'] <= 120
             && hash_equals($proof['snapshot'], MutationKey::hash($snapshot)), 409, 'La agenda cambió mientras se revisaba el traslado. Vuelve a intentarlo.');
         foreach ($this->edges($snapshot) as $key => [$from, $to, $resourceId]) {
@@ -53,10 +53,12 @@ final class RescheduleTransfers
         }
     }
 
-    private function snapshot(Event $event, CarbonImmutable $start, bool $lock): array
+    private function snapshot(Event $event, CarbonImmutable $start, bool $lock, ?array $resourceIds = null): array
     {
         $ownQuery = ResourceReservation::where('event_id', $event->id)->orderBy('resource_id');
-        $own = ($lock ? $ownQuery->lockForUpdate() : $ownQuery)->get();
+        $own = $resourceIds === null ? ($lock ? $ownQuery->lockForUpdate() : $ownQuery)->get()
+            : collect($resourceIds)->map(fn($id)=>(int)$id)->unique()->sort()->values()->map(fn($id)=>(object)[
+                'id'=>0,'resource_id'=>$id,'starts_at'=>$event->starts_at,'ends_at'=>$event->ends_at]);
         RecordWriteRejected::unless($own->count() <= 256, 409, 'La agenda requiere revisión por volumen.');
         $query = ResourceReservation::whereIn('resource_id', $own->pluck('resource_id'))->where('event_id', '!=', $event->id)
             ->with(['event' => fn ($q) => $lock ? $q->sharedLock() : $q])->orderBy('id')->limit(10001);
@@ -86,6 +88,7 @@ final class RescheduleTransfers
             foreach ($snapshot['neighbors'] as $row) {
                 if ($row['resource'] !== $resourceId) continue;
                 $other = $row['event'];
+                if ($other['status'] === 'cancelled') continue;
                 if ($other['end'] <= $candidate['start'] && ($before === null || $other['end'] > $before['end'])) $before = $other;
                 if ($other['start'] >= $candidate['end'] && ($after === null || $other['start'] < $after['start'])) $after = $other;
             }

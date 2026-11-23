@@ -21,6 +21,10 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-23 · BACKEND · Punto 4: traslados y presupuesto diario · PENDING
+- Rama `codex/fix-team-route-budget`. 38 pruebas/233 aserciones. Google simulado.
+- Revisar salida después del desmontaje, margen de 30 minutos, falta de informe de ruta y reserva atómica del tope diario.
+
 ### 2026-11-23 · UI · Mensajes automáticos (correos + textos, switches, preview, prueba) · PENDING
 - Branch / commits: claude/auto-messages
 - Reported by César: "ideame algo funcional e ideal… que se pueda controlar todo desde ahí"
