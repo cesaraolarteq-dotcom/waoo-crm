@@ -10,3 +10,6 @@ Schedule::command('waoo:refunds:recheck')->everyThirtyMinutes()->withoutOverlapp
 // Owner 2026-11-23 "Mensajes automáticos": instant messages every minute; planned reminder emails every five minutes.
 Schedule::command('waoo:messages')->everyMinute()->withoutOverlapping();
 Schedule::command('waoo:mail-due')->everyFiveMinutes()->withoutOverlapping()->when(fn () => config('waoo.sandbox_mail') === true);
+
+// Owner 2026-11-23: clients who book are saved in his Google Contacts (iPhone).
+Schedule::command('waoo:contacts')->everyTenMinutes()->withoutOverlapping();

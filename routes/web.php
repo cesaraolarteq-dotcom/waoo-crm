@@ -29,6 +29,7 @@ Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])-
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:20,1'])->prefix('admin/google')->group(function () {
     Route::get('/connect', [\App\Http\Controllers\Admin\GoogleCalendarController::class, 'connect']);
     Route::get('/callback', [\App\Http\Controllers\Admin\GoogleCalendarController::class, 'callback']);
+    Route::get('/contacts/connect', [\App\Http\Controllers\Admin\GoogleCalendarController::class, 'connectContacts']);
 });
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-api'])->prefix('admin/api')->group(function () {
     Route::get('/events/{event}/confirmed-agreement', [\App\Http\Controllers\Admin\ConfirmedAgreementController::class, 'show'])->whereNumber('event');
