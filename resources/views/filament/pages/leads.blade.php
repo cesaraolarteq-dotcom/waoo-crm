@@ -3,6 +3,7 @@
     $counts = $this->counts();
     $demand = ['full' => 'Fecha casi llena', 'filling' => 'Fecha muy pedida'];
     $types = \App\Filament\Pages\Leads::STATUS;
+    $sources = $this->sourceSummary();
 @endphp
 <x-filament-panels::page>
     <div class="wmoney">
@@ -13,6 +14,13 @@
                 </button>
             @endforeach
         </div>
+        @if ($sources)
+            <p class="wmoney-p wlead-sources"><b>Este mes llegaron por:</b>
+                @foreach ($sources as $s)
+                    <span>{{ $s['label'] }} {{ $s['leads'] }}{{ $s['booked'] ? ' ('.$s['booked'].' '.($s['booked'] === 1 ? 'reservó' : 'reservaron').')' : '' }}{{ $loop->last ? '' : ' ·' }}</span>
+                @endforeach
+            </p>
+        @endif
         @forelse ($rows as $r)
             <x-filament::section>
                 <div class="wlead">
@@ -27,6 +35,7 @@
                         <div><dt>Paquete (web)</dt><dd>{{ $r->package ?: '—' }}</dd></div>
                         <div><dt>Tipo</dt><dd>{{ $r->type ?: '—' }}</dd></div>
                         <div><dt>Contacto</dt><dd>{{ $r->phone }} · {{ $r->email }}</dd></div>
+                        @if ($r->source)<div><dt>Llegó por</dt><dd>{{ $r->source }}</dd></div>@endif
                         @if ($r->travel)<div><dt>Transporte que vio</dt><dd>{{ $r->travel }} <small>(solo informativo)</small></dd></div>@endif
                     </dl>
                     @if ($r->message)<p class="wlead-msg">“{{ $r->message }}”</p>@endif

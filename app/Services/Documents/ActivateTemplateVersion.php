@@ -20,6 +20,8 @@ final class ActivateTemplateVersion
             RecordWriteRejected::unless(hash_equals($template->source_sha256, $data['expected_source_sha256']), 409, 'La plantilla no corresponde a la versión revisada.');
             if ($template->state === 'active') return $template;
             RecordWriteRejected::unless($template->state === 'draft', 409, 'Crea una versión nueva para volver a usar esas condiciones.');
+            $activeVersion = $registry->active_version_id ? ContractTemplateVersion::whereKey($registry->active_version_id)->value('version') : null;
+            RecordWriteRejected::unless($activeVersion === null || $template->version > $activeVersion, 409, 'Crea una versión nueva para volver a usar esas condiciones.');
             if ($registry->active_version_id) ContractTemplateVersion::whereKey($registry->active_version_id)->update(['state' => 'retired', 'updated_at' => now()]);
             ContractTemplateVersion::whereKey($template->id)->update(['state' => 'active', 'approved_by' => $actor->id, 'approved_at' => now(), 'updated_at' => now()]);
             DB::table('contract_template_registry')->where('id', 1)->update(['active_version_id' => $template->id]);

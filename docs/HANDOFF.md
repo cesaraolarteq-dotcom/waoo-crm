@@ -1,5 +1,15 @@
 ## 2026-11-23 · Codex · Implementación de la propuesta de CI del #218
-Rama `codex/ci-speed-10-shards`. Suite completa repartida entre diez grupos, con los mismos disparadores y controles. Un push de Claude con una línea `Tests:` puede ejecutar archivos concretos como comprobación rápida. Se comprobó la sintaxis YAML y Bash y el selector con nombres válidos, inexistentes y caracteres de patrón. El tiempo real depende de la disponibilidad de los runners y se medirá en GitHub. El #217 conserva su propia ejecución completa tras resolver el conflicto documental.
+Rama `codex/ci-speed-10-shards`. Suite completa repartida entre diez grupos, con los mismos disparadores y controles. Un push de Claude con una línea `Tests:` puede ejecutar archivos concretos como comprobación rápida. Se comprobó la sintaxis YAML y Bash y el selector con nombres válidos, inexistentes y caracteres de patrón. El tiempo real depende de la disponibilidad de los runners y se medirá en GitHub. El #217 pasó 53 pruebas locales y CI, y se fusionó en 7620bb3. El #221 lleva los cambios de CI sobre esa base.
+
+## 2026-11-20 · Codex · Sincronización del #217 con main
+Conflicto limitado al handoff. Se conservaron ambas entradas. Aplicación y pruebas idénticas a 10857ec, cuyo CI pasó en 44782271445 y 44782398733. MariaDB local: 53 pruebas, 864 aserciones, cero fallos.
+
+## 2026-11-20 · Codex · Revisión de #209, #210, #213 y primera punta de #214
+Integración sobre Stripe 4bc9d68. Se incluye el transporte de 8be3959 y se dejan las adiciones posteriores de #214 para su revisión propia. El servidor impide reactivar borradores anteriores al contrato activo, y el portal aplica el límite de Zip al total con comisión, igual que el checkout. La prueba de entrada de prospectos usa URLs explícitas para distinguir HTTP de HTTPS.
+MariaDB: 53 casos, 52 correctos en la primera tanda. El caso restante usaba por error el esquema HTTPS del entorno. Verificado por separado después de fijar las dos URLs: 1 caso y 3 aserciones correctas. El código productivo de HTTPS se conservó. No se verificó el proveedor real ni el navegador.
+#208 queda por separado: los filtros nuevos excluyen filas live ya grabadas con la etiqueta anterior, y cambiar el entorno de un intento existente altera su hash de comisión. Hace falta probar la transición de recibos e intentos existentes antes de integrar.
+#215 queda por separado: busca coincidencias solo en la primera página de Stripe. Una petición anterior a la introducción del metadato también puede quedar sin coincidencia. Si la respuesta original se perdió y la clave ya caducó, el caso requiere conciliación antes de crear otra devolución.
+#214 avanzó a 46b9c83 y añadió tarde una regla de aviso corto, otros métodos para depósito y descuentos. La verificación de la solicitud congelada ahora depende de la aprobación vigente del evento. Probar que los cambios posteriores no impiden conciliar un pago ya iniciado. Revisar también que un método opcional inactivo no bloquee tarjeta.
 
 ## 2026-11-20 · Claude → Codex · Work without asking + faster CI (PR #218)
 - César: "ya le di acceso a todo pero aún sigue pidiendo permiso" — new **Autonomy** section in AGENTS.md/CLAUDE.md. Ask only for real-CRM deploys, real money/live Stripe-Twilio, new prices/policies/contract or unapproved client texts.
@@ -7,6 +17,11 @@ Rama `codex/ci-speed-10-shards`. Suite completa repartida entre diez grupos, con
 
 ## 2026-11-20 · Codex · Revisión de #211 y cierre adicional de reintentos
 Rama `codex/fix-refund-review`, conserva Claude `2b8daa0`. A1–A5 revisados; corregidos dos casos adicionales reproducidos (2 FAIL): una petición unknown con provider_refund_id vuelve a consultar ese reembolso, nunca vuelve a crearlo; el cron prioriza la revisión más antigua y rota también después de errores, evitando bloquear el resto. Un error al consultar una devolución existente no libera su importe. Regresión integrada de Stripe/reembolsos/propinas/reservas rápidas en ejecución; resultado final pendiente. No deploy, mensajes ni dinero real. #208–#214 se revisan por separado; #212 es rama de despliegue, no fusionar su PR.
+## 2026-11-19/20 · Claude → Codex · Staff phone + contract page (#213) and travel fee v2 (#214, stacked) — REVISAR (PII + dinero)
+
+- #213 `claude/staff-phone`: Staff y trajes shows each person's phone (encrypted identity, read per request, `tel:` link; edit stays in Enlaces del staff). Contract page: active version + newer draft on top, older drafts shown as "Reemplazada" and not activatable. Data (not code): 25 staff identities copied crm-test → real by resource code (system audit, source note); contract v5 draft on real (v4 + 3.6 electricity), owner activates.
+- #214 `claude/travel-fee-v2`: owner per-mile formula (2026-11-19) $20 first 5 mi, $1.25/mi to 40, $5/mi after, tolls included (`charge_tolls=false`), 70 mi one-way limit, new fixed ZIPs. Website already live with the same rules. Calibration test pinned to the 2026-10-14 rules.
+- Both CI green. Deploy plan: merge into `claude/deploy-20261117` with #209–#211 after review; César runs the real deploy.
 
 ## 2026-11-17/18 · Claude · Fixes for Codex's Stripe audit (A1–A5) · branch `claude/refund-fixes`
 Owner: "okay inicia". Codex regressions adopted into the suite (`StripeRefundAdapterTest`, CancelAndRefundTest, StripeSandboxTest, FakeStripeGateway).
@@ -2871,3 +2886,10 @@ Owner asked ("sí actívalos") to offer Klarna/Afterpay/Zip on the balance payme
 - `StripeReceiptProcessor`: a non-card payment counts only when it is Klarna/Afterpay AND that session offered it; else `payment_method_not_offered` reconciliation. Cards keep the credit-only rule when the 3% fee policy applies.
 - **Review for Codex:** with `WAOO_REGULAR_CARD_FEE_ENABLED=true` the 3% is added before the method is chosen, so a Klarna/Afterpay payment also carries it (same as Reserva rápida today). Check BNPL surcharge rules before turning the fee on in live.
 - Portal copy: "Tarjeta …, Klarna o Afterpay" + installments hint. Test `BalancePayLaterTest`.
+
+## 2026-11-17 · Claude · Zip on the balance payment (owner: "configura el zip en el crm")
+- Stripe live account: `zip_payments` capability **active** (checked via API 2026-11-17), Zip enabled by César in the dashboard.
+- `CreateCheckoutIntent::PAY_LATER` + `zip`; `StripeTestGateway::verifyMethods` maps `zip` → `zip_payments`; portal label "Zip".
+- `CreateCheckoutIntent::forAmount()`: Zip only for $35–$4,000 (Stripe Zip US range) so Checkout never gets an out-of-range method (the session check compares methods exactly).
+- Enabled per environment with `WAOO_PORTAL_PAYMENT_METHODS=card,klarna,afterpay_clearpay,zip`. Reserva rápida public flow unchanged (card/Klarna only by owner rule).
+- Review for Codex: money path (receipt counts only when that session offered Zip — same rule as Klarna/Afterpay).
