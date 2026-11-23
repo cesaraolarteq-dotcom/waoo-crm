@@ -101,17 +101,28 @@ final class GoogleContacts
         return trim((string) $customer->name).' · Waoo '.$month.' '.$firstParty->setTimezone('America/Chicago')->format('Y');
     }
 
-    /** Customers who booked: a confirmed party or money received on a party. @return array<int, CarbonImmutable> customer id => first booked party start */
+    /** Customers who booked: a confirmed party, money received on a party, or a past party in the HoneyBook history. @return array<int, CarbonImmutable> customer id => first booked party start */
     public static function bookedCustomers(): array
     {
         $paid = LedgerEntry::where('kind', 'receipt')->where('environment', \App\Support\WaooRuntime::ledgerEnvironment())->whereNotNull('event_id')->distinct()->pluck('event_id');
         $events = Event::where(fn ($q) => $q->where('status', 'capacity_reserved')->orWhereIn('id', $paid))
             ->whereNotIn('status', ['cancelled', 'canceled'])->whereNotNull('customer_id')->get(['id', 'customer_id', 'starts_at']);
         $out = [];
-        foreach ($events as $e) {
-            $at = CarbonImmutable::parse($e->starts_at);
-            if (! isset($out[$e->customer_id]) || $at->lessThan($out[$e->customer_id])) $out[$e->customer_id] = $at;
-        }
+        $keep = function (int $customerId, $at) use (&$out) {
+            if (! $at) return;
+            $at = CarbonImmutable::parse($at);
+            if (! isset($out[$customerId]) || $at->lessThan($out[$customerId])) $out[$customerId] = $at;
+        };
+        foreach ($events as $e) $keep((int) $e->customer_id, $e->starts_at);
+        // Past clients from the HoneyBook history import: parties that happened (or archived with money paid), never cancelled.
+        \App\Models\HistoricalEvent::query()->whereNotNull('current_revision_id')->orderBy('id')->chunk(200, function ($rows) use ($keep) {
+            $revisions = \App\Models\HistoricalEventRevision::whereIn('id', $rows->pluck('current_revision_id'))->get()->keyBy('id');
+            foreach ($rows as $h) {
+                $f = $revisions->get($h->current_revision_id)?->payload['facts'] ?? [];
+                $status = $f['status'] ?? null;
+                if ($status === 'completed' || ($status === 'archived_unknown' && (int) ($f['paid_total_cents'] ?? 0) > 0)) $keep((int) $h->customer_id, $f['start_at'] ?? $f['source_date'] ?? null);
+            }
+        });
         return $out;
     }
 

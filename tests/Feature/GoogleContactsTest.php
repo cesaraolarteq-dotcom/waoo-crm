@@ -61,6 +61,20 @@ class GoogleContactsTest extends TestCase
         $this->assertSame('Ana Torres · Waoo nov 2026', GoogleContacts::displayName($c, CarbonImmutable::parse('2026-12-01T03:00:00Z')));
     }
 
+    public function test_past_honeybook_clients_count_but_cancelled_ones_do_not(): void
+    {
+        foreach (['completed' => 'Lucía Ramos', 'cancelled' => 'Carla Díaz'] as $status => $name) {
+            $c = Customer::create(['name' => $name, 'phone' => '346-555-0144', 'locale' => 'es']);
+            $h = \App\Models\HistoricalEvent::create(['project_key' => hash('sha256', $name), 'customer_id' => $c->id, 'version' => 1]);
+            $r = \App\Models\HistoricalEventRevision::create(['historical_event_id' => $h->id, 'customer_id' => $c->id, 'version' => 1, 'source_sha256' => str_repeat('a', 64),
+                'facts_sha256' => str_repeat('b', 64), 'payload' => ['facts' => ['status' => $status, 'start_at' => '2025-03-08T20:00:00Z']], 'payload_sha256' => str_repeat('c', 64), 'created_by' => $this->owner->id]);
+            $h->forceFill(['current_revision_id' => $r->id])->save();
+        }
+        $booked = GoogleContacts::bookedCustomers();
+        $this->assertCount(1, $booked);
+        $this->assertSame('Lucía Ramos · Waoo mar 2025', GoogleContacts::displayName(Customer::find(array_key_first($booked)), $booked[array_key_first($booked)]));
+    }
+
     public function test_without_a_connection_nothing_is_sent(): void
     {
         $this->event('María González', 'capacity_reserved', '2026-12-12T21:00:00Z');
