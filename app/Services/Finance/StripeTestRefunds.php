@@ -12,7 +12,7 @@ use Stripe\StripeClient;
  */
 final class StripeTestRefunds implements StripeRefunds
 {
-    public function refund(string $paymentIntentId, int $amountCents, string $key): array
+    public function refund(string $paymentIntentId, int $amountCents, string $key, bool $allowCreate = true): array
     {
         $client = $this->client();
         $payment = $client->paymentIntents->retrieve($paymentIntentId)->toArray();
@@ -20,11 +20,15 @@ final class StripeTestRefunds implements StripeRefunds
             || ($payment['currency'] ?? null) !== 'usd' || (int) ($payment['amount_received'] ?? 0) < $amountCents) {
             throw new \RuntimeException(self::BINDING_MISMATCH);
         }
-        // Stripe forgets idempotency keys after 24 h: a request replayed later (state unknown, no re_ id stored) must find the
-        // refund it may already have created, by the key written in its metadata, instead of creating a second one.
-        foreach ($client->refunds->all(['payment_intent' => $paymentIntentId, 'limit' => 100])->toArray()['data'] ?? [] as $existing) {
-            if (($existing['metadata']['waoo_refund_key'] ?? null) === $key) return $this->checked($existing, $paymentIntentId, $amountCents);
+        // A lost response can be recovered by metadata even after Stripe prunes the idempotency key.
+        $refunds = $client->refunds->all(['payment_intent' => $paymentIntentId, 'limit' => 100]);
+        foreach ($refunds->autoPagingIterator() as $existing) {
+            $facts = $existing->toArray();
+            if (($facts['metadata']['waoo_refund_key'] ?? null) === $key) {
+                return $this->checked($facts, $paymentIntentId, $amountCents);
+            }
         }
+        if (! $allowCreate) throw new \RuntimeException('stripe_refund_reconciliation_required');
         $refund = $client->refunds->create(['payment_intent' => $paymentIntentId, 'amount' => $amountCents, 'reason' => 'requested_by_customer',
             'metadata' => ['waoo_refund_key' => $key]], ['idempotency_key' => 'waoo-refund-'.$key])->toArray();
         return $this->checked($refund, $paymentIntentId, $amountCents);

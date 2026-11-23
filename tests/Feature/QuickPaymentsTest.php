@@ -626,4 +626,18 @@ class QuickPaymentsTest extends TestCase
         $this->expectException(\App\Exceptions\RecordWriteRejected::class);
         app(\App\Services\Booking\RecoverQuickCheckout::class)->execute($this->owner, $intent->id);
     }
+
+    public function test_inactive_financing_does_not_prevent_card_deposit(): void
+    {
+        config(['waoo.portal_payment_methods' => ['card', 'zip']]);
+        $booking = $this->create();
+        $this->client($booking);
+        $this->details();
+        $gateway = $this->gateway();
+        $gateway->inactiveMethods = ['zip'];
+        $this->checkout();
+        $request = \App\Models\QuickStripeCheckoutRequest::sole();
+        $this->assertSame(['card'], $request->envelope['parameters']['payment_method_types']);
+        $this->assertSame(1, $gateway->creates);
+    }
 }

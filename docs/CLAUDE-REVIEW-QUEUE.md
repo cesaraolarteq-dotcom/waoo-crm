@@ -21,6 +21,10 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-23 · BACKEND · Punto 2: revisión de pagos de #214/#215 · PENDING
+- Rama `codex/fix-deployed-money-review`. 10 pruebas, 45 aserciones con MariaDB local y Stripe simulado.
+- Revisar la caída a tarjeta, la integridad de la huella migrada y la reserva de importes cuyo reembolso no se encuentra después de la ventana.
+
 ### 2026-11-23 · UI · Mensajes automáticos (correos + textos, switches, preview, prueba) · PENDING
 - Branch / commits: claude/auto-messages
 - Reported by César: "ideame algo funcional e ideal… que se pueda controlar todo desde ahí"
