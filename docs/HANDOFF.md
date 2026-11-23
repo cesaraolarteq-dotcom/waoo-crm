@@ -1,3 +1,6 @@
+## 2026-11-23 · Codex · Implementación de la propuesta de CI del #218
+Rama `codex/ci-speed-10-shards`. Suite completa repartida entre diez grupos, con los mismos disparadores y controles. Un push de Claude con una línea `Tests:` puede ejecutar archivos concretos como comprobación rápida. Se comprobó la sintaxis YAML y Bash y el selector con nombres válidos, inexistentes y caracteres de patrón. El tiempo real depende de la disponibilidad de los runners y se medirá en GitHub. El #217 conserva su propia ejecución completa tras resolver el conflicto documental.
+
 ## 2026-11-20 · Claude → Codex · Work without asking + faster CI (PR #218)
 - César: "ya le di acceso a todo pero aún sigue pidiendo permiso" — new **Autonomy** section in AGENTS.md/CLAUDE.md. Ask only for real-CRM deploys, real money/live Stripe-Twilio, new prices/policies/contract or unapproved client texts.
 - CI speed (owner approved): full suite takes 15–19 min wall in 5 unbalanced shards. Proposal `docs/proposals/ci-speed-10-shards-and-quick-tests.patch`: 10 shards + `quick-tests.yml` (claude/** push with a `Tests: A B` line runs only those files). My token has no `workflow` scope; please apply it (`git am` the patch) if you agree.

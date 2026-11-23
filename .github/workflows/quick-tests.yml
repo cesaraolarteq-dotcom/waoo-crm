@@ -51,14 +51,15 @@ jobs:
       - run: cp .env.example .env && php artisan key:generate
       - name: Selected test files
         run: |
-          names=$(printf '%s\n' "$COMMIT_MESSAGE" | sed -n 's/^Tests:[[:space:]]*//p' | head -1 | tr ',' ' ')
-          files=""
-          for n in $names; do
-            case "$n" in *[!A-Za-z0-9_]*) echo "bad test name: $n"; exit 1;; esac
-            f=$(find tests -name "$n.php" | head -1)
-            [ -n "$f" ] || { echo "no test file named $n"; exit 1; }
-            files="$files $f"
+          line=$(sed -n '/^Tests:[[:space:]]*/{s/^Tests:[[:space:]]*//;p;q;}' <<< "$COMMIT_MESSAGE")
+          [[ -n "$line" ]] || exit 0
+          read -r -a names <<< "${line//,/ }"
+          files=()
+          for name in "${names[@]}"; do
+            [[ "$name" =~ ^[A-Za-z0-9_]+Test$ ]] || { printf 'Invalid test name: %s\n' "$name"; exit 1; }
+            mapfile -t matches < <(find tests/Unit tests/Feature -type f -name "$name.php")
+            (( ${#matches[@]} == 1 )) || { printf 'Expected exactly one file for %s\n' "$name"; exit 1; }
+            files+=("${matches[0]}")
           done
-          [ -n "$files" ] || { echo "no tests listed"; exit 1; }
-          echo "Running:$files"
-          for f in $files; do vendor/bin/phpunit "$f" || exit 1; done
+          (( ${#files[@]} > 0 )) || exit 1
+          vendor/bin/phpunit "${files[@]}"
