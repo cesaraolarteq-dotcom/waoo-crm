@@ -1,3 +1,7 @@
+## 2026-11-23 · Codex · Reintento de reembolsos antiguos (#215)
+Rama `codex/fix-expired-refund-replay`. Busca la devolución original en todas las páginas de Stripe. Si un intento sin identidad remota lleva 23 horas o más y no se encuentra el original, conserva el importe reservado para conciliación. El margen de una hora protege contra la posible caducidad de la clave de Stripe a partir de las 24 horas. Las búsquedas fallidas en ese estado tampoco liberan el importe.
+MariaDB y transporte Stripe simulado: 17 pruebas, 73 aserciones. Incluye recuperación de la identidad original y bloqueo del POST en un reintento antiguo sin coincidencia.
+
 ## 2026-11-20 · Codex · Revisión de #211 y cierre adicional de reintentos
 Rama `codex/fix-refund-review`, conserva Claude `2b8daa0`. A1–A5 revisados; corregidos dos casos adicionales reproducidos (2 FAIL): una petición unknown con provider_refund_id vuelve a consultar ese reembolso, nunca vuelve a crearlo; el cron prioriza la revisión más antigua y rota también después de errores, evitando bloquear el resto. Un error al consultar una devolución existente no libera su importe. Regresión integrada de Stripe/reembolsos/propinas/reservas rápidas en ejecución; resultado final pendiente. No deploy, mensajes ni dinero real. #208–#214 se revisan por separado; #212 es rama de despliegue, no fusionar su PR.
 

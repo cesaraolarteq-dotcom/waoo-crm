@@ -50,4 +50,15 @@ class StripeRefundAdapterTest extends \Tests\TestCase
         catch(\RuntimeException $e){$this->assertSame('stripe_payment_binding_mismatch',$e->getMessage());}
         $this->assertSame(['get /v1/account','get /v1/payment_intents/pi_fixture'],$this->calls);
     }
+    public function test_recovery_only_without_a_matching_refund_does_not_post(): void
+    {
+        $this->provider();
+        try {
+            (new StripeTestRefunds())->refund('pi_fixture', 100, 'fixture', false);
+            $this->fail('Created a refund for an unresolved expired request');
+        } catch (\RuntimeException $error) {
+            $this->assertSame('stripe_refund_reconciliation_required', $error->getMessage());
+        }
+        $this->assertSame(['get /v1/account', 'get /v1/payment_intents/pi_fixture', 'get /v1/refunds'], $this->calls);
+    }
 }

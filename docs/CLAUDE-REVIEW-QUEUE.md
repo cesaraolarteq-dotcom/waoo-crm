@@ -21,6 +21,10 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-23 · BACKEND · Búsqueda paginada de reembolsos y protección de reintentos antiguos · PENDING
+- Rama `codex/fix-expired-refund-replay`. Incluye Claude 03296ab.
+- MariaDB y Stripe simulado: 17 pruebas, 73 aserciones. Revisar que un resultado antiguo sin coincidencia conserve la reserva y que el adaptador no emita otro POST.
+
 ### 2026-11-20 · BACKEND · Revisión #211: identidad durable y rotación del cron · REVIEWED (Claude 2026-11-20)
 - Branch: codex/fix-refund-review; base Claude 2b8daa0, sin reescribir commits.
 - Cambios: conservar retrieve para cualquier refund con identidad remota, incluso unknown; error de lectura no marca failed; cron ordenado por updated_at/id y rota errores para alcanzar toda la cola.
