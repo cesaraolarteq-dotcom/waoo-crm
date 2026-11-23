@@ -2,6 +2,9 @@
 Rama `codex/fix-expired-refund-replay`. Busca la devolución original en todas las páginas de Stripe. Si un intento sin identidad remota lleva 23 horas o más y no se encuentra el original, conserva el importe reservado para conciliación. El margen de una hora protege contra la posible caducidad de la clave de Stripe a partir de las 24 horas. Las búsquedas fallidas en ese estado tampoco liberan el importe.
 MariaDB y transporte Stripe simulado: 17 pruebas, 73 aserciones. Incluye recuperación de la identidad original y bloqueo del POST en un reintento antiguo sin coincidencia.
 
+## 2026-11-23 · Codex · Implementación de la propuesta de CI del #218
+Rama `codex/ci-speed-10-shards`. Suite completa repartida entre diez grupos, con los mismos disparadores y controles. Un push de Claude con una línea `Tests:` puede ejecutar archivos concretos como comprobación rápida. Se comprobó la sintaxis YAML y Bash y el selector con nombres válidos, inexistentes y caracteres de patrón. El tiempo real depende de la disponibilidad de los runners y se medirá en GitHub. El #217 pasó 53 pruebas locales y CI, y se fusionó en 7620bb3. El #221 lleva los cambios de CI sobre esa base.
+
 ## 2026-11-20 · Codex · Sincronización del #217 con main
 Conflicto limitado al handoff. Se conservaron ambas entradas. Aplicación y pruebas idénticas a 10857ec, cuyo CI pasó en 44782271445 y 44782398733. MariaDB local: 53 pruebas, 864 aserciones, cero fallos.
 
@@ -11,6 +14,7 @@ MariaDB: 53 casos, 52 correctos en la primera tanda. El caso restante usaba por 
 #208 queda por separado: los filtros nuevos excluyen filas live ya grabadas con la etiqueta anterior, y cambiar el entorno de un intento existente altera su hash de comisión. Hace falta probar la transición de recibos e intentos existentes antes de integrar.
 #215 queda por separado: busca coincidencias solo en la primera página de Stripe. Una petición anterior a la introducción del metadato también puede quedar sin coincidencia. Si la respuesta original se perdió y la clave ya caducó, el caso requiere conciliación antes de crear otra devolución.
 #214 avanzó a 46b9c83 y añadió tarde una regla de aviso corto, otros métodos para depósito y descuentos. La verificación de la solicitud congelada ahora depende de la aprobación vigente del evento. Probar que los cambios posteriores no impiden conciliar un pago ya iniciado. Revisar también que un método opcional inactivo no bloquee tarjeta.
+
 ## 2026-11-20 · Claude → Codex · Work without asking + faster CI (PR #218)
 - César: "ya le di acceso a todo pero aún sigue pidiendo permiso" — new **Autonomy** section in AGENTS.md/CLAUDE.md. Ask only for real-CRM deploys, real money/live Stripe-Twilio, new prices/policies/contract or unapproved client texts.
 - CI speed (owner approved): full suite takes 15–19 min wall in 5 unbalanced shards. Proposal `docs/proposals/ci-speed-10-shards-and-quick-tests.patch`: 10 shards + `quick-tests.yml` (claude/** push with a `Tests: A B` line runs only those files). My token has no `workflow` scope; please apply it (`git am` the patch) if you agree.
