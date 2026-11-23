@@ -29,6 +29,7 @@ final class RunAutoMessages
         $this->occurrences();
         $this->contracts();
         $this->reminderTexts();
+        $this->thankYous();
         return $this->out;
     }
 
@@ -57,6 +58,7 @@ final class RunAutoMessages
         $locale = ($p['locale'] ?? 'en') === 'es' ? 'es' : 'en';
         $date = empty($p['start_time']) ? MailDates::due($p['event_date'].' 12:00', $locale) : MailDates::full(\Carbon\CarbonImmutable::parse($p['event_date'].' '.$p['start_time'], 'America/Chicago'), $locale);
         $vars = ['first_name' => explode(' ', trim((string) $p['name']))[0], 'event_date' => $date, 'zip' => (string) $p['zip']];
+        $this->leadText('occ:'.$o->id, (string) ($p['phone'] ?? ''), $locale, $vars);
         return $this->email('inquiry_received', 'occ:'.$o->id, (string) $p['email'], $locale, fn () => AutoMessages::renderEmail('inquiry_received', $locale, $vars), []);
     }
 
@@ -90,7 +92,7 @@ final class RunAutoMessages
     /** The text that goes with a due reminder (7 days before, balance, thank you). The email keeps its own path. */
     private function reminderTexts(): void
     {
-        $due = OutboundMessage::whereIn('template_key', \App\Services\Mail\EventMailSource::REMINDERS)
+        $due = OutboundMessage::whereIn('template_key', ['balance_reminder', 'week_before'])
             ->whereBetween('due_at', [$this->since(), now()])->whereNotNull('event_id')->orderBy('id')->limit(50)->get();
         foreach ($due as $m) {
             $id = 'reminder:'.$m->id;
@@ -103,6 +105,63 @@ final class RunAutoMessages
             if ($m->template_key === 'balance_reminder' && $src['balance_cents'] <= 0) { $this->log($m->template_key, $id, 'sms', $event->id, 'skipped', 'no_balance'); continue; }
             $this->text($m->template_key, $id, $src);
         }
+    }
+
+    /**
+     * Gracias + reseña: the day after the party at 10 a.m. (Houston), for confirmed CRM parties. With tips on, the tip link
+     * is issued automatically (IssueTipGrant::automatic); with tips off the email goes without the tip sentence.
+     */
+    private function thankYous(): void
+    {
+        $events = Event::where('status', 'capacity_reserved')->where('responsible_system', 'crm')
+            ->whereBetween('ends_at', [now()->subDays(3), now()])->orderBy('id')->limit(100)->get();
+        foreach ($events as $event) {
+            $due = $event->ends_at->setTimezone('America/Chicago')->addDay()->setTime(10, 0);
+            if ($due->isFuture() || $due->lessThan($this->since())) continue;
+            $id = 'thanks:'.$event->id;
+            if (AutoMessageLog::where('identity_sha256', $this->sha($id, 'email'))->exists() && AutoMessageLog::where('identity_sha256', $this->sha($id, 'sms'))->exists()) continue;
+            if (EventMessagePolicy::where('event_id', $event->id)->value('paused')) {
+                foreach (['email', 'sms'] as $ch) if (! AutoMessageLog::where('identity_sha256', $this->sha($id, $ch))->exists()) $this->log('thank_you_review', $id, $ch, $event->id, 'skipped', 'event_paused');
+                continue;
+            }
+            if (AutoMessages::tipsOn() && AutoMessages::emailOn('thank_you_review') && $this->owner()) {
+                try { app(\App\Services\Tips\IssueTipGrant::class)->automatic($this->owner(), $event->id, (string) Customer::whereKey($event->customer_id)->value('locale')); }
+                catch (\Throwable $e) { report($e); } // without a link the email goes without the tip sentence
+            }
+            try { $src = AutoMessageSource::forEvent($event->id); }
+            catch (\Throwable $e) {
+                foreach (['email', 'sms'] as $ch) if (! AutoMessageLog::where('identity_sha256', $this->sha($id, $ch))->exists()) $this->log('thank_you_review', $id, $ch, $event->id, 'skipped', $this->code($e));
+                continue;
+            }
+            if (! AutoMessages::tipsOn()) $src['vars']['tip_link'] = null;
+            $this->email('thank_you_review', $id, (string) $src['customer']->email, $src['locale'],
+                fn () => AutoMessages::renderEmail('thank_you_review', $src['locale'], $src['vars']), ['customer_id' => $src['customer']->id, 'event_id' => $event->id]);
+            $this->text('thank_you_review', $id, $src);
+        }
+    }
+
+    private function leadText(string $identity, string $phone, string $locale, array $vars): void
+    {
+        $sha = $this->sha($identity, 'sms');
+        if (AutoMessageLog::where('identity_sha256', $sha)->exists()) return;
+        $to = PhoneNumber::e164($phone); $only = (array) config('waoo.sms_allowlist', []);
+        $reason = match (true) {
+            ! AutoMessages::smsOn('inquiry_received') => 'owner_off',
+            ! SmsGate::enabled() => 'sms_off',
+            ! $to => 'no_mobile',
+            $only !== [] && ! in_array($to, $only, true) => 'test_mode',
+            ! SmsConsent::allows($to) => 'no_consent',
+            default => null,
+        };
+        if ($reason) { $this->log('inquiry_received', $identity, 'sms', null, $reason === 'test_mode' ? 'held' : 'skipped', $reason); return; }
+        try { $body = AutoMessages::renderSms('inquiry_received', $locale, $vars); }
+        catch (\Throwable $e) { $this->log('inquiry_received', $identity, 'sms', null, 'skipped', $this->code($e)); return; }
+        try { $row = $this->log('inquiry_received', $identity, 'sms', null, 'sending'); } catch (UniqueConstraintViolationException) { return; }
+        try {
+            $sms = app(SendSms::class)->toLead($this->owner(), $to, $body, $locale);
+            $row->fill(['status' => $sms->status, 'sms_message_id' => $sms->id])->save();
+            if (in_array($sms->status, ['sent', 'delivered'], true)) $this->out['sms']++;
+        } catch (\Throwable $e) { $row->fill(['status' => 'skipped', 'reason' => $this->code($e)])->save(); }
     }
 
     /** @return array{0:string,1:?int} final status and outbox message id */

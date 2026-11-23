@@ -25,7 +25,9 @@ final class AutoReminders
         if (! $grant) return 'Los recordatorios no se programaron: el enlace del cliente vence antes de la fiesta. Prográmalos desde la fiesta con un enlace nuevo.';
         try {
             app(PlanEventMail::class)->execute($actor, $event->id, ['expected_event_version' => $event->version,
-                'expected_customer_version' => $event->customer->version, 'portal_grant_id' => $grant->id], (string) Str::uuid());
+                'expected_customer_version' => $event->customer->version, 'portal_grant_id' => $grant->id,
+                // Owner 2026-11-23: the thank-you goes out from waoo:messages the day after, with its tip link (it can only exist after the party).
+                'templates' => ['balance_reminder', 'week_before']], (string) Str::uuid());
         } catch (\Throwable $e) {
             report($e);
             return 'Los recordatorios no se programaron solos. Prográmalos desde la fiesta (Más → Programar recordatorios).';

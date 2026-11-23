@@ -21,6 +21,10 @@ return [
     ],
     // Text messages: short, brand first (A2P), only to clients who accepted texts. {link} is the client's private page.
     'sms' => [
+        'inquiry_received' => [
+            'es' => 'Waoo Party: ¡Hola {first_name}! Recibimos tu solicitud para el {event_date}. Muy pronto te enviamos opciones por correo. Dudas: (346) 851-8830',
+            'en' => 'Waoo Party: Hi {first_name}! We received your request for {event_date}. We will email you options very soon. Questions: (346) 851-8830',
+        ],
         'payment_received' => [
             'es' => 'Waoo Party: ¡Gracias, {first_name}! Recibimos tu pago de {amount}. Saldo: {balance}.',
             'en' => 'Waoo Party: Thank you, {first_name}! We received your payment of {amount}. Balance: {balance}.',
@@ -38,8 +42,8 @@ return [
             'en' => 'Waoo Party: One week to go, {first_name}! Your party is on {event_date}. Check the details here: {link}',
         ],
         'thank_you_review' => [
-            'es' => 'Waoo Party: ¡Gracias por celebrar con nosotros, {first_name}! Si te gustó, tu reseña nos ayuda muchísimo: {review_link}',
-            'en' => 'Waoo Party: Thank you for celebrating with us, {first_name}! If you enjoyed it, a review helps us a lot: {review_link}',
+            'es' => 'Waoo Party: ¡Gracias por celebrar con nosotros, {first_name}! Si te gustó, tu reseña en Google nos ayuda muchísimo: {review_link}',
+            'en' => 'Waoo Party: Thank you for celebrating with us, {first_name}! If you enjoyed it, a Google review helps us a lot: {review_link}',
         ],
     ],
 ];

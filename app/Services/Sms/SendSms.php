@@ -41,6 +41,30 @@ final class SendSms
     }
 
     /**
+     * Owner 2026-11-23: the short text that goes with "Recibimos tu solicitud" to a website request. The visitor is not a
+     * client record yet; same rules as any text: texting on, US mobile, test-number list, accepted texts and no STOP.
+     */
+    public function toLead(User $actor, ?string $phone, string $body, string $locale): SmsMessage
+    {
+        RecordActor::authorize($actor);
+        $body = trim($body);
+        if ($body === '' || mb_strlen($body) > 640) throw ValidationException::withMessages(['body' => 'Escribe el texto (máximo 640 letras).']);
+        if (! SmsGate::enabled()) throw ValidationException::withMessages(['body' => 'Los textos están apagados. Se prenden cuando tú lo decidas.']);
+        $to = PhoneNumber::e164($phone);
+        if (! $to) throw ValidationException::withMessages(['body' => 'Este contacto no tiene un celular de EE. UU. válido.']);
+        $only = (array) config('waoo.sms_allowlist', []);
+        if ($only !== [] && ! in_array($to, $only, true)) throw ValidationException::withMessages(['body' => 'Los textos están en modo prueba: solo salen a los números de prueba.']);
+        if (! SmsConsent::allows($to)) throw ValidationException::withMessages(['body' => 'Este número no aceptó recibir textos (o escribió STOP).']);
+        if (! SmsMessage::where('phone_e164', $to)->where('direction', 'out')->whereIn('status', ['sent', 'delivered'])->exists()) {
+            $body .= "\n\n".self::FOOTER[$locale === 'en' ? 'en' : 'es'];
+        }
+        $message = SmsMessage::create(['direction' => 'out', 'phone_e164' => $to, 'customer_id' => null, 'event_id' => null,
+            'body' => $body, 'status' => 'queued', 'created_by' => $actor->id]);
+
+        return $this->deliver($actor, $message, $to, $body);
+    }
+
+    /**
      * Owner 2026-11-23 "Enviarme una prueba": a sample text to the owner's own test number. Only numbers listed in
      * WAOO_SMS_ALLOWLIST (his phone); never a client. Same Twilio path, footer rule and log as a real text.
      */

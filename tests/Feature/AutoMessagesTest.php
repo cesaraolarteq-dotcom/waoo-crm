@@ -106,13 +106,18 @@ class AutoMessagesTest extends TestCase
         $this->assertFalse(AutoMessages::emailOn('contract_signed'), 'A text change turns it back into a proposal.');
     }
 
-    public function test_reminder_switched_off_is_skipped_at_dispatch(): void
+    private function confirm(): void
     {
         $this->pay($this->finance->deposit_target_cents);
         $resources = [\App\Models\Resource::create(['code' => 'AM-PERFORMER', 'name' => 'Ana Torres', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer', 'driver']])->id,
             \App\Models\Resource::create(['code' => 'AM-SPEAKER', 'name' => 'Bocina 1', 'kind' => 'equipment', 'status' => 'active', 'equipment_kind' => 'speaker', 'skills' => []])->id];
         app(\App\Services\Finance\ConfirmPaidCapacity::class)->execute($this->owner, $this->event->id, ['expected_version' => 1, 'financial_revision_id' => $this->finance->id, 'resource_ids' => $resources,
             'review' => ['staff_confirmed' => true, 'cargo_checked' => true, 'origin_return_note' => 'Revisado.', 'transfers' => []]]);
+    }
+
+    public function test_reminder_switched_off_is_skipped_at_dispatch(): void
+    {
+        $this->confirm();
         $grant = app(\App\Services\Portal\IssuePortalGrant::class)->execute($this->owner, $this->event->id, ['customer_id' => $this->event->customer_id, 'expires_at' => now()->addDays(29)->toIso8601String()]);
         app(\App\Services\Mail\PlanEventMail::class)->execute($this->owner, $this->event->id, ['expected_event_version' => $this->event->fresh()->version, 'expected_customer_version' => Customer::find($this->event->customer_id)->version, 'portal_grant_id' => $grant->id, 'templates' => ['week_before']], (string) Str::uuid());
         $m = OutboundMessage::where('template_key', 'week_before')->sole();
@@ -122,6 +127,46 @@ class AutoMessagesTest extends TestCase
         $state = OutboundMessageState::where('outbound_message_id', $m->id)->sole();
         $this->assertSame(['skipped', 'owner_off'], [$state->status, $state->error_code]);
         $this->assertNotContains($m->id, $this->transport->sent);
+    }
+
+    public function test_confirming_plans_balance_and_week_reminders_and_the_thank_you_waits_for_after_the_party(): void
+    {
+        $this->confirm();
+        app(\App\Services\Portal\IssuePortalGrant::class)->execute($this->owner, $this->event->id, ['customer_id' => $this->event->customer_id, 'expires_at' => now()->addDays(29)->toIso8601String()]);
+        $this->assertNull(\App\Filament\Support\AutoReminders::afterConfirm($this->owner, $this->event->id), 'Real approved texts plan without errors.');
+        $this->assertSame(['balance_reminder', 'week_before'], OutboundMessage::orderBy('template_key')->pluck('template_key')->all());
+    }
+
+    public function test_thank_you_goes_the_day_after_at_ten_with_an_automatic_tip_link(): void
+    {
+        config(['waoo.sandbox_tips' => true]);
+        $this->confirm();
+        $end = $this->event->fresh()->ends_at;
+        $this->travelTo($end->setTimezone('America/Chicago')->addDay()->setTime(9, 50));
+        app(RunAutoMessages::class)->run();
+        $this->assertSame(0, OutboundMessage::count(), 'Not before 10 a.m.');
+        $this->travelTo($end->setTimezone('America/Chicago')->addDay()->setTime(10, 5));
+        app(RunAutoMessages::class)->run();
+        $m = OutboundMessage::where('template_key', 'thank_you_review')->sole();
+        $this->assertSame(1, \App\Models\TipGrant::where('event_id', $this->event->id)->count());
+        $this->assertStringContainsString('/portal/tip#', $m->payload['html']);
+        $this->assertStringContainsString('propina', $m->payload['text']);
+        $this->assertSame([$m->id], $this->transport->sent);
+        app(RunAutoMessages::class)->run();
+        $this->assertSame(1, OutboundMessage::count());
+        $this->assertSame(1, \App\Models\TipGrant::count(), 'The link is reused, never a second one.');
+    }
+
+    public function test_thank_you_without_tips_drops_only_the_tip_sentence(): void
+    {
+        config(['waoo.sandbox_tips' => false]);
+        $this->confirm();
+        $this->travelTo($this->event->fresh()->ends_at->setTimezone('America/Chicago')->addDay()->setTime(10, 5));
+        app(RunAutoMessages::class)->run();
+        $m = OutboundMessage::where('template_key', 'thank_you_review')->sole();
+        $this->assertStringNotContainsString('propina', $m->payload['text']);
+        $this->assertStringContainsString('reseña en Google', $m->payload['text']);
+        $this->assertSame(0, \App\Models\TipGrant::count());
     }
 
     public function test_owner_test_text_goes_only_to_the_listed_number(): void
@@ -150,7 +195,7 @@ class AutoMessagesTest extends TestCase
             ->call('toggle', 'payment_received', 'email')
             ->call('focusOn', 'week_before', 'sms')->assertSet('channel', 'sms')->assertSee('Texto propuesto por Claude')
             ->call('setLang', 'en')->assertSee('One week to go, María!')
-            ->call('select', 'inquiry_received')->assertSet('channel', 'email')
+            ->call('select', 'inquiry_received')->assertSet('channel', 'sms')->call('setChannel', 'email')
             ->call('sendTest');
         $this->assertTrue(AutoMessages::emailOn('contract_signed'));
         $this->assertFalse(MessageSetting::where('key', 'payment_received')->sole()->email_enabled);

@@ -14,7 +14,7 @@ final class AutoMessages
 {
     /** Client journey order. 'sms' = a text version exists for this message. */
     public const FLOW = [
-        'inquiry_received' => ['name' => 'Recibimos tu solicitud', 'when' => 'Al instante, cuando llega una solicitud desde la web', 'sms' => false],
+        'inquiry_received' => ['name' => 'Recibimos tu solicitud', 'when' => 'Al instante, cuando llega una solicitud desde la web', 'sms' => true],
         'payment_received' => ['name' => 'Pago recibido', 'when' => 'Al instante, cuando registras un pago (Zelle verificado o tarjeta)', 'sms' => true],
         'contract_signed' => ['name' => 'Contrato firmado', 'when' => 'Al instante, cuando el cliente firma su contrato', 'sms' => true],
         'balance_reminder' => ['name' => 'Recordatorio de saldo', 'when' => 'Un día antes de que venza el saldo (solo si hay saldo)', 'sms' => true],
@@ -109,6 +109,7 @@ final class AutoMessages
     public static function renderEmail(string $key, string $locale, #[\SensitiveParameter] array $vars, array $totals = []): array
     {
         $locale = $locale === 'en' ? 'en' : 'es';
+        if ($key === 'thank_you_review' && blank($vars['tip_link'] ?? null)) return self::thankYouWithoutTip($locale, $vars);
         if (! in_array($key, self::PAGE_APPROVED_EMAILS, true)) {
             $r = ApprovedMail::render($key, $locale, array_intersect_key($vars, array_flip(ApprovedMail::VARIABLES)), $totals);
             return ['subject' => $r['subject'], 'html' => $r['html'], 'text' => $r['text']];
@@ -122,6 +123,27 @@ final class AutoMessages
         $text = implode("\n\n", [...$mail['paragraphs'], $d['button'].': '.$vars['link'], $d['closing'], '— Waoo Party']);
         $html = view('mail.layout', ['lang' => $locale, 'mail' => $mail, 'totals' => [], 'logo' => Sandbox::origin().'/img/waoo-logo.png'])->render();
         return ['subject' => $mail['subject'], 'html' => $html, 'text' => $text];
+    }
+
+    /** Tips switched off on the server: the approved thank-you without its tip sentence and tip button. */
+    private static function thankYouWithoutTip(string $locale, array $vars): array
+    {
+        $d = ApprovedMail::definition('thank_you_review', $locale);
+        if (blank($vars['first_name'] ?? null)) ApprovedMail::fail('missing_template_variable');
+        ApprovedMail::url($vars['review_link'] ?? null, false);
+        $fill = fn (string $s) => preg_replace_callback('/\{(\w+)\}/', fn ($m) => (string) ($vars[$m[1]] ?? ''), $s);
+        $paragraphs = array_values(array_filter($d['paragraphs'], fn ($p) => ! str_contains($p, 'propina') && ! str_contains(mb_strtolower($p), ' tip')));
+        $mail = ['subject' => $fill($d['subject']), 'paragraphs' => array_map($fill, $paragraphs), 'closing' => $d['closing'] === null ? null : $fill($d['closing']),
+            'button' => ['label' => $fill($d['button']['label']), 'url' => $vars['review_link']], 'button2' => null];
+        $text = implode("\n\n", [...$mail['paragraphs'], $mail['button']['label'].': '.$vars['review_link'], ...($mail['closing'] ? [$mail['closing']] : []), '— Waoo Party']);
+        $html = view('mail.layout', ['lang' => $locale, 'mail' => $mail, 'totals' => [], 'logo' => Sandbox::origin().'/img/waoo-logo.png'])->render();
+        return ['subject' => $mail['subject'], 'html' => $html, 'text' => $text];
+    }
+
+    /** Tips page on (WAOO_SANDBOX_TIPS): only then does the thank-you carry a tip link. */
+    public static function tipsOn(): bool
+    {
+        return config('waoo.sandbox_tips') === true && config('waoo.sandbox_finance') === true;
     }
 
     public static function renderSms(string $key, string $locale, #[\SensitiveParameter] array $vars): string
@@ -146,7 +168,7 @@ final class AutoMessages
             'has_balance' => true, 'due' => $es ? '11 de diciembre de 2026' : 'Dec 11, 2026',
             'balance_due' => $es ? ' · vence viernes 11 de diciembre de 2026, 3:00 pm' : ' · due Fri, Dec 11, 2026 3:00 PM',
             'valid_until' => $es ? '30 de noviembre de 2026' : 'Nov 30, 2026', 'link' => $origin.'/portal#token=ejemplo',
-            'review_link' => (string) config('waoo.mail_review_url'), 'tip_link' => $origin.'/portal/tip#ejemplo'];
+            'review_link' => (string) config('waoo.mail_review_url'), 'tip_link' => self::tipsOn() ? $origin.'/portal/tip#ejemplo' : null];
     }
 
     public static function sampleTotals(string $lang): array
