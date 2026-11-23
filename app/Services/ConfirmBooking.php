@@ -30,6 +30,10 @@ final class ConfirmBooking
                 if (! $staffLater && $ids->isEmpty()) $this->fail('Selecciona el personal y los recursos de la fiesta.');
                 $hold = \App\Services\Booking\QuickCostumeHolds::confirmation($event, $ids->all(), $data['costume_outfits']);
                 $data['costume_outfits'] = $hold['choices'];
+                if ($event->status === 'draft') {
+                    $jointRows = app(\App\Services\Availability\JointCapacityHolds::class)->forConfirmation($event, $ids->all(), $staffLater);
+                    $hold['reservation_ids'] = array_unique([...$hold['reservation_ids'], ...$jointRows]);
+                }
                 if ($event->status === 'capacity_reserved') {
                     $existing = BookingEvidence::where('event_id', $event->id)->firstOrFail();
                     $same = $event->reservations()->orderBy('resource_id')->pluck('resource_id')->all() === $ids->all();

@@ -34,6 +34,7 @@ final class QuickPaymentCheckout
         catch(\Throwable){throw new RecordWriteRejected(503,'No pudimos verificar los métodos de Stripe. Puedes elegir Zelle o reintentar. / We could not verify Stripe methods. Choose Zelle or retry.');}
         RecordWriteRejected::unless($evidence===['account'=>\App\Services\Finance\StripeMode::account(),'methods'=>$methods],409,'La cuenta o los métodos de Stripe no coinciden.');
         [$request,$intent]=DB::transaction(function()use($client,$d,$key,$scope,$hash,$evidence){
+            \App\Services\Scheduling\DailyCapacity::lock();
             [$b,$e,$grant]=QuickPaymentProtocol::portal($client);QuickPaymentProtocol::submission($b,$e);
             if($r=MutationKey::find($scope,$key,$hash,true)){
                 $request=QuickStripeCheckoutRequest::findOrFail($r->result_id);$a=QuickPaymentAttempt::findOrFail($request->id);
@@ -45,6 +46,7 @@ final class QuickPaymentCheckout
             RecordWriteRejected::unless($b->state==='awaiting_payment'&&$b->expires_at->isFuture()&&!QuickPaymentProtocol::pendingNotice($b),409,'El apartado cambió o venció.');
             $lease=QuickStripeLease::whereKey($b->quick_stripe_lease_id)->lockForUpdate()->firstOrFail();$source=QuickStripeLeases::verify($lease,$e,false);
             \App\Services\Availability\AdmitEventCapacity::assertTeamStillHeld($e,$lease->admission_state); // S1: event → lease → days → inventory
+            app(\App\Services\Availability\JointCapacityHolds::class)->active($e, $lease->id);
             QuickStripeLeases::lockInventory($source);$source=QuickStripeLeases::verify($lease,$e);
             RecordWriteRejected::unless(!PaymentIntent::where('event_id',$e->id)->whereNotIn('status',['expired','failed','cancelled'])->lockForUpdate()->first(),409,'Ya existe un intento de pago. Revisa el original antes de abrir otro.');
             RecordWriteRejected::unless(!QuickStripeCheckoutRequest::where('quick_stripe_lease_id',$lease->id)->whereNotIn('id',QuickPaymentAttempt::select('id'))->exists(),409,'El apartado tiene una solicitud anterior que requiere revisión.');
@@ -64,7 +66,7 @@ final class QuickPaymentCheckout
         if($intent->status==='paid')return ['state'=>'paid','checkout_url'=>null];
         RecordWriteRejected::unless(!in_array($intent->status,['failed','expired','cancelled','superseded','reconciliation_required'],true),409,'Revisa el intento anterior.');
         // Recheck original authority and deadline even when the request is replayed.
-        DB::transaction(function()use($client,$request){[$b]=QuickPaymentProtocol::portal($client);self::verify($request);RecordWriteRejected::unless($b->state==='awaiting_payment'&&$b->expires_at->isFuture()&&!QuickPaymentProtocol::pendingNotice($b)&&$request->envelope['parameters']['expires_at']>now()->timestamp+30,409,'El apartado cambió o venció.');},3);
+        DB::transaction(function()use($client,$request){\App\Services\Scheduling\DailyCapacity::lock();[$b,$event]=QuickPaymentProtocol::portal($client);self::verify($request);app(\App\Services\Availability\JointCapacityHolds::class)->active($event, $b->quick_stripe_lease_id);RecordWriteRejected::unless($b->state==='awaiting_payment'&&$b->expires_at->isFuture()&&!QuickPaymentProtocol::pendingNotice($b)&&$request->envelope['parameters']['expires_at']>now()->timestamp+30,409,'El apartado cambió o venció.');},3);
         $p=self::verify($request);
         RecordWriteRejected::unless($p['capabilities']===$evidence && str_starts_with($p['parameters']['success_url'],\App\Services\Finance\Sandbox::origin().'/portal?'),409,'La configuración de Stripe cambió; revisa el intento original.');
         try{$session=$gateway->createCheckout($p['parameters'],$p['provider_key']);}
@@ -72,10 +74,12 @@ final class QuickPaymentCheckout
         catch(\Throwable){throw new RecordWriteRejected(503,'Stripe no respondió. Reintenta el mismo intento; no se ha registrado un pago. / Stripe did not respond. Resume the same attempt; no payment has been recorded.');}
         self::session($session,$request);
         try { return DB::transaction(function()use($client,$request,$intent,$session){
-            [$b]=QuickPaymentProtocol::portal($client);$locked=PaymentIntent::whereKey($intent->id)->lockForUpdate()->firstOrFail();
+            \App\Services\Scheduling\DailyCapacity::lock();
+            [$b,$event]=QuickPaymentProtocol::portal($client);$locked=PaymentIntent::whereKey($intent->id)->lockForUpdate()->firstOrFail();
             RecordWriteRejected::unless(!$locked->stripe_checkout_session_id||$locked->stripe_checkout_session_id===$session['id'],409,'La sesión cambió.');
             $changes=['stripe_checkout_session_id'=>$session['id']];
             if($locked->status!=='paid'){
+                app(\App\Services\Availability\JointCapacityHolds::class)->active($event, $b->quick_stripe_lease_id);
                 RecordWriteRejected::unless($b->state==='awaiting_payment'&&$b->expires_at->isFuture(),409,'El apartado cambió; el pago requiere revisión.');
                 RecordWriteRejected::unless(is_string($session['url']??null)&&preg_match('~^https://checkout\.stripe\.com/[^\s]+$~D',$session['url']),409,'Enlace de Stripe inválido.');
                 $changes+=['status'=>'open','checkout_url'=>$session['url']];

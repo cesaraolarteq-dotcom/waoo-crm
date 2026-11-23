@@ -21,6 +21,10 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-23 · BACKEND · Punto 3: apartado conjunto de la futura reserva web · PENDING
+- Rama `codex/fix-website-joint-hold`. Tres pruebas/18 aserciones con MariaDB, dos procesos y Stripe simulado.
+- Revisar vida del equipo comprometido en la planificación y ante reprogramación. La web permanece en preview.
+
 ### 2026-11-23 · UI · Mensajes automáticos (correos + textos, switches, preview, prueba) · PENDING
 - Branch / commits: claude/auto-messages
 - Reported by César: "ideame algo funcional e ideal… que se pueda controlar todo desde ahí"

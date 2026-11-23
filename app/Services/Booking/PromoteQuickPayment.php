@@ -17,6 +17,7 @@ final class PromoteQuickPayment
             &&$receipt->received_at&&(!\App\Services\Scheduling\DepositPolicy::underDayNotice($e->starts_at,$receipt->received_at)||\App\Services\Scheduling\DepositPolicy::ownerApproved($e->id));
         try{
             QuickPaymentProtocol::verify($b,$e);
+            $joint = app(\App\Services\Availability\JointCapacityHolds::class)->active($e, $lease->id);
             $p=QuickStripeLeases::verify($lease,$e,false,true);QuickStripeLeases::lockInventory($p);
             $p=QuickStripeLeases::verify($lease,$e,true,true);
         }catch(RecordWriteRejected){$valid=false;}
@@ -33,6 +34,7 @@ final class PromoteQuickPayment
         QuickCostumeHolds::transition($actor,$e,$h,$p['issues']? 'review_required':'held',$p['rows'],$p['issues'],'verified_payment_replaces_unpaid_lease');
         QuickPaymentProtocol::transition($b,'paid','verified_payment',$actor,['receipt_id'=>$backing->id,'quick_booking_id'=>$q->id]);
         DB::table('payment_exceptions')->where('event_id',$e->id)->where('kind','quick_payment_review')->where('context->booking_id',$b->id)->where('state','open')->update(['state'=>'resolved','updated_at'=>now()]);
+        if ($joint) \App\Services\Availability\JointCapacityHolds::append($joint, [...$joint->payload, 'state' => 'committed', 'reason' => 'verified_payment']);
         QuickStripeLeases::append($actor,$lease,[...$p,'state'=>'promoted','rows'=>[],'reason'=>'verified_payment_replaces_unpaid_lease']);
     }
 }
