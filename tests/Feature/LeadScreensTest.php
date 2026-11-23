@@ -121,4 +121,13 @@ class LeadScreensTest extends TestCase
         $this->get('/admin/prospectos?pagina=2')->assertOk()->assertSee('Primera Ficticia');
         $this->assertSame(51, Lead::count());
     }
+
+    /** Owner 2026-11-17: each lead says where it came from, and the top line counts this month's requests by source. */
+    public function test_list_shows_where_each_lead_came_from(): void
+    {
+        $this->lead(['attribution' => ['channel' => 'google_ads', 'term' => 'princess <b>party</b>']]);
+        $this->lead(['name' => 'Luis Ficticio']);
+        $this->get('/admin/prospectos')->assertOk()->assertSee('Llegó por')->assertSee('Anuncio de Google · buscó «princess &lt;b&gt;party&lt;/b&gt;»', false)
+            ->assertSee('Este mes llegaron por:')->assertSee('Sin dato (antes del 17 nov) 1');
+    }
 }

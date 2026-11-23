@@ -93,8 +93,17 @@ class Leads extends Page
                 'type' => self::EVENT_TYPES[$p['event_type'] ?? ''][1] ?? (in_array($p['event_type'] ?? '', ['', 'unspecified'], true) ? 'Sin elegir' : $p['event_type']), 'message' => $p['message'] ?? null,
                 'travel' => $p['travel_estimate_text'] ?? null, 'demand' => $p['demand_flag'] ?? 'unknown', 'locale' => $p['locale'] ?? 'es',
                 'received' => isset($l['submission']['received_at']) ? Labels::when(\Carbon\CarbonImmutable::parse($l['submission']['received_at'])) : '',
-                'hints' => $l['duplicate_hints'] ?? []];
+                'hints' => $l['duplicate_hints'] ?? [], 'source' => \App\Services\Leads\LeadSource::label($p)];
         })->all();
+    }
+
+    /** Owner 2026-11-17: this month's website requests and bookings by where they came from (Google Ads, Google, Instagram…). */
+    public function sourceSummary(): array
+    {
+        $start = \Carbon\CarbonImmutable::now('America/Chicago')->startOfMonth();
+        $rows = \App\Services\Leads\LeadSource::summary($start, $start->addMonth());
+
+        return collect($rows)->map(fn ($n, $c) => ['label' => \App\Services\Leads\LeadSource::LABELS[$c] ?? 'Sin dato (antes del 17 nov)', ...$n])->values()->all();
     }
 
     public function counts(): array

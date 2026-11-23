@@ -1,5 +1,5 @@
 <?php
-// Exact pure formula from waoo-website5afc001 travel-fee-lib.php lines31–43. No config/key/network load.
+// Exact pure formula from the website travel-fee-lib.php waoo_tf_fee (2026-11-19, charge_tolls). No config/key/network load.
 function fixture_website_travel_fee($oneWayMiles, $oneWayToll, array $cfg) {
     $raw = (float) $cfg['flat_fee'];
     $lo = (float) $cfg['flat_up_to_miles'];
@@ -10,7 +10,7 @@ function fixture_website_travel_fee($oneWayMiles, $oneWayToll, array $cfg) {
         if ($tier['up_to'] === null) break;
         $lo = (float) $tier['up_to'];
     }
-    $raw += $oneWayToll * 2;
+    if ($cfg['charge_tolls'] ?? true) $raw += $oneWayToll * 2;
     $step = max(1, (float) $cfg['round_to']);
     return ['raw' => $raw, 'fee' => (int) (round($raw / $step) * $step)];
 }

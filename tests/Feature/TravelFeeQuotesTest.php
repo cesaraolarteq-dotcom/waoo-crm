@@ -53,10 +53,10 @@ class TravelFeeQuotesTest extends TestCase
         $this->postJson('/admin/api/travel-fee-quotes', ['zip' => '77450'])->assertCreated();
         $this->postJson('/admin/api/travel-fee-quotes', ['address' => 'Katy'])->assertUnprocessable();
     }
-    public function test_all_seven_fixed_zips_skip_google_even_without_key(): void
+    public function test_all_fixed_zips_skip_google_even_without_key(): void
     {
         Http::fake(); config(['waoo.google_routes_key' => null]);
-        foreach (['77520' => 18000,'77521' => 18000,'77433' => 4000,'77355' => 8000,'77380' => 10000,'77013' => 10000,'77573' => 12500] as $zip => $fee) {
+        foreach (['77520' => 16000,'77521' => 16000,'77573' => 16000,'77381' => 12000,'77598' => 12000,'77346' => 12500,'77433' => 4000,'77447' => 5000,'77355' => 8000,'77380' => 10000,'77013' => 10000] as $zip => $fee) {
             $q = $this->quote('123 Fictional Venue, TX '.$zip, (string) $zip); $this->assertSame($fee, $q['fee_cents']); $this->assertTrue($q['breakdown']['special_zip']);
         }
         Http::assertNothingSent(); $this->assertDatabaseCount('travel_route_daily_usage', 0);

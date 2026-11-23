@@ -1,0 +1,118 @@
+From e3eac5b8e2dda526e21b24f538148d5868d189ca Mon Sep 17 00:00:00 2001
+From: Cesar Olarte <cesarolarte@Cesars-MBP.local.tld>
+Date: Fri, 20 Nov 2026 12:31:14 -0600
+Subject: [PATCH] CI: 10 shards (about half the wall time) + quick workflow
+ that runs only the test files named in the commit (owner 2026-11-20: faster)
+
+Tests: QuickPaymentsTest AdminScreensTest
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .github/workflows/ci.yml          |  7 ++--
+ .github/workflows/quick-tests.yml | 64 +++++++++++++++++++++++++++++++
+ 2 files changed, 68 insertions(+), 3 deletions(-)
+ create mode 100644 .github/workflows/quick-tests.yml
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 324fec5..fbbcaa4 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -6,6 +6,7 @@ on:
+ permissions:
+   contents: read
+ # A newer commit on the same branch/PR cancels the older run; main always finishes.
++# 2026-11-20: 10 shards (was 5, ~15–19 min wall) so a full run takes about half the time; same files, each in exactly one shard.
+ concurrency:
+   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+@@ -40,8 +41,8 @@ jobs:
+     strategy:
+       fail-fast: false
+       matrix:
+-        shard: [1, 2, 3, 4, 5]
+-    name: test (${{ matrix.shard }}/5)
++        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
++    name: test (${{ matrix.shard }}/10)
+     services:
+       mariadb:
+         image: mariadb:11.8
+@@ -77,5 +78,5 @@ jobs:
+       - run: composer install --no-interaction --prefer-dist
+       - run: cp .env.example .env && php artisan key:generate
+       # Each shard has its own MariaDB; every test file runs in exactly one shard (tools/ci-shard.php checks it).
+-      - run: php tools/ci-shard.php 5 ${{ matrix.shard }} > phpunit-shard.xml
++      - run: php tools/ci-shard.php 10 ${{ matrix.shard }} > phpunit-shard.xml
+       - run: vendor/bin/phpunit --configuration=phpunit-shard.xml
+diff --git a/.github/workflows/quick-tests.yml b/.github/workflows/quick-tests.yml
+new file mode 100644
+index 0000000..7142a04
+--- /dev/null
++++ b/.github/workflows/quick-tests.yml
+@@ -0,0 +1,64 @@
++name: Quick tests
++# 2026-11-20 (owner: faster turnaround): on a claude/** push whose commit message has a line
++#   Tests: AdminScreensTest QuickPaymentsTest
++# run only those test files (a few minutes). The full suite still runs on the PR before any deploy.
++on:
++  push:
++    branches: ['claude/**']
++permissions:
++  contents: read
++concurrency:
++  group: quick-${{ github.ref }}
++  cancel-in-progress: true
++jobs:
++  quick:
++    if: contains(github.event.head_commit.message, 'Tests:')
++    runs-on: ubuntu-latest
++    services:
++      mariadb:
++        image: mariadb:11.8
++        env:
++          MARIADB_ROOT_PASSWORD: ci-only-disposable-password
++          MARIADB_DATABASE: waoo_phase1_test
++        ports: ['3306:3306']
++        options: >-
++          --health-cmd="healthcheck.sh --connect --innodb_initialized"
++          --health-interval=5s --health-timeout=5s --health-retries=20
++    env:
++      APP_ENV: testing
++      APP_DEBUG: 'false'
++      DB_CONNECTION: mysql
++      DB_HOST: 127.0.0.1
++      DB_PORT: 3306
++      DB_DATABASE: waoo_phase1_test
++      DB_USERNAME: root
++      DB_PASSWORD: ci-only-disposable-password
++      SESSION_SECURE_COOKIE: 'false'
++      COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
++    steps:
++      - uses: actions/checkout@v7
++      - uses: shivammathur/setup-php@v2
++        with:
++          php-version: '8.3'
++          extensions: pdo_mysql, pdo_sqlite, intl, bcmath, mbstring, pcntl, zip
++          coverage: none
++          tools: composer:v2
++      - uses: actions/cache@v6
++        with:
++          path: ~/.composer/cache/files
++          key: composer-${{ hashFiles('composer.lock') }}
++      - run: composer install --no-interaction --prefer-dist
++      - run: cp .env.example .env && php artisan key:generate
++      - name: Selected test files
++        run: |
++          names=$(printf '%s\n' "$COMMIT_MESSAGE" | sed -n 's/^Tests:[[:space:]]*//p' | head -1 | tr ',' ' ')
++          files=""
++          for n in $names; do
++            case "$n" in *[!A-Za-z0-9_]*) echo "bad test name: $n"; exit 1;; esac
++            f=$(find tests -name "$n.php" | head -1)
++            [ -n "$f" ] || { echo "no test file named $n"; exit 1; }
++            files="$files $f"
++          done
++          [ -n "$files" ] || { echo "no tests listed"; exit 1; }
++          echo "Running:$files"
++          for f in $files; do vendor/bin/phpunit "$f" || exit 1; done
+-- 
+2.37.1 (Apple Git-137.1)
+
