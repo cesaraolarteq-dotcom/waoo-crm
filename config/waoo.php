@@ -79,6 +79,7 @@ return [
     // After the HoneyBook switch only: the CRM is the only agenda (no outside calendar is read). Off = an outside calendar must answer.
     // ANNIV-01 campaign switch (off): with the general mail gate also on, "One year later" emails and day-6 reminders go out.
     'anniversary_mail_enabled' => (bool) env('WAOO_ANNIVERSARY_MAIL_ENABLED', false),
+    'anniversary_clients_enabled' => (bool) env('WAOO_ANNIVERSARY_CLIENTS', false), // owner 2026-11-25: the anniversary email may reach real clients
     'anniversary_font' => env('WAOO_ANNIVERSARY_FONT', 'poppins'), // owner 2026-11-25: poppins | fredoka
     'availability_crm_only' => (bool) env('WAOO_AVAILABILITY_CRM_ONLY', false),
     'postal_address' => env('WAOO_POSTAL_ADDRESS', 'Waoo Party LLC · 17350 State Hwy 249, Ste 220 · Houston, TX 77064'),

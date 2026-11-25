@@ -14,6 +14,17 @@ final class MailGuard
         $tests=array_filter(array_map(fn($v)=>is_string($v)?mb_strtolower(trim($v)):'',(array)config('waoo.mail_test_recipients',[])),fn($v)=>filter_var($v,FILTER_VALIDATE_EMAIL)!==false);
         return array_values(array_unique([...$owner,...$tests]));
     }
+    /** Client campaigns that may reach real clients once their own live switch is on (owner 2026-11-25: anniversary only). */
+    public const CLIENT_CAMPAIGNS=['anniversary_main','anniversary_reminder'];
+
+    /** Owners/test recipients always; a real client only for an approved client campaign on the real CRM with its switch on. */
+    public static function allows(string $recipient,?string $template=null):bool
+    {
+        $r=mb_strtolower(trim($recipient));
+        if(in_array($r,self::allowlist(),true))return true;
+        return $template!==null&&in_array($template,self::CLIENT_CAMPAIGNS,true)&&config('waoo.anniversary_clients_enabled')===true
+            &&\App\Support\WaooRuntime::live()&&filter_var($r,FILTER_VALIDATE_EMAIL)!==false;
+    }
     public static function transaction(callable $work):mixed
     {
         try{return \Illuminate\Support\Facades\DB::transaction($work,3);}catch(\Illuminate\Database\QueryException){throw new \RuntimeException('Private mail persistence unavailable.');}

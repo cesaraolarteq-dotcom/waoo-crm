@@ -84,6 +84,31 @@ class AnniversaryCampaignTest extends TestCase
         $this->assertSame(['issued' => 1, 'sent' => 0, 'redeemed' => 0], array_intersect_key(AnniversaryCampaign::stats(), array_flip(['issued', 'sent', 'redeemed'])));
     }
 
+    public function test_overdue_clients_go_out_in_weekly_batches_three_weeks_before_their_anniversary(): void
+    {
+        $soon = $this->client('Carmen Ruiz', 'carmen@example.com'); $this->pastParty($soon, 355);     // anniversary in 10 days
+        $later = $this->client('Patricia Vega', 'patricia@example.com'); $this->pastParty($later, 335); // anniversary in 30 days, send day 13 days ago
+        $normal = $this->client('Lorena Díaz', 'lorena@example.com'); $this->pastParty($normal, 323);  // normal send day was yesterday
+        $this->assertSame(['issued' => 2, 'skipped' => 0], app(AnniversaryCampaign::class)->issue(CarbonImmutable::now('America/Chicago')));
+        $this->assertFalse(AnniversaryCode::where('customer_id', $later->id)->exists(), 'waits for its weekly batch');
+        $this->travel(10)->days();
+        $this->assertSame(['issued' => 1, 'skipped' => 0], app(AnniversaryCampaign::class)->issue(CarbonImmutable::now('America/Chicago')));
+    }
+
+    public function test_only_the_anniversary_campaign_may_reach_a_real_client_and_only_on_the_real_crm_with_its_switch_on(): void
+    {
+        $client = 'cliente.real@example.com';
+        $this->assertFalse(\App\Services\Mail\MailGuard::allows($client, 'anniversary_main'));
+        config(['waoo.anniversary_clients_enabled' => true]);
+        $this->assertFalse(\App\Services\Mail\MailGuard::allows($client, 'anniversary_main'), 'test environment is never live');
+        $this->app['env'] = 'production'; config(['waoo.live' => true]);
+        $this->assertTrue(\App\Services\Mail\MailGuard::allows($client, 'anniversary_main'));
+        $this->assertTrue(\App\Services\Mail\MailGuard::allows($client, 'anniversary_reminder'));
+        $this->assertFalse(\App\Services\Mail\MailGuard::allows($client, 'reschedule_notice'), 'other notices stay owner-only');
+        $this->assertFalse(\App\Services\Mail\MailGuard::allows($client), 'no template, no exception');
+        $this->app['env'] = 'testing';
+    }
+
     public function test_the_code_takes_10_percent_off_the_package_only_once_for_its_own_client(): void
     {
         $maria = $this->client('María González');

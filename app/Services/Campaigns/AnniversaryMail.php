@@ -73,7 +73,7 @@ final class AnniversaryMail
             if ($kind === null) continue;
             $customer = Customer::find($row->customer_id);
             if (! $customer || blank($customer->email) || ! filter_var($customer->email, FILTER_VALIDATE_EMAIL) || $customer->promo_opt_out_at !== null) continue;
-            if (! self::enabled() || ! CampaignOutbox::canPlan($customer->email)) { $out['held']++; continue; }
+            if (! self::enabled() || ! CampaignOutbox::canPlan($customer->email, 'anniversary_'.$kind)) { $out['held']++; continue; }
             // Plan the message and claim the code in one transaction: two runs never plan the same email twice.
             $message = MailGuard::transaction(function () use ($row, $kind) {
                 $fresh = AnniversaryCode::whereKey($row->id)->lockForUpdate()->first();
@@ -143,7 +143,7 @@ final class AnniversaryMail
             }
             foreach ($titles as $title) {
                 $name = trim(explode('|', $title)[0]);
-                $key = \Illuminate\Support\Str::ascii(mb_strtolower(trim(preg_replace('/\s+/u', ' ', preg_replace('/\(.*\)/u', '', $name)))));
+                $key = \Illuminate\Support\Str::ascii(mb_strtolower(trim(preg_replace('/\s+/u', ' ', preg_replace('/[!¡]+|\(.*\)/u', '', $name)))));
                 $crm = config('honeybook_aliases.packages')[$key] ?? null;
                 $variant = $crm ? \App\Models\ServiceVariant::where('name', $crm)->where('status', 'active')->first()
                     : \App\Models\ServiceVariant::where(fn ($q) => $q->where('name', $name)->orWhere('name_en', $name))->where('status', 'active')->first();
