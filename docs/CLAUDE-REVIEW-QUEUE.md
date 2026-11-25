@@ -21,6 +21,13 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-25 · DECISION · Verificación de registros para enlaces cortos · PENDING
+- Rama: `codex/fix-portal-log-verification`.
+- Cambio: la guía de Hostinger indica qué registros comprobar, cómo documentar el resultado y cuándo mantener apagados los enlaces cortos.
+- Archivos: `docs/HOSTINGER_STAGING.md` y registros de revisión.
+- Verificación: cotejo con el valor predeterminado de `WAOO_SHORT_PORTAL_LINKS` y el contrato de enlaces cortos. El panel de Hostinger no estuvo disponible.
+- Qué revisar: comprobar en cada entorno que los registros oculten el código de la ruta y el token en `Location`.
+
 ### 2026-11-20 · BACKEND · Integración parcial de prospectos, Zip, staff, contratos y transporte · PENDING
 - Branch: codex/fix-verified-nov20. Sources: #209, #210, #213 and #214 through 8be3959.
 - The server rejects activating an older draft. Zip eligibility uses the amount collected including the fee. The website lead transport regression uses explicit HTTP and HTTPS origins.
