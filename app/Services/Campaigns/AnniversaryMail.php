@@ -37,10 +37,9 @@ final class AnniversaryMail
             // Owner 2026-11-25: one tap to WhatsApp with the code already written, and a link to compare packages.
             'waUrl' => 'https://wa.me/13468518830?text='.rawurlencode("Hi Waoo Party! I'd like to use my gift code {$row->code} for my next celebration. / ¡Hola! Quiero usar mi código de regalo {$row->code} para mi próxima fiesta. 🎉"),
             'packagesUrl' => self::SITE.'/packages',
-            // Owner 2026-11-25 (sell more with real data only): the party month, the live Google rating, holiday characters in season.
+            // Owner 2026-11-25 (sell more with real data only): the party month, the live Google rating. No seasonal/specific characters (each party is different).
             'partyMonth' => $row->anchor_date ? \Carbon\CarbonImmutable::parse($row->anchor_date)->locale('en')->monthName : null,
             'rating' => self::rating(),
-            'seasonal' => in_array((int) now('America/Chicago')->month, [11, 12, 1], true),
             'lastPackage' => self::lastPackage($row),
             'font' => self::FONTS[config('waoo.anniversary_font', 'poppins')][0] ?? self::FONTS['poppins'][0],
             'accentFont' => self::FONTS[config('waoo.anniversary_font', 'poppins')][1] ?? self::FONTS['poppins'][1],

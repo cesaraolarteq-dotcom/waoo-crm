@@ -30,9 +30,6 @@
     </tr></table>
   </td></tr>
   <tr><td align="center" style="padding:18px 20px 0;font-family:{!! $accentFont !!};font-style:{{ $accentStyle }};font-size:19px;color:#FFF6E6">Your favorite characters are ready for round two</td></tr>
-  @if ($seasonal)
-  <tr><td align="center" style="font-family:{!! $font !!};padding:10px 24px 0;font-size:15px;line-height:1.5;color:#E4E1F7">This season, <strong style="font-family:{!! $font !!};color:#F9C930">Santa Claus</strong>, <strong style="font-family:{!! $font !!};color:#15D1C4">the Grinch</strong> and <strong style="font-family:{!! $font !!};color:#FF017C">Gingerbread</strong> can join your party too 🎄</td></tr>
-  @endif
   @endif
   <tr><td style="font-family:{!! $font !!};padding:28px 32px 0;font-size:17px;line-height:1.6;color:#E4E1F7">
     <p style="font-family:{!! $font !!};margin:0 0 14px">Hi <strong style="font-family:{!! $font !!};color:#FFFFFF">{{ $firstName }}</strong>,</p>
