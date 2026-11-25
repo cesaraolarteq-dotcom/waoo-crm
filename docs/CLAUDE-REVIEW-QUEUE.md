@@ -21,6 +21,13 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-25 · BUG · Hora y redondeo de traslados · PENDING
+- Rama: `codex/fix-drive-traffic-cache`, sobre el PR #227.
+- Cambio: distingue las dos horas repetidas de Houston y redondea hacia arriba segundos fraccionarios en las estimaciones por código postal.
+- Archivos: `DriveMinutes.php`, `DriveMinutesTest.php` y registros de revisión.
+- Verificación: prueba con Google simulado en CI. Google real y Hostinger pendientes.
+- Qué revisar: dos salidas a la 1:15 durante el cambio de hora deben consultar rutas distintas.
+
 ### 2026-11-23 · BACKEND · Punto 4: traslados y presupuesto diario · PENDING
 - Rama `codex/fix-team-route-budget`. 38 pruebas/233 aserciones. Google simulado.
 - Revisar salida después del desmontaje, margen de 30 minutos, falta de informe de ruta y reserva atómica del tope diario.
