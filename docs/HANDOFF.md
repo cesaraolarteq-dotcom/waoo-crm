@@ -1,3 +1,6 @@
+## 2026-11-25 · Codex · Margen por paquete para 2027
+Rama `codex/fix-package-margin-readiness`. La sección de [Reportes por paquete](COST-A-API.md#reportes-por-paquete-desde-2027) registra fuentes y verificación para 2027.
+
 ## 2026-11-23 · Codex · Implementación de la propuesta de CI del #218
 Rama `codex/ci-speed-10-shards`. Suite completa repartida entre diez grupos, con los mismos disparadores y controles. Un push de Claude con una línea `Tests:` puede ejecutar archivos concretos como comprobación rápida. Se comprobó la sintaxis YAML y Bash y el selector con nombres válidos, inexistentes y caracteres de patrón. El tiempo real depende de la disponibilidad de los runners y se medirá en GitHub. El #217 pasó 53 pruebas locales y CI, y se fusionó en 7620bb3. El #221 lleva los cambios de CI sobre esa base.
 

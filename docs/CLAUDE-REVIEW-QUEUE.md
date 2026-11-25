@@ -21,6 +21,13 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-25 · BACKEND · Preparación del margen por paquete para 2027 · PENDING
+- Rama: `codex/fix-package-margin-readiness`.
+- Cambio: registra el alcance de enero de 2027, las fuentes del reporte y los casos de verificación.
+- Archivos: `docs/COST-A-API.md` y registros de revisión.
+- Verificación: cotejado con Ruta del CRM del 25 de noviembre, el contrato de costos y el cálculo vigente de Reportes. Pendientes costos reales de 2027.
+- Qué revisar: acordar atribución de costos compartidos con datos ficticios antes de mostrar cifras de margen agregado.
+
 ### 2026-11-20 · BACKEND · Integración parcial de prospectos, Zip, staff, contratos y transporte · PENDING
 - Branch: codex/fix-verified-nov20. Sources: #209, #210, #213 and #214 through 8be3959.
 - The server rejects activating an older draft. Zip eligibility uses the amount collected including the fee. The website lead transport regression uses explicit HTTP and HTTPS origins.
