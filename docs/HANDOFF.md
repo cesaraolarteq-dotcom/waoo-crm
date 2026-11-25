@@ -2930,3 +2930,6 @@ Owner asked ("sí actívalos") to offer Klarna/Afterpay/Zip on the balance payme
 - `CreateCheckoutIntent::forAmount()`: Zip only for $35–$4,000 (Stripe Zip US range) so Checkout never gets an out-of-range method (the session check compares methods exactly).
 - Enabled per environment with `WAOO_PORTAL_PAYMENT_METHODS=card,klarna,afterpay_clearpay,zip`. Reserva rápida public flow unchanged (card/Klarna only by owner rule).
 - Review for Codex: money path (receipt counts only when that session offered Zip — same rule as Klarna/Afterpay).
+
+## 2026-11-25 · Claude · Real CRM = 7c3e63a (claude/deploy-20261125, draft PR #228)
+f833e01 + codex/fix-auto-message-review, fix-deployed-money-review, fix-website-joint-hold, fix-team-route-budget (reviewed by Claude) + Claude fix: `RescheduleTransfers` only proves routes between parties < 12 h apart (`sameDay`); before, any earlier party of the same staff (e.g. last week) was the previous stop, the provider returns null for past departures and Armar equipo / Cambiar fecha refused. Test in WeekendPlanTest. Lock: league/csv 9.29.1, web-auth/webauthn-lib 5.3.17 (audit advisories). CI 10/10 green. **Codex:** please merge the four review branches and this branch into main.
