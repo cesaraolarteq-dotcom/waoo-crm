@@ -80,12 +80,10 @@ final class RescheduleTransfers
             'setup' => $event->setup_minutes, 'breakdown' => $event->breakdown_minutes, 'address' => $event->address, 'zip' => $event->postal_code];
     }
 
-    private const SAME_DAY_GAP_HOURS = 12;
-
     private function sameDay(array $a, array $b): bool
     {
         [$first, $second] = $a['end'] <= $b['start'] ? [$a, $b] : [$b, $a];
-        return CarbonImmutable::parse($first['end'])->diffInMinutes(CarbonImmutable::parse($second['start']), true) < self::SAME_DAY_GAP_HOURS * 60;
+        return \App\Services\Scheduling\SameDayTransfer::needed(CarbonImmutable::parse($first['end']), CarbonImmutable::parse($second['start']));
     }
 
     private function edges(array $snapshot): array

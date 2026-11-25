@@ -200,10 +200,11 @@ final class ConfirmBooking
                             $this->rejectVersionConflict($resource, $slots, $characters, $costumeChoices);
                             $this->fail("Conflicto de horario: {$resource->code}.");
                         }
-                        if ($other->ends_at->lessThanOrEqualTo($event->starts_at)) {
+                        // Only a party on the same working day needs a drive check (owner 2026-11-25).
+                        if ($other->ends_at->lessThanOrEqualTo($event->starts_at) && \App\Services\Scheduling\SameDayTransfer::needed($other->ends_at, $event->starts_at)) {
                             $before = $other;
                         }
-                        if ($after === null && $other->starts_at->greaterThanOrEqualTo($event->ends_at)) {
+                        if ($after === null && $other->starts_at->greaterThanOrEqualTo($event->ends_at) && \App\Services\Scheduling\SameDayTransfer::needed($event->ends_at, $other->starts_at)) {
                             $after = $other;
                         }
                     }

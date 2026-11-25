@@ -375,8 +375,9 @@ class ConfirmCapacity extends Page
         $pairs = [];
         foreach ($ids as $id) {
             $others = ResourceReservation::where('resource_id', $id)->where('event_id', '!=', $event->id)->with('event')->get()->pluck('event');
-            $before = $others->filter(fn ($o) => $o->ends_at->lessThanOrEqualTo($event->starts_at))->sortByDesc('ends_at')->first();
-            $after = $others->filter(fn ($o) => $o->starts_at->greaterThanOrEqualTo($event->ends_at))->sortBy('starts_at')->first();
+            // Same working day only (owner 2026-11-25): never ask for a drive time to a party on another day.
+            $before = $others->filter(fn ($o) => $o->ends_at->lessThanOrEqualTo($event->starts_at) && \App\Services\Scheduling\SameDayTransfer::needed($o->ends_at, $event->starts_at))->sortByDesc('ends_at')->first();
+            $after = $others->filter(fn ($o) => $o->starts_at->greaterThanOrEqualTo($event->ends_at) && \App\Services\Scheduling\SameDayTransfer::needed($event->ends_at, $o->starts_at))->sortBy('starts_at')->first();
             foreach ([[$before, $event], [$event, $after]] as [$from, $to]) {
                 if ($from && $to) {
                     $pairs["{$from->id}-{$to->id}"] = [
