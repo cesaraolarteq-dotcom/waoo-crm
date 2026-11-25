@@ -43,5 +43,15 @@ class StaffPayTest extends TestCase
             ->call('markPaid', $sofia->id)->assertNotified('Marcado como pagado')->assertSee('Pagado');
         $this->assertSame(7000, StaffPayLine::sole()->amount_cents);
         $this->assertNotNull(StaffPayLine::sole()->paid_at);
+        $paid = StaffPayLine::sole();
+        $this->travel(1)->minute();
+        Livewire::test(StaffPay::class)->call('edit', $e->id, $sofia->id, 7000, null)
+            ->set("edits.{$e->id}-{$sofia->id}.amount", '80')
+            ->call('saveLine', $e->id, $sofia->id, 6500)
+            ->call('markPaid', $sofia->id);
+        $this->assertSame(7000, $paid->fresh()->amount_cents);
+        $this->assertTrue($paid->fresh()->paid_at->equalTo($paid->paid_at));
+        $this->assertDatabaseCount('staff_pay_lines', 1);
+
     }
 }
