@@ -29,9 +29,19 @@ final class QuickPaymentCheckout
         $methods=\App\Services\Finance\CreateCheckoutIntent::forAmount(\App\Services\Finance\CreateCheckoutIntent::methods(),$payable);
         RecordWriteRejected::unless(is_array($methods)&&$methods!==[]&&array_is_list($methods)&&count($methods)===count(array_unique($methods))&&array_diff($methods,self::METHODS)===[],409,'Revisa los métodos de pago.');
         sort($methods);
-        try{$evidence=$gateway->verifyMethods($methods);}
-        catch(\Illuminate\Auth\Access\AuthorizationException $error){throw $error;}
-        catch(\Throwable){throw new RecordWriteRejected(503,'No pudimos verificar los métodos de Stripe. Puedes elegir Zelle o reintentar. / We could not verify Stripe methods. Choose Zelle or retry.');}
+        try {
+            try {
+                $evidence = $gateway->verifyMethods($methods);
+            } catch (\RuntimeException $error) {
+                if ($methods === ['card'] || $error->getMessage() !== 'quick_payment_method_not_active') throw $error;
+                $methods = ['card'];
+                $evidence = $gateway->verifyMethods($methods);
+            }
+        } catch (\Illuminate\Auth\Access\AuthorizationException $error) {
+            throw $error;
+        } catch (\Throwable) {
+            throw new RecordWriteRejected(503,'No pudimos verificar los métodos de Stripe. Puedes elegir Zelle o reintentar. / We could not verify Stripe methods. Choose Zelle or retry.');
+        }
         RecordWriteRejected::unless($evidence===['account'=>\App\Services\Finance\StripeMode::account(),'methods'=>$methods],409,'La cuenta o los métodos de Stripe no coinciden.');
         [$request,$intent]=DB::transaction(function()use($client,$d,$key,$scope,$hash,$evidence){
             [$b,$e,$grant]=QuickPaymentProtocol::portal($client);QuickPaymentProtocol::submission($b,$e);

@@ -57,17 +57,19 @@ final class RefundPayment
 
         $receipt = LedgerEntry::findOrFail($request->receipt_id);
         $stripe = app(StripeRefunds::class);
+        // Once the provider may have pruned the key, a missing result is not evidence that no refund happened.
+        $allowCreate = $request->created_at->greaterThan(now()->subHours(23));
         try {
             $refund = $request->provider_refund_id
                 ? $stripe->retrieve($request->provider_refund_id, (string) $receipt->external_reference, $request->amount_cents)
-                : $stripe->refund((string) $receipt->external_reference, $request->amount_cents, $request->request_key);
+                : $stripe->refund((string) $receipt->external_reference, $request->amount_cents, $request->request_key, $allowCreate);
         } catch (\Stripe\Exception\InvalidRequestException|\Stripe\Exception\CardException $e) {
             // A failed lookup does not prove that an already-created refund failed.
-            if ($request->provider_refund_id) $this->unknown($request);
+            if ($request->provider_refund_id || ! $allowCreate) $this->unknown($request);
             RefundRequest::whereKey($request->id)->whereIn('state', ['requested', 'unknown'])->update(['state' => 'failed', 'error_code' => mb_substr((string) ($e->getStripeCode() ?: 'stripe_rejected'), 0, 100)]);
             throw new RecordWriteRejected(422, 'Stripe no aceptó el reembolso. No se devolvió nada.');
         } catch (\RuntimeException $e) {
-            if ($e->getMessage() === \App\Services\Finance\StripeTestRefunds::BINDING_MISMATCH) {
+            if ($allowCreate && $e->getMessage() === \App\Services\Finance\StripeTestRefunds::BINDING_MISMATCH) {
                 // Checked BEFORE asking Stripe for a refund: nothing was returned, so the amount is free again.
                 RefundRequest::whereKey($request->id)->whereIn('state', ['requested', 'unknown'])->update(['state' => 'failed', 'error_code' => 'payment_binding_mismatch']);
                 throw new RecordWriteRejected(422, 'Ese pago no corresponde a esta cuenta de Stripe. No se devolvió nada.');
