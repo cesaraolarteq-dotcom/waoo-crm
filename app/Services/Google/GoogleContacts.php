@@ -130,26 +130,36 @@ final class GoogleContacts
     public function sync(int $limit = 50): array
     {
         $c = self::connection(); $out = ['saved' => 0, 'failed' => 0];
-        if (! $c || ! self::configured()) return $out;
+        if (! \App\Support\WaooRuntime::trusted() || ! $c || ! self::configured()) return $out;
         $booked = self::bookedCustomers();
-        $done = CustomerGoogleContact::whereIn('customer_id', array_keys($booked))->where('status', 'saved')->pluck('customer_id')->all();
+        $done = CustomerGoogleContact::whereIn('customer_id', array_keys($booked))->whereIn('status', ['saved', 'sending', 'unknown'])->pluck('customer_id')->all();
         $todo = array_slice(array_diff_key($booked, array_flip($done)), 0, $limit, true);
         if ($todo === []) return $out;
         try { $group = $this->group($c); } catch (\Throwable $e) { $c->forceFill(['last_error' => mb_substr($e->getMessage(), 0, 255)])->save(); return $out; }
         foreach ($todo as $customerId => $first) {
             $customer = Customer::find($customerId); if (! $customer) continue;
-            $row = CustomerGoogleContact::firstOrNew(['customer_id' => $customerId]);
+            $row = null;
             $person = ['names' => [['unstructuredName' => self::displayName($customer, $first)]],
                 'memberships' => [['contactGroupMembership' => ['contactGroupResourceName' => $group]]]];
             if ($phone = \App\Services\Sms\PhoneNumber::e164($customer->phone)) $person['phoneNumbers'] = [['value' => $phone, 'type' => 'mobile']];
             if (filter_var($customer->email, FILTER_VALIDATE_EMAIL)) $person['emailAddresses'] = [['value' => $customer->email]];
             try {
-                $r = $this->api($c)->post(self::API.'people:createContact?personFields=names', $person);
-                if (! $r->successful()) throw new RuntimeException('Google respondió '.$r->status());
-                $row->fill(['resource_name' => $r->json('resourceName'), 'google_email' => $c->google_email, 'status' => 'saved', 'error' => null])->save();
+                $api = $this->api($c);
+                $claimed = \Illuminate\Support\Facades\DB::transaction(function () use ($customerId, $c) {
+                    $contact = CustomerGoogleContact::firstOrCreate(['customer_id' => $customerId], ['status' => 'failed']);
+                    $contact = CustomerGoogleContact::whereKey($contact->id)->lockForUpdate()->firstOrFail();
+                    if (in_array($contact->status, ['saved', 'sending', 'unknown'], true)) return null;
+                    $contact->fill(['google_email' => $c->google_email, 'status' => 'sending', 'error' => null])->save();
+                    return $contact;
+                }, 3);
+                if (! $claimed) continue;
+                $row = $claimed;
+                $r = $api->post(self::API.'people:createContact?personFields=names', $person);
+                if (! $r->successful() || ! is_string($r->json('resourceName'))) throw new RuntimeException('google_contact_create_unconfirmed');
+                $row->fill(['resource_name' => $r->json('resourceName'), 'status' => 'saved', 'error' => null])->save();
                 $out['saved']++;
             } catch (\Throwable $e) {
-                $row->fill(['status' => 'failed', 'error' => mb_substr($e->getMessage(), 0, 255)])->save();
+                if ($row?->status === 'sending') $row->fill(['status' => 'unknown', 'error' => 'google_contact_create_unconfirmed'])->save();
                 $out['failed']++;
                 if ($e->getMessage() === 'google_contacts_token') break;
             }
@@ -159,7 +169,7 @@ final class GoogleContacts
 
     public static function counts(): array
     {
-        return ['saved' => CustomerGoogleContact::where('status', 'saved')->count(), 'failed' => CustomerGoogleContact::where('status', 'failed')->count(),
+        return ['saved' => CustomerGoogleContact::where('status', 'saved')->count(), 'failed' => CustomerGoogleContact::whereIn('status', ['failed', 'sending', 'unknown'])->count(),
             'pending' => max(0, count(self::bookedCustomers()) - CustomerGoogleContact::where('status', 'saved')->count())];
     }
 }

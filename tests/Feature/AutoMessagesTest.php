@@ -204,4 +204,23 @@ class AutoMessagesTest extends TestCase
         $this->assertStringStartsWith('[Prueba] ', $test->payload['subject']);
         $this->assertSame([$test->id], $this->transport->sent);
     }
+
+    public function test_already_decided_reminders_do_not_hide_later_due_rows(): void
+    {
+        $this->confirm();
+        $grant = app(\App\Services\Portal\IssuePortalGrant::class)->execute($this->owner, $this->event->id, ['customer_id' => $this->event->customer_id, 'expires_at' => now()->addDays(29)->toIso8601String()]);
+        app(\App\Services\Mail\PlanEventMail::class)->execute($this->owner, $this->event->id, ['expected_event_version' => $this->event->fresh()->version, 'expected_customer_version' => Customer::find($this->event->customer_id)->version, 'portal_grant_id' => $grant->id, 'templates' => ['week_before']], (string) Str::uuid());
+        $template = OutboundMessage::where('template_key', 'week_before')->sole();
+        $this->travelTo($template->due_at);
+        for ($i = 0; $i < 50; $i++) {
+            $row = $template->replicate();
+            $row->intent_sha256 = hash('sha256', 'scheduler-fixture-'.$i);
+            $row->save();
+        }
+        $runner = app(RunAutoMessages::class);
+        $runner->run();
+        $this->assertSame(50, AutoMessageLog::where('key', 'week_before')->count());
+        $runner->run();
+        $this->assertSame(51, AutoMessageLog::where('key', 'week_before')->count());
+    }
 }
