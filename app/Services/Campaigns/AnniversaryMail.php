@@ -37,6 +37,14 @@ final class AnniversaryMail
             // Owner 2026-11-25: one tap to WhatsApp with the code already written, and a link to compare packages.
             'waUrl' => 'https://wa.me/13468518830?text='.rawurlencode("Hi Waoo Party! I'd like to use my gift code {$row->code} for my next celebration. / ¡Hola! Quiero usar mi código de regalo {$row->code} para mi próxima fiesta. 🎉"),
             'packagesUrl' => self::SITE.'/packages',
+            // Owner 2026-11-25 (sell more with real data only): the party month, the live Google rating, holiday characters in season.
+            'partyMonth' => $row->anchor_date ? \Carbon\CarbonImmutable::parse($row->anchor_date)->locale('en')->monthName : null,
+            'rating' => self::rating(),
+            'seasonal' => in_array((int) now('America/Chicago')->month, [11, 12, 1], true),
+            'lastPackage' => self::lastPackage($row),
+            'font' => self::FONTS[config('waoo.anniversary_font', 'poppins')][0] ?? self::FONTS['poppins'][0],
+            'accentFont' => self::FONTS[config('waoo.anniversary_font', 'poppins')][1] ?? self::FONTS['poppins'][1],
+            'accentStyle' => self::FONTS[config('waoo.anniversary_font', 'poppins')][2] ?? 'italic',
             'unsubscribeUrl' => URL::signedRoute('promo.unsubscribe', ['customer' => $customer->id]),
             'address' => (string) config('waoo.postal_address'),
             'parade' => [['src' => self::SITE.'/wall-photos/EC11A3FB-C4E6-4DB6-99AC-75D37530677D.jpg', 'alt' => 'Chase from Paw Patrol', 'ring' => '#15D1C4'],
@@ -47,7 +55,7 @@ final class AnniversaryMail
         $html = view('mail.anniversary', $vars)->render();
         $text = $kind === 'reminder'
             ? "Hi {$first},\n\nJust a friendly reminder: your 10% gift for your next celebration ends tomorrow.\n\nYour code: {$row->code}\nValid until {$expires} (Houston time).\n\nCheck your date: {$vars['bookUrl']}\nBook on WhatsApp: {$vars['waUrl']}\n\nWith love, the Waoo Party team"
-            : "Hi {$first},\n\nAlmost a year ago we were part of your celebration, and it was a joy to share it with you. That's why we have this gift for you:\n\n10% off the packages and add-ons of your next party.\nYour code: {$row->code}\nValid until {$expires} (Houston time). Regular prices only; can't be combined with any other promotion. The travel fee is charged in full.\n\nCheck your date: {$vars['bookUrl']}\nBook on WhatsApp: {$vars['waUrl']}\nNot sure which package to choose? {$vars['packagesUrl']}\n\nWith love, the Waoo Party team";
+            : "Hi {$first},\n\n".($vars['partyMonth'] ? 'Last '.$vars['partyMonth'] : 'Almost a year ago')." we were part of your celebration, and it was a joy to share it with you.".($vars['lastPackage'] ? " You chose our {$vars['lastPackage']['name']}. Book it again and your gift saves you {$vars['lastPackage']['saving']}." : '')." That's why we have this gift for you:\n\n10% off the packages and add-ons of your next party.\nYour code: {$row->code}\nValid until {$expires} (Houston time). Regular prices only; can't be combined with any other promotion. The travel fee is charged in full.\n\nCheck your date: {$vars['bookUrl']}\nBook on WhatsApp: {$vars['waUrl']}\nNot sure which package to choose? {$vars['packagesUrl']}\n\nWith love, the Waoo Party team";
         $text .= "\n\n{$vars['address']}\nUnsubscribe from promotions: {$vars['unsubscribeUrl']}";
         return ['subject' => $subject, 'html' => $html, 'text' => $text];
     }
@@ -96,4 +104,61 @@ final class AnniversaryMail
         }
         return $out;
     }
+
+    /** Email font choices (owner 2026-11-25): [body stack, accent stack, accent style]. Gmail shows the fallback (Arial). */
+    public const FONTS = [
+        'poppins' => ["'Poppins','Helvetica Neue',Helvetica,Arial,sans-serif", "'Poppins','Helvetica Neue',Arial,sans-serif", 'italic'],
+        'fredoka' => ["'Fredoka','Trebuchet MS','Helvetica Neue',Arial,sans-serif", "'Fredoka','Trebuchet MS',Arial,sans-serif", 'normal'],
+    ];
+
+    /** Live Google rating from the website (cached 12 h); null when unavailable, so the email simply leaves it out. */
+    public static function rating(): ?array
+    {
+        return \Illuminate\Support\Facades\Cache::remember('waoo.anniversary.google_rating', 43200, function () {
+            try {
+                $r = \Illuminate\Support\Facades\Http::timeout(4)->get(self::SITE.'/google-rating.php')->json();
+            } catch (\Throwable) {
+                return null;
+            }
+            return is_array($r) && is_numeric($r['rating'] ?? null) && (int) ($r['count'] ?? 0) > 0 && is_string($r['url'] ?? null) && str_starts_with($r['url'], 'https://')
+                ? ['rating' => (float) $r['rating'], 'count' => (int) $r['count'], 'url' => $r['url']] : null;
+        }) ?: null;
+    }
+
+    /**
+     * Owner 2026-11-25: «show the saving on the package they chose last time». The package of the anchor party (HoneyBook
+     * line items or CRM services) and 10 % of its CURRENT catalog price; null when it cannot be matched, so the line is left out.
+     * @return array{name:string, saving:string}|null
+     */
+    public static function lastPackage(AnniversaryCode $row): ?array
+    {
+        try {
+            [$source, $id] = array_pad(explode(':', (string) $row->anchor_key, 2), 2, null);
+            $titles = [];
+            if ($source === 'history' && ($event = \App\Models\HistoricalEvent::find((int) $id))) {
+                $p = \App\Services\History\HistoricalIntegrity::revision($event, \App\Models\HistoricalEventRevision::findOrFail($event->current_revision_id));
+                foreach ((array) ($p['source']['line_items'] ?? []) as $item) $titles[] = is_array($item) ? (string) ($item['title'] ?? $item['name'] ?? '') : (string) $item;
+                if (count($titles) === 1 && str_contains($titles[0], ';')) $titles = explode(';', $titles[0]);
+            } elseif ($source === 'crm' && ($event = \App\Models\Event::find((int) $id))) {
+                $titles = $event->services()->get()->map(fn ($s) => (string) \App\Models\ServiceVariant::find($s->service_variant_id)?->name_en ?: (string) \App\Models\ServiceVariant::find($s->service_variant_id)?->name)->all();
+            }
+            foreach ($titles as $title) {
+                $name = trim(explode('|', $title)[0]);
+                $key = \Illuminate\Support\Str::ascii(mb_strtolower(trim(preg_replace('/\s+/u', ' ', preg_replace('/\(.*\)/u', '', $name)))));
+                $crm = config('honeybook_aliases.packages')[$key] ?? null;
+                $variant = $crm ? \App\Models\ServiceVariant::where('name', $crm)->where('status', 'active')->first()
+                    : \App\Models\ServiceVariant::where(fn ($q) => $q->where('name', $name)->orWhere('name_en', $name))->where('status', 'active')->first();
+                if (! $variant || (int) $variant->character_quantity === 0 && ! preg_match('/package|paquete|waoo|star|magic/i', $name)) continue;
+                $price = \App\Models\PriceVersion::where('service_variant_id', $variant->id)->orderByDesc('id')->value('amount_cents');
+                if (! $price) continue;
+                $saving = intdiv((int) $price * self::PERCENT_FOR_SAVING + 50, 100);
+                return ['name' => $name, 'saving' => '$'.number_format($saving / 100, $saving % 100 === 0 ? 0 : 2)];
+            }
+        } catch (\Throwable) {
+            return null;
+        }
+        return null;
+    }
+
+    private const PERCENT_FOR_SAVING = AnniversaryCampaign::PERCENT;
 }
