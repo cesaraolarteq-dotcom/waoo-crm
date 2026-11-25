@@ -58,7 +58,10 @@
   </td></tr>
   <tr><td align="center" style="padding:14px 20px 0"><span style="display:inline-block;padding:8px 16px;border:1px solid #6E5A1E;border-radius:999px;background:#151530;font-size:13px;font-weight:700;color:#FFF6E6">Regular prices only · can’t be combined with any other promotion</span></td></tr>
   <tr><td align="center" style="padding:26px 20px 0"><a href="{{ $bookUrl }}" style="display:inline-block;padding:17px 40px;border-radius:999px;background:#F9C930;color:#07091F;font-size:18px;font-weight:800;text-decoration:none">Check my date</a></td></tr>
-  <tr><td align="center" style="padding:16px 20px 0;font-size:14px;color:#BDBADB">Rather message us? Call or text <a href="tel:+13468518830" style="color:#15D1C4;font-weight:700;text-decoration:none">(346) 851-8830</a></td></tr>
+  <tr><td align="center" style="padding:12px 20px 0"><a href="{{ $waUrl }}" style="display:inline-block;padding:14px 32px;border-radius:999px;background:#25D366;color:#07091F;font-size:16px;font-weight:800;text-decoration:none">Book on WhatsApp</a></td></tr>
+  <tr><td align="center" style="padding:8px 20px 0;font-size:13px;color:#BDBADB">Your code is already in the message.</td></tr>
+  <tr><td align="center" style="padding:16px 20px 0;font-size:15px;color:#E4E1F7">Not sure which package to choose? <a href="{{ $packagesUrl }}" style="color:#F9C930;font-weight:800;text-decoration:none">See all packages&nbsp;→</a></td></tr>
+  <tr><td align="center" style="padding:12px 20px 0;font-size:14px;color:#BDBADB">Rather call? <a href="tel:+13468518830" style="color:#15D1C4;font-weight:700;text-decoration:none">(346) 851-8830</a></td></tr>
   @if ($kind === 'main')
   <tr><td style="padding:34px 20px 0">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0B0E2B;border:1px solid #262A57;border-radius:20px">

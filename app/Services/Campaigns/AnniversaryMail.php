@@ -34,6 +34,9 @@ final class AnniversaryMail
         $vars = ['kind' => $kind, 'subject' => $subject, 'firstName' => $first, 'code' => $row->code, 'expires' => $expires,
             'preheader' => $kind === 'reminder' ? "Your 10% code {$row->code} ends tomorrow." : 'A gift from us for your next celebration.',
             'site' => self::SITE, 'bookUrl' => self::SITE.'/contact?promo='.rawurlencode($row->code),
+            // Owner 2026-11-25: one tap to WhatsApp with the code already written, and a link to compare packages.
+            'waUrl' => 'https://wa.me/13468518830?text='.rawurlencode("Hi Waoo Party! I'd like to use my gift code {$row->code} for my next celebration. / ¡Hola! Quiero usar mi código de regalo {$row->code} para mi próxima fiesta. 🎉"),
+            'packagesUrl' => self::SITE.'/packages',
             'unsubscribeUrl' => URL::signedRoute('promo.unsubscribe', ['customer' => $customer->id]),
             'address' => (string) config('waoo.postal_address'),
             'parade' => [['src' => self::SITE.'/wall-photos/EC11A3FB-C4E6-4DB6-99AC-75D37530677D.jpg', 'alt' => 'Chase from Paw Patrol', 'ring' => '#15D1C4'],
@@ -43,8 +46,8 @@ final class AnniversaryMail
                 ['src' => self::SITE.'/wall-photos/16C253F2-96E6-406E-B906-22B6EB0EE6FF.jpg', 'alt' => 'Skye from Paw Patrol', 'ring' => '#15D1C4']]];
         $html = view('mail.anniversary', $vars)->render();
         $text = $kind === 'reminder'
-            ? "Hi {$first},\n\nJust a friendly reminder: your 10% gift for your next celebration ends tomorrow.\n\nYour code: {$row->code}\nValid until {$expires} (Houston time).\n\nCheck your date: {$vars['bookUrl']}\n\nWith love, the Waoo Party team"
-            : "Hi {$first},\n\nAlmost a year ago we were part of your celebration, and it was a joy to share it with you. That's why we have this gift for you:\n\n10% off the packages and add-ons of your next party.\nYour code: {$row->code}\nValid until {$expires} (Houston time). Regular prices only; can't be combined with any other promotion. The travel fee is charged in full.\n\nCheck your date: {$vars['bookUrl']}\n\nWith love, the Waoo Party team";
+            ? "Hi {$first},\n\nJust a friendly reminder: your 10% gift for your next celebration ends tomorrow.\n\nYour code: {$row->code}\nValid until {$expires} (Houston time).\n\nCheck your date: {$vars['bookUrl']}\nBook on WhatsApp: {$vars['waUrl']}\n\nWith love, the Waoo Party team"
+            : "Hi {$first},\n\nAlmost a year ago we were part of your celebration, and it was a joy to share it with you. That's why we have this gift for you:\n\n10% off the packages and add-ons of your next party.\nYour code: {$row->code}\nValid until {$expires} (Houston time). Regular prices only; can't be combined with any other promotion. The travel fee is charged in full.\n\nCheck your date: {$vars['bookUrl']}\nBook on WhatsApp: {$vars['waUrl']}\nNot sure which package to choose? {$vars['packagesUrl']}\n\nWith love, the Waoo Party team";
         $text .= "\n\n{$vars['address']}\nUnsubscribe from promotions: {$vars['unsubscribeUrl']}";
         return ['subject' => $subject, 'html' => $html, 'text' => $text];
     }

@@ -19,7 +19,7 @@ class CustomDurationTest extends TestCase
         parent::setUp();
         $this->owner = User::factory()->create(['role' => 'owner_admin', 'active' => true, 'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'), 'two_factor_confirmed_at' => now()]);
         $this->actingAs($this->owner);
-        $variant = app(SaveVariant::class)->execute($this->owner, ['name' => 'Fixture Photo Booth', 'status' => 'active', 'duration_minutes' => 180, 'requirements' => []]);
+        $variant = app(SaveVariant::class)->execute($this->owner, ['name' => 'Fixture Photo Booth', 'status' => 'active', 'duration_minutes' => 180, 'requirements' => [['kind' => 'equipment', 'equipment_kind' => 'photo_booth', 'quantity' => 1]]]);
         $price = app(AddPriceVersion::class)->execute($this->owner, $variant->id, ['amount_cents' => 35000, 'currency' => 'USD']);
         $customer = Customer::create(['name' => 'Sofía Ramírez', 'email' => 'sofia.ramirez@example.test', 'locale' => 'es']);
         $start = now('America/Chicago')->addDays(20)->setTime(12, 0)->utc();
