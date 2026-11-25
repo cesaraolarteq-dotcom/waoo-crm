@@ -30,6 +30,9 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 ### 2026-11-23 · BACKEND · Punto 3: apartado conjunto de la futura reserva web · PENDING
 - Rama `codex/fix-website-joint-hold`. Tres pruebas/18 aserciones con MariaDB, dos procesos y Stripe simulado.
 - Revisar vida del equipo comprometido en la planificación y ante reprogramación. La web permanece en preview.
+### 2026-11-23 · BACKEND · Punto 4: traslados y presupuesto diario · PENDING
+- Rama `codex/fix-team-route-budget`. 38 pruebas/233 aserciones. Google simulado.
+- Revisar salida después del desmontaje, margen de 30 minutos, falta de informe de ruta y reserva atómica del tope diario.
 
 ### 2026-11-23 · UI · Mensajes automáticos (correos + textos, switches, preview, prueba) · PENDING
 - Branch / commits: claude/auto-messages

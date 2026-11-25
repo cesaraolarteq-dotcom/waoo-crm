@@ -6,7 +6,7 @@ use App\Services\Staff\{IssueStaffGrant, SaveStaffIdentity, StaffContext};
 use App\Services\Team\{AssignEventTeam, SuggestWeekendTeams, TeamSlots};
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\{Http, Mail};
 use Illuminate\Support\Str;
 use Livewire\Livewire;
@@ -15,7 +15,15 @@ use Tests\TestCase;
 /** Owner 2026-11-03: staff confirm their party and say on Monday which days they can work (Saturday first); the plan uses it. */
 class StaffAnswersTest extends TestCase
 {
-    use RefreshDatabase;
+    use DatabaseMigrations;
+
+    protected function tearDown(): void
+    {
+        // Disposable synthetic fixtures only; preserve the production rollback guard.
+        if ($this->app && \Illuminate\Support\Facades\Schema::hasTable('event_team_plans')) \Illuminate\Support\Facades\DB::table('event_team_plans')->delete();
+        parent::tearDown();
+    }
+
 
     private User $owner; private ServiceVariant $waoo; private PriceVersion $price; private int $n = 0;
 
