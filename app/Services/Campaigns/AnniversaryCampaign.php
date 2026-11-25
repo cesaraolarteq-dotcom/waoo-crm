@@ -19,9 +19,9 @@ use Illuminate\Validation\ValidationException;
  */
 final class AnniversaryCampaign
 {
-    public const SEND_AFTER_DAYS = 322; // 46 weeks after the party, 6 weeks before the anniversary
+    public const SEND_AFTER_DAYS = 330; // kept for reports; the real rule is 5 weeks before the anniversary
+    public const WEEKS_BEFORE = 5; // owner 2026-11-25: average booking lead time is 28 days, so 5 weeks before the anniversary
     public const VALID_DAYS = 7;
-    public const CATCH_UP_DAYS = 21; // owner 2026-11-25: overdue clients go out in weekly batches, 3 weeks before their anniversary
     public const PERCENT = 10;
     private const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O, 1/I
 
@@ -41,10 +41,8 @@ final class AnniversaryCampaign
             foreach ($latest as $customerId => $a) {
                 $anchor = CarbonImmutable::createFromFormat('!Y-m-d', $a['date'], 'America/Chicago');
                 // Only inside the window: from 46 weeks after the party until its anniversary.
-                if ($today < $anchor->addDays(self::SEND_AFTER_DAYS) || $today >= $anchor->addYear()) continue;
-                // Catch-up (owner 2026-11-25): when the normal send day passed more than a week ago, wait until 3 weeks
-                // before the anniversary, so the backlog goes out in weekly batches instead of all at once.
-                if ($today > $anchor->addDays(self::SEND_AFTER_DAYS + 7) && $today < $anchor->addYear()->subDays(self::CATCH_UP_DAYS)) continue;
+                // 5 weeks before the anniversary (owner 2026-11-25); a client whose day already passed goes out at the next run.
+                if ($today < $anchor->addYear()->subWeeks(self::WEEKS_BEFORE) || $today >= $anchor->addYear()) continue;
                 if (AnniversaryCode::where('customer_id', $customerId)->where('anchor_key', $a['key'])->exists()) continue;
                 $reason = null;
                 foreach ($later as $e) {

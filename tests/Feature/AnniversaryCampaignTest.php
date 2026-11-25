@@ -84,13 +84,13 @@ class AnniversaryCampaignTest extends TestCase
         $this->assertSame(['issued' => 1, 'sent' => 0, 'redeemed' => 0], array_intersect_key(AnniversaryCampaign::stats(), array_flip(['issued', 'sent', 'redeemed'])));
     }
 
-    public function test_overdue_clients_go_out_in_weekly_batches_three_weeks_before_their_anniversary(): void
+    public function test_codes_go_out_five_weeks_before_the_anniversary_and_overdue_ones_at_the_next_run(): void
     {
-        $soon = $this->client('Carmen Ruiz', 'carmen@example.com'); $this->pastParty($soon, 355);     // anniversary in 10 days
-        $later = $this->client('Patricia Vega', 'patricia@example.com'); $this->pastParty($later, 335); // anniversary in 30 days, send day 13 days ago
-        $normal = $this->client('Lorena Díaz', 'lorena@example.com'); $this->pastParty($normal, 323);  // normal send day was yesterday
+        $overdue = $this->client('Carmen Ruiz', 'carmen@example.com'); $this->pastParty($overdue, 355); // anniversary in 10 days
+        $today = $this->client('Lorena Díaz', 'lorena@example.com'); $this->pastParty($today, 330);    // exactly 5 weeks before
+        $later = $this->client('Patricia Vega', 'patricia@example.com'); $this->pastParty($later, 320); // anniversary in 45 days
         $this->assertSame(['issued' => 2, 'skipped' => 0], app(AnniversaryCampaign::class)->issue(CarbonImmutable::now('America/Chicago')));
-        $this->assertFalse(AnniversaryCode::where('customer_id', $later->id)->exists(), 'waits for its weekly batch');
+        $this->assertFalse(AnniversaryCode::where('customer_id', $later->id)->exists(), 'not yet: more than 5 weeks away');
         $this->travel(10)->days();
         $this->assertSame(['issued' => 1, 'skipped' => 0], app(AnniversaryCampaign::class)->issue(CarbonImmutable::now('America/Chicago')));
     }
