@@ -654,6 +654,51 @@ class QuickPaymentsTest extends TestCase
         $this->assertSame('released', \App\Models\JointCapacityHold::sole()->state);
     }
 
+    public function test_changed_website_hold_staff_blocks_checkout_before_stripe_session_creation(): void
+    {
+        $this->websiteHoldFixture();
+        $booking = app(\App\Services\Booking\CreateWebsiteBookingHold::class)->execute($this->owner, $this->input, (string) Str::uuid());
+        $this->client($booking);
+        $this->details();
+        $gateway = $this->gateway();
+        $claim = $this->claim();
+        unset($claim['amount_cents'], $claim['reference']);
+        $claim['deposit_percent'] = 50;
+
+        // A version change keeps the person eligible for the solver but invalidates the saved hold.
+        Resource::where('code', 'STAFF-1')->increment('version');
+        $this->withHeader('Idempotency-Key', (string) Str::uuid())
+            ->postJson('/portal/api/quick-payment/checkout', $claim)->assertConflict();
+
+        $this->assertSame(0, $gateway->creates);
+        $this->assertDatabaseCount('quick_payment_attempts', 0);
+        $this->assertDatabaseCount('ledger_entries', 0);
+        $this->assertDatabaseCount('resource_reservations', 3);
+    }
+
+    public function test_website_hold_keeps_resources_while_stripe_cannot_confirm_checkout_expiry(): void
+    {
+        $this->websiteHoldFixture();
+        $booking = app(\App\Services\Booking\CreateWebsiteBookingHold::class)->execute($this->owner, $this->input, (string) Str::uuid());
+        $this->client($booking);
+        $this->details();
+        $gateway = $this->gateway();
+        $this->checkout();
+
+        $this->travel(48)->hours();
+        $gateway->failExpire = true;
+        $tick = app(\App\Services\Booking\TickQuickPayments::class);
+        $this->assertSame(0, $tick->execute()['expired']);
+        $this->assertSame('held', \App\Models\JointCapacityHold::sole()->state);
+        $this->assertDatabaseCount('resource_reservations', 3);
+
+        $gateway->failExpire = false;
+        $this->assertSame(1, $tick->execute()['expired']);
+        $this->assertSame('released', \App\Models\JointCapacityHold::sole()->state);
+        $this->assertDatabaseCount('resource_reservations', 0);
+        $this->assertDatabaseCount('ledger_entries', 0);
+    }
+
     public function test_website_hold_moves_to_committed_without_replacing_resources_after_stripe_payment(): void
     {
         $this->websiteHoldFixture();

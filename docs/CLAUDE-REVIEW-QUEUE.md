@@ -21,6 +21,13 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-25 · BACKEND · Pruebas del apartado conjunto antes del cobro · PENDING
+- Rama: `codex/fix-joint-hold-review`, sobre el PR #226 (`fdccd2f`).
+- Cambios: pruebas de checkout con versión de personal modificada y vencimiento con cierre de Stripe sin confirmar.
+- Archivos: `tests/Feature/QuickPaymentsTest.php` y registros de revisión.
+- Verificación: Stripe simulado y base desechable en CI. Sin acceso al CRM real ni a Stripe real.
+- Qué revisar: que el cambio de personal impida abrir Stripe y que el vencimiento conserve las tres unidades hasta confirmar el cierre del checkout.
+
 ### 2026-11-23 · BACKEND · Punto 3: apartado conjunto de la futura reserva web · PENDING
 - Rama `codex/fix-website-joint-hold`. Tres pruebas/18 aserciones con MariaDB, dos procesos y Stripe simulado.
 - Revisar vida del equipo comprometido en la planificación y ante reprogramación. La web permanece en preview.
