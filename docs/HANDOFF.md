@@ -1,3 +1,6 @@
+## 2026-11-26 · Codex · Prueba de traslado y apartado
+Rama `codex/fix-hold-travel-verification`. Ver [cola de revisión](CLAUDE-REVIEW-QUEUE.md#entries).
+
 ## 2026-11-25 · Codex · Cobertura de retención antes del cobro
 Rama `codex/fix-joint-hold-review`. Añade dos pruebas del PR #226. Ver [cola de revisión](CLAUDE-REVIEW-QUEUE.md#entries).
 

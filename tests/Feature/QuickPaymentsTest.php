@@ -717,6 +717,46 @@ class QuickPaymentsTest extends TestCase
         $this->assertSame('paid', QuickPaymentBooking::sole()->state);
     }
 
+    public function test_same_day_transfer_must_fit_before_the_same_team_can_be_held(): void
+    {
+        $this->websiteHoldFixture();
+        $firstStart = \Carbon\CarbonImmutable::parse('2026-11-10T12:00:00-06:00');
+        $this->input['starts_at'] = $firstStart->toIso8601String();
+        $this->input['ends_at'] = $firstStart->addHours(2)->toIso8601String();
+        $adapter = app(\App\Services\Booking\CreateWebsiteBookingHold::class);
+        $adapter->execute($this->owner, $this->input, (string) Str::uuid());
+
+        $second = [...$this->input,
+            'starts_at' => $firstStart->addHours(3)->toIso8601String(),
+            'ends_at' => $firstStart->addHours(5)->toIso8601String(),
+            'address' => '200 Example Lane',
+        ];
+        $key = (string) Str::uuid();
+        $minutes = 20;
+        $calls = [];
+        $this->app->instance('waoo.availability.drive', function ($fromZip, $toZip, $departure, $from, $to) use (&$minutes, &$calls) {
+            $calls[] = [$departure->timestamp, $from, $to];
+            return $minutes;
+        });
+
+        try {
+            $adapter->execute($this->owner, $second, $key);
+            $this->fail('A transfer that does not fit must block the second hold.');
+        } catch (\App\Exceptions\RecordWriteRejected $error) {
+            $this->assertSame(409, $error->getStatusCode());
+        }
+        $this->assertSame([[$firstStart->addHours(2)->addMinutes(10)->timestamp, $this->input['address'], $second['address']]], $calls);
+        $this->assertDatabaseCount('joint_capacity_holds', 1);
+        $this->assertDatabaseCount('resource_reservations', 3);
+        $this->assertDatabaseCount('ledger_entries', 0);
+
+        $minutes = 5;
+        $adapter->execute($this->owner, $second, $key);
+        $this->assertDatabaseCount('joint_capacity_holds', 2);
+        $this->assertDatabaseCount('resource_reservations', 6);
+        $this->assertDatabaseCount('ledger_entries', 0);
+    }
+
     public function test_competing_website_requests_cannot_both_hold_the_last_team(): void
     {
         $this->websiteHoldFixture();

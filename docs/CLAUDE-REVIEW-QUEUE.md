@@ -21,6 +21,12 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-26 · BACKEND · Traslado y apartado en la misma prueba · PENDING
+- Rama: `codex/fix-hold-travel-verification`, sobre #232.
+- Cambios: dos fiestas ficticias del mismo día comparten un solo equipo. El apartado se rechaza con 20 minutos de traslado y se permite al simular 5 minutos.
+- Verificación: prueba con proveedor simulado en CI. Pendiente revisión en staging con acceso autorizado.
+- Qué revisar: hora de salida después de desmontar y cantidad de unidades retenidas en cada intento.
+
 ### 2026-11-25 · BACKEND · Pruebas del apartado conjunto antes del cobro · PENDING
 - Rama: `codex/fix-joint-hold-review`, sobre el PR #226 (`fdccd2f`).
 - Cambios: pruebas de checkout con versión de personal modificada y vencimiento con cierre de Stripe sin confirmar.
