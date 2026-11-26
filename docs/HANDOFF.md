@@ -1,3 +1,24 @@
+## 2026-11-26 · Claude → Codex · Cola nueva (César: «instrucciones bien específicas para Codex»)
+Trabaja sin pedir permiso (AGENTS.md «Autonomy»), ramas `codex/*`, una PR por punto, en este orden. Base: `claude/import-fixes` (PR #229 borrador): es lo que tiene el CRM real hoy y trae el composer.lock bueno (Symfony 7.4.24, webauthn 5.3.17, league/csv 9.29.1). No despliegues, no envíes correos/SMS/WhatsApp, no uses datos reales en pruebas (nombres tipo María González).
+
+1. **Revisión de seguridad de lo que sube hoy al CRM real** (PR #229, commits desde 7c3e63a). Busca fallos reproducibles con prueba; si encuentras uno, corrígelo en `codex/fix-*` con su prueba.
+   - `POST /sync/honeybook` (`HoneyBookSyncController`, `Imports/HoneyBookSync`): token Bearer comparado por sha256 con `hash_equals`; apagado sin `WAOO_HONEYBOOK_SYNC`. Aplica pagos y firmas de HoneyBook **solo** a fiestas ya vinculadas; cambios de fecha/hora/dirección/servicios van a revisión, nunca se aplican solos. Revisa: doble aplicación de un mismo pago si el CSV llega dos veces, un pago que baje el total pagado, CSV enorme o malformado, un proyecto cancelado.
+   - `POST /sync/ads/google` y `/sync/ads/google/ack` (`AdsSyncController`, `Ads/AdsSync`): Bearer con sha256 en `WAOO_ADS_SYNC_TOKEN_SHA256`. La respuesta devuelve gclid y valor de fiestas reservadas: confirma que no sale nombre, teléfono, correo ni dirección; que el ack no acepta leads no reservados; que `updateOrInsert` no permite inflar el gasto.
+   - `GET/POST /webhooks/whatsapp` (`WhatsAppWebhookController`): firma X-Hub-Signature-256 con `hash_equals`, verify_token, apagado sin `WAOO_WHATSAPP`; estados que nunca retroceden.
+   - `ReceiveResendWebhook::engagement` (aperturas/clics, único por svix-id) y `MailGuard::allows` (aniversario solo con `WAOO_ANNIVERSARY_CLIENTS`; mensajes automáticos solo con `WAOO_CLIENT_MESSAGES`, que sigue APAGADO hasta el cambio).
+   - `ReceiveWebsiteLead`: gclid/gbraid/wbraid/fbclid (regex `^[A-Za-z0-9_\-.~]+$`, máx. 200) y click_at entero.
+   Entrega: comentario en #229 con «OK» o la lista de fallos + ramas de arreglo.
+
+2. **Limpiar la cola de PRs** (hay ~30 abiertas). Para cada una: si ya está en `claude/import-fixes` (lo que corre en el CRM real), une a main o ciérrala con una línea diciendo dónde quedó. Une primero #229 a main cuando el punto 1 esté OK. Ramas de subida (#212, #228) se cierran sin unir. Deja en HANDOFF una tabla PR → unida / cerrada / pendiente y por qué.
+
+3. **Retener personal y trajes antes del cobro (Ruta a9-codex-wip)**: #226, #232 y #237 juntos. Falta lo que dijiste el 23 nov: reprogramar y replanificar una reserva que tenga apartado. Termínalo con pruebas en MariaDB (dos clientes por el último traje, pago que llega tarde, apartado vencido). Es requisito para que la web cobre el depósito sola.
+
+4. **Pagos al staff (Ruta f6-pagos-dev, #234)**: deja listo todo lo que no depende de César. Las tarifas que faltan (pintacaritas, spa, DJ, operador de Photo Booth, fórmula del chofer) quedan como «sin tarifa → revisión del dueño», nunca $0. Regla de transporte: solo cuenta como costo si manejó un chofer pagado, no César ni Maybeli.
+
+5. **Margen por paquete (#235/#236/#240)**: sin prisa; empieza en enero 2027. Solo asegúrate de que la pantalla diga «sin datos de costos» cuando falten tarifas, en lugar de mostrar 100 % de margen.
+
+Al terminar cada punto: entrada corta en HANDOFF.md y comentario en su PR. César sube al CRM real con SUBIR; tú no.
+
 ## 2026-11-23 · Claude → Codex · Cola de trabajo para Codex (César: «algo para Codex de la ruta»)
 En orden; trabaja sin pedir permiso (AGENTS.md «Autonomy»), ramas `codex/*`, una PR por punto.
 1. **Revisar PR #223** (`claude/auto-messages`, dinero/clientes): `RunAutoMessages` (envío cada minuto, una decisión por fuente+canal), `SendSms::toLead`/`testToOwner`, `IssueTipGrant::automatic` (propinas ya encendidas en el CRM real: WAOO_SANDBOX_TIPS=true), `DispatchOutboundMail` owner_off, `AutoReminders` sin thank-you, `GoogleContacts` (People API, escribe solo contactos nuevos), `StaffPayEstimate` mínimos $40. Comenta en la PR; corrige en una rama tuya si algo falla.
