@@ -52,6 +52,10 @@ class EventCostSnapshotsTest extends TestCase
             ->assertJsonPath('packages.0.revenue_cents', 40000)->assertJsonPath('packages.0.cost_cents', 15500)
             ->assertJsonPath('packages.0.margin_cents', 24500);
 
+        $this->event->increment('version');
+        $this->getJson($url)->assertOk()->assertJsonPath('included_events', 0)
+            ->assertJsonPath('pending_events', 1)->assertJsonPath('packages', []);
+
         $this->event->update(['starts_at' => '2027-01-01 05:59:00']);
         $this->getJson($url)->assertOk()->assertJsonPath('included_events', 0)->assertJsonPath('pending_events', 0);
         $this->getJson('/admin/api/reports/package-margin?year=2026')->assertUnprocessable();
@@ -142,11 +146,13 @@ class EventCostSnapshotsTest extends TestCase
         catch (\Illuminate\Auth\Access\AuthorizationException $e) { $this->assertStringContainsString('administración', $e->getMessage()); }
         $this->store()->assertForbidden(); $this->summary()->assertForbidden();
         $this->owner->forceFill(['active' => true, 'role' => 'staff'])->save(); $this->summary()->assertForbidden();
+        $this->getJson('/admin/api/reports/package-margin?year=2027')->assertForbidden();
         $this->owner->forceFill(['role' => 'owner_admin'])->save();
         $grant = app(IssuePortalGrant::class)->execute($this->owner, $this->event->id, ['customer_id' => $this->event->customer_id, 'expires_at' => now()->addDay()->toIso8601String()]);
         auth()->logout(); $this->app['auth']->forgetGuards(); $this->postJson('/portal/api/session', ['token' => $grant->token])->assertOk();
         $this->getJson('/portal/api/event')->assertOk()->assertDontSee('PRIVATE-COST-FIXTURE-NOTE')->assertDontSee('Fixture staff pay')->assertJsonMissingPath('costs');
         $this->summary()->assertUnauthorized();
+        $this->getJson('/admin/api/reports/package-margin?year=2027')->assertUnauthorized();
     }
     public function test_disabled_sandbox_and_unconfirmed_2fa_cannot_record_or_read_costs(): void
     {

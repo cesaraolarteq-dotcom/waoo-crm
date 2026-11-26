@@ -24,7 +24,7 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 ### 2026-11-26 · BACKEND · Primer reporte de margen por paquete · PENDING
 - Rama: `codex/fix-package-margin-report`.
 - Cambio: lectura privada por año desde 2027, con costos reales confirmados y conteo de eventos pendientes.
-- Verificación: prueba con datos ficticios sobre año de Houston, estimaciones pendientes y exclusión de comisiones de tarjeta. Sin datos reales.
+- Verificación: prueba con datos ficticios sobre año de Houston, estimaciones pendientes, costos desactualizados, acceso exclusivo de administración y exclusión de comisiones de tarjeta. Sin datos reales.
 - Qué revisar: acuerdo de un solo paquete, costos compartidos pendientes y ausencia de datos de clientes en la respuesta.
 
 ### 2026-11-20 · BACKEND · Integración parcial de prospectos, Zip, staff, contratos y transporte · PENDING
