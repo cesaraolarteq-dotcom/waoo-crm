@@ -20,7 +20,7 @@ class LeadDraftsTest extends TestCase
         config(['waoo.sandbox_lead_intake' => true, 'waoo.lead_shared_secret' => $this->secret]); Mail::fake(); Queue::fake();
     }
 
-    private function post(array $payload, ?string $secret = null)
+    private function sendDraft(array $payload, ?string $secret = null)
     {
         $body = json_encode($payload); $key = (string) Str::uuid(); $at = (string) now()->getTimestamp();
         return $this->call('POST', 'http://localhost/api/leads/draft', [], [], [], ['CONTENT_TYPE' => 'application/json', 'HTTP_ACCEPT' => 'application/json',
@@ -35,10 +35,10 @@ class LeadDraftsTest extends TestCase
 
     public function test_a_signed_draft_is_saved_once_per_visit_and_closed_when_the_full_request_arrives(): void
     {
-        $this->post($this->draft(), 'wrong-secret-wrong-secret-wrong-secret-0000')->assertUnauthorized();
-        $this->post($this->draft(['phone' => '(123) 555-0101']))->assertStatus(422);
-        $this->post($this->draft())->assertStatus(202);
-        $this->post($this->draft(['email' => 'maria@example.test']))->assertStatus(202);
+        $this->sendDraft($this->draft(), 'wrong-secret-wrong-secret-wrong-secret-0000')->assertUnauthorized();
+        $this->sendDraft($this->draft(['phone' => '(123) 555-0101']))->assertStatus(422);
+        $this->sendDraft($this->draft())->assertStatus(202);
+        $this->sendDraft($this->draft(['email' => 'maria@example.test']))->assertStatus(202);
         $this->assertDatabaseCount('lead_drafts', 1);
         $this->assertCount(1, ReceiveLeadDraft::open());
         $this->assertSame('8325550101', ReceiveLeadDraft::open()[0]->phone_digits);
@@ -50,13 +50,13 @@ class LeadDraftsTest extends TestCase
         app(ReceiveWebsiteLead::class)->execute($body, $at, $key, 'sha256='.hash_hmac('sha256', $at."\n".$key."\n".$body, $this->secret));
         $this->assertSame([], ReceiveLeadDraft::open());
         // A later draft from the same phone is not reopened.
-        $this->post($this->draft(['draft_key' => '7f1c2d3e-4b5a-4c6d-8e7f-9a0b1c2d3e4f']))->assertStatus(202);
+        $this->sendDraft($this->draft(['draft_key' => '7f1c2d3e-4b5a-4c6d-8e7f-9a0b1c2d3e4f']))->assertStatus(202);
         $this->assertSame([], ReceiveLeadDraft::open());
     }
 
     public function test_drafts_are_deleted_after_sixty_days(): void
     {
-        $this->post($this->draft())->assertStatus(202);
+        $this->sendDraft($this->draft())->assertStatus(202);
         $this->travel(61)->days();
         $this->assertSame(1, ReceiveLeadDraft::prune());
         $this->assertDatabaseCount('lead_drafts', 0);
@@ -64,7 +64,7 @@ class LeadDraftsTest extends TestCase
 
     public function test_the_owner_sees_the_sin_terminar_tab(): void
     {
-        $this->post($this->draft())->assertStatus(202);
+        $this->sendDraft($this->draft())->assertStatus(202);
         $owner = User::factory()->create(['role' => 'owner_admin', 'active' => true, 'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'), 'two_factor_confirmed_at' => now()]);
         config(['waoo.sandbox_finance' => true]);
         $this->actingAs($owner);
