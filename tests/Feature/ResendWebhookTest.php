@@ -47,7 +47,7 @@ class ResendWebhookTest extends TestCase
         $this->receive('email.opened','msg_open_1')->assertOk(); // replay counts once
         $this->receive('email.clicked','msg_click_1',['data'=>['click'=>['link'=>'https://wa.me/13468518830?text=Hi']]])->assertOk();
         $this->receive('email.clicked','msg_click_2',['data'=>['click'=>['link'=>'https://waooparty.com/packages']]])->assertOk();
-        $this->assertSame(['opened'=>1,'clicked'=>2],\App\Models\OutboundMessageEngagement::selectRaw('kind,count(*) c')->groupBy('kind')->pluck('c','kind')->map(fn($c)=>(int)$c)->all());
+        $this->assertEquals(['clicked'=>2,'opened'=>1],\App\Models\OutboundMessageEngagement::selectRaw('kind,count(*) c')->groupBy('kind')->pluck('c','kind')->map(fn($c)=>(int)$c)->sortKeys()->all());
         $this->assertSame(['packages','whatsapp'],\App\Models\OutboundMessageEngagement::whereNotNull('link_kind')->orderBy('link_kind')->pluck('link_kind')->all());
         $this->assertSame('sent',$this->mailState->fresh()->status,'an open is not a delivery');
     }
