@@ -105,6 +105,10 @@ class AnniversaryCampaignTest extends TestCase
         $this->assertTrue(\App\Services\Mail\MailGuard::allows($client, 'anniversary_main'));
         $this->assertTrue(\App\Services\Mail\MailGuard::allows($client, 'anniversary_reminder'));
         $this->assertFalse(\App\Services\Mail\MailGuard::allows($client, 'reschedule_notice'), 'other notices stay owner-only');
+        $this->assertFalse(\App\Services\Mail\MailGuard::allows($client, 'week_before'), 'automatic messages need their own switch');
+        config(['waoo.client_messages_enabled' => true]);
+        $this->assertTrue(\App\Services\Mail\MailGuard::allows($client, 'week_before'));
+        $this->assertFalse(\App\Services\Mail\MailGuard::allows($client, 'reschedule_notice'));
         $this->assertFalse(\App\Services\Mail\MailGuard::allows($client), 'no template, no exception');
         $this->app['env'] = 'testing';
     }

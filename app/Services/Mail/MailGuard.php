@@ -22,8 +22,11 @@ final class MailGuard
     {
         $r=mb_strtolower(trim($recipient));
         if(in_array($r,self::allowlist(),true))return true;
-        return $template!==null&&in_array($template,self::CLIENT_CAMPAIGNS,true)&&config('waoo.anniversary_clients_enabled')===true
-            &&\App\Support\WaooRuntime::live()&&filter_var($r,FILTER_VALIDATE_EMAIL)!==false;
+        if($template===null||!\App\Support\WaooRuntime::live()||filter_var($r,FILTER_VALIDATE_EMAIL)===false)return false;
+        if(in_array($template,self::CLIENT_CAMPAIGNS,true))return config('waoo.anniversary_clients_enabled')===true;
+        // Owner 2026-11-26: the six automatic messages reach clients once this switch is on (each text still needs his
+        // approval and its own switch on «Mensajes automáticos»; parties HoneyBook manages never get them).
+        return array_key_exists($template,\App\Support\AutoMessages::FLOW)&&config('waoo.client_messages_enabled')===true;
     }
     public static function transaction(callable $work):mixed
     {

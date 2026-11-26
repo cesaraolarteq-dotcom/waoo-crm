@@ -29,7 +29,7 @@ final class DispatchOutboundMail
             if(!$intact){$this->transition($m,$state,'blocked','payload_integrity_failed');return false;}
             $recipient=$rendered['recipient'];
             $suppressed=OutboundMessageState::whereIn('outbound_message_id',OutboundMessage::where('recipient_sha256',hash('sha256',$recipient))->select('id'))->whereIn('status',['bounced','complained'])->lockForUpdate()->first();
-            if(!in_array($recipient,MailGuard::allowlist(),true)||$suppressed){$this->transition($m,$state,'blocked',$suppressed?'recipient_suppressed':'recipient_not_allowed');return false;}
+            if(!MailGuard::allows($recipient,$m->template_key)||$suppressed){$this->transition($m,$state,'blocked',$suppressed?'recipient_suppressed':'recipient_not_allowed');return false;}
             if(!$transport->configured()){$this->transition($m,$state,'blocked','transport_unconfigured');return false;}
             $this->transition($m,$state,'dispatching',null,true);return true;
         });

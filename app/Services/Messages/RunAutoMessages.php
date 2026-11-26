@@ -185,10 +185,10 @@ final class RunAutoMessages
         if (! AutoMessages::emailOn($key)) { $this->log($key, $identity, 'email', $links['event_id'] ?? null, 'skipped', 'owner_off'); return ['skipped', null]; }
         $recipient = mb_strtolower(trim($recipient));
         if (! filter_var($recipient, FILTER_VALIDATE_EMAIL)) { $this->log($key, $identity, 'email', $links['event_id'] ?? null, 'skipped', 'recipient_required'); return ['skipped', null]; }
-        if (! CampaignOutbox::canPlan($recipient)) {
+        if (! CampaignOutbox::canPlan($recipient, $key)) {
             // Test mode (client not on the test list), bounced address or no provider: decided once, never sent later.
             $this->out['held']++;
-            $this->log($key, $identity, 'email', $links['event_id'] ?? null, 'held', in_array($recipient, MailGuard::allowlist(), true) ? 'transport_or_suppressed' : 'test_mode');
+            $this->log($key, $identity, 'email', $links['event_id'] ?? null, 'held', MailGuard::allows($recipient, $key) ? 'transport_or_suppressed' : 'test_mode');
             return ['held', null];
         }
         $mail = $render();
