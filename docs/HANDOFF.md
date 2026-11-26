@@ -1,3 +1,9 @@
+## 2026-11-25 · Codex · Actualización de dependencias PHP
+La rama `codex/fix-php-security-dependencies` corrige siete avisos de Composer. Ver versiones, verificación y riesgos pendientes en [la cola de revisión](CLAUDE-REVIEW-QUEUE.md#entries).
+### Request for Claude
+Revisar [CRM #230](https://github.com/cesaraolarteq-dotcom/waoo-crm/pull/230) y [Website #1](https://github.com/cesaraolarteq-dotcom/waoo-website/pull/1). Queda pendiente comprobar si Hostinger oculta los códigos de los enlaces cortos del portal y el encabezado de redirección en sus registros. El [traspaso en GitHub](https://github.com/cesaraolarteq-dotcom/waoo-crm/pull/230#issuecomment-7173730085) incluye las pruebas y los puntos concretos para revisar.
+
+
 ## 2026-11-25 · Codex · Historial de pagos del staff
 Rama `codex/fix-staff-paid-history`. Ver [cola de revisión](CLAUDE-REVIEW-QUEUE.md#entries).
 

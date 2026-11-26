@@ -21,6 +21,13 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-25 · BACKEND · Actualización de dos dependencias PHP · PENDING
+- Rama: `codex/fix-php-security-dependencies` (base `d3128d9`).
+- Cambios: `league/csv` de 9.28.0 a 9.29.1 y `web-auth/webauthn-lib` de 5.3.9 a 5.3.13.
+- Archivos: `composer.lock` y registro de revisión.
+- Verificación: `composer audit --locked` detectó siete avisos antes y ninguno después. `composer validate --strict` pasó. La suite del CRM se verifica en CI. Falta revisar los registros de acceso de Hostinger.
+- Qué revisar: confirmar en CI el inicio de sesión con dos factores y la importación de CSV de HoneyBook.
+
 ### 2026-11-25 · BUG · Conservar los pagos registrados del staff · PENDING
 - Rama: `codex/fix-staff-paid-history`.
 - Cambio: las ediciones y el marcado de pagos se coordinan por persona. Una línea pagada conserva su monto y fecha ante ediciones o reintentos.
