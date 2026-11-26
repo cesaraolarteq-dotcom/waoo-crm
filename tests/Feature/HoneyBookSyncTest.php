@@ -44,7 +44,8 @@ class HoneyBookSyncTest extends TestCase
         $this->assertDatabaseCount('events', 0);
         $paid = [...$row, 'amount_paid' => '475.00', 'balance' => '475.00', 'contract_signed' => 'yes'];
         $csv = implode(',', $h)."\n".implode(',', array_map(fn ($k) => '"'.str_replace('"', '""', $paid[$k]).'"', $h))."\n";
-        $this->send($this->secret, $csv)->assertOk()->assertJsonPath('review.0', $paid['project_name'].' — Vincula el proyecto antes de aplicar sus pagos o firma.');
+        // Owner 2026-11-26: a paid new party is imported automatically, but without an address it still waits for review.
+        $this->send($this->secret, $csv)->assertOk()->assertJsonPath('status', 'review')->assertJsonPath('counts.review', 1);
         $this->assertDatabaseCount('events', 0);
     }
 }

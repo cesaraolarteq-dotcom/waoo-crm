@@ -71,11 +71,8 @@ final class HoneyBookSync
         $snapshot = $link ? ImportedProjectRevision::find($link->current_revision_id)?->source_snapshot : null;
         if (! $snapshot) {
             if (($r['status'] ?? '') === 'cancelled') return null;
-            if (trim($r['payments'] ?? '') !== '' || ! in_array(trim($r['amount_paid'] ?? ''), ['', '0.00'], true)
-                || ! in_array(trim($r['contract_signed'] ?? ''), ['', 'no'], true)) {
-                $this->review($r['project_name'], $r['event_date'], 'Vincula el proyecto antes de aplicar sus pagos o firma.');
-                return null;
-            }
+            // Owner 2026-11-26 (option A): a NEW HoneyBook party is imported with its deposit and signature automatically
+            // (it goes through the same commit + confirm as the manual import); only party changes on linked rows wait for César.
             if (blank($r['event_address'] ?? null)) { $this->review((string) $r['project_name'], (string) $r['event_date'], 'Falta la dirección en HoneyBook (no se importa hasta tenerla; luego se suma el transporte).'); return null; }
             if (($r['characters'] ?? '') === '') $r['characters'] = $this->guessCharacters((string) ($r['project_name'] ?? ''));
             return $r;
