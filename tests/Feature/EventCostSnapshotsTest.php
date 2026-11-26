@@ -61,6 +61,23 @@ class EventCostSnapshotsTest extends TestCase
         $this->getJson('/admin/api/reports/package-margin?year=2026')->assertUnprocessable();
     }
 
+    public function test_package_margin_does_not_allocate_shared_costs_across_packages(): void
+    {
+        $this->event->update(['starts_at' => '2027-01-10 18:00:00', 'ends_at' => '2027-01-10 19:00:00']);
+        $other = ServiceVariant::create(['name' => 'Fixture second package', 'status' => 'active', 'duration_minutes' => 60, 'requirements' => []]);
+        $price = PriceVersion::create(['service_variant_id' => $other->id, 'amount_cents' => 20000,
+            'currency' => 'USD', 'created_by' => $this->owner->id]);
+        $this->event->services()->create(['service_variant_id' => $other->id, 'price_version_id' => $price->id,
+            'duration_minutes' => 60, 'operational_ready' => true, 'requirements_snapshot' => []]);
+        $finance = app(CreateFinancialRevision::class)->execute($this->owner, $this->event->id, ['expected_version' => 1], (string) Str::uuid());
+        $this->assertCount(2, $finance->lines_snapshot);
+        $this->event->update(['status' => 'capacity_reserved']);
+        $this->store(['kind' => 'actual', 'financial_revision_id' => $finance->id])->assertCreated()->assertJsonPath('complete', true);
+
+        $this->getJson('/admin/api/reports/package-margin?year=2027')->assertOk()->assertJsonPath('included_events', 0)
+            ->assertJsonPath('pending_events', 1)->assertJsonPath('packages', []);
+    }
+
     public function test_event_without_agreement_has_no_invented_revenue_cost_or_margin(): void
     {
         $other = $this->event->replicate(); $other->save();
