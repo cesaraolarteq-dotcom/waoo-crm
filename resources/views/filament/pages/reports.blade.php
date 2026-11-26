@@ -16,6 +16,22 @@
     @endphp
     @if ($bd || $analytics)
         <div class="wp">
+            @php $ads = $this->adsReport(); $chan = \App\Services\Leads\LeadSource::LABELS + ['unknown' => 'Sin dato']; @endphp
+            {{-- Owner 2026-11-26: what each booked party costs in ads, by channel. --}}
+            <div class="wp-card" style="margin-bottom:16px">
+                <span class="wp-pill">Publicidad · costo por fiesta reservada</span>
+                @foreach (['this' => $ads['this_label'], 'last' => $ads['last_label']] as $k => $label)
+                    <h3 style="margin:12px 0 6px">{{ $label }}</h3>
+                    <ul class="wp-list">
+                        @foreach ($ads[$k] as $c => $r)
+                            @continue($r['leads'] === 0 && ! $r['spend_cents'])
+                            <li>{{ $chan[$c] ?? $c }}
+                                <span>{{ $r['leads'] }} {{ $r['leads'] === 1 ? 'solicitud' : 'solicitudes' }} · {{ $r['booked'] }} {{ $r['booked'] === 1 ? 'reservó' : 'reservaron' }}@if ($r['spend_cents'] !== null) · gasto {{ $this->money($r['spend_cents']) }}@if ($r['booked'] > 0) · <b>{{ $this->money(intdiv($r['spend_cents'], $r['booked'])) }} por fiesta</b>@elseif ($r['spend_cents'] > 0) · aún sin reservas @endif @endif</span></li>
+                        @endforeach
+                    </ul>
+                @endforeach
+                <p class="wp-note">El gasto de Google llega solo cada día desde tu cuenta de Google Ads. El de Meta se agrega cuando conectemos la app de Meta.</p>
+            </div>
             @if ($anniv)
                 <div class="wp-card" style="margin-bottom:16px">
                     <span class="wp-pill">Un año después · efectividad</span>

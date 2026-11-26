@@ -88,6 +88,7 @@ return [
         'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
         'waba_id' => env('WHATSAPP_WABA_ID'),
     ],
+    'ads_sync_token_sha256' => env('WAOO_ADS_SYNC_TOKEN_SHA256'), // owner 2026-11-26: Google Ads script
     'client_messages_enabled' => (bool) env('WAOO_CLIENT_MESSAGES', false), // owner 2026-11-26: automatic messages may reach clients
     'honeybook_sync_enabled' => (bool) env('WAOO_HONEYBOOK_SYNC', false), // owner 2026-11-26: HoneyBook → CRM every 12 h
     'honeybook_sync_token_sha256' => env('WAOO_HONEYBOOK_SYNC_TOKEN_SHA256'),

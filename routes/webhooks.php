@@ -23,3 +23,7 @@ Route::post('/sync/honeybook', \App\Http\Controllers\Webhooks\HoneyBookSyncContr
 // Owner 2026-11-26: WhatsApp 8830 via Waoo's own Meta app (Cloud API). Signed by Meta (X-Hub-Signature-256).
 Route::get('/webhooks/whatsapp', [\App\Http\Controllers\Webhooks\WhatsAppWebhookController::class, 'verify'])->middleware('throttle:30,1');
 Route::post('/webhooks/whatsapp', [\App\Http\Controllers\Webhooks\WhatsAppWebhookController::class, 'receive'])->middleware('throttle:240,1');
+
+// Owner 2026-11-26 (point 5): Google Ads script → daily spend in, booked prospects out (offline conversions).
+Route::post('/sync/ads/google', [\App\Http\Controllers\Webhooks\AdsSyncController::class, 'spend'])->middleware('throttle:20,1');
+Route::post('/sync/ads/google/ack', [\App\Http\Controllers\Webhooks\AdsSyncController::class, 'ack'])->middleware('throttle:20,1');

@@ -195,6 +195,14 @@ class Reports extends Page
             Filament::auth()->user(), ['as_of' => now('America/Chicago')->toDateString()]);
     }
 
+    /** Owner 2026-11-26 (point 5): this month and last month — ad spend, prospects, bookings and cost per booked party by channel. */
+    public function adsReport(): array
+    {
+        $now = CarbonImmutable::now('America/Chicago')->startOfMonth();
+        return ['this' => \App\Services\Ads\AdsSync::report($now, $now->addMonth()), 'last' => \App\Services\Ads\AdsSync::report($now->subMonth(), $now),
+            'this_label' => ucfirst($now->locale('es')->translatedFormat('F')), 'last_label' => ucfirst($now->subMonth()->locale('es')->translatedFormat('F'))];
+    }
+
     /** ANNIV-01 effectiveness (César 2026-10-29: "enviamos 10 correos y contrataron 2"). */
     public function anniversary(): ?array
     {
