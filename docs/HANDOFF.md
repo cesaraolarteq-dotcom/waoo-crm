@@ -20,7 +20,7 @@ Trabaja sin pedir permiso (AGENTS.md «Autonomy»), ramas `codex/*`, una PR por 
 Al terminar cada punto: entrada corta en HANDOFF.md y comentario en su PR. César sube al CRM real con SUBIR; tú no.
 
 ## 2026-11-26 · Codex · Punto 2: inventario de PRs
-Rama `codex/fix-handoff-1126-pr-queue`. Comparé las puntas contra `claude/import-fixes` (`5431f42`). Cerré 13 PRs incluidos en esa rama y dos ramas de despliegue. El #229 sigue pendiente de #241 y CI.
+Rama `codex/fix-handoff-1126-pr-queue`. Comparé las puntas contra `claude/import-fixes` (`5431f42`). Cerré 16 PRs. Trece puntas ya estaban incluidas en la rama, un lock era idéntico y dos PRs eran ramas de despliegue. #241 se incorporó a #229. El #229 espera la confirmación de la regla de HoneyBook y el CI de su punta actual.
 
 | PR | Estado | Motivo |
 |---|---|---|
@@ -40,7 +40,7 @@ Rama `codex/fix-handoff-1126-pr-queue`. Comparé las puntas contra `claude/impor
 | #226 | Cerrada | El apartado inicial está en `claude/import-fixes`. La continuación queda en el punto 3. |
 | #227 | Cerrada | Punta incluida en `claude/import-fixes`. |
 | #228 | Cerrada | Rama histórica de despliegue. |
-| #229 | Pendiente | Incorporar #241 y comprobar el CI de la punta resultante antes de unir a `main`. |
+| #229 | Pendiente | #241 ya está incorporado. La punta `b8e7e86` vuelve a importar fiestas nuevas con pago. Confirmar cuál regla aplica y verificar CI. |
 | #231 | Pendiente | Falta revisar los registros de acceso de Hostinger. |
 | #232 | Pendiente | Cobertura propia para el punto 3. |
 | #233 | Pendiente | Caché de traslados con cambios propios. |
@@ -48,10 +48,14 @@ Rama `codex/fix-handoff-1126-pr-queue`. Comparé las puntas contra `claude/impor
 | #235 | Pendiente | Base de costos del punto 5. |
 | #236 | Pendiente | Consulta de margen del punto 5. |
 | #237 | Pendiente | Cobertura de traslados para el punto 3. |
-| #238 | Pendiente | Punta distinta. Comparar el lock con la base auditada antes de cerrar. |
+| #238 | Cerrada | El lock es idéntico al auditado en `claude/import-fixes`. |
 | #239 | Pendiente | Preparación aislada de crm-test. |
 | #240 | Pendiente | Pantalla de margen del punto 5. |
-| #241 | Pendiente | Correcciones de la revisión del #229. |
+| #241 | Unida | Correcciones de la revisión integradas en `claude/import-fixes`. |
+| #242 | Pendiente | Registro de esta cola en HANDOFF. |
+| #243 | Pendiente | Reprogramación y replanificación del punto 3. |
+| #244 | Pendiente | Pagos al staff del punto 4. |
+| #245 | Pendiente | Margen por paquete del punto 5. |
 
 ## 2026-11-23 · Claude → Codex · Cola de trabajo para Codex (César: «algo para Codex de la ruta»)
 En orden; trabaja sin pedir permiso (AGENTS.md «Autonomy»), ramas `codex/*`, una PR por punto.
