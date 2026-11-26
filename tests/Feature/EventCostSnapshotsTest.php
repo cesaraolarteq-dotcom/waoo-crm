@@ -36,6 +36,27 @@ class EventCostSnapshotsTest extends TestCase
         return $this->withHeader('Idempotency-Key', $key ?? (string) Str::uuid())->postJson('/admin/api/events/'.$this->event->id.'/cost-snapshots', [...$this->input, ...$extra]);
     }
     private function summary() { return $this->getJson('/admin/api/events/'.$this->event->id.'/costs'); }
+    public function test_package_margin_uses_actual_costs_and_houston_year_boundary(): void
+    {
+        $this->event->update(['status' => 'capacity_reserved', 'starts_at' => '2027-01-01 06:00:00', 'ends_at' => '2027-01-01 07:00:00']);
+        $this->store()->assertCreated();
+        $url = '/admin/api/reports/package-margin?year=2027';
+        $this->getJson($url)->assertOk()->assertHeader('Cache-Control', 'no-store, private')
+            ->assertJsonPath('included_events', 0)->assertJsonPath('pending_events', 1);
+        $this->store(['kind' => 'actual', 'lines' => [
+            ...$this->input['lines'],
+            ['label' => 'Fixture processing fee', 'category' => 'card_processing', 'amount_cents' => 1200],
+        ]])->assertCreated();
+        $this->getJson($url)->assertOk()->assertJsonPath('included_events', 1)->assertJsonPath('pending_events', 0)
+            ->assertJsonPath('packages.0.name', 'Fixture package')->assertJsonPath('packages.0.events', 1)
+            ->assertJsonPath('packages.0.revenue_cents', 40000)->assertJsonPath('packages.0.cost_cents', 15500)
+            ->assertJsonPath('packages.0.margin_cents', 24500);
+
+        $this->event->update(['starts_at' => '2027-01-01 05:59:00']);
+        $this->getJson($url)->assertOk()->assertJsonPath('included_events', 0)->assertJsonPath('pending_events', 0);
+        $this->getJson('/admin/api/reports/package-margin?year=2026')->assertUnprocessable();
+    }
+
     public function test_event_without_agreement_has_no_invented_revenue_cost_or_margin(): void
     {
         $other = $this->event->replicate(); $other->save();

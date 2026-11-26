@@ -2,7 +2,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Services\Reports\{ReadOwnerReport, RenderOwnerReportEmail};
+use App\Services\Reports\{ReadOwnerReport, ReadPackageMargin, RenderOwnerReportEmail};
 use Illuminate\Http\Request;
 
 final class OwnerReportReadController extends Controller
@@ -11,6 +11,11 @@ final class OwnerReportReadController extends Controller
     {
         return response()->json($service->execute($request->user(), $request->query()))->header('Cache-Control', 'no-store, private');
     }
+    public function packageMargin(Request $request, ReadPackageMargin $service)
+    {
+        return response()->json($service->execute($request->user(), $request->query()))->header('Cache-Control', 'no-store, private');
+    }
+
     public function preview(Request $request, int $snapshot, RenderOwnerReportEmail $service)
     {
         return response()->json($service->execute($request->user(), $snapshot))->header('Cache-Control', 'no-store, private');
