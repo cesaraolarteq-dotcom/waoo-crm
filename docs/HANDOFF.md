@@ -1,3 +1,19 @@
+## 2026-11-26 (noche) · Claude → Codex · Cola 2 (César: «dame instrucciones para Codex»)
+Recibí #242–#246, gracias. Mismas reglas: trabaja sin pedir permiso (AGENTS.md «Autonomy»), ramas `codex/*`, base `claude/import-fixes` (hoy en el CRM real = ee1c30f). No despliegues, no envíes correos/SMS/WhatsApp, nombres ficticios tipo María González. En orden:
+
+1. **Cierra #246** sin unir: el arreglo ya está en ee1c30f (`sendDraft()`), y la regla A ya está en b8e7e86. Una línea diciendo eso.
+2. **Une #243, #244, #245 y #242 a `claude/import-fixes`**, en ese orden. Antes de cada uno: rebase sobre la punta actual, CI completo en verde (10 shards + checks + quick), y en el mensaje del commit la línea `Tests: Clase1 Clase2`. Si dos chocan en migraciones, renómbralas con fecha posterior a `2026_11_26_140000`. Al terminar, deja en HANDOFF «listo para revisar» con el commit final. Yo reviso dinero y apartados y le pido «súbelo» a César. Tú no despliegas.
+3. **Cierra las PR que ya quedaron absorbidas**, con una línea indicando dónde quedó cada una: #226, #232, #237 → #243; #234 → #244; #235, #236, #240 → #245. Cierra #239 sin unir: ya no usamos crm-test (desde el 20 nov se sube directo al CRM real).
+4. **Las 3 PR viejas que siguen abiertas:**
+   - **#222** (reembolsos repetidos de Stripe): es dinero. Haz rebase, agrega una prueba que repita el mismo evento de reembolso dos veces y confirme que queda un solo registro, y únela.
+   - **#233** (caché del tráfico al cambiar la hora): rebase y únela si sigue haciendo falta; si no, ciérrala explicando por qué.
+   - **#231** (documentación del registro del portal): únela si solo toca docs y pruebas; si no, ciérrala.
+5. **Ruta f3-rutas · tiempos de manejo automáticos entre fiestas.** Cuando la misma persona, el mismo vehículo o el mismo traje tienen dos fiestas el mismo día, el CRM calcula el manejo de la dirección A a la B con la función que ya existe para el chequeo de manejo del mismo día (no hay API nueva ni costo nuevo). Si no alcanza, muestra el aviso «No da tiempo de llegar» en Reserva rápida y en la ficha del evento. Usa el margen que ya está en config; no inventes otro. Si falta la dirección, el aviso dice «Falta dirección, no se puede calcular el manejo», nunca «OK». Pruebas en MariaDB: dos fiestas a 40 min, dos sin dirección, y una que cambia de hora.
+6. **Ruta f3-prueba-fechas · reporte para que César compare 5 fechas.** Comando de solo lectura `php artisan waoo:fechas-reporte 2026-12-05 2026-12-12 …`. Por cada fecha, lista en español sencillo cada paquete con «se puede vender» o «lleno» y por qué («los 2 animadores ya están en fiestas», «falta la maleta de pintacaritas»). Recuerda la regla de César: se bloquean combinaciones de capacidad, no personas específicas (si las 2 maletas de pintacaritas están en dos Waoo que chocan, no se vende otro pintacaritas). No cambia datos. Deja el resultado de 5 sábados reales en HANDOFF para que yo se lo pase a César.
+7. **Margen con varios paquetes (pendiente en #245).** No lo programes. Deja en HANDOFF 2 o 3 opciones de cómo repartir los costos compartidos (personal, transporte) entre los paquetes de una misma fiesta, cada una con un ejemplo de $. Yo se lo pregunto a César.
+
+Al terminar cada punto: entrada corta en HANDOFF y comentario en su PR. Lo que dependa de César (tarifas del staff, fórmula del chofer) queda en revisión, nunca en $0.
+
 ## 2026-11-26 · Codex · Punto 1: revisión de seguridad del #229
 Rama `codex/fix-handoff-1126-security` sobre `claude/import-fixes`. HoneyBook deja reducciones, cambios de servicios y pagos de proyectos sin vínculo para revisión. Google Ads valida gasto y acuses, y WhatsApp conserva la evidencia de entrega y lectura. Ver [pruebas y pendientes en la cola de revisión](CLAUDE-REVIEW-QUEUE.md#entries).
 
