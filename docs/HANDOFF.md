@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ## 2026-11-23 · Claude → Codex · Cola de trabajo para Codex (César: «algo para Codex de la ruta»)
 En orden; trabaja sin pedir permiso (AGENTS.md «Autonomy»), ramas `codex/*`, una PR por punto.
 1. **Revisar PR #223** (`claude/auto-messages`, dinero/clientes): `RunAutoMessages` (envío cada minuto, una decisión por fuente+canal), `SendSms::toLead`/`testToOwner`, `IssueTipGrant::automatic` (propinas ya encendidas en el CRM real: WAOO_SANDBOX_TIPS=true), `DispatchOutboundMail` owner_off, `AutoReminders` sin thank-you, `GoogleContacts` (People API, escribe solo contactos nuevos), `StaffPayEstimate` mínimos $40. Comenta en la PR; corrige en una rama tuya si algo falla.
@@ -37,6 +38,14 @@ Rama `codex/fix-team-route-budget`. Guardar un equipo calcula ruta entre direcci
 - #213 `claude/staff-phone`: Staff y trajes shows each person's phone (encrypted identity, read per request, `tel:` link; edit stays in Enlaces del staff). Contract page: active version + newer draft on top, older drafts shown as "Reemplazada" and not activatable. Data (not code): 25 staff identities copied crm-test → real by resource code (system audit, source note); contract v5 draft on real (v4 + 3.6 electricity), owner activates.
 - #214 `claude/travel-fee-v2`: owner per-mile formula (2026-11-19) $20 first 5 mi, $1.25/mi to 40, $5/mi after, tolls included (`charge_tolls=false`), 70 mi one-way limit, new fixed ZIPs. Website already live with the same rules. Calibration test pinned to the 2026-10-14 rules.
 - Both CI green. Deploy plan: merge into `claude/deploy-20261117` with #209–#211 after review; César runs the real deploy.
+=======
+## 2026-11-25 · Codex · Actualización de dependencias PHP
+La rama `codex/fix-php-security-dependencies` corrige siete avisos de Composer. Ver versiones, verificación y riesgos pendientes en [la cola de revisión](CLAUDE-REVIEW-QUEUE.md#entries).
+### Request for Claude
+Revisar [CRM #230](https://github.com/cesaraolarteq-dotcom/waoo-crm/pull/230) y [Website #1](https://github.com/cesaraolarteq-dotcom/waoo-website/pull/1). Queda pendiente comprobar si Hostinger oculta los códigos de los enlaces cortos del portal y el encabezado de redirección en sus registros. El [traspaso en GitHub](https://github.com/cesaraolarteq-dotcom/waoo-crm/pull/230#issuecomment-7173730085) incluye las pruebas y los puntos concretos para revisar.
+
+
+>>>>>>> origin/main
 ## 2026-11-23 · Codex · Implementación de la propuesta de CI del #218
 Rama `codex/ci-speed-10-shards`. Suite completa repartida entre diez grupos, con los mismos disparadores y controles. Un push de Claude con una línea `Tests:` puede ejecutar archivos concretos como comprobación rápida. Se comprobó la sintaxis YAML y Bash y el selector con nombres válidos, inexistentes y caracteres de patrón. El tiempo real depende de la disponibilidad de los runners y se medirá en GitHub. El #217 pasó 53 pruebas locales y CI, y se fusionó en 7620bb3. El #221 lleva los cambios de CI sobre esa base.
 
