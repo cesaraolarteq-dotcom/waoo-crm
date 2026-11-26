@@ -21,6 +21,12 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-26 · UI · Margen por paquete en Reportes · PENDING
+- Rama: `codex/fix-package-margin-screen` sobre #236.
+- Cambio: Reportes muestra selector de año desde 2027, fiestas incluidas y pendientes, e ingresos, costos y margen por paquete.
+- Verificación: 10 pruebas y 85 aserciones en SQLite local. Chromium con Blade y datos ficticios a 390×844 y 1280×844 en claro y oscuro. Selector de 44 px, foco por teclado y página sin desborde. Capturas fuera del repositorio.
+- Qué revisar: Reportes en español, cambio de año, estado vacío y fiestas excluidas por costos pendientes. GitHub verifica MariaDB. Sin datos reales ni pruebas en Hostinger.
+
 ### 2026-11-25 · BACKEND · Actualización de dos dependencias PHP · PENDING
 - Rama: `codex/fix-php-security-dependencies` (base `d3128d9`).
 - Cambios: `league/csv` de 9.28.0 a 9.29.1 y `web-auth/webauthn-lib` de 5.3.9 a 5.3.13.

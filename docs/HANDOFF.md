@@ -1,3 +1,6 @@
+## 2026-11-26 · Codex · Vista de margen por paquete
+Rama `codex/fix-package-margin-screen` sobre #236. Reportes muestra el margen y los casos pendientes por año. Ver pruebas y capturas en la [cola de revisión](CLAUDE-REVIEW-QUEUE.md#entries).
+
 ## 2026-11-25 · Codex · Actualización de dependencias PHP
 La rama `codex/fix-php-security-dependencies` corrige siete avisos de Composer. Ver versiones, verificación y riesgos pendientes en [la cola de revisión](CLAUDE-REVIEW-QUEUE.md#entries).
 ### Request for Claude

@@ -410,3 +410,6 @@ a.wdash-item:focus-visible{outline:0;box-shadow:var(--focus)}
 .dark .wce-field select{background:#0E1B52;border-color:rgba(255,255,255,.15);color:#fff} .dark .wce-person{border-color:rgba(255,255,255,.12);color:#fff} .dark .wce-h{color:#fff}
 .wtp-warn{color:var(--warn);font-weight:600}
 .wtp-empty .wcal-btn{margin-left:8px}
+
+.waoo-package-margin select{min-height:44px}
+.waoo-package-margin h3{overflow-wrap:anywhere}

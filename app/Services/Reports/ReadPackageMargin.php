@@ -10,12 +10,15 @@ use Carbon\CarbonImmutable;
 
 final class ReadPackageMargin
 {
+    public const FIRST_YEAR = 2027;
+    public const LAST_YEAR = 2100;
+
     public function execute(User $actor, array $input): array
     {
         Sandbox::require();
         RecordActor::authorize($actor);
         PortalContext::requireTransport(request());
-        $data = RecordInput::validate($input, ['year' => 'required|integer|min:2027|max:2100']);
+        $data = RecordInput::validate($input, ['year' => 'required|integer|min:'.self::FIRST_YEAR.'|max:'.self::LAST_YEAR]);
         $year = (int) $data['year'];
         $start = CarbonImmutable::create($year, 1, 1, 0, 0, 0, 'America/Chicago');
         $packages = [];

@@ -3,7 +3,8 @@ namespace Tests\Feature;
 
 use App\Filament\Pages\{Dashboard, Reports};
 use App\Filament\Support\ReportsSource;
-use App\Models\{OwnerReportSnapshot, Resource};
+use App\Models\{FinancialRevision, OwnerReportSnapshot, Resource};
+use App\Services\Costs\RecordCostSnapshot;
 use App\Services\Finance\{ConfirmPaidCapacity, CreateFinancialRevision, RecordZellePayment};
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
@@ -55,6 +56,28 @@ class ReportsPageTest extends TestCase
         $this->assertGreaterThan(0, $october['kpis']['received']['value'], 'The deposit arrived on Oct 14.');
         $page->call('setTab', 'crecimiento')->assertSee('Mes por mes')->call('setTab', 'zonas')->assertSee('Mapa de zonas calientes')->call('setPulseMode', 'balance')->call('setTab', 'pulso')->assertSee('Segunda mitad');
         $page->call('setTab', 'viene')->assertSee('Dinero por cobrar')->assertSee('Ventana de reserva por temporada')->assertSee('Un año después');
+    }
+
+    public function test_package_margin_view_shows_costs_and_changes_the_selected_year(): void
+    {
+        $event = $this->event->fresh();
+        $event->update(['starts_at' => '2027-01-10 18:00:00', 'ends_at' => '2027-01-10 19:00:00']);
+        $finance = FinancialRevision::where('event_id', $event->id)->latest('revision')->firstOrFail();
+        app(RecordCostSnapshot::class)->execute($this->owner, $event->id, [
+            'kind' => 'actual', 'expected_event_version' => $event->version,
+            'financial_revision_id' => $finance->id, 'expected_revision' => 0,
+            'coverage_confirmed' => true, 'note' => 'Todos los costos ficticios están revisados.',
+            'lines' => [['label' => 'Materiales', 'category' => 'materials', 'amount_cents' => 2500]],
+        ], (string) Str::uuid());
+
+        Livewire::test(Reports::class)
+            ->assertSet('marginYear', 2027)
+            ->assertSee('Margen por paquete')->assertSee('1 incluidas · 0 pendientes')
+            ->assertSee($finance->lines_snapshot[0]['name'])->assertSee('$25')
+            ->set('marginYear', 2028)->assertSee('0 incluidas · 0 pendientes')
+            ->assertSee('No hay fiestas con margen calculado para 2028.')
+            ->set('marginYear', 2026)->assertSet('marginYear', 2027)
+            ->assertSee('1 incluidas · 0 pendientes');
     }
 
     public function test_navigation_never_goes_past_the_latest_completed_period(): void
