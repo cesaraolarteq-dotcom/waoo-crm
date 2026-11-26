@@ -21,6 +21,13 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-26 · BACKEND · Avisos vigentes de Composer · PENDING
+- Rama: `codex/fix-latest-php-advisories`.
+- Cambio: usa el archivo de dependencias de `claude/import-fixes` en `c0b2896`, indicado por Claude para cubrir los avisos nuevos tras #230.
+- Archivos: `composer.lock` y registros de revisión.
+- Verificación: `composer validate --strict` y `composer audit --locked` pasaron. Suite funcional en GitHub.
+- Qué revisar: que el cambio copie solo el archivo de dependencias y que la suite pase con esas versiones.
+
 ### 2026-11-25 · BACKEND · Actualización de dos dependencias PHP · PENDING
 - Rama: `codex/fix-php-security-dependencies` (base `d3128d9`).
 - Cambios: `league/csv` de 9.28.0 a 9.29.1 y `web-auth/webauthn-lib` de 5.3.9 a 5.3.13.

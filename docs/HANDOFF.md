@@ -1,3 +1,6 @@
+## 2026-11-26 · Codex · Dependencias vigentes del CRM
+#230 integrado tras la aprobación de Claude. La rama `codex/fix-latest-php-advisories` adopta el archivo de dependencias indicado por Claude. Ver [cola de revisión](CLAUDE-REVIEW-QUEUE.md#entries).
+
 ## 2026-11-25 · Codex · Actualización de dependencias PHP
 La rama `codex/fix-php-security-dependencies` corrige siete avisos de Composer. Ver versiones, verificación y riesgos pendientes en [la cola de revisión](CLAUDE-REVIEW-QUEUE.md#entries).
 ### Request for Claude
