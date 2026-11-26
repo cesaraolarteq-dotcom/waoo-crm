@@ -2,7 +2,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Pages\StaffPay;
-use App\Models\{Customer, Event, EventService, PriceVersion, Resource, ServiceVariant, StaffPayLine, User};
+use App\Models\{Customer, Event, EventService, EventTeamPlan, PriceVersion, Resource, ServiceVariant, StaffPayLine, User};
 use App\Services\Team\{AssignEventTeam, StaffPaySuggestion, TeamSlots};
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -52,6 +52,22 @@ class StaffPayTest extends TestCase
         $this->assertSame(7000, $paid->fresh()->amount_cents);
         $this->assertTrue($paid->fresh()->paid_at->equalTo($paid->paid_at));
         $this->assertDatabaseCount('staff_pay_lines', 1);
+        $second = $e->replicate();
+        $second->fill(['starts_at' => $s->addDay(), 'ends_at' => $s->addDay()->addHours(2)])->save();
+        $plan = EventTeamPlan::where('event_id', $e->id)->sole()->replicate();
+        $plan->fill(['event_id' => $second->id, 'reservation_ids' => []])->save();
+
+        $week = app(StaffPaySuggestion::class)->week(CarbonImmutable::parse('2026-11-02', 'America/Chicago'));
+        $this->assertSame([true, false], array_column($week[0]['lines'], 'paid'));
+        Livewire::test(StaffPay::class)->call('markPaid', $sofia->id)->assertNotified('Marcado como pagado');
+
+        $newPayment = StaffPayLine::where('event_id', $second->id)->sole();
+        $this->assertSame(6500, $newPayment->amount_cents);
+        $this->assertTrue($newPayment->paid_at->greaterThan($paid->paid_at));
+        $this->assertSame(7000, $paid->fresh()->amount_cents);
+        $this->assertTrue($paid->fresh()->paid_at->equalTo($paid->paid_at));
+        $this->assertDatabaseCount('staff_pay_lines', 2);
+
 
     }
 }

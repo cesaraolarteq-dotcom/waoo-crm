@@ -26,7 +26,7 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 - Cambio: las ediciones y el marcado de pagos se coordinan por persona. Una línea pagada conserva su monto y fecha ante ediciones o reintentos.
 - Archivos: `StaffPay.php`, `StaffPayTest.php` y registros de revisión.
 - Verificación: prueba con datos ficticios en CI. Zelle real y datos del personal quedan fuera.
-- Qué revisar: guardar $80 tras marcar $70 como pagados y volver a marcar no debe cambiar el monto, la fecha ni el número de registros.
+- Qué revisar: guardar $80 tras marcar $70 como pagados y volver a marcar no debe cambiar el monto, la fecha ni el número de registros. Con un evento pagado y uno pendiente en la misma semana, solo se registra el que faltaba.
 
 ### 2026-11-20 · BACKEND · Integración parcial de prospectos, Zip, staff, contratos y transporte · PENDING
 - Branch: codex/fix-verified-nov20. Sources: #209, #210, #213 and #214 through 8be3959.
