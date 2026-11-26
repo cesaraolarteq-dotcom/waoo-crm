@@ -1,3 +1,6 @@
+## 2026-11-26 · Codex · César eligió la regla A para HoneyBook
+El CRM importa y vincula una fiesta nueva con su depósito y firma de HoneyBook cuando tiene los datos necesarios. Los cambios operativos de una fiesta vinculada siguen pasando a revisión. Se renombró un método auxiliar de `LeadDraftsTest` para resolver el conflicto con Laravel que detenía el CI del #229.
+
 ## 2026-11-26 · Codex · Punto 1: revisión de seguridad del #229
 Rama `codex/fix-handoff-1126-security` sobre `claude/import-fixes`. HoneyBook deja reducciones, cambios de servicios y pagos de proyectos sin vínculo para revisión. Google Ads valida gasto y acuses, y WhatsApp conserva la evidencia de entrega y lectura. Ver [pruebas y pendientes en la cola de revisión](CLAUDE-REVIEW-QUEUE.md#entries).
 
