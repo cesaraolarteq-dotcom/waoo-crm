@@ -11,7 +11,7 @@ class HoneyBookSyncTest extends TestCase
 
     private string $secret = 'synthetic-sync-secret-0123456789abcdef';
 
-    private function post(?string $token, string $body)
+    private function send(?string $token, string $body)
     {
         return $this->call('POST', '/sync/honeybook', [], [], [], array_filter(['CONTENT_TYPE' => 'text/csv', 'HTTP_AUTHORIZATION' => $token ? 'Bearer '.$token : null]), $body);
     }
@@ -19,12 +19,12 @@ class HoneyBookSyncTest extends TestCase
     public function test_the_door_is_closed_when_off_and_refuses_a_wrong_secret(): void
     {
         $csv = implode(',', \App\Services\Imports\HoneyBookFutureSource::HEADERS)."\n";
-        $this->post($this->secret, $csv)->assertNotFound();
+        $this->send($this->secret, $csv)->assertNotFound();
         config(['waoo.honeybook_sync_enabled' => true, 'waoo.honeybook_sync_token_sha256' => hash('sha256', $this->secret)]);
-        $this->post(null, $csv)->assertUnauthorized();
-        $this->post('wrong-secret-wrong-secret-wrong-secret', $csv)->assertUnauthorized();
+        $this->send(null, $csv)->assertUnauthorized();
+        $this->send('wrong-secret-wrong-secret-wrong-secret', $csv)->assertUnauthorized();
         \App\Models\User::factory()->create(['id' => 1, 'role' => 'owner_admin', 'active' => true, 'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'), 'two_factor_confirmed_at' => now()]);
-        $this->post($this->secret, $csv)->assertOk()->assertJsonPath('status', 'ok');
+        $this->send($this->secret, $csv)->assertOk()->assertJsonPath('status', 'ok');
         $this->assertDatabaseCount('honeybook_sync_runs', 1);
     }
 
@@ -38,7 +38,7 @@ class HoneyBookSyncTest extends TestCase
             'client_email' => 'lucia@example.test', 'event_date' => now('America/Chicago')->addDays(20)->toDateString(), 'start_time' => '13:00', 'end_time' => '15:00',
             'services' => 'Waoo Package', 'package_total' => '950.00', 'travel_fee' => '0.00', 'discount' => '0.00', 'total' => '950.00', 'amount_paid' => '475.00', 'balance' => '475.00', 'contract_signed' => 'no'];
         $csv = implode(',', $h)."\n".implode(',', array_map(fn ($k) => '"'.str_replace('"', '""', $row[$k]).'"', $h))."\n";
-        $this->post($this->secret, $csv)->assertOk()->assertJsonPath('status', 'review')->assertJsonPath('counts.review', 1);
+        $this->send($this->secret, $csv)->assertOk()->assertJsonPath('status', 'review')->assertJsonPath('counts.review', 1);
         $this->assertDatabaseCount('events', 0);
     }
 }
