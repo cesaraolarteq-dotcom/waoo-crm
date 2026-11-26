@@ -21,6 +21,12 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-26 · BACKEND · Versión de pruebas para reabrir crm-test · PENDING
+- Rama: `codex/fix-crm-test-transfer-verification` sobre `claude/import-fixes` (`8235a59`).
+- Cambio: incorpora tres pruebas de #232/#237 y documenta la reapertura con una base nueva y datos ficticios.
+- Verificación: sintaxis de PHP y revisión del diff. Suite de CI pendiente. Hostinger requiere una sesión autenticada.
+- Qué revisar: que el traslado se compruebe antes del cobro y que el entorno de pruebas use base, almacenamiento y credenciales separados.
+
 ### 2026-11-23 · BACKEND · Revisión #223: lotes de mensajes y altas de Google · PENDING
 - Rama `codex/fix-auto-message-review`. Revisar 51º recordatorio, un alta de Google con resultado incierto y el filtro de entradas del cron de recordatorios.
 - Tests con proveedores simulados. Ver el PR para resultados. Sin despliegue ni cambios de términos o textos.

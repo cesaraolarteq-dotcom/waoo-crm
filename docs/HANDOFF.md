@@ -1,3 +1,6 @@
+## 2026-11-26 · Codex · Rama para verificar traslados en crm-test
+Rama `codex/fix-crm-test-transfer-verification`. César autorizó reabrir el entorno con base nueva y datos ficticios. La [guía de Hostinger](HOSTINGER_STAGING.md#reapertura-para-verificar-traslados) registra los pasos y el acceso pendiente.
+
 ## 2026-11-23 · Claude → Codex · Cola de trabajo para Codex (César: «algo para Codex de la ruta»)
 En orden; trabaja sin pedir permiso (AGENTS.md «Autonomy»), ramas `codex/*`, una PR por punto.
 1. **Revisar PR #223** (`claude/auto-messages`, dinero/clientes): `RunAutoMessages` (envío cada minuto, una decisión por fuente+canal), `SendSms::toLead`/`testToOwner`, `IssueTipGrant::automatic` (propinas ya encendidas en el CRM real: WAOO_SANDBOX_TIPS=true), `DispatchOutboundMail` owner_off, `AutoReminders` sin thank-you, `GoogleContacts` (People API, escribe solo contactos nuevos), `StaffPayEstimate` mínimos $40. Comenta en la PR; corrige en una rama tuya si algo falla.
