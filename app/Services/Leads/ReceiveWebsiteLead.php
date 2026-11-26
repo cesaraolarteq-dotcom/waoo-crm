@@ -38,7 +38,11 @@ final class ReceiveWebsiteLead
             'payload.consent.text' => 'required_with:payload.consent|string|max:4000',
             'payload.consent.version' => 'required_with:payload.consent|string|max:120',
             // Owner 2026-11-17: where the visitor came from (Google Ads, Google, Instagram…), optional so older website copies keep working.
-            'payload.attribution' => 'sometimes|nullable|array:channel,campaign,term,referrer,landing,first_seen_at',
+            'payload.attribution' => 'sometimes|nullable|array:channel,campaign,term,referrer,landing,first_seen_at,gclid,gbraid,wbraid,fbclid,click_at',
+            // Owner 2026-11-26: the ad click ID travels with the request (disclosed in the privacy policy) for offline conversions.
+            'payload.attribution.gclid' => ['sometimes', 'nullable', 'string', 'max:200', 'regex:/^[A-Za-z0-9_\-.~]+$/'], 'payload.attribution.gbraid' => ['sometimes', 'nullable', 'string', 'max:200', 'regex:/^[A-Za-z0-9_\-.~]+$/'],
+            'payload.attribution.wbraid' => ['sometimes', 'nullable', 'string', 'max:200', 'regex:/^[A-Za-z0-9_\-.~]+$/'], 'payload.attribution.fbclid' => ['sometimes', 'nullable', 'string', 'max:200', 'regex:/^[A-Za-z0-9_\-.~]+$/'],
+            'payload.attribution.click_at' => 'sometimes|nullable|integer|min:1600000000000|max:4102444800000',
             'payload.attribution.channel' => ['required_with:payload.attribution', Rule::in(array_keys(LeadSource::LABELS))],
             'payload.attribution.campaign' => 'sometimes|nullable|string|max:150', 'payload.attribution.term' => 'sometimes|nullable|string|max:150',
             'payload.attribution.referrer' => ['sometimes', 'nullable', 'string', 'max:120', 'regex:/^[a-z0-9.-]+$/'],
