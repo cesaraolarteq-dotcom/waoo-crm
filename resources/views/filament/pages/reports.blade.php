@@ -23,6 +23,27 @@
                     <p>{{ $anniv['issued'] }} {{ $anniv['issued'] === 1 ? 'cliente recibió' : 'clientes recibieron' }} su código y {{ $anniv['redeemed'] }} {{ $anniv['redeemed'] === 1 ? 'reservó' : 'reservaron' }} con él.
                         @if ($anniv['sent'] < $anniv['issued']) {{ $anniv['issued'] - $anniv['sent'] }} códigos están listos pero el correo sigue apagado: todavía no se envían. @endif</p>
                     <p class="wp-note"><a href="{{ url('/admin/anniversary/preview') }}" target="_blank" rel="noopener" style="text-decoration:underline">Ver el correo</a> · <a href="{{ url('/admin/anniversary/preview?kind=reminder') }}" target="_blank" rel="noopener" style="text-decoration:underline">Ver el recordatorio del día 6</a> (ejemplo con datos ficticios)</p>
+                    @if (($anniv['funnel']['sent'] ?? 0) > 0)
+                        {{-- Owner 2026-11-26: delivered / opened / clicked like HoneyBook, then who booked. --}}
+                        @php($fn = $anniv['funnel'])
+                        <div class="wp-funnel">
+                            @foreach (['sent' => 'Enviados', 'delivered' => 'Entregados', 'opened' => 'Abiertos*', 'clicked' => 'Hicieron clic', 'booked' => 'Reservaron'] as $k => $label)
+                                <div><b>{{ $fn[$k] }}</b><span>{{ $label }}</span>@if ($k !== 'sent' && $fn['sent'])<small>{{ round(100 * $fn[$k] / $fn['sent']) }} %</small>@endif</div>
+                            @endforeach
+                        </div>
+                        @php($btn = ['book' => 'Ver mi fecha', 'whatsapp' => 'WhatsApp', 'packages' => 'Ver paquetes', 'phone' => 'Llamar', 'google' => 'Reseñas de Google', 'other' => 'Otro enlace'])
+                        @if ($anniv['clicks_by_button'])<p class="wp-note">Botones: @foreach ($anniv['clicks_by_button'] as $k => $n){{ $btn[$k] ?? $k }} {{ $n }}@if (! $loop->last) · @endif @endforeach</p>@endif
+                        @if ($fn['bounced'])<p class="wp-note">{{ $fn['bounced'] }} {{ $fn['bounced'] === 1 ? 'correo rebotó' : 'correos rebotaron' }} (la dirección no existe o no acepta correo).</p>@endif
+                        <p class="wp-note">* «Abierto» es aproximado: el iPhone abre los correos solo. Los clics y las reservas son exactos.</p>
+                        <details class="wp-people"><summary>Ver cliente por cliente ({{ count($anniv['people']) }})</summary>
+                            <ul class="wp-list">
+                                @foreach ($anniv['people'] as $p)
+                                    <li>{{ $p['name'] }}
+                                        <span>@if ($p['booked'])✅ Reservó @elseif ($p['clicks'])👆 {{ collect($p['clicks'])->map(fn ($k) => $btn[$k] ?? $k)->implode(', ') }} @elseif ($p['opened'])👀 Abrió @elseif ($p['bounced'])⚠️ Rebotó @elseif ($p['delivered'])📬 Entregado @else Enviado @endif</span></li>
+                                @endforeach
+                            </ul>
+                        </details>
+                    @endif
                     <ul class="wp-list">
                         <li>Dinero de esas reservas <span>{{ $this->money($anniv['revenue_cents']) }}</span></li>
                         <li>Descuento que diste <span>{{ $this->money($anniv['discount_cents']) }}</span></li>
