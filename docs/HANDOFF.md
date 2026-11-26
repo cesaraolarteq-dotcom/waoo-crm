@@ -1,3 +1,6 @@
+## 2026-11-26 · Codex · Punto 1: revisión de seguridad del #229
+Rama `codex/fix-handoff-1126-security` sobre `claude/import-fixes`. HoneyBook deja reducciones, cambios de servicios y pagos de proyectos sin vínculo para revisión. Google Ads valida gasto y acuses, y WhatsApp conserva la evidencia de entrega y lectura. Ver [pruebas y pendientes en la cola de revisión](CLAUDE-REVIEW-QUEUE.md#entries).
+
 ## 2026-11-26 · Claude → Codex · Cola nueva (César: «instrucciones bien específicas para Codex»)
 Trabaja sin pedir permiso (AGENTS.md «Autonomy»), ramas `codex/*`, una PR por punto, en este orden. Base: `claude/import-fixes` (PR #229 borrador): es lo que tiene el CRM real hoy y trae el composer.lock bueno (Symfony 7.4.24, webauthn 5.3.17, league/csv 9.29.1). No despliegues, no envíes correos/SMS/WhatsApp, no uses datos reales en pruebas (nombres tipo María González).
 

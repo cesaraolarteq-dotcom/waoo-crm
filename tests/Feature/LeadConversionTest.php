@@ -42,17 +42,35 @@ class LeadConversionTest extends TestCase
             'portal' => ['expires_at' => now()->addDays(10)->toIso8601String()]];
     }
 
-    private function lead(): Lead
+    private function lead(array $attribution = []): Lead
     {
         $body = json_encode(['name' => 'Website fixture', 'phone' => '555-0101', 'email' => 'website@example.invalid', 'event_date' => now()->addDays(20)->toDateString(), 'start_time' => null,
             'zip' => '77493', 'event_type' => 'birthday', 'package' => 'opaque-website-code', 'message' => null, 'travel_estimate_text' => '$999 informational only', 'locale' => 'en',
-            'consent' => null, 'demand_flag' => 'unknown', 'submitted_at' => now()->subHour()->toIso8601String(), 'page' => '/contact']);
+            'consent' => null, 'demand_flag' => 'unknown', 'submitted_at' => now()->subHour()->toIso8601String(), 'page' => '/contact',
+            ...($attribution ? ['attribution' => $attribution] : [])]);
         $key = (string) Str::uuid(); $at = (string) now()->getTimestamp();
         return app(ReceiveWebsiteLead::class)->execute($body, $at, $key, 'sha256='.hash_hmac('sha256', $at."\n".$key."\n".$body, config('waoo.lead_shared_secret')));
     }
     private function convert(Lead $lead, ?array $booking = null, ?string $key = null)
     {
         return $this->withHeader('Idempotency-Key', $key ?? (string) Str::uuid())->postJson('/admin/api/leads/'.$lead->id.'/quick-book', ['expected_version' => 1, 'booking' => $booking ?? $this->input]);
+    }
+
+    public function test_google_conversion_exports_only_booking_fields_and_acknowledges_only_eligible_bookings(): void
+    {
+        $booked = $this->lead(['gclid' => 'fictional_click-1']);
+        $unbooked = $this->lead(['gclid' => 'fictional_click-2']);
+        $this->convert($booked)->assertCreated();
+        $token = 'fictional-google-ads-token-for-local-tests';
+        config(['waoo.ads_sync_token_sha256' => hash('sha256', $token)]);
+        $headers = ['Authorization' => 'Bearer '.$token];
+
+        $result = $this->postJson('/sync/ads/google', ['rows' => []], $headers)->assertOk();
+        $result->assertJsonCount(1, 'conversions')->assertJsonPath('conversions.0.lead_id', $booked->id);
+        $this->assertSame(['lead_id', 'gclid', 'gbraid', 'wbraid', 'conversion_time', 'value', 'currency'], array_keys($result->json('conversions.0')));
+        $this->postJson('/sync/ads/google/ack', ['lead_ids' => [$unbooked->id]], $headers)->assertOk()->assertJsonPath('acknowledged', 0);
+        $this->postJson('/sync/ads/google/ack', ['lead_ids' => [$booked->id]], $headers)->assertOk()->assertJsonPath('acknowledged', 1);
+        $this->postJson('/sync/ads/google/ack', ['lead_ids' => [$booked->id]], $headers)->assertOk()->assertJsonPath('acknowledged', 0);
     }
     public function test_real_intake_to_quick_booking_links_only_after_verified_core_and_replay_is_safe(): void
     {
