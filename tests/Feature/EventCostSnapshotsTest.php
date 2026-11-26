@@ -38,7 +38,7 @@ class EventCostSnapshotsTest extends TestCase
     private function summary() { return $this->getJson('/admin/api/events/'.$this->event->id.'/costs'); }
     public function test_package_margin_uses_actual_costs_and_houston_year_boundary(): void
     {
-        $this->event->update(['status' => 'capacity_reserved', 'starts_at' => '2027-01-01 06:00:00', 'ends_at' => '2027-01-01 07:00:00']);
+        $this->event->forceFill(['status' => 'capacity_reserved', 'starts_at' => '2027-01-01 06:00:00', 'ends_at' => '2027-01-01 07:00:00'])->save();
         $this->store()->assertCreated();
         $url = '/admin/api/reports/package-margin?year=2027';
         $this->getJson($url)->assertOk()->assertHeader('Cache-Control', 'no-store, private')
@@ -71,7 +71,7 @@ class EventCostSnapshotsTest extends TestCase
             'duration_minutes' => 60, 'operational_ready' => true, 'requirements_snapshot' => []]);
         $finance = app(CreateFinancialRevision::class)->execute($this->owner, $this->event->id, ['expected_version' => 1], (string) Str::uuid());
         $this->assertCount(2, $finance->lines_snapshot);
-        $this->event->update(['status' => 'capacity_reserved']);
+        $this->event->forceFill(['status' => 'capacity_reserved'])->save();
         $this->store(['kind' => 'actual', 'financial_revision_id' => $finance->id])->assertCreated()->assertJsonPath('complete', true);
 
         $this->getJson('/admin/api/reports/package-margin?year=2027')->assertOk()->assertJsonPath('included_events', 0)
