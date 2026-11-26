@@ -21,7 +21,6 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
-<<<<<<< HEAD
 ### 2026-11-23 · BACKEND · Revisión #223: lotes de mensajes y altas de Google · PENDING
 - Rama `codex/fix-auto-message-review`. Revisar 51º recordatorio, un alta de Google con resultado incierto y el filtro de entradas del cron de recordatorios.
 - Tests con proveedores simulados. Ver el PR para resultados. Sin despliegue ni cambios de términos o textos.
@@ -44,7 +43,6 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 - What Claude must check: proposed SMS wording is owner-approved on the page before any text goes out.
 
 ### 2026-11-20 · BACKEND · Revisión #211: identidad durable y rotación del cron · REVIEWED (Claude 2026-11-20)
-=======
 ### 2026-11-25 · BACKEND · Actualización de dos dependencias PHP · PENDING
 - Rama: `codex/fix-php-security-dependencies` (base `d3128d9`).
 - Cambios: `league/csv` de 9.28.0 a 9.29.1 y `web-auth/webauthn-lib` de 5.3.9 a 5.3.13.
@@ -52,7 +50,6 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 - Verificación: `composer audit --locked` detectó siete avisos antes y ninguno después. `composer validate --strict` pasó. La suite del CRM se verifica en CI. Falta revisar los registros de acceso de Hostinger.
 - Qué revisar: confirmar en CI el inicio de sesión con dos factores y la importación de CSV de HoneyBook.
 
->>>>>>> origin/main
 ### 2026-11-20 · BACKEND · Integración parcial de prospectos, Zip, staff, contratos y transporte · PENDING
 - Branch: codex/fix-verified-nov20. Sources: #209, #210, #213 and #214 through 8be3959.
 - The server rejects activating an older draft. Zip eligibility uses the amount collected including the fee. The website lead transport regression uses explicit HTTP and HTTPS origins.
