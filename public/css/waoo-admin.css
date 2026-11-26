@@ -513,3 +513,5 @@ a.wdash-item:focus-visible{outline:0;box-shadow:var(--focus)}
 .wimp-danger{color:#C0392B;border-color:rgba(192,57,43,.4)}
 .dark .wimp-danger{color:#FF8A7A;border-color:rgba(255,138,122,.4)}
 @media (max-width:700px){.wimp-fields{grid-template-columns:1fr}.wimp-review>li{flex-direction:column;align-items:flex-start}}
+.waoo-package-margin select{min-height:44px}
+.waoo-package-margin h3{overflow-wrap:anywhere}

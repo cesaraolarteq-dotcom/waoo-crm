@@ -7,6 +7,7 @@
 @endphp
 <x-filament-panels::page>
     @include('filament.pages.reports-panorama')
+    @include('filament.pages.reports-package-margin', ['margin' => $this->packageMargin()])
     @php
         $bd = $this->birthdays();
         $analytics = $this->analytics();
