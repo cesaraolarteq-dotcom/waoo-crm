@@ -20,13 +20,13 @@
             {{-- Owner 2026-11-26: what each booked party costs in ads, by channel. --}}
             <div class="wp-card" style="margin-bottom:16px">
                 <span class="wp-pill">Publicidad · costo por fiesta reservada</span>
-                @foreach (['this' => $ads['this_label'], 'last' => $ads['last_label']] as $k => $label)
-                    <h3 style="margin:12px 0 6px">{{ $label }}</h3>
+                @foreach (['this' => $ads['this_label'], 'last' => $ads['last_label']] as $adPeriod => $adLabel)
+                    <h3 style="margin:12px 0 6px">{{ $adLabel }}</h3>
                     <ul class="wp-list">
-                        @foreach ($ads[$k] as $c => $r)
-                            @continue($r['leads'] === 0 && ! $r['spend_cents'])
-                            <li>{{ $chan[$c] ?? $c }}
-                                <span>{{ $r['leads'] }} {{ $r['leads'] === 1 ? 'solicitud' : 'solicitudes' }} · {{ $r['booked'] }} {{ $r['booked'] === 1 ? 'reservó' : 'reservaron' }}@if ($r['spend_cents'] !== null) · gasto {{ $this->money($r['spend_cents']) }}@if ($r['booked'] > 0) · <b>{{ $this->money(intdiv($r['spend_cents'], $r['booked'])) }} por fiesta</b>@elseif ($r['spend_cents'] > 0) · aún sin reservas @endif @endif</span></li>
+                        @foreach ($ads[$adPeriod] as $adCh => $adRow)
+                            @continue($adRow['leads'] === 0 && ! $adRow['spend_cents'])
+                            <li>{{ $chan[$adCh] ?? $adCh }}
+                                <span>{{ $adRow['leads'] }} {{ $adRow['leads'] === 1 ? 'solicitud' : 'solicitudes' }} · {{ $adRow['booked'] }} {{ $adRow['booked'] === 1 ? 'reservó' : 'reservaron' }}@if ($adRow['spend_cents'] !== null) · gasto {{ $this->money($adRow['spend_cents']) }}@if ($adRow['booked'] > 0) · <b>{{ $this->money(intdiv($adRow['spend_cents'], $adRow['booked'])) }} por fiesta</b>@elseif ($adRow['spend_cents'] > 0) · aún sin reservas @endif @endif</span></li>
                         @endforeach
                     </ul>
                 @endforeach
