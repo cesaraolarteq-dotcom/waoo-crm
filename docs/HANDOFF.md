@@ -19,6 +19,40 @@ Trabaja sin pedir permiso (AGENTS.md «Autonomy»), ramas `codex/*`, una PR por 
 
 Al terminar cada punto: entrada corta en HANDOFF.md y comentario en su PR. César sube al CRM real con SUBIR; tú no.
 
+## 2026-11-26 · Codex · Punto 2: inventario de PRs
+Rama `codex/fix-handoff-1126-pr-queue`. Comparé las puntas contra `claude/import-fixes` (`5431f42`). Cerré 13 PRs incluidos en esa rama y dos ramas de despliegue. El #229 sigue pendiente de #241 y CI.
+
+| PR | Estado | Motivo |
+|---|---|---|
+| #208 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #209 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #210 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #212 | Cerrada | Rama histórica de despliegue. |
+| #213 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #214 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #215 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #219 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #220 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #222 | Pendiente | Conciliación de reembolsos con cambios propios. |
+| #223 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #224 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #225 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #226 | Cerrada | El apartado inicial está en `claude/import-fixes`. La continuación queda en el punto 3. |
+| #227 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #228 | Cerrada | Rama histórica de despliegue. |
+| #229 | Pendiente | Incorporar #241 y comprobar el CI de la punta resultante antes de unir a `main`. |
+| #231 | Pendiente | Falta revisar los registros de acceso de Hostinger. |
+| #232 | Pendiente | Cobertura propia para el punto 3. |
+| #233 | Pendiente | Caché de traslados con cambios propios. |
+| #234 | Pendiente | Historial de pagos del staff para el punto 4. |
+| #235 | Pendiente | Base de costos del punto 5. |
+| #236 | Pendiente | Consulta de margen del punto 5. |
+| #237 | Pendiente | Cobertura de traslados para el punto 3. |
+| #238 | Pendiente | Punta distinta. Comparar el lock con la base auditada antes de cerrar. |
+| #239 | Pendiente | Preparación aislada de crm-test. |
+| #240 | Pendiente | Pantalla de margen del punto 5. |
+| #241 | Pendiente | Correcciones de la revisión del #229. |
+
 ## 2026-11-23 · Claude → Codex · Cola de trabajo para Codex (César: «algo para Codex de la ruta»)
 En orden; trabaja sin pedir permiso (AGENTS.md «Autonomy»), ramas `codex/*`, una PR por punto.
 1. **Revisar PR #223** (`claude/auto-messages`, dinero/clientes): `RunAutoMessages` (envío cada minuto, una decisión por fuente+canal), `SendSms::toLead`/`testToOwner`, `IssueTipGrant::automatic` (propinas ya encendidas en el CRM real: WAOO_SANDBOX_TIPS=true), `DispatchOutboundMail` owner_off, `AutoReminders` sin thank-you, `GoogleContacts` (People API, escribe solo contactos nuevos), `StaffPayEstimate` mínimos $40. Comenta en la PR; corrige en una rama tuya si algo falla.
