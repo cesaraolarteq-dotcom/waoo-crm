@@ -12,6 +12,7 @@ final class AdsSyncController
     {
         $expected = (string) config('waoo.ads_sync_token_sha256');
         abort_unless(strlen($expected) === 64 && strlen((string) $r->bearerToken()) >= 32 && hash_equals($expected, hash('sha256', (string) $r->bearerToken())), 401);
+        abort_if(strlen($r->getContent()) > 1_048_576, 413);
     }
 
     public function spend(Request $r)
