@@ -58,8 +58,8 @@ class LeadConversionTest extends TestCase
 
     public function test_google_conversion_exports_only_booking_fields_and_acknowledges_only_eligible_bookings(): void
     {
-        $booked = $this->lead(['gclid' => 'fictional_click-1']);
-        $unbooked = $this->lead(['gclid' => 'fictional_click-2']);
+        $booked = $this->lead(['channel' => 'google_ads', 'gclid' => 'fictional_click-1']);
+        $unbooked = $this->lead(['channel' => 'google_ads', 'gclid' => 'fictional_click-2']);
         $this->convert($booked)->assertCreated();
         $token = 'fictional-google-ads-token-for-local-tests';
         config(['waoo.ads_sync_token_sha256' => hash('sha256', $token)]);
