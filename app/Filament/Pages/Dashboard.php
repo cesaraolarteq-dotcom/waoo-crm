@@ -192,6 +192,14 @@ class Dashboard extends BaseDashboard
                 'items' => ($quick['waiting_details'] ?? collect())->map($contractLink)->values()->all()];
         }
 
+        // Owner 2026-11-26: what the automatic HoneyBook sync could not apply on its own (latest run only).
+        if (config('waoo.honeybook_sync_enabled') === true && ($run = \App\Models\HoneybookSyncRun::latest('id')->first())) {
+            $when = \Carbon\CarbonImmutable::parse($run->created_at)->setTimezone('America/Chicago')->locale('es')->translatedFormat('D j M, g:i a');
+            $cards[] = ['tone' => 'warn', 'title' => 'HoneyBook: por revisar', 'text' => "Sincronización de {$when}. Lo demás (fiestas nuevas, pagos, firmas) ya se aplicó solo.",
+                'items' => collect($run->items)->where('kind', 'review')->map(fn ($i) => ['label' => trim(($i['project'] ?: 'HoneyBook').($i['date'] ? ' · '.$i['date'] : '')),
+                    'meta' => $i['detail'], 'url' => \App\Filament\Pages\ImportHoneyBook::getUrl()])->values()->all()];
+        }
+
         $maintenance = Resource::query()->where('status', 'maintenance')->orderBy('name')->get();
         $cards[] = ['tone' => 'info', 'title' => 'Unidades en mantenimiento', 'text' => 'No se pueden asignar hasta que las pongas como disponibles.',
             'items' => $maintenance->map(fn ($r) => ['label' => $r->name, 'url' => \App\Filament\Resources\Resources\ResourceUnitResource::getUrl('edit', ['record' => $r])])->all()];

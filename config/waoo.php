@@ -80,6 +80,9 @@ return [
     // ANNIV-01 campaign switch (off): with the general mail gate also on, "One year later" emails and day-6 reminders go out.
     'anniversary_mail_enabled' => (bool) env('WAOO_ANNIVERSARY_MAIL_ENABLED', false),
     'anniversary_clients_enabled' => (bool) env('WAOO_ANNIVERSARY_CLIENTS', false), // owner 2026-11-25: the anniversary email may reach real clients
+    'honeybook_sync_enabled' => (bool) env('WAOO_HONEYBOOK_SYNC', false), // owner 2026-11-26: HoneyBook → CRM every 12 h
+    'honeybook_sync_token_sha256' => env('WAOO_HONEYBOOK_SYNC_TOKEN_SHA256'),
+    'honeybook_sync_actor_id' => (int) env('WAOO_HONEYBOOK_SYNC_ACTOR_ID', 1),
     'anniversary_font' => env('WAOO_ANNIVERSARY_FONT', 'poppins'), // owner 2026-11-25: poppins | fredoka
     'availability_crm_only' => (bool) env('WAOO_AVAILABILITY_CRM_ONLY', false),
     'postal_address' => env('WAOO_POSTAL_ADDRESS', 'Waoo Party LLC · 17350 State Hwy 249, Ste 220 · Houston, TX 77064'),

@@ -15,3 +15,7 @@ Route::post('/webhooks/twilio/inbound', [\App\Http\Controllers\Webhooks\TwilioWe
 
 Route::post('/webhooks/twilio/status', [\App\Http\Controllers\Webhooks\TwilioWebhookController::class, 'status'])
     ->middleware('throttle:240,1');
+
+// Owner 2026-11-26: HoneyBook → CRM every 12 hours until the switch (cloud job, bearer secret).
+Route::post('/sync/honeybook', \App\Http\Controllers\Webhooks\HoneyBookSyncController::class)
+    ->middleware('throttle:10,1');
