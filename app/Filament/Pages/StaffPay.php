@@ -87,32 +87,55 @@ class StaffPay extends Page
         $amount = trim((string) ($this->edits[$key]['amount'] ?? ''));
         if (! preg_match('/^\d{1,5}(\.\d{1,2})?$/', $amount)) { Notification::make()->danger()->title('Escribe el monto')->body('Solo el número, por ejemplo 45.')->send(); return; }
         $user = Filament::auth()->user();
-        $line = StaffPayLine::updateOrCreate(['event_id' => $eventId, 'resource_id' => $resourceId],
-            ['amount_cents' => (int) round(((float) $amount) * 100), 'suggested_cents' => $suggested, 'note' => filled($n = trim((string) ($this->edits[$key]['note'] ?? ''))) ? mb_substr($n, 0, 300) : null, 'updated_by' => $user->id]);
-        Audit::recordFor($user, 'staff_pay.line_saved', $line, [], $line->only(['event_id', 'resource_id', 'amount_cents', 'suggested_cents']));
+        $saved = DB::transaction(function () use ($eventId, $resourceId, $key, $user, $amount, $suggested) {
+            Resource::whereKey($resourceId)->lockForUpdate()->firstOrFail();
+            $line = StaffPayLine::firstOrNew(['event_id' => $eventId, 'resource_id' => $resourceId]);
+            if ($line->paid_at !== null) return false;
+
+            $note = trim((string) ($this->edits[$key]['note'] ?? ''));
+            $line->fill(['amount_cents' => (int) round(((float) $amount) * 100), 'suggested_cents' => $suggested,
+                'note' => filled($note) ? mb_substr($note, 0, 300) : null, 'updated_by' => $user->id])->save();
+            Audit::recordFor($user, 'staff_pay.line_saved', $line, [], $line->only(['event_id', 'resource_id', 'amount_cents', 'suggested_cents']));
+            return true;
+        }, 3);
+        if (! $saved) return;
         unset($this->edits[$key]);
         Notification::make()->success()->title('Monto guardado')->send();
     }
 
-    public function edit(int $eventId, int $resourceId, int $cents, ?string $note): void
+    public function edit(int $eventId, int $resourceId, ?int $cents, ?string $note): void
     {
-        $this->edits[$eventId.'-'.$resourceId] = ['amount' => number_format($cents / 100, 2, '.', ''), 'note' => (string) $note];
+        $this->edits[$eventId.'-'.$resourceId] = ['amount' => $cents === null ? '' : number_format($cents / 100, 2, '.', ''), 'note' => (string) $note];
     }
 
     /** Marks every party of this person in the week as paid, keeping the amount shown (suggested or changed). */
     public function markPaid(int $resourceId): void
     {
-        $person = collect($this->board())->firstWhere('resource_id', $resourceId);
-        if (! $person || $person['missing_rate']) { Notification::make()->warning()->title('Falta una tarifa')->body('Pon la tarifa o escribe el monto antes de marcarlo pagado.')->send(); return; }
         $user = Filament::auth()->user();
-        DB::transaction(function () use ($person, $resourceId, $user) {
+        $result = DB::transaction(function () use ($resourceId, $user) {
+            if (! Resource::whereKey($resourceId)->lockForUpdate()->first()) return null;
+
+            $person = collect($this->board())->firstWhere('resource_id', $resourceId);
+            if (! $person || $person['missing_rate']) return null;
+
+            $total = 0;
+            $changed = false;
             foreach ($person['lines'] as $l) {
                 $line = StaffPayLine::firstOrNew(['event_id' => $l['event_id'], 'resource_id' => $resourceId]);
+                if ($line->paid_at !== null) continue;
                 $line->fill(['amount_cents' => $l['amount_cents'], 'suggested_cents' => $line->exists ? $line->suggested_cents : $l['suggested_cents'], 'paid_at' => now(), 'updated_by' => $user->id])->save();
                 Audit::recordFor($user, 'staff_pay.paid', $line, [], $line->only(['event_id', 'resource_id', 'amount_cents']));
+                $total += $line->amount_cents;
+                $changed = true;
             }
-        });
-        Notification::make()->success()->title('Marcado como pagado')->body($person['name'].' · '.Labels::money($person['total_cents']))->send();
+            return ['name' => $person['name'], 'total' => $total, 'changed' => $changed];
+        }, 3);
+
+        if ($result === null) {
+            Notification::make()->warning()->title('Falta una tarifa')->body('Pon la tarifa o escribe el monto antes de marcarlo pagado.')->send();
+        } elseif ($result['changed']) {
+            Notification::make()->success()->title('Marcado como pagado')->body($result['name'].' · '.Labels::money($result['total']))->send();
+        }
     }
 
     public function board(): array
