@@ -80,6 +80,14 @@ return [
     // ANNIV-01 campaign switch (off): with the general mail gate also on, "One year later" emails and day-6 reminders go out.
     'anniversary_mail_enabled' => (bool) env('WAOO_ANNIVERSARY_MAIL_ENABLED', false),
     'anniversary_clients_enabled' => (bool) env('WAOO_ANNIVERSARY_CLIENTS', false), // owner 2026-11-25: the anniversary email may reach real clients
+    'whatsapp' => [ // owner 2026-11-26: own Meta app, no intermediary
+        'enabled' => (bool) env('WAOO_WHATSAPP', false),
+        'app_secret' => env('WHATSAPP_APP_SECRET'),
+        'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),
+        'token' => env('WHATSAPP_TOKEN'),
+        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
+        'waba_id' => env('WHATSAPP_WABA_ID'),
+    ],
     'client_messages_enabled' => (bool) env('WAOO_CLIENT_MESSAGES', false), // owner 2026-11-26: automatic messages may reach clients
     'honeybook_sync_enabled' => (bool) env('WAOO_HONEYBOOK_SYNC', false), // owner 2026-11-26: HoneyBook → CRM every 12 h
     'honeybook_sync_token_sha256' => env('WAOO_HONEYBOOK_SYNC_TOKEN_SHA256'),

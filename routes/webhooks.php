@@ -19,3 +19,7 @@ Route::post('/webhooks/twilio/status', [\App\Http\Controllers\Webhooks\TwilioWeb
 // Owner 2026-11-26: HoneyBook → CRM every 12 hours until the switch (cloud job, bearer secret).
 Route::post('/sync/honeybook', \App\Http\Controllers\Webhooks\HoneyBookSyncController::class)
     ->middleware('throttle:10,1');
+
+// Owner 2026-11-26: WhatsApp 8830 via Waoo's own Meta app (Cloud API). Signed by Meta (X-Hub-Signature-256).
+Route::get('/webhooks/whatsapp', [\App\Http\Controllers\Webhooks\WhatsAppWebhookController::class, 'verify'])->middleware('throttle:30,1');
+Route::post('/webhooks/whatsapp', [\App\Http\Controllers\Webhooks\WhatsAppWebhookController::class, 'receive'])->middleware('throttle:240,1');
