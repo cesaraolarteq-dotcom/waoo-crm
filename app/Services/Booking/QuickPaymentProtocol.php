@@ -69,9 +69,14 @@ final class QuickPaymentProtocol
             RecordWriteRejected::unless($audit!==null,409,'El historial de la reserva requiere revisión.');
             if ($current) {
                 $original = clone $event; $original->version = $s['event_version']; $original->status = 'draft';
-                RecordWriteRejected::unless(QuickStripeLeases::eventHash($original) === $s['event_sha256']
-                    && MutationKey::hash(QuickCostumeHolds::recipe($event)) === $s['recipe_sha256']
-                    && (int) FinancialRevision::where('event_id', $event->id)->max('revision') === $f->revision,
+                $latest = FinancialRevision::where('event_id', $event->id)->orderByDesc('revision')->firstOrFail();
+                $rescheduled = $b->state === 'paid' && $b->receipt_id !== null && $event->status === 'capacity_reserved'
+                    && \App\Models\EventChange::where('event_id', $event->id)->where('kind', 'reschedule')
+                        ->whereIn('state', ['pending_signature', 'completed'])->where('event_version_after', $event->version)
+                        ->where('new_starts_at', $event->starts_at)->where('new_ends_at', $event->ends_at)
+                        ->where('financial_revision_id', $latest->id)->exists();
+                RecordWriteRejected::unless(MutationKey::hash(QuickCostumeHolds::recipe($event)) === $s['recipe_sha256']
+                    && ($rescheduled || (QuickStripeLeases::eventHash($original) === $s['event_sha256'] && $latest->id === $f->id)),
                     409, 'El acuerdo cambió; revisa la reserva antes de continuar.');
             }
             return $s;

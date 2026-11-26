@@ -27,6 +27,11 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 ### 2026-11-23 · BACKEND · Punto 2: revisión de pagos de #214/#215 · PENDING
 - Rama `codex/fix-deployed-money-review`. 10 pruebas, 45 aserciones con MariaDB local y Stripe simulado.
 - Revisar la caída a tarjeta, la integridad de la huella migrada y la reserva de importes cuyo reembolso no se encuentra después de la ventana.
+### 2026-11-26 · BACKEND · Punto 3: reprogramación del apartado conjunto · PENDING
+- Rama `codex/fix-handoff-1126-joint-hold`.
+- Una fiesta confirmada con depósito conciliado puede mover todas las reservas en una transacción, conservar el historial y volver a firmar. Un equipo completo puede reemplazar al personal y conservar los trajes y equipos apartados.
+- MariaDB local: 16 pruebas y 175 aserciones, más 2 pruebas y 38 aserciones en la última comprobación enfocada. Stripe, calendarios y rutas ficticias. Revisar carrera por el último traje, vencimiento, un recibo tardío y el cambio de fecha que conserva el contrato anterior. El sitio público continúa en vista previa.
+
 ### 2026-11-23 · BACKEND · Punto 3: apartado conjunto de la futura reserva web · PENDING
 - Rama `codex/fix-website-joint-hold`. Tres pruebas/18 aserciones con MariaDB, dos procesos y Stripe simulado.
 - Revisar vida del equipo comprometido en la planificación y ante reprogramación. La web permanece en preview.
