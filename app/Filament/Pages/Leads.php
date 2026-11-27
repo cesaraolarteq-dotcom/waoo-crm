@@ -75,6 +75,18 @@ class Leads extends Page
         return $n ? (string) $n : null;
     }
 
+    /** Owner 2026-11-26: «Sin terminar» — forms left halfway (name + phone), to follow up by WhatsApp. */
+    public function drafts(): array
+    {
+        return \App\Services\Leads\ReceiveLeadDraft::open();
+    }
+
+    public function dismissDraft(int $id): void
+    {
+        \Illuminate\Support\Facades\DB::table('lead_drafts')->where('id', $id)->whereNull('dismissed_at')->update(['dismissed_at' => now(), 'updated_at' => now()]);
+        Notification::make()->title('Listo, ya no aparece aquí.')->success()->send();
+    }
+
     public function rows(): array
     {
         $page = app(ReadLeads::class)->index(Filament::auth()->user(), [...(array_key_exists($this->status, self::STATUS) ? ['status' => $this->status] : []),

@@ -2,7 +2,7 @@
 
 namespace App\Services\Ads;
 
-use App\Models\{Event, FinancialRevision, Lead, QuickPaymentBooking};
+use App\Models\{Event, FinancialRevision, Lead};
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -15,17 +15,38 @@ final class AdsSync
     /** @param list<array{date:string,campaign_id:string,campaign:string,cost_micros:int|string,clicks?:int,impressions?:int}> $rows */
     public function storeSpend(string $platform, array $rows): int
     {
-        $n = 0;
+        $entries = [];
+        $now = now();
         foreach (array_slice($rows, 0, 2000) as $r) {
-            $day = (string) ($r['date'] ?? '');
-            if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $day) || ! is_numeric($r['cost_micros'] ?? null)) continue;
-            DB::table('ad_spend_daily')->updateOrInsert(
-                ['day' => $day, 'platform' => $platform, 'campaign_id' => mb_substr((string) ($r['campaign_id'] ?? ''), 0, 40)],
-                ['campaign' => mb_substr((string) ($r['campaign'] ?? ''), 0, 200), 'cost_cents' => (int) round(((int) $r['cost_micros']) / 10000),
-                    'clicks' => (int) ($r['clicks'] ?? 0), 'impressions' => (int) ($r['impressions'] ?? 0), 'updated_at' => now(), 'created_at' => now()]);
-            $n++;
+            if (! is_array($r)) continue;
+            $day = $r['date'] ?? null;
+            $campaignId = $r['campaign_id'] ?? null;
+            if (is_int($campaignId)) $campaignId = (string) $campaignId;
+            $campaign = $r['campaign'] ?? '';
+            if (! is_string($day) || ! preg_match('/^\d{4}-\d{2}-\d{2}$/D', $day)
+                || ! checkdate((int) substr($day, 5, 2), (int) substr($day, 8, 2), (int) substr($day, 0, 4))
+                || ! is_string($campaignId) || ! preg_match('/^[0-9]{1,40}$/D', $campaignId) || ! is_string($campaign)) continue;
+            $cost = self::unsignedInt($r['cost_micros'] ?? null, PHP_INT_MAX);
+            $clicks = self::unsignedInt($r['clicks'] ?? 0, 4_294_967_295);
+            $impressions = self::unsignedInt($r['impressions'] ?? 0, 4_294_967_295);
+            if ($cost === null || $clicks === null || $impressions === null) continue;
+            $entries[$day.':'.$campaignId] = ['day' => $day, 'platform' => $platform, 'campaign_id' => $campaignId,
+                'campaign' => mb_substr($campaign, 0, 200), 'cost_cents' => intdiv($cost, 10000) + (int) ($cost % 10000 >= 5000),
+                'clicks' => $clicks, 'impressions' => $impressions, 'created_at' => $now, 'updated_at' => $now];
         }
-        return $n;
+        DB::transaction(function () use ($entries) {
+            foreach (array_chunk($entries, 100) as $chunk) {
+                DB::table('ad_spend_daily')->upsert($chunk, ['day', 'platform', 'campaign_id'], ['campaign', 'cost_cents', 'clicks', 'impressions', 'updated_at']);
+            }
+        }, 3);
+        return count($entries);
+    }
+
+    private static function unsignedInt(mixed $value, int $max): ?int
+    {
+        if (! is_int($value) && (! is_string($value) || ! preg_match('/^(?:0|[1-9][0-9]*)$/D', $value))) return null;
+        $parsed = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => $max]]);
+        return $parsed === false ? null : $parsed;
     }
 
     /** Booked prospects with a Google click ID not yet reported (click within the last 90 days, as Google requires). */
@@ -49,11 +70,13 @@ final class AdsSync
     public function acknowledge(string $platform, array $leadIds): int
     {
         $n = 0;
-        foreach (array_slice(array_unique(array_map('intval', $leadIds)), 0, 500) as $id) {
-            $lead = Lead::find($id);
-            if (! $lead || $lead->status !== 'booked') continue;
+        $ids = array_unique(array_filter(array_map(fn ($id) => self::unsignedInt($id, PHP_INT_MAX), array_slice($leadIds, 0, 500))));
+        foreach (Lead::with('submission')->whereKey($ids)->where('status', 'booked')->where('created_at', '>=', now()->subDays(90))->get() as $lead) {
+            $a = $lead->submission?->payload['attribution'] ?? [];
+            if (! is_string($a['gclid'] ?? $a['gbraid'] ?? $a['wbraid'] ?? null)) continue;
             [$value] = self::booking($lead);
-            $n += DB::table('ad_conversion_uploads')->insertOrIgnore(['lead_id' => $id, 'platform' => $platform, 'value_cents' => (int) $value, 'reported_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+            if ($value === null) continue;
+            $n += DB::table('ad_conversion_uploads')->insertOrIgnore(['lead_id' => $lead->id, 'platform' => $platform, 'value_cents' => $value, 'reported_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
         }
         return $n;
     }

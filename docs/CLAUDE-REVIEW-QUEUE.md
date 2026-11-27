@@ -21,6 +21,12 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-26 · BACKEND · Punto 1: seguridad de sincronización del #229 · PENDING
+- Rama `codex/fix-handoff-1126-security`, base `claude/import-fixes` (`5431f42`).
+- HoneyBook aplica la validación CSV estricta del importador, y deriva a revisión las reducciones del total pagado, los cambios operativos y el dinero o firma de un proyecto sin vincular. El mismo CSV conserva una sola revisión de dinero.
+- Google Ads valida filas antes de reemplazar el gasto por día y campaña, conserva el contrato de exportación sin datos de contacto y confirma únicamente conversiones elegibles. Un estado tardío de WhatsApp no deshace una entrega o lectura confirmada.
+- Verificar los tests `HoneyBookSyncTest`, `HoneyBookMoneyResyncTest`, `AdsSyncTest`, `LeadConversionTest` y `WhatsAppWebhookTest`, con proveedores ficticios. Revisar también las puertas de Resend, correo y atribución. La configuración y los servicios de producción quedan fuera de la verificación.
+
 ### 2026-11-23 · BACKEND · Revisión #223: lotes de mensajes y altas de Google · PENDING
 - Rama `codex/fix-auto-message-review`. Revisar 51º recordatorio, un alta de Google con resultado incierto y el filtro de entradas del cron de recordatorios.
 - Tests con proveedores simulados. Ver el PR para resultados. Sin despliegue ni cambios de términos o textos.
