@@ -12,9 +12,9 @@
    - Esto es disponibilidad, así que va en PR para que yo la revise.
 
 ## 2026-11-27 · Codex · Cola 2, punto 6 · listo para revisar
-Código `890cd64` y verificación de credenciales `e95042d`. `php artisan waoo:fechas-reporte` consulta cinco sábados, o acepta cinco fechas explícitas. Usa la capacidad del CRM y el calendario externo, con caché temporal en memoria. Evalúa horarios de 09:00 a 20:30 por paquete y por personaje. Los traslados sin confirmar quedan para aprobación.
+Código `890cd64`, verificación de credenciales `e95042d` y motivo de falta de inventario `cd3e2ff`. `php artisan waoo:fechas-reporte` consulta cinco sábados, o acepta cinco fechas explícitas. Usa la capacidad del CRM y el calendario externo, con caché temporal en memoria. Evalúa horarios de 09:00 a 20:30 por paquete y por personaje. Los traslados sin confirmar quedan para aprobación.
 
-MariaDB: `AvailabilityDatesReportTest GoogleCalendarSyncTest`, 8 pruebas y 39 aserciones. Si la credencial de Google expiró, el comando deja el calendario sin confirmar sin renovar ni escribir la credencial.
+MariaDB: `AvailabilityDatesReportTest GoogleCalendarSyncTest`, 8 pruebas y 40 aserciones. Si la credencial de Google expiró, el comando deja el calendario sin confirmar sin renovar ni escribir la credencial.
 
 Muestra en vivo del formulario público, hora de Houston:
 
