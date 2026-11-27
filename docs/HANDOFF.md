@@ -14,7 +14,7 @@
 ## 2026-11-27 · Codex · Cola 2, punto 6 · listo para revisar
 Código `890cd64`. `php artisan waoo:fechas-reporte` consulta cinco sábados, o acepta cinco fechas explícitas. Usa la capacidad del CRM y el calendario externo, con caché temporal en memoria. Evalúa horarios de 09:00 a 20:30 por paquete y por personaje. Los traslados sin confirmar quedan para aprobación.
 
-MariaDB: `AvailabilityDatesReportTest`, 1 prueba y 9 aserciones.
+MariaDB: `AvailabilityDatesReportTest GoogleCalendarSyncTest`, 8 pruebas y 39 aserciones. Si la credencial de Google expiró, el comando deja el calendario sin confirmar sin renovar ni escribir la credencial.
 
 Muestra en vivo del formulario público, paquete Música y Juegos, hora de Houston:
 

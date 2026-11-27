@@ -41,7 +41,7 @@ final class AvailabilityDatesReport extends Command
         try {
             foreach ($dates as $date) {
                 $day = CarbonImmutable::createFromFormat('!Y-m-d', $date, ChicagoTime::TZ);
-                $calendar = CheckWebsiteCandidates::busy($day->subDay(), $day->addDays(2));
+                $calendar = CheckWebsiteCandidates::busy($day->subDay(), $day->addDays(2), readOnly: true);
                 $capacity = new WebsiteCapacity($day, $calendar);
                 $source = $capacity->calendarOk() ? '' : ' registradas en el CRM (calendario externo sin confirmar)';
                 $this->newLine();

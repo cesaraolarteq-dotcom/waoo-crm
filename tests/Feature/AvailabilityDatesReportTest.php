@@ -2,8 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Models\ServiceVariant;
+use App\Models\{GoogleCalendarConnection, ServiceVariant, User};
 use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 final class AvailabilityDatesReportTest extends TestCase
@@ -30,5 +31,25 @@ final class AvailabilityDatesReportTest extends TestCase
 
         $this->assertDatabaseCount('events', 0);
         $this->assertDatabaseCount('resource_reservations', 0);
+    }
+
+    public function test_report_does_not_refresh_expired_google_credentials(): void
+    {
+        $this->travelTo(now('America/Chicago')->setDate(2026, 11, 27)->setTime(12, 0));
+        config(['waoo.availability_crm_only' => false, 'waoo.honeybook_ical_url' => null]);
+        Http::fake();
+        $owner = User::factory()->create(['name' => 'María González']);
+        $connection = GoogleCalendarConnection::create([
+            'user_id' => $owner->id, 'google_email' => 'maria@example.test', 'access_token' => 'fixture-expired',
+            'refresh_token' => 'fixture-refresh', 'access_expires_at' => now()->subHour(),
+        ]);
+
+        $this->artisan('waoo:fechas-reporte', ['dates' => ['2026-12-05']])
+            ->expectsOutput('2026-12-05 · 0 fiestas registradas en el CRM (calendario externo sin confirmar)')
+            ->assertSuccessful();
+
+        Http::assertNothingSent();
+        $this->assertSame('fixture-expired', $connection->fresh()->access_token);
+        $this->assertNull($connection->fresh()->last_error);
     }
 }

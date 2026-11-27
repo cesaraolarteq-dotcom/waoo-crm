@@ -190,15 +190,18 @@ final class GoogleCalendar
      * @return list<array{0: CarbonImmutable, 1: CarbonImmutable}>|null
      */
     /** Exact busy intervals; null when not connected, failing or the answer is incomplete (never "free", Codex audit S4). */
-    public function busyIntervals(CarbonImmutable $from, CarbonImmutable $to): ?array
+    public function busyIntervals(CarbonImmutable $from, CarbonImmutable $to, bool $readOnly = false): ?array
     {
         $c = self::connection();
         if (! $c) return null;
         $key = 'waoo.google.busy-raw.'.$c->id.'.'.$from->utc()->format('YmdHi').'.'.$to->utc()->format('YmdHi');
         $raw = Cache::get($key);
         if ($raw === null) {
+            // Reports cannot rotate credentials or update the integration's error status.
+            if ($readOnly && (!$c->access_token || !$c->access_expires_at?->isFuture())) return null;
             try {
-                $r = $this->api($c)->post(self::API.'/freeBusy', ['timeMin' => $from->utc()->toIso8601String(), 'timeMax' => $to->utc()->toIso8601String(),
+                $api = $readOnly ? Http::withToken($c->access_token)->acceptJson()->timeout(15) : $this->api($c);
+                $r = $api->post(self::API.'/freeBusy', ['timeMin' => $from->utc()->toIso8601String(), 'timeMax' => $to->utc()->toIso8601String(),
                     'timeZone' => ChicagoTime::TZ, 'items' => [['id' => 'primary']]]);
             } catch (\Throwable) {
                 return null;
