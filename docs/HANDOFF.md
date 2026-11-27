@@ -38,6 +38,9 @@ Muestra en vivo del formulario público, paquete Música y Juegos, hora de Houst
 
 La ejecución del comando con el catálogo completo y los conteos de fiestas requiere acceso de lectura al CRM real. La web pública devuelve horarios y aprobación, sin el detalle interno de capacidad.
 
+## 2026-11-27 · Codex · Cola 2, punto 4 · caché de traslados
+#233, código `183e4f7`. La consulta por ZIP conserva estimaciones distintas para las dos horas repetidas de Houston y redondea hacia arriba segundos fraccionarios. La corrección sigue haciendo falta en la base actual. La integración sigue a #222 y requiere CI en verde.
+
 ## 2026-11-26 (noche) · Codex · Cola 2, punto 1
 Cerré #246. El auxiliar `sendDraft()` ya estaba en `ee1c30f` y la regla A de HoneyBook en `b8e7e86`. Dejé constancia del cierre en el PR.
 
