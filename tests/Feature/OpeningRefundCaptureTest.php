@@ -109,6 +109,16 @@ class OpeningRefundCaptureTest extends TestCase
         Http::assertNothingSent(); Mail::assertNothingSent();
         $this->postJson('/admin/api/events/'.$this->eventId.'/opening-refunds/'.$row->id.'/allocate')->assertNotFound();
     }
+    public function test_replaying_the_same_stripe_refund_event_keeps_one_refund_record(): void
+    {
+        $this->deliver();
+        $this->deliver();
+
+        $this->assertDatabaseCount('opening_refund_evidence', 1);
+        $this->assertDatabaseCount('opening_refund_observations', 1);
+        $this->assertSame(1, WebhookReceipt::whereKey('evt_refund_daniela')->count());
+    }
+
     public function test_same_event_and_different_callback_retries_never_duplicate_the_refund(): void
     {
         $this->deliver(); $this->deliver(); $this->deliver('evt_refund_again');

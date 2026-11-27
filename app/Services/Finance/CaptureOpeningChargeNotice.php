@@ -32,7 +32,7 @@ final class CaptureOpeningChargeNotice
                 Event::whereKey($hint->event_id)->lockForUpdate()->firstOrFail();
                 $p = LedgerEntry::whereKey($hint->id)->lockForUpdate()->first();
                 if ($p && $p->external_identity_key === $identity && $p->kind === 'receipt' && $p->method === 'stripe'
-                    && $p->verified_by === null && $p->source_type === 'verified_stripe_webhook' && $p->environment === 'test' && $p->currency === 'USD'
+                    && $p->verified_by === null && $p->source_type === 'verified_stripe_webhook' && $p->environment === \App\Support\WaooRuntime::ledgerEnvironment() && $p->currency === 'USD'
                     && OpeningStripeProof::grossOf($p) === $provider['charge']['amount'] && $p->external_reference === $provider['payment']['id']
                     && $p->received_at?->timestamp === $provider['charge']['created']
                     && ImportedProjectLink::where('event_id', $p->event_id)->sharedLock()->first()) $parent = $p;

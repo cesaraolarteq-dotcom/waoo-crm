@@ -9,7 +9,9 @@ use Carbon\CarbonImmutable;
 /** Private current-read context shared by the diff and the same-route commit. Caller holds importer/batch locks. */
 final class HoneyBookResyncReview
 {
-    public const MONEY_FIELDS = ['amount_paid', 'balance', 'payments', 'balance_due_date'];
+    // Owner 2026-11-26 (automatic HoneyBook sync): the signature flag and the free-text notes are facts that may change
+    // without touching the party itself, like the payments.
+    public const MONEY_FIELDS = ['amount_paid', 'balance', 'payments', 'balance_due_date', 'contract_signed', 'notes'];
 
     public static function commercialHash(#[\SensitiveParameter] array $source): string
     {

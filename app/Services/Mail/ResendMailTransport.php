@@ -26,7 +26,7 @@ final class ResendMailTransport implements MailTransport
             $state=OutboundMessageState::where('outbound_message_id',$message->id)->firstOrFail();
             if($state->status!=='dispatching'||$record->environment!=='sandbox'||$record->channel!=='email'
                 ||!hash_equals($record->recipient_sha256,hash('sha256',$message->recipient))
-                ||!in_array($message->recipient,MailGuard::allowlist(),true)
+                ||!MailGuard::allows($message->recipient,$record->template_key)
                 ||($payload['recipient']??null)!==$message->recipient||($payload['subject']??null)!==$message->subject
                 ||($payload['html']??null)!==$message->html||($payload['text']??null)!==$message->text
                 ||OutboundMessageState::whereIn('outbound_message_id',OutboundMessage::where('recipient_sha256',$record->recipient_sha256)->select('id'))->whereIn('status',['bounced','complained'])->exists()){

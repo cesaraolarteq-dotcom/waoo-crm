@@ -3,11 +3,14 @@ namespace Tests\Unit;
 
 use App\Services\Routing\DriveMinutes;
 use Carbon\CarbonImmutable;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class DriveMinutesTest extends TestCase
 {
+    use DatabaseMigrations;
     public function test_google_duration_plus_zip_slack_cached_and_one_fetch_per_request(): void
     {
         config(['waoo.google_routes_key' => 'test-key', 'cache.default' => 'array']);
@@ -20,6 +23,22 @@ class DriveMinutesTest extends TestCase
         $this->assertSame(DriveMinutes::ZIP_SLACK_MINUTES, $d->between('77494', '77494', $at));
         Http::assertSentCount(1);
         Http::assertSent(fn ($r) => $r['routingPreference'] === 'TRAFFIC_AWARE' && $r['origin']['address'] === '77494, TX, USA');
+    }
+
+    public function test_zip_estimates_distinguish_the_two_fall_back_hours_and_round_up(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-10-30T12:00:00Z'));
+        config(['waoo.google_routes_key' => 'test-key', 'cache.default' => 'array']);
+        Http::fake(['routes.googleapis.com/*' => Http::sequence()
+            ->push(['routes' => [['duration' => '60.1s']]])
+            ->push(['routes' => [['duration' => '180s']]])]);
+        $first = CarbonImmutable::parse('2026-11-01T01:15:00-05:00');
+        $second = CarbonImmutable::parse('2026-11-01T01:15:00-06:00');
+        $drive = new DriveMinutes(2);
+
+        $this->assertSame(12, $drive->between('77494', '77084', $first));
+        $this->assertSame(13, $drive->between('77494', '77084', $second));
+        Http::assertSentCount(2);
     }
 
     public function test_failures_and_bad_input_are_unknown(): void
@@ -66,4 +85,17 @@ class DriveMinutesTest extends TestCase
         Http::assertSentCount(1);
     }
 
+
+    public function test_drive_requests_share_the_daily_budget_with_fee_quotes(): void
+    {
+        config(['waoo.google_routes_key' => 'test-key', 'cache.default' => 'array', 'travel_fees.google_calls_per_day' => 2]);
+        DB::table('travel_route_daily_usage')->insert(['day' => now('America/Chicago')->toDateString(), 'calls' => 1]);
+        Http::fake(['routes.googleapis.com/*' => Http::response(['routes' => [['duration' => '600s']]])]);
+        $departure = CarbonImmutable::now()->addDays(3);
+        $this->assertSame(10, (new DriveMinutes())->betweenAddresses('100 Example Lane', '200 Example Lane', $departure));
+        $this->assertNull((new DriveMinutes())->between('77494', '77084', $departure));
+        $this->assertSame(10, (new DriveMinutes())->betweenAddresses('100 Example Lane', '200 Example Lane', $departure));
+        Http::assertSentCount(1);
+        $this->assertSame(2, (int) DB::table('travel_route_daily_usage')->value('calls'));
+    }
 }

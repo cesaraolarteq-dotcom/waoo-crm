@@ -1,6 +1,7 @@
 <?php
 namespace App\Services\Changes;
 
+use App\Services\Availability\WebsiteCapacity;
 use App\Exceptions\RecordWriteRejected;
 use App\Models\{Event, ResourceBlock, ResourceReservation};
 use App\Services\Finance\MutationKey;
@@ -11,12 +12,12 @@ use Illuminate\Support\Facades\DB;
 /** Private, short-lived route proof. All provider I/O precedes the admission transaction. */
 final class RescheduleTransfers
 {
-    public function prepare(Event $event, CarbonImmutable $start): array
+    public function prepare(Event $event, CarbonImmutable $start, ?array $resourceIds = null): array
     {
         RecordWriteRejected::unless(DB::transactionLevel() === 0, 409, 'Revisa el traslado antes de cambiar la fecha.');
-        $snapshot = $this->snapshot($event, $start, false);
+        $snapshot = $this->snapshot($event, $start, false, $resourceIds);
         $routes = new DriveMinutes(3, 2.0);
-        $proof = ['snapshot' => MutationKey::hash($snapshot), 'read_at' => now()->timestamp, 'routes' => []];
+        $proof = ['snapshot' => MutationKey::hash($snapshot), 'read_at' => now()->timestamp, 'routes' => [], 'warnings' => []];
         foreach ($this->edges($snapshot) as $key => [$from, $to, $resourceId]) {
             $routeKey = $from['id'].':'.$to['id'];
             if (array_key_exists($routeKey, $proof['routes'])) continue;
@@ -28,24 +29,46 @@ final class RescheduleTransfers
                     : $routes->betweenAddresses($from['address'], $to['address'], $departure);
             }
             $proof['routes'][$routeKey] = is_int($minutes) && $minutes >= 0 && $minutes <= 1440 ? $minutes : null;
+            $warning = $this->warning($from, $to, $proof['routes'][$routeKey]);
+            if ($warning !== null) $proof['warnings'][] = $warning;
         }
         return $proof;
     }
 
+    private function warning(array $from, array $to, ?int $minutes): ?string
+    {
+        if (blank($from['address']) || blank($to['address'])) return 'Falta dirección, no se puede calcular el manejo';
+        if ($minutes === null || $from['breakdown'] === null || $to['setup'] === null) return 'Traslado pendiente de revisión';
+        $arrival = CarbonImmutable::parse($from['end'])->addMinutes($from['breakdown'] + $minutes);
+        return $arrival->addMinutes(WebsiteCapacity::GAP_MINUTES + $to['setup'])->greaterThan(CarbonImmutable::parse($to['start']))
+            ? 'No da tiempo de llegar' : null;
+    }
+
+    public function warnings(Event $event): array
+    {
+        if ($event->starts_at === null || $event->ends_at === null || $event->ends_at->isPast()) return [];
+        try {
+            return array_values(array_unique($this->prepare($event, CarbonImmutable::instance($event->starts_at))['warnings']));
+        } catch (RecordWriteRejected) {
+            return ['Traslado pendiente de revisión'];
+        }
+    }
+
     /** Caller holds the global admission mutex, event, and all its reserved resource rows. */
-    public function assertFits(Event $event, CarbonImmutable $start, array $proof): void
+    public function assertFits(Event $event, CarbonImmutable $start, array $proof, ?array $resourceIds = null): void
     {
         RecordWriteRejected::unless(DB::transactionLevel() > 0, 409, 'No se pudo revisar la agenda.');
-        $snapshot = $this->snapshot($event, $start, true);
+        $snapshot = $this->snapshot($event, $start, true, $resourceIds);
         RecordWriteRejected::unless(now()->timestamp >= $proof['read_at'] && now()->timestamp - $proof['read_at'] <= 120
             && hash_equals($proof['snapshot'], MutationKey::hash($snapshot)), 409, 'La agenda cambió mientras se revisaba el traslado. Vuelve a intentarlo.');
         foreach ($this->edges($snapshot) as $key => [$from, $to, $resourceId]) {
             $minutes = $proof['routes'][$from['id'].':'.$to['id']] ?? null;
+            RecordWriteRejected::unless(filled($from['address']) && filled($to['address']), 409, 'Falta dirección, no se puede calcular el manejo');
             RecordWriteRejected::unless(is_int($minutes) && $from['breakdown'] !== null && $to['setup'] !== null,
                 409, 'No se pudo comprobar el traslado del recurso apartado. Revisa dirección, montaje y desmontaje.');
             $departure = CarbonImmutable::parse($from['end'])->addMinutes($from['breakdown']);
             $arrival = $departure->addMinutes($minutes);
-            RecordWriteRejected::unless($arrival->addMinutes(30 + $to['setup'])->lessThanOrEqualTo(CarbonImmutable::parse($to['start'])),
+            RecordWriteRejected::unless($arrival->addMinutes(WebsiteCapacity::GAP_MINUTES + $to['setup'])->lessThanOrEqualTo(CarbonImmutable::parse($to['start'])),
                 409, 'No cabe el traslado con montaje, desmontaje y 30 minutos adicionales.');
             RecordWriteRejected::unless(!$arrival->greaterThan($departure) || ! ResourceBlock::where('resource_id', $resourceId)->whereNull('released_at')
                 ->where('starts_at', '<', $arrival)->where('ends_at', '>', $departure)->lockForUpdate()->exists(),
@@ -53,10 +76,12 @@ final class RescheduleTransfers
         }
     }
 
-    private function snapshot(Event $event, CarbonImmutable $start, bool $lock): array
+    private function snapshot(Event $event, CarbonImmutable $start, bool $lock, ?array $resourceIds = null): array
     {
         $ownQuery = ResourceReservation::where('event_id', $event->id)->orderBy('resource_id');
-        $own = ($lock ? $ownQuery->lockForUpdate() : $ownQuery)->get();
+        $own = $resourceIds === null ? ($lock ? $ownQuery->lockForUpdate() : $ownQuery)->get()
+            : collect($resourceIds)->map(fn($id)=>(int)$id)->unique()->sort()->values()->map(fn($id)=>(object)[
+                'id'=>0,'resource_id'=>$id,'starts_at'=>$event->starts_at,'ends_at'=>$event->ends_at]);
         RecordWriteRejected::unless($own->count() <= 256, 409, 'La agenda requiere revisión por volumen.');
         $query = ResourceReservation::whereIn('resource_id', $own->pluck('resource_id'))->where('event_id', '!=', $event->id)
             ->with(['event' => fn ($q) => $lock ? $q->sharedLock() : $q])->orderBy('id')->limit(10001);
@@ -78,6 +103,12 @@ final class RescheduleTransfers
             'setup' => $event->setup_minutes, 'breakdown' => $event->breakdown_minutes, 'address' => $event->address, 'zip' => $event->postal_code];
     }
 
+    private function sameDay(array $a, array $b): bool
+    {
+        [$first, $second] = $a['end'] <= $b['start'] ? [$a, $b] : [$b, $a];
+        return \App\Services\Scheduling\SameDayTransfer::needed(CarbonImmutable::parse($first['end']), CarbonImmutable::parse($second['start']));
+    }
+
     private function edges(array $snapshot): array
     {
         $candidate = $snapshot['candidate']; $edges = [];
@@ -86,6 +117,11 @@ final class RescheduleTransfers
             foreach ($snapshot['neighbors'] as $row) {
                 if ($row['resource'] !== $resourceId) continue;
                 $other = $row['event'];
+                if ($other['status'] === 'cancelled') continue;
+                // Only parties on the same working day need a route: 12 h covers any drive in the service area (70 mi max)
+                // plus 30 min and setup. Without this, last week's party became a "previous stop" whose route can't be
+                // looked up (departure in the past), and every staff member who had worked before was refused.
+                if (! $this->sameDay($other, $candidate)) continue;
                 if ($other['end'] <= $candidate['start'] && ($before === null || $other['end'] > $before['end'])) $before = $other;
                 if ($other['start'] >= $candidate['end'] && ($after === null || $other['start'] < $after['start'])) $after = $other;
             }

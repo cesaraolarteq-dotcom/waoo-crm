@@ -2,7 +2,7 @@
 namespace App\Services\Routing;
 
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\{Cache, Http};
+use Illuminate\Support\Facades\{Cache, DB, Http};
 
 /**
  * Drive time between two ZIP codes for the buffer between parties (César 2026-10-29: real drive + 30 minutes; the 30 is
@@ -21,11 +21,12 @@ final class DriveMinutes
     {
         if (! preg_match('/^\d{5}$/D', $fromZip) || ! preg_match('/^\d{5}$/D', $toZip)) return null;
         if ($fromZip === $toZip) return self::ZIP_SLACK_MINUTES;
-        $hour = $departAt->setTimezone('America/Chicago')->format('Y-m-d-H');
+        $hour = $departAt->setTimezone('America/Chicago')->format('Y-m-d-H-O');
         $key = 'waoo.drive.'.$fromZip.'.'.$toZip.'.'.$hour;
         $cached = Cache::get($key);
         if (is_int($cached)) return $cached;
         if ($this->fetches >= $this->maxFetches || blank(config('waoo.google_routes_key')) || $departAt <= CarbonImmutable::now()->addMinute()) return null;
+        if (DB::transactionLevel() > 0 || ! TravelRouteBudget::take()) return null;
         $this->fetches++;
         try {
             $r = Http::connectTimeout($this->timeout)->timeout($this->timeout)->withHeaders(['X-Goog-Api-Key' => config('waoo.google_routes_key'),
@@ -33,9 +34,9 @@ final class DriveMinutes
                 'origin' => ['address' => $fromZip.', TX, USA'], 'destination' => ['address' => $toZip.', TX, USA'], 'travelMode' => 'DRIVE',
                 'routingPreference' => 'TRAFFIC_AWARE', 'departureTime' => $departAt->utc()->format('Y-m-d\TH:i:s\Z')]);
             $duration = $r->successful() ? $r->json('routes.0.duration') : null;
-            if (! is_string($duration) || ! preg_match('/^(\d+)(?:\.\d+)?s$/D', $duration, $m)) return null;
+            if (! is_string($duration) || ! preg_match('/^(\d+(?:\.\d+)?)s$/D', $duration, $m)) return null;
         } catch (\Throwable) { return null; } // never log the key or the request
-        $minutes = (int) ceil((int) $m[1] / 60) + self::ZIP_SLACK_MINUTES;
+        $minutes = (int) ceil((float) $m[1] / 60) + self::ZIP_SLACK_MINUTES;
         Cache::put($key, $minutes, now()->addDays(7));
         return $minutes;
     }
@@ -43,12 +44,13 @@ final class DriveMinutes
     public function betweenAddresses(?string $from, ?string $to, CarbonImmutable $departAt): ?int
     {
         if (blank($from) || blank($to) || strlen($from) > 500 || strlen($to) > 500
-            || \Illuminate\Support\Facades\DB::transactionLevel() > 0 || $departAt <= CarbonImmutable::now()->addMinute()) return null;
+            || DB::transactionLevel() > 0 || $departAt <= CarbonImmutable::now()->addMinute()) return null;
         $departure = $departAt->utc()->format('Y-m-d\TH:i:s\Z');
         $key = 'waoo.drive.exact.'.hash('sha256', json_encode([$from, $to, $departure]));
         $cached = Cache::get($key);
         if (is_int($cached) && $cached >= 0 && $cached <= 1440) return $cached;
         if ($this->fetches >= $this->maxFetches || blank(config('waoo.google_routes_key'))) return null;
+        if (DB::transactionLevel() > 0 || ! TravelRouteBudget::take()) return null;
         $this->fetches++;
         try {
             $r = Http::connectTimeout($this->timeout)->timeout($this->timeout)->withoutRedirecting()->withHeaders([

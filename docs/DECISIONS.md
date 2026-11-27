@@ -4,6 +4,12 @@
 
 2026-10-15. Estado: **propuestas para revisión; arquitectura final pendiente de evidencia de Hostinger**. D1–D6 están aprobadas en HANDOFF; la elección de stack/proveedor no lo está. Fase 0 está autorizada; Fase 1 no.
 
+## 2026-11-26 · César · One number for clients: WhatsApp 8830 first, SMS only as fallback
+- Client messages go by **email (sales@waooparty.com) + WhatsApp from the business number (346) 851-8830** (WhatsApp Business Platform in coexistence with the WhatsApp Business app, so replies keep arriving on his phone and are also saved in the CRM).
+- **SMS from the Twilio number only when the client has no WhatsApp** (detected automatically when WhatsApp refuses the number). The first SMS says who it is and gives the 8830; replies are forwarded to César's phone as a normal text with the client's name, and saved in the CRM.
+- The 8830 is never moved to Twilio (he would lose texts on his phone). Goal (his words): "streamline everything, make it simple and easy for customers".
+- Until the official switch, no automatic message reaches clients (WAOO_CLIENT_MESSAGES stays off); only the anniversary campaign is live.
+
 ## ADR-001: conservar web y separar CRM modular
 
 La inspección confirma HTML/PHP sin framework. Recomiendo conservar esa web y crear un monolito modular Laravel + MySQL/InnoDB con Filament para administración, sujeto a capacidades del hosting. Portal y endpoints tendrán autorización por objeto en servidor; Filament no sustituye el portal. Catálogo, cotizaciones, pagos, contratos, recursos y mensajes comparten estados persistidos y transacciones.

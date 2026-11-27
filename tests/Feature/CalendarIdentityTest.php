@@ -150,4 +150,31 @@ final class CalendarIdentityTest extends TestCase
         catch (\Illuminate\Auth\Access\AuthorizationException) { $this->assertDatabaseCount('calendar_identity_links', 0); }
         Http::assertNothingSent();
     }
+
+    private function projectEntry(string $description, string $from = '160000', string $to = '170000'): string
+    {
+        return "BEGIN:VEVENT\r\nUID:hb-sync-{$from}@example.test\r\nDTSTART:20261121T{$from}Z\r\nDTEND:20261121T{$to}Z\r\n"
+            ."DESCRIPTION:<b>Project name</b>: <a href=\"https://www.honeybook.com/app/event/{$description}\">Cumpleaños de Sofía</a>\r\nEND:VEVENT\r\n";
+    }
+
+    public function test_honeybook_project_link_in_the_calendar_absorbs_the_same_imported_party(): void
+    {
+        $project = 'aa11bb22cc33dd44ee55ff66';
+        ImportedProjectLink::where('event_id', $this->event->id)->update(['project_key' => HoneyBookCalendarFeed::projectHash($project)]);
+        $entries = $this->feed($this->projectEntry($project));
+        $this->assertSame(HoneyBookCalendarFeed::projectHash($project), $entries[0][2]['project_sha256']);
+        $this->assertStringNotContainsString($project, json_encode($entries), 'only the hash leaves the parser');
+        $this->assertSame(1, $this->partyCount($entries), 'same HoneyBook project at the same time is one party');
+
+        // A folded description line (RFC 5545) is read the same way.
+        $folded = str_replace('/app/event/', "/app/ev\r\n ent/", $this->projectEntry($project));
+        $this->assertSame(1, $this->partyCount($this->feed($folded)));
+
+        $this->assertSame(2, $this->partyCount($this->feed($this->projectEntry($project, '180000', '190000'))), 'moved in HoneyBook, not yet synced: both stay busy');
+        $this->assertSame(2, $this->partyCount($this->feed($this->projectEntry('0123456789abcdef01234567'))), 'another project is another party');
+        $two = str_replace('</a>', '</a> <a href="https://www.honeybook.com/app/event/0123456789abcdef01234567">x</a>', $this->projectEntry($project));
+        $this->assertSame(2, $this->partyCount($this->feed($two)), 'two project ids in one entry are not trusted');
+        $this->event->update(['status' => 'cancelled']);
+        $this->assertSame(1, $this->partyCount($this->feed($this->projectEntry($project))), 'a cancelled CRM party never hides the calendar entry');
+    }
 }

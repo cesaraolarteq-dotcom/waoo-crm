@@ -150,6 +150,8 @@ final class GoogleCalendar
     {
         $c = self::connection();
         if (! $c) return false;
+        // Owner 2026-11-23: a cancelled party leaves his Google Calendar (it used to stay as «Cancelada» and block the day).
+        if ($e->status === 'cancelled') { $this->remove($e->id); return true; }
         $link = EventGoogleLink::firstOrNew(['event_id' => $e->id]);
         $body = self::body($e);
         $hash = hash('sha256', json_encode($body, JSON_THROW_ON_ERROR));

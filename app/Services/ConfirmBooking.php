@@ -30,6 +30,10 @@ final class ConfirmBooking
                 if (! $staffLater && $ids->isEmpty()) $this->fail('Selecciona el personal y los recursos de la fiesta.');
                 $hold = \App\Services\Booking\QuickCostumeHolds::confirmation($event, $ids->all(), $data['costume_outfits']);
                 $data['costume_outfits'] = $hold['choices'];
+                if ($event->status === 'draft') {
+                    $jointRows = app(\App\Services\Availability\JointCapacityHolds::class)->forConfirmation($event, $ids->all(), $staffLater);
+                    $hold['reservation_ids'] = array_unique([...$hold['reservation_ids'], ...$jointRows]);
+                }
                 if ($event->status === 'capacity_reserved') {
                     $existing = BookingEvidence::where('event_id', $event->id)->firstOrFail();
                     $same = $event->reservations()->orderBy('resource_id')->pluck('resource_id')->all() === $ids->all();
@@ -90,8 +94,8 @@ final class ConfirmBooking
                 if ($conversion=\App\Models\QuoteConversion::where('event_id',$eventId)->first()) {
                     $finance=\App\Models\FinancialRevision::where('event_id',$eventId)->orderByDesc('revision')->firstOrFail();
                     $accepted=\App\Services\Quotes\QuoteAgreement::forEvent($event);
-                    $net=(int)\App\Models\LedgerEntry::where('event_id',$eventId)->where('environment','test')->where('kind','receipt')->sum('amount_cents')
-                        -(int)\App\Models\LedgerEntry::where('event_id',$eventId)->where('environment','test')->where('kind','refund')->sum('amount_cents');
+                    $net=(int)\App\Models\LedgerEntry::where('event_id',$eventId)->where('environment',\App\Support\WaooRuntime::ledgerEnvironment())->where('kind','receipt')->sum('amount_cents')
+                        -(int)\App\Models\LedgerEntry::where('event_id',$eventId)->where('environment',\App\Support\WaooRuntime::ledgerEnvironment())->where('kind','refund')->sum('amount_cents');
                     \App\Exceptions\RecordWriteRejected::unless((int)($data['financial_revision_id']??0)===$finance->id&&$finance->event_version===$event->version
                         &&$finance->quote_revision_id===$conversion->quote_revision_id&&$finance->total_cents===$accepted['total_cents']
                         &&$net>0&&(int)$data['payment']['amount_cents']===$net&&$data['payment']['reference']==='ledger:test:'.$eventId.':'.$finance->id,
@@ -196,10 +200,11 @@ final class ConfirmBooking
                             $this->rejectVersionConflict($resource, $slots, $characters, $costumeChoices);
                             $this->fail("Conflicto de horario: {$resource->code}.");
                         }
-                        if ($other->ends_at->lessThanOrEqualTo($event->starts_at)) {
+                        // Only a party on the same working day needs a drive check (owner 2026-11-25).
+                        if ($other->ends_at->lessThanOrEqualTo($event->starts_at) && \App\Services\Scheduling\SameDayTransfer::needed($other->ends_at, $event->starts_at)) {
                             $before = $other;
                         }
-                        if ($after === null && $other->starts_at->greaterThanOrEqualTo($event->ends_at)) {
+                        if ($after === null && $other->starts_at->greaterThanOrEqualTo($event->ends_at) && \App\Services\Scheduling\SameDayTransfer::needed($event->ends_at, $other->starts_at)) {
                             $after = $other;
                         }
                     }

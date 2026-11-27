@@ -160,8 +160,9 @@ class ReservationNeighborhoodTest extends TestCase
     {
         $candidate = $this->event(CarbonImmutable::parse('2027-07-01T15:00:00-05:00'));
         $resource = $this->resource();
-        $before = $this->event($candidate->starts_at->subDays(20)); $this->reserve($before, $resource);
-        $after = $this->event($candidate->starts_at->addDays(20)); $this->reserve($after, $resource);
+        // Same working day on both sides (owner 2026-11-25: parties on other days need no drive review).
+        $before = $this->event($candidate->starts_at->subHours(4)); $this->reserve($before, $resource);
+        $after = $this->event($candidate->starts_at->addHours(4)); $this->reserve($after, $resource);
         $variant = ServiceVariant::create(['name' => 'Fixture schedule package', 'status' => 'active', 'duration_minutes' => 60,
             'requirements' => [['kind' => 'equipment', 'equipment_kind' => 'speaker', 'quantity' => 1]]]);
         $price = PriceVersion::create(['service_variant_id' => $variant->id, 'amount_cents' => 20000, 'currency' => 'USD', 'created_by' => $this->owner->id]);

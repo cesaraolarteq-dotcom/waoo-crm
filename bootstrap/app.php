@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trimStrings(except: [fn (Request $r) => $r->is('webhooks/postmark/bounces', 'webhooks/resend', 'api/availability', 'api/availability/*')]);
         $middleware->convertEmptyStringsToNull(except: [fn (Request $r) => $r->is('webhooks/postmark/bounces', 'webhooks/resend', 'api/availability', 'api/availability/*')]);
         $middleware->append(\App\Http\Middleware\SensitiveApplicationResponses::class);
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->validateCsrfTokens(except: ['webhooks/stripe']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

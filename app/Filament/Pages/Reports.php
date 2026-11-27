@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Exceptions\RecordWriteRejected;
 use App\Filament\Support\{Labels, ReportsSource};
+use App\Services\Reports\ReadPackageMargin;
 use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
@@ -37,6 +38,8 @@ class Reports extends Page
 
     #[Url(as: 'ano')]
     public int $analyticsYear = 0;
+
+    public int $marginYear = ReadPackageMargin::FIRST_YEAR;
 
     public ?array $emailPreview = null;
 
@@ -74,6 +77,7 @@ class Reports extends Page
         abort_unless(static::canAccess(), 403);
         $this->kind = in_array($this->kind, ['weekly', 'monthly'], true) ? $this->kind : 'weekly';
         if ($this->analyticsYear < 2000 || $this->analyticsYear > 2100) $this->analyticsYear = (int)now('America/Chicago')->year;
+        $this->marginYear = $this->validMarginYear((int) now('America/Chicago')->year);
         $today = now('America/Chicago')->toDateString();
         $this->asOf = ($d = self::validDate($this->asOf)) && $d <= $today ? $d : $today;
         $this->window = in_array($this->window, ['year', 'month', 'week', 'custom'], true) ? $this->window : 'year';
@@ -116,6 +120,9 @@ class Reports extends Page
 
     public function updated(string $name): void
     {
+        if ($name === 'marginYear') {
+            $this->marginYear = $this->validMarginYear($this->marginYear);
+        }
         if (in_array($name, ['rangeFrom', 'rangeTo'], true)) {
             $this->{$name} = self::validDate($this->{$name}) ?? now('America/Chicago')->toDateString();
             $this->panoramaCache = null;
@@ -188,11 +195,31 @@ class Reports extends Page
         return ReportsSource::read(Filament::auth()->user(), $this->kind, $this->asOf);
     }
 
+    public function packageMargin(): array
+    {
+        return app(ReadPackageMargin::class)->execute(Filament::auth()->user(), [
+            'year' => $this->validMarginYear($this->marginYear),
+        ]);
+    }
+
+    private function validMarginYear(int $year): int
+    {
+        return max(ReadPackageMargin::FIRST_YEAR, min(ReadPackageMargin::LAST_YEAR, $year));
+    }
+
     public function birthdayDraft(): ?array
     {
         if (!config('waoo.sandbox_anniversary', false)) return null;
         return app(\App\Services\Campaigns\ReadBirthdayCampaignDraft::class)->execute(
             Filament::auth()->user(), ['as_of' => now('America/Chicago')->toDateString()]);
+    }
+
+    /** Owner 2026-11-26 (point 5): this month and last month — ad spend, prospects, bookings and cost per booked party by channel. */
+    public function adsReport(): array
+    {
+        $now = CarbonImmutable::now('America/Chicago')->startOfMonth();
+        return ['this' => \App\Services\Ads\AdsSync::report($now, $now->addMonth()), 'last' => \App\Services\Ads\AdsSync::report($now->subMonth(), $now),
+            'this_label' => ucfirst($now->locale('es')->translatedFormat('F')), 'last_label' => ucfirst($now->subMonth()->locale('es')->translatedFormat('F'))];
     }
 
     /** ANNIV-01 effectiveness (César 2026-10-29: "enviamos 10 correos y contrataron 2"). */

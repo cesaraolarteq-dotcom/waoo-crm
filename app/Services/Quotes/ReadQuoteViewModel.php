@@ -44,7 +44,7 @@ final class ReadQuoteViewModel
                 'quote'=>['number'=>$payload['number'],'revision'=>$payload['revision'],'state'=>$state,'valid_until'=>$date($payload['valid_until']),
                     'when'=>$when,...($tbd?['time_tbd'=>true]:[]),
                     'where'=>$payload['event']['address']??'',
-                    'lines'=>array_map(fn($l)=>['name'=>$l['name'],'duration'=>$l['duration_minutes'].' min',
+                    'lines'=>array_map(fn($l)=>['name'=>\App\Support\PackageName::for($l['name'],$locale),'duration'=>$l['duration_minutes'].' min',
                         'characters'=>implode(', ',array_map(fn($c)=>$c['name'].($c['quantity']>1?' × '.$c['quantity']:''),$l['characters'])),
                         'amount'=>$money($l['amount_cents'])],$payload['lines']),
                     'travel'=>$money($payload['travel_fee_cents']),

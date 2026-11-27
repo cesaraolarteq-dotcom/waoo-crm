@@ -8,6 +8,7 @@
         <script src="{{ \App\Support\AssetVersion::url('js/waoo-places.js') }}" data-key="{{ config('waoo.google_maps_browser_key') }}" defer></script>
     @endif
     @if ($result)
+        @include('filament.pages.partials.route-warnings', ['warnings' => $result['route_warnings'] ?? []])
         <div class="wqb-done">
             <h2>¡Reserva guardada! <span>{{ $result['summary'] }}</span></h2>
             @if ($result['link_pending'] ?? false)

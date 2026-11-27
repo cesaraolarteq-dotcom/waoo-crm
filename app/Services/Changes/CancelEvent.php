@@ -34,7 +34,9 @@ final class CancelEvent
             // Codex's quick-booking costume holds have their own release protocol; it needs the cancelled status inside this transaction.
             if (QuickCostumeHold::where('event_id', $eventId)->whereIn('state', ['held', 'review_required', 'consumed'])->exists())
                 \App\Services\Booking\QuickCostumeHolds::releaseForCancellation($actor, $event, $data['reason']);
-            $released = ResourceReservation::where('event_id', $eventId)->delete();
+            $released = ResourceReservation::where('event_id', $eventId)->count();
+            app(\App\Services\Availability\JointCapacityHolds::class)->release($event, 'event_cancelled');
+            ResourceReservation::where('event_id', $eventId)->delete();
             SupersedeCollections::forEvent($eventId, 'event_cancelled', $actor);
             $policy = EventMessagePolicy::where('event_id', $eventId)->lockForUpdate()->first() ?? new EventMessagePolicy(['event_id' => $eventId, 'version' => 0]);
             if (! $policy->paused) $policy->fill(['paused' => true, 'version' => $policy->version + 1, 'updated_by' => $actor->id])->save();

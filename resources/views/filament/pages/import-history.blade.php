@@ -43,7 +43,7 @@
                 @endforeach
             </div>
             <p class="wqb-hint">Estas cifras son lo que dice el archivo y se pueden repetir entre sí (una fila puede ser cancelada y no tener correo). Corte: {{ \Carbon\CarbonImmutable::parse($r['batch']['cutoff'])->setTimezone('America/Chicago')->locale('es')->translatedFormat('j M Y, g:i a') }}.</p>
-            <p class="wfile-note">{{ $r['bulk']['eligible'] }} sin conflicto · {{ $r['bulk']['review_required'] }} por revisar · {{ $r['counts']['imported'] }} guardadas · {{ $r['counts']['excluded'] }} excluidas. Estado: {{ $r['batch']['state'] }}.</p>
+            <p class="wfile-note">{{ $r['bulk']['eligible'] }} sin conflicto · {{ $r['bulk']['review_required'] }} por revisar · {{ $r['counts']['imported'] }} guardadas · {{ $r['counts']['excluded'] }} excluidas. Estado: {{ ['reviewing' => 'en revisión', 'closed' => 'cerrado', 'discarded' => 'descartado'][$r['batch']['state']] ?? $r['batch']['state'] }}.</p>
             @if($r['commit_available'])
                 @if(!$bulkPin)
                     <button type="button" class="wcal-btn on" wire:click="startBulk({{ $r['batch']['version'] }}, '{{ $r['coverage_sha256'] }}', '{{ $r['bulk']['plan_sha256'] }}')">Importar todas las filas sin conflicto</button>
@@ -52,9 +52,19 @@
                     <label>Idioma para clientas nuevas <select wire:model="newCustomerLocale"><option value="es">Español</option><option value="en">Inglés</option></select></label>
                     <button type="button" class="wcal-btn on" wire:click="importSafe" wire:loading.attr="disabled">Confirmar importación sin conflicto</button>
                 @endif
-                <details><summary>Lista de revisión ({{ count($r['review_rows']) }})</summary>
-                    @foreach($r['review_rows'] as $pending)<p><button type="button" wire:click="showRow({{ $pending['id'] }})">Revisar fila {{ $pending['id'] }}</button> · {{ implode(' · ', $P::issues($pending['reason_codes'], true)) }}</p>@endforeach
-                </details>
+                @if (count($r['review_rows']) > 0)
+                    {{-- Owner 2026-11-25: the list was hidden and its links looked like plain text. --}}
+                    <h3 class="wfile-h">Por revisar ({{ count($r['review_rows']) }})</h3>
+                    <ul class="wimp-review">
+                        @foreach($r['review_rows'] as $pending)
+                            <li @class(['is-open' => $rowId === $pending['id']])>
+                                <span><b>Fila {{ $pending['id'] }}</b> · {{ implode(' · ', $P::issues($pending['reason_codes'], true)) }}</span>
+                                <button type="button" class="wcal-btn" wire:click="showRow({{ $pending['id'] }})">Revisar</button>
+                            </li>
+                            @if ($rowId === $pending['id'])<li class="wimp-review-panel">@include('filament.pages.partials.history-selected-row', ['inline' => true])</li>@endif
+                        @endforeach
+                    </ul>
+                @endif
                 @if(!$closePin)<button type="button" class="wcal-btn" wire:click="startClose({{ $r['batch']['version'] }}, '{{ $r['coverage_sha256'] }}')">Cerrar lote…</button>
                 @else <p>El cierre exige todas las filas resueltas y conserva la evidencia cifrada.</p><button type="button" class="wcal-btn" wire:click="closeBatch">Confirmar cierre</button>@endif
             @endif
@@ -87,50 +97,11 @@
             @endif
         </x-filament::section>
 
-        @if ($rowId && ($d = $this->row()))
+        @if ($rowId && ! collect($r['review_rows'] ?? [])->contains('id', $rowId) && $this->row())
             <x-filament::section>
                 <x-slot name="heading">Fila seleccionada</x-slot>
                 <x-slot name="afterHeader"><button type="button" class="wcal-btn" wire:click="closeRow">Cerrar</button></x-slot>
-                @if (isset($d['error']))
-                    <p class="wmoney-warn">{{ $d['error'] }}</p>
-                @else
-                    @php($row = $d['ok'])
-                    @php($n = $row['normalized'])
-                    <p class="wqb-hint">Así viene en el archivo, sin cambios. El archivo está guardado cifrado. Ningún importe de origen acredita un cobro en el CRM.</p>
-                    <dl class="wfile-dl">
-                        @foreach ($row['source'] as $field => $value)
-                            @php($label = $P::SOURCE[$field] ?? $field)
-                            @if (($row['source'][$field] ?? '') !== '')
-                                <div><dt>{{ $label }}</dt><dd>{{ $P::displaySource($field, $row['source'][$field]) }}</dd></div>
-                            @endif
-                        @endforeach
-                    </dl>
-                    <h3 class="wfile-h">Cómo lo entiende el CRM</h3>
-                    <dl class="wfile-dl">
-                        <div><dt>Fecha</dt><dd>{{ $n['source_date'] ?? 'Sin fecha válida' }}@if (($n['end_date'] ?? null) && $n['end_date'] !== $n['source_date']) → {{ $n['end_date'] }}@endif</dd></div>
-                        <div><dt>Hora</dt><dd>
-                            @if ($n['time_precision'] === 'date') Solo fecha, sin hora
-                            @elseif ($n['start_at'] && $n['end_at'])
-                                {{ \Carbon\CarbonImmutable::parse($n['start_at'])->setTimezone('America/Chicago')->format('g:i a') }} – {{ \Carbon\CarbonImmutable::parse($n['end_at'])->setTimezone('America/Chicago')->format('g:i a T') }}
-                            @else Hora sin resolver @endif
-                        </dd></div>
-                        <div><dt>Total</dt><dd>{{ $P::money($n['booked_total_cents'], $n['currency']) }} <small>(lo que dice HoneyBook; no es un pago verificado)</small></dd></div>
-                    </dl>
-                    @if($row['previous'])<p>Cambios respecto a la versión {{ $row['previous']['version'] }}: {{ implode(' · ', $row['previous']['changed_fields']) ?: 'Decisión de clasificación' }}. Guardar una diferencia requiere tu motivo y conserva la versión anterior.</p>@endif
-                    @if($row['commit_available'])
-                        <label>Clienta <select wire:model="reviewCustomerId"><option value="">Crear con los datos de origen</option>
-                            @foreach($row['customer_match']['candidates'] as $candidate)<option value="{{ $candidate['id'] }}">{{ $candidate['name'] }} · {{ $candidate['email'] }} · {{ $candidate['phone'] }}</option>@endforeach
-                        </select></label>
-                        <label>Estado del historial <select wire:model="reviewStatus"><option value="archived_unknown">Archivado, estado sin confirmar</option><option value="completed">Completado</option><option value="cancelled">Cancelado</option></select></label>
-                        <label>Tipo <select wire:model="reviewType">@foreach(['unknown'=>'Sin confirmar','birthday'=>'Cumpleaños','baby_shower'=>'Baby shower','gender_reveal'=>'Revelación','corporate'=>'Corporativo','other'=>'Otro'] as $key=>$label)<option value="{{ $key }}">{{ $label }}</option>@endforeach</select></label>
-                        <label>Motivo de revisión o exclusión <textarea wire:model="reviewReason" maxlength="1000"></textarea></label>
-                        <button type="button" wire:click="decideRow(false)" wire:loading.attr="disabled">Guardar esta fila</button>
-                        <button type="button" wire:click="decideRow(true)" wire:loading.attr="disabled">Excluir con motivo</button>
-                    @endif
-                    @if ($all = $P::issues($row['issue_codes'], true))
-                        <ul class="wimp-issues">@foreach ($all as $t)<li>{{ $t }}</li>@endforeach</ul>
-                    @endif
-                @endif
+                @include('filament.pages.partials.history-selected-row')
             </x-filament::section>
         @endif
 

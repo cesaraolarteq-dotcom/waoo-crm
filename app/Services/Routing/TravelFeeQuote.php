@@ -4,7 +4,6 @@ namespace App\Services\Routing;
 use App\Models\{TravelFeeQuoteRecord, User};
 use App\Services\Finance\Sandbox;
 use App\Services\Records\{RecordActor, RecordInput};
-use Illuminate\Support\Facades\DB;
 
 final class TravelFeeQuote
 {
@@ -22,7 +21,7 @@ final class TravelFeeQuote
         elseif ($inputs['outside']) { $status = 'outside'; $breakdown['reason'] = 'outside_texas'; }
         elseif (array_key_exists($inputs['zip'], $cfg['special_zips'])) { $status = 'ok'; $fee = (int) ($cfg['special_zips'][$inputs['zip']] * 100); $breakdown = ['special_zip' => true, 'route_type' => 'fixed_zip']; }
         elseif (is_string(config('waoo.google_routes_key')) && config('waoo.google_routes_key') !== '') {
-            if (!$this->takeCall((int) $cfg['google_calls_per_day'])) $breakdown['reason'] = 'daily_cap';
+            if (!TravelRouteBudget::take()) $breakdown['reason'] = 'daily_cap';
             elseif (!$route = app(GoogleTravelRoute::class)->forAddress($zipOnly ? substr((string) $zip, 0, 5).', TX, USA' : $address)) $breakdown['reason'] = 'provider_unavailable';
             else {
                 $breakdown = [...TravelFeeRules::calculate($route['miles'], $route['toll_cents']), 'route_type' => $route['route_type'], 'special_zip' => false, 'zip_only' => $zipOnly];
@@ -34,16 +33,6 @@ final class TravelFeeQuote
         $quote = TravelFeeQuoteRecord::create(['input_hash' => $hash, 'rules_hash' => $rulesHash, 'inputs' => $inputs, 'rules' => $cfg,
             'status' => $status, 'fee_cents' => $fee, 'breakdown' => $breakdown, 'expires_at' => $status === 'unavailable' ? now()->addMinutes(5) : now()->addDays($cfg['cache_days']), 'created_by' => $actor->id]);
         return $this->present($quote, false);
-    }
-    private function takeCall(int $limit): bool
-    {
-        $day = now()->setTimezone('America/Chicago')->toDateString();
-        return DB::transaction(function () use ($day, $limit) {
-            DB::table('travel_route_daily_usage')->insertOrIgnore(['day' => $day, 'calls' => 0]);
-            $row = DB::table('travel_route_daily_usage')->where('day', $day)->lockForUpdate()->first();
-            if ($row->calls >= $limit) return false;
-            DB::table('travel_route_daily_usage')->where('day', $day)->increment('calls'); return true;
-        }, 3);
     }
     private function present(TravelFeeQuoteRecord $quote, bool $cached): array
     {

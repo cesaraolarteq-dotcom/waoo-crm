@@ -36,6 +36,7 @@ final class WebsiteCapacity
     private array $resources = [];
     private array $units = [];
     private array $blocks = [];
+    private array $daySolverResults = [];
     private array $candidatePins = [];
     private ?array $candidateAssignment = null;
     private ?\Illuminate\Support\Collection $characters = null;
@@ -101,8 +102,21 @@ final class WebsiteCapacity
             ->where('identity.scope_sha256', $scope)->where('e.status', '!=', 'cancelled')
             ->whereColumn('e.starts_at', 'identity.starts_at')->whereColumn('e.ends_at', 'identity.ends_at')
             ->get(['identity.uid_sha256', 'identity.event_id', 'identity.starts_at', 'identity.ends_at'])->keyBy('uid_sha256');
+        // The calendar entry carries HoneyBook's project id: a party already imported from that same project at the same
+        // time is the same party, never a second one (owner 2026-11-27: Dec 12 showed 8 parties for 4).
+        $projectOf = ImportedProjectLink::whereIn('event_id', array_map(fn ($idx) => (int) substr($this->parties[$idx]['key'], 1), $imported))
+            ->pluck('project_key', 'event_id')->all();
         foreach ($calendar ?? [] as $entry) {
             [$cFrom, $cTo] = $entry;
+            $project = $entry[2]['project_sha256'] ?? null;
+            if ($project !== null) {
+                $same = null;
+                foreach ($free as $i => $idx) {
+                    $p = $this->parties[$idx];
+                    if (($projectOf[(int) substr($p['key'], 1)] ?? null) === $project && $p['start']->equalTo($cFrom) && $p['end']->equalTo($cTo)) { $same = $i; break; }
+                }
+                if ($same !== null) { unset($free[$same]); continue; }
+            }
             $identity = ($entry[2]['scope_sha256'] ?? null) === $scope ? $identities->get($entry[2]['uid_sha256'] ?? '') : null;
             if ($identity && CarbonImmutable::parse($identity->starts_at, 'UTC')->equalTo($cFrom)
                 && CarbonImmutable::parse($identity->ends_at, 'UTC')->equalTo($cTo)) continue;
@@ -384,7 +398,14 @@ final class WebsiteCapacity
         if ($jobs === []) return 'feasible';
         $jobKeys = array_column($jobs, 'key');
         $separations = array_values(array_filter($separations, fn ($edge) => in_array($edge['first'], $jobKeys, true) && in_array($edge['second'], $jobKeys, true)));
-        $r = (new PoolCapacitySolver())->solve($this->resources, $jobs, $blocks, $separations);
+        // Resources and fixed blocks belong to this immutable day snapshot. Candidate times,
+        // pins, outfit eligibility and route separations must match before reusing a witness.
+        $key = hash('sha256', serialize([$jobs, $separations]));
+        $r = $this->daySolverResults[$key] ?? (new PoolCapacitySolver())->solve($this->resources, $jobs, $blocks, $separations);
+        if ($r['state'] !== 'unknown' && !isset($this->daySolverResults[$key])) {
+            if (count($this->daySolverResults) >= 64) array_shift($this->daySolverResults);
+            $this->daySolverResults[$key] = $r;
+        }
         if ($withPeople && $r['state'] === 'feasible') $this->candidateAssignment = $r['witness']['candidate'] ?? [];
         return in_array($r['state'], ['feasible', 'infeasible'], true) ? $r['state'] : 'unknown';
     }

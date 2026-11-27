@@ -23,7 +23,7 @@ final class ReadBookingAnalytics
             $rows = [];
             // Shared head locks keep source revisions coherent during this bounded report.
             $history = HistoricalEvent::orderBy('id')->sharedLock()->limit(10001)->get();
-            $events = Event::with('services')->orderBy('id')->sharedLock()->limit(10001)->get();
+            $events = Event::with('services')->where(fn ($q) => \App\Support\TestCustomers::exclude($q, 'customer_id', \App\Support\TestCustomers::ids()))->orderBy('id')->sharedLock()->limit(10001)->get();
             RecordWriteRejected::unless($history->count() + $events->count() <= 10000, 409, 'El volumen requiere un reporte por lotes.');
             foreach ($history as $event) {
                 $revision = HistoricalEventRevision::findOrFail($event->current_revision_id);
