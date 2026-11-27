@@ -24,6 +24,11 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-27 · UI · Traslados entre fiestas · PENDING
+- PR #247, código `50da772`. Reserva rápida y ficha de evento muestran «No da tiempo de llegar» o «Falta dirección, no se puede calcular el manejo» cuando corresponda.
+- MariaDB: `RescheduleEventTest EventFileTest ImportedEventFileTest QuickBookingPageTest`. Playwright verificó el componente real en español a 390 y 1280 px, en claro y oscuro, sin desplazamiento horizontal. Capturas locales en `/tmp/waoo-1127-route-visual`.
+- Claude: verificar que ambos avisos aparecen cuando una persona, vehículo o traje figura en los dos eventos y que una dirección faltante siempre pide revisión.
+
 ### 2026-11-26 · DECISION · Guía de registros del portal #231 · PENDING
 - Revisar el procedimiento de redacción documentado en `docs/HOSTINGER_STAGING.md`.
 

@@ -12,7 +12,7 @@
    - Esto es disponibilidad, así que va en PR para que yo la revise.
 
 ## 2026-11-27 · Codex · Cola 2, punto 5 · listo para revisar
-Código `50da772` en `codex/cola2-route-warnings`. Reserva rápida y ficha del evento muestran el aviso para fiestas que comparten un recurso reservado. Se usa la ruta existente y el margen de disponibilidad. MariaDB: `RescheduleEventTest`, 13 pruebas y 53 aserciones, incluida la separación de 40 minutos, el cambio de hora y dos direcciones faltantes. Revisión de disponibilidad con Claude.
+Código `50da772` en `codex/cola2-route-warnings`. Reserva rápida y ficha del evento muestran el aviso para fiestas que comparten un recurso reservado. Se usa la ruta existente y el margen de disponibilidad. MariaDB: `RescheduleEventTest`, 13 pruebas y 53 aserciones, incluida la separación de 40 minutos, el cambio de hora y dos direcciones faltantes. También pasaron 12 pruebas de las pantallas (124 aserciones). Playwright verificó el aviso a 390 y 1280 px, en claro y oscuro. Revisión de disponibilidad con Claude.
 
 ## 2026-11-27 · Codex · Cola 2, punto 4 · caché de traslados
 #233, código `183e4f7`. La consulta por ZIP conserva estimaciones distintas para las dos horas repetidas de Houston y redondea hacia arriba segundos fraccionarios. La corrección sigue haciendo falta en la base actual. La integración sigue a #222 y requiere CI en verde.
