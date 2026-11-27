@@ -44,3 +44,12 @@ La Fase 0 no se cierra solo con estos requisitos escritos: las pruebas de viabil
 El adaptador Postmark es opcional de sandbox; el dueño aún no eligió proveedor. No configurar DNS, cuenta ni envío por la existencia del adaptador. Mantener los flags de recepción/envío apagados hasta una prueba autorizada de staging.
 
 En una prueba autorizada, confirmar que la solicitud HTTPS del dominio de staging llega a PHP como `Request::isSecure() === true`, mediante diagnóstico temporal restringido al administrador que solo muestre ese booleano, nunca phpinfo/headers/secretos. Retirar el diagnóstico después. Confirmar además que HTTP no acepta el webhook y que un cliente directo no puede convertir HTTP en seguro enviando `X-Forwarded-Proto: https`. Si hay proxy TLS, documentar sus IPs y headers observados y confiar solo en esos proxies verificados; no habilitar trust-all para pasar el chequeo. Usar un payload sintético y credenciales dedicadas por el mecanismo seguro, nunca en shell history/logs. Verificar receptor deshabilitado404, HTTPS con credencial errónea401, credencial correcta y mapping sintético200. Si PHP no reconoce HTTPS, bloquear la activación hasta resolver el despliegue; no quitar isSecure. Este documento prepara la prueba, no afirma haberla ejecutado en Hostinger.
+
+
+## Enlaces cortos del portal · verificación de registros
+
+Mantener `WAOO_SHORT_PORTAL_LINKS=false` en cada entorno hasta verificar sus registros. Consultar el [contrato de los enlaces cortos](SHORT-PORTAL-LINK-API.md#public-get-rcode) para los requisitos de la aplicación.
+
+1. En hPanel y en los servicios de proxy o monitoreo que utilice el CRM, comprobar si se guardan la ruta de la solicitud y el encabezado de respuesta `Location`. Incluir registros de acceso y error, trazas y exportaciones.
+2. En un entorno de pruebas autorizado, usar un enlace creado para un cliente ficticio. Verificar que los registros oculten el código de `/r/<código>` y el token del destino, tanto al resolver el enlace como al rechazar una solicitud. Confirmar con una solicitud normal que el registro sigue funcionando.
+3. Anotar por entorno la fecha, las fuentes de registros revisadas y el resultado. Usar solo evidencias redactadas. Cuando algún registro no se pueda comprobar o el proveedor no permita ocultar esos valores, conservar los enlaces completos del portal y dejar apagados los enlaces cortos en ese entorno.
