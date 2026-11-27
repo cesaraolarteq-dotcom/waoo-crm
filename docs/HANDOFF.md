@@ -11,11 +11,48 @@
    - Propón una mejora: podar por personaje/recurso antes de buscar, o cachear por día. Nunca debe decir «disponible» si no está probado. Una prueba con 8 fiestas tiene que contestar en <1 s.
    - Esto es disponibilidad, así que va en PR para que yo la revise.
 
+## 2026-11-27 · Codex · Cola 2, punto 8 · listo para revisar
+Código `1c328fb`. El solver descarta recursos bloqueados y parejas traje–intérprete incompatibles, demuestra carencias antes de buscar y solo reutiliza resultados concluyentes de la misma agenda del día. Una salida factible conserva su asignación concreta. Un presupuesto agotado sigue en revisión.
+
+MariaDB y PHP: `PoolCapacitySolverTest WebsiteCapacityTest`, 38 pruebas y 113 aserciones. La prueba de ocho fiestas exige menos de un segundo para probar tanto la escasez de un traje como la asignación al liberarlo.
+
+Medición pública de solo lectura del 5 dic: Música y Juegos devuelve 7 horarios con aprobación (09:00–12:00); Star con Mickey devuelve 10 con aprobación (09:00–13:30). La web publica `status`, `times` y `exact`. El conteo CRM de `review_required` queda pendiente hasta ejecutar la petición de disponibilidad firmada con credenciales del entorno real.
+
+## 2026-11-27 · Codex · Cola 2, punto 5 · listo para revisar
+Código `50da772` en `codex/cola2-route-warnings`. Reserva rápida y ficha del evento muestran el aviso para fiestas que comparten un recurso reservado. Se usa la ruta existente y el margen de disponibilidad. MariaDB: `RescheduleEventTest`, 13 pruebas y 53 aserciones, incluida la separación de 40 minutos, el cambio de hora y dos direcciones faltantes. Revisión de disponibilidad con Claude.
+
+## 2026-11-27 · Codex · Cola 2, punto 6 · listo para revisar
+Código `890cd64`. `php artisan waoo:fechas-reporte` consulta cinco sábados, o acepta cinco fechas explícitas. Usa la capacidad del CRM y el calendario externo, con caché temporal en memoria. Evalúa horarios de 09:00 a 20:30 por paquete y por personaje. Los traslados sin confirmar quedan para aprobación.
+
+MariaDB: `AvailabilityDatesReportTest`, 1 prueba y 9 aserciones.
+
+Muestra en vivo del formulario público, paquete Música y Juegos, hora de Houston:
+
+| Fecha | Horarios que muestra la web | Aprobación |
+|---|---|---|
+| 28 nov | 24 · 09:00–20:30 | 24 |
+| 5 dic | 7 · 09:00–12:00 | 7 |
+| 12 dic | 24 · 09:00–20:30 | 24 |
+| 19 dic | 24 · 09:00–20:30 | 0 |
+| 26 dic | 24 · 09:00–20:30 | 0 |
+
+La ejecución del comando con el catálogo completo y los conteos de fiestas requiere acceso de lectura al CRM real. La web pública devuelve horarios y aprobación, sin el detalle interno de capacidad.
+
 ## 2026-11-27 · Codex · Cola 2, punto 4 · caché de traslados
 #233, código `183e4f7`. La consulta por ZIP conserva estimaciones distintas para las dos horas repetidas de Houston y redondea hacia arriba segundos fraccionarios. La corrección sigue haciendo falta en la base actual. La integración sigue a #222 y requiere CI en verde.
 
 ## 2026-11-27 · Codex · Cola 2, punto 4 · registros del portal
 #231, documentación `e89d3b2`. La guía de Hostinger indica cómo verificar la redacción de los códigos del portal con un cliente ficticio. La integración sigue a #233 y requiere CI en verde.
+
+## 2026-11-27 · Codex · Cola 2, punto 7 · listo para revisar
+Propuestas en el commit `f3ecb17`.
+Tres opciones para repartir $200 de personal y transporte entre dos paquetes de una fiesta:
+
+- **Por venta neta.** A vendió $600 y B $400. A absorbe $120 y B $80. Se puede calcular con los importes de cada paquete.
+- **Por uso de cada costo.** Si $150 de personal se reparten por horas (A 3 h, B 2 h), son $90 y $60. Si los $50 de transporte corresponden a una sola ida compartida, se reparten $25 y $25. Total: A $115 y B $85.
+- **Compartidos a nivel fiesta.** Cada paquete muestra sus costos directos. Los $200 compartidos aparecen en el margen de la fiesta. A y B conservan su margen directo de $600 y $400 si no tuvieron otros costos. El margen de la fiesta queda en $800.
+
+César decide cómo repartir y qué hacer con descuentos antes de calcular el margen por paquete. Cuando falte la tarifa de personal o transporte, conservar «sin datos de costos».
 
 ## 2026-11-26 (noche) · Codex · Cola 2, punto 1
 Cerré #246. El auxiliar `sendDraft()` ya estaba en `ee1c30f` y la regla A de HoneyBook en `b8e7e86`. Dejé constancia del cierre en el PR.

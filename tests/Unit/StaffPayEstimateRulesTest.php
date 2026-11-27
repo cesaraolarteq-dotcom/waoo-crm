@@ -16,4 +16,11 @@ class StaffPayEstimateRulesTest extends TestCase
         $this->assertSame(7000, StaffPayEstimate::pay('entertainer', 'Mágico (Magic)', 3500, 120), 'Two hours: normal rate.');
         $this->assertSame(7000, StaffPayEstimate::pay('entertainer', 'Música y Juegos', 3500, 120));
     }
+
+    public function test_character_rates_stay_pending_until_the_owner_confirms_them(): void
+    {
+        $this->assertArrayNotHasKey('performer', StaffPayEstimate::HOURLY_CENTS);
+        $this->assertArrayNotHasKey('performer_wig', StaffPayEstimate::HOURLY_CENTS);
+        $this->assertArrayNotHasKey('face_painter', StaffPayEstimate::HOURLY_CENTS);
+    }
 }

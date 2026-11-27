@@ -91,18 +91,74 @@ final class PoolCapacitySolver
             }
         }
         if ($tasks === []) return $unknown('empty_demand');
-        $chosen = []; $states = 0; $exhausted = false; $checks = 0;
-        $free = static function (array $task, int $id) use (&$busy, &$checks, &$exhausted, &$chosen, $tasks, $separate, $deadline): bool {
-            if ($exhausted) return false;
-            foreach ($chosen as $index => $otherId) {
-                if (++$checks > 500000 || (($checks & 127) === 0 && hrtime(true) >= $deadline)) { $exhausted = true; return false; }
-                if ($otherId === $id && isset($separate[$task['job']][$tasks[$index]['job']][$id])) return false;
+        $infeasible = ['scope' => 'resource_pools', 'state' => 'infeasible', 'reason' => null, 'witness' => []];
+        $chosen = []; $chosenJobs = []; $states = 0; $exhausted = false; $checks = 0;
+        $withinBudget = static function () use (&$checks, &$exhausted, $deadline): bool {
+            if (++$checks > 500000 || (($checks & 127) === 0 && hrtime(true) >= $deadline)) $exhausted = true;
+            return !$exhausted;
+        };
+        $overlaps = static function (array $task, array $intervals) use ($withinBudget): bool {
+            foreach ($intervals as [$start, $end]) {
+                if (!$withinBudget() || ($start < $task['end'] && $end > $task['start'])) return true;
             }
-            foreach ($busy[$id] ?? [] as [$start, $end]) {
-                if (++$checks > 500000 || (($checks & 127) === 0 && hrtime(true) >= $deadline)) { $exhausted = true; return false; }
-                if ($start < $task['end'] && $end > $task['start']) return false;
+            return false;
+        };
+        foreach ($tasks as &$task) {
+            $task['eligible'] = array_values(array_filter($task['eligible'],
+                fn ($id) => !$overlaps($task, $busy[$id] ?? [])));
+            if ($exhausted) return $unknown('evaluation_budget');
+            if ($task['eligible'] === []) return $infeasible;
+        }
+        unset($task);
+
+        // Discard costumes and wearers that have no eligible partner after fixed blocks.
+        foreach ($tasks as $i => $task) {
+            if (!($task['own'] ?? false)) continue;
+            $partner = $task['partner'];
+            $eligible = array_fill_keys($task['eligible'], true);
+            $partnerEligible = array_fill_keys($tasks[$partner]['eligible'], true);
+            $own = []; $other = [];
+            foreach ($task['pairs'] as $pair => $_) {
+                if (!$withinBudget()) return $unknown('evaluation_budget');
+                [$first, $second] = explode(':', $pair);
+                if ($first !== $second && isset($eligible[$first], $partnerEligible[$second])) {
+                    $own[(int) $first] = true;
+                    $other[(int) $second] = true;
+                }
             }
-            return true;
+            if ($own === []) return $infeasible;
+            $tasks[$i]['eligible'] = array_keys($own);
+            $tasks[$partner]['eligible'] = array_keys($other);
+        }
+
+        // Every task active at one instant needs a distinct unit of its kind.
+        // Check the tightest domains first so broad unrelated inventory cannot hide scarce characters.
+        $byKind = [];
+        foreach ($tasks as $task) $byKind[$task['kind']][] = $task;
+        foreach ($byKind as $sameKind) {
+            $ticks = array_unique(array_column($sameKind, 'start'));
+            usort($sameKind, fn ($a, $b) => count($a['eligible']) <=> count($b['eligible']));
+            foreach ($ticks as $tick) {
+                $union = []; $demand = 0;
+                foreach ($sameKind as $task) {
+                    if (!$withinBudget()) return $unknown('evaluation_budget');
+                    if ($task['start'] > $tick || $task['end'] <= $tick) continue;
+                    foreach ($task['eligible'] as $id) {
+                        if (!$withinBudget()) return $unknown('evaluation_budget');
+                        $union[$id] = true;
+                    }
+                    if (++$demand > count($union)) return $infeasible;
+                }
+            }
+        }
+
+        $busy = []; // Fixed blocks were already applied to every domain.
+        $free = static function (array $task, int $id) use (&$busy, &$chosenJobs, $separate, $withinBudget, $overlaps): bool {
+            if (!$withinBudget()) return false;
+            foreach ($chosenJobs[$id] ?? [] as $job) {
+                if (!$withinBudget() || isset($separate[$task['job']][$job][$id])) return false;
+            }
+            return !$overlaps($task, $busy[$id] ?? []);
         };
         // A paired task may only take a unit that forms an allowed combination with its partner's chosen unit.
         $paired = static function (int $i, int $id) use (&$chosen, $tasks): bool {
@@ -111,7 +167,7 @@ final class PoolCapacitySolver
             $other = $chosen[$t['partner']];
             return isset($t['pairs'][$t['own'] ? $id.':'.$other : $other.':'.$id]);
         };
-        $search = function () use (&$search, &$chosen, &$busy, &$states, &$exhausted, $tasks, $groups, $units, $free, $paired, $deadline): bool {
+        $search = function () use (&$search, &$chosen, &$busy, &$chosenJobs, &$states, &$exhausted, $tasks, $groups, $units, $free, $paired, $deadline): bool {
             if (++$states > $this->maxStates || hrtime(true) >= $deadline) { $exhausted = true; return false; }
             // Bound driver/seat feasibility using distinct still-eligible units, never independent positive role counts.
             foreach ($groups as $group) {
@@ -161,13 +217,14 @@ final class PoolCapacitySolver
             $task = $tasks[$selected];
             foreach ($domain as $id) {
                 $chosen[$selected] = $id; $busy[$id][] = [$task['start'], $task['end']];
+                $chosenJobs[$id][] = $task['job'];
                 if ($search()) return true;
-                array_pop($busy[$id]); unset($chosen[$selected]);
+                array_pop($busy[$id]); array_pop($chosenJobs[$id]); unset($chosen[$selected]);
                 if ($exhausted) return false;
             }
             return false;
         };
-        if (!$search()) return $exhausted ? $unknown('evaluation_budget') : ['scope' => 'resource_pools', 'state' => 'infeasible', 'reason' => null, 'witness' => []];
+        if (!$search()) return $exhausted ? $unknown('evaluation_budget') : $infeasible;
         $witness = [];
         foreach ($chosen as $i => $id) $witness[$tasks[$i]['job']][$tasks[$i]['key']] = $id;
         return ['scope' => 'resource_pools', 'state' => 'feasible', 'reason' => null, 'witness' => $witness];

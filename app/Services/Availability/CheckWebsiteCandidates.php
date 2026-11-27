@@ -109,7 +109,7 @@ final class CheckWebsiteCandidates
     }
 
     /** @return array{0: array, 1: bool} requirements and whether the character choice is complete and valid */
-    private function requirements(ServiceVariant $variant, array $chosen): array
+    public function requirements(ServiceVariant $variant, array $chosen): array
     {
         $req = (array) $variant->requirements;
         $options = collect((array) $variant->character_options);
