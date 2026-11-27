@@ -24,6 +24,9 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-26 · DECISION · Guía de registros del portal #231 · PENDING
+- Revisar el procedimiento de redacción documentado en `docs/HOSTINGER_STAGING.md`.
+
 ### 2026-11-26 · BACKEND · Caché de traslados del #233 · PENDING
 - Revisar la hora repetida de Houston y el redondeo de segundos en `DriveMinutesTest`.
 
