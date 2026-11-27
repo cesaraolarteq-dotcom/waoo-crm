@@ -38,6 +38,7 @@ final class WebsiteCapacity
     private array $blocks = [];
     private array $candidatePins = [];
     private ?array $candidateAssignment = null;
+    private ?array $missingCandidateResource = null;
     private ?\Illuminate\Support\Collection $characters = null;
     private ?string $zip = null;
     private ?string $location = null;
@@ -214,6 +215,7 @@ final class WebsiteCapacity
     public function check(CarbonImmutable $from, CarbonImmutable $to, string $day, array $requirements): string
     {
         $this->candidateAssignment = null;
+        $this->missingCandidateResource = null;
         if ($this->partiesOn($day) >= self::MAX_PER_DAY) return 'unavailable';
         $state = $this->evaluate($from, $to, $requirements);
         if ($state === 'unavailable' || $state === 'review_required') return $state;
@@ -224,6 +226,12 @@ final class WebsiteCapacity
         // Unknown demand can hide the very costume/crew needed by this candidate. A time window cannot prove it free.
         $uncertain = array_filter($this->parties, fn ($p) => $p['uncertain']);
         return $uncertain ? 'owner_approval_required' : $state;
+    }
+
+    /** A package requirement with no matching unit in the active inventory, if found by the last check. */
+    public function missingCandidateResource(): ?array
+    {
+        return $this->missingCandidateResource;
     }
 
     /** Private server allocation for S1; never add its staff/resource identities to a public availability response. */
@@ -355,7 +363,10 @@ final class WebsiteCapacity
                     if ($eligible === [] && !$costumeRole) {
                         // The candidate needs something nobody has: impossible. An already booked party is a fact: its role is
                         // skipped here, and the party is marked uncertain so nearby starts go to the owner (Codex audit S5).
-                        if ($p['key'] === 'candidate') return 'infeasible';
+                        if ($p['key'] === 'candidate') {
+                            $this->missingCandidateResource = $req;
+                            return 'infeasible';
+                        }
                         $this->unfilled = true;
                         continue;
                     }

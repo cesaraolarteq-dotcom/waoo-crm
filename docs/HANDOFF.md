@@ -11,6 +11,23 @@
    - Propón una mejora: podar por personaje/recurso antes de buscar, o cachear por día. Nunca debe decir «disponible» si no está probado. Una prueba con 8 fiestas tiene que contestar en <1 s.
    - Esto es disponibilidad, así que va en PR para que yo la revise.
 
+## 2026-11-27 · Codex · Cola 2, punto 6 · listo para revisar
+Código `890cd64`, verificación de credenciales `e95042d` y motivo de falta de inventario `cd3e2ff`. `php artisan waoo:fechas-reporte` consulta cinco sábados, o acepta cinco fechas explícitas. Usa la capacidad del CRM y el calendario externo, con caché temporal en memoria. Evalúa horarios de 09:00 a 20:30 por paquete y por personaje. Los traslados sin confirmar quedan para aprobación.
+
+MariaDB: `AvailabilityDatesReportTest GoogleCalendarSyncTest`, 8 pruebas y 40 aserciones. Si la credencial de Google expiró, el comando deja el calendario sin confirmar sin renovar ni escribir la credencial.
+
+Muestra en vivo del formulario público, hora de Houston:
+
+| Fecha | Música y Juegos | Star con Mickey | Aprobación |
+|---|---|---|---|
+| 28 nov | 24 · 09:00–20:30 | 24 · 09:00–20:30 | Todos |
+| 5 dic | 7 · 09:00–12:00 | 10 · 09:00–13:30 | Todos |
+| 12 dic | 24 · 09:00–20:30 | 24 · 09:00–20:30 | Todos |
+| 19 dic | 24 · 09:00–20:30 | 24 · 09:00–20:30 | Ninguno |
+| 26 dic | 24 · 09:00–20:30 | 24 · 09:00–20:30 | Ninguno |
+
+La ejecución del comando con el catálogo completo y los conteos de fiestas requiere acceso de lectura al CRM real. La web pública devuelve horarios y aprobación, sin el detalle interno de capacidad.
+
 ## 2026-11-27 · Codex · Cola 2, punto 4 · caché de traslados
 #233, código `183e4f7`. La consulta por ZIP conserva estimaciones distintas para las dos horas repetidas de Houston y redondea hacia arriba segundos fraccionarios. La corrección sigue haciendo falta en la base actual. La integración sigue a #222 y requiere CI en verde.
 

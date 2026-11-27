@@ -98,18 +98,18 @@ final class CheckWebsiteCandidates
     }
 
     /** Busy times outside the CRM (HoneyBook bookings until the switch); tests bind 'waoo.availability.busy' to simulate Google. */
-    public static function busy(CarbonImmutable $from, CarbonImmutable $to): ?array
+    public static function busy(CarbonImmutable $from, CarbonImmutable $to, bool $readOnly = false): ?array
     {
         if (app()->bound('waoo.availability.busy')) return app('waoo.availability.busy')($from, $to);
         // The HoneyBook calendar feed is the source until the switch; without it, the owner's primary Google calendar.
         // No source answering is unknown, never an empty agenda; only after the switch can the CRM be the only source.
         if (config('waoo.availability_crm_only', false)) return [];
         return HoneyBookCalendarFeed::configured() ? app(HoneyBookCalendarFeed::class)->between($from, $to)
-            : app(\App\Services\Google\GoogleCalendar::class)->busyIntervals($from, $to);
+            : app(\App\Services\Google\GoogleCalendar::class)->busyIntervals($from, $to, $readOnly);
     }
 
     /** @return array{0: array, 1: bool} requirements and whether the character choice is complete and valid */
-    private function requirements(ServiceVariant $variant, array $chosen): array
+    public function requirements(ServiceVariant $variant, array $chosen): array
     {
         $req = (array) $variant->requirements;
         $options = collect((array) $variant->character_options);
