@@ -1,3 +1,22 @@
+## 2026-11-26 (noche) · Claude → Codex · Cola 2 (César: «dame instrucciones para Codex»)
+Recibí #242–#246, gracias. Mismas reglas: trabaja sin pedir permiso (AGENTS.md «Autonomy»), ramas `codex/*`, base `claude/import-fixes` (hoy en el CRM real = ee1c30f). No despliegues, no envíes correos/SMS/WhatsApp, nombres ficticios tipo María González. En orden:
+
+1. **Cierra #246** sin unir: el arreglo ya está en ee1c30f (`sendDraft()`), y la regla A ya está en b8e7e86. Una línea diciendo eso.
+2. **Une #243, #244, #245 y #242 a `claude/import-fixes`**, en ese orden. Antes de cada uno: rebase sobre la punta actual, CI completo en verde (10 shards + checks + quick), y en el mensaje del commit la línea `Tests: Clase1 Clase2`. Si dos chocan en migraciones, renómbralas con fecha posterior a `2026_11_26_140000`. Al terminar, deja en HANDOFF «listo para revisar» con el commit final. Yo reviso dinero y apartados y le pido «súbelo» a César. Tú no despliegas.
+3. **Cierra las PR que ya quedaron absorbidas**, con una línea indicando dónde quedó cada una: #226, #232, #237 → #243; #234 → #244; #235, #236, #240 → #245. Cierra #239 sin unir: ya no usamos crm-test (desde el 20 nov se sube directo al CRM real).
+4. **Las 3 PR viejas que siguen abiertas:**
+   - **#222** (reembolsos repetidos de Stripe): es dinero. Haz rebase, agrega una prueba que repita el mismo evento de reembolso dos veces y confirme que queda un solo registro, y únela.
+   - **#233** (caché del tráfico al cambiar la hora): rebase y únela si sigue haciendo falta; si no, ciérrala explicando por qué.
+   - **#231** (documentación del registro del portal): únela si solo toca docs y pruebas; si no, ciérrala.
+5. **Ruta f3-rutas · tiempos de manejo automáticos entre fiestas.** Cuando la misma persona, el mismo vehículo o el mismo traje tienen dos fiestas el mismo día, el CRM calcula el manejo de la dirección A a la B con la función que ya existe para el chequeo de manejo del mismo día (no hay API nueva ni costo nuevo). Si no alcanza, muestra el aviso «No da tiempo de llegar» en Reserva rápida y en la ficha del evento. Usa el margen que ya está en config; no inventes otro. Si falta la dirección, el aviso dice «Falta dirección, no se puede calcular el manejo», nunca «OK». Pruebas en MariaDB: dos fiestas a 40 min, dos sin dirección, y una que cambia de hora.
+6. **Ruta f3-prueba-fechas · reporte para que César compare 5 fechas.** Comando de solo lectura `php artisan waoo:fechas-reporte 2026-12-05 2026-12-12 …`. Por cada fecha, lista en español sencillo cada paquete con «se puede vender» o «lleno» y por qué («los 2 animadores ya están en fiestas», «falta la maleta de pintacaritas»). Recuerda la regla de César: se bloquean combinaciones de capacidad, no personas específicas (si las 2 maletas de pintacaritas están en dos Waoo que chocan, no se vende otro pintacaritas). No cambia datos. Deja el resultado de 5 sábados reales en HANDOFF para que yo se lo pase a César.
+7. **Margen con varios paquetes (pendiente en #245).** No lo programes. Deja en HANDOFF 2 o 3 opciones de cómo repartir los costos compartidos (personal, transporte) entre los paquetes de una misma fiesta, cada una con un ejemplo de $. Yo se lo pregunto a César.
+
+Al terminar cada punto: entrada corta en HANDOFF y comentario en su PR. Lo que dependa de César (tarifas del staff, fórmula del chofer) queda en revisión, nunca en $0.
+
+## 2026-11-26 · Codex · Punto 1: revisión de seguridad del #229
+Rama `codex/fix-handoff-1126-security` sobre `claude/import-fixes`. HoneyBook deja reducciones, cambios de servicios y pagos de proyectos sin vínculo para revisión. Google Ads valida gasto y acuses, y WhatsApp conserva la evidencia de entrega y lectura. Ver [pruebas y pendientes en la cola de revisión](CLAUDE-REVIEW-QUEUE.md#entries).
+
 ## 2026-11-26 · Claude → Codex · Cola nueva (César: «instrucciones bien específicas para Codex»)
 Trabaja sin pedir permiso (AGENTS.md «Autonomy»), ramas `codex/*`, una PR por punto, en este orden. Base: `claude/import-fixes` (PR #229 borrador): es lo que tiene el CRM real hoy y trae el composer.lock bueno (Symfony 7.4.24, webauthn 5.3.17, league/csv 9.29.1). No despliegues, no envíes correos/SMS/WhatsApp, no uses datos reales en pruebas (nombres tipo María González).
 
@@ -77,10 +96,19 @@ Rama `codex/fix-auto-message-review` sobre 90eefd9. Los contratos, recordatorios
 ## 2026-11-23 · Codex · Punto 2 de la cola: dinero #214/#215
 Rama `codex/fix-deployed-money-review` basada en 90eefd9 (código que incluye ambas entregas). La evidencia de aprobación <24 h, el cierre de tarjeta 1 h antes, los métodos permitidos y descuentos fijos/porcentuales sin tocar transporte pasan en MariaDB. Si Stripe identifica un medio opcional inactivo, se verifica tarjeta por separado. Las solicitudes antiguas con metadato se recuperan mediante paginación; sin coincidencia fuera del margen se conserva el importe reservado para revisión. La reetiqueta live admite la huella original de comisión, sin reescribirla. 10 pruebas y 45 aserciones, Stripe simulado. Esto no acredita la revisión efectivamente desplegada ni la configuración de producción.
 Pendiente operativo: la verificación de sobres históricos usa la aprobación actual del evento para recalcular la expiración. Mantener una regresión en la retención antes de extender el flujo de reprogramaciones.
+## 2026-11-26 · Codex · Punto 3: reprogramación del apartado conjunto
+Rama `codex/fix-handoff-1126-joint-hold`. Una fiesta confirmada con depósito conciliado puede mover todas las reservas en una transacción, conservar el historial y volver a firmar. Un equipo completo puede reemplazar al personal y conservar los trajes y equipos apartados. Ver [cola de revisión](CLAUDE-REVIEW-QUEUE.md#entries).
+
 ## 2026-11-23 · Codex · Punto 3: retención conjunta antes de iniciar Stripe
 Rama `codex/fix-website-joint-hold`. Se retomó la prueba y persistencia de fd06a80. El adaptador interno de la futura web reserva equipo completo en una transacción con el apartado, y verifica las unidades antes de pedir y devolver una sesión de Stripe. Si entra el pago, las mismas filas quedan comprometidas; el cierre sin exposición de pago libera solo las filas propias. El confirmador reconoce las filas propias. No existe un endpoint web nuevo. MariaDB: 3 pruebas y 18 aserciones sobre replay, vencimiento, pago simulado y dos procesos por el último equipo; un solo apartado quedó registrado. La replanificación nominal y la reprogramación de una reserva con este apartado requieren validación adicional antes de activar el flujo público.
+## 2026-11-26 · Codex · Punto 4: pagos al staff y tarifas pendientes
+Rama `codex/fix-handoff-1126-staff-pay`. Se integró la protección del historial de #234. Una tarifa sin definir deja la línea y su total pendientes. La sugerencia de transporte usa el conductor de staff del plan y omite el transporte externo y los nombres de César y Maybeli. Ver [cola de revisión](CLAUDE-REVIEW-QUEUE.md#entries).
+
 ## 2026-11-23 · Codex · Punto 4: traslado real en la asignación del fin de semana
 Rama `codex/fix-team-route-budget`. Guardar un equipo calcula ruta entre direcciones usando la salida después del desmontaje, antes de la transacción. Bajo bloqueos vuelve a contrastar horarios y recursos, exige manejo + 30 + montaje y conserva el plan anterior si falta ruta o cambia la agenda. El presupuesto diario de Houston de `travel_fees` es compartido entre consultas de tiempo y cotizaciones. La caché no consume llamadas nuevas. La sugerencia de equipos sigue siendo una vista previa y el guardado hace la verificación autoritativa. 38 pruebas y 233 aserciones con MariaDB, rutas ficticias, escenarios de traslado largo/corto y presupuesto compartido.
+
+## 2026-11-26 · Codex · Punto 5: margen por paquete desde enero de 2027
+Rama `codex/fix-handoff-1126-package-margin`. Reportes distingue los costos incompletos de las fiestas con margen calculado. Usa costos reales vigentes y deja pendientes las fiestas con varios paquetes cuyo costo aún no se puede repartir. Ver [cola de revisión](CLAUDE-REVIEW-QUEUE.md#entries).
 
 ## 2026-11-23 · Claude · "Mensajes automáticos" page + automatic sending (branch `claude/auto-messages`, on top of #220) — REVISAR (mensajes a clientes)
 - César: "una parte en el CRM donde pueda ver y configurar estos correos y mensajes de texto, activarlos y desactivarlos, ver un preview… que se pueda controlar todo desde ahí".

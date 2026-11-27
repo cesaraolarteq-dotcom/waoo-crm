@@ -27,3 +27,18 @@ GET `/admin/api/events/{event}/cost-snapshots`: bounded page/per_page1..50, opti
 ## Claude UI handoff
 
 After current portal/payment work, add owner-only cost estimate/actual forms and margin summary. Show unknown costs and missing coverage clearly; use null margin as pending, never $0 profit. Preserve displayed versions and a stable key per attempt; after409 reload rather than silently replacing another edit. Show estimate vs actual separately, stale snapshots/history and owner note. No customer/staff-facing cost screens or automated pay/rates in this increment.
+
+## Reportes por paquete desde 2027
+
+La Ruta del CRM del 25 de noviembre registra la decisión de César del 29 de octubre. El margen por paquete empieza en enero de 2027 porque faltan costos completos de 2026. La fecha del evento se interpreta en Houston. Las fiestas anteriores pueden seguir en los reportes existentes de ventas y cobros.
+
+Para preparar el reporte, usar la versión vigente del acuerdo y los costos directos registrados para cada fiesta. Mantener las estimaciones y los costos reales separados. La regla de Reportes distingue la venta del paquete, después de descuentos, del transporte cobrado al cliente y de la comisión de tarjeta. El transporte pagado al staff se registra como costo. El monto registrado como pagado al staff es evidencia distinta de su sugerencia semanal.
+
+Comprobar con datos ficticios antes de incorporar información real:
+
+- Una fiesta del 31 de diciembre en Houston queda fuera del reporte por paquete aunque su hora UTC caiga en enero.
+- Un costo pendiente o un acuerdo modificado lleva la fiesta a revisión. Mostrar cuántas fiestas entraron al cálculo y cuántas quedan pendientes.
+- Para una fiesta con varios paquetes, solo usar costos vinculados al paquete correspondiente. Dejar un costo compartido pendiente de asignación y conservarlo en el total de la fiesta.
+- Si el mismo pago al staff aparece en el registro de pagos y en un costo capturado a mano, comprobar su origen antes de contabilizarlo en el mismo reporte.
+
+Antes de publicar cifras reales, hace falta una muestra con costos confirmados por fiesta y pagos conciliados del staff. La regla vigente de materiales de Reportes se puede mostrar en estimaciones. Para un margen real, distinguir el costo real documentado de un valor estimado.

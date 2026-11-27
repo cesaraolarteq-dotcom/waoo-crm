@@ -13,9 +13,9 @@ use App\Models\{Event, EventService, ServiceVariant};
 final class StaffPayEstimate
 {
     /** Hourly pay in cents per staffing skill, as decided by the owner. Missing skills have no rate yet. */
-    public const HOURLY_CENTS = ['host' => 2500, 'face_painter' => 2500, 'entertainer' => 3500];
+    public const HOURLY_CENTS = ['host' => 2500, 'entertainer' => 3500, 'performer' => 6000, 'performer_wig' => 8000];
     public const ROLE = ['host' => 'Recreador', 'face_painter' => 'Recreador (pintacaritas)', 'entertainer' => 'Animador', 'operator' => 'Operador',
-        'dj' => 'DJ', 'spa' => 'Spa', 'performer' => 'Staff'];
+        'dj' => 'DJ', 'spa' => 'Spa', 'performer' => 'Personaje', 'performer_wig' => 'Personaje de peluca'];
     public const MINIMUM_CENTS = 5000;
     /** Owner 2026-11-23: a 30-minute service pays at least $40. */
     public const HALF_HOUR_MINIMUM_CENTS = 4000;

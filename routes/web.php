@@ -75,6 +75,7 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-api'])->pre
     Route::get('/leads/{lead}', [\App\Http\Controllers\Admin\LeadController::class, 'show'])->whereNumber('lead');
     Route::patch('/leads/{lead}', [\App\Http\Controllers\Admin\LeadController::class, 'update'])->whereNumber('lead');
     Route::post('/leads/{lead}/quick-book', [\App\Http\Controllers\Admin\LeadController::class, 'convert'])->whereNumber('lead');
+    Route::get('/reports/package-margin', [\App\Http\Controllers\Admin\OwnerReportReadController::class, 'packageMargin']);
     Route::get('/reports/owner', [\App\Http\Controllers\Admin\OwnerReportReadController::class, 'index']);
     Route::get('/reports/snapshots/{snapshot}/email-preview', [\App\Http\Controllers\Admin\OwnerReportReadController::class, 'preview'])->whereNumber('snapshot');
     Route::post('/reports/snapshots', [\App\Http\Controllers\Admin\OwnerReportSnapshotController::class, 'store']);

@@ -8,6 +8,7 @@ use App\Services\Scheduling\{BookingNoticePolicy, SameDayTransfer};
 use Carbon\CarbonImmutable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Owner 2026-11-26: HoneyBook → CRM every 12 hours until the switch (a cloud job reads HoneyBook and posts the
@@ -19,7 +20,7 @@ use Illuminate\Support\Str;
 final class HoneyBookSync
 {
     /** Fields that define the party itself: any change here is César's decision, never automatic. */
-    public const PARTY_FIELDS = ['event_date', 'start_time', 'end_time', 'event_address', 'event_zip', 'package_total', 'travel_fee', 'discount', 'total', 'status'];
+    public const PARTY_FIELDS = ['event_date', 'start_time', 'end_time', 'event_address', 'event_zip', 'services', 'characters', 'package_total', 'travel_fee', 'discount', 'total', 'status'];
 
     /** HoneyBook names → catalog character names (exact names match on their own). */
     private const CHARACTER_ALIASES = ['mickey mouse' => 'Mickey', 'minnie' => 'Minnie Mouse', 'the grinch' => 'Grinch', 'ana' => 'Anna',
@@ -69,14 +70,17 @@ final class HoneyBookSync
         $link = $key !== '' ? ImportedProjectLink::where('project_key', hash('sha256', $key))->first() : null;
         $snapshot = $link ? ImportedProjectRevision::find($link->current_revision_id)?->source_snapshot : null;
         if (! $snapshot) {
-            if (($r['characters'] ?? '') === '') $r['characters'] = $this->guessCharacters((string) ($r['project_name'] ?? ''));
+            if (($r['status'] ?? '') === 'cancelled') return null;
+            // Owner 2026-11-26 (option A): a NEW HoneyBook party is imported with its deposit and signature automatically
+            // (it goes through the same commit + confirm as the manual import); only party changes on linked rows wait for César.
             if (blank($r['event_address'] ?? null)) { $this->review((string) $r['project_name'], (string) $r['event_date'], 'Falta la dirección en HoneyBook (no se importa hasta tenerla; luego se suma el transporte).'); return null; }
+            if (($r['characters'] ?? '') === '') $r['characters'] = $this->guessCharacters((string) ($r['project_name'] ?? ''));
             return $r;
         }
         $changed = array_values(array_filter(self::PARTY_FIELDS, fn ($f) => trim((string) ($r[$f] ?? '')) !== trim((string) ($snapshot[$f] ?? ''))));
         if ($changed !== []) {
             $labels = ['event_date' => 'fecha', 'start_time' => 'hora de inicio', 'end_time' => 'hora de fin', 'event_address' => 'dirección', 'event_zip' => 'código postal',
-                'package_total' => 'precio del paquete', 'travel_fee' => 'transporte', 'discount' => 'descuento', 'total' => 'total', 'status' => 'estado'];
+                'services' => 'servicios', 'characters' => 'personajes', 'package_total' => 'precio del paquete', 'travel_fee' => 'transporte', 'discount' => 'descuento', 'total' => 'total', 'status' => 'estado'];
             $detail = collect($changed)->map(fn ($f) => $labels[$f].': '.($snapshot[$f] ?? '—').' → '.($r[$f] ?? '—'))->implode(' · ');
             $this->review((string) $snapshot['project_name'], (string) $snapshot['event_date'], (($r['status'] ?? '') === 'cancelled' ? 'Cancelada en HoneyBook. ' : 'Cambió en HoneyBook: ').$detail);
             return null;
@@ -156,6 +160,11 @@ final class HoneyBookSync
             $this->review($name, $date, 'Cambió algo que no es dinero ni firma: '.collect($v['blocked'] ?? [])->pluck('field')->unique()->implode(', ').'.');
             return;
         }
+        $paid = collect($v['changes'])->firstWhere('field', 'paid_cents');
+        if ($paid !== null && $paid['to'] < $paid['from']) {
+            $this->review($name, $date, 'HoneyBook reportó menos dinero pagado. Revisa el saldo antes de actualizarlo.');
+            return;
+        }
         $c = $v['current'];
         app(CommitHoneyBookEvent::class)->execute($actor, $batchId, $row->id, [
             'expected_batch_version' => $v['batch']['version'], 'expected_row_version' => $v['row']['version'], 'expected_preview_sha256' => $v['row']['preview_sha256'],
@@ -180,12 +189,13 @@ final class HoneyBookSync
     private function parse(string $csv): array
     {
         RecordWriteRejected::unless(strlen($csv) > 0 && strlen($csv) <= 1_048_576, 422, 'Archivo vacío o demasiado grande.');
-        $lines = array_map(fn ($l) => str_getcsv($l, ',', '"', ''), preg_split('/\r\n|\n|\r/', trim($csv)));
-        $headers = array_shift($lines);
-        RecordWriteRejected::unless($headers === HoneyBookFutureSource::HEADERS, 422, 'Las columnas no son las de HoneyBook (honeybook_future_v1).');
-        $rows = [];
-        foreach ($lines as $cells) if (count($cells) === count($headers)) $rows[] = array_combine($headers, $cells);
-        return [$headers, $rows];
+        try {
+            $parsed = app(ImportCsv::class)->parse($csv, 'projects', HoneyBookFutureSource::profile());
+        } catch (ValidationException) {
+            throw new RecordWriteRejected(422, 'HoneyBook mandó un archivo CSV inválido.');
+        }
+        $headers = $parsed['headers'];
+        return [$headers, array_map(fn ($row) => array_combine($headers, $row['cells']), $parsed['rows'])];
     }
 
     private function review(string $project, string $date, string $detail): void
