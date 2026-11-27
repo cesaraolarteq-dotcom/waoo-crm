@@ -25,6 +25,22 @@ class DriveMinutesTest extends TestCase
         Http::assertSent(fn ($r) => $r['routingPreference'] === 'TRAFFIC_AWARE' && $r['origin']['address'] === '77494, TX, USA');
     }
 
+    public function test_zip_estimates_distinguish_the_two_fall_back_hours_and_round_up(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-10-30T12:00:00Z'));
+        config(['waoo.google_routes_key' => 'test-key', 'cache.default' => 'array']);
+        Http::fake(['routes.googleapis.com/*' => Http::sequence()
+            ->push(['routes' => [['duration' => '60.1s']]])
+            ->push(['routes' => [['duration' => '180s']]])]);
+        $first = CarbonImmutable::parse('2026-11-01T01:15:00-05:00');
+        $second = CarbonImmutable::parse('2026-11-01T01:15:00-06:00');
+        $drive = new DriveMinutes(2);
+
+        $this->assertSame(12, $drive->between('77494', '77084', $first));
+        $this->assertSame(13, $drive->between('77494', '77084', $second));
+        Http::assertSentCount(2);
+    }
+
     public function test_failures_and_bad_input_are_unknown(): void
     {
         config(['waoo.google_routes_key' => 'test-key', 'cache.default' => 'array']);
