@@ -4,6 +4,7 @@
     $money = fn ($c) => \App\Filament\Support\Labels::money($c);
 @endphp
 <x-filament-panels::page>
+    @include('filament.pages.partials.route-warnings', ['warnings' => app(\App\Services\Changes\RescheduleTransfers::class)->warnings($e)])
     @if($e->billing_company)
         <x-filament::section heading="Facturar a empresa">
             <p>{{ $e->billing_company['name'] }} · Atención: {{ \App\Services\Billing\BillingCompany::person($e) }}</p>

@@ -418,6 +418,7 @@ class QuickBooking extends Page
         }
         \App\Models\EventChannel::record($r->event->id, $s['channel'] ?? null, Filament::auth()->id());
         $this->result = self::presentResult($r, $s);
+        $this->result['route_warnings'] = app(\App\Services\Changes\RescheduleTransfers::class)->warnings($r->event);
         $this->key = (string) Str::uuid(); $this->shortNoticeOk = false;
         $this->leadId = null; $this->leadVersion = null; $this->leadSummary = null;
     }
