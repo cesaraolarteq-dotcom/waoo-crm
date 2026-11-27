@@ -21,6 +21,7 @@ class StaffPayEstimateRulesTest extends TestCase
     {
         $this->assertArrayNotHasKey('performer', StaffPayEstimate::HOURLY_CENTS);
         $this->assertArrayNotHasKey('performer_wig', StaffPayEstimate::HOURLY_CENTS);
-        $this->assertArrayNotHasKey('face_painter', StaffPayEstimate::HOURLY_CENTS);
+        foreach (['face_painter', 'spa', 'dj', 'operator'] as $skill) $this->assertSame(2500, StaffPayEstimate::HOURLY_CENTS[$skill]);
+        $this->assertSame(5000, StaffPayEstimate::pay('face_painter', 'Pintacaritas', 2500, 60), 'One hour: $50 minimum.');
     }
 }

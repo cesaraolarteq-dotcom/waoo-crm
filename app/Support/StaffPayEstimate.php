@@ -14,7 +14,8 @@ final class StaffPayEstimate
 {
     /** Hourly pay in cents per staffing skill, as decided by the owner. Missing skills have no rate yet. */
     // Character rates (personaje / traje / peluca) wait for the owner's confirmation (Ruta s-tarifas): pending, never guessed.
-    public const HOURLY_CENTS = ['host' => 2500, 'entertainer' => 3500];
+    // Owner 2026-11-26 (Ruta s-tarifas): face painter, spa, DJ and Photo Booth operator $25/h. The driver is decided per payment.
+    public const HOURLY_CENTS = ['host' => 2500, 'entertainer' => 3500, 'face_painter' => 2500, 'spa' => 2500, 'dj' => 2500, 'operator' => 2500];
     public const ROLE = ['host' => 'Recreador', 'face_painter' => 'Recreador (pintacaritas)', 'entertainer' => 'Animador', 'operator' => 'Operador',
         'dj' => 'DJ', 'spa' => 'Spa', 'performer' => 'Personaje', 'performer_wig' => 'Personaje de peluca'];
     public const MINIMUM_CENTS = 5000;
