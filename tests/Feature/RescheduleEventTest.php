@@ -152,6 +152,26 @@ class RescheduleEventTest extends TestCase
         $this->assertSame('completed', $this->move($e, 30, '11:35')->state);
     }
 
+    public function test_event_route_warnings_follow_the_current_time_and_require_both_addresses(): void
+    {
+        $earlier = $this->book(30, 8);
+        $later = $this->book(31, 12, 'Lucía Hernández');
+        $start = $earlier->ends_at->addMinutes(40);
+        $later->update(['starts_at' => $start, 'ends_at' => $start->addHours(2)]);
+        $later->reservations()->update(['starts_at' => $start, 'ends_at' => $start->addHours(2)]);
+        $routes = app(\App\Services\Changes\RescheduleTransfers::class);
+        $this->assertSame(['No da tiempo de llegar'], $routes->warnings($later->fresh()));
+
+        $start = $start->addHours(3);
+        $later->update(['starts_at' => $start, 'ends_at' => $start->addHours(2)]);
+        $later->reservations()->update(['starts_at' => $start, 'ends_at' => $start->addHours(2)]);
+        $this->assertSame([], $routes->warnings($later->fresh()));
+
+        $earlier->update(['address' => null]);
+        $later->update(['address' => null]);
+        $this->assertSame(['Falta dirección, no se puede calcular el manejo'], $routes->warnings($later->fresh()));
+    }
+
     public function test_missing_route_proof_cannot_move_a_reserved_unit_even_with_a_large_time_gap(): void
     {
         $e = $this->book(20, 12);

@@ -1,6 +1,7 @@
 <?php
 namespace App\Services\Changes;
 
+use App\Services\Availability\WebsiteCapacity;
 use App\Exceptions\RecordWriteRejected;
 use App\Models\{Event, ResourceBlock, ResourceReservation};
 use App\Services\Finance\MutationKey;
@@ -16,7 +17,7 @@ final class RescheduleTransfers
         RecordWriteRejected::unless(DB::transactionLevel() === 0, 409, 'Revisa el traslado antes de cambiar la fecha.');
         $snapshot = $this->snapshot($event, $start, false, $resourceIds);
         $routes = new DriveMinutes(3, 2.0);
-        $proof = ['snapshot' => MutationKey::hash($snapshot), 'read_at' => now()->timestamp, 'routes' => []];
+        $proof = ['snapshot' => MutationKey::hash($snapshot), 'read_at' => now()->timestamp, 'routes' => [], 'warnings' => []];
         foreach ($this->edges($snapshot) as $key => [$from, $to, $resourceId]) {
             $routeKey = $from['id'].':'.$to['id'];
             if (array_key_exists($routeKey, $proof['routes'])) continue;
@@ -28,8 +29,29 @@ final class RescheduleTransfers
                     : $routes->betweenAddresses($from['address'], $to['address'], $departure);
             }
             $proof['routes'][$routeKey] = is_int($minutes) && $minutes >= 0 && $minutes <= 1440 ? $minutes : null;
+            $warning = $this->warning($from, $to, $proof['routes'][$routeKey]);
+            if ($warning !== null) $proof['warnings'][] = $warning;
         }
         return $proof;
+    }
+
+    private function warning(array $from, array $to, ?int $minutes): ?string
+    {
+        if (blank($from['address']) || blank($to['address'])) return 'Falta dirección, no se puede calcular el manejo';
+        if ($minutes === null || $from['breakdown'] === null || $to['setup'] === null) return 'Traslado pendiente de revisión';
+        $arrival = CarbonImmutable::parse($from['end'])->addMinutes($from['breakdown'] + $minutes);
+        return $arrival->addMinutes(WebsiteCapacity::GAP_MINUTES + $to['setup'])->greaterThan(CarbonImmutable::parse($to['start']))
+            ? 'No da tiempo de llegar' : null;
+    }
+
+    public function warnings(Event $event): array
+    {
+        if ($event->starts_at === null || $event->ends_at === null || $event->ends_at->isPast()) return [];
+        try {
+            return array_values(array_unique($this->prepare($event, CarbonImmutable::instance($event->starts_at))['warnings']));
+        } catch (RecordWriteRejected) {
+            return ['Traslado pendiente de revisión'];
+        }
     }
 
     /** Caller holds the global admission mutex, event, and all its reserved resource rows. */
@@ -41,11 +63,12 @@ final class RescheduleTransfers
             && hash_equals($proof['snapshot'], MutationKey::hash($snapshot)), 409, 'La agenda cambió mientras se revisaba el traslado. Vuelve a intentarlo.');
         foreach ($this->edges($snapshot) as $key => [$from, $to, $resourceId]) {
             $minutes = $proof['routes'][$from['id'].':'.$to['id']] ?? null;
+            RecordWriteRejected::unless(filled($from['address']) && filled($to['address']), 409, 'Falta dirección, no se puede calcular el manejo');
             RecordWriteRejected::unless(is_int($minutes) && $from['breakdown'] !== null && $to['setup'] !== null,
                 409, 'No se pudo comprobar el traslado del recurso apartado. Revisa dirección, montaje y desmontaje.');
             $departure = CarbonImmutable::parse($from['end'])->addMinutes($from['breakdown']);
             $arrival = $departure->addMinutes($minutes);
-            RecordWriteRejected::unless($arrival->addMinutes(30 + $to['setup'])->lessThanOrEqualTo(CarbonImmutable::parse($to['start'])),
+            RecordWriteRejected::unless($arrival->addMinutes(WebsiteCapacity::GAP_MINUTES + $to['setup'])->lessThanOrEqualTo(CarbonImmutable::parse($to['start'])),
                 409, 'No cabe el traslado con montaje, desmontaje y 30 minutos adicionales.');
             RecordWriteRejected::unless(!$arrival->greaterThan($departure) || ! ResourceBlock::where('resource_id', $resourceId)->whereNull('released_at')
                 ->where('starts_at', '<', $arrival)->where('ends_at', '>', $departure)->lockForUpdate()->exists(),
