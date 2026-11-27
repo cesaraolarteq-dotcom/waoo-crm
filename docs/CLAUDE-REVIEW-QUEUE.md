@@ -30,6 +30,10 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 ### 2026-11-23 · BACKEND · Revisión #223: lotes de mensajes y altas de Google · PENDING
 - Rama `codex/fix-auto-message-review`. Revisar 51º recordatorio, un alta de Google con resultado incierto y el filtro de entradas del cron de recordatorios.
 - Tests con proveedores simulados. Ver el PR para resultados. Sin despliegue ni cambios de términos o textos.
+### 2026-11-26 · DECISION · Punto 2: inventario de PRs · PENDING
+- Rama `codex/fix-handoff-1126-pr-queue`. La tabla del HANDOFF registra cierres verificados y pendientes por punta de Git.
+- #241 ya está en la rama. Antes de unir #229 a main, confirmar con César la regla de HoneyBook ante el cambio de `b8e7e86` y comprobar CI sobre la punta autorizada.
+
 ### 2026-11-23 · BACKEND · Punto 2: revisión de pagos de #214/#215 · PENDING
 - Rama `codex/fix-deployed-money-review`. 10 pruebas, 45 aserciones con MariaDB local y Stripe simulado.
 - Revisar la caída a tarjeta, la integridad de la huella migrada y la reserva de importes cuyo reembolso no se encuentra después de la ventana.
