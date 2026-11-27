@@ -2,7 +2,7 @@
 namespace App\Services\Documents;
 
 use App\Exceptions\RecordWriteRejected;
-use App\Models\{ClientDetailsSubmission, Customer, Event, FinancialRevision};
+use App\Models\{ClientDetailsSubmission, Contract, Customer, Event, EventChange, FinancialRevision, QuickPaymentBooking};
 use App\Services\Booking\QuickCostumeHolds;
 use App\Services\Finance\MutationKey;
 use App\Services\Portal\PortalContext;
@@ -20,10 +20,14 @@ final class ClientContractSource
         \App\Services\Responsibility\RequireCrmResponsibility::check($event);
         \App\Services\Imports\ImportedAgreement::blockCrmLifecycle($event->id);
         $booking = \App\Services\Booking\QuickPaymentProtocol::booking($event->id);
+        $finance = FinancialRevision::where('event_id', $event->id)->orderByDesc('revision')->firstOrFail();
+        $change = EventChange::pendingSignature($event->id);
+        $change = $change && $change->event_version_after === $event->version && $change->financial_revision_id === $finance->id
+            && (! $booking || $booking->state === 'paid') ? $change : null;
         if ($booking) {
             \App\Services\Booking\QuickPaymentProtocol::gate();
             \App\Services\Booking\QuickPaymentProtocol::verify($booking,$event);
-            \App\Services\Booking\QuickPaymentProtocol::submission($booking,$event);
+            if (! $change) \App\Services\Booking\QuickPaymentProtocol::submission($booking,$event);
             if(in_array($booking->state,['paid','paid_needs_review'],true)){
                 $receipt=\App\Models\LedgerEntry::whereKey($booking->receipt_id)->sharedLock()->first();
                 RecordWriteRejected::unless($receipt && $receipt->event_id===$event->id && $receipt->financial_revision_id===$booking->financial_revision_id && $receipt->kind==='receipt' && $receipt->environment===\App\Support\WaooRuntime::ledgerEnvironment() && $receipt->amount_cents>0 && (($receipt->source_type==='owner_verified' && $receipt->verified_by!==null) || QuickCostumeHolds::verifiedStripeReceipt($receipt)),409,'Revisa la evidencia del pago.');
@@ -32,18 +36,16 @@ final class ClientContractSource
             RecordWriteRejected::unless($booking->portal_grant_id===$client->grantId && (in_array($booking->state,['paid','paid_needs_review'],true) || (in_array($booking->state,['zelle_pending','review_required'],true) && \App\Services\Booking\QuickPaymentProtocol::pendingNotice($booking))),409,'Primero elige tu pago. / Choose your payment first.');
         }
         $quick = $booking ? null : QuickCostumeHolds::record($event);
-        $finance = FinancialRevision::where('event_id', $event->id)->orderByDesc('revision')->firstOrFail();
         if(!$booking) CreateContract::assertCurrent($event, $finance);
-        else RecordWriteRejected::unless(in_array($event->status,['draft','capacity_reserved'],true) && $finance->id===$booking->financial_revision_id && ($event->status!=='draft'||$event->version===$finance->event_version),409,'El acuerdo cambió.');
+        else RecordWriteRejected::unless(in_array($event->status,['draft','capacity_reserved'],true) && ($finance->id===$booking->financial_revision_id || $change !== null) && ($event->status!=='draft'||$event->version===$finance->event_version),409,'El acuerdo cambió.');
         $submission = ClientDetailsSubmission::where('event_id', $event->id)->orderByDesc('revision')->first();
-        // CHANGE-A part 3: after an owner reschedule (no card quick-payment booking) the client signs again with the details
+        // CHANGE-A part 3: after an owner reschedule the client signs again with the details
         // already given for the previous version and the revision the reschedule created; nothing else is relaxed.
-        $change = $booking ? null : \App\Models\EventChange::pendingSignature($event->id);
-        $change = $change && $change->event_version_after === $event->version && $change->financial_revision_id === $finance->id ? $change : null;
         RecordWriteRejected::unless($submission && $submission->customer_id === $customer->id
             && $submission->portal_grant_id === $client->grantId && $submission->revision === $data['expected_revision']
             && ($submission->event_version === $event->version || ($change && \App\Models\EventChange::preservesDetailsVersion(
-                $event->id, $submission->event_version, $change->event_version_before)))
+                $event->id, $submission->event_version, $change->event_version_before))
+                || ($booking && $change && self::detailsSurvivedPaidConfirmation($booking, $submission, $change)))
             && $event->version === $data['expected_event_version']
             && ($finance->id === ($booking?->financial_revision_id ?? $quick->initial_financial_revision_id) || $change !== null) && $finance->currency === 'USD' && $finance->quote_revision_id === null, 409, 'La reserva o los datos cambiaron. Recarga antes de preparar el contrato.');
         RecordWriteRejected::unless(MutationKey::hash($customer->only(['name','email','phone','locale'])) === MutationKey::hash($submission->base_customer_snapshot),
@@ -69,6 +71,19 @@ final class ClientContractSource
         }
         $provenance = ClientSubmissionFingerprint::capture($submission);
         return [$event, $customer, $finance, $submission, $values, $provenance];
+    }
+
+    private static function detailsSurvivedPaidConfirmation(QuickPaymentBooking $booking, ClientDetailsSubmission $submission, EventChange $change): bool
+    {
+        $confirmedVersion = $submission->event_version + 1;
+        if (! EventChange::preservesDetailsVersion($booking->event_id, $confirmedVersion, $change->event_version_before)) return false;
+        if (! DB::table('audit_entries')->where('subject_type', 'events')->where('subject_id', $booking->event_id)
+            ->where('action', 'booking.capacity_reserved')->where('after->version', $confirmedVersion)->exists()) return false;
+
+        $provenance = ClientSubmissionFingerprint::capture($submission);
+        return Contract::where('event_id', $booking->event_id)->where('state', 'signed')
+            ->where('financial_revision_id', $booking->financial_revision_id)->where('event_version', $submission->event_version)
+            ->get()->contains(fn (Contract $contract) => ($contract->commercial_snapshot['client_details'] ?? null) === $provenance);
     }
 
     /** Lines that come from a booked service; a reschedule fee line (CHANGE-A) is money, not a service. */

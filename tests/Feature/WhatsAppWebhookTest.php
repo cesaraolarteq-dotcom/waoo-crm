@@ -52,6 +52,8 @@ class WhatsAppWebhookTest extends TestCase
         $this->signed($this->event('messages', ['statuses' => [['id' => 'wamid.OUT1', 'status' => 'read']]]))->assertOk();
         $this->signed($this->event('messages', ['statuses' => [['id' => 'wamid.OUT1', 'status' => 'delivered']]]))->assertOk(); // late, never steps back
         $this->assertSame('read', $sent->fresh()->status);
+        $this->signed($this->event('messages', ['statuses' => [['id' => 'wamid.OUT1', 'status' => 'failed']]]))->assertOk();
+        $this->assertSame('read', $sent->fresh()->status);
     }
 
     public function test_events_for_another_number_are_ignored(): void

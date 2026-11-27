@@ -8,6 +8,7 @@ final class ReadQuickPayment
     {
         return DB::transaction(function()use($client){
             [$b,$e]=QuickPaymentProtocol::portal($client);$s=QuickPaymentProtocol::verify($b,$e);$f=\App\Models\FinancialRevision::findOrFail($b->financial_revision_id);
+            $total = $b->state === 'paid' ? \App\Models\FinancialRevision::where('event_id', $e->id)->orderByDesc('revision')->value('total_cents') : $f->total_cents;
             $intent=\App\Models\PaymentIntent::where('event_id',$e->id)->where('purpose','quick_deposit')->whereNotIn('status',['expired','failed','cancelled'])->orderByDesc('created_at')->first();
             $attempt=$intent?\App\Models\QuickPaymentAttempt::where('payment_intent_id',$intent->id)->first():null;
             $url=$intent?->checkout_url;
@@ -20,7 +21,7 @@ final class ReadQuickPayment
             }
             $generation=\App\Models\QuickPaymentAttempt::where('quick_payment_booking_id',$b->id)->count();
             $pending=(bool)QuickPaymentProtocol::pendingNotice($b);
-            return ['attempt_generation'=>$generation,'active_checkout'=>$active,'state'=>$b->state,'expected_booking_version'=>$b->version,'expected_payment_sha256'=>$b->agreement_sha256,'total_cents'=>$f->total_cents,
+            return ['attempt_generation'=>$generation,'active_checkout'=>$active,'state'=>$b->state,'expected_booking_version'=>$b->version,'expected_payment_sha256'=>$b->agreement_sha256,'total_cents'=>$total,
                 'balance_cents'=>app(\App\Services\Finance\FinanceSummary::class)->forEvent($e)['balance_cents'],'deposit_cents'=>$s['terms']['principal_cents'],'currency'=>'USD','expires_at'=>$b->expires_at->toIso8601String(),
                 'choices'=>array_map(fn($percent)=>QuickStripeTerms::freeze($f->total_cents,\Carbon\CarbonImmutable::createFromTimestampUTC($s['terms']['created_at']),$percent)->snapshot(),\App\Services\Scheduling\DepositPolicy::collectionPercents($f)),
                 'can_pay'=>$active===null&&$b->state==='awaiting_payment'&&$b->expires_at->isFuture()&&$e->starts_at->timestamp>=now()->addHours(24)->addSeconds(1860)->timestamp,'can_sign'=>$pending||in_array($b->state,['paid','paid_needs_review'],true),

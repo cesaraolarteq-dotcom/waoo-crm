@@ -2,10 +2,10 @@
 namespace App\Services\Changes;
 
 use App\Exceptions\RecordWriteRejected;
-use App\Models\{Contract, Event, EventChange, FinancialRevision, QuickCostumeHold, Resource, ResourceReservation, User};
+use App\Models\{Contract, Event, EventChange, FinancialRevision, JointCapacityHold, QuickCostumeHold, Resource, ResourceReservation, User};
 use App\Services\Audit;
-use App\Services\Availability\AdmitEventCapacity;
-use App\Services\Booking\QuickCostumeHolds;
+use App\Services\Availability\{AdmitEventCapacity, JointCapacityHolds};
+use App\Services\Booking\{QuickCostumeHolds, QuickPaymentExposure, QuickPaymentProtocol};
 use App\Services\Finance\{MutationKey, Sandbox};
 use App\Services\Records\{RecordActor, RecordInput};
 use App\Support\ChicagoTime;
@@ -53,9 +53,17 @@ final class RescheduleEvent
             RecordWriteRejected::unless(! EventChange::where('event_id', $eventId)->where('state', 'pending_signature')->exists(), 409,
                 'Ya hay un cambio de fecha esperando la firma del cliente.');
             \App\Services\Booking\QuickStripeLeases::assertNoActive($eventId);
-            // A card quick-payment booking freezes the original date in its evidence; moving it is not supported yet.
-            RecordWriteRejected::unless(! \App\Models\QuickPaymentBooking::where('event_id', $eventId)->whereNotIn('state', ['expired', 'cancelled'])->exists(), 409,
-                'Esta reserva se hizo con el enlace de pago con tarjeta: el cambio de fecha para ese tipo de reserva todavía no está listo. Avísale a Claude.');
+            $booking = QuickPaymentProtocol::booking($eventId);
+            $joint = JointCapacityHold::where('event_id', $eventId)->lockForUpdate()->first();
+            if ($booking && ! in_array($booking->state, ['expired', 'cancelled'], true)) {
+                RecordWriteRejected::unless($booking->state === 'paid' && $booking->receipt_id !== null && $event->status === 'capacity_reserved'
+                    && $joint?->state === 'committed' && $joint->quick_stripe_lease_id === $booking->quick_stripe_lease_id, 409,
+                    'Confirma el pago y el equipo de la reserva antes de cambiar la fecha.');
+                QuickPaymentProtocol::verify($booking, $event);
+                RecordWriteRejected::unless(! QuickPaymentExposure::unresolved($eventId)->where('status', '!=', 'paid')->lockForUpdate()->exists(),
+                    409, 'Concilia el cobro pendiente antes de cambiar la fecha.');
+            }
+            RecordWriteRejected::unless($joint?->state !== 'held', 409, 'El equipo está apartado para un cobro pendiente.');
             $oldStart = $event->starts_at; $oldEnd = $event->ends_at; $before = $event->version;
             $end = $start->addSeconds($oldStart->diffInSeconds($oldEnd));
             RecordWriteRejected::unless(! $start->equalTo($oldStart), 422, 'Esa es la misma fecha y hora de ahora.');
@@ -69,6 +77,7 @@ final class RescheduleEvent
             $units = Resource::whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
             $reservations = ResourceReservation::where('event_id', $eventId)->orderBy('resource_id')->lockForUpdate()->get();
             $p = $hold ? QuickCostumeHolds::verify($hold, $event) : null;
+            $jointPayload = $joint?->state === 'committed' ? app(JointCapacityHolds::class)->verify($joint, $event) : null;
             if ($reservations->isNotEmpty()) RecordWriteRejected::unless($event->setup_minutes !== null && $event->breakdown_minutes !== null,
                 409, 'Completa montaje y desmontaje antes de mover la fiesta.');
             app(RescheduleTransfers::class)->assertFits($event, $start, $proof);
@@ -83,6 +92,10 @@ final class RescheduleEvent
             }
             AdmitEventCapacity::assertFits($event);
             if ($hold) QuickCostumeHolds::transition($actor, $event, $hold, $hold->state, $p['rows'], $p['issues'], 'Cambio de fecha: '.$data['fee_reason']);
+            if ($jointPayload) {
+                JointCapacityHolds::append($joint, [...$jointPayload, 'window' => QuickCostumeHolds::window($event), 'reason' => 'rescheduled']);
+                app(JointCapacityHolds::class)->verify($joint, $event);
+            }
 
             // Part 2 (money): a new financial revision with the same prices and discounts, the $100 line when charged, and the
             // balance due 24 h before the new start. Payments already received stay; open payment links are superseded.

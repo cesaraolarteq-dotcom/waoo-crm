@@ -21,12 +21,23 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-26 · BACKEND · Punto 1: seguridad de sincronización del #229 · PENDING
+- Rama `codex/fix-handoff-1126-security`, base `claude/import-fixes` (`5431f42`).
+- HoneyBook aplica la validación CSV estricta del importador, y deriva a revisión las reducciones del total pagado, los cambios operativos y el dinero o firma de un proyecto sin vincular. El mismo CSV conserva una sola revisión de dinero.
+- Google Ads valida filas antes de reemplazar el gasto por día y campaña, conserva el contrato de exportación sin datos de contacto y confirma únicamente conversiones elegibles. Un estado tardío de WhatsApp no deshace una entrega o lectura confirmada.
+- Verificar los tests `HoneyBookSyncTest`, `HoneyBookMoneyResyncTest`, `AdsSyncTest`, `LeadConversionTest` y `WhatsAppWebhookTest`, con proveedores ficticios. Revisar también las puertas de Resend, correo y atribución. La configuración y los servicios de producción quedan fuera de la verificación.
+
 ### 2026-11-23 · BACKEND · Revisión #223: lotes de mensajes y altas de Google · PENDING
 - Rama `codex/fix-auto-message-review`. Revisar 51º recordatorio, un alta de Google con resultado incierto y el filtro de entradas del cron de recordatorios.
 - Tests con proveedores simulados. Ver el PR para resultados. Sin despliegue ni cambios de términos o textos.
 ### 2026-11-23 · BACKEND · Punto 2: revisión de pagos de #214/#215 · PENDING
 - Rama `codex/fix-deployed-money-review`. 10 pruebas, 45 aserciones con MariaDB local y Stripe simulado.
 - Revisar la caída a tarjeta, la integridad de la huella migrada y la reserva de importes cuyo reembolso no se encuentra después de la ventana.
+### 2026-11-26 · BACKEND · Punto 3: reprogramación del apartado conjunto · PENDING
+- Rama `codex/fix-handoff-1126-joint-hold`.
+- Una fiesta confirmada con depósito conciliado puede mover todas las reservas en una transacción, conservar el historial y volver a firmar. Un equipo completo puede reemplazar al personal y conservar los trajes y equipos apartados.
+- MariaDB local: 16 pruebas y 175 aserciones, más 2 pruebas y 38 aserciones en la última comprobación enfocada. Stripe, calendarios y rutas ficticias. Revisar carrera por el último traje, vencimiento, un recibo tardío y el cambio de fecha que conserva el contrato anterior. El sitio público continúa en vista previa.
+
 ### 2026-11-23 · BACKEND · Punto 3: apartado conjunto de la futura reserva web · PENDING
 - Rama `codex/fix-website-joint-hold`. Tres pruebas/18 aserciones con MariaDB, dos procesos y Stripe simulado.
 - Revisar vida del equipo comprometido en la planificación y ante reprogramación. La web permanece en preview.

@@ -21,5 +21,12 @@ class AdsSyncTest extends TestCase
         $this->postJson('/sync/ads/google', $rows, ['Authorization' => 'Bearer '.$this->secret])->assertOk();
         $this->assertDatabaseCount('ad_spend_daily', 1);
         $this->assertDatabaseHas('ad_spend_daily', ['campaign_id' => '123', 'cost_cents' => 1200]);
+        $this->postJson('/sync/ads/google', ['rows' => [
+            [...$rows['rows'][0], 'cost_micros' => -10000],
+            [...$rows['rows'][0], 'date' => '2026-02-30'],
+            [...$rows['rows'][0], 'campaign_id' => ''],
+        ]], ['Authorization' => 'Bearer '.$this->secret])->assertOk()->assertJsonPath('stored', 0);
+        $this->assertDatabaseCount('ad_spend_daily', 1);
+        $this->assertDatabaseHas('ad_spend_daily', ['campaign_id' => '123', 'cost_cents' => 1200]);
     }
 }

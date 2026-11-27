@@ -81,14 +81,14 @@ final class WhatsAppCloud
 
     private function status(array $s): int
     {
-        $map = ['sent' => 1, 'delivered' => 2, 'read' => 3, 'failed' => 4];
+        $map = ['sent' => 1, 'failed' => 2, 'delivered' => 3, 'read' => 4];
         $new = (string) ($s['status'] ?? '');
         if (! isset($map[$new])) return 0;
         return DB::transaction(function () use ($s, $new, $map) {
             $row = WhatsappMessage::where('provider_id', (string) ($s['id'] ?? ''))->where('direction', 'out')->lockForUpdate()->first();
             if (! $row) return 0;
-            if (($map[$row->status] ?? 0) >= $map[$new] && $new !== 'failed') return 0; // never step back (read stays read)
-            $row->fill(['status' => $new, 'error_code' => $new === 'failed' ? mb_substr((string) ($s['errors'][0]['code'] ?? 'failed'), 0, 40) : $row->error_code])->save();
+            if (($map[$row->status] ?? 0) >= $map[$new]) return 0;
+            $row->fill(['status' => $new, 'error_code' => $new === 'failed' ? mb_substr((string) ($s['errors'][0]['code'] ?? 'failed'), 0, 40) : null])->save();
             return 1;
         });
     }
