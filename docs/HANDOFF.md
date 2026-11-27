@@ -11,6 +11,9 @@
    - Propón una mejora: podar por personaje/recurso antes de buscar, o cachear por día. Nunca debe decir «disponible» si no está probado. Una prueba con 8 fiestas tiene que contestar en <1 s.
    - Esto es disponibilidad, así que va en PR para que yo la revise.
 
+## 2026-11-27 · Codex · Cola 2, punto 4 · caché de traslados
+#233, código `183e4f7`. La consulta por ZIP conserva estimaciones distintas para las dos horas repetidas de Houston y redondea hacia arriba segundos fraccionarios. La corrección sigue haciendo falta en la base actual. La integración sigue a #222 y requiere CI en verde.
+
 ## 2026-11-26 (noche) · Codex · Cola 2, punto 1
 Cerré #246. El auxiliar `sendDraft()` ya estaba en `ee1c30f` y la regla A de HoneyBook en `b8e7e86`. Dejé constancia del cierre en el PR.
 

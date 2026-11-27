@@ -24,6 +24,9 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
+### 2026-11-26 · BACKEND · Caché de traslados del #233 · PENDING
+- Revisar la hora repetida de Houston y el redondeo de segundos en `DriveMinutesTest`.
+
 ### 2026-11-26 · BACKEND · Punto 1: seguridad de sincronización del #229 · PENDING
 - Rama `codex/fix-handoff-1126-security`, base `claude/import-fixes` (`5431f42`).
 - HoneyBook aplica la validación CSV estricta del importador, y deriva a revisión las reducciones del total pagado, los cambios operativos y el dinero o firma de un proyecto sin vincular. El mismo CSV conserva una sola revisión de dinero.
