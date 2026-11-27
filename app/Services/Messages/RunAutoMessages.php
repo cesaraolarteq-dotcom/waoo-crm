@@ -26,6 +26,7 @@ final class RunAutoMessages
     public function run(): array
     {
         if (! \App\Support\WaooRuntime::trusted()) return $this->out;
+        $this->out = array_fill_keys(array_keys($this->out), 0);
         $this->occurrences();
         $this->contracts();
         $this->reminderTexts();
@@ -37,7 +38,7 @@ final class RunAutoMessages
 
     private function occurrences(): void
     {
-        $pending = MailOccurrenceState::where('status', 'pending')->pluck('mail_occurrence_id');
+        $pending = MailOccurrenceState::where('status', 'pending')->select('mail_occurrence_id');
         $rows = MailOccurrence::whereIn('id', $pending)->whereIn('key', self::OCCURRENCE_KEYS)->orderBy('id')->limit(50)->get();
         foreach ($rows as $o) {
             $state = MailOccurrenceState::where('mail_occurrence_id', $o->id)->first();
@@ -73,9 +74,9 @@ final class RunAutoMessages
 
     private function contracts(): void
     {
-        foreach (Contract::where('state', 'signed')->where('signed_at', '>=', $this->since())->orderBy('signed_at')->limit(50)->get() as $contract) {
+        $contracts = Contract::where('state', 'signed')->whereBetween('signed_at', [$this->since(), now()]);
+        foreach ($this->undecided($contracts, 'contract:', ['email', 'sms'], 50) as $contract) {
             $id = 'contract:'.$contract->id;
-            if (AutoMessageLog::where('identity_sha256', $this->sha($id, 'email'))->exists() && AutoMessageLog::where('identity_sha256', $this->sha($id, 'sms'))->exists()) continue;
             try {
                 $src = AutoMessageSource::forEvent((int) $contract->event_id);
             } catch (\Throwable $e) {
@@ -93,10 +94,9 @@ final class RunAutoMessages
     private function reminderTexts(): void
     {
         $due = OutboundMessage::whereIn('template_key', ['balance_reminder', 'week_before'])
-            ->whereBetween('due_at', [$this->since(), now()])->whereNotNull('event_id')->orderBy('id')->limit(50)->get();
-        foreach ($due as $m) {
+            ->whereBetween('due_at', [$this->since(), now()])->whereNotNull('event_id');
+        foreach ($this->undecided($due, 'reminder:', ['sms'], 50) as $m) {
             $id = 'reminder:'.$m->id;
-            if (AutoMessageLog::where('identity_sha256', $this->sha($id, 'sms'))->exists()) continue;
             $event = Event::find($m->event_id);
             if (! $event || $event->status !== 'capacity_reserved') { $this->log($m->template_key, $id, 'sms', $m->event_id, 'skipped', 'event_not_confirmed'); continue; }
             if (EventMessagePolicy::where('event_id', $event->id)->value('paused')) { $this->log($m->template_key, $id, 'sms', $event->id, 'skipped', 'event_paused'); continue; }
@@ -113,13 +113,14 @@ final class RunAutoMessages
      */
     private function thankYous(): void
     {
+        $today = now('America/Chicago')->startOfDay();
+        $due = $today->copy()->setTime(10, 0);
+        if ($due->isFuture() || $due->lessThan($this->since())) return;
         $events = Event::where('status', 'capacity_reserved')->where('responsible_system', 'crm')
-            ->whereBetween('ends_at', [now()->subDays(3), now()])->orderBy('id')->limit(100)->get();
-        foreach ($events as $event) {
-            $due = $event->ends_at->setTimezone('America/Chicago')->addDay()->setTime(10, 0);
-            if ($due->isFuture() || $due->lessThan($this->since())) continue;
+            ->where('ends_at', '>=', $today->copy()->subDay()->utc())
+            ->where('ends_at', '<', $today->copy()->utc());
+        foreach ($this->undecided($events, 'thanks:', ['email', 'sms'], 100) as $event) {
             $id = 'thanks:'.$event->id;
-            if (AutoMessageLog::where('identity_sha256', $this->sha($id, 'email'))->exists() && AutoMessageLog::where('identity_sha256', $this->sha($id, 'sms'))->exists()) continue;
             if (EventMessagePolicy::where('event_id', $event->id)->value('paused')) {
                 foreach (['email', 'sms'] as $ch) if (! AutoMessageLog::where('identity_sha256', $this->sha($id, $ch))->exists()) $this->log('thank_you_review', $id, $ch, $event->id, 'skipped', 'event_paused');
                 continue;
@@ -137,6 +138,18 @@ final class RunAutoMessages
             $this->email('thank_you_review', $id, (string) $src['customer']->email, $src['locale'],
                 fn () => AutoMessages::renderEmail('thank_you_review', $src['locale'], $src['vars']), ['customer_id' => $src['customer']->id, 'event_id' => $event->id]);
             $this->text('thank_you_review', $id, $src);
+        }
+    }
+
+    /** Count the batch after filtering decided sources, so the first page cannot starve later rows. */
+    private function undecided(\Illuminate\Database\Eloquent\Builder $query, string $prefix, array $channels, int $limit): iterable
+    {
+        $remaining = $limit;
+        foreach ($query->lazyById($limit) as $row) {
+            $identities = array_map(fn ($channel) => $this->sha($prefix.$row->id, $channel), $channels);
+            if (AutoMessageLog::whereIn('identity_sha256', $identities)->count() === count($channels)) continue;
+            yield $row;
+            if (--$remaining === 0) return;
         }
     }
 
@@ -172,10 +185,10 @@ final class RunAutoMessages
         if (! AutoMessages::emailOn($key)) { $this->log($key, $identity, 'email', $links['event_id'] ?? null, 'skipped', 'owner_off'); return ['skipped', null]; }
         $recipient = mb_strtolower(trim($recipient));
         if (! filter_var($recipient, FILTER_VALIDATE_EMAIL)) { $this->log($key, $identity, 'email', $links['event_id'] ?? null, 'skipped', 'recipient_required'); return ['skipped', null]; }
-        if (! CampaignOutbox::canPlan($recipient)) {
+        if (! CampaignOutbox::canPlan($recipient, $key)) {
             // Test mode (client not on the test list), bounced address or no provider: decided once, never sent later.
             $this->out['held']++;
-            $this->log($key, $identity, 'email', $links['event_id'] ?? null, 'held', in_array($recipient, MailGuard::allowlist(), true) ? 'transport_or_suppressed' : 'test_mode');
+            $this->log($key, $identity, 'email', $links['event_id'] ?? null, 'held', MailGuard::allows($recipient, $key) ? 'transport_or_suppressed' : 'test_mode');
             return ['held', null];
         }
         $mail = $render();

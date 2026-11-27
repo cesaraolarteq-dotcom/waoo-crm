@@ -19,7 +19,8 @@ use Illuminate\Validation\ValidationException;
  */
 final class AnniversaryCampaign
 {
-    public const SEND_AFTER_DAYS = 322; // 46 weeks after the party, 6 weeks before the anniversary
+    public const SEND_AFTER_DAYS = 330; // kept for reports; the real rule is 5 weeks before the anniversary
+    public const WEEKS_BEFORE = 5; // owner 2026-11-25: average booking lead time is 28 days, so 5 weeks before the anniversary
     public const VALID_DAYS = 7;
     public const PERCENT = 10;
     private const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O, 1/I
@@ -40,7 +41,8 @@ final class AnniversaryCampaign
             foreach ($latest as $customerId => $a) {
                 $anchor = CarbonImmutable::createFromFormat('!Y-m-d', $a['date'], 'America/Chicago');
                 // Only inside the window: from 46 weeks after the party until its anniversary.
-                if ($today < $anchor->addDays(self::SEND_AFTER_DAYS) || $today >= $anchor->addYear()) continue;
+                // 5 weeks before the anniversary (owner 2026-11-25); a client whose day already passed goes out at the next run.
+                if ($today < $anchor->addYear()->subWeeks(self::WEEKS_BEFORE) || $today >= $anchor->addYear()) continue;
                 if (AnniversaryCode::where('customer_id', $customerId)->where('anchor_key', $a['key'])->exists()) continue;
                 $reason = null;
                 foreach ($later as $e) {
@@ -134,7 +136,40 @@ final class AnniversaryCampaign
             'rate' => $codes->count() ? round(100 * $redeemed->count() / $codes->count(), 1) : null,
             'revenue_cents' => $revenue, 'discount_cents' => $discount, 'cancelled' => $cancelled,
             'expired' => $codes->where('state', '!=', 'redeemed')->filter(fn ($c) => $c->expires_at && $c->expires_at->isPast())->count(),
-            'skipped' => AnniversaryCode::where('state', 'skipped')->selectRaw('skip_reason, count(*) c')->groupBy('skip_reason')->pluck('c', 'skip_reason')->all()];
+            'skipped' => AnniversaryCode::where('state', 'skipped')->selectRaw('skip_reason, count(*) c')->groupBy('skip_reason')->pluck('c', 'skip_reason')->all(),
+            ...self::funnel($codes)];
+    }
+
+    /**
+     * Owner 2026-11-26 («como en HoneyBook: entregado, abierto»): sent → delivered → opened → clicked → booked, and per client.
+     * Opens are approximate (Apple Mail opens emails by itself); clicks and bookings are exact.
+     */
+    private static function funnel($codes): array
+    {
+        $sent = $codes->whereNotNull('sent_at');
+        $messages = \App\Models\OutboundMessage::whereIn('template_key', ['anniversary_main', 'anniversary_reminder'])
+            ->whereIn('customer_id', $sent->pluck('customer_id'))->get(['id', 'customer_id', 'template_key']);
+        $status = \App\Models\OutboundMessageState::whereIn('outbound_message_id', $messages->pluck('id'))->pluck('status', 'outbound_message_id');
+        $events = \App\Models\OutboundMessageEngagement::whereIn('outbound_message_id', $messages->pluck('id'))->get();
+        $byCustomer = $messages->groupBy('customer_id');
+        $people = []; $f = ['sent' => $sent->count(), 'delivered' => 0, 'bounced' => 0, 'opened' => 0, 'clicked' => 0, 'booked' => 0];
+        $links = ['book' => 0, 'whatsapp' => 0, 'packages' => 0, 'phone' => 0, 'google' => 0, 'other' => 0];
+        foreach ($sent as $code) {
+            $ids = ($byCustomer[$code->customer_id] ?? collect())->pluck('id');
+            $states = $ids->map(fn ($id) => $status[$id] ?? null)->filter();
+            $mine = $events->whereIn('outbound_message_id', $ids);
+            $clicks = $mine->where('kind', 'clicked')->pluck('link_kind')->unique()->values()->all();
+            $row = ['name' => (string) \App\Models\Customer::find($code->customer_id)?->name, 'anchor' => (string) $code->anchor_date,
+                'delivered' => $states->contains('delivered'), 'bounced' => $states->contains('bounced'),
+                'opened' => $mine->where('kind', 'opened')->isNotEmpty() || $clicks !== [], 'clicks' => $clicks,
+                'booked' => $code->state === 'redeemed', 'last' => optional($mine->max('occurred_at'))?->toIso8601String()];
+            foreach (['delivered', 'bounced', 'opened', 'booked'] as $k) if ($row[$k]) $f[$k]++;
+            if ($clicks !== []) $f['clicked']++;
+            foreach ($clicks as $k) $links[$k] = ($links[$k] ?? 0) + 1;
+            $people[] = $row;
+        }
+        usort($people, fn ($a, $b) => [$b['booked'], count($b['clicks']), $b['opened']] <=> [$a['booked'], count($a['clicks']), $a['opened']] ?: strcmp($a['anchor'], $b['anchor']));
+        return ['funnel' => $f, 'clicks_by_button' => array_filter($links), 'people' => $people];
     }
 
     private static function uniqueCode(): string

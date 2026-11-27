@@ -25,7 +25,7 @@ class GoogleContactsTest extends TestCase
             'oauth2.googleapis.com/token' => Http::response(['access_token' => 'at', 'expires_in' => 3600, 'refresh_token' => 'rt', 'scope' => 'openid email https://www.googleapis.com/auth/contacts',
                 'id_token' => 'x.'.rtrim(strtr(base64_encode(json_encode(['email' => 'waoo@example.test'])), '+/', '-_'), '=').'.y']),
             'people.googleapis.com/v1/contactGroups' => Http::response(['resourceName' => 'contactGroups/abc', 'name' => 'Clientes Waoo']),
-            'people.googleapis.com/v1/people:createContact*' => Http::sequence()->push(['resourceName' => 'people/c1'])->push(['resourceName' => 'people/c2']),
+            'people.googleapis.com/v1/people:createContact*' => Http::sequence()->push(['resourceName' => 'people/c1'])->push(['resourceName' => 'people/c2'])->push([], 503),
         ]);
     }
 
@@ -80,5 +80,20 @@ class GoogleContactsTest extends TestCase
         $this->event('María González', 'capacity_reserved', '2026-12-12T21:00:00Z');
         $this->assertSame(['saved' => 0, 'failed' => 0], app(GoogleContacts::class)->sync());
         Http::assertNothingSent();
+    }
+
+    public function test_unconfirmed_create_is_not_repeated_by_the_next_sync(): void
+    {
+        GoogleContactConnection::create(['user_id' => $this->owner->id, 'google_email' => 'waoo@example.test',
+            'refresh_token' => 'fixture-refresh', 'access_token' => 'fixture-access',
+            'access_expires_at' => now()->addHour(), 'group_resource_name' => 'contactGroups/abc']);
+        foreach (['Ana Torres', 'Sofia Lopez', 'Laura Ruiz'] as $name) {
+            $this->event($name, 'capacity_reserved', '2026-12-12T21:00:00Z');
+        }
+        $service = app(GoogleContacts::class);
+        $this->assertSame(['saved' => 2, 'failed' => 1], $service->sync());
+        $this->assertSame('unknown', CustomerGoogleContact::orderByDesc('id')->firstOrFail()->status);
+        $this->assertSame(['saved' => 0, 'failed' => 0], $service->sync());
+        Http::assertSentCount(3);
     }
 }

@@ -1,5 +1,7 @@
 @php
-    $rows = $this->rows();
+    $isDrafts = $status === 'drafts';
+    $rows = $isDrafts ? [] : $this->rows();
+    $drafts = $this->drafts();
     $counts = $this->counts();
     $demand = ['full' => 'Fecha casi llena', 'filling' => 'Fecha muy pedida'];
     $types = \App\Filament\Pages\Leads::STATUS;
@@ -8,9 +10,9 @@
 <x-filament-panels::page>
     <div class="wmoney">
         <div class="wmoney-states" role="tablist" aria-label="Filtrar por estado">
-            @foreach (['new' => 'Nuevos', 'contacted' => 'Contactados', 'quoted' => 'Cotizados', 'booked' => 'Reservados', 'lost' => 'Perdidos', 'all' => 'Todos'] as $k => $label)
+            @foreach (['new' => 'Nuevos', 'contacted' => 'Contactados', 'quoted' => 'Cotizados', 'booked' => 'Reservados', 'lost' => 'Perdidos', 'all' => 'Todos', 'drafts' => 'Sin terminar'] as $k => $label)
                 <button type="button" role="tab" aria-selected="{{ $status === $k ? 'true' : 'false' }}" wire:click="$set('status', '{{ $k }}')" class="wlead-tab {{ $status === $k ? 'on' : '' }}">
-                    {{ $label }}@if ($k !== 'all' && ($counts[$k] ?? 0)) <b>{{ $counts[$k] }}</b>@endif
+                    {{ $label }}@if ($k === 'drafts' && count($drafts)) <b>{{ count($drafts) }}</b>@elseif ($k !== 'all' && $k !== 'drafts' && ($counts[$k] ?? 0)) <b>{{ $counts[$k] }}</b>@endif
                 </button>
             @endforeach
         </div>
@@ -21,6 +23,35 @@
                 @endforeach
             </p>
         @endif
+        @if ($isDrafts)
+            {{-- Owner 2026-11-26: people who typed name + phone in the quote form and left without sending it. --}}
+            <p class="wmoney-p">Escribieron su nombre y teléfono en el formulario y se fueron sin enviarlo. Escríbeles una vez por WhatsApp. Si después envían la solicitud completa, desaparecen de aquí solos. Se borran a los 60 días.</p>
+            @forelse ($drafts as $d)
+                @php $f = $d->fields; $pkg = $f['package'] ?? null; $ch = $f['attribution']['channel'] ?? null; @endphp
+                <x-filament::section>
+                    <div class="wlead">
+                        <div class="wlead-head">
+                            <div><b class="wlead-name">{{ $d->name }}</b> <span class="wlead-st st-new">Sin terminar</span></div>
+                            <small>{{ \Carbon\Carbon::parse($d->updated_at)->timezone('America/Chicago')->locale('es')->diffForHumans() }}</small>
+                        </div>
+                        <p class="wmoney-p">
+                            ({{ substr($d->phone_digits, 0, 3) }}) {{ substr($d->phone_digits, 3, 3) }}-{{ substr($d->phone_digits, 6) }}@if ($d->email) · {{ $d->email }}@endif
+                            @if (! empty($f['event_date'])) · fiesta {{ \Carbon\Carbon::parse($f['event_date'])->locale('es')->translatedFormat('j M Y') }}@endif
+                            @if (! empty($f['zip'])) · ZIP {{ $f['zip'] }}@endif
+                            @if ($pkg) · {{ $pkg }}@endif
+                            · {{ ($f['locale'] ?? 'en') === 'es' ? 'Español' : 'Inglés' }}
+                            @if ($ch) · llegó por {{ \App\Services\Leads\LeadSource::LABELS[$ch] ?? $ch }}@endif
+                        </p>
+                        <div class="wmoney-actions">
+                            <a class="wcal-btn on" href="https://wa.me/1{{ $d->phone_digits }}" target="_blank" rel="noopener">Escribir por WhatsApp</a>
+                            <button type="button" class="wcal-btn" wire:click="dismissDraft({{ $d->id }})">Ya lo atendí</button>
+                        </div>
+                    </div>
+                </x-filament::section>
+            @empty
+                <x-filament::section><p class="wmoney-p">No hay solicitudes sin terminar.</p></x-filament::section>
+            @endforelse
+        @else
         @forelse ($rows as $r)
             <x-filament::section>
                 <div class="wlead">
@@ -58,7 +89,8 @@
         @empty
             <x-filament::section><p class="wmoney-p">No hay prospectos en este estado. Aquí llegan las solicitudes de cotización de la página web; los de WhatsApp se reservan directo con «Reserva rápida».</p></x-filament::section>
         @endforelse
-        @if (($this->pageInfo['last'] ?? 1) > 1)
+        @endif
+        @if (! $isDrafts && ($this->pageInfo['last'] ?? 1) > 1)
             <nav class="wlead-pages" aria-label="Páginas de prospectos">
                 <button type="button" class="wcal-btn" wire:click="goToPage({{ $this->pageInfo['current'] - 1 }})" @disabled($this->pageInfo['current'] <= 1)>← Anteriores</button>
                 <span>{{ $this->pageInfo['from'] }}–{{ $this->pageInfo['to'] }} de {{ $this->pageInfo['total'] }} · página {{ $this->pageInfo['current'] }} de {{ $this->pageInfo['last'] }}</span>

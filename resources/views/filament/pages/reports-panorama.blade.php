@@ -98,6 +98,11 @@
         .wp-card{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px;min-width:0;display:grid;gap:10px;align-content:start}
         .wp-pill{justify-self:start;font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:99px;background:var(--pill-bg);color:var(--pill-ink)}
         .wp-big{font-size:2.2rem;font-weight:800;line-height:1}
+        .wp-funnel{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:12px 0}
+        .wp-funnel div{display:grid;gap:2px;padding:10px;border:1px solid var(--line);border-radius:12px;text-align:center}
+        .wp-funnel b{font-size:1.4rem;line-height:1}.wp-funnel span{font-size:.78rem;opacity:.8}.wp-funnel small{font-size:.75rem;opacity:.6}
+        .wp-people summary{cursor:pointer;font-size:.86rem;margin:8px 0;text-decoration:underline}
+        @media (max-width:700px){.wp-funnel{grid-template-columns:repeat(3,minmax(0,1fr))}}
         .wp-cols{display:flex;align-items:flex-end;gap:4px;height:180px;padding-top:8px}
         .wp-cols button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;background:none;border:0;padding:0;cursor:pointer;border-radius:6px}
         .wp-cols .bar{position:relative;width:100%;max-width:38px;flex:1;display:flex;align-items:flex-end;justify-content:center}

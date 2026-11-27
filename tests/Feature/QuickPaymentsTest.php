@@ -32,7 +32,7 @@ class QuickPaymentsTest extends TestCase
     protected function tearDown():void
     {
         // Only this disposable synthetic database. Keep production rollback guard intact.
-        foreach(['quick_payment_notifications','quick_payment_receipts','quick_payment_attempts','quick_payment_events','quick_payment_bookings'] as $t)DB::table($t)->delete();
+        foreach(['event_team_plans','joint_capacity_hold_events','joint_capacity_holds','quick_payment_notifications','quick_payment_receipts','quick_payment_attempts','quick_payment_events','quick_payment_bookings'] as $t)DB::table($t)->delete();
         DB::table('quick_stripe_checkout_requests')->delete();
         DB::table('ledger_entries')->whereNull('external_reference')->update(['external_reference'=>'SYNTHETIC-ROLLBACK-ONLY']);
         DB::table('customers')->whereNull('name')->update(['name'=>'María González']);
@@ -625,5 +625,249 @@ class QuickPaymentsTest extends TestCase
         $g->sessions = []; $intent->forceFill(['stripe_checkout_session_id' => 'cs_test_other', 'status' => 'open'])->save();
         $this->expectException(\App\Exceptions\RecordWriteRejected::class);
         app(\App\Services\Booking\RecoverQuickCheckout::class)->execute($this->owner, $intent->id);
+    }
+
+    public function test_inactive_financing_does_not_prevent_card_deposit(): void
+    {
+        config(['waoo.portal_payment_methods' => ['card', 'zip']]);
+        $booking = $this->create();
+        $this->client($booking);
+        $this->details();
+        $gateway = $this->gateway();
+        $gateway->inactiveMethods = ['zip'];
+        $this->checkout();
+        $request = \App\Models\QuickStripeCheckoutRequest::sole();
+        $this->assertSame(['card'], $request->envelope['parameters']['payment_method_types']);
+        $this->assertSame(1, $gateway->creates);
+    }
+
+    private function websiteHoldFixture(): void
+    {
+        config(['waoo.honeybook_ical_url' => 'https://calendar.example.test/booked.ics']);
+        Http::fake(['calendar.example.test/*' => Http::response("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nEND:VCALENDAR\r\n")]);
+        Character::sole()->forceFill(['costume_style' => 'head'])->save();
+        Resource::create(['code' => 'STAFF-1', 'name' => 'Fictional Performer', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer', 'driver']]);
+        Resource::create(['code' => 'SPEAKER-1', 'name' => 'Fixture Speaker', 'kind' => 'equipment', 'status' => 'active', 'equipment_kind' => 'speaker']);
+        ServiceVariant::sole()->update(['requirements' => [['kind' => 'equipment', 'equipment_kind' => 'speaker', 'quantity' => 1]]]);
+        $this->input['setup_minutes'] = 10;
+        $this->input['breakdown_minutes'] = 10;
+    }
+
+    public function test_website_hold_reserves_costume_staff_and_equipment_then_releases_all_on_expiry(): void
+    {
+        $this->websiteHoldFixture();
+        $adapter = app(\App\Services\Booking\CreateWebsiteBookingHold::class);
+        $key = (string) Str::uuid();
+        $booking = $adapter->execute($this->owner, $this->input, $key);
+        $this->assertSame($booking->event->id, $adapter->execute($this->owner, $this->input, $key)->event->id);
+        $this->assertSame(['costume', 'equipment', 'staff'], DB::table('resource_reservations')->join('resources', 'resources.id', '=', 'resource_reservations.resource_id')->orderBy('resources.kind')->pluck('resources.kind')->all());
+        $this->assertDatabaseCount('ledger_entries', 0);
+        $this->travel(48)->hours();
+        $this->assertSame(1, app(\App\Services\Booking\TickQuickPayments::class)->execute()['expired']);
+        $this->assertDatabaseCount('resource_reservations', 0);
+        $this->assertSame('released', \App\Models\JointCapacityHold::sole()->state);
+    }
+
+    public function test_changed_website_hold_staff_blocks_checkout_before_stripe_session_creation(): void
+    {
+        $this->websiteHoldFixture();
+        $booking = app(\App\Services\Booking\CreateWebsiteBookingHold::class)->execute($this->owner, $this->input, (string) Str::uuid());
+        $this->client($booking);
+        $this->details();
+        $gateway = $this->gateway();
+        $claim = $this->claim();
+        unset($claim['amount_cents'], $claim['reference']);
+        $claim['deposit_percent'] = 50;
+
+        // A version change keeps the person eligible for the solver but invalidates the saved hold.
+        Resource::where('code', 'STAFF-1')->increment('version');
+        $this->withHeader('Idempotency-Key', (string) Str::uuid())
+            ->postJson('/portal/api/quick-payment/checkout', $claim)->assertConflict();
+
+        $this->assertSame(0, $gateway->creates);
+        $this->assertDatabaseCount('quick_payment_attempts', 0);
+        $this->assertDatabaseCount('ledger_entries', 0);
+        $this->assertDatabaseCount('resource_reservations', 3);
+    }
+
+    public function test_website_hold_keeps_resources_while_stripe_cannot_confirm_checkout_expiry(): void
+    {
+        $this->websiteHoldFixture();
+        $booking = app(\App\Services\Booking\CreateWebsiteBookingHold::class)->execute($this->owner, $this->input, (string) Str::uuid());
+        $this->client($booking);
+        $this->details();
+        $gateway = $this->gateway();
+        $this->checkout();
+
+        $this->travel(48)->hours();
+        $gateway->failExpire = true;
+        $tick = app(\App\Services\Booking\TickQuickPayments::class);
+        $this->assertSame(0, $tick->execute()['expired']);
+        $this->assertSame('held', \App\Models\JointCapacityHold::sole()->state);
+        $this->assertDatabaseCount('resource_reservations', 3);
+
+        $gateway->failExpire = false;
+        $this->assertSame(1, $tick->execute()['expired']);
+        $this->assertSame('released', \App\Models\JointCapacityHold::sole()->state);
+        $this->assertDatabaseCount('resource_reservations', 0);
+        $this->assertDatabaseCount('ledger_entries', 0);
+        $sessionId = array_key_first($gateway->sessions);
+        $gateway->pay($sessionId);
+        $this->webhook($gateway, $sessionId);
+        $this->assertSame('paid_needs_review', QuickPaymentBooking::sole()->state);
+        $this->assertSame('released', \App\Models\JointCapacityHold::sole()->state);
+        $this->assertDatabaseCount('resource_reservations', 0);
+        $this->assertSame(1, LedgerEntry::where('kind', 'receipt')->count());
+    }
+
+    public function test_website_hold_moves_to_committed_without_replacing_resources_after_stripe_payment(): void
+    {
+        $this->websiteHoldFixture();
+        $booking = app(\App\Services\Booking\CreateWebsiteBookingHold::class)->execute($this->owner, $this->input, (string) Str::uuid());
+        $reservationIds = DB::table('resource_reservations')->orderBy('id')->pluck('id')->all();
+        $this->client($booking);
+        $this->details();
+        $gateway = $this->gateway();
+        $this->checkout();
+        $sessionId = array_key_first($gateway->sessions);
+        $gateway->pay($sessionId);
+        $this->webhook($gateway, $sessionId);
+        $this->assertSame('committed', \App\Models\JointCapacityHold::sole()->state);
+        $this->assertSame($reservationIds, DB::table('resource_reservations')->orderBy('id')->pluck('id')->all());
+        $this->assertSame(1, LedgerEntry::where('kind', 'receipt')->count());
+        $this->assertSame('paid', QuickPaymentBooking::sole()->state);
+    }
+
+    public function test_paid_website_team_can_change_date_and_replace_staff_without_releasing_the_costume(): void
+    {
+        $this->websiteHoldFixture();
+        config(['waoo.sandbox_changes' => true]);
+        \Illuminate\Support\Facades\Storage::fake('local');
+        $template = app(\App\Services\Documents\CreateTemplateVersion::class)->execute($this->owner,
+            ['terms_html' => '<p>Acuerdo de María González.</p>', 'change_note' => 'Plantilla ficticia.'], (string) Str::uuid());
+        app(\App\Services\Documents\ActivateTemplateVersion::class)->execute($this->owner, $template->id,
+            ['expected_source_sha256' => $template->source_sha256, 'approval_note' => 'Aprobación ficticia de la plantilla.']);
+        $booking = app(\App\Services\Booking\CreateWebsiteBookingHold::class)->execute($this->owner, $this->input, (string) Str::uuid());
+        $this->client($booking);
+        $this->details();
+        $gateway = $this->gateway();
+        $this->checkout();
+        $sessionId = array_key_first($gateway->sessions);
+        $gateway->pay($sessionId);
+        $this->webhook($gateway, $sessionId);
+        $event = Event::findOrFail($booking->event->id);
+        $costume = Resource::where('kind', 'costume')->sole();
+        $sign = function (int $version) {
+            $this->postJson('/portal/api/details/contract', ['expected_event_version' => $version, 'expected_revision' => 1],
+                ['Idempotency-Key' => (string) Str::uuid()])->assertOk();
+            $contract = \App\Models\Contract::where('state', 'issued')->sole();
+            $this->get('/portal/api/contracts/'.$contract->id.'/pdf')->assertOk();
+            $this->postJson('/portal/api/contracts/'.$contract->id.'/sign', ['expected_version' => $contract->version,
+                'presented_pdf_sha256' => $contract->presented_pdf_sha256, 'signer_name' => 'Elena Martínez', 'consent' => true,
+                'intent_to_sign' => true, 'consent_version' => 'esign-consent-v2-2026-10-20-es'], ['Idempotency-Key' => (string) Str::uuid()])->assertOk();
+            return $contract->fresh();
+        };
+        $firstContract = $sign($event->version);
+        $event->refresh();
+        if ($event->status === 'draft') {
+            $event = app(\App\Services\Finance\ConfirmPaidCapacity::class)->execute($this->owner, $event->id, [
+                'expected_version' => $event->version, 'financial_revision_id' => $booking->financial_revision->id,
+                'staff_later' => true, 'resource_ids' => [$costume->id], 'review' => ['transfers' => []],
+            ]);
+        }
+        $original = \App\Models\JointCapacityHold::sole();
+        $change = app(\App\Services\Changes\RescheduleEvent::class)->execute($this->owner, $event->id, [
+            'expected_version' => $event->version, 'date' => now('America/Chicago')->addDays(30)->toDateString(), 'time' => '15:00',
+            'fee_decision' => 'waive', 'fee_reason' => 'Synthetic date change for the fixture.',
+        ], (string) Str::uuid());
+        $this->assertSame($original->version + 1, $original->fresh()->version);
+        $this->assertSame($original->payload['rows'], $original->fresh()->payload['rows']);
+        $this->assertSame(3, $change->moved_reservations);
+        $this->getJson('/portal/api/quick-payment')->assertOk()->assertJsonPath('can_pay', false);
+        $this->assertSame('pending_signature', $change->state);
+        $secondContract = $sign($event->fresh()->version);
+        $this->assertSame('signed', $firstContract->fresh()->state);
+        $this->assertSame($change->financial_revision_id, $secondContract->financial_revision_id);
+        $this->assertSame('completed', $change->fresh()->state);
+
+        $new = Resource::create(['code' => 'STAFF-2', 'name' => 'Fictional Replacement', 'kind' => 'staff', 'status' => 'active', 'skills' => ['performer', 'driver']]);
+        $seat = \App\Services\Team\TeamSlots::for($event->fresh())['costumes'][0]['key'];
+        app(\App\Services\Team\AssignEventTeam::class)->execute($this->owner, $event->id, [
+            'expected_plan_version' => 0, 'people' => [], 'costumes' => [$seat => ['unit_id' => $costume->id, 'wearer_id' => $new->id]],
+            'driver' => $new->id,
+        ], (string) Str::uuid());
+        $this->assertDatabaseMissing('resource_reservations', ['event_id' => $event->id, 'resource_id' => Resource::where('code', 'STAFF-1')->value('id')]);
+        $this->assertDatabaseHas('resource_reservations', ['event_id' => $event->id, 'resource_id' => $new->id]);
+        $this->assertDatabaseHas('resource_reservations', ['event_id' => $event->id, 'resource_id' => $costume->id]);
+        $this->assertSame(1, LedgerEntry::where('kind', 'receipt')->count());
+    }
+
+    public function test_same_day_transfer_must_fit_before_the_same_team_can_be_held(): void
+    {
+        $this->websiteHoldFixture();
+        $firstStart = \Carbon\CarbonImmutable::parse('2026-11-10T12:00:00-06:00');
+        $this->input['starts_at'] = $firstStart->toIso8601String();
+        $this->input['ends_at'] = $firstStart->addHours(2)->toIso8601String();
+        $adapter = app(\App\Services\Booking\CreateWebsiteBookingHold::class);
+        $adapter->execute($this->owner, $this->input, (string) Str::uuid());
+
+        $second = [...$this->input,
+            'starts_at' => $firstStart->addHours(3)->toIso8601String(),
+            'ends_at' => $firstStart->addHours(5)->toIso8601String(),
+            'address' => '200 Example Lane',
+        ];
+        $key = (string) Str::uuid();
+        $minutes = 20;
+        $calls = [];
+        $this->app->instance('waoo.availability.drive', function ($fromZip, $toZip, $departure, $from, $to) use (&$minutes, &$calls) {
+            $calls[] = [$departure->timestamp, $from, $to];
+            return $minutes;
+        });
+
+        try {
+            $adapter->execute($this->owner, $second, $key);
+            $this->fail('A transfer that does not fit must block the second hold.');
+        } catch (\App\Exceptions\RecordWriteRejected $error) {
+            $this->assertSame(409, $error->getStatusCode());
+        }
+        $this->assertSame([[$firstStart->addHours(2)->addMinutes(10)->timestamp, $this->input['address'], $second['address']]], $calls);
+        $this->assertDatabaseCount('joint_capacity_holds', 1);
+        $this->assertDatabaseCount('resource_reservations', 3);
+        $this->assertDatabaseCount('ledger_entries', 0);
+
+        $minutes = 5;
+        $adapter->execute($this->owner, $second, $key);
+        $this->assertDatabaseCount('joint_capacity_holds', 2);
+        $this->assertDatabaseCount('resource_reservations', 6);
+        $this->assertDatabaseCount('ledger_entries', 0);
+    }
+
+    public function test_competing_website_requests_cannot_both_hold_the_last_team(): void
+    {
+        $this->websiteHoldFixture();
+        $base = $this->input;
+        $owner = $this->owner;
+        $worker = static function (string $email) use ($base, $owner): string {
+            $input = $base;
+            $input['new_customer']['email'] = $email;
+            try {
+                app(\App\Services\Booking\CreateWebsiteBookingHold::class)->execute($owner, $input, (string) Str::uuid());
+                return 'held';
+            } catch (\App\Exceptions\RecordWriteRejected) {
+                return 'refused';
+            } catch (\Illuminate\Validation\ValidationException $error) {
+                if (array_key_exists('booking', $error->errors())) return 'refused';
+                throw $error;
+            }
+        };
+        $outcomes = \Tests\Support\ConcurrentWorkers::run([
+            fn () => $worker('first@example.test'),
+            fn () => $worker('second@example.test'),
+        ]);
+        sort($outcomes);
+        $this->assertSame(['held', 'refused'], $outcomes);
+        $this->assertDatabaseCount('joint_capacity_holds', 1);
+        $this->assertDatabaseCount('resource_reservations', 3);
+        $this->assertDatabaseCount('ledger_entries', 0);
     }
 }

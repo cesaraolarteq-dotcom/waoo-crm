@@ -112,7 +112,16 @@ final class QuickStripeLeases
                         &&($unit->outfit===null?$row['outfit']===null||in_array($row['outfit'],$character->outfits??[],true):$unit->outfit===$row['outfit']),
                         409,'El inventario apartado cambió; no se liberará otra unidad.');
                 }
-                RecordWriteRejected::unless(ResourceReservation::where('event_id',$event->id)->count()===count($p['rows']),409,'La fiesta tiene reservas ajenas a este apartado.');
+                $expectedReservations = array_column($p['rows'], 'reservation_id');
+                $joint = \App\Models\JointCapacityHold::where('quick_stripe_lease_id', $lease->id)->first();
+                if ($joint) {
+                    $jointPayload = app(\App\Services\Availability\JointCapacityHolds::class)->verify($joint, $event, false);
+                    RecordWriteRejected::unless($joint->state === 'held', 409, 'El apartado del equipo requiere revisión.');
+                    $expectedReservations = array_values(array_unique([...$expectedReservations, ...array_column($jointPayload['rows'], 'reservation_id')]));
+                }
+                sort($expectedReservations);
+                $actualReservations = ResourceReservation::where('event_id', $event->id)->orderBy('id')->pluck('id')->all();
+                RecordWriteRejected::unless($actualReservations === $expectedReservations, 409, 'La fiesta tiene reservas ajenas a este apartado.');
                 $slots=QuickCostumeHolds::slots($event)['slots'];
                 RecordWriteRejected::unless(count($slots)===count($p['rows']),409,'El apartado no cubre la receta congelada.');
                 $units=Resource::whereIn('id',array_column($p['rows'],'resource_id'))->orderBy('id')->get();

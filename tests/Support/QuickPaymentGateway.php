@@ -3,7 +3,13 @@ namespace Tests\Support;
 final class QuickPaymentGateway implements \App\Services\Finance\QuickStripeGateway
 {
     public array $sessions=[];public int $creates=0;public $onCreate=null;
-    public function verifyMethods(array $methods):array{return ['account'=>'acct_waoosandbox','methods'=>$methods];}
+    public array $inactiveMethods = [];
+
+    public function verifyMethods(array $methods): array
+    {
+        if (array_intersect($methods, $this->inactiveMethods)) throw new \RuntimeException('quick_payment_method_not_active');
+        return ['account' => 'acct_waoosandbox', 'methods' => $methods];
+    }
     public function createCheckout(array $parameters,string $key):array
     {
         $this->creates++;$sid='cs_test_'.str_replace('-','',$parameters['client_reference_id']);

@@ -80,6 +80,12 @@ final class RescheduleTransfers
             'setup' => $event->setup_minutes, 'breakdown' => $event->breakdown_minutes, 'address' => $event->address, 'zip' => $event->postal_code];
     }
 
+    private function sameDay(array $a, array $b): bool
+    {
+        [$first, $second] = $a['end'] <= $b['start'] ? [$a, $b] : [$b, $a];
+        return \App\Services\Scheduling\SameDayTransfer::needed(CarbonImmutable::parse($first['end']), CarbonImmutable::parse($second['start']));
+    }
+
     private function edges(array $snapshot): array
     {
         $candidate = $snapshot['candidate']; $edges = [];
@@ -89,6 +95,10 @@ final class RescheduleTransfers
                 if ($row['resource'] !== $resourceId) continue;
                 $other = $row['event'];
                 if ($other['status'] === 'cancelled') continue;
+                // Only parties on the same working day need a route: 12 h covers any drive in the service area (70 mi max)
+                // plus 30 min and setup. Without this, last week's party became a "previous stop" whose route can't be
+                // looked up (departure in the past), and every staff member who had worked before was refused.
+                if (! $this->sameDay($other, $candidate)) continue;
                 if ($other['end'] <= $candidate['start'] && ($before === null || $other['end'] > $before['end'])) $before = $other;
                 if ($other['start'] >= $candidate['end'] && ($after === null || $other['start'] < $after['start'])) $after = $other;
             }

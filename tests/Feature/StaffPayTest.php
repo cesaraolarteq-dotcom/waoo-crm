@@ -2,7 +2,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Pages\StaffPay;
-use App\Models\{Customer, Event, EventService, PriceVersion, Resource, ServiceVariant, StaffPayLine, User};
+use App\Models\{Customer, Event, EventService, EventTeamPlan, PriceVersion, Resource, ServiceVariant, StaffPayLine, User};
 use App\Services\Team\{AssignEventTeam, StaffPaySuggestion, TeamSlots};
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
@@ -26,7 +26,7 @@ class StaffPayTest extends TestCase
     public function test_suggestion_explains_itself_and_the_owner_can_change_and_pay(): void
     {
         $this->travelTo(CarbonImmutable::parse('2026-11-05 10:00', 'America/Chicago'));
-        $owner = User::factory()->create(['role' => 'owner_admin', 'active' => true, 'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'), 'two_factor_confirmed_at' => now()]);
+        $owner = User::factory()->create(['name' => 'César Olarte', 'role' => 'owner_admin', 'active' => true, 'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'), 'two_factor_confirmed_at' => now()]);
         $this->actingAs($owner);
         $v = ServiceVariant::create(['name' => 'Waoo', 'status' => 'active', 'duration_minutes' => 120, 'requirements' => []]);
         $price = PriceVersion::create(['service_variant_id' => $v->id, 'amount_cents' => 80000, 'currency' => 'USD', 'created_by' => $owner->id]);
@@ -42,6 +42,10 @@ class StaffPayTest extends TestCase
 
         $this->travelTo(CarbonImmutable::parse('2026-11-10 10:00', 'America/Chicago')); // the Monday after
         $page = Livewire::test(StaffPay::class)->assertSee('Sofía Méndez')->assertSee('falta la tarifa de este puesto')->assertSee('Falta tarifa');
+        $missing = $page->instance()->board()[0];
+        $this->assertNull($missing['total_cents']);
+        $this->assertNull($missing['lines'][0]['amount_cents']);
+        $page->call('edit', $e->id, $sofia->id, null, null)->assertSet("edits.{$e->id}-{$sofia->id}.amount", '');
         $page->set('rates.host.amount', '15')->set('rates.host.per', 'hour')->set('rates.driving.amount', '20')->set('rates.driving.per', 'party')->call('saveRates')->assertNotified('Tarifas guardadas');
         $week = app(StaffPaySuggestion::class)->week(CarbonImmutable::parse('2026-11-02', 'America/Chicago'));
         $this->assertSame(4500 + 2000, $week[0]["total_cents"]); // 3 h × $15 + driving $20
@@ -51,5 +55,39 @@ class StaffPayTest extends TestCase
             ->call('markPaid', $sofia->id)->assertNotified('Marcado como pagado')->assertSee('Pagado');
         $this->assertSame(7000, StaffPayLine::sole()->amount_cents);
         $this->assertNotNull(StaffPayLine::sole()->paid_at);
+        foreach (['César Olarte', 'Maybeli'] as $name) {
+            $sofia->update(['name' => $name]);
+            $line = app(StaffPaySuggestion::class)->week(CarbonImmutable::parse('2026-11-02', 'America/Chicago'))[0]['lines'][0];
+            $this->assertFalse($line['drove']);
+            $this->assertSame(4500, $line['suggested_cents']);
+            $this->assertSame(7000, $line['amount_cents']);
+        }
+        $sofia->update(['name' => 'Sofía Méndez']);
+        $paid = StaffPayLine::sole();
+        $this->travel(1)->minute();
+        Livewire::test(StaffPay::class)->call('edit', $e->id, $sofia->id, 7000, null)
+            ->set("edits.{$e->id}-{$sofia->id}.amount", '80')
+            ->call('saveLine', $e->id, $sofia->id, 6500)
+            ->call('markPaid', $sofia->id);
+        $this->assertSame(7000, $paid->fresh()->amount_cents);
+        $this->assertTrue($paid->fresh()->paid_at->equalTo($paid->paid_at));
+        $this->assertDatabaseCount('staff_pay_lines', 1);
+        $second = $e->replicate();
+        $second->fill(['starts_at' => $s->addDay(), 'ends_at' => $s->addDay()->addHours(2)])->save();
+        $plan = EventTeamPlan::where('event_id', $e->id)->sole()->replicate();
+        $plan->fill(['event_id' => $second->id, 'reservation_ids' => []])->save();
+
+        $week = app(StaffPaySuggestion::class)->week(CarbonImmutable::parse('2026-11-02', 'America/Chicago'));
+        $this->assertSame([true, false], array_column($week[0]['lines'], 'paid'));
+        Livewire::test(StaffPay::class)->call('markPaid', $sofia->id)->assertNotified('Marcado como pagado');
+
+        $newPayment = StaffPayLine::where('event_id', $second->id)->sole();
+        $this->assertSame(6500, $newPayment->amount_cents);
+        $this->assertTrue($newPayment->paid_at->greaterThan($paid->paid_at));
+        $this->assertSame(7000, $paid->fresh()->amount_cents);
+        $this->assertTrue($paid->fresh()->paid_at->equalTo($paid->paid_at));
+        $this->assertDatabaseCount('staff_pay_lines', 2);
+
+
     }
 }

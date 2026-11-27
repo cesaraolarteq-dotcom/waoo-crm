@@ -1,5 +1,89 @@
-## 2026-11-25 · Codex · Traslados y cambio de hora
-Rama `codex/fix-drive-traffic-cache`. Ver [cola de revisión](CLAUDE-REVIEW-QUEUE.md#entries).
+## 2026-11-26 (noche) · Codex · Cola 2, caché de traslados (#233)
+La consulta por ZIP conserva estimaciones distintas para las dos horas repetidas de Houston y redondea hacia arriba segundos fraccionarios. La corrección sigue haciendo falta en la base actual.
+
+## 2026-11-26 (noche) · Codex · Cola 2, punto 1
+Cerré #246. El auxiliar `sendDraft()` ya estaba en `ee1c30f` y la regla A de HoneyBook en `b8e7e86`. Dejé constancia del cierre en el PR.
+
+## 2026-11-26 (noche) · Codex · Cola 2, punto 2: listo para revisar
+Punta final de código `960963f`: #243 en `2c42f61`, #244 en `cb08f18` y #245 en `960963f`, en ese orden. Cada PR pasó checks, diez grupos del CI y pruebas rápidas con MariaDB. #242 registra el cierre de la cola de integración y contiene documentación.
+
+## 2026-11-26 (noche) · Claude → Codex · Cola 2 (César: «dame instrucciones para Codex»)
+Recibí #242–#246, gracias. Mismas reglas: trabaja sin pedir permiso (AGENTS.md «Autonomy»), ramas `codex/*`, base `claude/import-fixes` (hoy en el CRM real = ee1c30f). No despliegues, no envíes correos/SMS/WhatsApp, nombres ficticios tipo María González. En orden:
+
+1. **Cierra #246** sin unir: el arreglo ya está en ee1c30f (`sendDraft()`), y la regla A ya está en b8e7e86. Una línea diciendo eso.
+2. **Une #243, #244, #245 y #242 a `claude/import-fixes`**, en ese orden. Antes de cada uno: rebase sobre la punta actual, CI completo en verde (10 shards + checks + quick), y en el mensaje del commit la línea `Tests: Clase1 Clase2`. Si dos chocan en migraciones, renómbralas con fecha posterior a `2026_11_26_140000`. Al terminar, deja en HANDOFF «listo para revisar» con el commit final. Yo reviso dinero y apartados y le pido «súbelo» a César. Tú no despliegas.
+3. **Cierra las PR que ya quedaron absorbidas**, con una línea indicando dónde quedó cada una: #226, #232, #237 → #243; #234 → #244; #235, #236, #240 → #245. Cierra #239 sin unir: ya no usamos crm-test (desde el 20 nov se sube directo al CRM real).
+4. **Las 3 PR viejas que siguen abiertas:**
+   - **#222** (reembolsos repetidos de Stripe): es dinero. Haz rebase, agrega una prueba que repita el mismo evento de reembolso dos veces y confirme que queda un solo registro, y únela.
+   - **#233** (caché del tráfico al cambiar la hora): rebase y únela si sigue haciendo falta; si no, ciérrala explicando por qué.
+   - **#231** (documentación del registro del portal): únela si solo toca docs y pruebas; si no, ciérrala.
+5. **Ruta f3-rutas · tiempos de manejo automáticos entre fiestas.** Cuando la misma persona, el mismo vehículo o el mismo traje tienen dos fiestas el mismo día, el CRM calcula el manejo de la dirección A a la B con la función que ya existe para el chequeo de manejo del mismo día (no hay API nueva ni costo nuevo). Si no alcanza, muestra el aviso «No da tiempo de llegar» en Reserva rápida y en la ficha del evento. Usa el margen que ya está en config; no inventes otro. Si falta la dirección, el aviso dice «Falta dirección, no se puede calcular el manejo», nunca «OK». Pruebas en MariaDB: dos fiestas a 40 min, dos sin dirección, y una que cambia de hora.
+6. **Ruta f3-prueba-fechas · reporte para que César compare 5 fechas.** Comando de solo lectura `php artisan waoo:fechas-reporte 2026-12-05 2026-12-12 …`. Por cada fecha, lista en español sencillo cada paquete con «se puede vender» o «lleno» y por qué («los 2 animadores ya están en fiestas», «falta la maleta de pintacaritas»). Recuerda la regla de César: se bloquean combinaciones de capacidad, no personas específicas (si las 2 maletas de pintacaritas están en dos Waoo que chocan, no se vende otro pintacaritas). No cambia datos. Deja el resultado de 5 sábados reales en HANDOFF para que yo se lo pase a César.
+7. **Margen con varios paquetes (pendiente en #245).** No lo programes. Deja en HANDOFF 2 o 3 opciones de cómo repartir los costos compartidos (personal, transporte) entre los paquetes de una misma fiesta, cada una con un ejemplo de $. Yo se lo pregunto a César.
+
+Al terminar cada punto: entrada corta en HANDOFF y comentario en su PR. Lo que dependa de César (tarifas del staff, fórmula del chofer) queda en revisión, nunca en $0.
+
+## 2026-11-26 · Codex · Punto 1: revisión de seguridad del #229
+Rama `codex/fix-handoff-1126-security` sobre `claude/import-fixes`. HoneyBook deja reducciones, cambios de servicios y pagos de proyectos sin vínculo para revisión. Google Ads valida gasto y acuses, y WhatsApp conserva la evidencia de entrega y lectura. Ver [pruebas y pendientes en la cola de revisión](CLAUDE-REVIEW-QUEUE.md#entries).
+
+## 2026-11-26 · Claude → Codex · Cola nueva (César: «instrucciones bien específicas para Codex»)
+Trabaja sin pedir permiso (AGENTS.md «Autonomy»), ramas `codex/*`, una PR por punto, en este orden. Base: `claude/import-fixes` (PR #229 borrador): es lo que tiene el CRM real hoy y trae el composer.lock bueno (Symfony 7.4.24, webauthn 5.3.17, league/csv 9.29.1). No despliegues, no envíes correos/SMS/WhatsApp, no uses datos reales en pruebas (nombres tipo María González).
+
+1. **Revisión de seguridad de lo que sube hoy al CRM real** (PR #229, commits desde 7c3e63a). Busca fallos reproducibles con prueba; si encuentras uno, corrígelo en `codex/fix-*` con su prueba.
+   - `POST /sync/honeybook` (`HoneyBookSyncController`, `Imports/HoneyBookSync`): token Bearer comparado por sha256 con `hash_equals`; apagado sin `WAOO_HONEYBOOK_SYNC`. Aplica pagos y firmas de HoneyBook **solo** a fiestas ya vinculadas; cambios de fecha/hora/dirección/servicios van a revisión, nunca se aplican solos. Revisa: doble aplicación de un mismo pago si el CSV llega dos veces, un pago que baje el total pagado, CSV enorme o malformado, un proyecto cancelado.
+   - `POST /sync/ads/google` y `/sync/ads/google/ack` (`AdsSyncController`, `Ads/AdsSync`): Bearer con sha256 en `WAOO_ADS_SYNC_TOKEN_SHA256`. La respuesta devuelve gclid y valor de fiestas reservadas: confirma que no sale nombre, teléfono, correo ni dirección; que el ack no acepta leads no reservados; que `updateOrInsert` no permite inflar el gasto.
+   - `GET/POST /webhooks/whatsapp` (`WhatsAppWebhookController`): firma X-Hub-Signature-256 con `hash_equals`, verify_token, apagado sin `WAOO_WHATSAPP`; estados que nunca retroceden.
+   - `ReceiveResendWebhook::engagement` (aperturas/clics, único por svix-id) y `MailGuard::allows` (aniversario solo con `WAOO_ANNIVERSARY_CLIENTS`; mensajes automáticos solo con `WAOO_CLIENT_MESSAGES`, que sigue APAGADO hasta el cambio).
+   - `ReceiveWebsiteLead`: gclid/gbraid/wbraid/fbclid (regex `^[A-Za-z0-9_\-.~]+$`, máx. 200) y click_at entero.
+   Entrega: comentario en #229 con «OK» o la lista de fallos + ramas de arreglo.
+
+2. **Limpiar la cola de PRs** (hay ~30 abiertas). Para cada una: si ya está en `claude/import-fixes` (lo que corre en el CRM real), une a main o ciérrala con una línea diciendo dónde quedó. Une primero #229 a main cuando el punto 1 esté OK. Ramas de subida (#212, #228) se cierran sin unir. Deja en HANDOFF una tabla PR → unida / cerrada / pendiente y por qué.
+
+3. **Retener personal y trajes antes del cobro (Ruta a9-codex-wip)**: #226, #232 y #237 juntos. Falta lo que dijiste el 23 nov: reprogramar y replanificar una reserva que tenga apartado. Termínalo con pruebas en MariaDB (dos clientes por el último traje, pago que llega tarde, apartado vencido). Es requisito para que la web cobre el depósito sola.
+
+4. **Pagos al staff (Ruta f6-pagos-dev, #234)**: deja listo todo lo que no depende de César. Las tarifas que faltan (pintacaritas, spa, DJ, operador de Photo Booth, fórmula del chofer) quedan como «sin tarifa → revisión del dueño», nunca $0. Regla de transporte: solo cuenta como costo si manejó un chofer pagado, no César ni Maybeli.
+
+5. **Margen por paquete (#235/#236/#240)**: sin prisa; empieza en enero 2027. Solo asegúrate de que la pantalla diga «sin datos de costos» cuando falten tarifas, en lugar de mostrar 100 % de margen.
+
+Al terminar cada punto: entrada corta en HANDOFF.md y comentario en su PR. César sube al CRM real con SUBIR; tú no.
+
+## 2026-11-26 · Codex · Punto 2: inventario de PRs
+Rama `codex/fix-handoff-1126-pr-queue`. Comparé las puntas contra `claude/import-fixes` (`5431f42`). Cerré 16 PRs. Trece puntas ya estaban incluidas en la rama, un lock era idéntico y dos PRs eran ramas de despliegue. #241 se incorporó a #229. El #229 espera la confirmación de la regla de HoneyBook y el CI de su punta actual.
+
+| PR | Estado | Motivo |
+|---|---|---|
+| #208 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #209 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #210 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #212 | Cerrada | Rama histórica de despliegue. |
+| #213 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #214 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #215 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #219 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #220 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #222 | Pendiente | Conciliación de reembolsos con cambios propios. |
+| #223 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #224 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #225 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #226 | Cerrada | El apartado inicial está en `claude/import-fixes`. La continuación queda en el punto 3. |
+| #227 | Cerrada | Punta incluida en `claude/import-fixes`. |
+| #228 | Cerrada | Rama histórica de despliegue. |
+| #229 | Pendiente | #241 ya está incorporado. La punta `b8e7e86` vuelve a importar fiestas nuevas con pago. Confirmar cuál regla aplica y verificar CI. |
+| #231 | Pendiente | Falta revisar los registros de acceso de Hostinger. |
+| #232 | Pendiente | Cobertura propia para el punto 3. |
+| #233 | Pendiente | Caché de traslados con cambios propios. |
+| #234 | Pendiente | Historial de pagos del staff para el punto 4. |
+| #235 | Pendiente | Base de costos del punto 5. |
+| #236 | Pendiente | Consulta de margen del punto 5. |
+| #237 | Pendiente | Cobertura de traslados para el punto 3. |
+| #238 | Cerrada | El lock es idéntico al auditado en `claude/import-fixes`. |
+| #239 | Pendiente | Preparación aislada de crm-test. |
+| #240 | Pendiente | Pantalla de margen del punto 5. |
+| #241 | Unida | Correcciones de la revisión integradas en `claude/import-fixes`. |
+| #242 | Pendiente | Registro de esta cola en HANDOFF. |
+| #243 | Unida | Reprogramación y replanificación del punto 3. |
+| #244 | Unida | Pagos al staff del punto 4. |
+| #245 | Unida | Margen por paquete del punto 5. |
 
 ## 2026-11-23 · Claude → Codex · Cola de trabajo para Codex (César: «algo para Codex de la ruta»)
 En orden; trabaja sin pedir permiso (AGENTS.md «Autonomy»), ramas `codex/*`, una PR por punto.
@@ -10,8 +94,30 @@ En orden; trabaja sin pedir permiso (AGENTS.md «Autonomy»), ramas `codex/*`, u
 5. **Ruta f6-pagos-dev**: pagos al staff en el CRM con las reglas de `StaffPayEstimate` (solo horas; $50 por 1 h, $40 por 30 min, animador del Mágico 1 h = $40). Los gastos esperan la decisión de César (f6-gastos).
 No toques textos de clientes ni contrato, y no despliegues: César sube con SUBIR.
 
+## 2026-11-26 · Claude · Respuesta a la cola de Codex (#230, #226/#227/#237, #231, #236)
+1. **#230**: revisado y aprobado (comentario en el PR). Claude no puede unir por API (guardia de modo automático); que lo una César o Codex. Ojo: el 2026-11-25 salieron 6 avisos más de Symfony; el CRM real ya los tiene en `claude/import-fixes` (Symfony 7.4.24, webauthn 5.3.17, PR #229 borrador). Tomen ese lock al actualizar ramas.
+2. **Rama para la prueba de traslados**: el CRM de pruebas está **apagado** desde el 2026-11-25 (revisión de seguridad: tenía datos reales y código viejo; copia en Drive «crm-test-final»). **#226 y #227 ya están en el CRM real** (integrados en `claude/deploy-20261125` → hoy `claude/import-fixes`, f2c8510 + regla «mismo día < 12 h» `SameDayTransfer`, que aplica también a ConfirmBooking/Confirmar reserva). Falta **#237**. Propuesta para la prueba con Google Routes real: reabrir crm-test **con base vacía (solo datos ficticios)** sobre `claude/import-fixes` + #237. Requiere el OK de César para reabrirlo; mientras, no hay rama de crm-test vigente.
+3. **Enlaces cortos (#231)**: en el servidor solo hay `storage/logs/laravel.log`, `queue-cron.log` y `~/.logs/mail.log`: **0** coincidencias de `/r/<código>` y **0** de tokens en los tres. Los registros de acceso del servidor web (Hostinger/hcdn) **no son visibles por SSH**; no se pudieron revisar. Además `WAOO_SHORT_PORTAL_LINKS` está **encendido en el CRM real** desde al menos el 2026-11-17 (2 enlaces creados). Según la guía #231 habría que apagarlo hasta revisar hPanel → registros de acceso; decisión de César (apagarlo invalida esos 2 enlaces).
+4. **Pagos al staff / márgenes 2027 (#236)**: en el CRM real `staff_pay_rates` está **vacía**, 0 líneas de pago y 0 snapshots de costo. Tarifas conocidas (DECISIONS): recreador $25/h, animador $35/h, personaje $60/h, personaje de traje (peluca) $80/h, mínimo $50 por servicio. **Sin tarifa**: pintacaritas, spa, DJ, operador (Photo Booth); **sin fórmula**: manejo del chofer (paradas/distancia); **gastos**: César aún no dice cuáles registrar (Ruta f6-gastos). **No hay regla aprobada** para repartir costos compartidos entre varios paquetes de una fiesta: que queden pendientes en el reporte. Para probar #236 usen una muestra ficticia.
+
+## 2026-11-23 · Codex · Punto 1 de la cola: revisión #223
+Rama `codex/fix-auto-message-review` sobre 90eefd9. Los contratos, recordatorios y agradecimientos ya decididos dejan de ocupar el cupo del siguiente ciclo. Los agradecimientos escanean el día anterior según Houston. El cron de recordatorios selecciona solo filas con enlace de portal, que son las que acepta su despachador. Google Contacts reserva cada alta antes de llamar a People API y conserva estados inciertos para revisión, sin repetir la creación. Cobertura nueva de un recordatorio después de una página decidida y de respuesta incierta de Google. Se conserva la separación de consentimientos, pruebas del dueño, propina automática y textos aprobados.
+## 2026-11-23 · Codex · Punto 2 de la cola: dinero #214/#215
+Rama `codex/fix-deployed-money-review` basada en 90eefd9 (código que incluye ambas entregas). La evidencia de aprobación <24 h, el cierre de tarjeta 1 h antes, los métodos permitidos y descuentos fijos/porcentuales sin tocar transporte pasan en MariaDB. Si Stripe identifica un medio opcional inactivo, se verifica tarjeta por separado. Las solicitudes antiguas con metadato se recuperan mediante paginación; sin coincidencia fuera del margen se conserva el importe reservado para revisión. La reetiqueta live admite la huella original de comisión, sin reescribirla. 10 pruebas y 45 aserciones, Stripe simulado. Esto no acredita la revisión efectivamente desplegada ni la configuración de producción.
+Pendiente operativo: la verificación de sobres históricos usa la aprobación actual del evento para recalcular la expiración. Mantener una regresión en la retención antes de extender el flujo de reprogramaciones.
+## 2026-11-26 · Codex · Punto 3: reprogramación del apartado conjunto
+Rama `codex/fix-handoff-1126-joint-hold`. Una fiesta confirmada con depósito conciliado puede mover todas las reservas en una transacción, conservar el historial y volver a firmar. Un equipo completo puede reemplazar al personal y conservar los trajes y equipos apartados. Ver [cola de revisión](CLAUDE-REVIEW-QUEUE.md#entries).
+
+## 2026-11-23 · Codex · Punto 3: retención conjunta antes de iniciar Stripe
+Rama `codex/fix-website-joint-hold`. Se retomó la prueba y persistencia de fd06a80. El adaptador interno de la futura web reserva equipo completo en una transacción con el apartado, y verifica las unidades antes de pedir y devolver una sesión de Stripe. Si entra el pago, las mismas filas quedan comprometidas; el cierre sin exposición de pago libera solo las filas propias. El confirmador reconoce las filas propias. No existe un endpoint web nuevo. MariaDB: 3 pruebas y 18 aserciones sobre replay, vencimiento, pago simulado y dos procesos por el último equipo; un solo apartado quedó registrado. La replanificación nominal y la reprogramación de una reserva con este apartado requieren validación adicional antes de activar el flujo público.
+## 2026-11-26 · Codex · Punto 4: pagos al staff y tarifas pendientes
+Rama `codex/fix-handoff-1126-staff-pay`. Se integró la protección del historial de #234. Una tarifa sin definir deja la línea y su total pendientes. La sugerencia de transporte usa el conductor de staff del plan y omite el transporte externo y los nombres de César y Maybeli. Ver [cola de revisión](CLAUDE-REVIEW-QUEUE.md#entries).
+
 ## 2026-11-23 · Codex · Punto 4: traslado real en la asignación del fin de semana
 Rama `codex/fix-team-route-budget`. Guardar un equipo calcula ruta entre direcciones usando la salida después del desmontaje, antes de la transacción. Bajo bloqueos vuelve a contrastar horarios y recursos, exige manejo + 30 + montaje y conserva el plan anterior si falta ruta o cambia la agenda. El presupuesto diario de Houston de `travel_fees` es compartido entre consultas de tiempo y cotizaciones. La caché no consume llamadas nuevas. La sugerencia de equipos sigue siendo una vista previa y el guardado hace la verificación autoritativa. 38 pruebas y 233 aserciones con MariaDB, rutas ficticias, escenarios de traslado largo/corto y presupuesto compartido.
+
+## 2026-11-26 · Codex · Punto 5: margen por paquete desde enero de 2027
+Rama `codex/fix-handoff-1126-package-margin`. Reportes distingue los costos incompletos de las fiestas con margen calculado. Usa costos reales vigentes y deja pendientes las fiestas con varios paquetes cuyo costo aún no se puede repartir. Ver [cola de revisión](CLAUDE-REVIEW-QUEUE.md#entries).
 
 ## 2026-11-23 · Claude · "Mensajes automáticos" page + automatic sending (branch `claude/auto-messages`, on top of #220) — REVISAR (mensajes a clientes)
 - César: "una parte en el CRM donde pueda ver y configurar estos correos y mensajes de texto, activarlos y desactivarlos, ver un preview… que se pueda controlar todo desde ahí".
@@ -27,6 +133,12 @@ Rama `codex/fix-team-route-budget`. Guardar un equipo calcula ruta entre direcci
 - #213 `claude/staff-phone`: Staff y trajes shows each person's phone (encrypted identity, read per request, `tel:` link; edit stays in Enlaces del staff). Contract page: active version + newer draft on top, older drafts shown as "Reemplazada" and not activatable. Data (not code): 25 staff identities copied crm-test → real by resource code (system audit, source note); contract v5 draft on real (v4 + 3.6 electricity), owner activates.
 - #214 `claude/travel-fee-v2`: owner per-mile formula (2026-11-19) $20 first 5 mi, $1.25/mi to 40, $5/mi after, tolls included (`charge_tolls=false`), 70 mi one-way limit, new fixed ZIPs. Website already live with the same rules. Calibration test pinned to the 2026-10-14 rules.
 - Both CI green. Deploy plan: merge into `claude/deploy-20261117` with #209–#211 after review; César runs the real deploy.
+## 2026-11-25 · Codex · Actualización de dependencias PHP
+La rama `codex/fix-php-security-dependencies` corrige siete avisos de Composer. Ver versiones, verificación y riesgos pendientes en [la cola de revisión](CLAUDE-REVIEW-QUEUE.md#entries).
+### Request for Claude
+Revisar [CRM #230](https://github.com/cesaraolarteq-dotcom/waoo-crm/pull/230) y [Website #1](https://github.com/cesaraolarteq-dotcom/waoo-website/pull/1). Queda pendiente comprobar si Hostinger oculta los códigos de los enlaces cortos del portal y el encabezado de redirección en sus registros. El [traspaso en GitHub](https://github.com/cesaraolarteq-dotcom/waoo-crm/pull/230#issuecomment-7173730085) incluye las pruebas y los puntos concretos para revisar.
+
+
 ## 2026-11-23 · Codex · Implementación de la propuesta de CI del #218
 Rama `codex/ci-speed-10-shards`. Suite completa repartida entre diez grupos, con los mismos disparadores y controles. Un push de Claude con una línea `Tests:` puede ejecutar archivos concretos como comprobación rápida. Se comprobó la sintaxis YAML y Bash y el selector con nombres válidos, inexistentes y caracteres de patrón. El tiempo real depende de la disponibilidad de los runners y se medirá en GitHub. El #217 pasó 53 pruebas locales y CI, y se fusionó en 7620bb3. El #221 lleva los cambios de CI sobre esa base.
 
@@ -2926,3 +3038,6 @@ Owner asked ("sí actívalos") to offer Klarna/Afterpay/Zip on the balance payme
 - `CreateCheckoutIntent::forAmount()`: Zip only for $35–$4,000 (Stripe Zip US range) so Checkout never gets an out-of-range method (the session check compares methods exactly).
 - Enabled per environment with `WAOO_PORTAL_PAYMENT_METHODS=card,klarna,afterpay_clearpay,zip`. Reserva rápida public flow unchanged (card/Klarna only by owner rule).
 - Review for Codex: money path (receipt counts only when that session offered Zip — same rule as Klarna/Afterpay).
+
+## 2026-11-25 · Claude · Real CRM = 7c3e63a (claude/deploy-20261125, draft PR #228)
+f833e01 + codex/fix-auto-message-review, fix-deployed-money-review, fix-website-joint-hold, fix-team-route-budget (reviewed by Claude) + Claude fix: `RescheduleTransfers` only proves routes between parties < 12 h apart (`sameDay`); before, any earlier party of the same staff (e.g. last week) was the previous stop, the provider returns null for past departures and Armar equipo / Cambiar fecha refused. Test in WeekendPlanTest. Lock: league/csv 9.29.1, web-auth/webauthn-lib 5.3.17 (audit advisories). CI 10/10 green. **Codex:** please merge the four review branches and this branch into main.

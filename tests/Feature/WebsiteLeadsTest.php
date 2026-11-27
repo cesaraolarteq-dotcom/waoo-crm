@@ -163,11 +163,19 @@ class WebsiteLeadsTest extends TestCase
         $this->signed(json_encode($this->payload(['attribution' => $ok])))->assertStatus(202);
         $this->assertSame($ok, LeadSubmission::sole()->payload['attribution']);
         $this->signed(json_encode($this->payload(['attribution' => null])))->assertStatus(202);
-        foreach ([['channel' => 'tiktok_hidden'], ['channel' => 'google_ads', 'gclid' => 'Cj0KCQ-private'], ['channel' => 'referral', 'referrer' => 'evil.com/<script>'],
+        foreach ([['channel' => 'tiktok_hidden'], ['channel' => 'google_ads', 'gclid' => 'Cj0K<script>'], ['channel' => 'google_ads', 'click_at' => 'yesterday'], ['channel' => 'referral', 'referrer' => 'evil.com/<script>'],
             ['channel' => 'direct', 'landing' => 'https://other.example/x'], ['campaign' => 'no channel'], ['channel' => 'google_ads', 'term' => str_repeat('x', 151)]] as $bad) {
             $this->signed(json_encode($this->payload(['attribution' => $bad])))->assertUnprocessable();
         }
         $this->assertDatabaseCount('leads', 2);
+    }
+
+    public function test_ad_click_ids_are_kept_for_offline_conversions(): void
+    {
+        // Owner 2026-11-26: the click ID travels with the request (disclosed in the privacy policy).
+        $ok = ['channel' => 'google_ads', 'campaign' => 'Busqueda', 'gclid' => 'Cj0KCQiA-fixture_123', 'click_at' => 1795700000000];
+        $this->signed(json_encode($this->payload(['attribution' => $ok])))->assertStatus(202);
+        $this->assertSame('Cj0KCQiA-fixture_123', LeadSubmission::sole()->payload['attribution']['gclid']);
     }
 
     public function test_lead_source_label_and_monthly_summary(): void

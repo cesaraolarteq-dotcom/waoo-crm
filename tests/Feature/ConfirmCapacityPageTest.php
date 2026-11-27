@@ -159,6 +159,17 @@ class ConfirmCapacityPageTest extends TestCase
         $this->assertSame(0, ResourceReservation::count());
     }
 
+    public function test_a_party_with_the_same_resource_on_another_day_needs_no_transfer(): void
+    {
+        $this->bindService();
+        $earlier = $this->makeEvent(Customer::first(), 'Last week party', $this->event->starts_at->subDays(7), ServiceVariant::first(), PriceVersion::first());
+        $earlier->forceFill(['status' => 'capacity_reserved'])->save();
+        ResourceReservation::create(['event_id' => $earlier->id, 'resource_id' => $this->performer->id, 'starts_at' => $earlier->starts_at, 'ends_at' => $earlier->ends_at]);
+
+        $page = Livewire::test(ConfirmCapacity::class, ['record' => $this->event->id])->fillForm($this->form(['payment' => ['amount' => '63']]));
+        $this->assertSame([], array_values($page->get('data.transfers')));
+    }
+
     public function test_neighbor_event_adds_a_transfer_to_review(): void
     {
         $this->bindService();

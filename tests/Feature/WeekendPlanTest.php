@@ -79,6 +79,17 @@ class WeekendPlanTest extends TestCase
         $this->assertSame(1,ResourceReservation::where('event_id',$a->id)->count());
     }
 
+    public function test_a_party_on_another_day_needs_no_route_for_the_same_staff(): void
+    {
+        // Real provider answers null for past departures; last week's party must never block the next one.
+        $a=$this->party('2026-11-07 14:00');$b=$this->party('2026-11-14 14:00');
+        $staff=Resource::where('code','CESAR')->value('id');
+        $this->save($a,['people'=>[TeamSlots::for($a)['people'][0]['key']=>$staff]]);
+        app()->instance('waoo.availability.drive',fn(...$args)=>throw new \RuntimeException('No route is needed between different days.'));
+        $this->save($b,['people'=>[TeamSlots::for($b)['people'][0]['key']=>$staff]]);
+        $this->assertTrue(EventTeamPlan::where('event_id',$b->id)->exists());
+    }
+
     public function test_a_proven_short_drive_uses_drive_plus_thirty_instead_of_a_fixed_sixty(): void
     {
         $a=$this->party('2026-11-07 14:00');$b=$this->party('2026-11-07 17:45');

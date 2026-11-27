@@ -38,4 +38,29 @@ class LiveLedgerTest extends TestCase
     {
         $this->assertSame('test', \App\Support\WaooRuntime::ledgerEnvironment());
     }
+
+    public function test_relabel_preserves_existing_card_fee_evidence(): void
+    {
+        $this->scenario();
+        $finance = app(CreateFinancialRevision::class)->execute($this->owner, $this->event->id, ['expected_version' => $this->event->version], (string) Str::uuid());
+        $intent = new \App\Models\PaymentIntent(['id' => (string) Str::uuid(), 'event_id' => $this->event->id, 'financial_revision_id' => $finance->id,
+            'purpose' => 'balance', 'status' => 'creating', 'currency' => 'USD', 'environment' => 'test', 'principal_cents' => 10000,
+            'customer_fee_cents' => 300, 'payable_cents' => 10300, 'card_fee_policy' => \App\Services\Finance\CardFees::POLICY, 'expires_at' => now()->addHour()]);
+        $intent->card_fee_terms_sha256 = \App\Services\Finance\CardFees::fingerprint($intent);
+        $intent->save();
+        try {
+            $this->app['env'] = 'production';
+            config(['waoo.live' => true]);
+            (require database_path('migrations/2026_11_20_120000_relabel_live_money_rows.php'))->up();
+            $migrated = $intent->fresh();
+            $this->assertSame('live', $migrated->environment);
+            $this->assertSame($intent->card_fee_terms_sha256, $migrated->card_fee_terms_sha256);
+            $this->assertTrue(\App\Services\Finance\CardFees::valid($migrated));
+            $migrated->card_fee_terms_sha256 = str_repeat('0', 64);
+            $this->assertFalse(\App\Services\Finance\CardFees::valid($migrated));
+        } finally {
+            $this->app['env'] = 'testing';
+            $intent->update(['card_fee_policy' => null, 'card_fee_terms_sha256' => null]);
+        }
+    }
 }

@@ -13,3 +13,10 @@ Schedule::command('waoo:mail-due')->everyFiveMinutes()->withoutOverlapping()->wh
 
 // Owner 2026-11-23: clients who book are saved in his Google Contacts (iPhone).
 Schedule::command('waoo:contacts')->everyTenMinutes()->withoutOverlapping();
+// «Un año después» (owner 2026-11-25): codes every Monday, emails and day-6 reminders every day. Both only send with the
+// campaign switches on (WAOO_ANNIVERSARY_MAIL_ENABLED + WAOO_ANNIVERSARY_CLIENTS); issuing alone never sends anything.
+Schedule::command('waoo:anniversary-issue')->weeklyOn(1, '10:00')->timezone('America/Chicago')->withoutOverlapping()->when(fn () => config('waoo.sandbox_anniversary') === true);
+Schedule::command('waoo:anniversary-send')->dailyAt('10:30')->timezone('America/Chicago')->withoutOverlapping()->when(fn () => config('waoo.sandbox_anniversary') === true);
+
+// Owner 2026-11-26: unfinished website requests are deleted after 60 days (privacy policy).
+\Illuminate\Support\Facades\Schedule::call(fn () => \App\Services\Leads\ReceiveLeadDraft::prune())->dailyAt('03:15')->timezone('America/Chicago')->name('lead-drafts-prune')->withoutOverlapping();
