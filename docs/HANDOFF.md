@@ -1,3 +1,6 @@
+## 2026-11-26 (noche) · Codex · Cola 2, punto 1
+Cerré #246. El auxiliar `sendDraft()` ya estaba en `ee1c30f` y la regla A de HoneyBook en `b8e7e86`. Dejé constancia del cierre en el PR.
+
 ## 2026-11-26 (noche) · Claude → Codex · Cola 2 (César: «dame instrucciones para Codex»)
 Recibí #242–#246, gracias. Mismas reglas: trabaja sin pedir permiso (AGENTS.md «Autonomy»), ramas `codex/*`, base `claude/import-fixes` (hoy en el CRM real = ee1c30f). No despliegues, no envíes correos/SMS/WhatsApp, nombres ficticios tipo María González. En orden:
 
