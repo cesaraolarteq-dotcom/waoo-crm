@@ -50,6 +50,11 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 - Rama `codex/fix-team-route-budget`. 38 pruebas/233 aserciones. Google simulado.
 - Revisar salida después del desmontaje, margen de 30 minutos, falta de informe de ruta y reserva atómica del tope diario.
 
+### 2026-11-26 · UI · Punto 5: margen por paquete desde enero de 2027 · PENDING
+- Rama `codex/fix-handoff-1126-package-margin`.
+- Reportes distingue los costos incompletos de las fiestas con margen calculado. Usa costos reales vigentes y deja pendientes las fiestas con varios paquetes cuyo costo aún no se puede repartir.
+- MariaDB local: 23 pruebas, 195 aserciones con datos ficticios. Playwright: 390 y 1280 px, claro y oscuro. Revisar el aviso de costos incompletos y el límite por año de Houston.
+
 ### 2026-11-23 · UI · Mensajes automáticos (correos + textos, switches, preview, prueba) · PENDING
 - Branch / commits: claude/auto-messages
 - Reported by César: "ideame algo funcional e ideal… que se pueda controlar todo desde ahí"
