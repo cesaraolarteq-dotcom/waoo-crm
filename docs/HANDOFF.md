@@ -11,7 +11,8 @@
    - Propón una mejora: podar por personaje/recurso antes de buscar, o cachear por día. Nunca debe decir «disponible» si no está probado. Una prueba con 8 fiestas tiene que contestar en <1 s.
    - Esto es disponibilidad, así que va en PR para que yo la revise.
 
-## 2026-11-27 · Codex · Cola 2, punto 7
+## 2026-11-27 · Codex · Cola 2, punto 7 · listo para revisar
+Propuestas en el commit `f3ecb17`.
 Tres opciones para repartir $200 de personal y transporte entre dos paquetes de una fiesta:
 
 - **Por venta neta.** A vendió $600 y B $400. A absorbe $120 y B $80. Se puede calcular con los importes de cada paquete.
