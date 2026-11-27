@@ -18,6 +18,9 @@ MariaDB y PHP: `PoolCapacitySolverTest WebsiteCapacityTest`, 38 pruebas y 113 as
 
 Medición pública de solo lectura del 5 dic: Música y Juegos devuelve 7 horarios con aprobación (09:00–12:00); Star con Mickey devuelve 10 con aprobación (09:00–13:30). La web publica `status`, `times` y `exact`. El conteo CRM de `review_required` queda pendiente hasta ejecutar la petición de disponibilidad firmada con credenciales del entorno real.
 
+## 2026-11-27 · Codex · Cola 2, punto 5 · listo para revisar
+Código `50da772` en `codex/cola2-route-warnings`. Reserva rápida y ficha del evento muestran el aviso para fiestas que comparten un recurso reservado. Se usa la ruta existente y el margen de disponibilidad. MariaDB: `RescheduleEventTest`, 13 pruebas y 53 aserciones, incluida la separación de 40 minutos, el cambio de hora y dos direcciones faltantes. Revisión de disponibilidad con Claude.
+
 ## 2026-11-26 (noche) · Codex · Cola 2, punto 1
 Cerré #246. El auxiliar `sendDraft()` ya estaba en `ee1c30f` y la regla A de HoneyBook en `b8e7e86`. Dejé constancia del cierre en el PR.
 
