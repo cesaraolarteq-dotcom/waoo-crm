@@ -36,6 +36,7 @@ final class WebsiteCapacity
     private array $resources = [];
     private array $units = [];
     private array $blocks = [];
+    private array $daySolverResults = [];
     private array $candidatePins = [];
     private ?array $candidateAssignment = null;
     private ?\Illuminate\Support\Collection $characters = null;
@@ -397,7 +398,14 @@ final class WebsiteCapacity
         if ($jobs === []) return 'feasible';
         $jobKeys = array_column($jobs, 'key');
         $separations = array_values(array_filter($separations, fn ($edge) => in_array($edge['first'], $jobKeys, true) && in_array($edge['second'], $jobKeys, true)));
-        $r = (new PoolCapacitySolver())->solve($this->resources, $jobs, $blocks, $separations);
+        // Resources and fixed blocks belong to this immutable day snapshot. Candidate times,
+        // pins, outfit eligibility and route separations must match before reusing a witness.
+        $key = hash('sha256', serialize([$jobs, $separations]));
+        $r = $this->daySolverResults[$key] ?? (new PoolCapacitySolver())->solve($this->resources, $jobs, $blocks, $separations);
+        if ($r['state'] !== 'unknown' && !isset($this->daySolverResults[$key])) {
+            if (count($this->daySolverResults) >= 64) array_shift($this->daySolverResults);
+            $this->daySolverResults[$key] = $r;
+        }
         if ($withPeople && $r['state'] === 'feasible') $this->candidateAssignment = $r['witness']['candidate'] ?? [];
         return in_array($r['state'], ['feasible', 'infeasible'], true) ? $r['state'] : 'unknown';
     }

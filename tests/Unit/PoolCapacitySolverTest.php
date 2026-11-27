@@ -11,6 +11,31 @@ final class PoolCapacitySolverTest extends TestCase
     private function job(string $key, array $slots, int $start = 1000, int $end = 2000, int $drivers = 0): array
     { return ['key' => $key, 'starts_at' => $start, 'ends_at' => $end, 'slots' => $slots, 'minimum_drivers' => $drivers]; }
 
+    public function test_eight_parties_quickly_prove_a_character_shortage_or_produce_a_witness(): void
+    {
+        $staff = array_map(fn ($id) => $this->staff($id, true), range(1, 12));
+        $costumes = array_map(fn ($id) => ['id' => $id, 'kind' => 'costume'], range(101, 108));
+        $jobs = [];
+        for ($i = 0; $i < 8; $i++) {
+            $jobs[] = $this->job('party'.$i, [
+                $this->slot('character', range(101, 108), 'costume'),
+                $this->slot('performer', range(1, 12)),
+            ], drivers: 1);
+        }
+        $solver = new PoolCapacitySolver();
+        $started = hrtime(true);
+        $blocked = [['resource_id' => 108, 'starts_at' => 1000, 'ends_at' => 2000]];
+        $shortage = $solver->solve([...$staff, ...$costumes], $jobs, $blocked);
+        $available = $solver->solve([...$staff, ...$costumes], $jobs);
+
+        $this->assertLessThan(1.0, (hrtime(true) - $started) / 1e9);
+        $this->assertSame('infeasible', $shortage['state']);
+        $this->assertSame([], $shortage['witness']);
+        $this->assertSame('feasible', $available['state']);
+        $this->assertCount(8, array_unique(array_column($available['witness'], 'character')));
+        $this->assertCount(8, array_unique(array_column($available['witness'], 'performer')));
+    }
+
     public function test_one_multiskilled_person_cannot_cover_two_simultaneous_roles(): void
     {
         $j = $this->job('party', [$this->slot('animador', [1]), $this->slot('recreador', [1])]);
