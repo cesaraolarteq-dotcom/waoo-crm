@@ -2,8 +2,9 @@
 namespace App\Services\Team;
 
 use App\Exceptions\RecordWriteRejected;
-use App\Models\{Character, Event, EventTeamPlan, Resource, ResourceReservation, User};
+use App\Models\{Character, Event, EventTeamPlan, JointCapacityHold, Resource, ResourceReservation, User};
 use App\Services\Audit;
+use App\Services\Availability\{AdmitEventCapacity, JointCapacityHolds};
 use App\Services\Finance\MutationKey;
 use App\Services\MatchEventResources;
 use App\Services\Records\{RecordActor, RecordInput};
@@ -44,12 +45,18 @@ final class AssignEventTeam
             RecordWriteRejected::unless(array_diff(array_keys($d['people']), $people->keys()->all()) === [] && array_diff(array_keys($d['costumes']), $costumeSeats->keys()->all()) === [], 422, 'El paquete cambió. Recarga la página.');
             $ids = collect($d['people'])->filter()->merge(collect($d['costumes'])->pluck('unit_id')->filter())->merge(collect($d['costumes'])->pluck('wearer_id')->filter())
                 ->merge(is_numeric($d['driver'] ?? null) ? [(int) $d['driver']] : [])->map(fn ($i) => (int) $i)->unique()->sort()->values();
-            $characterIds = Resource::whereIn('id', $ids)->where('kind', 'costume')->pluck('character_id')->filter()->unique()->sort()->values();
+            $joint = JointCapacityHold::where('event_id', $eventId)->where('state', 'committed')->lockForUpdate()->first();
+            $jointHolds = app(JointCapacityHolds::class);
+            $held = $joint ? $jointHolds->verify($joint, $event, false) : null;
+            if ($joint) AdmitEventCapacity::lockDays($event->starts_at, $event->ends_at);
+            $lockedIds = $ids->merge(array_column($held['rows'] ?? [], 'resource_id'))->unique()->sort()->values();
+            $characterIds = Resource::whereIn('id', $lockedIds)->where('kind', 'costume')->pluck('character_id')->filter()->unique()->sort()->values();
             $characters = Character::whereIn('id', $characterIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
-            $units = Resource::whereIn('id', $ids)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
-            RecordWriteRejected::unless($units->count() === $ids->count(), 422, 'Una persona o traje ya no existe.');
+            $units = Resource::whereIn('id', $lockedIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+            RecordWriteRejected::unless($units->count() === $lockedIds->count(), 422, 'Una persona o traje ya no existe.');
             // Current reads after the unit locks: other parties' reservations of these people/costumes.
-            ResourceReservation::whereIn('resource_id', $ids)->orderBy('id')->lockForUpdate()->get();
+            ResourceReservation::whereIn('resource_id', $lockedIds)->orderBy('id')->lockForUpdate()->get();
+            if ($joint) $jointHolds->verify($joint, $event);
             $own = collect($plan?->reservation_ids ?? []);
             $team = [];
             foreach ($d['people'] as $seat => $id) {
@@ -90,6 +97,15 @@ final class AssignEventTeam
                 $drivers = collect($team)->filter(fn ($id) => MatchEventResources::driver($units[$id]))->values();
                 if ($drivers->count() === 1) $driver = $units[$drivers->first()]; // only one driver on the team: it is that person
             }
+            $jointRows = collect($held['rows'] ?? [])->keyBy('resource_id');
+            if ($joint) {
+                $complete = count($team) === count($need['people']) + count($need['costumes'])
+                    && count($selectedCostumes) === count($need['costumes']) && (! $need['needs_driver'] || $driver);
+                $heldCostumes = $jointRows->where('kind', 'costume')->keys()->all();
+                RecordWriteRejected::unless(($complete && array_diff($heldCostumes, $selectedCostumes) === [])
+                    || array_diff($ids->all(), $jointRows->keys()->all()) === [], 409,
+                    'Completa el equipo y conserva los trajes apartados para cambiar a otra persona.');
+            }
             // Replace what this plan reserved before; keep units reserved by the booking itself (e.g. costumes held at confirmation).
             $transfers->assertFits($event,\Carbon\CarbonImmutable::instance($event->starts_at)->utc(),$proof,$selectedIds);
             ResourceReservation::whereIn('id', $own)->where('event_id', $event->id)->delete();
@@ -97,6 +113,25 @@ final class AssignEventTeam
             foreach (array_unique([...$team, ...array_filter(array_column($costumes, 'unit_id'))]) as $id) {
                 if (ResourceReservation::where('event_id', $event->id)->where('resource_id', $id)->exists()) continue;
                 $created[] = ResourceReservation::create(['event_id' => $event->id, 'resource_id' => $id, 'starts_at' => $event->starts_at, 'ends_at' => $event->ends_at])->id;
+            }
+            if ($joint && $complete) {
+                foreach ($jointRows->where('kind', 'staff') as $id => $row) {
+                    if (! $row['owned'] || in_array($id, $team, true)) continue;
+                    ResourceReservation::whereKey($row['reservation_id'])->where('event_id', $eventId)->delete();
+                    $jointRows->forget($id);
+                }
+                foreach (ResourceReservation::where('event_id', $eventId)->whereIn('resource_id', $team)->orderBy('resource_id')->get() as $reservation) {
+                    $id = $reservation->resource_id;
+                    if ($jointRows->has($id)) continue;
+                    $jointRows->put($id, ['resource_id' => $id, 'resource_version' => $units[$id]->version, 'kind' => 'staff',
+                        'reservation_id' => $reservation->id, 'owned' => in_array($reservation->id, $created, true)]);
+                }
+                $created = array_values(array_diff($created, $jointRows->pluck('reservation_id')->all()));
+                $rows = $jointRows->sortKeys()->values()->all();
+                if ($rows !== $held['rows']) {
+                    JointCapacityHolds::append($joint, [...$held, 'rows' => $rows, 'reason' => 'staff_replanned']);
+                    $jointHolds->verify($joint, $event);
+                }
             }
             $slots = $people->map(fn ($s) => [...$s, 'resource_id' => isset($d['people'][$s['key']]) && $d['people'][$s['key']] ? (int) $d['people'][$s['key']] : null])->values()->all();
             $payload = ['event_id' => $event->id, 'slots' => $slots, 'costumes' => $costumes, 'driver' => $driver?->id, 'external' => $external];
