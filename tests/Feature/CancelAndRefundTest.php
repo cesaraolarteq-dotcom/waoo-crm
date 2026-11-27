@@ -68,9 +68,9 @@ class CancelAndRefundTest extends TestCase
     private function fakeStripe(\Closure $answer): object
     {
         $fake = new class($answer) implements StripeRefunds {
-            public array $calls = []; public array $retrieved = []; public ?\Closure $later = null;
+            public array $calls = []; public array $createPermissions = []; public array $retrieved = []; public ?\Closure $later = null;
             public function __construct(public \Closure $answer) {}
-            public function refund(string $paymentIntentId, int $amountCents, string $key): array { $this->calls[] = [$paymentIntentId, $amountCents, $key]; return ($this->answer)($paymentIntentId, $amountCents, $key); }
+            public function refund(string $paymentIntentId, int $amountCents, string $key, bool $allowCreate = true): array { $this->calls[] = [$paymentIntentId, $amountCents, $key]; $this->createPermissions[] = $allowCreate; return ($this->answer)($paymentIntentId, $amountCents, $key); }
             public function retrieve(string $refundId, string $paymentIntentId, int $amountCents): array { $this->retrieved[] = $refundId; return ($this->later)($refundId, $paymentIntentId, $amountCents); }
         };
         $this->app->instance(StripeRefunds::class, $fake);
@@ -257,5 +257,25 @@ class CancelAndRefundTest extends TestCase
         $this->travel(30)->minutes(); $this->artisan('waoo:refunds:recheck',['--limit'=>1])->assertSuccessful();
         $this->assertSame(['re_rotate_1','re_rotate_2'],$fake->retrieved);
         $this->assertSame(1,LedgerEntry::where('kind','refund')->count());
+    }
+    public function test_expired_unknown_retry_never_authorizes_a_new_refund(): void
+    {
+        $event = $this->book();
+        $receipt = $this->cardReceipt($event);
+        $fake = $this->fakeStripe(fn () => throw new \RuntimeException('Missing provider result'));
+        $key = (string) Str::uuid();
+        $input = ['receipt_id' => $receipt->id, 'amount_cents' => 100, 'reason' => 'Synthetic expired refund retry.'];
+        for ($i = 0; $i < 2; $i++) {
+            try {
+                app(RefundPayment::class)->execute($this->owner, $event->id, $input, $key);
+                $this->fail('Expected unresolved result');
+            } catch (RecordWriteRejected $error) {
+                $this->assertSame(503, $error->status);
+            }
+            $this->travel(24)->hours();
+        }
+        $this->assertSame([true, false], $fake->createPermissions);
+        $this->assertSame('unknown', RefundRequest::where('request_key', $key)->sole()->state);
+        $this->assertSame(0, LedgerEntry::where('kind', 'refund')->count());
     }
 }

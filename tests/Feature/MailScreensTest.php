@@ -92,13 +92,12 @@ class MailScreensTest extends TestCase
         $this->assertSame(1, substr_count($html, 'Rebotó'));
     }
 
-    public function test_settings_page_lists_what_is_missing_without_secrets_and_fixes_the_quote_subject(): void
+    public function test_settings_page_shows_what_is_missing_without_secrets(): void
     {
+        // Mensajes automáticos (owner 2026-11-23): provider state, masked test address, unapproved texts never switchable.
         $this->app->forgetInstance(MailTransport::class);
-        Livewire::test(EmailTemplates::class)->assertSee('¿Listos para enviar?')->assertSee('Sin configurar')->assertSee($this->owner->email)
-            ->assertSee('Aprobar los textos (6 de 14 aprobados') // fixture templates for 3 of the 7 emails left after retiring contract_ready and zelle_notice_pending
-            ->assertSee('Conectar un proveedor de correo')
-            ->assertSee('Tu cotización Waoo Party para el sábado 21 de noviembre');
+        Livewire::test(EmailTemplates::class)->assertSee('Correo sin conectar')->assertSee('Modo prueba')->assertDontSee($this->owner->email)
+            ->assertSee('Por aprobar')->call('select', 'inquiry_received')->assertSee('Falta el texto aprobado')->assertDontSee('Aprobar este texto');
     }
 
     public function test_everything_mail_is_hidden_while_mail_is_off(): void
@@ -106,6 +105,6 @@ class MailScreensTest extends TestCase
         config(['waoo.sandbox_mail' => false]);
         $this->file()->assertDontSee('Correos al cliente')->assertActionHidden('mailPlan');
         Livewire::test(Dashboard::class)->assertDontSee('Correos que rebotaron');
-        Livewire::test(EmailTemplates::class)->assertSee('Apagados');
+        Livewire::test(EmailTemplates::class)->assertSee('Modo prueba'); // the page stays reachable; sending is off server-side
     }
 }

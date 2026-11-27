@@ -27,16 +27,24 @@ final class DepositPolicy
         return array_values(array_filter($percents, fn ($p) => ($p === 100 ? $revision->total_cents : intdiv($revision->total_cents + 1, 2)) >= $revision->deposit_target_cents));
     }
 
-    /** A newly offered unattended booking needs 24 hours; previously recorded money remains reconcilable. */
-    public static function assertNotice(CarbonInterface $startsAt): void
+    public const SHORT_NOTICE = 'Faltan menos de 24 horas: la regla es no reservar.';
+
+    /** A newly offered unattended booking needs 24 hours unless the owner confirmed it for this event (owner 2026-11-20). */
+    public static function assertNotice(CarbonInterface $startsAt, ?int $eventId = null): void
     {
-        \App\Exceptions\RecordWriteRejected::when(self::underDayNotice($startsAt), 409, 'Faltan menos de 24 horas: la regla es no reservar.');
+        \App\Exceptions\RecordWriteRejected::when(self::underDayNotice($startsAt) && ! self::ownerApproved($eventId), 409, self::SHORT_NOTICE);
     }
 
-    /** Stop the provider's payment window before the 24-hour boundary, without renewing the original 48-hour lease. */
-    public static function checkoutExpiry(int $expiry, CarbonInterface $startsAt, int $createdAt): int
+    /** Owner-confirmed short notice for this event (immutable row). */
+    public static function ownerApproved(?int $eventId): bool
     {
-        $expiry = min($expiry, $startsAt->getTimestamp() - 86400);
+        return $eventId !== null && \App\Models\ShortNoticeApproval::where('event_id', $eventId)->exists();
+    }
+
+    /** Stop the provider's payment window before the 24-hour boundary (1 hour before the party when the owner confirmed short notice), without renewing the original 48-hour lease. */
+    public static function checkoutExpiry(int $expiry, CarbonInterface $startsAt, int $createdAt, bool $shortNoticeOk = false): int
+    {
+        $expiry = min($expiry, $startsAt->getTimestamp() - ($shortNoticeOk ? 3600 : 86400));
         \App\Exceptions\RecordWriteRejected::unless($expiry >= $createdAt + 1860, 409, 'No queda tiempo suficiente para abrir otro cobro. Revisa el apartado.');
         return $expiry;
     }

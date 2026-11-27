@@ -51,7 +51,7 @@ final class BookingSalesReport
         }
         $packages = array_values($packages);
         usort($packages, fn ($a, $b) => strcmp($a['name'], $b['name']) ?: $a['service_variant_id'] <=> $b['service_variant_id']);
-        return ['environment' => 'test', 'timezone' => 'America/Chicago', 'generated_at' => now()->toIso8601String(), 'period' => $period,
+        return ['environment' => \App\Support\WaooRuntime::ledgerEnvironment(), 'timezone' => 'America/Chicago', 'generated_at' => now()->toIso8601String(), 'period' => $period,
             'basis' => 'first_booking.capacity_reserved.created_at', 'booking_count' => $rows->count(), 'imported_confirmation_count_excluded' => $importedCount, 'package_coverage_complete' => $unknown === 0,
             'package_unknown_booking_count' => $unknown, 'package_occurrence_count' => $unknown ? null : $known,
             'known_package_occurrence_count' => $known, 'packages' => $packages];

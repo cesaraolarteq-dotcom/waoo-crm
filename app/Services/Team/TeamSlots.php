@@ -19,11 +19,12 @@ final class TeamSlots
     {
         $people = []; $costumes = []; $driver = false; $count = [];
         foreach ($event->services()->orderBy('id')->get() as $service) {
+            $paired=collect($service->requirements_snapshot ?? [])->where('kind','costume')->sum('quantity');
             foreach ((array) $service->requirements_snapshot as $r => $req) {
                 for ($i = 0; $i < (int) ($req['quantity'] ?? 0); $i++) {
                     $key = $service->id.'-'.$r.'-'.$i;
                     if ($req['kind'] === 'staff' && ($req['skill'] ?? null) === 'driver') { $driver = true; continue; }
-                    if ($req['kind'] === 'staff' && ($req['skill'] ?? null) === 'performer') continue; // the costume seat below
+                    if ($req['kind'] === 'staff' && in_array($req['skill'] ?? null,['performer','performer_wig'],true) && $paired>0) { $paired--;continue; } // exactly one wearer per costume seat
                     if ($req['kind'] === 'staff') {
                         $skill = (string) ($req['skill'] ?? 'host');
                         $n = $count[$skill] = ($count[$skill] ?? 0) + 1;
@@ -54,14 +55,17 @@ final class TeamSlots
     }
 
     /** Whether a person or costume is free for this party (blocks and other parties, keeping the travel gap). */
-    public static function free(Resource $unit, Event $event, array $alsoBusy = []): bool
+    public static function free(Resource $unit, Event $event, array $alsoBusy = [], int $gapMinutes = self::GAP_MINUTES, bool $currentRead = false): bool
     {
         if ($unit->status !== 'active') return false;
         [$from, $to] = self::window($event);
-        if (ResourceBlock::where('resource_id', $unit->id)->whereNull('released_at')->where('starts_at', '<', $to)->where('ends_at', '>', $from)->exists()) return false;
-        $gap = self::GAP_MINUTES;
-        foreach (ResourceReservation::where('resource_id', $unit->id)->where('event_id', '!=', $event->id)->with('event')->get() as $r) {
-            $o = $r->event; if (! $o || $o->status === 'cancelled') continue;
+        $blocks=ResourceBlock::where('resource_id', $unit->id)->whereNull('released_at')->where('starts_at', '<', $to)->where('ends_at', '>', $from);
+        if (($currentRead?$blocks->lockForUpdate():$blocks)->exists()) return false;
+        $gap = max(0,$gapMinutes); // zero only when the caller separately verifies a real route proof before committing
+        $bookings=ResourceReservation::where('resource_id', $unit->id)->where('event_id', '!=', $event->id)
+            ->with(['event'=>fn($q)=>$currentRead?$q->sharedLock():$q]);
+        foreach (($currentRead?$bookings->lockForUpdate():$bookings)->get() as $r) {
+            $o = $r->event; if (!$o) return false;if ($o->status === 'cancelled') continue;
             [$of, $ot] = self::window($o);
             if ($of->lessThan($to->addMinutes($gap)) && $ot->greaterThan($from->subMinutes($gap))) return false;
         }

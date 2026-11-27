@@ -14,6 +14,8 @@ final class TipCopy
             'choose' => 'Elige una propina', 'pct_hint' => 'Porcentajes del total de tu fiesta (:total).',
             'other' => 'Otro monto', 'other_hint' => 'Escribe el monto en dólares.', 'pay' => 'Dejar propina de :amount', 'pay_none' => 'Elige un monto',
             'card' => 'Pago seguro con tarjeta, Apple Pay o Google Pay.', 'optional' => 'La propina es opcional. ¡Gracias de todas formas!',
+            // Owner 2026-11-23: Zelle too (no fee; the owner passes it to the team).
+            'zelle_title' => '¿Prefieres Zelle?', 'zelle_to' => 'Envíala a', 'zelle_memo' => 'En el mensaje escribe «Propina» y tu nombre para que sepamos de qué fiesta es.', 'zelle_full' => 'También llega completa al equipo.',
             'thanks_title' => '¡Gracias por tu propina!', 'thanks' => 'Le llega completa al equipo de tu fiesta. ¡Nos encantaría celebrar contigo otra vez!',
             'review' => 'Dejar una reseña en Google', 'error_amount' => 'Escribe un monto entre $1 y $2,000 (por ejemplo 25 o 25.50).',
             'error' => 'No se pudo abrir el pago. Inténtalo de nuevo en un momento.', 'stale' => 'Esta página cambió. Recárgala para ver los montos actualizados.',
@@ -26,6 +28,7 @@ final class TipCopy
             'choose' => 'Choose a tip', 'pct_hint' => 'Percentages of your party total (:total).',
             'other' => 'Other amount', 'other_hint' => 'Enter the amount in dollars.', 'pay' => 'Leave a :amount tip', 'pay_none' => 'Choose an amount',
             'card' => 'Secure payment by card, Apple Pay or Google Pay.', 'optional' => 'Tips are optional. Thank you either way!',
+            'zelle_title' => 'Prefer Zelle?', 'zelle_to' => 'Send it to', 'zelle_memo' => 'In the memo, write “Tip” and your name so we know which party it is for.', 'zelle_full' => 'It also goes in full to the team.',
             'thanks_title' => 'Thank you for your tip!', 'thanks' => "It goes in full to your party's team. We'd love to celebrate with you again!",
             'review' => 'Leave a Google review', 'error_amount' => 'Enter an amount between $1 and $2,000 (for example 25 or 25.50).',
             'error' => 'The payment could not be opened. Please try again in a moment.', 'stale' => 'This page changed. Reload it to see the updated amounts.',

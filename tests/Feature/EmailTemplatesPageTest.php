@@ -6,23 +6,22 @@ use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-// MAIL-01 settings page: read-only list of the 9 client emails with EN/ES previews in sandboxed iframes; nothing is sent.
+// Mensajes automáticos (owner 2026-11-23): one sandboxed preview of the selected message; nothing is sent by opening it.
 class EmailTemplatesPageTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_owner_sees_all_drafts_with_sandboxed_previews(): void
+    public function test_owner_sees_the_journey_with_one_sandboxed_preview(): void
     {
         $owner = User::factory()->create(['role' => 'owner_admin', 'active' => true, 'two_factor_secret' => encrypt('JBSWY3DPEHPK3PXP'), 'two_factor_confirmed_at' => now()]);
         $this->actingAs($owner);
         Filament::setCurrentPanel(Filament::getPanel('admin'));
 
         $html = $this->get('/admin/correos')->assertOk()
-            ->assertSee('Correos a los clientes')->assertSee('Texto aprobado')
-            ->assertSee('Recibimos tu solicitud, Ana')->assertSee('One week to go, Ana')
-            ->assertSee('El día después de la fiesta')->getContent();
-        $this->assertSame(14, substr_count($html, '<iframe'));
-        $this->assertSame(14, substr_count($html, ' sandbox '));
+            ->assertSee('Mensajes automáticos')->assertSee('Recibimos tu solicitud, María')
+            ->assertSee('Gracias + reseña')->assertSee('El día después de la fiesta')->getContent();
+        $this->assertSame(1, substr_count($html, '<iframe'));
+        $this->assertSame(1, substr_count($html, ' sandbox '));
         $this->assertStringNotContainsString('srcdoc="<!doctype', $html); // preview HTML is attribute-escaped
     }
 

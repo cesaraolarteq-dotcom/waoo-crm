@@ -56,7 +56,7 @@ class TravelFeeQuotesTest extends TestCase
     public function test_all_fixed_zips_skip_google_even_without_key(): void
     {
         Http::fake(); config(['waoo.google_routes_key' => null]);
-        foreach (['77520' => 16000,'77521' => 16000,'77573' => 16000,'77381' => 12000,'77598' => 12000,'77346' => 12500,'77433' => 4000,'77447' => 5000,'77355' => 8000,'77380' => 10000,'77013' => 10000] as $zip => $fee) {
+        foreach (['77520' => 16000,'77521' => 16000,'77573' => 16000,'77381' => 12000,'77598' => 12000,'77346' => 12500,'77433' => 4000,'77447' => 5000,'77355' => 8000,'77380' => 12000,'77013' => 10000] as $zip => $fee) {
             $q = $this->quote('123 Fictional Venue, TX '.$zip, (string) $zip); $this->assertSame($fee, $q['fee_cents']); $this->assertTrue($q['breakdown']['special_zip']);
         }
         Http::assertNothingSent(); $this->assertDatabaseCount('travel_route_daily_usage', 0);

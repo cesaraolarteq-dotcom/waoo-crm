@@ -108,7 +108,7 @@ final class QuickStripeCheckoutRequests
             self::safeOrigin($p['origin']);
             $sorted = $p['requested_methods']; sort($sorted, SORT_STRING);
             $expiry = $terms->checkoutExpiresAt(CarbonImmutable::createFromTimestampUTC($p['created_at']));
-            if($p['schema_version']===2)$expiry=\App\Services\Scheduling\DepositPolicy::checkoutExpiry($expiry,CarbonImmutable::parse($source['window']['party_start']),$p['created_at']);
+            if($p['schema_version']===2)$expiry=\App\Services\Scheduling\DepositPolicy::checkoutExpiry($expiry,CarbonImmutable::parse($source['window']['party_start']),$p['created_at'],\App\Services\Scheduling\DepositPolicy::ownerApproved((int)$p['event_id']));
             $date = CarbonImmutable::parse($source['window']['party_start'])->setTimezone('America/Chicago')->format('Y-m-d');
             RecordWriteRejected::unless($sorted === $p['requested_methods'] && $p['parameters'] === self::parameters(
                 $request->id, $p['event_id'], $money, $date, $p['origin'], $sorted, $expiry),

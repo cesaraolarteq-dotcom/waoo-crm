@@ -43,6 +43,7 @@ final class TickQuickPayments
                 }
                 if($b->state==='processing'||QuickPaymentExposure::unresolved($e->id)->lockForUpdate()->exists())return; // includes prepared requests without a session ID
                 $p=QuickStripeLeases::verify($lease,$e,false);QuickStripeLeases::lockInventory($p);$p=QuickStripeLeases::verify($lease,$e);
+                app(\App\Services\Availability\JointCapacityHolds::class)->release($e, 'original_48h_deadline');
                 ResourceReservation::whereIn('id',array_column($p['rows'],'reservation_id'))->where('event_id',$e->id)->delete();
                 QuickStripeLeases::append(null,$lease,[...$p,'state'=>'expired','rows'=>[],'reason'=>'original_48h_deadline']);
                 QuickPaymentProtocol::transition($b,'expired','original_48h_deadline');$counts['expired']++;

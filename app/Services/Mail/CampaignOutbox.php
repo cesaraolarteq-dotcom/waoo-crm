@@ -16,9 +16,9 @@ use App\Services\Finance\MutationKey;
 final class CampaignOutbox
 {
     /** Whether a message to this recipient may be planned now (allowlisted, not bounced/complained, transport configured). */
-    public static function canPlan(string $recipient): bool
+    public static function canPlan(string $recipient, ?string $template = null): bool
     {
-        return in_array(mb_strtolower($recipient), MailGuard::allowlist(), true) && ! self::suppressed($recipient)
+        return MailGuard::allows($recipient, $template) && ! self::suppressed($recipient)
             && app(MailTransport::class)->configured();
     }
 
@@ -63,7 +63,7 @@ final class CampaignOutbox
             catch (\Throwable) { $intact = false; }
             if (! $intact) return $this->transition($m, $state, 'blocked', 'payload_integrity_failed');
             if ($reason = $guard ? $guard() : null) return $this->transition($m, $state, 'blocked', $reason);
-            if (! in_array($p['recipient'], MailGuard::allowlist(), true)) return $this->transition($m, $state, 'blocked', 'recipient_not_allowed');
+            if (! MailGuard::allows((string) $p['recipient'], $m->template_key)) return $this->transition($m, $state, 'blocked', 'recipient_not_allowed');
             if (self::suppressed($p['recipient'])) return $this->transition($m, $state, 'blocked', 'recipient_suppressed');
             if (! $transport->configured()) return $this->transition($m, $state, 'blocked', 'transport_unconfigured');
             $this->transition($m, $state, 'dispatching', null, true);

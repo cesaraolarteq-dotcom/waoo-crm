@@ -102,8 +102,8 @@ class ViewCustomer extends Page
     {
         $events = Event::query()->where('customer_id', $this->record->getKey())->orderByDesc('starts_at')->get();
         $paid = FinanceGate::enabled()
-            ? (int) LedgerEntry::whereIn('event_id', $events->pluck('id'))->where('environment', 'test')->where('kind', 'receipt')->sum('amount_cents')
-              - (int) LedgerEntry::whereIn('event_id', $events->pluck('id'))->where('environment', 'test')->where('kind', 'refund')->sum('amount_cents')
+            ? (int) LedgerEntry::whereIn('event_id', $events->pluck('id'))->where('environment', \App\Support\WaooRuntime::ledgerEnvironment())->where('kind', 'receipt')->sum('amount_cents')
+              - (int) LedgerEntry::whereIn('event_id', $events->pluck('id'))->where('environment', \App\Support\WaooRuntime::ledgerEnvironment())->where('kind', 'refund')->sum('amount_cents')
             : null;
         $map = fn ($e) => (object) ['title' => $e->title, 'when' => Labels::when($e->starts_at), 'type' => $e->event_type ? (EventResource::EVENT_TYPES[$e->event_type] ?? '') : '',
             'status' => Labels::label(Labels::EVENT_STATUS, $e->status), 'color' => Labels::EVENT_STATUS_COLOR[$e->status] ?? 'gray',

@@ -35,19 +35,23 @@ final class CardFees
             'enabled'=>self::enabled(),'credit_only_ready'=>self::ready()];
     }
 
-    public static function fingerprint(PaymentIntent $intent): string
+    public static function fingerprint(PaymentIntent $intent, ?string $recordedEnvironment = null): string
     {
-        return MutationKey::hash($intent->only(['id','event_id','financial_revision_id','environment','purpose','currency','principal_cents','customer_fee_cents','payable_cents','card_fee_policy']));
+        $facts = $intent->only(['id','event_id','financial_revision_id','environment','purpose','currency','principal_cents','customer_fee_cents','payable_cents','card_fee_policy']);
+        if ($recordedEnvironment !== null) $facts['environment'] = $recordedEnvironment;
+        return MutationKey::hash($facts);
     }
 
     public static function valid(PaymentIntent $intent): bool
     {
-        if($intent->currency!=='USD' || $intent->environment!=='test' || $intent->principal_cents<1)return false;
+        if($intent->currency!=='USD' || $intent->environment!==\App\Support\WaooRuntime::ledgerEnvironment() || $intent->principal_cents<1)return false;
         if($intent->card_fee_policy===null)return $intent->card_fee_terms_sha256===null && $intent->customer_fee_cents===0 && $intent->principal_cents===$intent->payable_cents;
         try{$terms=self::quote($intent->principal_cents);}catch(ValidationException){return false;}
         return $intent->card_fee_policy===self::POLICY && $intent->currency==='USD' && $intent->customer_fee_cents===$terms['customer_fee_cents']
             && $intent->payable_cents===$terms['payable_cents'] && is_string($intent->card_fee_terms_sha256)
-            && hash_equals(self::fingerprint($intent),$intent->card_fee_terms_sha256);
+            && (hash_equals(self::fingerprint($intent), $intent->card_fee_terms_sha256)
+                // The real CRM previously labeled live rows test. Preserve their exact frozen fee evidence after relabeling.
+                || ($intent->environment === 'live' && hash_equals(self::fingerprint($intent, 'test'), $intent->card_fee_terms_sha256)));
     }
 
     public static function reject(): never
