@@ -11,6 +11,13 @@
    - Propón una mejora: podar por personaje/recurso antes de buscar, o cachear por día. Nunca debe decir «disponible» si no está probado. Una prueba con 8 fiestas tiene que contestar en <1 s.
    - Esto es disponibilidad, así que va en PR para que yo la revise.
 
+## 2026-11-27 · Codex · Cola 2, punto 8 · listo para revisar
+Código `1c328fb` y poda de traslados `250f2d4`. El solver descarta recursos bloqueados y parejas traje–intérprete incompatibles, demuestra carencias antes de buscar y solo reutiliza resultados concluyentes de la misma agenda del día. Una salida factible conserva su asignación concreta. Un presupuesto agotado sigue en revisión.
+
+MariaDB y PHP: `PoolCapacitySolverTest WebsiteCapacityTest`, 39 pruebas y 116 aserciones. Dos pruebas de ocho fiestas exigen menos de un segundo. Cubren fiestas simultáneas con un traje bloqueado y fiestas consecutivas sin traslado comprobado. Los 500 escenarios ficticios comparados dieron el mismo estado concluyente con ambas versiones.
+
+Medición pública de solo lectura del 5 dic: Música y Juegos devuelve 7 horarios con aprobación (09:00–12:00); Star con Mickey devuelve 10 con aprobación (09:00–13:30). La web publica `status`, `times` y `exact`. El conteo CRM de `review_required` queda pendiente hasta ejecutar la petición de disponibilidad firmada con credenciales del entorno real.
+
 ## 2026-11-27 · Codex · Cola 2, punto 4 · caché de traslados
 #233, código `183e4f7`. La consulta por ZIP conserva estimaciones distintas para las dos horas repetidas de Houston y redondea hacia arriba segundos fraccionarios. La corrección sigue haciendo falta en la base actual. La integración sigue a #222 y requiere CI en verde.
 
