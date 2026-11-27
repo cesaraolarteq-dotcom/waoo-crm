@@ -20,6 +20,12 @@ final class AvailabilityDatesReportTest extends TestCase
             'setup_minutes' => 15, 'breakdown_minutes' => 15, 'requirements' => [],
         ]);
 
+        ServiceVariant::create([
+            'name' => 'Pintacaritas', 'status' => 'active', 'duration_minutes' => 60,
+            'setup_minutes' => 15, 'breakdown_minutes' => 15,
+            'requirements' => [['kind' => 'equipment', 'equipment_kind' => 'face_kit', 'quantity' => 1]],
+        ]);
+
         $this->artisan('waoo:fechas-reporte')
             ->expectsOutput('2026-11-28 · 0 fiestas')
             ->expectsOutput('2026-12-05 · 0 fiestas')
@@ -27,6 +33,7 @@ final class AvailabilityDatesReportTest extends TestCase
             ->expectsOutput('2026-12-19 · 0 fiestas')
             ->expectsOutput('2026-12-26 · 0 fiestas')
             ->expectsOutputToContain('se puede vender')
+            ->expectsOutputToContain('Pintacaritas · lleno (falta maleta de pintacaritas)')
             ->assertSuccessful();
 
         $this->assertDatabaseCount('events', 0);

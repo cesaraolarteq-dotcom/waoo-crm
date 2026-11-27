@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Filament\Support\Labels;
 use App\Models\{Character, ServiceVariant};
 use App\Services\Availability\{CheckWebsiteCandidates, WebsiteCapacity};
 use App\Services\Scheduling\BookingNoticePolicy;
@@ -88,12 +89,20 @@ final class AvailabilityDatesReport extends Command
             $from = $start->subMinutes($package->setup_minutes);
             $to = $start->addMinutes($package->duration_minutes + $package->breakdown_minutes + WebsiteCapacity::GAP_MINUTES);
             $state = $capacity->check($from, $to, $day->toDateString(), $requirements);
+            $missing = $capacity->missingCandidateResource();
+            $shortage = match ($missing['kind'] ?? null) {
+                'equipment' => 'falta '.mb_strtolower(Labels::EQUIPMENT[$missing['equipment_kind'] ?? ''] ?? 'equipo compatible'),
+                'costume' => 'falta el traje compatible',
+                'vehicle' => 'falta un vehículo con los asientos requeridos',
+                'staff' => 'falta personal con el perfil requerido',
+                default => null,
+            };
             $reason = match ($state) {
                 'available' => BookingNoticePolicy::requiresWebsiteApproval($start, $now) ? 'requiere aprobación por cercanía de fecha' : 'se puede vender',
-                'owner_approval_required' => 'requiere aprobación de capacidad o traslado',
+                'owner_approval_required' => $shortage ? "requiere aprobación ($shortage)" : 'requiere aprobación de capacidad o traslado',
                 'review_required' => 'revisar (capacidad sin comprobar)',
                 default => !$capacity->simultaneousOk($from, $to) || $capacity->partiesOn($day->toDateString()) >= WebsiteCapacity::MAX_PER_DAY
-                    ? 'lleno (límite de fiestas)' : 'lleno (combinación de recursos sin cupo)',
+                    ? 'lleno (límite de fiestas)' : 'lleno ('.($shortage ?? 'combinación de recursos sin cupo').')',
             };
             $states[$reason][] = $start->format('H:i');
         }
