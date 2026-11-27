@@ -17,3 +17,6 @@ Schedule::command('waoo:contacts')->everyTenMinutes()->withoutOverlapping();
 // campaign switches on (WAOO_ANNIVERSARY_MAIL_ENABLED + WAOO_ANNIVERSARY_CLIENTS); issuing alone never sends anything.
 Schedule::command('waoo:anniversary-issue')->weeklyOn(1, '10:00')->timezone('America/Chicago')->withoutOverlapping()->when(fn () => config('waoo.sandbox_anniversary') === true);
 Schedule::command('waoo:anniversary-send')->dailyAt('10:30')->timezone('America/Chicago')->withoutOverlapping()->when(fn () => config('waoo.sandbox_anniversary') === true);
+
+// Owner 2026-11-26: unfinished website requests are deleted after 60 days (privacy policy).
+\Illuminate\Support\Facades\Schedule::call(fn () => \App\Services\Leads\ReceiveLeadDraft::prune())->dailyAt('03:15')->timezone('America/Chicago')->name('lead-drafts-prune')->withoutOverlapping();

@@ -30,7 +30,7 @@
         <section class="wtp-card wpay-person" wire:key="pay-{{ $p['resource_id'] }}">
             <header>
                 <div><b class="wtp-title">{{ $p['name'] }}</b><div class="wtp-muted">{{ count($p['lines']) }} {{ count($p['lines']) === 1 ? 'fiesta' : 'fiestas' }}</div></div>
-                <div class="wpay-total"><b>{{ $money($p['total_cents']) }}</b>
+                <div class="wpay-total"><b>{{ $p['missing_rate'] ? 'Falta tarifa' : $money($p['total_cents']) }}</b>
                     @if ($p['paid'])<span class="wtp-chip ok">Pagado</span>
                     @else<button type="button" class="wcal-btn on" wire:click="markPaid({{ $p['resource_id'] }})">Marcar pagado</button>@endif
                 </div>
@@ -50,7 +50,7 @@
                         </div>
                     @else
                         <div class="wpay-amt"><b>{{ $l['suggested_cents'] === null && $l['decided'] === null ? 'Falta tarifa' : $money($l['amount_cents']) }}</b>
-                            @unless ($l['paid'])<button type="button" class="wtp-rep wpay-change" wire:click="edit({{ $l['event_id'] }}, {{ $p['resource_id'] }}, {{ $l['amount_cents'] }}, @js($l['note']))">Cambiar</button>@endunless</div>
+                            @unless ($l['paid'])<button type="button" class="wtp-rep wpay-change" wire:click="edit({{ $l['event_id'] }}, {{ $p['resource_id'] }}, {{ $l['amount_cents'] ?? 'null' }}, @js($l['note']))">Cambiar</button>@endunless</div>
                     @endif
                 </div>
             @endforeach

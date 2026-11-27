@@ -2,8 +2,9 @@
 namespace App\Services\Team;
 
 use App\Filament\Support\Labels;
-use App\Models\{Event, EventTeamPlan, Resource, StaffPayLine, StaffPayRate};
+use App\Models\{Event, EventTeamPlan, Resource, StaffPayLine, StaffPayRate, User};
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Str;
 
 /**
  * Owner 2026-11-03: what each person should get for the parties they worked, as a suggestion the owner can change.
@@ -14,29 +15,38 @@ final class StaffPaySuggestion
 {
     public const DRIVING = 'driving';
 
-    /** @return list<array{resource_id:int,name:string,total_cents:int,missing_rate:bool,paid:bool,lines:list<array>}> */
+    /** @return list<array{resource_id:int,name:string,total_cents:?int,missing_rate:bool,paid:bool,lines:list<array>}> */
     public function week(CarbonImmutable $monday): array
     {
         $from = $monday->setTimezone('America/Chicago')->startOfDay(); $to = $from->addWeek();
         $rates = StaffPayRate::all()->keyBy('role');
         $events = Event::where('status', 'capacity_reserved')->where('starts_at', '>=', $from->utc())->where('starts_at', '<', $to->utc())->orderBy('starts_at')->get();
+        $plans = EventTeamPlan::whereIn('event_id', $events->modelKeys())->get()->keyBy('event_id');
+        $drivers = Resource::whereIn('id', $plans->pluck('driver_resource_id')->filter())->pluck('name', 'id');
+        $ownerNames = User::where('role', 'owner_admin')->pluck('name')->map(fn ($name) => Str::lower(Str::ascii(trim($name))))
+            ->merge(['cesar', 'maybeli']);
         $people = [];
         foreach ($events as $e) {
-            $plan = EventTeamPlan::where('event_id', $e->id)->first();
+            $plan = $plans->get($e->id);
             if (! $plan) continue;
             $seats = [];
             foreach ($plan->slots ?? [] as $s) if ($s['resource_id'] ?? null) $seats[(int) $s['resource_id']] = $s['skill'];
             foreach ($plan->costumes ?? [] as $c) if ($c['wearer_id'] ?? null) $seats[(int) $c['wearer_id']] = 'performer';
+            $driver = $plan->external_driver ? null : $drivers->get($plan->driver_resource_id);
+            $driverName = $driver !== null ? Str::lower(Str::ascii(trim($driver))) : null;
             foreach ($seats as $rid => $skill) {
-                $people[$rid]['lines'][] = $this->line($e, $rid, $skill, (int) $plan->driver_resource_id === $rid, $rates);
+                $paidStaffDriver = $driverName !== null && ! $ownerNames->containsStrict($driverName)
+                    && (int) $plan->driver_resource_id === $rid;
+                $people[$rid]['lines'][] = $this->line($e, $rid, $skill, $paidStaffDriver, $rates);
             }
         }
         $names = Resource::whereIn('id', array_keys($people))->pluck('name', 'id');
         $out = [];
         foreach ($people as $rid => $p) {
+            $missing = collect($p['lines'])->contains(fn ($l) => $l['amount_cents'] === null);
             $out[] = ['resource_id' => $rid, 'name' => $names[$rid] ?? '—', 'lines' => $p['lines'],
-                'total_cents' => array_sum(array_column($p['lines'], 'amount_cents')),
-                'missing_rate' => collect($p['lines'])->contains(fn ($l) => $l['suggested_cents'] === null && $l['decided'] === null),
+                'total_cents' => $missing ? null : array_sum(array_column($p['lines'], 'amount_cents')),
+                'missing_rate' => $missing,
                 'paid' => collect($p['lines'])->every(fn ($l) => $l['paid'])];
         }
         usort($out, fn ($a, $b) => strcmp($a['name'], $b['name']));
@@ -70,7 +80,7 @@ final class StaffPaySuggestion
 
         return ['event_id' => $e->id, 'title' => $e->title, 'when' => Labels::when($e->starts_at), 'role' => $role, 'hours' => $hours, 'drove' => $drove,
             'suggested_cents' => $suggested, 'why' => $why, 'decided' => $decided?->amount_cents, 'note' => $decided?->note, 'paid' => (bool) $decided?->paid_at,
-            'amount_cents' => $decided?->amount_cents ?? $suggested ?? 0];
+            'amount_cents' => $decided?->amount_cents ?? $suggested];
     }
 
     private static function hours(int $minutes): string
