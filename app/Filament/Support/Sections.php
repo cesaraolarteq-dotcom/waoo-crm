@@ -40,7 +40,7 @@ final class Sections
             'settings' => ['label' => 'Ajustes', 'icon' => Heroicon::OutlinedCog6Tooth, 'tabs' => [
                 ['label' => 'Catálogo', 'target' => Resources\Variants\ServiceVariantResource::class],
                 ['label' => 'Contrato', 'target' => Pages\ContractTemplates::class],
-                ['label' => 'Correos', 'target' => Pages\EmailTemplates::class],
+                ['label' => 'Mensajes', 'target' => Pages\EmailTemplates::class],
                 ['label' => 'Seguridad', 'target' => 'route:security'],
                 ['label' => 'HoneyBook', 'target' => 'section:honeybook'],
             ]],

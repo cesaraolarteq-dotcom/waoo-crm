@@ -466,7 +466,7 @@ class ViewEvent extends Page
         $e = $this->record;
         $receipts = function () use ($e): array {
             $out = [];
-            foreach (\App\Models\LedgerEntry::where('event_id', $e->id)->where('environment', 'test')->where('kind', 'receipt')->whereIn('method', ['stripe', 'zelle'])->orderBy('received_at')->get() as $r) {
+            foreach (\App\Models\LedgerEntry::where('event_id', $e->id)->where('environment', \App\Support\WaooRuntime::ledgerEnvironment())->where('kind', 'receipt')->whereIn('method', ['stripe', 'zelle'])->orderBy('received_at')->get() as $r) {
                 $left = $r->amount_cents - (int) \App\Models\RefundRequest::where('receipt_id', $r->id)->whereIn('state', ['requested', 'unknown', 'succeeded'])->sum('amount_cents');
                 if ($left > 0) $out[$r->id] = ($r->method === 'stripe' ? 'Tarjeta' : 'Zelle').' · '.Labels::when($r->received_at).' · queda '.Labels::money($left);
             }

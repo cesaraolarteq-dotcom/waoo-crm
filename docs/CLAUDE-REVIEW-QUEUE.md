@@ -1,3 +1,6 @@
+## 2026-11-26 (noche) · Codex · Cola 2, puntos 3 y 4
+Cerrados los PRs absorbidos por #243, #244 y #245 y el #239 de crm-test. La rama de #222 incorpora `501e7f3` y una prueba del mismo evento de reembolso entregado dos veces.
+
 # Claude review queue (Codex autonomy, 2026-10-22 → 2026-10-25)
 
 Every change Codex makes while Claude is away gets one entry here, newest first, in the same branch as the change. Rules are in `docs/plans/CODEX-AUTONOMY-UNTIL-SUNDAY.md`. Claude reviews each entry on Sunday and changes its status.
@@ -21,9 +24,59 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 
 ## Entries
 
-### 2026-11-23 · BACKEND · Búsqueda paginada de reembolsos y protección de reintentos antiguos · PENDING
-- Rama `codex/fix-expired-refund-replay`. Incluye Claude 03296ab.
-- MariaDB y Stripe simulado: 17 pruebas, 73 aserciones. Revisar que un resultado antiguo sin coincidencia conserve la reserva y que el adaptador no emita otro POST.
+### 2026-11-26 · BACKEND · Punto 1: seguridad de sincronización del #229 · PENDING
+- Rama `codex/fix-handoff-1126-security`, base `claude/import-fixes` (`5431f42`).
+- HoneyBook aplica la validación CSV estricta del importador, y deriva a revisión las reducciones del total pagado, los cambios operativos y el dinero o firma de un proyecto sin vincular. El mismo CSV conserva una sola revisión de dinero.
+- Google Ads valida filas antes de reemplazar el gasto por día y campaña, conserva el contrato de exportación sin datos de contacto y confirma únicamente conversiones elegibles. Un estado tardío de WhatsApp no deshace una entrega o lectura confirmada.
+- Verificar los tests `HoneyBookSyncTest`, `HoneyBookMoneyResyncTest`, `AdsSyncTest`, `LeadConversionTest` y `WhatsAppWebhookTest`, con proveedores ficticios. Revisar también las puertas de Resend, correo y atribución. La configuración y los servicios de producción quedan fuera de la verificación.
+
+### 2026-11-23 · BACKEND · Revisión #223: lotes de mensajes y altas de Google · PENDING
+- Rama `codex/fix-auto-message-review`. Revisar 51º recordatorio, un alta de Google con resultado incierto y el filtro de entradas del cron de recordatorios.
+- Tests con proveedores simulados. Ver el PR para resultados. Sin despliegue ni cambios de términos o textos.
+### 2026-11-26 · DECISION · Punto 2: inventario de PRs · PENDING
+- Rama `codex/fix-handoff-1126-pr-queue`. La tabla del HANDOFF registra cierres verificados y pendientes por punta de Git.
+- #241 ya está en la rama. Antes de unir #229 a main, confirmar con César la regla de HoneyBook ante el cambio de `b8e7e86` y comprobar CI sobre la punta autorizada.
+
+### 2026-11-23 · BACKEND · Punto 2: revisión de pagos de #214/#215 · PENDING
+- Rama `codex/fix-deployed-money-review`. 10 pruebas, 45 aserciones con MariaDB local y Stripe simulado.
+- Revisar la caída a tarjeta, la integridad de la huella migrada y la reserva de importes cuyo reembolso no se encuentra después de la ventana.
+### 2026-11-26 · BACKEND · Punto 3: reprogramación del apartado conjunto · PENDING
+- Rama `codex/fix-handoff-1126-joint-hold`.
+- Una fiesta confirmada con depósito conciliado puede mover todas las reservas en una transacción, conservar el historial y volver a firmar. Un equipo completo puede reemplazar al personal y conservar los trajes y equipos apartados.
+- MariaDB local: 16 pruebas y 175 aserciones, más 2 pruebas y 38 aserciones en la última comprobación enfocada. Stripe, calendarios y rutas ficticias. Revisar carrera por el último traje, vencimiento, un recibo tardío y el cambio de fecha que conserva el contrato anterior. El sitio público continúa en vista previa.
+
+### 2026-11-23 · BACKEND · Punto 3: apartado conjunto de la futura reserva web · PENDING
+- Rama `codex/fix-website-joint-hold`. Tres pruebas/18 aserciones con MariaDB, dos procesos y Stripe simulado.
+- Revisar vida del equipo comprometido en la planificación y ante reprogramación. La web permanece en preview.
+### 2026-11-26 · UI · Punto 4: pagos al staff y tarifas pendientes · PENDING
+- Rama `codex/fix-handoff-1126-staff-pay`.
+- Se integró la protección del historial de #234. Una tarifa sin definir deja la línea y su total pendientes. La sugerencia de transporte usa el conductor de staff del plan y omite el transporte externo y los nombres de César y Maybeli.
+- MariaDB local: 2 pruebas, 46 aserciones. Playwright con ejemplos ficticios: 390 y 1280 px, claro y oscuro. Revisar la identificación por nombre del conductor y las tarifas que el dueño todavía no definió.
+
+### 2026-11-23 · BACKEND · Punto 4: traslados y presupuesto diario · PENDING
+- Rama `codex/fix-team-route-budget`. 38 pruebas/233 aserciones. Google simulado.
+- Revisar salida después del desmontaje, margen de 30 minutos, falta de informe de ruta y reserva atómica del tope diario.
+
+### 2026-11-26 · UI · Punto 5: margen por paquete desde enero de 2027 · PENDING
+- Rama `codex/fix-handoff-1126-package-margin`.
+- Reportes distingue los costos incompletos de las fiestas con margen calculado. Usa costos reales vigentes y deja pendientes las fiestas con varios paquetes cuyo costo aún no se puede repartir.
+- MariaDB local: 23 pruebas, 195 aserciones con datos ficticios. Playwright: 390 y 1280 px, claro y oscuro. Revisar el aviso de costos incompletos y el límite por año de Houston.
+
+### 2026-11-23 · UI · Mensajes automáticos (correos + textos, switches, preview, prueba) · PENDING
+- Branch / commits: claude/auto-messages
+- Reported by César: "ideame algo funcional e ideal… que se pueda controlar todo desde ahí"
+- What changed and why: /admin/correos rebuilt as the control page for automatic messages (see HANDOFF 2026-11-23). Styles `.wmsg-*` in waoo-admin.css with local light/dark tokens.
+- Files: app/Filament/Pages/EmailTemplates.php, resources/views/filament/pages/email-templates.blade.php, public/css/waoo-admin.css, app/Support/AutoMessages.php, app/Services/Messages/*, config/auto-messages.php
+- How verified: AutoMessagesTest, EmailTemplatesPageTest/BoundaryTest; screenshots 390×844 (list, email preview, SMS bubble) and 1280 light/dark.
+- What Claude must check: proposed SMS wording is owner-approved on the page before any text goes out.
+
+### 2026-11-20 · BACKEND · Revisión #211: identidad durable y rotación del cron · REVIEWED (Claude 2026-11-20)
+### 2026-11-25 · BACKEND · Actualización de dos dependencias PHP · PENDING
+- Rama: `codex/fix-php-security-dependencies` (base `d3128d9`).
+- Cambios: `league/csv` de 9.28.0 a 9.29.1 y `web-auth/webauthn-lib` de 5.3.9 a 5.3.13.
+- Archivos: `composer.lock` y registro de revisión.
+- Verificación: `composer audit --locked` detectó siete avisos antes y ninguno después. `composer validate --strict` pasó. La suite del CRM se verifica en CI. Falta revisar los registros de acceso de Hostinger.
+- Qué revisar: confirmar en CI el inicio de sesión con dos factores y la importación de CSV de HoneyBook.
 
 ### 2026-11-20 · BACKEND · Integración parcial de prospectos, Zip, staff, contratos y transporte · PENDING
 - Branch: codex/fix-verified-nov20. Sources: #209, #210, #213 and #214 through 8be3959.
@@ -31,7 +84,7 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 - Evidence: initial MariaDB integration 52/53, remaining HTTPS fixture corrected and rerun 1/1. Full CI required for this branch.
 - Review the latest #214 separately. #208 and #215 risks in HANDOFF. No production writes or provider calls.
 
-### 2026-11-20 · BACKEND · Revisión #211: identidad durable y rotación del cron · REVIEWED (Claude 2026-11-20)
+### 2026-11-20 · BACKEND · Revisión #211: identidad durable y rotación del cron · PENDING
 - Branch: codex/fix-refund-review; base Claude 2b8daa0, sin reescribir commits.
 - Cambios: conservar retrieve para cualquier refund con identidad remota, incluso unknown; error de lectura no marca failed; cron ordenado por updated_at/id y rota errores para alcanzar toda la cola.
 - Pruebas: dos regresiones FAIL antes (2 casos/5 aserciones); suite integrada en curso, no declarar verde todavía.

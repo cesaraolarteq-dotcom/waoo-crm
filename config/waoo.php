@@ -35,6 +35,10 @@ return [
     'process_after_response' => env('WAOO_PROCESS_AFTER_RESPONSE', true),
     'sandbox_mail' => env('WAOO_SANDBOX_MAIL', false),
     'mail_allowlist' => [],
+    // Owner 2026-11-20: test recipients set on the server (his own email/phone) — mail may go to these addresses even
+    // though they are not CRM owner accounts; texts go ONLY to these numbers while the list is not empty.
+    'mail_test_recipients' => array_values(array_filter(array_map('trim', explode(',', mb_strtolower((string) env('WAOO_MAIL_TEST_RECIPIENTS', '')))))),
+    'sms_allowlist' => array_values(array_filter(array_map('trim', explode(',', (string) env('WAOO_SMS_ALLOWLIST', ''))))),
     'mail_templates' => \App\Support\ApprovedClientTexts::mailDefinitions($clientTexts),
     'mail_review_url' => 'https://g.page/r/CVT57MD29OwXEAE/review', // Waoo Party's public Google review link (owner 2026-10-18).
     'sandbox_web_availability' => env('WAOO_SANDBOX_WEB_AVAILABILITY', false),
@@ -75,6 +79,21 @@ return [
     // After the HoneyBook switch only: the CRM is the only agenda (no outside calendar is read). Off = an outside calendar must answer.
     // ANNIV-01 campaign switch (off): with the general mail gate also on, "One year later" emails and day-6 reminders go out.
     'anniversary_mail_enabled' => (bool) env('WAOO_ANNIVERSARY_MAIL_ENABLED', false),
+    'anniversary_clients_enabled' => (bool) env('WAOO_ANNIVERSARY_CLIENTS', false), // owner 2026-11-25: the anniversary email may reach real clients
+    'whatsapp' => [ // owner 2026-11-26: own Meta app, no intermediary
+        'enabled' => (bool) env('WAOO_WHATSAPP', false),
+        'app_secret' => env('WHATSAPP_APP_SECRET'),
+        'verify_token' => env('WHATSAPP_VERIFY_TOKEN'),
+        'token' => env('WHATSAPP_TOKEN'),
+        'phone_number_id' => env('WHATSAPP_PHONE_NUMBER_ID'),
+        'waba_id' => env('WHATSAPP_WABA_ID'),
+    ],
+    'ads_sync_token_sha256' => env('WAOO_ADS_SYNC_TOKEN_SHA256'), // owner 2026-11-26: Google Ads script
+    'client_messages_enabled' => (bool) env('WAOO_CLIENT_MESSAGES', false), // owner 2026-11-26: automatic messages may reach clients
+    'honeybook_sync_enabled' => (bool) env('WAOO_HONEYBOOK_SYNC', false), // owner 2026-11-26: HoneyBook → CRM every 12 h
+    'honeybook_sync_token_sha256' => env('WAOO_HONEYBOOK_SYNC_TOKEN_SHA256'),
+    'honeybook_sync_actor_id' => (int) env('WAOO_HONEYBOOK_SYNC_ACTOR_ID', 1),
+    'anniversary_font' => env('WAOO_ANNIVERSARY_FONT', 'poppins'), // owner 2026-11-25: poppins | fredoka
     'availability_crm_only' => (bool) env('WAOO_AVAILABILITY_CRM_ONLY', false),
     'postal_address' => env('WAOO_POSTAL_ADDRESS', 'Waoo Party LLC · 17350 State Hwy 249, Ste 220 · Houston, TX 77064'),
     'sandbox_extras' => (bool) env('WAOO_SANDBOX_EXTRAS', false), // EXTRAS-01: client adds extras from her link (off until César turns it on)

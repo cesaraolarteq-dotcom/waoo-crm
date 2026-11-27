@@ -40,7 +40,7 @@ final class CreateContract
             }
             $snapshot = [...\App\Services\Billing\BillingCompany::snapshot($event->billing_company), 'client' => $data['client'], 'event' => ['date_long' => $event->starts_at->setTimezone('America/Chicago')->locale('en')->translatedFormat('D, M j, Y'),
                 'start_time' => $event->starts_at->setTimezone('America/Chicago')->format('g:i a'), 'end_time' => $event->ends_at->setTimezone('America/Chicago')->format('g:i a'), 'address' => $event->address],
-                'services' => $finance->lines_snapshot, 'travel_fee_cents' => $finance->travel_fee_cents, 'total_cents' => $finance->total_cents,
+                'services' => array_map(fn ($l) => isset($l['name']) ? [...$l, 'name_en' => \App\Support\PackageName::for($l['name'], 'en')] : $l, $finance->lines_snapshot), 'travel_fee_cents' => $finance->travel_fee_cents, 'total_cents' => $finance->total_cents,
                 'discounts'=>array_map(fn($d)=>['label'=>$d['label'],'amount_cents'=>$d['amount_cents']],$finance->discounts_snapshot??[]),
                 'balance_due_at' => $finance->balance_due_at->toIso8601String()];
             foreach ($snapshot['services'] as $line) {

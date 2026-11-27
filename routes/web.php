@@ -29,6 +29,7 @@ Route::get('/session/csrf', fn() => response()->json(['token' => csrf_token()])-
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:20,1'])->prefix('admin/google')->group(function () {
     Route::get('/connect', [\App\Http\Controllers\Admin\GoogleCalendarController::class, 'connect']);
     Route::get('/callback', [\App\Http\Controllers\Admin\GoogleCalendarController::class, 'callback']);
+    Route::get('/contacts/connect', [\App\Http\Controllers\Admin\GoogleCalendarController::class, 'connectContacts']);
 });
 Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-api'])->prefix('admin/api')->group(function () {
     Route::get('/events/{event}/confirmed-agreement', [\App\Http\Controllers\Admin\ConfirmedAgreementController::class, 'show'])->whereNumber('event');
@@ -74,6 +75,7 @@ Route::middleware(['auth', RequireOwnerAdmin::class, 'throttle:admin-api'])->pre
     Route::get('/leads/{lead}', [\App\Http\Controllers\Admin\LeadController::class, 'show'])->whereNumber('lead');
     Route::patch('/leads/{lead}', [\App\Http\Controllers\Admin\LeadController::class, 'update'])->whereNumber('lead');
     Route::post('/leads/{lead}/quick-book', [\App\Http\Controllers\Admin\LeadController::class, 'convert'])->whereNumber('lead');
+    Route::get('/reports/package-margin', [\App\Http\Controllers\Admin\OwnerReportReadController::class, 'packageMargin']);
     Route::get('/reports/owner', [\App\Http\Controllers\Admin\OwnerReportReadController::class, 'index']);
     Route::get('/reports/snapshots/{snapshot}/email-preview', [\App\Http\Controllers\Admin\OwnerReportReadController::class, 'preview'])->whereNumber('snapshot');
     Route::post('/reports/snapshots', [\App\Http\Controllers\Admin\OwnerReportSnapshotController::class, 'store']);

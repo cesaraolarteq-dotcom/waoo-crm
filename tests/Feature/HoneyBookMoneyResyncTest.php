@@ -61,6 +61,28 @@ class HoneyBookMoneyResyncTest extends TestCase
         return app(CommitHoneyBookEvent::class)->execute($this->owner, $batch->id, $row->id, $input, $key ?? (string)Str::uuid());
     }
 
+    public function test_automatic_sync_is_idempotent_and_leaves_source_changes_for_review(): void
+    {
+        $link = $this->confirmed();
+        $token = 'fictional-honeybook-sync-token-for-local-tests';
+        config(['waoo.honeybook_sync_enabled' => true, 'waoo.honeybook_sync_token_sha256' => hash('sha256', $token),
+            'waoo.honeybook_sync_actor_id' => $this->owner->id]);
+        $sync = function (array $source) use ($token) {
+            $file = $this->futureFile([$this->futureRow($source)]);
+            return $this->call('POST', '/sync/honeybook', [], [], [], ['HTTP_AUTHORIZATION' => 'Bearer '.$token], $file->getContent());
+        };
+
+        $payment = ['amount_paid' => '90.00', 'balance' => '30.00',
+            'payments' => '2026-10-01|70.00|Zelle;2026-10-02|-10.00|source adjustment;2026-10-16|30.00|Cash'];
+        $sync($payment)->assertOk()->assertJsonPath('counts.payments_updated', 1);
+        $revision = $link->fresh()->current_revision_id;
+        $sync($payment)->assertOk()->assertJsonPath('counts.unchanged', 1);
+        foreach ([[], ['status' => 'cancelled', ...$payment], ['services' => 'Different fictional package', ...$payment]] as $change) {
+            $sync($change)->assertOk()->assertJsonPath('counts.review', 1)->assertJsonPath('counts.payments_updated', 0);
+            $this->assertSame($revision, $link->fresh()->current_revision_id);
+        }
+    }
+
     public function test_confirmed_money_update_appends_source_only_and_preserves_all_operational_and_bank_evidence(): void
     {
         $link = $this->confirmed();

@@ -55,7 +55,7 @@ final class CaptureOpeningStripeRefund
                     $reason = self::sameRefund($existing, $parent, $provider, $evidence) ? 'refund_duplicate' : 'refund_identity_conflict';
                 } else {
                     $newEntry = LedgerEntry::create(['event_id' => $parent->event_id, 'financial_revision_id' => $parent->financial_revision_id,
-                        'environment' => 'test', 'kind' => 'refund', 'method' => 'stripe', 'amount_cents' => $refund['amount'], 'currency' => 'USD',
+                        'environment' => \App\Support\WaooRuntime::ledgerEnvironment(), 'kind' => 'refund', 'method' => 'stripe', 'amount_cents' => $refund['amount'], 'currency' => 'USD',
                         'received_at' => CarbonImmutable::createFromTimestampUTC($refund['created']), 'external_reference' => $refund['id'],
                         'external_identity_key' => $refundIdentity, 'verified_by' => null, 'source_type' => 'verified_stripe_refund', 'source_id' => $locked->id]);
                     $previousGross = (int) DB::table('opening_refund_evidence')->join('ledger_entries', 'ledger_entries.id', '=', 'opening_refund_evidence.ledger_entry_id')
@@ -93,7 +93,7 @@ final class CaptureOpeningStripeRefund
     private static function parentValid(LedgerEntry $parent, array $p): bool
     {
         return $parent->kind === 'receipt' && $parent->method === 'stripe' && $parent->source_type === 'verified_stripe_webhook'
-            && $parent->environment === 'test' && $parent->currency === 'USD' && $parent->verified_by === null
+            && $parent->environment === \App\Support\WaooRuntime::ledgerEnvironment() && $parent->currency === 'USD' && $parent->verified_by === null
             && OpeningStripeProof::grossOf($parent) === $p['charge']['amount'] && $parent->external_reference === $p['payment']['id']
             && $parent->received_at && $parent->received_at->timestamp === $p['charge']['created'];
     }
@@ -102,7 +102,7 @@ final class CaptureOpeningStripeRefund
         try {
             if (!$row) return false; $body = $row->payload;
             return $entry->event_id === $parent->event_id && $entry->financial_revision_id === $parent->financial_revision_id
-                && $entry->kind === 'refund' && $entry->method === 'stripe' && $entry->environment === 'test' && $entry->currency === 'USD'
+                && $entry->kind === 'refund' && $entry->method === 'stripe' && $entry->environment === \App\Support\WaooRuntime::ledgerEnvironment() && $entry->currency === 'USD'
                 && $entry->amount_cents === $p['refund']['amount'] && $entry->external_reference === $p['refund']['id']
                 && $entry->received_at?->timestamp === $p['refund']['created'] && $row->parent_ledger_entry_id === $parent->id
                 && ($body['schema_version'] ?? null) === 1 && $body['provider'] === $p

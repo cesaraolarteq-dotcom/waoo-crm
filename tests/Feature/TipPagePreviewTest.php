@@ -8,14 +8,15 @@ use Tests\TestCase;
 // 100 % to the party's staff, card fees never mentioned; the thank-you email carries a second "leave a tip" button.
 class TipPagePreviewTest extends TestCase
 {
-    public function test_open_tip_page_offers_five_ten_fifteen_percent_and_other_without_fees_or_zelle(): void
+    public function test_open_tip_page_offers_five_ten_fifteen_percent_other_and_zelle_without_fees(): void
     {
         $html = $this->get('/dev/portal/tip?lang=es')->assertOk()->assertHeader('Referrer-Policy', 'no-referrer')
             ->assertSee('El 100 % es para el staff')->assertSee('Te acompañaron: Lucía, Carlos')
             ->assertSee('5 %')->assertSee('$31')->assertSee('10 %')->assertSee('$62')->assertSee('15 %')->assertSee('$92')->assertSee('Otro monto')
-            ->assertSee('Porcentajes del total de tu fiesta ($615)')->getContent();
+            ->assertSee('Porcentajes del total de tu fiesta ($615)')->assertSee('¿Prefieres Zelle?')->assertSee('346-216-8739')->getContent();
         $visible = preg_replace('#<script\b.*?</script>#s', '', $html); // what the client reads (the script names Stripe's host only to verify it)
-        foreach (['comisión', 'Comisión', 'Zelle', 'Stripe', 'fee'] as $word) $this->assertStringNotContainsString($word, $visible);
+        // Owner 2026-11-23: Zelle is offered too (it used to be card only).
+        foreach (['comisión', 'Comisión', 'Stripe', 'fee'] as $word) $this->assertStringNotContainsString($word, $visible);
         $this->get('/dev/portal/tip?lang=en')->assertSee('100% goes to the staff')->assertSee('Other amount')->assertDontSee('fee');
     }
 

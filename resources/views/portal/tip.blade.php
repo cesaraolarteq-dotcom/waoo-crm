@@ -36,6 +36,12 @@
   <p class="p-hint t-center">{{ $t('card') }}<br>{{ $t('optional') }}</p>
 </form>
 
+<section class="p-card t-zelle" aria-labelledby="tip-zelle-h">
+  <h2 id="tip-zelle-h">{{ $t('zelle_title') }}</h2>
+  <p>{{ $t('zelle_to') }}: <b>Waoo Party LLC · 346-216-8739</b></p>
+  <p class="p-hint">{{ $t('zelle_memo') }} {{ $t('zelle_full') }}</p>
+</section>
+
 <script>
 (function () {
   // TIP-01 API (docs/TIP-01-API.md): the browser sends only the option (or a canonical custom amount) with the pinned

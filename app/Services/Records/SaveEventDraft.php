@@ -21,7 +21,7 @@ final class SaveEventDraft
         $actor = RecordActor::authorize($actor);
         $id = $eventId;
         $input = \App\Services\Billing\BillingCompany::input($input);
-        $data = RecordInput::validate($input, [...\App\Services\Billing\BillingCompany::rules(),'customer_id' => 'required|integer|exists:customers,id', 'title' => 'required|string|max:255', 'event_type' => ['sometimes', 'nullable', Rule::in(['birthday', 'baby_shower', 'gender_reveal', 'corporate', 'other'])], 'starts_at' => ['required', 'date', new ExplicitOffset()], 'ends_at' => ['required', 'date', 'after:starts_at', new ExplicitOffset()], 'timezone' => ['required', Rule::in(['America/Chicago'])], 'time_tbd' => 'sometimes|boolean', 'address' => 'nullable|string|max:255', 'postal_code' => ['nullable', 'string', 'regex:/^[0-9]{5}(?:-[0-9]{4})?$/'], 'setup_minutes' => 'nullable|integer|min:0|max:720', 'breakdown_minutes' => 'nullable|integer|min:0|max:720', 'travel_fee_cents' => 'nullable|integer|min:0|max:100000000', 'travel_fee_quote_id' => 'sometimes|nullable|integer|min:1', 'travel_fee_override_note' => 'sometimes|nullable|string|min:10|max:1000', 'services' => 'present|array|max:10', 'services.*' => 'array:price_version_id,characters', 'services.*.characters' => 'sometimes|array|max:20', 'services.*.characters.*' => 'array:character_id,quantity,outfit,note', 'services.*.characters.*.character_id' => 'required|integer|exists:characters,id', 'services.*.characters.*.outfit' => 'sometimes|nullable|string|max:60', 'services.*.characters.*.note' => 'sometimes|nullable|string|max:200', 'services.*.characters.*.quantity' => 'required|integer|min:1|max:20', 'services.*.price_version_id' => 'required|integer|distinct|exists:price_versions,id', 'expected_version' => ($id ? 'required' : 'sometimes') . '|integer|min:1']);
+        $data = RecordInput::validate($input, [...\App\Services\Billing\BillingCompany::rules(),'customer_id' => 'required|integer|exists:customers,id', 'title' => 'required|string|max:255', 'event_type' => ['sometimes', 'nullable', Rule::in(['birthday', 'baby_shower', 'gender_reveal', 'corporate', 'other'])], 'starts_at' => ['required', 'date', new ExplicitOffset()], 'ends_at' => ['required', 'date', 'after:starts_at', new ExplicitOffset()], 'timezone' => ['required', Rule::in(['America/Chicago'])], 'time_tbd' => 'sometimes|boolean', 'address' => 'nullable|string|max:255', 'postal_code' => ['nullable', 'string', 'regex:/^[0-9]{5}(?:-[0-9]{4})?$/'], 'setup_minutes' => 'nullable|integer|min:0|max:720', 'breakdown_minutes' => 'nullable|integer|min:0|max:720', 'travel_fee_cents' => 'nullable|integer|min:0|max:100000000', 'travel_fee_quote_id' => 'sometimes|nullable|integer|min:1', 'travel_fee_override_note' => 'sometimes|nullable|string|min:10|max:1000', 'services' => 'present|array|max:10', 'services.*' => 'array:price_version_id,characters,duration_minutes', 'services.*.duration_minutes' => 'sometimes|nullable|integer|min:15|max:1440', 'services.*.characters' => 'sometimes|array|max:20', 'services.*.characters.*' => 'array:character_id,quantity,outfit,note', 'services.*.characters.*.character_id' => 'required|integer|exists:characters,id', 'services.*.characters.*.outfit' => 'sometimes|nullable|string|max:60', 'services.*.characters.*.note' => 'sometimes|nullable|string|max:200', 'services.*.characters.*.quantity' => 'required|integer|min:1|max:20', 'services.*.price_version_id' => 'required|integer|distinct|exists:price_versions,id', 'expected_version' => ($id ? 'required' : 'sometimes') . '|integer|min:1']);
         return DB::transaction(function () use ($actor, $data, $id) {
             \App\Services\Scheduling\DailyCapacity::lock();
             $event = $id ? Event::whereKey($id)->lockForUpdate()->firstOrFail() : new Event();
@@ -60,12 +60,12 @@ final class SaveEventDraft
                 RecordWriteRejected::when($variant->status === 'retired', 422, 'La variante fue retirada.');
                 $characters = $selection['characters'] ?? ($previous->get($price->id)?->characters->map(fn ($row) => $row->only(['character_id', 'quantity', 'outfit', 'note']))->all() ?? []);
                 $compiled = CharacterRecipe::compile($variant, $characters, "services.{$index}.characters");
-                $service = EventService::create(['event_id' => $event->id, 'service_variant_id' => $variant->id, 'price_version_id' => $price->id, 'requirements_snapshot' => $compiled['requirements'], 'duration_minutes' => $variant->duration_minutes, 'operational_ready' => $compiled['ready'],
+                $service = EventService::create(['event_id' => $event->id, 'service_variant_id' => $variant->id, 'price_version_id' => $price->id, 'requirements_snapshot' => $compiled['requirements'], 'duration_minutes' => self::duration($variant, $selection), 'operational_ready' => $compiled['ready'],
                     'extends_event_snapshot' => (bool) $variant->extends_event,
                     'covers_event_snapshot' => SameLengthExtras::applies($variant),
                     'extra_characters' => $compiled['extra'], 'extra_character_cents' => $compiled['extra'] > 0 ? ServiceVariant::extraCharacterPrice($variant) : null]);
                 $service->characters()->createMany($compiled['characters']);
-                $auditServices[] = ['price_version_id' => $price->id, 'characters' => $compiled['characters']];
+                $auditServices[] = ['price_version_id' => $price->id, 'characters' => $compiled['characters'], ...(isset($selection['duration_minutes']) ? ['duration_minutes' => (int) $selection['duration_minutes']] : [])];
             }
             if (collect($timingVariants)->contains(fn ($v) => $v->extends_event)) {
                 RecordWriteRejected::unless(collect($timingVariants)->contains(fn ($v) => !$v->extends_event),422,'Selecciona servicios con requisitos completos.');
@@ -82,5 +82,17 @@ final class SaveEventDraft
             Audit::recordFor($actor, $id ? 'event.draft_updated' : 'event.created', $event, $before, [...$event->getAttributes(), 'services' => $auditServices]);
             return $event->fresh()->load('services.characters');
         }, 3);
+    }
+
+    /**
+     * Owner 2026-11-25: a custom quote may sell a service for less time than the catalog (e.g. Photo Booth for 2 h instead of 3).
+     * Only shorter, never longer: longer time is sold as «Hora extra».
+     */
+    private static function duration(ServiceVariant $variant, array $selection): int
+    {
+        $custom = isset($selection['duration_minutes']) ? (int) $selection['duration_minutes'] : null;
+        RecordWriteRejected::when($custom !== null && $custom > (int) $variant->duration_minutes, 422, 'Una duración especial solo puede ser más corta que la del catálogo. Para más tiempo agrega «Hora extra».');
+
+        return $custom ?? (int) $variant->duration_minutes;
     }
 }

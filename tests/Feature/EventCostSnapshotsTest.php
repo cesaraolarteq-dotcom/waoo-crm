@@ -36,6 +36,48 @@ class EventCostSnapshotsTest extends TestCase
         return $this->withHeader('Idempotency-Key', $key ?? (string) Str::uuid())->postJson('/admin/api/events/'.$this->event->id.'/cost-snapshots', [...$this->input, ...$extra]);
     }
     private function summary() { return $this->getJson('/admin/api/events/'.$this->event->id.'/costs'); }
+    public function test_package_margin_uses_actual_costs_and_houston_year_boundary(): void
+    {
+        $this->event->forceFill(['status' => 'capacity_reserved', 'starts_at' => '2027-01-01 06:00:00', 'ends_at' => '2027-01-01 07:00:00'])->save();
+        $this->store()->assertCreated();
+        $url = '/admin/api/reports/package-margin?year=2027';
+        $this->getJson($url)->assertOk()->assertHeader('Cache-Control', 'no-store, private')
+            ->assertJsonPath('included_events', 0)->assertJsonPath('pending_events', 1);
+        $this->store(['kind' => 'actual', 'lines' => [
+            ...$this->input['lines'],
+            ['label' => 'Fixture processing fee', 'category' => 'card_processing', 'amount_cents' => 1200],
+        ]])->assertCreated();
+        $this->getJson($url)->assertOk()->assertJsonPath('included_events', 1)->assertJsonPath('pending_events', 0)
+            ->assertJsonPath('packages.0.name', 'Fixture package')->assertJsonPath('packages.0.events', 1)
+            ->assertJsonPath('packages.0.revenue_cents', 40000)->assertJsonPath('packages.0.cost_cents', 15500)
+            ->assertJsonPath('packages.0.margin_cents', 24500);
+
+        $this->event->increment('version');
+        $this->getJson($url)->assertOk()->assertJsonPath('included_events', 0)
+            ->assertJsonPath('pending_events', 1)->assertJsonPath('packages', []);
+
+        $this->event->update(['starts_at' => '2027-01-01 05:59:00']);
+        $this->getJson($url)->assertOk()->assertJsonPath('included_events', 0)->assertJsonPath('pending_events', 0);
+        $this->getJson('/admin/api/reports/package-margin?year=2026')->assertUnprocessable();
+    }
+
+    public function test_package_margin_does_not_allocate_shared_costs_across_packages(): void
+    {
+        $this->event->update(['starts_at' => '2027-01-10 18:00:00', 'ends_at' => '2027-01-10 19:00:00']);
+        $other = ServiceVariant::create(['name' => 'Fixture second package', 'status' => 'active', 'duration_minutes' => 60, 'requirements' => []]);
+        $price = PriceVersion::create(['service_variant_id' => $other->id, 'amount_cents' => 20000,
+            'currency' => 'USD', 'created_by' => $this->owner->id]);
+        $this->event->services()->create(['service_variant_id' => $other->id, 'price_version_id' => $price->id,
+            'duration_minutes' => 60, 'operational_ready' => true, 'requirements_snapshot' => []]);
+        $finance = app(CreateFinancialRevision::class)->execute($this->owner, $this->event->id, ['expected_version' => 1], (string) Str::uuid());
+        $this->assertCount(2, $finance->lines_snapshot);
+        $this->event->forceFill(['status' => 'capacity_reserved'])->save();
+        $this->store(['kind' => 'actual', 'financial_revision_id' => $finance->id])->assertCreated()->assertJsonPath('complete', true);
+
+        $this->getJson('/admin/api/reports/package-margin?year=2027')->assertOk()->assertJsonPath('included_events', 0)
+            ->assertJsonPath('pending_events', 1)->assertJsonPath('packages', []);
+    }
+
     public function test_event_without_agreement_has_no_invented_revenue_cost_or_margin(): void
     {
         $other = $this->event->replicate(); $other->save();
@@ -121,11 +163,13 @@ class EventCostSnapshotsTest extends TestCase
         catch (\Illuminate\Auth\Access\AuthorizationException $e) { $this->assertStringContainsString('administración', $e->getMessage()); }
         $this->store()->assertForbidden(); $this->summary()->assertForbidden();
         $this->owner->forceFill(['active' => true, 'role' => 'staff'])->save(); $this->summary()->assertForbidden();
+        $this->getJson('/admin/api/reports/package-margin?year=2027')->assertForbidden();
         $this->owner->forceFill(['role' => 'owner_admin'])->save();
         $grant = app(IssuePortalGrant::class)->execute($this->owner, $this->event->id, ['customer_id' => $this->event->customer_id, 'expires_at' => now()->addDay()->toIso8601String()]);
         auth()->logout(); $this->app['auth']->forgetGuards(); $this->postJson('/portal/api/session', ['token' => $grant->token])->assertOk();
         $this->getJson('/portal/api/event')->assertOk()->assertDontSee('PRIVATE-COST-FIXTURE-NOTE')->assertDontSee('Fixture staff pay')->assertJsonMissingPath('costs');
         $this->summary()->assertUnauthorized();
+        $this->getJson('/admin/api/reports/package-margin?year=2027')->assertUnauthorized();
     }
     public function test_disabled_sandbox_and_unconfirmed_2fa_cannot_record_or_read_costs(): void
     {

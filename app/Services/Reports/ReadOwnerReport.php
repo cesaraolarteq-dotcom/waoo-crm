@@ -24,7 +24,7 @@ final class ReadOwnerReport
         $anchor = CarbonImmutable::parse($containing['starts_on'], 'America/Chicago')->subDay()->toDateString();
         $period = ReportPeriod::resolve(['period' => $kind, 'anchor' => $anchor]);
         $query = ['period' => $kind, 'anchor' => $anchor];
-        return ['schema_version' => 1, 'environment' => 'test', 'timezone' => 'America/Chicago',
+        return ['schema_version' => 1, 'environment' => \App\Support\WaooRuntime::ledgerEnvironment(), 'timezone' => 'America/Chicago',
             'generated_at' => now()->toIso8601String(), 'kind' => $data['kind'], 'as_of' => $data['as_of'],
             'due_on' => $period['ends_before'],
             'operations' => app(OperationalReport::class)->execute($actor, $query),

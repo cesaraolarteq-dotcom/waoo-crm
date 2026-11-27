@@ -271,6 +271,14 @@ class ImportHistory extends Page
         $this->read = null;
     }
 
+    /** Rows with these issues can only be excluded (same list CommitHistoricalRow refuses). */
+    public static function blocking(array $codes): bool
+    {
+        return array_intersect($codes, ['project_id_required', 'event_date_required', 'event_date_invalid', 'end_date_invalid', 'duplicate_project_id',
+            'start_time_invalid', 'end_time_invalid', 'start_time_nonexistent', 'end_time_nonexistent', 'start_time_ambiguous', 'end_time_ambiguous',
+            'end_not_after_start', 'not_safely_past']) !== [];
+    }
+
     public function showRow(int $rowId): void
     {
         $this->rowId = $rowId;

@@ -51,6 +51,7 @@ class ServiceVariantResource extends Resource
     {
         return $schema->columns(2)->components([
             TextInput::make('name')->label('Nombre del servicio')->required()->maxLength(255)->columnSpanFull(),
+            TextInput::make('name_en')->label('Nombre en inglés (lo ven los clientes en inglés y el contrato)')->maxLength(255)->columnSpanFull(),
             Textarea::make('long_description')->label('Descripción para el contrato (en inglés)')->rows(6)->maxLength(10000)->columnSpanFull()
                 ->helperText('Cómo se desarrolla el servicio, con tus palabras. Se copia al contrato cuando fijas los montos; los contratos ya emitidos no cambian.'),
             TextInput::make('duration_minutes')->label('Duración (minutos)')->integer()->minValue(1)->maxValue(1440)->required()
@@ -113,7 +114,9 @@ class ServiceVariantResource extends Resource
 
         $long = trim((string) ($data['long_description'] ?? ''));
 
-        return ['name' => trim((string) ($data['name'] ?? '')), 'long_description' => $long === '' ? null : $long, 'status' => $data['status'] ?? 'draft',
+        $en = trim((string) ($data['name_en'] ?? ''));
+
+        return ['name' => trim((string) ($data['name'] ?? '')), 'name_en' => $en === '' ? null : $en, 'long_description' => $long === '' ? null : $long, 'status' => $data['status'] ?? 'draft',
             'duration_minutes' => (int) ($data['duration_minutes'] ?? 0), 'requirements' => self::normalizeRequirements($data['requirements'] ?? []),
             'character_quantity' => $quantity, 'character_options' => $options, 'offered_as_extra' => (bool) ($data['offered_as_extra'] ?? false), 'extends_event' => (bool) ($data['extends_event'] ?? false),
             'extra_character_cents' => $quantity > 0 && filled($data['extra_character_price'] ?? null) ? (int) round(((float) $data['extra_character_price']) * 100) : null,

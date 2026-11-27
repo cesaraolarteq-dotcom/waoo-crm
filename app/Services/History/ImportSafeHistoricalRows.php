@@ -37,12 +37,14 @@ final class ImportSafeHistoricalRows
                     $c=$match['candidates'][0]; $customer=['mode'=>'link','id'=>$c['id'],'expected_version'=>$c['version']];
                 }
                 if ($customer['mode'] === 'create') $customer['locale']=$d['new_customer_locale'];
-                $result = app(CommitHistoricalRow::class)->execute($actor,$batchId,$item['row_id'],[
+                // Owner 2026-11-25: one row the CRM cannot place (e.g. same email under another name) must not stop
+                // the whole import; it stays in the review list instead.
+                try { $result = app(CommitHistoricalRow::class)->execute($actor,$batchId,$item['row_id'],[
                     'expected_batch_version'=>HistoryImportBatch::findOrFail($batchId)->version,
                     'expected_row_version'=>$item['version'],'expected_preview_sha256'=>$item['preview_sha256'],
                     'expected_match_sha256'=>$match['expected_match_sha256'],'customer'=>$customer,
                     'source_status_confirmation'=>$item['status'],'event_type_confirmation'=>$item['event_type'],
-                ], (string)Str::uuid());
+                ], (string)Str::uuid()); } catch (\App\Exceptions\RecordWriteRejected) { $counts['left_for_review'] = ($counts['left_for_review'] ?? 0) + 1; continue; }
                 $counts[$result['state']]++;
             }
             $batch=HistoryImportBatch::whereKey($batchId)->lockForUpdate()->firstOrFail(); $m=HistoryEnvelope::batch($batch);

@@ -13,10 +13,14 @@ use App\Models\{Event, EventService, ServiceVariant};
 final class StaffPayEstimate
 {
     /** Hourly pay in cents per staffing skill, as decided by the owner. Missing skills have no rate yet. */
-    public const HOURLY_CENTS = ['host' => 2500, 'face_painter' => 2500, 'entertainer' => 3500];
+    public const HOURLY_CENTS = ['host' => 2500, 'entertainer' => 3500, 'performer' => 6000, 'performer_wig' => 8000];
     public const ROLE = ['host' => 'Recreador', 'face_painter' => 'Recreador (pintacaritas)', 'entertainer' => 'Animador', 'operator' => 'Operador',
-        'dj' => 'DJ', 'spa' => 'Spa', 'performer' => 'Staff'];
+        'dj' => 'DJ', 'spa' => 'Spa', 'performer' => 'Personaje', 'performer_wig' => 'Personaje de peluca'];
     public const MINIMUM_CENTS = 5000;
+    /** Owner 2026-11-23: a 30-minute service pays at least $40. */
+    public const HALF_HOUR_MINIMUM_CENTS = 4000;
+    /** Owner 2026-11-23: the only exception: the animator of the Magic package, 1 hour, is paid $40 (not $35 and not the $50 minimum). */
+    public const MAGIC_ANIMATOR_HOUR_CENTS = 4000;
     public const MATERIALS_CENTS = 3000;
 
     /** @return list<array{label: string, category: string, amount: ?string, event_service_id: int}> */
@@ -31,7 +35,7 @@ final class StaffPayEstimate
                 if (($r['kind'] ?? null) !== 'staff') continue;
                 $skill = (string) ($r['skill'] ?? '');
                 $rate = self::HOURLY_CENTS[$skill] ?? null;
-                $pay = $rate === null ? null : max(intdiv($rate * $minutes + 30, 60), self::MINIMUM_CENTS);
+                $pay = $rate === null ? null : self::pay($skill, $name, $rate, $minutes);
                 for ($i = 0; $i < max(1, (int) ($r['quantity'] ?? 1)); $i++) {
                     $lines[] = ['label' => (self::ROLE[$skill] ?? ucfirst($skill)).' · '.$name.' ('.$hours.' h)'.($rate === null ? ' · tarifa pendiente' : ''),
                         'category' => 'staff_labor', 'amount' => $pay === null ? null : self::dollars($pay), 'event_service_id' => $service->id];
@@ -41,6 +45,12 @@ final class StaffPayEstimate
         }
 
         return $lines;
+    }
+
+    public static function pay(string $skill, string $packageName, int $rateCents, int $minutes): int
+    {
+        if ($skill === 'entertainer' && $minutes === 60 && preg_match('/m[aá]gic/iu', $packageName)) return self::MAGIC_ANIMATOR_HOUR_CENTS;
+        return max(intdiv($rateCents * $minutes + 30, 60), $minutes <= 30 ? self::HALF_HOUR_MINIMUM_CENTS : self::MINIMUM_CENTS);
     }
 
     private static function dollars(int $cents): string

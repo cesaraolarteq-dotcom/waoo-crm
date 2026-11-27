@@ -85,6 +85,22 @@ class GoogleCalendarSyncTest extends TestCase
         Http::assertSent(fn (Request $r) => $r->method() === 'PATCH' && str_ends_with($r->url(), '/events/g-1') && $r['summary'] === 'Fiesta de Lucía (cambio)');
     }
 
+    public function test_a_cancelled_party_leaves_google_and_is_not_sent_again(): void
+    {
+        // Owner 2026-11-23: cancelled test parties stayed in his calendar and blocked the day.
+        $this->fakeGoogle();
+        GoogleCalendarConnection::create(['user_id' => $this->owner->id, 'refresh_token' => 'rt', 'access_token' => 'at', 'access_expires_at' => now()->addHour(), 'calendar_id' => 'cal-waoo@group.calendar.google.com']);
+        $event = $this->party();
+        $this->assertSame('g-1', EventGoogleLink::where('event_id', $event->id)->value('google_event_id'));
+        $event->forceFill(['status' => 'cancelled'])->save();
+        Http::assertSent(fn (Request $r) => $r->method() === 'DELETE' && str_contains($r->url(), '/events/g-1'));
+        $this->travelTo(\Carbon\CarbonImmutable::parse('2026-12-01T10:00:00-06:00'));
+        $posts = fn () => collect(Http::recorded())->filter(fn ($pair) => $pair[0]->method() === 'POST' && str_ends_with($pair[0]->url(), '/events'))->count();
+        $before = $posts();
+        app(GoogleCalendar::class)->syncUpcoming();
+        $this->assertSame($before, $posts(), 'Sync never re-creates a cancelled party.');
+    }
+
     public function test_google_failure_never_blocks_saving_and_is_shown_for_retry(): void
     {
         Http::fake(['*' => Http::response([], 500)]);

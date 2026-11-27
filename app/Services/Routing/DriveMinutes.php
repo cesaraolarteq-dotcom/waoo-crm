@@ -2,7 +2,7 @@
 namespace App\Services\Routing;
 
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\{Cache, Http};
+use Illuminate\Support\Facades\{Cache, DB, Http};
 
 /**
  * Drive time between two ZIP codes for the buffer between parties (César 2026-10-29: real drive + 30 minutes; the 30 is
@@ -26,6 +26,7 @@ final class DriveMinutes
         $cached = Cache::get($key);
         if (is_int($cached)) return $cached;
         if ($this->fetches >= $this->maxFetches || blank(config('waoo.google_routes_key')) || $departAt <= CarbonImmutable::now()->addMinute()) return null;
+        if (DB::transactionLevel() > 0 || ! TravelRouteBudget::take()) return null;
         $this->fetches++;
         try {
             $r = Http::connectTimeout($this->timeout)->timeout($this->timeout)->withHeaders(['X-Goog-Api-Key' => config('waoo.google_routes_key'),
@@ -43,12 +44,13 @@ final class DriveMinutes
     public function betweenAddresses(?string $from, ?string $to, CarbonImmutable $departAt): ?int
     {
         if (blank($from) || blank($to) || strlen($from) > 500 || strlen($to) > 500
-            || \Illuminate\Support\Facades\DB::transactionLevel() > 0 || $departAt <= CarbonImmutable::now()->addMinute()) return null;
+            || DB::transactionLevel() > 0 || $departAt <= CarbonImmutable::now()->addMinute()) return null;
         $departure = $departAt->utc()->format('Y-m-d\TH:i:s\Z');
         $key = 'waoo.drive.exact.'.hash('sha256', json_encode([$from, $to, $departure]));
         $cached = Cache::get($key);
         if (is_int($cached) && $cached >= 0 && $cached <= 1440) return $cached;
         if ($this->fetches >= $this->maxFetches || blank(config('waoo.google_routes_key'))) return null;
+        if (DB::transactionLevel() > 0 || ! TravelRouteBudget::take()) return null;
         $this->fetches++;
         try {
             $r = Http::connectTimeout($this->timeout)->timeout($this->timeout)->withoutRedirecting()->withHeaders([
