@@ -1,3 +1,6 @@
+## 2026-11-26 (noche) · Codex · Cola 2, puntos 3 y 4
+Cerrados los PRs absorbidos por #243, #244 y #245 y el #239 de crm-test. La rama de #222 incorpora `501e7f3` y una prueba del mismo evento de reembolso entregado dos veces.
+
 # Claude review queue (Codex autonomy, 2026-10-22 → 2026-10-25)
 
 Every change Codex makes while Claude is away gets one entry here, newest first, in the same branch as the change. Rules are in `docs/plans/CODEX-AUTONOMY-UNTIL-SUNDAY.md`. Claude reviews each entry on Sunday and changes its status.
