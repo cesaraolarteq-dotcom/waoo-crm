@@ -1,5 +1,15 @@
-## 2026-11-26 (noche) · Codex · Cola 2, puntos 3 y 4
-Cerrados los PRs absorbidos por #243, #244 y #245 y el #239 de crm-test. La rama de #222 incorpora `501e7f3` y una prueba del mismo evento de reembolso entregado dos veces.
+## 2026-11-27 · Claude → Codex · Arreglo de calendario en el CRM real + punto 8 nuevo
+**En el CRM real ahora: `3338530`** (rama `claude/hotfix-calendar-1127`, base ee1c30f, con «súbelo» de César). Ya está unido a esta rama.
+- Problema: cada fiesta importada de HoneyBook se contaba dos veces, una como evento del CRM y otra como entrada del calendario iCal. Por eso el 12 dic mostraba 8 fiestas cuando eran 4. Además el solver se quedaba sin presupuesto (`evaluation_budget`) y la web se quedaba sin horarios.
+- Arreglo: `HoneyBookCalendarFeed` saca el id de proyecto (`honeybook.com/app/event/<24 hex>`) de DESCRIPTION y lo guarda como `project_sha256`. `WebsiteCapacity` descarta la entrada cuando coincide con `imported_project_links.project_key` y con la misma hora exacta. Si cambia la hora o el proyecto, cuentan las dos. Prueba: `CalendarIdentityTest::test_honeybook_project_link_in_the_calendar_absorbs_the_same_imported_party`.
+- Verificado en el CRM real: 4 dic = 1, 5 dic = 7, 12 dic = 4.
+- Web (public_html, fuera de git): `waoo-crm-availability-lib.php` ahora espera 6 s en vez de 2. Un timeout (code 0) ya no activa el bloqueo de 60 s para todos; el bloqueo queda solo para 429/5xx. Copia de respaldo en `~/backups-website`.
+- Resultado en la web: el 4, el 12 y el 13 de diciembre ya muestran horarios (todos con aprobación, por la regla de 14 días). Del 19 de diciembre en adelante salen horarios normales.
+
+8. **Solver en días llenos (nuevo, después del punto 7):** con 7+ fiestas (por ejemplo el 5 dic), `PoolCapacitySolver` (50000 estados / 200 ms) devuelve `evaluation_budget`, y eso se vuelve `review_required`. Además, la revisión conjunta con todas las fiestas da infeasible, y los horarios pasan a `owner_approval_required`.
+   - Mide cuántos horarios del 5 dic salen `review_required` contra el CRM real (solo lectura).
+   - Propón una mejora: podar por personaje/recurso antes de buscar, o cachear por día. Nunca debe decir «disponible» si no está probado. Una prueba con 8 fiestas tiene que contestar en <1 s.
+   - Esto es disponibilidad, así que va en PR para que yo la revise.
 
 ## 2026-11-26 (noche) · Codex · Cola 2, punto 1
 Cerré #246. El auxiliar `sendDraft()` ya estaba en `ee1c30f` y la regla A de HoneyBook en `b8e7e86`. Dejé constancia del cierre en el PR.
@@ -3041,3 +3051,6 @@ Owner asked ("sí actívalos") to offer Klarna/Afterpay/Zip on the balance payme
 
 ## 2026-11-25 · Claude · Real CRM = 7c3e63a (claude/deploy-20261125, draft PR #228)
 f833e01 + codex/fix-auto-message-review, fix-deployed-money-review, fix-website-joint-hold, fix-team-route-budget (reviewed by Claude) + Claude fix: `RescheduleTransfers` only proves routes between parties < 12 h apart (`sameDay`); before, any earlier party of the same staff (e.g. last week) was the previous stop, the provider returns null for past departures and Armar equipo / Cambiar fecha refused. Test in WeekendPlanTest. Lock: league/csv 9.29.1, web-auth/webauthn-lib 5.3.17 (audit advisories). CI 10/10 green. **Codex:** please merge the four review branches and this branch into main.
+
+## 2026-11-27 · Codex · Cola 2, puntos 3 y 4 (#222), listo para revisar
+Cierres del punto 3 verificados. #222 añade la prueba de reenvío del mismo evento de reembolso con un único registro.
