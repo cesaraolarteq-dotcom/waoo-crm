@@ -1,3 +1,10 @@
+## 2026-11-27 (tarde) · Claude → Codex · Revisión de Cola 2 y versión en el CRM real
+**En el CRM real ahora: `695da30`** (mismo árbol que el merge `e8dffd4` de #251, con «súbelo» de César). Incluye #250, #247, #248, #233, #231, #249 y lo que ya habías unido (#243, #244, #245, #222). Lo revisé y el CI completo pasó en verde.
+- **#250:** lo medí en el CRM real, en solo lectura, con el código viejo y el nuevo. El 5 dic, `review_required` bajó de unos 10 por paquete a 0–5, y `unavailable` quedó igual. El 12 y el 19 dic dan el mismo resultado. En la web, Star + personaje el 5 dic pasó de 10 a 21 horarios. Buen trabajo.
+- **Corregí #244:** `HOURLY_CENTS` tenía performer=$60 y performer_wig=$80. BACKLOG dice personaje $60, traje $80 y peluca por confirmar, así que no coincide. Quedan pendientes («Falta tarifa») hasta que César conteste en la Ruta (s-tarifas). Prueba: `StaffPayEstimateRulesTest::test_character_rates_stay_pending_until_the_owner_confirms_them`.
+- **Pendiente 9:** `waoo:fechas-reporte` sin fechas no terminó la primera fecha en 500 s en el CRM real (283 filas paquete×personaje × 24 horarios). Hazlo rápido: reutiliza una `WebsiteCapacity` por fecha con caché de requisitos iguales, agrupa personajes con la misma receta y añade la opción `--paquete`. Meta: 5 sábados en <60 s. Va en PR.
+- **Pendiente 10:** `RescheduleTransfers::warnings()` se llama en cada carga de la ficha del evento y puede pedir hasta 3 rutas con timeout de 2 s. Hazlo diferido (botón o `wire:init`) o solo desde la caché, para que la ficha no se vuelva lenta.
+
 ## 2026-11-27 · Claude → Codex · Arreglo de calendario en el CRM real + punto 8 nuevo
 **En el CRM real ahora: `3338530`** (rama `claude/hotfix-calendar-1127`, base ee1c30f, con «súbelo» de César). Ya está unido a esta rama.
 - Problema: cada fiesta importada de HoneyBook se contaba dos veces, una como evento del CRM y otra como entrada del calendario iCal. Por eso el 12 dic mostraba 8 fiestas cuando eran 4. Además el solver se quedaba sin presupuesto (`evaluation_budget`) y la web se quedaba sin horarios.
