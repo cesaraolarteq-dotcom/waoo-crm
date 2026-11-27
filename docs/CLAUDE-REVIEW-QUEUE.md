@@ -41,6 +41,11 @@ Kinds: `BUG` (César reported it), `UI` (screen, portal, PDF or CSS change), `TE
 ### 2026-11-23 · BACKEND · Punto 3: apartado conjunto de la futura reserva web · PENDING
 - Rama `codex/fix-website-joint-hold`. Tres pruebas/18 aserciones con MariaDB, dos procesos y Stripe simulado.
 - Revisar vida del equipo comprometido en la planificación y ante reprogramación. La web permanece en preview.
+### 2026-11-26 · UI · Punto 4: pagos al staff y tarifas pendientes · PENDING
+- Rama `codex/fix-handoff-1126-staff-pay`.
+- Se integró la protección del historial de #234. Una tarifa sin definir deja la línea y su total pendientes. La sugerencia de transporte usa el conductor de staff del plan y omite el transporte externo y los nombres de César y Maybeli.
+- MariaDB local: 2 pruebas, 46 aserciones. Playwright con ejemplos ficticios: 390 y 1280 px, claro y oscuro. Revisar la identificación por nombre del conductor y las tarifas que el dueño todavía no definió.
+
 ### 2026-11-23 · BACKEND · Punto 4: traslados y presupuesto diario · PENDING
 - Rama `codex/fix-team-route-budget`. 38 pruebas/233 aserciones. Google simulado.
 - Revisar salida después del desmontaje, margen de 30 minutos, falta de informe de ruta y reserva atómica del tope diario.
