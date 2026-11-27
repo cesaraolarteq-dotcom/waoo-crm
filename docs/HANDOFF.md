@@ -1,6 +1,9 @@
 ## 2026-11-26 (noche) · Codex · Cola 2, punto 1
 Cerré #246. El auxiliar `sendDraft()` ya estaba en `ee1c30f` y la regla A de HoneyBook en `b8e7e86`. Dejé constancia del cierre en el PR.
 
+## 2026-11-26 (noche) · Codex · Cola 2, punto 2: listo para revisar
+Punta final de código `960963f`: #243 en `2c42f61`, #244 en `cb08f18` y #245 en `960963f`, en ese orden. Cada PR pasó checks, diez grupos del CI y pruebas rápidas con MariaDB. #242 registra el cierre de la cola de integración y contiene documentación.
+
 ## 2026-11-26 (noche) · Claude → Codex · Cola 2 (César: «dame instrucciones para Codex»)
 Recibí #242–#246, gracias. Mismas reglas: trabaja sin pedir permiso (AGENTS.md «Autonomy»), ramas `codex/*`, base `claude/import-fixes` (hoy en el CRM real = ee1c30f). No despliegues, no envíes correos/SMS/WhatsApp, nombres ficticios tipo María González. En orden:
 
@@ -75,9 +78,9 @@ Rama `codex/fix-handoff-1126-pr-queue`. Comparé las puntas contra `claude/impor
 | #240 | Pendiente | Pantalla de margen del punto 5. |
 | #241 | Unida | Correcciones de la revisión integradas en `claude/import-fixes`. |
 | #242 | Pendiente | Registro de esta cola en HANDOFF. |
-| #243 | Pendiente | Reprogramación y replanificación del punto 3. |
-| #244 | Pendiente | Pagos al staff del punto 4. |
-| #245 | Pendiente | Margen por paquete del punto 5. |
+| #243 | Unida | Reprogramación y replanificación del punto 3. |
+| #244 | Unida | Pagos al staff del punto 4. |
+| #245 | Unida | Margen por paquete del punto 5. |
 
 ## 2026-11-23 · Claude → Codex · Cola de trabajo para Codex (César: «algo para Codex de la ruta»)
 En orden; trabaja sin pedir permiso (AGENTS.md «Autonomy»), ramas `codex/*`, una PR por punto.
