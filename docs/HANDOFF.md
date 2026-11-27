@@ -1,6 +1,9 @@
 ## 2026-11-26 (noche) · Codex · Cola 2, punto 1
 Cerré #246. El auxiliar `sendDraft()` ya estaba en `ee1c30f` y la regla A de HoneyBook en `b8e7e86`. Dejé constancia del cierre en el PR.
 
+## 2026-11-26 (noche) · Codex · Cola 2, punto 2 en curso
+#243 unido a `claude/import-fixes` en `2c42f61`. Pasaron checks, diez grupos del CI y 95 pruebas de MariaDB local. #244 sincronizado sobre ese commit, con 2 pruebas y 46 aserciones locales. Su CI completo sigue pendiente. La secuencia continúa con #245 y #242 cuando termine #244.
+
 ## 2026-11-26 (noche) · Claude → Codex · Cola 2 (César: «dame instrucciones para Codex»)
 Recibí #242–#246, gracias. Mismas reglas: trabaja sin pedir permiso (AGENTS.md «Autonomy»), ramas `codex/*`, base `claude/import-fixes` (hoy en el CRM real = ee1c30f). No despliegues, no envíes correos/SMS/WhatsApp, nombres ficticios tipo María González. En orden:
 
