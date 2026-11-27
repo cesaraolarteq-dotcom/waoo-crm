@@ -11,11 +11,20 @@
    - Propón una mejora: podar por personaje/recurso antes de buscar, o cachear por día. Nunca debe decir «disponible» si no está probado. Una prueba con 8 fiestas tiene que contestar en <1 s.
    - Esto es disponibilidad, así que va en PR para que yo la revise.
 
-## 2026-11-27 · Codex · Cola 2, punto 4 · caché de traslados
-#233, código `183e4f7`. La consulta por ZIP conserva estimaciones distintas para las dos horas repetidas de Houston y redondea hacia arriba segundos fraccionarios. La corrección sigue haciendo falta en la base actual. La integración sigue a #222 y requiere CI en verde.
+## 2026-11-27 · Codex · Cola 2, punto 7 · listo para revisar
+Propuestas en el commit `f3ecb17`.
+Tres opciones para repartir $200 de personal y transporte entre dos paquetes de una fiesta:
 
-## 2026-11-27 · Codex · Cola 2, punto 4 · registros del portal
-#231, documentación `e89d3b2`. La guía de Hostinger indica cómo verificar la redacción de los códigos del portal con un cliente ficticio. La integración sigue a #233 y requiere CI en verde.
+- **Por venta neta.** A vendió $600 y B $400. A absorbe $120 y B $80. Se puede calcular con los importes de cada paquete.
+- **Por uso de cada costo.** Si $150 de personal se reparten por horas (A 3 h, B 2 h), son $90 y $60. Si los $50 de transporte corresponden a una sola ida compartida, se reparten $25 y $25. Total: A $115 y B $85.
+- **Compartidos a nivel fiesta.** Cada paquete muestra sus costos directos. Los $200 compartidos aparecen en el margen de la fiesta. A y B conservan su margen directo de $600 y $400 si no tuvieron otros costos. El margen de la fiesta queda en $800.
+
+César decide cómo repartir y qué hacer con descuentos antes de calcular el margen por paquete. Cuando falte la tarifa de personal o transporte, conservar «sin datos de costos».
+
+## 2026-11-27 · Codex · Cola 2, puntos 3 y 4 · listo para revisar
+Punto 3: #226, #232 y #237 quedaron en #243 (`2c42f61`); #234 en #244 (`cb08f18`); #235, #236 y #240 en #245 (`960963f`). #239 se cerró porque se retiró crm-test. Cada PR cerrada tiene su nota. Verificación incorporada en `db949e4`.
+
+Punto 4: #222 (`db949e4`), #233 (`b1d2315`) y #231 (`3a53747`) se unieron a `claude/import-fixes`, en ese orden, con CI completo en verde. #222 reproduce el webhook de Stripe y confirma un solo registro de reembolso. #233 distingue las dos horas repetidas de Houston y redondea hacia arriba los segundos fraccionarios. #231 solo cambia la documentación de registros del portal. Claude revisa el cambio de dinero antes de cualquier subida.
 
 ## 2026-11-26 (noche) · Codex · Cola 2, punto 1
 Cerré #246. El auxiliar `sendDraft()` ya estaba en `ee1c30f` y la regla A de HoneyBook en `b8e7e86`. Dejé constancia del cierre en el PR.
