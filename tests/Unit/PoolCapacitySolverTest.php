@@ -36,6 +36,25 @@ final class PoolCapacitySolverTest extends TestCase
         $this->assertCount(8, array_unique(array_column($available['witness'], 'performer')));
     }
 
+    public function test_eight_sequential_parties_without_transfers_need_eight_distinct_costumes(): void
+    {
+        $resources = array_map(fn ($id) => ['id' => $id, 'kind' => 'costume'], range(1, 7));
+        $jobs = []; $separations = [];
+        for ($i = 0; $i < 8; $i++) {
+            $key = 'party'.$i;
+            foreach ($jobs as $existing) {
+                $separations[] = ['first' => $existing['key'], 'second' => $key, 'resources' => range(1, 7)];
+            }
+            $jobs[] = $this->job($key, [$this->slot('character', range(1, 7), 'costume')], 100 * $i, 100 * $i + 50);
+        }
+
+        $started = hrtime(true);
+        $result = (new PoolCapacitySolver())->solve($resources, $jobs, separations: $separations);
+        $this->assertLessThan(1.0, (hrtime(true) - $started) / 1e9);
+        $this->assertSame('infeasible', $result['state']);
+        $this->assertSame([], $result['witness']);
+    }
+
     public function test_one_multiskilled_person_cannot_cover_two_simultaneous_roles(): void
     {
         $j = $this->job('party', [$this->slot('animador', [1]), $this->slot('recreador', [1])]);

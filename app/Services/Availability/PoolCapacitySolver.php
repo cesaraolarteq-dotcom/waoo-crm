@@ -79,7 +79,7 @@ final class PoolCapacitySolver
             foreach ($required as $id) if (!is_int($id) || !isset($units[$id])) return $unknown('invalid_required');
             $groups[$j['key']] = ['required' => array_unique($required), 'team_skills' => $people ? $teamSkills : [], 'indices' => $indices, 'staff' => $staff, 'vehicles' => $people ? $vehicles : 0, 'drivers' => $people ? max($j['minimum_drivers'], $vehicles) : $j['minimum_drivers']];
         }
-        $separate = [];
+        $separate = []; $fullySeparate = [];
         foreach ($separations as $edge) {
             if (!is_array($edge) || !is_string($edge['first'] ?? null) || !is_string($edge['second'] ?? null)
                 || $edge['first'] === $edge['second'] || !isset($groups[$edge['first']], $groups[$edge['second']])
@@ -88,6 +88,9 @@ final class PoolCapacitySolver
                 if (!is_int($id) || !isset($units[$id])) return $unknown('invalid_separation');
                 $separate[$edge['first']][$edge['second']][$id] = true;
                 $separate[$edge['second']][$edge['first']][$id] = true;
+            }
+            if (count($separate[$edge['first']][$edge['second']] ?? []) === count($units)) {
+                $fullySeparate[$edge['first']][$edge['second']] = $fullySeparate[$edge['second']][$edge['first']] = true;
             }
         }
         if ($tasks === []) return $unknown('empty_demand');
@@ -148,6 +151,24 @@ final class PoolCapacitySolver
                         $union[$id] = true;
                     }
                     if (++$demand > count($union)) return $infeasible;
+                }
+            }
+            if ($fullySeparate !== []) {
+                // A pair with no proven transfer may have to use different units even at different times.
+                // Build a set in which every pair is forbidden to share a unit, then bound its demand.
+                $exclusive = []; $union = [];
+                foreach ($sameKind as $task) {
+                    foreach ($exclusive as $other) {
+                        if (!$withinBudget()) return $unknown('evaluation_budget');
+                        if (!isset($fullySeparate[$task['job']][$other['job']])
+                            && ($task['start'] >= $other['end'] || $other['start'] >= $task['end'])) continue 2;
+                    }
+                    $exclusive[] = $task;
+                    foreach ($task['eligible'] as $id) {
+                        if (!$withinBudget()) return $unknown('evaluation_budget');
+                        $union[$id] = true;
+                    }
+                    if (count($exclusive) > count($union)) return $infeasible;
                 }
             }
         }
