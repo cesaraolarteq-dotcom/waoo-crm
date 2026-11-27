@@ -30,7 +30,13 @@ final class HoneyBookCalendarFeed
         return $uid === '' || $uid !== trim($uid) || strlen($uid) > 1024 || preg_match('/[\x00-\x1F\x7F]/', $uid) ? null : hash('sha256', $uid);
     }
 
-    /** @return list<array{0: CarbonImmutable, 1: CarbonImmutable, 2?: array{uid_sha256: string, scope_sha256?: string}}>|null null when the feed did not answer or cannot be trusted */
+    /** Same key the HoneyBook import stores in imported_project_links.project_key. */
+    public static function projectHash(string $projectId): string
+    {
+        return hash('sha256', strtolower($projectId));
+    }
+
+    /** @return list<array{0: CarbonImmutable, 1: CarbonImmutable, 2?: array{uid_sha256?: string, scope_sha256?: string, project_sha256?: string}}>|null null when the feed did not answer or cannot be trusted */
     public function between(CarbonImmutable $from, CarbonImmutable $to): ?array
     {
         $url = (string) config('waoo.honeybook_ical_url');
@@ -84,7 +90,8 @@ final class HoneyBookCalendarFeed
                         [$seenStart, $seenEnd] = $identities[$uid];
                         if (!$seenStart->equalTo($start) || !$seenEnd->equalTo($end)) return null;
                     } else {
-                        $events[] = $uid === null ? [$start, $end] : [$start, $end, ['uid_sha256' => $uid]];
+                        $meta = ($uid === null ? [] : ['uid_sha256' => $uid]) + (isset($cur['PROJECT']) ? ['project_sha256' => $cur['PROJECT']] : []);
+                        $events[] = $meta === [] ? [$start, $end] : [$start, $end, $meta];
                         if ($uid !== null) $identities[$uid] = [$start, $end];
                     }
                 }
@@ -96,6 +103,14 @@ final class HoneyBookCalendarFeed
                 continue;
             }
             if (preg_match('/^(RRULE|RDATE|EXRULE|DURATION)[;:]/', $line)) return null; // recurrence/duration not supported
+            // HoneyBook writes its project link in the description (owner 2026-11-27: the same party was counted twice, once
+            // imported and once from this calendar). Only one distinct project id is trusted; anything else stays unlinked.
+            if (preg_match('/^DESCRIPTION(?:;[^:]*)?:(.*)$/s', $line, $d)) {
+                preg_match_all('~honeybook\.com/app/event/([0-9a-f]{24})(?![0-9a-f])~i', $d[1], $pm);
+                $ids = array_unique(array_map('strtolower', $pm[1]));
+                if (count($ids) === 1) $cur['PROJECT'] = self::projectHash(reset($ids));
+                continue;
+            }
             if (! preg_match('/^(DTSTART|DTEND|STATUS)((?:;[^:]*)?):(.*)$/', $line, $m)) continue;
             if ($m[1] === 'STATUS') { $cur['STATUS'] = strtoupper(trim($m[3])); continue; }
             $value = trim($m[3]); $params = $m[2];
